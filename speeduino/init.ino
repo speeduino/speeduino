@@ -1772,28 +1772,33 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-    case 31:
-     #ifndef SMALL_FLASH_MODE
-      //Pin mappings for the BMW PnP PCBs by pazi88. This is an AVR only module. At least for now
+   case 31:
+      //Pin mappings for the BMW PnP PCBs by pazi88.
+      #if defined(CORE_AVR)
+      //This is the regular MEGA2560 pin mapping
       pinInjector1 = 8; //Output pin injector 1
       pinInjector2 = 9; //Output pin injector 2
       pinInjector3 = 10; //Output pin injector 3
       pinInjector4 = 11; //Output pin injector 4
       pinInjector5 = 12; //Output pin injector 5
       pinInjector6 = 50; //Output pin injector 6
+      pinInjector7 = 39; //Output pin injector 7 (placeholder)
+      pinInjector8 = 42; //Output pin injector 8 (placeholder)
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
       pinCoil6 = 34; //Pin for coil 6
+      pinCoil7 = 46; //Pin for coil 7 (placeholder)
+      pinCoil8 = 53; //Pin for coil 8 (placeholder)
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 20; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
       pinIAT = A0; //IAT sensor pin
-      pinCLT = A1; //CLS sensor pin
+      pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinBaro = A5; //Baro sensor pin
@@ -1813,7 +1818,49 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
       pinVSS = 3; //VSS input pin
-      #endif
+     #elif defined(STM32F407xx)
+      pinInjector1 = PB15; //Output pin injector 1
+      pinInjector2 = PB14; //Output pin injector 2
+      pinInjector3 = PB12; //Output pin injector 3
+      pinInjector4 = PB13; //Output pin injector 4
+      pinInjector5 = PA8; //Output pin injector 5
+      pinInjector6 = PE7; //Output pin injector 6
+      pinInjector7 = PE13; //Output pin injector 7 (placeholder)
+      pinInjector8 = PE10; //Output pin injector 8 (placeholder)
+      pinCoil1 = PE2; //Pin for coil 1
+      pinCoil2 = PE3; //Pin for coil 2
+      pinCoil3 = PC13; //Pin for coil 3
+      pinCoil4 = PE6; //Pin for coil 4
+      pinCoil5 = PE4; //Pin for coil 5
+      pinCoil6 = PE5; //Pin for coil 6
+      pinCoil7 = PE0; //Pin for coil 7 (placeholder)
+      pinCoil8 = PB9; //Pin for coil 8 (placeholder)
+      pinTrigger = PD3; //The CAS pin
+      pinTrigger2 = PD4; //The Cam Sensor pin
+      pinTPS = PA2;//TPS input pin
+      pinMAP = PA3; //MAP sensor pin
+      pinIAT = PA0; //IAT sensor pin
+      pinCLT = PA1; //CLS sensor pin
+      pinO2 = PB0; //O2 Sensor pin
+      pinBat = PA4; //Battery reference voltage pin
+      pinBaro = PA5; //Baro sensor pin
+      pinDisplayReset = PE12; // OLED reset pin
+      pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
+      pinIdle1 = PD10; //ICV pin1
+      pinIdle2 = PD9; //ICV pin3
+      pinBoost = PD8; //Boost control
+      pinVVT_1 = PD11; //VVT1 output (intake vanos)
+      pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
+      pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
+      pinStepperDir = PB10; //Stepper valve isn't used with these
+      pinStepperStep = PB11; //Stepper valve isn't used with these
+      pinStepperEnable = PA15; //Stepper valve isn't used with these
+      pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
+      pinLaunch = PB8; //Launch control pin
+      pinFlex = PD7; // Flex sensor
+      pinResetControl = PB7; //Reset control output
+      pinVSS = PB6; //VSS input pin
+     #endif
       break;
 
     case 40:
