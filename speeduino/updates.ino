@@ -491,6 +491,8 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    configPage9.boostByGearEnabled = 0;
+
     //Added possibility to set minimum programmable output time
     configPage13.outputTimeLimit[0] = 0;
     configPage13.outputTimeLimit[1] = 0;
