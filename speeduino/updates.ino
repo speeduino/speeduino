@@ -491,6 +491,9 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    //RPM switch point added for map sample method. Set to 0 to not affect existing tunes.
+    configPage2.mapSwitchPoint = 0;
+
     configPage9.boostByGearEnabled = 0;
 
     writeAllConfig();
