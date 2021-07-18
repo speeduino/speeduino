@@ -494,6 +494,8 @@ void doUpdates()
     //RPM switch point added for map sample method. Set to 0 to not affect existing tunes.
     configPage2.MapSwitchPoint = 0;
 
+    configPage9.boostByGearEnabled = 0;
+
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
@@ -512,6 +514,8 @@ void doUpdates()
     configPage13.outputPin[5] = 0;
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
+
+    configPage4.FILTER_FLEX = 75;
 
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
