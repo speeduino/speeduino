@@ -1121,7 +1121,8 @@ struct config9 {
   byte boostByGearEnabled : 2;
 
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
-
+  byte idleAdvStartDelay;     //delay for idle advance engage
+  
   byte boostByGear1;
   byte boostByGear2;
   byte boostByGear3;
@@ -1129,7 +1130,6 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_161;
   byte unused10_162;
   byte unused10_163;
   byte unused10_164;
