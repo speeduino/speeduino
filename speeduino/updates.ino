@@ -492,6 +492,21 @@ void doUpdates()
     configPage4.ANGLEFILTER_VVT = 0;
 
     configPage2.IdleAdvDelay *= 2; //Increased resolution to 0.5 second
+    
+    //RPM switch point added for map sample method. Set to 0 to not affect existing tunes.
+    configPage2.mapSwitchPoint = 0;
+
+    configPage9.boostByGearEnabled = 0;
+
+    //Added possibility to set minimum programmable output time
+    configPage13.outputTimeLimit[0] = 0;
+    configPage13.outputTimeLimit[1] = 0;
+    configPage13.outputTimeLimit[2] = 0;
+    configPage13.outputTimeLimit[3] = 0;
+    configPage13.outputTimeLimit[4] = 0;
+    configPage13.outputTimeLimit[5] = 0;
+    configPage13.outputTimeLimit[6] = 0;
+    configPage13.outputTimeLimit[7] = 0;
 
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
@@ -511,6 +526,8 @@ void doUpdates()
     configPage13.outputPin[5] = 0;
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
+
+    configPage4.FILTER_FLEX = 75;
 
     EEPROM.write(EEPROM_DATA_VERSION, CURRENT_DATA_VERSION);
   }
