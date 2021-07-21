@@ -160,19 +160,13 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
     int16_t yMax = table2D_getRawValue(fromTable, xMax);
     int16_t yMin = table2D_getRawValue(fromTable, xMin);
 
-    //Float version
-    /*
-    int yVal = (m / n) * (abs(yMax - yMin));
+    /* Float version (if m, yMax, yMin and n were float's)
+       int yVal = (m * (yMax - yMin)) / n;
     */
-
+    
     //Non-Float version
-    int16_t yVal = ((long)(m << 6) / n) * (abs(yMax - yMin));
-    yVal = (yVal >> 6);
-
-    if (yMax > yMin) { yVal = yMin + yVal; }
-    else { yVal = yMin - yVal; }
-
-    returnValue = yVal;
+    int16_t yVal = ( ((int32_t) m) * (yMax-yMin) ) / n;
+    returnValue = yMin + yVal;
   }
 
   fromTable->lastInput = X_in;
