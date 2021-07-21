@@ -278,7 +278,7 @@ For a missing tooth wheel, this is the number if the tooth had NOT been missing 
 static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.startRevolutions >= configPage4.SkipCycles) && (currentStatus.hasSync == true) )
+  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (currentStatus.hasSync == true) )
   {
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
@@ -1277,7 +1277,7 @@ void triggerPri_4G63()
 
     if (currentStatus.hasSync == true)
     {
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock && (currentStatus.startRevolutions >= configPage4.SkipCycles))
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock && (currentStatus.startRevolutions >= configPage4.StgCycles))
       {
         if(configPage2.nCylinders == 4)
         {

@@ -14,11 +14,13 @@ _regexComma = r'(?:\s*,\s*)' # Whitespaced comma
 _keyRegEx = r'^\s*(?P<key>[^;].+)\s*=' # Ini file key. E.g.  '   foo  ='
 _dataTypeRegex = fr'{_regexComma}(?P<type>[S|U]\d+)' # Comma prefixed data type. E.g. ' , S16 ' 
 _fieldOffsetRegex = fr'{_regexComma}(?P<offset>\d+)' # Comma prefixed number
-_otherRegEx = fr'({_regexComma}(?P<other>.+))*' # Comma prefixed anything
+_inlineCommentRegex = r'\s*(?P<comment>;\s*.*)?$'
+_otherRegEx = fr'({_regexComma}(?P<other>.+?))*{_inlineCommentRegex}' # Comma prefixed anything
+_NAME_OVERRIDE_TAG = 'name='
 
 class Comment:
     """A comment line"""
-    REGEX = re.compile(fr'^\s*(;.*)$')
+    REGEX = re.compile(fr'^{_inlineCommentRegex}')
 
     def __init__(self, match):
         self.Comment = match.group(1).strip()
@@ -28,7 +30,7 @@ class Comment:
 
 class Section:
     """A section line"""
-    REGEX = re.compile(fr'^\s*\[(.+)\]\s*$')
+    REGEX = re.compile(fr'^\s*\[(.+)\]{_inlineCommentRegex}')
         
     def __init__(self, match):
         self.Section = match.group(1).strip()
@@ -50,7 +52,20 @@ class FieldBase:
         self.DataType = FieldBase.__types[match.group('type').strip()]
         self.Offset = int(match.group('offset') or -1)
         self.Other = [x.strip() for x in (match.group('other') or "").split(',')]
-        self.NameOverride = "use_name_parse" in self.Other
+        code_overide = more_itertools.first((other for other in self.Other if other.startswith("%code_override")), None)
+        self.CodeOverride = code_overide.split('=', 1)[1] if code_overide else code_overide
+
+    @property
+    def CodeFieldName(self):
+        """Some field names require additional processing in order to get
+        the equivalent source code variable name"""
+        if self.CodeOverride:
+            if isinstance(self.CodeOverride, FieldBase):
+                return self.CodeOverride.Field
+            if self.CodeOverride.startswith(_NAME_OVERRIDE_TAG):
+                return self.CodeOverride[len(_NAME_OVERRIDE_TAG):]
+
+        return self.Field
 
 class ScalarField(FieldBase):
     """A scalar field"""
@@ -103,7 +118,7 @@ class OneDimArrayField(FieldBase):
 
 class StringDef:
     """A string definition"""
-    REGEX = re.compile(fr'{_keyRegEx}(?:\s*string){_regexComma}(?P<encoding>.+){_regexComma}(?:\s*(?P<length>\d+))')
+    REGEX = re.compile(fr'{_keyRegEx}(?:\s*string){_regexComma}(?P<encoding>.+){_regexComma}(?:\s*(?P<length>\d+)){_inlineCommentRegex}')
 
     def __init__(self, match):
         self.Field = match.group('key').strip()
@@ -115,7 +130,7 @@ class StringDef:
 
 class KeyValue:
     """A generic key-value pair"""
-    REGEX = re.compile(fr'{_keyRegEx}\s*(?P<value>.*)\s*$')
+    REGEX = re.compile(fr'{_keyRegEx}\s*(?P<value>.*?){_inlineCommentRegex}')
 
     def __init__(self, match):
         self.Key = match.group('key').strip()
@@ -126,7 +141,7 @@ class KeyValue:
 
 class Define:
     """A #define"""
-    REGEX = re.compile(fr'^\s*#define\s+(?P<condition>.+)\s*=\s*(?P<value>.+)\s*$')
+    REGEX = re.compile(fr'^\s*#define\s+(?P<condition>.+?)\s*=\s*(?P<value>.+?){_inlineCommentRegex}')
 
     def __init__(self, match):
         self.Condition = match.group('condition').strip()
@@ -137,7 +152,7 @@ class Define:
 
 class BeginIfdef:
     """A #if"""
-    REGEX = re.compile(fr'^\s*#if\s+(?P<condition>.*)\s*$')
+    REGEX = re.compile(fr'^\s*#if\s+(?P<condition>.*?){_inlineCommentRegex}$')
 
     def __init__(self, match):
         self.Condition = match.group('condition').strip()
@@ -147,7 +162,7 @@ class BeginIfdef:
 
 class IfDefElse:
     """A #else"""
-    REGEX = re.compile(fr'^\s*#else\s*$')
+    REGEX = re.compile(fr'^\s*#else{_inlineCommentRegex}$')
 
     def __init__(self, match):
         pass
@@ -157,7 +172,7 @@ class IfDefElse:
 
 class EndIfdef:
     """A #endif"""
-    REGEX = re.compile(fr'^\s*#endif\s*$')
+    REGEX = re.compile(fr'^\s*#endif{_inlineCommentRegex}$')
 
     def __init__(self, match):
         pass
@@ -175,35 +190,52 @@ class UnknownLine:
 
 class BlankLine:
     """A line with text"""
-        
+
+class Table:
+    REGEX = re.compile(fr'^\s*table\s*=\s*(?P<TableId>.+?){_regexComma}(?P<MapId>.+?){_regexComma}(?P<Title>".+?"){_regexComma}(?P<Page>\d*)({_regexComma}%code_override=(?P<CodeOverride>.*?))?{_inlineCommentRegex}')
+
+    def __init__(self, match):
+        self.TableId = match.group('TableId').strip()
+        self.MapId  =  match.group('MapId').strip()
+        self.Title = match.group('Title').strip()
+        self.Page = match.group('Page').strip()
+        self.CodeOverride = match.group('CodeOverride')
+
+    @property
+    def CodeFieldName(self):
+        if self.CodeOverride:
+            if self.CodeOverride.startswith(_NAME_OVERRIDE_TAG):
+                return self.CodeOverride[len(_NAME_OVERRIDE_TAG):]
+        return self.TableId
+
+def process_line(line):
+    ts_ini_regex_handlers = [
+        Define,
+        Comment,
+        Section,
+        ScalarField,
+        BitField,
+        TwoDimArrayField,
+        OneDimArrayField,
+        StringDef,
+        BeginIfdef,
+        IfDefElse,
+        EndIfdef,
+        Table,
+        KeyValue,
+    ]
+    if str.isspace(line):
+        return BlankLine()
+
+    for line_type in ts_ini_regex_handlers:
+        match = line_type.REGEX.match(line)
+        if match:
+            return line_type(match)
+
+    return UnknownLine(line)
+
 def parse_tsini(iniFile):
     """Parses a TS ini file into a collection of objects. One object per line"""
-
-    def process_line(line):
-        ts_ini_regex_handlers = [
-            Comment,
-            Section,
-            ScalarField,
-            BitField,
-            TwoDimArrayField,
-            OneDimArrayField,
-            StringDef,
-            Define,
-            BeginIfdef,
-            IfDefElse,
-            EndIfdef,
-            KeyValue
-        ]
-        if str.isspace(line):
-            return BlankLine()
-
-        for line_type in ts_ini_regex_handlers:
-            match = line_type.REGEX.match(line)
-            if match:
-                return line_type(match)
-
-        return UnknownLine(line)
-
     with open(iniFile, 'r') as f:
         return [process_line(x) for x in f]
 
@@ -237,6 +269,23 @@ def coalesce_ifdefs(lines):
                         lambda itemA, itemB: isinstance(itemB, BeginIfdef) or isinstance(itemA, EndIfdef)
                 )))
 
+def fixup_overrides(lines):
+    """
+    Find fields %'code_override' tags and link to actual override object  
+    """
+    def create_override(lines, override):
+        define = more_itertools.first((line for line in lines if isinstance(line, Define) and line.Condition==override))
+        return process_line(define.Value)
+
+    overrides = { }
+    override_fields = (field for field in lines if isinstance(field, FieldBase) and field.CodeOverride)
+    for field in override_fields:
+        if field.CodeOverride[0]=='$':
+            key = field.CodeOverride[1:]
+            field.CodeOverride = overrides.get(key) or overrides.setdefault(key, create_override(lines,key))
+
+    return lines
+
 def read(iniFile):
     """
     Read a TunerStudio file into a dictionary.
@@ -246,8 +295,8 @@ def read(iniFile):
     """
 
     # Parse lines
-    lines = parse_tsini(iniFile)
-    
+    lines = fixup_overrides(parse_tsini(iniFile))
+
     # This is only here to make section grouping code simpler
     if not isinstance(lines[0], Section):
         lines.insert(0, Section(re.match(Section.REGEX, '[None]')))
@@ -296,17 +345,3 @@ def group_overlapping(fields):
     if fields:
         return more_itertools.split_before(fields, group_overlap(fields[0]))
     return fields
-
-_PARSE_SUBS= [
-    # Array index flag 
-    [ re.compile('_i(?P<index>\d+)_'), '[\g<index>].' ]
-]
-
-def get_code_fieldname(item:FieldBase):
-    """Some field names require additional processing in order to get
-    the equivalent source code variable name"""
-    name = item.Field
-    if item.NameOverride:
-        for sub in _PARSE_SUBS:
-            name = sub[0].sub(sub[1], name)
-    return name

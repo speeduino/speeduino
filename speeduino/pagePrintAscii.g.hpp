@@ -34,7 +34,7 @@ static void printPage1(Print &target) {
 	target.println(configPage1.displayB2);
 	target.println(configPage1.reqFuel);
 	target.println(configPage1.divider);
-	target.println(configPage1.alternate);
+	target.println(configPage1.injTiming);
 	target.println(configPage1.multiplyMAP_old);
 	target.println(configPage1.includeAFR);
 	target.println(configPage1.hardCutType);
@@ -43,10 +43,10 @@ static void printPage1(Print &target) {
 	target.println(configPage1.injOpen);
 	print_array(target, configPage1.injAng);
 	target.println(configPage1.mapSample);
-	target.println(configPage1.twoStroke);
+	target.println(configPage1.strokes);
 	target.println(configPage1.injType);
 	target.println(configPage1.nCylinders);
-	target.println(configPage1.algorithm);
+	target.println(configPage1.fuelAlgorithm);
 	target.println(configPage1.fixAngEnable);
 	target.println(configPage1.nInjectors);
 	target.println(configPage1.engineType);
@@ -99,7 +99,7 @@ static void printPage1(Print &target) {
 	target.println(configPage1.CTPSEnabled);
 	target.println(configPage1.idleAdvEnabled);
 	target.println(configPage1.idleAdvAlgorithm);
-	target.println(configPage1.idleAdvDelay);
+	target.println(configPage1.IdleAdvDelay);
 	target.println(configPage1.idleAdvRPM);
 	target.println(configPage1.idleAdvTPS);
 	print_array(target, configPage1.injAngRPM);
@@ -160,7 +160,7 @@ static void printPage4(Print &target) {
 	target.println(configPage4.bootloaderCaps);
 	target.println(configPage4.resetControlConfig);
 	target.println(configPage4.resetControlPin);
-	target.println(configPage4.SkipCycles);
+	target.println(configPage4.StgCycles);
 	target.println(configPage4.boostType);
 	target.println(configPage4.useDwellLim);
 	target.println(configPage4.sparkMode);

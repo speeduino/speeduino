@@ -127,11 +127,6 @@ static void serial_print_3dtable(Print &target, const table3D &currentTable)
 
 // Alias page 2 - it's page 1 in the INI file
 #define configPage1 configPage2
-// As per INI comment
-// ;Has to be called algorithm for the req fuel calculator to work :(
-#define algorithm fuelAlgorithm
-#define alternate injTiming
-#define twoStroke strokes
 
 // Pull in the generated code.
 #include "pagePrintAscii.g.hpp"

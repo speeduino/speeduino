@@ -856,7 +856,7 @@ struct config2 {
 
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
-  byte idleAdvDelay : 5;
+  byte IdleAdvDelay : 5;
   
   byte idleAdvRPM;
   byte idleAdvTPS;
@@ -930,7 +930,7 @@ struct config4 {
      2=Prevent Always (RESET_CONTROL_PREVENT_ALWAYS), 3=Serial Command (RESET_CONTROL_SERIAL_COMMAND) - Copied to resetControl (See init.ino, utilities.ino) */
   byte resetControlPin : 6;
 
-  byte SkipCycles; //The number of initial cycles before the ignition should fire when first cranking
+  byte StgCycles; //The number of initial cycles before the ignition should fire when first cranking
 
   byte boostType : 1; ///< Boost Control type: 0=Open loop (OPEN_LOOP_BOOST), 1=closed loop (CLOSED_LOOP_BOOST)
   byte useDwellLim : 1; //Whether the dwell limiter is off or on
@@ -1359,7 +1359,7 @@ struct config13 {
   uint8_t firstDataIn[8]; ///< Set of first I/O vars to compare
   uint8_t secondDataIn[8];///< Set of second I/O vars to compare
   uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependant(Unit: 0.1S)
-  uint8_t unused_13[8]; // Unused
+  uint8_t unused13_35_49[8]; // Unused
   int16_t firstTarget[8]; ///< first  target value to compare with numeric comp
   int16_t secondTarget[8];///< second target value to compare with bitwise op
   //89bytes

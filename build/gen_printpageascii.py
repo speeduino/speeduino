@@ -30,7 +30,7 @@ OUTPUT_VAR_NAME = 'target'
 def generate_printfields(page_num, fields, file):
     """ Print each field in the page """
     def get_fullfieldname(page_num, field):
-        return f'configPage{page_num}.{read_tsini.get_code_fieldname(field)}'
+        return f'configPage{page_num}.{field.CodeFieldName}'
 
     def gen_scalar(page_num, field):
         return f'\t{OUTPUT_VAR_NAME}.println({get_fullfieldname(page_num, field)});'
@@ -44,21 +44,27 @@ def generate_printfields(page_num, fields, file):
     def gen_unknown(page_num, field):
         return f'\t// Unknown field: {field.Field}'
 
+    def apply_overrides(fields):
+        return ((field.CodeOverride if isinstance(field.CodeOverride, read_tsini.FieldBase) else field) for field in fields)
+
+    def unique_fields(fields):
+         return {field.Field : field for field in fields}.values()
+
     print_map = {
         read_tsini.ScalarField : gen_scalar,
         read_tsini.BitField : gen_bit,
         read_tsini.OneDimArrayField: gen_array
-    }
+    }       
 
-    for generator, field in ((print_map.get(type(field), gen_unknown), field) for field in fields): 
+    for generator, field in ((print_map.get(type(field), gen_unknown), field) for field in unique_fields(apply_overrides(fields))): 
         print(generator(page_num, field), file=file)
 
 def generate_printtables(tables, file):
     """ Print each table in the page """
     for table in tables: 
-        tableName = table[0].Values[2].replace('"', '')
+        tableName = table.Title.strip('"')
         print(f'\t{OUTPUT_VAR_NAME}.println(F("\\n{tableName}"));', file=file)
-        print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table[0].Values[0]});', file=file)
+        print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table.CodeFieldName});', file=file)
 
 def generate_pageprintfunction(function_name, page_num, fields, file):
     # TS appear to use a "last one wins" algorithm. 
@@ -84,8 +90,7 @@ def generate_pageprintfunction(function_name, page_num, fields, file):
     generate_printfields(page_num, print_fields, file)
     
     # Each table in the INI file is at least 3 entries - we only need one
-    tables = itertools.groupby((field for field in fields if field.Table), 
-                                key = lambda item: item.Table)
+    tables = set((field.Table for field in fields if field.Table))
     generate_printtables(tables, file)
 
     print('}', file=file) 
@@ -96,12 +101,13 @@ def generate_printpageascii(ts_ini_lines, file):
         return isinstance(item, read_tsini.KeyValue) and item.Key == 'page'
 
     def is_table(item):
-        return isinstance(item, read_tsini.KeyValue) and item.Key == 'table'
+        return isinstance(item, read_tsini.Table)
 
     def is_actionable(item):
         return not isinstance(item, read_tsini.Comment) \
             and not isinstance(item, read_tsini.UnknownLine) \
-            and not isinstance(item, read_tsini.BlankLine)
+            and not isinstance(item, read_tsini.BlankLine) \
+            and not isinstance(item, read_tsini.Define)
 
     def is_field(item):
         return isinstance(item, read_tsini.FieldBase)
