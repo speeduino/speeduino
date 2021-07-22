@@ -491,6 +491,8 @@ void doUpdates()
     configPage10.vvtCLMaxAng = 200;
     configPage4.ANGLEFILTER_VVT = 0;
 
+    configPage2.IdleAdvDelay *= 2; //Increased resolution to 0.5 second
+    
     //RPM switch point added for map sample method. Set to 0 to not affect existing tunes.
     configPage2.mapSwitchPoint = 0;
 
