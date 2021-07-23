@@ -57,61 +57,66 @@ void writeAllConfig()
 
 //  ================================= Internal write support ===============================
 
+typedef struct write_location {
+  eeprom_address_t address;
+  uint8_t counter;
+} write_location;
 
 /** Update byte to EEPROM by first comparing content and the need to write it.
 We only ever write to the EEPROM where the new value is different from the currently stored byte
 This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
 */
-static inline uint8_t update(eeprom_address_t address, uint8_t value, uint8_t counter)
+static inline write_location update(uint8_t value, write_location location)
 {
-  if (EEPROM.read(address)!=value)
+  if (EEPROM.read(location.address)!=value)
   {
-    EEPROM.write(address, value);
-    return counter+1;
+    EEPROM.write(location.address, value);
+    ++location.counter;
   }
-  return counter;
+  return location;
 }
 
-static inline uint8_t write_range_divisor(eeprom_address_t &address, int8_t divisor, int16_t *pStart, const int16_t *pEnd, uint8_t counter)
+static inline write_location write_range(byte *pStart, const byte *pEnd, write_location location)
 {
-  while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  while (location.counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
   {
-    counter = update(address, (*pStart)/divisor, counter);
-    ++pStart; ++address;
+    location = update(*pStart, location);
+    ++pStart; ++location.address;
   }
-  return counter;
+  return location;
 }
 
-static inline uint8_t write_range(eeprom_address_t &address, byte *pStart, const byte *pEnd, uint8_t counter)
+static inline write_location write(const table_row_t &row, write_location location)
 {
-  while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
-  {
-    counter = update(address, *pStart, counter);
-    ++pStart; ++address;
-  }
-  return counter;
+  return write_range(row.pValue, row.pEnd, location);
 }
 
-static inline uint8_t writeTableValues(const table3D *pTable, eeprom_address_t &address, uint8_t counter)
+static inline write_location write(table_row_iterator_t it, write_location location)
 {
-  byte **pRow = pTable->values + (pTable->xSize-1);
-  byte **pRowEnd = pTable->values - 1;
-  int rowSize = pTable->xSize;
-  while (counter<=EEPROM_MAX_WRITE_BLOCK && pRow!=pRowEnd)
+  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
   {
-    counter = write_range(address, *pRow, *pRow+rowSize, counter);
-    --pRow;
+    location = write(get_row(it), location);
+    it = advance_row(it);
   }
-  return counter;
+  return location;
 }
 
-static inline uint8_t writeTable(const table3D *pTable, eeprom_address_t &address, uint8_t counter)
+static inline write_location write(table_axis_iterator_t it, write_location location)
 {
-  counter = update(address, pTable->xSize, counter); ++address;
-  counter = update(address, pTable->ySize, counter); ++address;
-  counter = writeTableValues(pTable, address, counter);
-  counter = write_range_divisor(address, getTableXAxisFactor(pTable), pTable->axisX, pTable->axisX+pTable->xSize, counter);
-  return write_range_divisor(address, getTableYAxisFactor(pTable), pTable->axisY, pTable->axisY+pTable->ySize, counter);
+  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
+  {
+    location = update(get_value(it), location);
+    ++location.address;
+    it = advance_axis(it);
+  }
+  return location;
+}
+
+static inline write_location writeTable(const table3D *pTable, write_location location)
+{
+  return write(y_rbegin(pTable), 
+                write(x_begin(pTable), 
+                  write(rows_begin(pTable), location)));
 }
 
 //  ================================= End write support ===============================
@@ -120,36 +125,26 @@ static inline uint8_t writeTable(const table3D *pTable, eeprom_address_t &addres
 Takes the current configuration (config pages and maps)
 and writes them to EEPROM as per the layout defined in storage.h.
 */
-void writeConfig(byte tableNum)
+void writeConfig(uint8_t pageNum)
 {
-  /*
-  We only ever write to the EEPROM where the new value is different from the currently stored byte
-  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-  */
-  uint8_t writeCounter = 0;
-  eeprom_address_t address;
+  write_location result;
 
-  switch(tableNum)
+  switch(pageNum)
   {
     case veMapPage:
       /*---------------------------------------------------
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG1_XSIZE;
-      writeCounter = writeTable(&fuelTable, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&fuelTable, { EEPROM_CONFIG1_MAP, 0 } );
       break;
-      //That concludes the writing of the VE table
 
     case veSetPage:
       /*---------------------------------------------------
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG2_START;
-      writeCounter = write_range(address, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), { EEPROM_CONFIG2_START, 0 });
       break;
 
     case ignMapPage:
@@ -157,10 +152,7 @@ void writeConfig(byte tableNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      //Begin writing the Ignition table, basically the same thing as above
-      address = EEPROM_CONFIG3_XSIZE;
-      writeCounter = writeTable(&ignitionTable, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&ignitionTable, { EEPROM_CONFIG3_MAP, 0 });
       break;
 
     case ignSetPage:
@@ -168,9 +160,7 @@ void writeConfig(byte tableNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG4_START;
-      writeCounter = write_range(address, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), { EEPROM_CONFIG4_START, 0 });
       break;
 
     case afrMapPage:
@@ -178,10 +168,7 @@ void writeConfig(byte tableNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      //Begin writing the Ignition table, basically the same thing as above
-      address = EEPROM_CONFIG5_XSIZE;
-      writeCounter = writeTable(&afrTable, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&afrTable, {EEPROM_CONFIG5_MAP, 0} );
       break;
 
     case afrSetPage:
@@ -189,9 +176,7 @@ void writeConfig(byte tableNum)
       | Config page 3 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG6_START;
-      writeCounter = write_range(address, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), { EEPROM_CONFIG6_START, 0 });
       break;
 
     case boostvvtPage:
@@ -199,14 +184,9 @@ void writeConfig(byte tableNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      //Begin writing the 2 tables, basically the same thing as above but we're doing these 2 together (2 tables per page instead of 1)
-      address = EEPROM_CONFIG7_XSIZE1;
-      writeCounter = writeTable(&boostTable, address, writeCounter);
-      address = EEPROM_CONFIG7_XSIZE2;
-      writeCounter = writeTable(&vvtTable, address, writeCounter);
-      address = EEPROM_CONFIG7_XSIZE3;
-      writeCounter = writeTable(&stagingTable, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&boostTable, { EEPROM_CONFIG7_MAP1, 0 });
+      result = writeTable(&vvtTable, { EEPROM_CONFIG7_MAP2, result.counter });
+      result = writeTable(&stagingTable, { EEPROM_CONFIG7_MAP3, result.counter });
       break;
 
     case seqFuelPage:
@@ -214,25 +194,14 @@ void writeConfig(byte tableNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      //Begin writing the 2 tables, basically the same thing as above but we're doing these 2 together (2 tables per page instead of 1)
-      address = EEPROM_CONFIG8_XSIZE1;
-      writeCounter = writeTable(&trim1Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE2;
-      writeCounter = writeTable(&trim2Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE3;
-      writeCounter = writeTable(&trim3Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE4;
-      writeCounter = writeTable(&trim4Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE5;
-      writeCounter = writeTable(&trim5Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE6;
-      writeCounter = writeTable(&trim6Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE7;
-      writeCounter = writeTable(&trim7Table, address, writeCounter);
-      address = EEPROM_CONFIG8_XSIZE8;
-      writeCounter = writeTable(&trim8Table, address, writeCounter);
-      
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&trim1Table, { EEPROM_CONFIG8_MAP1, 0} );
+      result = writeTable(&trim2Table, { EEPROM_CONFIG8_MAP2, result.counter});
+      result = writeTable(&trim3Table, { EEPROM_CONFIG8_MAP3, result.counter});
+      result = writeTable(&trim4Table, { EEPROM_CONFIG8_MAP4, result.counter});
+      result = writeTable(&trim5Table, { EEPROM_CONFIG8_MAP5, result.counter});
+      result = writeTable(&trim6Table, { EEPROM_CONFIG8_MAP6, result.counter});
+      result = writeTable(&trim7Table, { EEPROM_CONFIG8_MAP7, result.counter});
+      result = writeTable(&trim8Table, { EEPROM_CONFIG8_MAP8, result.counter});
       break;
 
     case canbusPage:
@@ -240,9 +209,7 @@ void writeConfig(byte tableNum)
       | Config page 10 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG9_START;
-      writeCounter = write_range(address, (byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), { EEPROM_CONFIG9_START, 0 });
       break;
 
     case warmupPage:
@@ -250,9 +217,7 @@ void writeConfig(byte tableNum)
       | Config page 11 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG10_START;
-      writeCounter = write_range(address, (byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), { EEPROM_CONFIG10_START, 0});
       break;
 
     case fuelMap2Page:
@@ -260,11 +225,8 @@ void writeConfig(byte tableNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG11_XSIZE;
-      writeCounter = writeTable(&fuelTable2, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&fuelTable2, { EEPROM_CONFIG11_MAP, 0 });
       break;
-      //That concludes the writing of the 2nd fuel table
 
     case wmiMapPage:
       /*---------------------------------------------------
@@ -273,22 +235,16 @@ void writeConfig(byte tableNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG12_XSIZE;
-      writeCounter = writeTable(&wmiTable, address, writeCounter);
-      address = EEPROM_CONFIG12_XSIZE2;
-      writeCounter = writeTable(&vvt2Table, address, writeCounter);
-      address = EEPROM_CONFIG12_XSIZE3;
-      writeCounter = writeTable(&dwellTable, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&wmiTable, { EEPROM_CONFIG12_MAP, 0 });
+      result = writeTable(&vvt2Table, { EEPROM_CONFIG12_MAP2, result.counter});
+      result = writeTable(&dwellTable, { EEPROM_CONFIG12_MAP3, result.counter});
       break;
       
   case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
-      address = EEPROM_CONFIG13_START;
-      writeCounter = write_range(address, (byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = write_range((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), { EEPROM_CONFIG13_START, 0});
       break;
     
     case ignMap2Page:
@@ -296,26 +252,32 @@ void writeConfig(byte tableNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      //Begin writing the Ignition table, basically the same thing as above
-      address = EEPROM_CONFIG14_XSIZE;
-      writeCounter = writeTable(&ignitionTable2, address, writeCounter);
-      eepromWritesPending = writeCounter > EEPROM_MAX_WRITE_BLOCK;
+      result = writeTable(&ignitionTable2, { EEPROM_CONFIG14_MAP, 0});
       break;
 
     default:
       break;
   }
+
+  eepromWritesPending = result.counter > EEPROM_MAX_WRITE_BLOCK;
 }
+
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
  */
 void resetConfigPages()
 {
-  memset(&configPage2, 0, sizeof(config2));
-  memset(&configPage4, 0, sizeof(config4));
-  memset(&configPage6, 0, sizeof(config6));
-  memset(&configPage9, 0, sizeof(config9));
-  memset(&configPage10, 0, sizeof(config10));
-  memset(&configPage13, 0, sizeof(config13));
+  for (uint8_t page=1; page<getPageCount(); ++page)
+  {
+    page_iterator_t entity = page_begin(page);
+    while (entity.type!=End)
+    {
+      if (entity.type==Raw)
+      {
+        memset(entity.pData, 0, entity.size);
+      }
+      entity = advance(entity);
+    }
+  }
 }
 
 //  ================================= Internal read support ===============================
@@ -334,42 +296,37 @@ static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst
   return address;
 }
 
-static inline eeprom_address_t load_range_multiplier(eeprom_address_t address, int16_t *pFirst, int16_t *pLast, int16_t multiplier)
+static inline eeprom_address_t load(table_row_t row, eeprom_address_t address)
 {
-  for (; pFirst != pLast; ++address, (void)++pFirst)
-  {
-    *pFirst = EEPROM.read(address) * multiplier;
-  }
-  return address;
+  return load_range(address, row.pValue, row.pEnd);
 }
 
-static inline eeprom_address_t loadTableValues(table3D *pTable, eeprom_address_t address)
+static inline eeprom_address_t load(table_row_iterator_t it, eeprom_address_t address)
 {
-  byte **pRow = pTable->values + (pTable->xSize-1);
-  byte **pRowEnd = pTable->values - 1;
-  int rowSize = pTable->xSize;
-  for(; pRow!=pRowEnd; --pRow)
+  while (!at_end(it))
   {
-    address = load_range(address, *pRow, *pRow+rowSize);
+    address = load(get_row(it), address);
+    it = advance_row(it);
   }
   return address; 
 }
 
-static inline eeprom_address_t loadTableAxisX(table3D *pTable, eeprom_address_t address)
+static inline eeprom_address_t load(table_axis_iterator_t it, eeprom_address_t address)
 {
-  return load_range_multiplier(address, pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable));
-}
-
-static inline eeprom_address_t loadTableAxisY(table3D *pTable, eeprom_address_t address)
-{
-  return load_range_multiplier(address, pTable->axisY, pTable->axisY+pTable->ySize, getTableYAxisFactor(pTable));
+  while (!at_end(it))
+  {
+    set_value(it, EEPROM.read(address));
+    ++address;
+    it = advance_axis(it);
+  }
+  return address;    
 }
 
 static inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t address)
 {
-  return loadTableAxisY(pTable,
-                        loadTableAxisX(pTable, 
-                                        loadTableValues(pTable, address)));
+  return load(y_rbegin(pTable),
+                load(x_begin(pTable), 
+                  load(rows_begin(pTable), address)));
 }
 
 
@@ -382,19 +339,16 @@ void loadConfig()
 {
   loadTable(&fuelTable, EEPROM_CONFIG1_MAP);
   load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
-  //That concludes the reading of the VE table
   
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
-  //Begin writing the Ignition table, basically the same thing as above
   loadTable(&ignitionTable, EEPROM_CONFIG3_MAP);
   load_range(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
-  //Begin writing the Ignition table, basically the same thing as above
   loadTable(&afrTable, EEPROM_CONFIG5_MAP);
   load_range(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
@@ -441,7 +395,6 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
 
-  //Begin writing the Ignition table, basically the same thing as above
   loadTable(&ignitionTable2, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
@@ -484,29 +437,28 @@ void writeCalibration()
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
-static eeprom_address_t compute_crc_address(byte pageNo)
+static eeprom_address_t compute_crc_address(uint8_t pageNum)
 {
-  return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
+  return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
 }
 
 /** Write CRC32 checksum to EEPROM.
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
-Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM).
 @param pageNo - Config page number
 @param crc32_val - CRC32 checksum
 */
-void storePageCRC32(byte pageNo, uint32_t crc32_val)
+void storePageCRC32(uint8_t pageNum, uint32_t crcValue)
 {
-  EEPROM.put(compute_crc_address(pageNo), crc32_val);
+  EEPROM.put(compute_crc_address(pageNum), crcValue);
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given page from EEPROM.
 @param pageNo - Config page number
 */
-uint32_t readPageCRC32(byte pageNo)
+uint32_t readPageCRC32(uint8_t pageNum)
 {
   uint32_t crc32_val;
-  return EEPROM.get(compute_crc_address(pageNo), crc32_val);
+  return EEPROM.get(compute_crc_address(pageNum), crc32_val);
 }
 
 // Utility functions.
