@@ -22,7 +22,7 @@
 #define KNOCK_MODE_ANALOG   2
 
 #define VSS_GEAR_HYSTERESIS 10
-#define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
+#define VSS_MIN_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
 #define TPS_READ_FREQUENCY  15 //ONLY VALID VALUES ARE 15 or 30!!!
 
@@ -57,9 +57,11 @@ byte MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssLastPulseTime; /**< The time of the last VSS pulse of the VSS */
-volatile unsigned long vssLastMinusOnePulseTime; /**< The time of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
-volatile unsigned long vssTotalTime; /**< Cumulative count of the last VSS_SAMPLES number of pulses */
-volatile byte vssCount;
+volatile unsigned long vssLastMinusOnePulseTime; /**< The time of the previous VSS pulse */
+volatile unsigned long vssTotalTime; /**< Cumulative count of the number of pulses when the sensor has not completed a rotation */
+volatile unsigned long vssSensorRevStartTime; /**< Start time for a complete sensor rotation */
+volatile unsigned long vssSensorRevTotalTime; /**< Total time for a complete sensor rotation */
+volatile byte vssCount; /**< Count of vss sensor pulses */
 
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
