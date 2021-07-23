@@ -9,7 +9,6 @@ A full copy of the license may be found in the projects root directory
 
 #include "globals.h"
 #include "table.h"
-#include "comms.h" // Is this needed at all ?
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "table_iterator.h"
@@ -49,7 +48,7 @@ void writeAllConfig()
   uint8_t page = 1U;
   writeConfig(page++);
   while (page<pageCount && !eepromWritesPending)
-  { 
+  {
     writeConfig(page++);
   }
 }
@@ -76,7 +75,7 @@ static inline write_location update(uint8_t value, write_location location)
   return location;
 }
 
-static inline write_location write_range(byte *pStart, const byte *pEnd, write_location location)
+static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
   while (location.counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
   {
@@ -127,7 +126,7 @@ and writes them to EEPROM as per the layout defined in storage.h.
 */
 void writeConfig(uint8_t pageNum)
 {
-  write_location result;
+  write_location result = { 0, 0 };
 
   switch(pageNum)
   {
@@ -287,7 +286,7 @@ void resetConfigPages()
  * @param pFirst - Start memory address
  * @param pLast - End memory address
  */
-static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, byte *pLast)
+static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, const byte *pLast)
 {
   for (; pFirst != pLast; ++address, (void)++pFirst)
   {
