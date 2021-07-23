@@ -34,7 +34,12 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
-bool eepromWritesPending = false;
+static bool eepromWritesPending = false;
+
+bool isEepromWritePending()
+{
+  return eepromWritesPending;
+}
 
 /** Write all config pages to EEPROM.
  */

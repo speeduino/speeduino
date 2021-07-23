@@ -16,7 +16,7 @@ void storeEEPROMVersion(byte);
 void storePageCRC32(byte, uint32_t);
 uint32_t readPageCRC32(byte);
 
-extern bool eepromWritesPending;
+bool isEepromWritePending();
 
 /*
 Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes):
