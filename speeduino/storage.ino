@@ -55,65 +55,66 @@ void writeAllConfig()
 }
 
 
-namespace {
+//  ================================= Internal write support ===============================
 
-  /** Update byte to EEPROM by first comparing content and the need to write it.
-  We only ever write to the EEPROM where the new value is different from the currently stored byte
-  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-  */
-  inline int16_t update(eeprom_address_t address, uint8_t value, int16_t counter)
-  {
-    if (EEPROM.read(address)!=value)
-    {
-      EEPROM.write(address, value);
-      return counter+1;
-    }
-    return counter;
-  }
 
-  inline int16_t write_range_divisor(eeprom_address_t &address, int8_t divisor, int16_t *pStart, const int16_t *pEnd, int16_t counter)
+/** Update byte to EEPROM by first comparing content and the need to write it.
+We only ever write to the EEPROM where the new value is different from the currently stored byte
+This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
+*/
+static inline uint8_t update(eeprom_address_t address, uint8_t value, uint8_t counter)
+{
+  if (EEPROM.read(address)!=value)
   {
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
-    {
-      counter = update(address, (*pStart)/divisor, counter);
-      ++pStart; ++address;
-    }
-    return counter;
+    EEPROM.write(address, value);
+    return counter+1;
   }
-
-  inline int16_t write_range(eeprom_address_t &address, byte *pStart, const byte *pEnd, int16_t counter)
-  {
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
-    {
-      counter = update(address, *pStart, counter);
-      ++pStart; ++address;
-    }
-    return counter;
-  }
-
-  inline int16_t writeTableValues(const table3D *pTable, eeprom_address_t &address, int16_t counter)
-  {
-    byte **pRow = pTable->values + (pTable->xSize-1);
-    byte **pRowEnd = pTable->values - 1;
-    int rowSize = pTable->xSize;
-    while (counter<=EEPROM_MAX_WRITE_BLOCK && pRow!=pRowEnd)
-    {
-      counter = write_range(address, *pRow, *pRow+rowSize, counter);
-      --pRow;
-    }
-    return counter;
-  }
-
-  inline int16_t writeTable(const table3D *pTable, eeprom_address_t &address, int16_t counter)
-  {
-    counter = update(address, pTable->xSize, counter); ++address;
-    counter = update(address, pTable->ySize, counter); ++address;
-    counter = writeTableValues(pTable, address, counter);
-    counter = write_range_divisor(address, getTableXAxisFactor(pTable), pTable->axisX, pTable->axisX+pTable->xSize, counter);
-    return write_range_divisor(address, getTableYAxisFactor(pTable), pTable->axisY, pTable->axisY+pTable->ySize, counter);
-  }
+  return counter;
 }
 
+static inline uint8_t write_range_divisor(eeprom_address_t &address, int8_t divisor, int16_t *pStart, const int16_t *pEnd, uint8_t counter)
+{
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  {
+    counter = update(address, (*pStart)/divisor, counter);
+    ++pStart; ++address;
+  }
+  return counter;
+}
+
+static inline uint8_t write_range(eeprom_address_t &address, byte *pStart, const byte *pEnd, uint8_t counter)
+{
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  {
+    counter = update(address, *pStart, counter);
+    ++pStart; ++address;
+  }
+  return counter;
+}
+
+static inline uint8_t writeTableValues(const table3D *pTable, eeprom_address_t &address, uint8_t counter)
+{
+  byte **pRow = pTable->values + (pTable->xSize-1);
+  byte **pRowEnd = pTable->values - 1;
+  int rowSize = pTable->xSize;
+  while (counter<=EEPROM_MAX_WRITE_BLOCK && pRow!=pRowEnd)
+  {
+    counter = write_range(address, *pRow, *pRow+rowSize, counter);
+    --pRow;
+  }
+  return counter;
+}
+
+static inline uint8_t writeTable(const table3D *pTable, eeprom_address_t &address, uint8_t counter)
+{
+  counter = update(address, pTable->xSize, counter); ++address;
+  counter = update(address, pTable->ySize, counter); ++address;
+  counter = writeTableValues(pTable, address, counter);
+  counter = write_range_divisor(address, getTableXAxisFactor(pTable), pTable->axisX, pTable->axisX+pTable->xSize, counter);
+  return write_range_divisor(address, getTableYAxisFactor(pTable), pTable->axisY, pTable->axisY+pTable->ySize, counter);
+}
+
+//  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
 Takes the current configuration (config pages and maps)
@@ -125,7 +126,7 @@ void writeConfig(byte tableNum)
   We only ever write to the EEPROM where the new value is different from the currently stored byte
   This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
   */
-  int writeCounter = 0;
+  uint8_t writeCounter = 0;
   eeprom_address_t address;
 
   switch(tableNum)
@@ -317,60 +318,64 @@ void resetConfigPages()
   memset(&configPage13, 0, sizeof(config13));
 }
 
-namespace
+//  ================================= Internal read support ===============================
+
+/** Load range of bytes form EEPROM offset to memory.
+ * @param address - start offset in EEPROM
+ * @param pFirst - Start memory address
+ * @param pLast - End memory address
+ */
+static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, byte *pLast)
 {
-  /** Load range of bytes form EEPROM offset to memory.
-   * @param address - start offset in EEPROM
-   * @param pFirst - Start memory address
-   * @param pLast - End memory address
-   */
-  inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, byte *pLast)
+  for (; pFirst != pLast; ++address, (void)++pFirst)
   {
-	  for (; pFirst != pLast; ++address, (void)++pFirst)
-		{
-		  *pFirst = EEPROM.read(address);
-		}
-    return address;
+    *pFirst = EEPROM.read(address);
   }
-
-  inline eeprom_address_t load_range_multiplier(eeprom_address_t address, int16_t *pFirst, int16_t *pLast, int16_t multiplier)
-	{
-  	for (; pFirst != pLast; ++address, (void)++pFirst)
-		{
-		  *pFirst = EEPROM.read(address) * multiplier;
-		}
-    return address;
-  }
-
-  inline eeprom_address_t loadTableValues(table3D *pTable, eeprom_address_t address)
-  {
-    byte **pRow = pTable->values + (pTable->xSize-1);
-    byte **pRowEnd = pTable->values - 1;
-    int rowSize = pTable->xSize;
-    for(; pRow!=pRowEnd; --pRow)
-    {
-      address = load_range(address, *pRow, *pRow+rowSize);
-    }
-    return address; 
-  }
-
-  inline eeprom_address_t loadTableAxisX(table3D *pTable, eeprom_address_t address)
-  {
-    return load_range_multiplier(address, pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable));
-  }
-
-  inline eeprom_address_t loadTableAxisY(table3D *pTable, eeprom_address_t address)
-  {
-    return load_range_multiplier(address, pTable->axisY, pTable->axisY+pTable->ySize, getTableYAxisFactor(pTable));
-  }
-
-  inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t address)
-  {
-    return loadTableAxisY(pTable,
-                          loadTableAxisX(pTable, 
-                                          loadTableValues(pTable, address)));
-  }
+  return address;
 }
+
+static inline eeprom_address_t load_range_multiplier(eeprom_address_t address, int16_t *pFirst, int16_t *pLast, int16_t multiplier)
+{
+  for (; pFirst != pLast; ++address, (void)++pFirst)
+  {
+    *pFirst = EEPROM.read(address) * multiplier;
+  }
+  return address;
+}
+
+static inline eeprom_address_t loadTableValues(table3D *pTable, eeprom_address_t address)
+{
+  byte **pRow = pTable->values + (pTable->xSize-1);
+  byte **pRowEnd = pTable->values - 1;
+  int rowSize = pTable->xSize;
+  for(; pRow!=pRowEnd; --pRow)
+  {
+    address = load_range(address, *pRow, *pRow+rowSize);
+  }
+  return address; 
+}
+
+static inline eeprom_address_t loadTableAxisX(table3D *pTable, eeprom_address_t address)
+{
+  return load_range_multiplier(address, pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable));
+}
+
+static inline eeprom_address_t loadTableAxisY(table3D *pTable, eeprom_address_t address)
+{
+  return load_range_multiplier(address, pTable->axisY, pTable->axisY+pTable->ySize, getTableYAxisFactor(pTable));
+}
+
+static inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t address)
+{
+  return loadTableAxisY(pTable,
+                        loadTableAxisX(pTable, 
+                                        loadTableValues(pTable, address)));
+}
+
+
+//  ================================= End internal read support ===============================
+
+
 /** Load all config tables from storage.
  */
 void loadConfig()
