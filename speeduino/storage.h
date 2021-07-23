@@ -6,14 +6,11 @@ void writeConfig(byte);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
-void loadCalibration_new();
-void writeCalibration_new();
 void resetConfigPages();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
 void storeLastBaro(byte);
-void storeCalibrationValue(uint16_t, byte);
 byte readEEPROMVersion();
 void storeEEPROMVersion(byte);
 void storePageCRC32(byte, uint32_t);
