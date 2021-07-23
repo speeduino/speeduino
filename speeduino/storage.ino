@@ -13,27 +13,23 @@ A full copy of the license may be found in the projects root directory
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "table_iterator.h"
+#include "pages.h"
 
 bool eepromWritesPending = false;
+
 /** Write all config pages to EEPROM.
  */
 void writeAllConfig()
 {
-  writeConfig(veSetPage);
-  if (eepromWritesPending == false) { writeConfig(veMapPage); }
-  if (eepromWritesPending == false) { writeConfig(ignMapPage); }
-  if (eepromWritesPending == false) { writeConfig(ignSetPage); }
-  if (eepromWritesPending == false) { writeConfig(afrMapPage); }
-  if (eepromWritesPending == false) { writeConfig(afrSetPage); }
-  if (eepromWritesPending == false) { writeConfig(boostvvtPage); }
-  if (eepromWritesPending == false) { writeConfig(seqFuelPage); }
-  if (eepromWritesPending == false) { writeConfig(canbusPage); }
-  if (eepromWritesPending == false) { writeConfig(warmupPage); }
-  if (eepromWritesPending == false) { writeConfig(fuelMap2Page); }
-  if (eepromWritesPending == false) { writeConfig(wmiMapPage); }
-  if (eepromWritesPending == false) { writeConfig(progOutsPage); }
-  if (eepromWritesPending == false) { writeConfig(ignMap2Page); }
+  uint8_t pageCount = getPageCount();
+  uint8_t page = 1U;
+  writeConfig(page++);
+  while (page<pageCount && !eepromWritesPending)
+  { 
+    writeConfig(page++);
+  }
 }
+
 
 namespace {
 
