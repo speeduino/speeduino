@@ -1,8 +1,6 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-#include "globals.h"
-
 void writeAllConfig();
 void writeConfig(byte);
 void loadConfig();
@@ -21,11 +19,6 @@ void storeEEPROMVersion(byte);
 void storePageCRC32(byte, uint32_t);
 uint32_t readPageCRC32(byte);
 
-#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
-#define EEPROM_MAX_WRITE_BLOCK 64 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
-#else
-#define EEPROM_MAX_WRITE_BLOCK 30 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
-#endif
 extern bool eepromWritesPending;
 
 /*
@@ -84,8 +77,6 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 3583  |512  | Calibration data (CLT)              |
 -----------------------------------------------------
 */
-
-#define EEPROM_DATA_VERSION   0
 
 #define EEPROM_CONFIG1_XSIZE  1
 #define EEPROM_CONFIG1_YSIZE  2
@@ -200,14 +191,6 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 #define EEPROM_CONFIG8_XBINS8 3187
 #define EEPROM_CONFIG8_YBINS8 3193
 
-
-//Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define EEPROM_PAGE_CRC32     3686 //Size of this is 4 * <number of pages> (CRC32 = 32 bits): 3742 - (14 * 4) = 3686
-#define EEPROM_LAST_BARO      3742 // 3743 - 1
-//New values using 2D tables
-#define EEPROM_CALIBRATION_O2   3743 //3839-96 +64
-#define EEPROM_CALIBRATION_IAT  3839 //3967-128
-#define EEPROM_CALIBRATION_CLT  3967 //4095-128
 //These were the values used previously when all calibration tables were 512 long. They need to be retained for the update process (202005 -> 202008) can work. 
 #define EEPROM_CALIBRATION_O2_OLD   2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071

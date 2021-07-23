@@ -15,6 +15,22 @@ A full copy of the license may be found in the projects root directory
 #include "table_iterator.h"
 #include "pages.h"
 
+//The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
+#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
+#define EEPROM_MAX_WRITE_BLOCK 64
+#else
+#define EEPROM_MAX_WRITE_BLOCK 30
+#endif
+
+#define EEPROM_DATA_VERSION   0
+
+// Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
+#define STORAGE_END 0xFFF       // Should be E2END?
+#define EEPROM_CALIBRATION_CLT  (STORAGE_END-(sizeof(cltCalibration_bins)+sizeof(cltCalibration_values)))
+#define EEPROM_CALIBRATION_IAT  (EEPROM_CALIBRATION_CLT-(sizeof(iatCalibration_bins)+sizeof(iatCalibration_values)))
+#define EEPROM_CALIBRATION_O2   (EEPROM_CALIBRATION_IAT-(sizeof(o2Calibration_bins)+sizeof(o2Calibration_values)))
+#define EEPROM_LAST_BARO        (EEPROM_CALIBRATION_O2-1)
+
 bool eepromWritesPending = false;
 
 /** Write all config pages to EEPROM.
@@ -472,6 +488,11 @@ void writeCalibration()
 
 }
 
+static uint16_t compute_crc_address(byte pageNo)
+{
+  return EEPROM_LAST_BARO-((getPageCount() - pageNo)*sizeof(uint32_t));
+}
+
 /** Write CRC32 checksum to EEPROM.
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
 Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse page order (ie the last page is store first in EEPROM).
@@ -480,8 +501,7 @@ Note: Each pages requires 4 bytes for its CRC32. These are stored in reverse pag
 */
 void storePageCRC32(byte pageNo, uint32_t crc32_val)
 {
-  uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
+  uint16_t address = compute_crc_address(pageNo);
 
   //One = Most significant -> Four = Least significant byte
   byte four = (crc32_val & 0xFF);
@@ -501,8 +521,7 @@ void storePageCRC32(byte pageNo, uint32_t crc32_val)
 */
 uint32_t readPageCRC32(byte pageNo)
 {
-  uint16_t address; //Start address for the relevant page
-  address = EEPROM_PAGE_CRC32 + ((getPageCount() - pageNo) * 4);
+  uint16_t address = compute_crc_address(pageNo);
 
   //Read the 4 bytes from the eeprom memory.
   uint32_t four = EEPROM.read(address);
