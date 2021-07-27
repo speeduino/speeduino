@@ -67,30 +67,14 @@ def generate_printtables(tables, file):
         print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table.CodeFieldName});', file=file)
 
 def generate_pageprintfunction(function_name, page_num, fields, file):
-    # TS appear to use a "last one wins" algorithm. 
-    # This is useful for us - we use a different algorithm and can therefore
-    # define fields in the INI file that TS will not use. 
-    def flatten_field_group(field_group):
-        non_bits = [item for item in field_group if not isinstance(item, read_tsini.BitField)]        
-        if non_bits:
-            # Pick the widest non-bit field
-            return max(non_bits, key=lambda item: item.OffsetEnd-item.Offset)
-        # Assume groups that are all bit fields do not really overlap
-        return field_group
-
     print(f'static void {function_name}(Print &{OUTPUT_VAR_NAME}) {{', file=file)
     print(f'\t{OUTPUT_VAR_NAME}.println(F("\\nPg {page_num} Cfg"));', file=file)
 
-    # Deal with overlapping fields
-    print_fields = more_itertools.collapse(
-                    map(flatten_field_group, 
-                        read_tsini.group_overlapping(
-                            (field for field in fields if not field.Table)
-                        )))
+    print_fields = (field for field in fields if not field.Table)
     generate_printfields(page_num, print_fields, file)
     
     # Each table in the INI file is at least 3 entries - we only need one
-    tables = set((field.Table for field in fields if field.Table))
+    tables = list(dict.fromkeys((field.Table for field in fields if field.Table)))
     generate_printtables(tables, file)
 
     print('}', file=file) 
