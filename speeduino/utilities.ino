@@ -210,7 +210,7 @@ void checkProgrammableIO()
       {
         if(firstCheck)
         {
-          if (ioOutDelay[y] >= configPage13.outputTimeLimit[y]) { firstCheck = false; } //Time has counted, disable the output
+          if ((configPage13.outputTimeLimit[y] != 0) && (ioOutDelay[y] >= configPage13.outputTimeLimit[y])) { firstCheck = false; } //Time has counted, disable the output
         }
         else
         {
