@@ -4129,3 +4129,165 @@ void triggerSetEndTeeth_FordST170()
 }
 /** @} */
 
+/** Renix 44-2-2 decoder.  
+* Renix trigger wheel doesn't decode into 360 degrees nicely (360/44 = 8.18 degrees). Solution is to count teeth, every set teeth look up precalculed tooth angle.
+* if you select the correct teeth on the 44 tooth wheel you're either exactly correct (0,90,180,270 degrees) or 0.090909 degrees out (at 40,49, 130, 139, etc).
+* Means you have a pattern of counting teeth 4 teeth, 5 teeth. (assumption you don't need both teeth 9 degrees apart, just one of them for reasonable accuracy)
+*
+* @defgroup dec_renix44 Renix 44-2-2 tooth
+* @{
+*/
+void triggerSetup_Renix44()
+{
+  triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
+  toothAngles[0] = 0;
+  toothAngles[1] = 41;
+  toothAngles[2] = 90;
+  toothAngles[3] = 131;
+  toothAngles[4] = 180;
+  toothAngles[5] = 221;
+  toothAngles[6] = 270;
+  toothAngles[7] = 311;
+
+  MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
+  if(initialisationComplete == false) { toothCurrentCount = 7; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
+  secondDerivEnabled = false;
+  decoderIsSequential = false;
+  triggerToothAngleIsCorrect = true;
+  toothSystemCount = 0;
+  configPage4.triggerTeeth = 8; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
+}
+
+void triggerPri_Renix44()
+{
+    curTime = micros();
+    curGap = curTime - toothLastToothTime;
+    if ( curGap >= triggerFilterTime )
+    {
+      toothSystemCount++;
+
+      // identify how big a two tooth gap is, as we have two 2 tooth gaps next to each other - need to be careful we don't accidentally calculate a 4 tooth gap 
+      // hence only do the calculation when we're not close 
+      if (toothSystemCount < 40)
+      {     
+        targetGap2 = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) ; //Multiply by 3 (Checks for a gap 3x greater than the last one)
+        targetGap = targetGap2 >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth deocder)
+      }
+
+      // increment which of the 44 teeth we've just seen. if we'e got the double gap, add 2 teeth
+      if( curGap >= targetGap )
+      { 
+        toothSystemCount++; // to account for the gap being a double sized gap
+        if(toothSystemCount < 40)
+        {
+          toothSystemCount = 40;
+          currentStatus.hasSync = false;
+          currentStatus.syncLossCounter++;            
+        }
+      }
+      else
+        { setFilter(curGap); } //Recalc the new filter value, only do this on the single gap tooth 
+        
+
+      switch(toothSystemCount)
+      {
+        case 0:
+        case 44:
+          toothCurrentCount = 0;
+          toothOneMinusOneTime = toothOneTime;
+          toothOneTime = curTime;
+          currentStatus.hasSync = true;
+          currentStatus.startRevolutions++; //Counter
+          triggerToothAngle = 49; 
+          break;
+        case 5:
+          toothCurrentCount = 1;
+          triggerToothAngle = 41; 
+          break;
+        case 11:
+          toothCurrentCount = 2;
+          triggerToothAngle = 49; 
+          break;
+        case 16:
+          toothCurrentCount = 3;
+          triggerToothAngle = 41;           
+          break;
+        case 22:
+          toothCurrentCount = 4;
+          triggerToothAngle = 49; 
+          break;
+        case 27:
+          toothCurrentCount = 5;
+          triggerToothAngle = 41; 
+          break;
+        case 33:
+          toothCurrentCount = 6;
+          triggerToothAngle = 49; 
+          break;
+        case 38:
+          toothCurrentCount = 7;
+          triggerToothAngle = 41; 
+          break;          
+      }
+
+      validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+      //NEW IGNITION MODE
+      if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+      {
+        int16_t crankAngle = toothAngles[toothCurrentCount] + configPage4.triggerAngle;
+        crankAngle = ignitionLimits(crankAngle);
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
+        {
+          crankAngle += 360;
+          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+        }
+        else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+      }
+
+      toothLastMinusOneToothTime = toothLastToothTime;
+      toothLastToothTime = curTime;
+    } //Trigger filter
+  
+}
+void triggerSec_Renix44()
+{
+  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  return;
+}
+
+uint16_t getRPM_Renix44()
+{
+   return stdGetRPM(360);
+}
+int getCrankAngle_Renix44()
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    interrupts();
+
+    int crankAngle;
+    crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+
+    //Estimate the number of degrees travelled since the last tooth
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
+
+    return crankAngle;
+}
+
+void triggerSetEndTeeth_Renix44()
+{
+
+  lastToothCalcAdvance = currentStatus.advance;
+}

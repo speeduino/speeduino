@@ -32,6 +32,7 @@
 #define DECODER_420A              18
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
+#define DECODER_RENIX44           21
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
