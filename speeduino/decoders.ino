@@ -58,6 +58,8 @@ volatile unsigned long compositeLastToothTime;
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
+volatile uint16_t decoderTachoOutSkipTeeth; //Number of teeth to skip until the tacho output is flipped.
+volatile uint16_t decoderTachoLastTooth; //Last tooth that the tach output was flipped on;
 volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -378,6 +380,14 @@ void triggerSetup_missingTooth()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
+  
+  if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) // Tacho config 0 = WhlToothSync
+  { 
+    decoderTachoOutSkipTeeth = (checkSyncToothCount >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
+    if (decoderTachoOutSkipTeeth < (configPage4.triggerMissingTeeth * 2)){ decoderTachoOutSkipTeeth = (configPage4.triggerMissingTeeth * 2); } // limit to missing teeth * 2
+  }
+  else{	decoderTachoOutSkipTeeth = 0; }
+  
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
@@ -469,6 +479,23 @@ void triggerPri_missingTooth()
             }
           }
         }
+		
+		/* Tachometer output wheel pulse method */
+		if (( decoderTachoOutSkipTeeth > 0) && (currentStatus.hasSync == true))
+		{
+		  if (toothCurrentCount == 1)
+		  { // Turn low pulse at tooth 1 (Most boards invert the output so this is 12V out on the tach)
+			  TACHO_PULSE_LOW(); 
+			  decoderTachoLastTooth = toothCurrentCount;
+		  }   
+		  else if (toothCurrentCount == (decoderTachoLastTooth + decoderTachoOutSkipTeeth)) 
+		  {
+            TACHO_PULSE_TOGGLE();
+		    decoderTachoLastTooth = toothCurrentCount;
+		  }
+          // Else maintain last value of tacho output;		  
+		}
+        else{ TACHO_PULSE_HIGH(); } //Turn off tacho output
         
         if(isMissingTooth == false)
         {
@@ -4128,4 +4155,3 @@ void triggerSetEndTeeth_FordST170()
   lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
-
