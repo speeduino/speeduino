@@ -245,6 +245,12 @@ void initialiseAll()
     o2CalibrationTable.xSize = 32;
     o2CalibrationTable.values = o2Calibration_values;
     o2CalibrationTable.axisX = o2Calibration_bins;
+	
+	tpsCurveTable.valueSize = SIZE_BYTE;
+    tpsCurveTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    tpsCurveTable.xSize = 3;
+    tpsCurveTable.values = configPage6.tpsCurveTPS;
+    tpsCurveTable.axisX = configPage6.tpsCurveADC;
 
     //Setup the calibration tables
     loadCalibration();

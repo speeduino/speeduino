@@ -458,6 +458,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D tpsCurveTable; // For non linear TPS curves (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -874,8 +875,10 @@ struct config2 {
   int8_t rtc_trim;
   byte idleAdvVss;
   byte mapSwitchPoint;
+  
+  byte tpsCurveEnbl : 1; ///<TPS Enables 3 point curve vs max min.
 
-  byte unused2_95[2];
+  byte unused2_95[1];
 
 #if defined(CORE_AVR)
   };
@@ -1078,6 +1081,8 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+  byte tpsCurveADC[3];    //X axis ADC values for TPS curve
+  byte tpsCurveTPS[3];    //Y axis TPS values for TPS curve
 
 #if defined(CORE_AVR)
   };
