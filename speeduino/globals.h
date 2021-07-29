@@ -358,9 +358,8 @@
 #define MULTIPLY_MAP_MODE_100   2
 
 #define TACHOUT_MODE_WHLTOOTHSYNC   0
-#define TACHOUT_MODE_IGNTOGGLE      1
-#define TACHOUT_MODE_IGNPULSE       2
-#define TACHOUT_MODE_IGNSKIPPULSE   3
+#define TACHOUT_MODE_IGNPULSE       1
+#define TACHOUT_MODE_IGNSKIPPULSE   2
 
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
@@ -739,7 +738,7 @@ struct config2 {
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
   byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
-  byte tachoMode : 2;    ///< Tacho Output mode 0 = WhlToothSync, 1 = IGNToggle, 2 = IGNPulse, 3 = IGNSkipPulse
+  byte tachoMode : 2;    ///< Tacho Output mode 0 = WhlToothSync, 1 = IGNPulse, 2 = IGNSkipPulse
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
   byte taeThresh;       /**< The TPSdot threshold that must be exceeded before AE is engaged */
