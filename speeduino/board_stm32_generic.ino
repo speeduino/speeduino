@@ -6,6 +6,14 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
+  #if defined(FRAM_AS_EEPROM)
+    #if defined(STM32F407xx)
+    FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+    FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
+  #endif
+
 void initBoard()
 {
     /*

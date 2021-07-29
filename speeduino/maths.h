@@ -3,6 +3,7 @@
 
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
+unsigned long halfPercentage(byte, unsigned long);
 inline long powint(int, unsigned int);
 int divs100(long);
 unsigned long divu100(unsigned long);

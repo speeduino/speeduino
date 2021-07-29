@@ -6,7 +6,61 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
+#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#define NATIVE_CAN_AVAILABLE
+//This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
+STM32_CAN Can0 (_CAN1,DEF);
+#endif
+
+#if defined(SRAM_AS_EEPROM)
+    BackupSramAsEEPROM EEPROM;
+#elif defined(USE_SPI_EEPROM)
+    SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+ 
+    //windbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #if defined(STM32F407xx)
+      SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+      FramClass EEPROM(PB0, SPI_for_FRAM);
+    #else //Blue/Black Pills
+      SPIClass SPI_for_FRAM(PB15, PB14, PB13);
+      FramClass EEPROM(PB12, SPI_for_FRAM);
+    #endif
+#elif defined(STM32F7xx)
+  #if defined(DUAL_BANK)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+  #else
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+  #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#else //default case, internal flash as EEPROM for STM32F4
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#endif
+
+
+HardwareTimer Timer1(TIM1);
+HardwareTimer Timer2(TIM2);
+HardwareTimer Timer3(TIM3);
+HardwareTimer Timer4(TIM4);
+#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
+HardwareTimer Timer5(TIM5);
+#if defined(TIM11)
+HardwareTimer Timer11(TIM11);
+#elif defined(TIM7)
+HardwareTimer Timer11(TIM7);
+#endif
+#endif
+
+#ifdef RTC_ENABLED
 STM32RTC& rtc = STM32RTC::getInstance();
+#endif
 
   void initBoard()
   {
@@ -20,13 +74,13 @@ STM32RTC& rtc = STM32RTC::getInstance();
     delay(10);
 
     /*
-     ***********************************************************************************************************
-     * Real Time clock for datalogging/time stamping
-     */
-     
-     rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
-     rtc.begin(); // initialize RTC 24H format
-
+    ***********************************************************************************************************
+    * Real Time clock for datalogging/time stamping
+    */
+    #ifdef RTC_ENABLED
+      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
+      rtc.begin(); // initialize RTC 24H format
+    #endif
     /*
     ***********************************************************************************************************
     * Idle
@@ -37,7 +91,11 @@ STM32RTC& rtc = STM32RTC::getInstance();
     } 
 
     //This must happen at the end of the idle init
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);
+    #else
+    Timer1.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer1.attachInterrupt(4, idleInterrupt);  //on first flash the configPage4.iacAlgorithm is invalid
 
 
@@ -47,13 +105,21 @@ STM32RTC& rtc = STM32RTC::getInstance();
     */
     #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
       Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+      #if ( STM32_CORE_VERSION_MAJOR < 2 )
       Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
       Timer4.attachInterrupt(1, oneMSInterval);
+      #else //2.0 forward
+      Timer4.attachInterrupt(oneMSInterval);
+      #endif
       Timer4.resume(); //Start Timer
     #else
       Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
+      #if ( STM32_CORE_VERSION_MAJOR < 2 )
       Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
       Timer11.attachInterrupt(1, oneMSInterval);
+      #else
+      Timer11.attachInterrupt(oneMSInterval);
+      #endif
       Timer11.resume(); //Start Timer
     #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
@@ -67,8 +133,13 @@ STM32RTC& rtc = STM32RTC::getInstance();
     vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer1.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer1.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer1.attachInterrupt(2, boostInterrupt);
     Timer1.attachInterrupt(3, vvtInterrupt);
 
@@ -84,6 +155,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer3.setPrescaleFactor(((Timer3.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
 
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(3, TIMER_OUTPUT_COMPARE);
@@ -94,7 +166,18 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer2.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer2.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer2.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer2.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
 
+    Timer3.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer3.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer3.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer3.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     //Attach interrupt functions
     //Injection
     Timer3.attachInterrupt(1, fuelSchedule1Interrupt);
@@ -104,19 +187,35 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #if (INJ_CHANNELS >= 5)
     Timer5.setOverflow(0xFFFF, TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer5.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
     #endif
     #if (INJ_CHANNELS >= 6)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(2, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer5.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
     #endif
     #if (INJ_CHANNELS >= 7)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(3, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer5.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
     #endif
     #if (INJ_CHANNELS >= 8)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(4, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer5.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
     #endif
 
@@ -128,30 +227,65 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow(0xFFFF, TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer4.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
     #endif
     #if (IGN_CHANNELS >= 6)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(2, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer4.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
     #endif
     #if (IGN_CHANNELS >= 7)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(3, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer4.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
     #endif
     #if (IGN_CHANNELS >= 8)
+    #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(4, TIMER_OUTPUT_COMPARE);
+    #else //2.0 forward
+    Timer4.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
+    #endif
     Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
     Timer1.resume();
+    DISABLE_BOOST_TIMER();  //Make sure it is disabled. It's is enabled by default on the library
+    DISABLE_VVT_TIMER();    //Make sure it is disabled. It's is enabled by default on the library
+    IDLE_TIMER_DISABLE();   //Make sure it is disabled. It's is enabled by default on the library
     Timer2.resume();
+    IGN1_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN2_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN3_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN4_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
     Timer3.resume();
+    FUEL1_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL2_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL3_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL4_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
     #if (IGN_CHANNELS >= 5)
     Timer4.resume();
+    IGN5_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN6_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN7_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
+    IGN8_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
     #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.resume();
+    FUEL5_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL6_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL7_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
+    FUEL8_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
     #endif
   }
 
