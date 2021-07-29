@@ -408,12 +408,8 @@ void readTPS(bool useFilter)
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
 
-  /* HRW TPS CURVE IN HERE */
-  if (configPage2.tpsCurveEnbl == true)
-  {
-	  //perform table lookup
-	currentStatus.TPS = table2D_getValue(&tpsCurveTable, tempADC);
-  }
+  if (configPage2.tpsCurveEnbl == true){ currentStatus.TPS = table2D_getValue(&tpsCurveTable, tempADC); } // Enable a curve fit of TPS for non-linear sensors
+
   else if(configPage2.tpsMax > configPage2.tpsMin)
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
