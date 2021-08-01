@@ -241,7 +241,7 @@ void boostControl()
         }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
-      if(currentStatus.MAP >= 100 ) //Only engage boost control above 100kpa. 
+      if(currentStatus.MAP >= currentStatus.baro ) //Only engage boost control above baro pressure
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
