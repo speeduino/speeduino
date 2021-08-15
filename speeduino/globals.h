@@ -1339,7 +1339,9 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
-  byte unused11_187_191[2]; //Bytes 187-191
+  byte lnchCtrlVss;
+
+  byte unused11_191; //Bytes 187-191
 
 #if defined(CORE_AVR)
   };
