@@ -909,10 +909,10 @@ void initialiseAll()
         //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and3;
-          inj2EndFunction = closeInjector2and3;
+          inj1StartFunction = openInjector1and3;
+          inj1EndFunction = closeInjector1and3;
+          inj2StartFunction = openInjector2and4;
+          inj2EndFunction = closeInjector2and4;
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
