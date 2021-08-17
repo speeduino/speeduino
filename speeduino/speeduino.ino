@@ -147,6 +147,7 @@ void loop()
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
           {
+            readAuxCanBus();
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
