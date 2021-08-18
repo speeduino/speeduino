@@ -89,7 +89,7 @@ void fanControl()
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        fan_pwm_value = percentage255(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+        fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
         if (currentStatus.fanDuty > 0)
         {
           currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
@@ -109,7 +109,7 @@ void fanControl()
       currentStatus.fanOn = false;
       DISABLE_FAN_TIMER();
     }
-    else if (currentStatus.fanDuty == 255)
+    else if (currentStatus.fanDuty == 200)
     {
       //Make sure fan has 100% duty
       FAN_ON();
