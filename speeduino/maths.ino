@@ -68,10 +68,10 @@ unsigned long percentage(byte x, unsigned long y)
   //return divu100(y * x);
 }
 
-//Same as the percentage calculation, but instead of 0-100 range, we can use full 0-255 range of the byte for increased resolution
-unsigned long percentage255(byte x, unsigned long y)
+//Same as above, but 0.5% accuracy
+unsigned long halfPercentage(byte x, unsigned long y)
 {
-  return (y * x) / 255;
+  return (y * x) / 200;
 }
 
 /*

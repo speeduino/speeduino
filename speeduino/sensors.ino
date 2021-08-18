@@ -3,6 +3,9 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+/** @file
+ * Read sensors with appropriate timing / scheduling.
+ */
 #include "sensors.h"
 #include "crankMaths.h"
 #include "globals.h"
@@ -12,7 +15,10 @@ A full copy of the license may be found in the projects root directory
 #include "idle.h"
 #include "errors.h"
 #include "corrections.h"
+#include "pages.h"
 
+/** Init all ADC conversions by setting resolutions, etc.
+ */
 void initialiseADC()
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
@@ -117,6 +123,9 @@ void initialiseADC()
   if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
+  if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
+
+  flexStartTime = micros();
 
   vssCount = 0;
   vssTotalTime = 0;
@@ -173,6 +182,22 @@ static inline void instanteneousMAPReading()
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
+  
+  //Repeat for EMAP if it's enabled
+  if(configPage6.useEMAP == true)
+  {
+    tempReading = analogRead(pinEMAP);
+    tempReading = analogRead(pinEMAP);
+
+    //Error check
+    if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+      {
+        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+      }
+    else { mapErrorCount += 1; }
+    currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
+    if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
+  }
 
 }
 
@@ -190,7 +215,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -256,12 +281,21 @@ static inline void readMAP()
           MAPcount = 0;
         }
       }
-      else {  instanteneousMAPReading(); }
+      else 
+      {
+        instanteneousMAPReading();
+        MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
+        if(configPage6.useEMAP == true)
+        {
+          EMAPrunningValue = currentStatus.EMAPADC;
+        }
+        MAPcount = 1;
+      }
       break;
 
     case 2:
       //Minimum reading in a cycle
-      if (currentStatus.RPM > 0 ) //If the engine isn't running, fall back to instantaneous reads
+      if (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -295,12 +329,16 @@ static inline void readMAP()
           validateMAP();
         }
       }
-      else { instanteneousMAPReading(); }
+      else 
+      {
+        instanteneousMAPReading();
+        MAPrunningValue = currentStatus.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
+      }
       break;
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPM > 0) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
@@ -342,7 +380,12 @@ static inline void readMAP()
           MAPcount = 0;
         }
       }
-      else { instanteneousMAPReading(); }
+      else 
+      {
+        instanteneousMAPReading();
+        MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
+        MAPcount = 1;
+      }
       break; 
 
     default:
@@ -543,6 +586,7 @@ uint16_t getSpeed()
   {
     //VSS mode 1 is (Will be) CAN
   }
+  // Interrupt driven mode
   else if(configPage2.vssMode > 1)
   {
     if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
@@ -642,7 +686,8 @@ void flexPulse()
 {
   if(READ_FLEX() == true)
   {
-    flexPulseWidth = (micros() - flexStartTime); //Calculate the pulse width
+    unsigned long tempPW = (micros() - flexStartTime); //Calculate the pulse width
+    flexPulseWidth = ADC_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
     ++flexCounter;
   }
   else

@@ -125,13 +125,12 @@
   #define BOOST_TIMER_COUNTER   FTM1_CNT
   #define VVT_TIMER_COMPARE     FTM1_C1V
   #define VVT_TIMER_COUNTER     FTM1_CNT
-
   #define FAN_TIMER_COMPARE     FTM2_C1V
   #define FAN_TIMER_COUNTER     FTM2_CNT
 
-  static inline void boostInterrupt();
-  static inline void vvtInterrupt();
-  static inline void fanInterrupt();
+  void boostInterrupt();
+  void vvtInterrupt();
+  void fanInterrupt();
 
 /*
 ***********************************************************************************************************
@@ -143,7 +142,7 @@
   #define IDLE_TIMER_ENABLE() FTM2_C0SC |= FTM_CSC_CHIE
   #define IDLE_TIMER_DISABLE() FTM2_C0SC &= ~FTM_CSC_CHIE
 
-  static inline void idleInterrupt();
+  void idleInterrupt();
 
 /*
 ***********************************************************************************************************
@@ -152,10 +151,10 @@
    #define USE_SERIAL3               // Secondary serial port to use
   #include <FlexCAN_T4.h>
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 #elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+  extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
   static CAN_message_t outMsg;
   static CAN_message_t inMsg;

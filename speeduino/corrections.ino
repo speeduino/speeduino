@@ -4,12 +4,22 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 
-/*
+/** @file
+Corrections to injection pulsewidth.
 The corrections functions in this file affect the fuel pulsewidth (Either increasing or decreasing)
 based on factors other than the VE lookup.
 
-These factors include temperature (Warmup Enrichment and After Start Enrichment), Acceleration/Decelleration,
-Flood clear mode etc.
+These factors include:
+- Temperature (Warmup Enrichment and After Start Enrichment)
+- Acceleration/Decelleration
+- Flood clear mode
+- etc.
+
+Most correction functions return value 100 (like 100% == 1) for no need for correction.
+
+There are 2 top level functions that call more detailed corrections for Fuel and Ignition respectively:
+- @ref correctionsFuel() - All fuel related corrections
+- @ref correctionsIgn() - All ignition related corrections
 */
 //************************************************************************************************************
 
@@ -22,7 +32,11 @@ Flood clear mode etc.
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+/** Instance of the PID object in case that algorithm is used (Always instantiated).
+* Needs to be global as it maintains state outside of each function call.
+* Comes from Arduino (?) PID library.
+*/
+PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
 int MAP_rateOfChange;
 int TPS_rateOfChange;
@@ -36,7 +50,10 @@ int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to b
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint16_t aseTaperStart;
 uint16_t dfcoStart;
+uint16_t idleAdvStart;
 
+/** Initialize instances and vars related to corrections (at ECU boot-up).
+ */
 void initialiseCorrections()
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
@@ -47,8 +64,8 @@ void initialiseCorrections()
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
 }
 
-/*
-correctionsTotal() calls all the other corrections functions and combines their results.
+/** Dispatch calculations for all fuel related corrections.
+Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
 uint16_t correctionsFuel()
@@ -163,8 +180,7 @@ static inline byte correctionsFuel_new()
 
 }
 
-/*
-Warm Up Enrichment (WUE)
+/** Warm Up Enrichment (WUE) corrections.
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
 byte correctionWUE()
@@ -187,8 +203,7 @@ byte correctionWUE()
   return WUEValue;
 }
 
-/*
-Cranking Enrichment
+/** Cranking Enrichment corrections.
 Additional fuel % to be added when the engine is cranking
 */
 uint16_t correctionCranking()
@@ -214,11 +229,9 @@ uint16_t correctionCranking()
   return crankingValue;
 }
 
-/**
- * @brief Afer Start Enrichment calculation
- * 
+/** Afer Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
- * where an additional amount of fuel is added (Over and above the WUE amount)
+ * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */
@@ -259,16 +272,16 @@ byte correctionASE()
   return currentStatus.ASEValue;
 }
 
-/**
- * @brief Acceleration enrichment correction calculation
+/** Acceleration enrichment correction calculation.
  * 
  * Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
  * Coolant-based modifier is applied on the top of this.
  * When the enrichment is turned on, it runs at that amount for a fixed period of time (taeTime)
  * 
- * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification. 
+ * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification.
+ * 
  * As the maximum enrichment amount is +255% and maximum cold adjustment for this is 255%, the overall return value
- * from this function can be 100+(255*255/100)=750. Hence this function returns a uint16_t rather than byte
+ * from this function can be 100+(255*255/100)=750. Hence this function returns a uint16_t rather than byte.
  */
 uint16_t correctionAccel()
 {
@@ -447,9 +460,8 @@ uint16_t correctionAccel()
   return accelValue;
 }
 
-/*
-Simple check to see whether we are cranking with the TPS above the flood clear threshold
-This function always returns either 100 or 0
+/** Simple check to see whether we are cranking with the TPS above the flood clear threshold.
+@return 100 (not cranking and thus no need for flood-clear) or 0 (Engine cranking and TPS above @ref config4.floodClear limit).
 */
 byte correctionFloodClear()
 {
@@ -466,9 +478,8 @@ byte correctionFloodClear()
   return floodValue;
 }
 
-/*
-Battery Voltage correction
-Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
+/** Battery Voltage correction.
+Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add.
 */
 byte correctionBatVoltage()
 {
@@ -477,9 +488,8 @@ byte correctionBatVoltage()
   return batValue;
 }
 
-/*
-Simple temperature based corrections lookup based on the inlet air temperature.
-This corrects for changes in air density from movement of the temperature
+/** Simple temperature based corrections lookup based on the inlet air temperature (IAT).
+This corrects for changes in air density from movement of the temperature.
 */
 byte correctionIATDensity()
 {
@@ -489,8 +499,7 @@ byte correctionIATDensity()
   return IATValue;
 }
 
-/**
- * @brief 
+/** Correction for current baromtetric / ambient pressure.
  * @returns A percentage value indicating the amount the fueling should be changed based on the barometric reading. 100 = No change. 110 = 10% increase. 90 = 10% decrease
  */
 byte correctionBaro()
@@ -501,8 +510,7 @@ byte correctionBaro()
   return baroValue;
 }
 
-/*
-Launch control has a setting to increase the fuel load to assist in bringing up boost
+/** Launch control has a setting to increase the fuel load to assist in bringing up boost.
 This simple check applies the extra fuel if we're currently launching
 */
 byte correctionLaunch()
@@ -539,8 +547,7 @@ bool correctionDFCO()
   return DFCOValue;
 }
 
-/*
- * Flex fuel adjustment to vary fuel based on ethanol content
+/** Flex fuel adjustment to vary fuel based on ethanol content.
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
 */
 byte correctionFlex()
@@ -568,15 +575,15 @@ byte correctionFuelTemp()
   return fuelTempValue;
 }
 
-/*
-Lookup the AFR target table and perform either a simple or PID adjustment based on this
+/** Lookup the AFR target table and perform either a simple or PID adjustment based on this.
 
 Simple (Best suited to narrowband sensors):
 If the O2 sensor reports that the mixture is lean/rich compared to the desired AFR target, it will make a 1% adjustment
-It then waits <egoDelta> number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%
+It then waits <egoDelta> number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
+
 This continues until either:
-  a) the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
-  b) the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
+- the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
+- the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
 
 PID (Best suited to wideband sensors):
 
@@ -603,7 +610,7 @@ byte correctionAFRClosedLoop()
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) )
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
       {
 
         //Check which algorithm is used, simple or PID
@@ -656,7 +663,10 @@ byte correctionAFRClosedLoop()
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
-
+/** Dispatch calculations for all ignition related corrections.
+ * @param base_advance - Base ignition advance (deg. ?)
+ * @return Advance considering all (~12) individual corrections
+ */
 int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
@@ -677,14 +687,18 @@ int8_t correctionsIgn(int8_t base_advance)
 
   return advance;
 }
-
+/** Correct ignition timing to configured fixed value.
+ * Must be called near end to override all other corrections.
+ */
 int8_t correctionFixedTiming(int8_t advance)
 {
   int8_t ignFixValue = advance;
   if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
   return ignFixValue;
 }
-
+/** Correct ignition timing to configured fixed value to use during craning.
+ * Must be called near end to override all other corrections.
+ */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   byte ignCrankFixValue = advance;
@@ -706,7 +720,7 @@ int8_t correctionFlexTiming(int8_t advance)
 
 int8_t correctionWMITiming(int8_t advance)
 {
-  if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && currentStatus.wmiEmpty == 0 ) //Check for wmi being enabled
+  if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) == 0 ) //Check for wmi being enabled
   {
     if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPM >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
     {
@@ -715,7 +729,8 @@ int8_t correctionWMITiming(int8_t advance)
   }
   return advance;
 }
-
+/** Ignition correction for inlet air temperature (IAT).
+ */
 int8_t correctionIATretard(int8_t advance)
 {
   byte ignIATValue = advance;
@@ -727,7 +742,8 @@ int8_t correctionIATretard(int8_t advance)
 
   return ignIATValue;
 }
-
+/** Ignition correction for coolant temperature (CLT).
+ */
 int8_t correctionCLTadvance(int8_t advance)
 {
   int8_t ignCLTValue = advance;
@@ -737,35 +753,36 @@ int8_t correctionCLTadvance(int8_t advance)
   
   return ignCLTValue;
 }
-
+/** Ignition Idle advance correction.
+ */
 int8_t correctionIdleAdvance(int8_t advance)
 {
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( (configPage2.idleAdvEnabled >= 1) && (currentStatus.runSecs >= configPage2.IdleAdvDelay))
+  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.IdleAdvDelay * 5)) )
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if( (configPage2.idleAdvAlgorithm == 0) && ((currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100)) && (currentStatus.TPS < configPage2.idleAdvTPS)) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss)) ) // TPS based idle state
+    if( (currentStatus.RPMdiv100 < configPage2.idleAdvRPM) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
+    && (((configPage2.idleAdvAlgorithm == 0) && (currentStatus.TPS < configPage2.idleAdvTPS)) || ((configPage2.idleAdvAlgorithm == 1) && (currentStatus.CTPSActive == 1))) ) // closed throttle position sensor (CTPS) based idle state
     {
-      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
-      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+      if( (runSecsX10 - idleAdvStart) >= configPage9.idleAdvStartDelay )
+      {
+        int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+        if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
+        else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+      }
     }
-    else if( (configPage2.idleAdvAlgorithm == 1) && (currentStatus.RPM < (unsigned int)(configPage2.idleAdvRPM * 100) && (currentStatus.CTPSActive == 1) ) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss)) ) // closed throttle position sensor (CTPS) based idle state
-    {
-      int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
-      if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-      else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
-    }
+    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvStart = runSecsX10; } //Only copy time at runSecsX10 update rate
   }
   return ignIdleValue;
 }
-
+/** Ignition soft revlimit correction.
+ */
 int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
@@ -780,7 +797,8 @@ int8_t correctionSoftRevLimit(int8_t advance)
 
   return ignSoftRevValue;
 }
-
+/** Ignition Nitrous oxide correction.
+ */
 int8_t correctionNitrous(int8_t advance)
 {
   byte ignNitrous = advance;
@@ -800,7 +818,8 @@ int8_t correctionNitrous(int8_t advance)
 
   return ignNitrous;
 }
-
+/** Ignition soft launch correction.
+ */
 int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
@@ -819,10 +838,11 @@ int8_t correctionSoftLaunch(int8_t advance)
 
   return ignSoftLaunchValue;
 }
-
+/** Ignition correction for soft flat shift.
+ */
 int8_t correctionSoftFlatShift(int8_t advance)
 {
-  byte ignSoftFlatValue = advance;
+  int8_t ignSoftFlatValue = advance;
 
   if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
   {
@@ -833,7 +853,8 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   return ignSoftFlatValue;
 }
-
+/** Ignition knock (retard) correction.
+ */
 int8_t correctionKnock(int8_t advance)
 {
   byte knockRetard = 0;
@@ -869,7 +890,8 @@ int8_t correctionKnock(int8_t advance)
   return advance - knockRetard;
 }
 
-//******************************** DWELL CORRECTIONS ********************************
+/** Ignition Dwell Correction.
+ */
 uint16_t correctionsDwell(uint16_t dwell)
 {
   uint16_t tempDwell = dwell;
