@@ -760,7 +760,7 @@ void boostDisable()
 
 #if defined(PWM_FAN_AVAILABLE)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
-  static inline void fanInterrupt()
+  void fanInterrupt()
 {
   if (fan_pwm_state == true)
   {

@@ -67,7 +67,7 @@ volatile bool fan_pwm_state;
 unsigned int fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
-static inline void fanInterrupt();
+void fanInterrupt();
 #endif
 
 volatile bool vvt1_pwm_state;
