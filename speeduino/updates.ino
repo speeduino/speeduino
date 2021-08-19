@@ -511,6 +511,15 @@ void doUpdates()
     writeAllConfig();
     EEPROM.write(EEPROM_DATA_VERSION, 18);
   }
+  
+  if(EEPROM.read(EEPROM_DATA_VERSION) == 18)
+  {
+    configPage2.canBMWCluster = 0;
+    configPage2.canVAGCluster = 0;
+
+    writeAllConfig();
+    EEPROM.write(EEPROM_DATA_VERSION, 19);
+  }
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (EEPROM.read(EEPROM_DATA_VERSION) == 0) || (EEPROM.read(EEPROM_DATA_VERSION) == 255) )
