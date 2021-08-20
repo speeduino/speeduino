@@ -3221,7 +3221,7 @@ void initialiseTriggers()
       //Renault 44 tooth decoder
       triggerSetup_Renix();
       triggerHandler = triggerPri_Renix44;
-      triggerSecondaryHandler = triggerSec_renix;
+      triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
       getRPM = getRPM_Renix;
       getCrankAngle = getCrankAngle_Renix;
@@ -3241,7 +3241,7 @@ void initialiseTriggers()
       //Renault 44 tooth decoder
       triggerSetup_Renix();
       triggerHandler = triggerPri_Renix66;
-      triggerSecondaryHandler = triggerSec_renix;
+      triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
       getRPM = getRPM_Renix;
       getCrankAngle = getCrankAngle_Renix;

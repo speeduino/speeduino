@@ -4381,7 +4381,7 @@ void triggerPri_Renix66()
 
 
 
-void triggerSec_renix()
+void triggerSec_Renix()
 {
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;

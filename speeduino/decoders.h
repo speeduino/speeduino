@@ -186,6 +186,15 @@ uint16_t getRPM_FordST170();
 int getCrankAngle_FordST170();
 void triggerSetEndTeeth_FordST170();
 
+void triggerSetup_Renix();
+void triggerSec_Renix();
+uint16_t getRPM_Renix();
+int getCrankAngle_Renix();
+void triggerSetEndTeeth_Renix44();
+void triggerSetEndTeeth_Renix66();
+void triggerPrimary_Renix44();
+void triggerPrimary_Renix66();
+
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
