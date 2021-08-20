@@ -29,3 +29,14 @@ jobs:
         doxyfile-path: "./Doxyfile" # default is ./Doxyfile
         # Working directory
         working-directory: "." # default is .
+
+    - name: Commit Doxygen HTML
+      if: ${{ false }}
+      run: |
+        cd ..
+        git clone https://github.com/speeduino/speeduino-doxygen
+        cp -r speeduino/reference/doxygen/html/* speeduino-doxygen
+        cd speeduino-doxygen
+        git add --all
+        git commit --allow-empty -m "Deploy code docs to GitHub Pages. Travis build ${TRAVIS_BUILD_NUMBER}" -m "Commit ${TRAVIS_COMMIT}"
+        git push --force "https://${GH_DOXYGEN}@github.com/speeduino/speeduino-doxygen" > /dev/null 2>&1

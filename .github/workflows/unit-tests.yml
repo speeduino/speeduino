@@ -38,3 +38,27 @@ jobs:
       run: | 
         platformio run -e megaatmega2560
         platformio remote test --force-remote --environment megaatmega2560
+
+    - name: Slack Notification (Passed)
+      uses: rtCamp/action-slack-notify@v2
+      if: success()
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Unit tests successful :white_check_mark:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
+    
+    - name: Slack Notification (Failed)
+      uses: rtCamp/action-slack-notify@v2
+      if: failure()
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Unit tests FAILED :warning:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
