@@ -38,8 +38,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
+        platformio update
+        platformio platform update
         
     - name: Run Unit Tests
       env:
         PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
-      run: platformio remote test --force-remote --environment megaatmega2560
+      run: | 
+        platformio run -e megaatmega2560
+        platformio remote test --force-remote --environment megaatmega2560
