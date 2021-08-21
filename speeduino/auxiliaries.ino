@@ -9,6 +9,8 @@ A full copy of the license may be found in the projects root directory
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
 
+uint16_t vvtTime;
+bool vvtHot;
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -127,6 +129,7 @@ void initialiseAuxPWM()
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+    if (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) {vvtHot=true;} //Checks to see if coolant's already at operating temperature
   }
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
@@ -299,8 +302,16 @@ void boostControl()
 
 void vvtControl()
 {
-  if( (configPage6.vvtEnabled == 1) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) )
+  bool vvtTimeHold;
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) )
   {
+    if (vvtTimeHold==false) 
+      {
+        vvtTime = runSecsX10;
+        vvtTimeHold=true;
+      }
+    if ((runSecsX10 - vvtTime) > (configPage4.vvtDelay * 5) || vvtHot==true) {
+    vvtHot=true;
     //currentStatus.vvt1Duty = 0;
     //Calculate the current cam angle
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
@@ -439,6 +450,7 @@ void vvtControl()
       if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
     }
  
+    }
   }
   else 
   { 
@@ -452,6 +464,7 @@ void vvtControl()
     vvt1_max_pwm = false;
     vvt2_pwm_state = false;
     vvt2_max_pwm = false;
+    vvtTimeHold=false;
   } 
 }
 
