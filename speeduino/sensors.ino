@@ -570,12 +570,15 @@ void readBat()
 uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
-  uint32_t pulseTime = 0;
+  uint32_t revolutionTime = 0;
 
   //Need to temp store the pulse time variables to prevent them changing during an interrupt
   noInterrupts();
   uint32_t temp_vssLastPulseTime = vssLastPulseTime;
   uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
+  byte temp_vssCount = vssCount;
+  uint32_t temp_vssSensorRevTotalTime = vssSensorRevTotalTime;
+  uint32_t temp_vssTotalTime = vssTotalTime;
   interrupts();
 
   if(configPage2.vssMode == 1)
@@ -585,25 +588,39 @@ uint16_t getSpeed()
   // Interrupt driven mode
   else if(configPage2.vssMode > 1)
   {
-    if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
+    if((temp_vssSensorRevTotalTime > 0) || (temp_vssCount >= VSS_MIN_SAMPLES)) //We only change the reading if we've reached the required number of samples
     {
       if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
       else
       {
-        pulseTime = vssTotalTime / VSS_SAMPLES;
-        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
-        if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
+		if(temp_vssSensorRevTotalTime > 0) // Sensor completed at least one full revolution before reading
+		{
+		  revolutionTime = temp_vssSensorRevTotalTime;
+		}
+		else // Sensor has not completed a revolution. Extrapolate partial revolution times to a full revolution time
+		{
+		  revolutionTime = (temp_vssTotalTime * (uint32_t)configPage2.vssSensorTeeth) / (uint32_t)temp_vssCount;
+		}
+		tempSpeed = 3600000000UL / (revolutionTime * configPage2.vssRevsPerKm); //Convert the time to complete one revolution into km/h
+		tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+		if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
       }
 
       vssCount = 0;
       vssTotalTime = 0;
+      vssSensorRevTotalTime = 0;
     }
     else
     {
       //Either not enough samples taken yet or speed has dropped to 0
-      if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
-      else { tempSpeed = currentStatus.vss; } 
+      if ( (micros() - temp_vssLastPulseTime) > 1000000UL )  // Check that the car hasn't come to a stop (1s timeout)
+	  { 
+        tempSpeed = 0;
+        vssCount = 0;
+        vssTotalTime = 0;
+        vssSensorRevTotalTime = 0;		
+	  } 
+      else { tempSpeed = currentStatus.vss; } // Wait for more samples.
     }
   }
   return tempSpeed;
@@ -711,20 +728,34 @@ void knockPulse()
 
 /**
  * @brief The ISR function for VSS pulses
+ * The idea is to offer 2 different modes of reading the value. 
+ * 1. The sensor is rotating slowly such that it does not complete a rotation within the read times.
+ * 2. The sensor is rotating fast so that it completes at least one (and likely multiple) rotations betweent the read times. 
+ * In the case 2 averaging an exact 360deg provides natural filtering and removes error due to unevently spaced teeth.
+ * This algorithm refreshes itself so the latest wheel sample is what is provided to the read function.
  * 
  */
 void vssPulse()
 {
-  //TODO: Add basic filtering here
   vssLastMinusOnePulseTime = vssLastPulseTime;
   vssLastPulseTime = micros();
-
-  if(vssCount < VSS_SAMPLES)
-  {
-    vssTotalTime += (vssLastPulseTime - vssLastMinusOnePulseTime);
-    vssCount++;
-  }
   
+  vssCount++;
+  
+  if(vssCount == 1){ vssSensorRevStartTime = vssLastMinusOnePulseTime; } // Save the start time for a full sensor revolution.
+  
+  if(vssCount == configPage2.vssSensorTeeth) // Reached the last tooth before external read reset of vssCount by read function
+  {
+    //vss_OdometerRevCount = vss_OdometerRevCount + 1; - if a key cylcle odometer is ever required just count the number of total revolutions and convert to Km.
+    vssSensorRevTotalTime = (vssLastPulseTime - vssSensorRevStartTime); // Time for one complete revolution
+	vssCount = 0; // Reset counter...
+	vssTotalTime = 0; // ...and partial time
+  }
+  else 
+  {
+	vssTotalTime += (vssLastPulseTime - vssLastMinusOnePulseTime); // Reads partial wheel speeds.
+	
+  }  
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)

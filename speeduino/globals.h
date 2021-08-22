@@ -852,7 +852,8 @@ struct config2 {
   byte vssMode : 2; ///< VSS (Vehicle speed sensor) mode (0=none, 1=CANbus, 2,3=Interrupt driven)
   byte vssPin : 6; ///< VSS (Vehicle speed sensor) pin number
   
-  uint16_t vssPulsesPerKm; ///< VSS (Vehicle speed sensor) pulses per Km
+  uint16_t vssRevsPerKm; ///< VSS (Vehicle speed sensor) revolutions per Km
+  byte vssSensorTeeth; ///< VSS (Vehicle speed sensor) number of teeth on sensor
   byte vssSmoothing;
   uint16_t vssRatio1;
   uint16_t vssRatio2;
