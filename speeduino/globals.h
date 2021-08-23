@@ -837,7 +837,7 @@ struct config2 {
 
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
-  byte IdleAdvDelay : 5;
+  byte idleAdvDelay : 5;
   
   byte idleAdvRPM;
   byte idleAdvTPS;
