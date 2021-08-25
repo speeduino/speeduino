@@ -108,6 +108,10 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
+inline COMPARE_TYPE getIgnitionCounter(int i);
+inline void setIgnitionCompare(int i, COMPARE_TYPE val);
+inline void setIgnitionTimerRunning(int i, bool enabled);
+
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
   static inline void fuelSchedule1Interrupt();
