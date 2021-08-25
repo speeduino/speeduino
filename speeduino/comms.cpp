@@ -283,7 +283,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202104-dev"));
+      Serial.print(F("speeduino 202109-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -443,7 +443,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2021.04-dev"));
+      Serial.print(F("Speeduino 2021.09-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -914,6 +914,8 @@ byte getStatusEntry(uint16_t byteNum)
     case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
+    case 120: statusValue = highByte(currentStatus.EMAP); break;
   }
 
   return statusValue;

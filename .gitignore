@@ -26,3 +26,4 @@ reference/doxygen
 speeduino.ino.cpp
 test/output_export.cpp
 misra/.results
+~$*

@@ -26,7 +26,9 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
+#ifdef SD_LOGGING
 #define RTC_ENABLED
+#endif
 #define USE_SERIAL3
 
 //When building for Black board Serial1 is instanciated,building generic STM32F4x7 has serial2 and serial 1 must be done here
@@ -90,7 +92,7 @@ extern "C" char* sbrk(int incr);
     extern SPI_EEPROM_Class EEPROM;
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H <Fram.h>
+    #define EEPROM_LIB_H "src/FRAM/Fram.h"
     #include EEPROM_LIB_H
     #if defined(STM32F407xx)
       extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
