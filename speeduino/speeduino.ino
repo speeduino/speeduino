@@ -1004,7 +1004,7 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
+        if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule[0].Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
         //if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
@@ -1019,7 +1019,7 @@ void loop()
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( (ignitionSchedule[0].Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 
@@ -1047,7 +1047,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition2StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[1].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
@@ -1072,7 +1072,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition3StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[2].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
@@ -1097,7 +1097,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition4StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[3].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
@@ -1122,7 +1122,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition5StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[4].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
@@ -1147,7 +1147,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition6StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[5].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition6StartTime = 0; }
@@ -1172,7 +1172,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition7StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[6].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition7StartTime = 0; }
@@ -1197,7 +1197,7 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition8StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[7].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition8StartTime = 0; }

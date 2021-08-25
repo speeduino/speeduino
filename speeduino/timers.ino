@@ -59,14 +59,14 @@ void oneMSInterval() //Most ARM chips can simply call a function
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
 
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign1EndFunction(); ignitionSchedule1.Status = OFF; } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign2EndFunction(); ignitionSchedule2.Status = OFF; } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign3EndFunction(); ignitionSchedule3.Status = OFF; } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign4EndFunction(); ignitionSchedule4.Status = OFF; } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign5EndFunction(); ignitionSchedule5.Status = OFF; } }
-  if(ignitionSchedule6.Status == RUNNING) { if( (ignitionSchedule6.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign6EndFunction(); ignitionSchedule6.Status = OFF; } }
-  if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
-  if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
+  if(ignitionSchedule[0].Status == RUNNING) { if( (ignitionSchedule[0].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign1EndFunction(); ignitionSchedule[0].Status = OFF; } }
+  if(ignitionSchedule[1].Status == RUNNING) { if( (ignitionSchedule[1].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign2EndFunction(); ignitionSchedule[1].Status = OFF; } }
+  if(ignitionSchedule[2].Status == RUNNING) { if( (ignitionSchedule[2].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign3EndFunction(); ignitionSchedule[2].Status = OFF; } }
+  if(ignitionSchedule[3].Status == RUNNING) { if( (ignitionSchedule[3].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign4EndFunction(); ignitionSchedule[3].Status = OFF; } }
+  if(ignitionSchedule[4].Status == RUNNING) { if( (ignitionSchedule[4].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign5EndFunction(); ignitionSchedule[4].Status = OFF; } }
+  if(ignitionSchedule[5].Status == RUNNING) { if( (ignitionSchedule[5].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign6EndFunction(); ignitionSchedule[5].Status = OFF; } }
+  if(ignitionSchedule[6].Status == RUNNING) { if( (ignitionSchedule[6].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule[6].Status = OFF; } }
+  if(ignitionSchedule[7].Status == RUNNING) { if( (ignitionSchedule[7].startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule[7].Status = OFF; } }
 
   //Tacho output check
   //Tacho is flagged as being ready for a pulse by the ignition outputs. 

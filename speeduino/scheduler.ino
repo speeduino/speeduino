@@ -37,14 +37,7 @@ FuelSchedule fuelSchedule6;
 FuelSchedule fuelSchedule7;
 FuelSchedule fuelSchedule8;
 
-Schedule ignitionSchedule1;
-Schedule ignitionSchedule2;
-Schedule ignitionSchedule3;
-Schedule ignitionSchedule4;
-Schedule ignitionSchedule5;
-Schedule ignitionSchedule6;
-Schedule ignitionSchedule7;
-Schedule ignitionSchedule8;
+Schedule ignitionSchedule[8];
 
 void (*inj1StartFunction)();
 void (*inj1EndFunction)();
@@ -102,14 +95,14 @@ void initialiseSchedulers()
     fuelSchedule7.schedulesSet = 0;
     fuelSchedule8.schedulesSet = 0;
 
-    ignitionSchedule1.Status = OFF;
-    ignitionSchedule2.Status = OFF;
-    ignitionSchedule3.Status = OFF;
-    ignitionSchedule4.Status = OFF;
-    ignitionSchedule5.Status = OFF;
-    ignitionSchedule6.Status = OFF;
-    ignitionSchedule7.Status = OFF;
-    ignitionSchedule8.Status = OFF;
+    ignitionSchedule[0].Status = OFF;
+    ignitionSchedule[1].Status = OFF;
+    ignitionSchedule[2].Status = OFF;
+    ignitionSchedule[3].Status = OFF;
+    ignitionSchedule[4].Status = OFF;
+    ignitionSchedule[5].Status = OFF;
+    ignitionSchedule[6].Status = OFF;
+    ignitionSchedule[7].Status = OFF;
 
     IGN1_TIMER_ENABLE();
     IGN2_TIMER_ENABLE();
@@ -120,14 +113,14 @@ void initialiseSchedulers()
     IGN7_TIMER_ENABLE();
     IGN8_TIMER_ENABLE();
 
-    ignitionSchedule1.schedulesSet = 0;
-    ignitionSchedule2.schedulesSet = 0;
-    ignitionSchedule3.schedulesSet = 0;
-    ignitionSchedule4.schedulesSet = 0;
-    ignitionSchedule5.schedulesSet = 0;
-    ignitionSchedule6.schedulesSet = 0;
-    ignitionSchedule7.schedulesSet = 0;
-    ignitionSchedule8.schedulesSet = 0;
+    ignitionSchedule[0].schedulesSet = 0;
+    ignitionSchedule[1].schedulesSet = 0;
+    ignitionSchedule[2].schedulesSet = 0;
+    ignitionSchedule[3].schedulesSet = 0;
+    ignitionSchedule[4].schedulesSet = 0;
+    ignitionSchedule[5].schedulesSet = 0;
+    ignitionSchedule[6].schedulesSet = 0;
+    ignitionSchedule[7].schedulesSet = 0;
 }
 
 /*
@@ -485,11 +478,11 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[0].Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule1.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule1.duration = duration;
+    ignitionSchedule[0].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[0].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[0].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -498,11 +491,11 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule1.startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(ignitionSchedule1.endScheduleSetByDecoder == false) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN1_COMPARE = (uint16_t)ignitionSchedule1.startCompare;
-    ignitionSchedule1.Status = PENDING; //Turn this schedule on
-    ignitionSchedule1.schedulesSet++;
+    ignitionSchedule[0].startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    if(ignitionSchedule[0].endScheduleSetByDecoder == false) { ignitionSchedule[0].endCompare = ignitionSchedule[0].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN1_COMPARE = (uint16_t)ignitionSchedule[0].startCompare;
+    ignitionSchedule[0].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[0].schedulesSet++;
     interrupts();
     IGN1_TIMER_ENABLE();
   }
@@ -512,9 +505,9 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule1.nextEndCompare = ignitionSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule1.hasNextSchedule = true;
+      ignitionSchedule[0].nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[0].nextEndCompare = ignitionSchedule[0].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[0].hasNextSchedule = true;
     }
 
   }
@@ -522,24 +515,24 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
-  if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
+  if( (ignitionSchedule[0].Status == RUNNING) && (timeToEnd < ignitionSchedule[0].duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
-  //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
+  //if( (timeToEnd < ignitionSchedule[0].duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
-    ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
-    IGN1_COMPARE = (uint16_t)ignitionSchedule1.endCompare;
+    ignitionSchedule[0].endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
+    IGN1_COMPARE = (uint16_t)ignitionSchedule[0].endCompare;
     interrupts();
   }
 }
 
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[1].Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule2.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule2.duration = duration;
+    ignitionSchedule[1].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[1].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[1].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -547,11 +540,11 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule2.startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(ignitionSchedule2.endScheduleSetByDecoder == false) { ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN2_COMPARE = (uint16_t)ignitionSchedule2.startCompare;
-    ignitionSchedule2.Status = PENDING; //Turn this schedule on
-    ignitionSchedule2.schedulesSet++;
+    ignitionSchedule[1].startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    if(ignitionSchedule[1].endScheduleSetByDecoder == false) { ignitionSchedule[1].endCompare = ignitionSchedule[1].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN2_COMPARE = (uint16_t)ignitionSchedule[1].startCompare;
+    ignitionSchedule[1].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[1].schedulesSet++;
     interrupts();
     IGN2_TIMER_ENABLE();
   }
@@ -561,20 +554,20 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule2.nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule2.nextEndCompare = ignitionSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule2.hasNextSchedule = true;
+      ignitionSchedule[1].nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[1].nextEndCompare = ignitionSchedule[1].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[1].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule3.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[2].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule3.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule3.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule3.duration = duration;
+    ignitionSchedule[2].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[2].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[2].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -582,11 +575,11 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule3.startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(ignitionSchedule3.endScheduleSetByDecoder == false) { ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN3_COMPARE = (uint16_t)ignitionSchedule3.startCompare;
-    ignitionSchedule3.Status = PENDING; //Turn this schedule on
-    ignitionSchedule3.schedulesSet++;
+    ignitionSchedule[2].startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    if(ignitionSchedule[2].endScheduleSetByDecoder == false) { ignitionSchedule[2].endCompare = ignitionSchedule[2].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN3_COMPARE = (uint16_t)ignitionSchedule[2].startCompare;
+    ignitionSchedule[2].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[2].schedulesSet++;
     interrupts();
     IGN3_TIMER_ENABLE();
   }
@@ -596,20 +589,20 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule3.hasNextSchedule = true;
+      ignitionSchedule[2].nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[2].nextEndCompare = ignitionSchedule[2].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[2].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[3].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule4.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule4.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule4.duration = duration;
+    ignitionSchedule[3].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[3].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[3].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -617,11 +610,11 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + timeout_timer_compare;
-    if(ignitionSchedule4.endScheduleSetByDecoder == false) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN4_COMPARE = (uint16_t)ignitionSchedule4.startCompare;
-    ignitionSchedule4.Status = PENDING; //Turn this schedule on
-    ignitionSchedule4.schedulesSet++;
+    ignitionSchedule[3].startCompare = IGN4_COUNTER + timeout_timer_compare;
+    if(ignitionSchedule[3].endScheduleSetByDecoder == false) { ignitionSchedule[3].endCompare = ignitionSchedule[3].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN4_COMPARE = (uint16_t)ignitionSchedule[3].startCompare;
+    ignitionSchedule[3].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[3].schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE();
   }
@@ -631,20 +624,20 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule4.hasNextSchedule = true;
+      ignitionSchedule[3].nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[3].nextEndCompare = ignitionSchedule[3].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[3].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[4].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule5.duration = duration;
+    ignitionSchedule[4].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[4].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[4].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -652,11 +645,11 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + timeout_timer_compare;
-    if(ignitionSchedule5.endScheduleSetByDecoder == false) { ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN5_COMPARE = (uint16_t)ignitionSchedule5.startCompare;
-    ignitionSchedule5.Status = PENDING; //Turn this schedule on
-    ignitionSchedule5.schedulesSet++;
+    ignitionSchedule[4].startCompare = IGN5_COUNTER + timeout_timer_compare;
+    if(ignitionSchedule[4].endScheduleSetByDecoder == false) { ignitionSchedule[4].endCompare = ignitionSchedule[4].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN5_COMPARE = (uint16_t)ignitionSchedule[4].startCompare;
+    ignitionSchedule[4].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[4].schedulesSet++;
     interrupts();
     IGN5_TIMER_ENABLE();
   }
@@ -666,20 +659,20 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule5.nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule5.nextEndCompare = ignitionSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule5.hasNextSchedule = true;
+      ignitionSchedule[4].nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[4].nextEndCompare = ignitionSchedule[4].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[4].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[5].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule6.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule6.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule6.duration = duration;
+    ignitionSchedule[5].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[5].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[5].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -687,11 +680,11 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
-    if(ignitionSchedule6.endScheduleSetByDecoder == false) { ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN6_COMPARE = (uint16_t)ignitionSchedule6.startCompare;
-    ignitionSchedule6.Status = PENDING; //Turn this schedule on
-    ignitionSchedule6.schedulesSet++;
+    ignitionSchedule[5].startCompare = IGN6_COUNTER + timeout_timer_compare;
+    if(ignitionSchedule[5].endScheduleSetByDecoder == false) { ignitionSchedule[5].endCompare = ignitionSchedule[5].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN6_COMPARE = (uint16_t)ignitionSchedule[5].startCompare;
+    ignitionSchedule[5].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[5].schedulesSet++;
     interrupts();
     IGN6_TIMER_ENABLE();
   }
@@ -701,20 +694,20 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule6.hasNextSchedule = true;
+      ignitionSchedule[5].nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[5].nextEndCompare = ignitionSchedule[5].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[5].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[6].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule7.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule7.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule7.duration = duration;
+    ignitionSchedule[6].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[6].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[6].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -722,11 +715,11 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule7.startCompare = IGN7_COUNTER + timeout_timer_compare;
-    if(ignitionSchedule7.endScheduleSetByDecoder == false) { ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN7_COMPARE = (uint16_t)ignitionSchedule7.startCompare;
-    ignitionSchedule7.Status = PENDING; //Turn this schedule on
-    ignitionSchedule7.schedulesSet++;
+    ignitionSchedule[6].startCompare = IGN7_COUNTER + timeout_timer_compare;
+    if(ignitionSchedule[6].endScheduleSetByDecoder == false) { ignitionSchedule[6].endCompare = ignitionSchedule[6].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN7_COMPARE = (uint16_t)ignitionSchedule[6].startCompare;
+    ignitionSchedule[6].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[6].schedulesSet++;
     interrupts();
     IGN7_TIMER_ENABLE();
   }
@@ -736,20 +729,20 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule7.hasNextSchedule = true;
+      ignitionSchedule[6].nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[6].nextEndCompare = ignitionSchedule[6].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[6].hasNextSchedule = true;
     }
   }
 }
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
+  if(ignitionSchedule[7].Status != RUNNING) //Check that we're not already part way through a schedule
   {
 
-    ignitionSchedule8.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule8.EndCallback = endCallback; //Name the start callback function
-    ignitionSchedule8.duration = duration;
+    ignitionSchedule[7].StartCallback = startCallback; //Name the start callback function
+    ignitionSchedule[7].EndCallback = endCallback; //Name the start callback function
+    ignitionSchedule[7].duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     uint16_t timeout_timer_compare;
@@ -757,11 +750,11 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    ignitionSchedule8.startCompare = IGN8_COUNTER + timeout_timer_compare;
-    if(ignitionSchedule8.endScheduleSetByDecoder == false) { ignitionSchedule8.endCompare = ignitionSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    IGN8_COMPARE = (uint16_t)ignitionSchedule8.startCompare;
-    ignitionSchedule8.Status = PENDING; //Turn this schedule on
-    ignitionSchedule8.schedulesSet++;
+    ignitionSchedule[7].startCompare = IGN8_COUNTER + timeout_timer_compare;
+    if(ignitionSchedule[7].endScheduleSetByDecoder == false) { ignitionSchedule[7].endCompare = ignitionSchedule[7].startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    IGN8_COMPARE = (uint16_t)ignitionSchedule[7].startCompare;
+    ignitionSchedule[7].Status = PENDING; //Turn this schedule on
+    ignitionSchedule[7].schedulesSet++;
     interrupts();
     IGN8_TIMER_ENABLE();
   }
@@ -771,9 +764,9 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
-      ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      ignitionSchedule8.hasNextSchedule = true;
+      ignitionSchedule[7].nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
+      ignitionSchedule[7].nextEndCompare = ignitionSchedule[7].nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      ignitionSchedule[7].hasNextSchedule = true;
     }
   }
 }
@@ -1107,33 +1100,33 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[0].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule1.StartCallback();
-      ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule1.startTime = micros();
-      if(ignitionSchedule1.endScheduleSetByDecoder == true) { IGN1_COMPARE = (uint16_t)ignitionSchedule1.endCompare; }
-      else { IGN1_COMPARE = (uint16_t)(IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration)); } //Doing this here prevents a potential overflow on restarts
+      ignitionSchedule[0].StartCallback();
+      ignitionSchedule[0].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[0].startTime = micros();
+      if(ignitionSchedule[0].endScheduleSetByDecoder == true) { IGN1_COMPARE = (uint16_t)ignitionSchedule[0].endCompare; }
+      else { IGN1_COMPARE = (uint16_t)(IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[0].duration)); } //Doing this here prevents a potential overflow on restarts
     }
-    else if (ignitionSchedule1.Status == RUNNING)
+    else if (ignitionSchedule[0].Status == RUNNING)
     {
-      ignitionSchedule1.EndCallback();
-      ignitionSchedule1.Status = OFF; //Turn off the schedule
-      ignitionSchedule1.schedulesSet = 0;
-      ignitionSchedule1.endScheduleSetByDecoder = false;
+      ignitionSchedule[0].EndCallback();
+      ignitionSchedule[0].Status = OFF; //Turn off the schedule
+      ignitionSchedule[0].schedulesSet = 0;
+      ignitionSchedule[0].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule1.hasNextSchedule == true)
+      if(ignitionSchedule[0].hasNextSchedule == true)
       {
-        IGN1_COMPARE = (uint16_t)ignitionSchedule1.nextStartCompare;
-        ignitionSchedule1.Status = PENDING;
-        ignitionSchedule1.schedulesSet = 1;
-        ignitionSchedule1.hasNextSchedule = false;
+        IGN1_COMPARE = (uint16_t)ignitionSchedule[0].nextStartCompare;
+        ignitionSchedule[0].Status = PENDING;
+        ignitionSchedule[0].schedulesSet = 1;
+        ignitionSchedule[0].hasNextSchedule = false;
       }
       else{ IGN1_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule1.Status == OFF)
+    else if (ignitionSchedule[0].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN1_TIMER_DISABLE();
@@ -1148,33 +1141,33 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[1].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule2.StartCallback();
-      ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule2.startTime = micros();
-      if(ignitionSchedule2.endScheduleSetByDecoder == true) { IGN2_COMPARE = (uint16_t)ignitionSchedule2.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN2_COMPARE = (uint16_t)(IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+      ignitionSchedule[1].StartCallback();
+      ignitionSchedule[1].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[1].startTime = micros();
+      if(ignitionSchedule[1].endScheduleSetByDecoder == true) { IGN2_COMPARE = (uint16_t)ignitionSchedule[1].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN2_COMPARE = (uint16_t)(IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[1].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
-    else if (ignitionSchedule2.Status == RUNNING)
+    else if (ignitionSchedule[1].Status == RUNNING)
     {
-      ignitionSchedule2.Status = OFF; //Turn off the schedule
-      ignitionSchedule2.EndCallback();
-      ignitionSchedule2.schedulesSet = 0;
-      ignitionSchedule2.endScheduleSetByDecoder = false;
+      ignitionSchedule[1].Status = OFF; //Turn off the schedule
+      ignitionSchedule[1].EndCallback();
+      ignitionSchedule[1].schedulesSet = 0;
+      ignitionSchedule[1].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
       
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule2.hasNextSchedule == true)
+      if(ignitionSchedule[1].hasNextSchedule == true)
       {
-        IGN2_COMPARE = (uint16_t)ignitionSchedule2.nextStartCompare;
-        ignitionSchedule2.Status = PENDING;
-        ignitionSchedule2.schedulesSet = 1;
-        ignitionSchedule2.hasNextSchedule = false;
+        IGN2_COMPARE = (uint16_t)ignitionSchedule[1].nextStartCompare;
+        ignitionSchedule[1].Status = PENDING;
+        ignitionSchedule[1].schedulesSet = 1;
+        ignitionSchedule[1].hasNextSchedule = false;
       }
       else{ IGN2_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule2.Status == OFF)
+    else if (ignitionSchedule[1].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN2_TIMER_DISABLE();
@@ -1189,33 +1182,33 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[2].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule3.StartCallback();
-      ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule3.startTime = micros();
-      if(ignitionSchedule3.endScheduleSetByDecoder == true) { IGN3_COMPARE = (uint16_t)ignitionSchedule3.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN3_COMPARE = (uint16_t)(IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
+      ignitionSchedule[2].StartCallback();
+      ignitionSchedule[2].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[2].startTime = micros();
+      if(ignitionSchedule[2].endScheduleSetByDecoder == true) { IGN3_COMPARE = (uint16_t)ignitionSchedule[2].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN3_COMPARE = (uint16_t)(IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[2].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
-    else if (ignitionSchedule3.Status == RUNNING)
+    else if (ignitionSchedule[2].Status == RUNNING)
     {
-       ignitionSchedule3.Status = OFF; //Turn off the schedule
-       ignitionSchedule3.EndCallback();
-       ignitionSchedule3.schedulesSet = 0;
-       ignitionSchedule3.endScheduleSetByDecoder = false;
+       ignitionSchedule[2].Status = OFF; //Turn off the schedule
+       ignitionSchedule[2].EndCallback();
+       ignitionSchedule[2].schedulesSet = 0;
+       ignitionSchedule[2].endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
 
        //If there is a next schedule queued up, activate it
-       if(ignitionSchedule3.hasNextSchedule == true)
+       if(ignitionSchedule[2].hasNextSchedule == true)
        {
-         IGN3_COMPARE = (uint16_t)ignitionSchedule3.nextStartCompare;
-         ignitionSchedule3.Status = PENDING;
-         ignitionSchedule3.schedulesSet = 1;
-         ignitionSchedule3.hasNextSchedule = false;
+         IGN3_COMPARE = (uint16_t)ignitionSchedule[2].nextStartCompare;
+         ignitionSchedule[2].Status = PENDING;
+         ignitionSchedule[2].schedulesSet = 1;
+         ignitionSchedule[2].hasNextSchedule = false;
        }
        else { IGN3_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule3.Status == OFF)
+    else if (ignitionSchedule[2].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN3_TIMER_DISABLE();
@@ -1230,33 +1223,33 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[3].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule4.StartCallback();
-      ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule4.startTime = micros();
-      if(ignitionSchedule4.endScheduleSetByDecoder == true) { IGN4_COMPARE = (uint16_t)ignitionSchedule4.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      ignitionSchedule[3].StartCallback();
+      ignitionSchedule[3].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[3].startTime = micros();
+      if(ignitionSchedule[3].endScheduleSetByDecoder == true) { IGN4_COMPARE = (uint16_t)ignitionSchedule[3].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN4_COMPARE = (uint16_t)(IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[3].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
-    else if (ignitionSchedule4.Status == RUNNING)
+    else if (ignitionSchedule[3].Status == RUNNING)
     {
-       ignitionSchedule4.Status = OFF; //Turn off the schedule
-       ignitionSchedule4.EndCallback();
-       ignitionSchedule4.schedulesSet = 0;
-       ignitionSchedule4.endScheduleSetByDecoder = false;
+       ignitionSchedule[3].Status = OFF; //Turn off the schedule
+       ignitionSchedule[3].EndCallback();
+       ignitionSchedule[3].schedulesSet = 0;
+       ignitionSchedule[3].endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the igintion counter
 
        //If there is a next schedule queued up, activate it
-       if(ignitionSchedule4.hasNextSchedule == true)
+       if(ignitionSchedule[3].hasNextSchedule == true)
        {
-         IGN4_COMPARE = (uint16_t)ignitionSchedule4.nextStartCompare;
-         ignitionSchedule4.Status = PENDING;
-         ignitionSchedule4.schedulesSet = 1;
-         ignitionSchedule4.hasNextSchedule = false;
+         IGN4_COMPARE = (uint16_t)ignitionSchedule[3].nextStartCompare;
+         ignitionSchedule[3].Status = PENDING;
+         ignitionSchedule[3].schedulesSet = 1;
+         ignitionSchedule[3].hasNextSchedule = false;
        }
        else { IGN4_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule4.Status == OFF)
+    else if (ignitionSchedule[3].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN4_TIMER_DISABLE();
@@ -1271,33 +1264,33 @@ ISR(TIMER4_COMPC_vect) //ignitionSchedule5
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[4].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule5.StartCallback();
-      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule5.startTime = micros();
-      if(ignitionSchedule5.endScheduleSetByDecoder == true) { IGN5_COMPARE = (uint16_t)ignitionSchedule5.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      ignitionSchedule[4].StartCallback();
+      ignitionSchedule[4].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[4].startTime = micros();
+      if(ignitionSchedule[4].endScheduleSetByDecoder == true) { IGN5_COMPARE = (uint16_t)ignitionSchedule[4].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN5_COMPARE = (uint16_t)(IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[4].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
-    else if (ignitionSchedule5.Status == RUNNING)
+    else if (ignitionSchedule[4].Status == RUNNING)
     {
-      ignitionSchedule5.Status = OFF; //Turn off the schedule
-      ignitionSchedule5.EndCallback();
-      ignitionSchedule5.schedulesSet = 0;
-      ignitionSchedule5.endScheduleSetByDecoder = false;
+      ignitionSchedule[4].Status = OFF; //Turn off the schedule
+      ignitionSchedule[4].EndCallback();
+      ignitionSchedule[4].schedulesSet = 0;
+      ignitionSchedule[4].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule5.hasNextSchedule == true)
+      if(ignitionSchedule[4].hasNextSchedule == true)
       {
-        IGN5_COMPARE = (uint16_t)ignitionSchedule5.nextStartCompare;
-        ignitionSchedule5.Status = PENDING;
-        ignitionSchedule5.schedulesSet = 1;
-        ignitionSchedule5.hasNextSchedule = false;
+        IGN5_COMPARE = (uint16_t)ignitionSchedule[4].nextStartCompare;
+        ignitionSchedule[4].Status = PENDING;
+        ignitionSchedule[4].schedulesSet = 1;
+        ignitionSchedule[4].hasNextSchedule = false;
       }
       else{ IGN5_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule5.Status == OFF)
+    else if (ignitionSchedule[4].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN5_TIMER_DISABLE();
@@ -1312,33 +1305,33 @@ ISR(TIMER4_COMPB_vect) //ignitionSchedule6
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[5].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule6.StartCallback();
-      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule6.startTime = micros();
-      if(ignitionSchedule6.endScheduleSetByDecoder == true) { IGN6_COMPARE = (uint16_t)ignitionSchedule6.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      ignitionSchedule[5].StartCallback();
+      ignitionSchedule[5].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[5].startTime = micros();
+      if(ignitionSchedule[5].endScheduleSetByDecoder == true) { IGN6_COMPARE = (uint16_t)ignitionSchedule[5].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN6_COMPARE = (uint16_t)(IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[5].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
-    else if (ignitionSchedule6.Status == RUNNING)
+    else if (ignitionSchedule[5].Status == RUNNING)
     {
-      ignitionSchedule6.Status = OFF; //Turn off the schedule
-      ignitionSchedule6.EndCallback();
-      ignitionSchedule6.schedulesSet = 0;
-      ignitionSchedule6.endScheduleSetByDecoder = false;
+      ignitionSchedule[5].Status = OFF; //Turn off the schedule
+      ignitionSchedule[5].EndCallback();
+      ignitionSchedule[5].schedulesSet = 0;
+      ignitionSchedule[5].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule6.hasNextSchedule == true)
+      if(ignitionSchedule[5].hasNextSchedule == true)
       {
-        IGN6_COMPARE = (uint16_t)ignitionSchedule6.nextStartCompare;
-        ignitionSchedule6.Status = PENDING;
-        ignitionSchedule6.schedulesSet = 1;
-        ignitionSchedule6.hasNextSchedule = false;
+        IGN6_COMPARE = (uint16_t)ignitionSchedule[5].nextStartCompare;
+        ignitionSchedule[5].Status = PENDING;
+        ignitionSchedule[5].schedulesSet = 1;
+        ignitionSchedule[5].hasNextSchedule = false;
       }
       else{ IGN6_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule6.Status == OFF)
+    else if (ignitionSchedule[5].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN6_TIMER_DISABLE();
@@ -1353,33 +1346,33 @@ ISR(TIMER3_COMPC_vect) //ignitionSchedule6
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[6].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule7.StartCallback();
-      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule7.startTime = micros();
-      if(ignitionSchedule7.endScheduleSetByDecoder == true) { IGN7_COMPARE = (uint16_t)ignitionSchedule7.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      ignitionSchedule[6].StartCallback();
+      ignitionSchedule[6].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[6].startTime = micros();
+      if(ignitionSchedule[6].endScheduleSetByDecoder == true) { IGN7_COMPARE = (uint16_t)ignitionSchedule[6].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN7_COMPARE = (uint16_t)(IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[6].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
-    else if (ignitionSchedule7.Status == RUNNING)
+    else if (ignitionSchedule[6].Status == RUNNING)
     {
-      ignitionSchedule7.Status = OFF; //Turn off the schedule
-      ignitionSchedule7.EndCallback();
-      ignitionSchedule7.schedulesSet = 0;
-      ignitionSchedule7.endScheduleSetByDecoder = false;
+      ignitionSchedule[6].Status = OFF; //Turn off the schedule
+      ignitionSchedule[6].EndCallback();
+      ignitionSchedule[6].schedulesSet = 0;
+      ignitionSchedule[6].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule7.hasNextSchedule == true)
+      if(ignitionSchedule[6].hasNextSchedule == true)
       {
-        IGN7_COMPARE = (uint16_t)ignitionSchedule7.nextStartCompare;
-        ignitionSchedule7.Status = PENDING;
-        ignitionSchedule7.schedulesSet = 1;
-        ignitionSchedule7.hasNextSchedule = false;
+        IGN7_COMPARE = (uint16_t)ignitionSchedule[6].nextStartCompare;
+        ignitionSchedule[6].Status = PENDING;
+        ignitionSchedule[6].schedulesSet = 1;
+        ignitionSchedule[6].hasNextSchedule = false;
       }
       else{ IGN7_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule7.Status == OFF)
+    else if (ignitionSchedule[6].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN7_TIMER_DISABLE();
@@ -1394,33 +1387,33 @@ ISR(TIMER3_COMPB_vect) //ignitionSchedule8
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
+    if (ignitionSchedule[7].Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule8.StartCallback();
-      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule8.startTime = micros();
-      if(ignitionSchedule8.endScheduleSetByDecoder == true) { IGN8_COMPARE = (uint16_t)ignitionSchedule8.endCompare; } //If the decoder has set the end compare value, assign it to the next compare
-      else { IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      ignitionSchedule[7].StartCallback();
+      ignitionSchedule[7].Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      ignitionSchedule[7].startTime = micros();
+      if(ignitionSchedule[7].endScheduleSetByDecoder == true) { IGN8_COMPARE = (uint16_t)ignitionSchedule[7].endCompare; } //If the decoder has set the end compare value, assign it to the next compare
+      else { IGN8_COMPARE = (uint16_t)(IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule[7].duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
     }
-    else if (ignitionSchedule8.Status == RUNNING)
+    else if (ignitionSchedule[7].Status == RUNNING)
     {
-      ignitionSchedule8.Status = OFF; //Turn off the schedule
-      ignitionSchedule8.EndCallback();
-      ignitionSchedule8.schedulesSet = 0;
-      ignitionSchedule8.endScheduleSetByDecoder = false;
+      ignitionSchedule[7].Status = OFF; //Turn off the schedule
+      ignitionSchedule[7].EndCallback();
+      ignitionSchedule[7].schedulesSet = 0;
+      ignitionSchedule[7].endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter
 
       //If there is a next schedule queued up, activate it
-      if(ignitionSchedule8.hasNextSchedule == true)
+      if(ignitionSchedule[7].hasNextSchedule == true)
       {
-        IGN8_COMPARE = (uint16_t)ignitionSchedule8.nextStartCompare;
-        ignitionSchedule8.Status = PENDING;
-        ignitionSchedule8.schedulesSet = 1;
-        ignitionSchedule8.hasNextSchedule = false;
+        IGN8_COMPARE = (uint16_t)ignitionSchedule[7].nextStartCompare;
+        ignitionSchedule[7].Status = PENDING;
+        ignitionSchedule[7].schedulesSet = 1;
+        ignitionSchedule[7].hasNextSchedule = false;
       }
       else{ IGN8_TIMER_DISABLE(); }
     }
-    else if (ignitionSchedule8.Status == OFF)
+    else if (ignitionSchedule[7].Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN8_TIMER_DISABLE();
