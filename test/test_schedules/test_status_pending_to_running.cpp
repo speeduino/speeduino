@@ -84,34 +84,42 @@ void test_status_pending_to_running_inj8(void)
 
 void test_status_pending_to_running_ign1(void)
 {
+#if IGN_CHANNELS >= 1
     initialiseSchedulers();
     setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[0].Status == PENDING) /*Wait*/ ;
     TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule[0].Status);
+#endif
 }
 
 void test_status_pending_to_running_ign2(void)
 {
+#if IGN_CHANNELS >= 2
     initialiseSchedulers();
     setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[1].Status == PENDING) /*Wait*/ ;
     TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule[1].Status);
+#endif
 }
 
 void test_status_pending_to_running_ign3(void)
 {
+#if IGN_CHANNELS >= 3
     initialiseSchedulers();
     setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[2].Status == PENDING) /*Wait*/ ;
     TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule[2].Status);
+#endif
 }
 
 void test_status_pending_to_running_ign4(void)
 {
+#if IGN_CHANNELS >= 4
     initialiseSchedulers();
     setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[3].Status == PENDING) /*Wait*/ ;
     TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule[3].Status);
+#endif
 }
 
 void test_status_pending_to_running_ign5(void)
@@ -126,7 +134,7 @@ void test_status_pending_to_running_ign5(void)
 
 void test_status_pending_to_running_ign6(void)
 {
-#if INJ_CHANNELS >= 6
+#if IGN_CHANNELS >= 6
     initialiseSchedulers();
     setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[5].Status == PENDING) /*Wait*/ ;
@@ -136,7 +144,7 @@ void test_status_pending_to_running_ign6(void)
 
 void test_status_pending_to_running_ign7(void)
 {
-#if INJ_CHANNELS >= 7
+#if IGN_CHANNELS >= 7
     initialiseSchedulers();
     setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[6].Status == PENDING) /*Wait*/ ;
@@ -146,7 +154,7 @@ void test_status_pending_to_running_ign7(void)
 
 void test_status_pending_to_running_ign8(void)
 {
-#if INJ_CHANNELS >= 8
+#if IGN_CHANNELS >= 8
     initialiseSchedulers();
     setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     while(ignitionSchedule[7].Status == PENDING) /*Wait*/ ;

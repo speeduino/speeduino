@@ -76,30 +76,38 @@ void test_status_off_to_pending_inj8(void)
 
 void test_status_off_to_pending_ign1(void)
 {
+#if IGN_CHANNELS >= 1
     initialiseSchedulers();
     setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[0].Status);
+#endif
 }
 
 void test_status_off_to_pending_ign2(void)
 {
+#if IGN_CHANNELS >= 2
     initialiseSchedulers();
     setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[1].Status);
+#endif
 }
 
 void test_status_off_to_pending_ign3(void)
 {
+#if IGN_CHANNELS >= 3
     initialiseSchedulers();
     setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[2].Status);
+#endif
 }
 
 void test_status_off_to_pending_ign4(void)
 {
+#if IGN_CHANNELS >= 4
     initialiseSchedulers();
     setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[3].Status);
+#endif
 }
 
 void test_status_off_to_pending_ign5(void)
@@ -113,7 +121,7 @@ void test_status_off_to_pending_ign5(void)
 
 void test_status_off_to_pending_ign6(void)
 {
-#if INJ_CHANNELS >= 6
+#if IGN_CHANNELS >= 6
     initialiseSchedulers();
     setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[5].Status);
@@ -122,7 +130,7 @@ void test_status_off_to_pending_ign6(void)
 
 void test_status_off_to_pending_ign7(void)
 {
-#if INJ_CHANNELS >= 7
+#if IGN_CHANNELS >= 7
     initialiseSchedulers();
     setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[6].Status);
@@ -131,7 +139,7 @@ void test_status_off_to_pending_ign7(void)
 
 void test_status_off_to_pending_ign8(void)
 {
-#if INJ_CHANNELS >= 8
+#if IGN_CHANNELS >= 8
     initialiseSchedulers();
     setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[7].Status);
