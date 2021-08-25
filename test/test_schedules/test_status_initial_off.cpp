@@ -56,49 +56,49 @@ void test_status_initial_off_inj8(void)
 void test_status_initial_off_ign1(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule1.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[0].Status);
 }
 
 void test_status_initial_off_ign2(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule2.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[1].Status);
 }
 
 void test_status_initial_off_ign3(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule3.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[2].Status);
 }
 
 void test_status_initial_off_ign4(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule4.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[3].Status);
 }
 
 void test_status_initial_off_ign5(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule5.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[4].Status);
 }
 
 void test_status_initial_off_ign6(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule6.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[5].Status);
 }
 
 void test_status_initial_off_ign7(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule7.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[6].Status);
 }
 
 void test_status_initial_off_ign8(void)
 {
     initialiseSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule8.Status);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule[7].Status);
 }
 
 void test_status_initial_off(void)

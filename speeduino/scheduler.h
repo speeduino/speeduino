@@ -205,14 +205,7 @@ extern FuelSchedule fuelSchedule6;
 extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 
-extern Schedule ignitionSchedule1;
-extern Schedule ignitionSchedule2;
-extern Schedule ignitionSchedule3;
-extern Schedule ignitionSchedule4;
-extern Schedule ignitionSchedule5;
-extern Schedule ignitionSchedule6;
-extern Schedule ignitionSchedule7;
-extern Schedule ignitionSchedule8;
+extern Schedule ignitionSchedule[8];
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
