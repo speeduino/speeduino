@@ -68,22 +68,8 @@ extern void (*inj8EndFunction)();
  * They are required for the various spark output modes.
  * @{
 */
-extern void (*ign1StartFunction)();
-extern void (*ign1EndFunction)();
-extern void (*ign2StartFunction)();
-extern void (*ign2EndFunction)();
-extern void (*ign3StartFunction)();
-extern void (*ign3EndFunction)();
-extern void (*ign4StartFunction)();
-extern void (*ign4EndFunction)();
-extern void (*ign5StartFunction)();
-extern void (*ign5EndFunction)();
-extern void (*ign6StartFunction)();
-extern void (*ign6EndFunction)();
-extern void (*ign7StartFunction)();
-extern void (*ign7EndFunction)();
-extern void (*ign8StartFunction)();
-extern void (*ign8EndFunction)();
+extern void (*ignStartFunction[8])();
+extern void (*ignEndFunction[8])();
 /** @} */
 
 void initialiseSchedulers();
@@ -208,7 +194,7 @@ extern FuelSchedule fuelSchedule6;
 extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 
-extern Schedule ignitionSchedule[8];
+extern Schedule ignitionSchedule[IGN_CHANNELS];
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

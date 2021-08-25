@@ -112,34 +112,42 @@ void test_accuracy_duration_inj8(void)
 
 void test_accuracy_duration_ign1(void)
 {
+#if IGN_CHANNELS >= 1
     initialiseSchedulers();
     setIgnitionSchedule1(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[0].Status == PENDING) || (ignitionSchedule[0].Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+#endif
 }
 
 void test_accuracy_duration_ign2(void)
 {
+#if IGN_CHANNELS >= 2
     initialiseSchedulers();
     setIgnitionSchedule2(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[1].Status == PENDING) || (ignitionSchedule[1].Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
+#endif
 }
 
 void test_accuracy_duration_ign3(void)
 {
+#if IGN_CHANNELS >= 3
     initialiseSchedulers();
     setIgnitionSchedule3(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[2].Status == PENDING) || (ignitionSchedule[2].Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
+#endif
 }
 
 void test_accuracy_duration_ign4(void)
 {
+#if IGN_CHANNELS >= 4
     initialiseSchedulers();
     setIgnitionSchedule4(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[3].Status == PENDING) || (ignitionSchedule[3].Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
+#endif
 }
 
 void test_accuracy_duration_ign5(void)
@@ -154,7 +162,7 @@ void test_accuracy_duration_ign5(void)
 
 void test_accuracy_duration_ign6(void)
 {
-#if INJ_CHANNELS >= 6
+#if IGN_CHANNELS >= 6
     initialiseSchedulers();
     setIgnitionSchedule6(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[5].Status == PENDING) || (ignitionSchedule[5].Status == RUNNING) ) /*Wait*/ ;
@@ -164,7 +172,7 @@ void test_accuracy_duration_ign6(void)
 
 void test_accuracy_duration_ign7(void)
 {
-#if INJ_CHANNELS >= 7
+#if IGN_CHANNELS >= 7
     initialiseSchedulers();
     setIgnitionSchedule7(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[6].Status == PENDING) || (ignitionSchedule[6].Status == RUNNING) ) /*Wait*/ ;
@@ -174,7 +182,7 @@ void test_accuracy_duration_ign7(void)
 
 void test_accuracy_duration_ign8(void)
 {
-#if INJ_CHANNELS >= 8
+#if IGN_CHANNELS >= 8
     initialiseSchedulers();
     setIgnitionSchedule8(startCallback, TIMEOUT, DURATION, endCallback);
     while( (ignitionSchedule[7].Status == PENDING) || (ignitionSchedule[7].Status == RUNNING) ) /*Wait*/ ;

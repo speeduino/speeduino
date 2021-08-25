@@ -37,7 +37,7 @@ FuelSchedule fuelSchedule6;
 FuelSchedule fuelSchedule7;
 FuelSchedule fuelSchedule8;
 
-Schedule ignitionSchedule[8];
+Schedule ignitionSchedule[IGN_CHANNELS];
 
 void (*inj1StartFunction)();
 void (*inj1EndFunction)();
@@ -56,22 +56,8 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
-void (*ign1StartFunction)();
-void (*ign1EndFunction)();
-void (*ign2StartFunction)();
-void (*ign2EndFunction)();
-void (*ign3StartFunction)();
-void (*ign3EndFunction)();
-void (*ign4StartFunction)();
-void (*ign4EndFunction)();
-void (*ign5StartFunction)();
-void (*ign5EndFunction)();
-void (*ign6StartFunction)();
-void (*ign6EndFunction)();
-void (*ign7StartFunction)();
-void (*ign7EndFunction)();
-void (*ign8StartFunction)();
-void (*ign8EndFunction)();
+void (*ignStartFunction[8])();
+void (*ignEndFunction[8])();
 
 void initialiseSchedulers()
 {
@@ -95,7 +81,7 @@ void initialiseSchedulers()
     fuelSchedule7.schedulesSet = 0;
     fuelSchedule8.schedulesSet = 0;
     
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < IGN_CHANNELS; i++) {
       ignitionSchedule[i].Status = OFF;
       setIgnitionTimerRunning(i, true);
       ignitionSchedule[i].schedulesSet = 0;
