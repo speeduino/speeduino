@@ -17,9 +17,9 @@ void setup();
 void loop();
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 byte getVE1();
-byte getAdvance1();
+smallAngle_t getAdvance1();
 
-uint16_t calculateInjectorStartAngle(uint16_t, int16_t);
+smallAngle_t calculateInjectorStartAngle(uint16_t, smallAngle_t);
 void calculateIgnitionAngle1(int);
 void calculateIgnitionAngle2(int);
 void calculateIgnitionAngle3(int);
@@ -43,22 +43,22 @@ extern byte curRollingCut; /**< Rolling rev limiter, current ignition channel be
 extern byte rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */
 extern uint32_t rollingCutLastRev; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
-extern int channel1IgnDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-extern int channel2IgnDegrees; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-extern int channel3IgnDegrees; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-extern int channel4IgnDegrees; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-extern int channel5IgnDegrees; /**< The number of crank degrees until cylinder 5 is at TDC */
-extern int channel6IgnDegrees; /**< The number of crank degrees until cylinder 6 is at TDC */
-extern int channel7IgnDegrees; /**< The number of crank degrees until cylinder 7 is at TDC */
-extern int channel8IgnDegrees; /**< The number of crank degrees until cylinder 8 is at TDC */
-extern int channel1InjDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-extern int channel2InjDegrees; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-extern int channel3InjDegrees; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-extern int channel4InjDegrees; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-extern int channel5InjDegrees; /**< The number of crank degrees until cylinder 5 is at TDC */
-extern int channel6InjDegrees; /**< The number of crank degrees until cylinder 6 is at TDC */
-extern int channel7InjDegrees; /**< The number of crank degrees until cylinder 7 is at TDC */
-extern int channel8InjDegrees; /**< The number of crank degrees until cylinder 8 is at TDC */
+extern smallAngle_t channel1IgnDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+extern smallAngle_t channel2IgnDegrees; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel3IgnDegrees; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel4IgnDegrees; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel5IgnDegrees; /**< The number of crank degrees until cylinder 5 is at TDC */
+extern smallAngle_t channel6IgnDegrees; /**< The number of crank degrees until cylinder 6 is at TDC */
+extern smallAngle_t channel7IgnDegrees; /**< The number of crank degrees until cylinder 7 is at TDC */
+extern smallAngle_t channel8IgnDegrees; /**< The number of crank degrees until cylinder 8 is at TDC */
+extern smallAngle_t channel1InjDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+extern smallAngle_t channel2InjDegrees; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel3InjDegrees; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel4InjDegrees; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+extern smallAngle_t channel5InjDegrees; /**< The number of crank degrees until cylinder 5 is at TDC */
+extern smallAngle_t channel6InjDegrees; /**< The number of crank degrees until cylinder 6 is at TDC */
+extern smallAngle_t channel7InjDegrees; /**< The number of crank degrees until cylinder 7 is at TDC */
+extern smallAngle_t channel8InjDegrees; /**< The number of crank degrees until cylinder 8 is at TDC */
 
 /** @name Staging
  * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   

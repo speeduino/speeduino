@@ -517,23 +517,23 @@ extern bool channel6InjEnabled;
 extern bool channel7InjEnabled;
 extern bool channel8InjEnabled;
 
-extern int ignition1EndAngle;
-extern int ignition2EndAngle;
-extern int ignition3EndAngle;
-extern int ignition4EndAngle;
-extern int ignition5EndAngle;
-extern int ignition6EndAngle;
-extern int ignition7EndAngle;
-extern int ignition8EndAngle;
+extern smallAngle_t ignition1EndAngle;
+extern smallAngle_t ignition2EndAngle;
+extern smallAngle_t ignition3EndAngle;
+extern smallAngle_t ignition4EndAngle;
+extern smallAngle_t ignition5EndAngle;
+extern smallAngle_t ignition6EndAngle;
+extern smallAngle_t ignition7EndAngle;
+extern smallAngle_t ignition8EndAngle;
 
-extern int ignition1StartAngle;
-extern int ignition2StartAngle;
-extern int ignition3StartAngle;
-extern int ignition4StartAngle;
-extern int ignition5StartAngle;
-extern int ignition6StartAngle;
-extern int ignition7StartAngle;
-extern int ignition8StartAngle;
+extern smallAngle_t ignition1StartAngle;
+extern smallAngle_t ignition2StartAngle;
+extern smallAngle_t ignition3StartAngle;
+extern smallAngle_t ignition4StartAngle;
+extern smallAngle_t ignition5StartAngle;
+extern smallAngle_t ignition6StartAngle;
+extern smallAngle_t ignition7StartAngle;
+extern smallAngle_t ignition8StartAngle;
 
 //These are variables used across multiple files
 extern const byte PROGMEM fsIntIndex[33];
@@ -565,9 +565,9 @@ extern volatile uint16_t ignitionCount; /**< The count of ignition events that h
   extern byte secondaryTriggerEdge;
   extern byte tertiaryTriggerEdge;
 #endif
-extern int CRANK_ANGLE_MAX;
-extern int CRANK_ANGLE_MAX_IGN;
-extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern bigAngle_t CRANK_ANGLE_MAX;
+extern bigAngle_t CRANK_ANGLE_MAX_IGN;
+extern bigAngle_t CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10;     /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
 extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents one of the injector channels and it's HW test status */
@@ -625,9 +625,9 @@ struct statuses {
   int dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */
   byte battery10;     /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
-  int8_t advance;     /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
-  int8_t advance1;    /**< The advance value from ignition table 1 */
-  int8_t advance2;    /**< The advance value from ignition table 2 */
+  smallAngle_t advance;     /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
+  smallAngle_t advance1;    /**< The advance value from ignition table 1 */
+  smallAngle_t advance2;    /**< The advance value from ignition table 2 */
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount;    /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */

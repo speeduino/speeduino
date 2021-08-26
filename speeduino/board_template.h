@@ -8,6 +8,13 @@
 */
   #define PORT_TYPE uint32_t //Size of the port variables (Eg inj1_pin_port). Most systems use a byte, but SAMD21 and possibly others are a 32-bit unsigned int
   #define PINMASK_TYPE uint32_t
+  #define smallAngle_t int8_t //usually in8_t
+  #define bigAngle_t int16_t //usually in16_t
+  const uint8_t ANGLE_SHIFTS = 0; //2^x
+  const uint8_t ANGLE_SHIFT_POWER = (1UL<<ANGLE_SHIFTS); //2^x
+  #define scaleCrankAngle(angle) ((angle)<<ANGLE_SHIFTS) //This set the crank resolution and type.
+  #define scaleCrankAngleDown(angle) ((angle)>>ANGLE_SHIFTS) //This set the crank resolution and type.
+
   #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class

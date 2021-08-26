@@ -110,14 +110,14 @@ bool channel6InjEnabled = false;
 bool channel7InjEnabled = false;
 bool channel8InjEnabled = false;
 
-int ignition1EndAngle = 0;
-int ignition2EndAngle = 0;
-int ignition3EndAngle = 0;
-int ignition4EndAngle = 0;
-int ignition5EndAngle = 0;
-int ignition6EndAngle = 0;
-int ignition7EndAngle = 0;
-int ignition8EndAngle = 0;
+smallAngle_t ignition1EndAngle = 0;
+smallAngle_t ignition2EndAngle = 0;
+smallAngle_t ignition3EndAngle = 0;
+smallAngle_t ignition4EndAngle = 0;
+smallAngle_t ignition5EndAngle = 0;
+smallAngle_t ignition6EndAngle = 0;
+smallAngle_t ignition7EndAngle = 0;
+smallAngle_t ignition8EndAngle = 0;
 
 //These are variables used across multiple files
 /// int (member) indexes in fullStatus array
@@ -149,9 +149,9 @@ volatile uint16_t ignitionCount; /**< The count of ignition events that have tak
   byte secondaryTriggerEdge;
   byte tertiaryTriggerEdge;
 #endif
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+bigAngle_t CRANK_ANGLE_MAX = scaleCrankAngle(720);
+bigAngle_t CRANK_ANGLE_MAX_IGN = scaleCrankAngle(360);
+bigAngle_t CRANK_ANGLE_MAX_INJ = scaleCrankAngle(360); ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
