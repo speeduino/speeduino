@@ -1,23 +1,24 @@
-import read_tsini
 import gen_printpageascii
-import os
-import sys
+from pathlib import Path
+from TsIni_Speeduino import load_speeduino_ini, ini_path
 
 Import("env")
 
-def before_build():
-    print("before_build: begin")
+# SCons builder that generates pagePrintAscii.g.hpp
+def genprintpageascii_build_action(target, source, env):
+    speeduino_ini = load_speeduino_ini()
+    print(f'Generating {str(target[0])}')
+    with open(target[0].get_abspath(), 'w') as f:
+        gen_printpageascii.generate_printpageascii(speeduino_ini, f)
 
-    iniFile = os.path.join(env['PROJECT_DIR'], 'reference', 'speeduino.ini')
-    print(f'Using INI file {iniFile}')
+print_page_genfile = File(Path(env['PROJECT_SRC_DIR']) / 'pagePrintAscii.g.hpp')
+print_page_file = File(Path(env['PROJECT_SRC_DIR']) / 'pagePrintAscii.cpp')
+ini_file = File(ini_path())
 
-    ts_ini_lines = read_tsini.read(iniFile)
+#Setup a SCons Builder that generates the print page ASCII code
+env.Append(BUILDERS = {'print_ascii_builder': Builder(action=genprintpageascii_build_action)})
+# Setup dependencies for the builder
+env.print_ascii_builder(print_page_genfile, ini_file)
 
-    print_page_genfile = os.path.join(env['PROJECT_SRC_DIR'], 'pagePrintAscii.g.hpp')
-    print(f'Generating {print_page_genfile}')
-    with open(print_page_genfile, 'w') as f:
-        gen_printpageascii.generate_printpageascii(ts_ini_lines, f)
-    
-    print("before_build: end")
-
-before_build()
+# Finally make the non-generated file dependent on the generated file
+env.Depends(print_page_file, print_page_genfile)

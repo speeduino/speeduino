@@ -10,17 +10,7 @@ The generated code is not stand alone. It relies on supporting code defined in t
 Example usage: py ./gen-printpageascii.py > ../speeduino/page_printascii.g.hpp
 """
 
-import os
-import sys
-import itertools
-import more_itertools
-import read_tsini
-
-def take_if(item):
-    if isinstance(item, read_tsini.IfDef):
-        return item.IfLines
-    else:
-        return item
+from TsIniParser import BitVariable, ScalarVariable, Array1dVariable, Page, Variable, TableArray1dVariable, TableArray2dVariable, CurveArray1dVariable
 
 # Code printing
 
@@ -29,8 +19,9 @@ OUTPUT_VAR_NAME = 'target'
 
 def generate_printfields(page_num, fields, file):
     """ Print each field in the page """
+
     def get_fullfieldname(page_num, field):
-        return f'configPage{page_num}.{field.CodeFieldName}'
+        return f'configPage{page_num}.{field.CodeName}'
 
     def gen_scalar(page_num, field):
         return f'\t{OUTPUT_VAR_NAME}.println({get_fullfieldname(page_num, field)});'
@@ -42,87 +33,56 @@ def generate_printfields(page_num, fields, file):
         return f'\tprint_array({OUTPUT_VAR_NAME}, {get_fullfieldname(page_num, field)});'
     
     def gen_unknown(page_num, field):
-        return f'\t// Unknown field: {field.Field}'
+        return f'\t// Unknown field: {field.name}'
 
     def apply_overrides(fields):
-        return ((field.CodeOverride if isinstance(field.CodeOverride, read_tsini.FieldBase) else field) for field in fields)
+        # Note that set is unordered - we want to preserve order here
+        return ((field.CodeOverride if isinstance(field.CodeOverride, Variable) else field) for field in fields)
 
     def unique_fields(fields):
-         return {field.Field : field for field in fields}.values()
+         return {field.CodeName : field for field in fields}.values()
 
     print_map = {
-        read_tsini.ScalarField : gen_scalar,
-        read_tsini.BitField : gen_bit,
-        read_tsini.OneDimArrayField: gen_array
+        ScalarVariable : gen_scalar,
+        BitVariable : gen_bit,
+        Array1dVariable: gen_array,
+        CurveArray1dVariable: gen_array,
     }       
 
-    for generator, field in ((print_map.get(type(field), gen_unknown), field) for field in unique_fields(apply_overrides(fields))): 
+    fields = apply_overrides(fields)
+    fields = unique_fields(fields)
+    for generator, field in ((print_map.get(type(field), gen_unknown), field) for field in fields): 
         print(generator(page_num, field), file=file)
 
-def generate_printtables(tables, file):
+def generate_printtables(print_table_vars, file):
     """ Print each table in the page """
+    tables = []
+    for t in print_table_vars:
+        if t.table not in tables:
+            tables.append(t.table)    
     for table in tables: 
-        tableName = table.Title.strip('"')
-        print(f'\t{OUTPUT_VAR_NAME}.println(F("\\n{tableName}"));', file=file)
-        print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table.CodeFieldName});', file=file)
+        print(f'\t{OUTPUT_VAR_NAME}.println(F("\\n{table.title}"));', file=file)
+        print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table.CodeName});', file=file)
 
-def generate_pageprintfunction(function_name, page_num, fields, file):
+def generate_pageprintfunction(function_name, page_node, file):
     print(f'static void {function_name}(Print &{OUTPUT_VAR_NAME}) {{', file=file)
-    print(f'\t{OUTPUT_VAR_NAME}.println(F("\\nPg {page_num} Cfg"));', file=file)
+    print(f'\t{OUTPUT_VAR_NAME}.println(F("\\nPg {page_node.page_num} Cfg"));', file=file)
 
-    print_fields = (field for field in fields if not field.Table)
-    generate_printfields(page_num, print_fields, file)
-    
-    # Each table in the INI file is at least 3 entries - we only need one
-    tables = list(dict.fromkeys((field.Table for field in fields if field.Table)))
-    generate_printtables(tables, file)
+    all_vars = [v for v in page_node.values() if isinstance(v, Variable)]
+    print_table_vars = [v for v in all_vars if isinstance(v, TableArray1dVariable) or isinstance(v, TableArray2dVariable)]
+    print_fields = [v for v in all_vars if v not in print_table_vars]
+
+    generate_printfields(page_node.page_num, print_fields, file)
+    generate_printtables(print_table_vars, file)
 
     print('}', file=file) 
-    print('', file=file)  
+    print('', file=file)
 
-def generate_printpageascii(ts_ini_lines, file):
-    def is_page(item):
-        return isinstance(item, read_tsini.KeyValue) and item.Key == 'page'
 
-    def is_table(item):
-        return isinstance(item, read_tsini.Table)
-
-    def is_actionable(item):
-        return not isinstance(item, read_tsini.Comment) \
-            and not isinstance(item, read_tsini.UnknownLine) \
-            and not isinstance(item, read_tsini.BlankLine) \
-            and not isinstance(item, read_tsini.Define)
-
-    def is_field(item):
-        return isinstance(item, read_tsini.FieldBase)
-
-    def find_table(tables, field):
-        if is_field(field):
-            for key, items in tables.items():
-                if any(item.Values[0]==field.Field for item in items):
-                    return key
-        return None
-
+def generate_printpageascii(parsetree, file):
+           
     def get_printpagefunctionname(page_num):
         return f'printPage{page_num}'
-
-    # Gather 3D table information - required later   
-    tables = (item for item in ts_ini_lines["TableEditor"] if is_actionable(item))
-    # Group into tables
-    tables = { table[0]: table[1:] for table in 
-                (group for group in 
-                    more_itertools.split_before(tables, is_table))}
-
-    # Find all non-comment lines in the "Constants" section & take one side of any #if 
-    page_lines = more_itertools.collapse((take_if(item) for item in ts_ini_lines["Constants"] if is_actionable(item)))
-    # Tag each line with it's table
-    field_table_setter = lambda item: setattr(item, 'Table', find_table(tables, item)) or item
-    page_lines = (field_table_setter(item) for item in page_lines)
-    # Group into pages
-    pages = { page[0].Values[0]: page[1:] for page in 
-                (group for group in 
-                    more_itertools.split_before(page_lines, is_page)
-                if is_page(group[0]))}
 
     print('/*', file=file)
     print('DO NOT EDIT THIS FILE.', file=file)
@@ -131,19 +91,20 @@ def generate_printpageascii(ts_ini_lines, file):
     print('*/', file=file)
     print('', file=file)
 
-    for page in pages.items():
-        generate_pageprintfunction(get_printpagefunctionname(page[0]), *page, file)
+    pages = [p for p in parsetree['Constants'].values() if isinstance(p, Page)]
+    for page in pages:
+        generate_pageprintfunction(get_printpagefunctionname(page.page_num), page, file)
 
     print(f'void printPageAscii(byte pageNum, Print &{OUTPUT_VAR_NAME}) {{', file=file)
     print('\tswitch(pageNum) {', file=file)
-    for page in pages.items():
-        print(f'\t\tcase {page[0]}:', file=file)
-        print(f'\t\t{get_printpagefunctionname(page[0])}({OUTPUT_VAR_NAME});', file=file)
+    for page in pages:
+        print(f'\t\tcase {page.page_num}:', file=file)
+        print(f'\t\t{get_printpagefunctionname(page.page_num)}({OUTPUT_VAR_NAME});', file=file)
         print(f'\t\tbreak;', file=file)
     print('\t}', file=file) 
     print('}', file=file)
 
 if __name__ == "__main__":
-    currDir = os.path.dirname(os.path.abspath(__file__))
-    iniFile = os.path.join(currDir, '..', 'reference', 'speeduino.ini')
-    generate_printpageascii(read_tsini.read(iniFile), sys.stdout)
+    import sys
+    from TsIni_Speeduino import load_speeduino_ini
+    generate_printpageascii(load_speeduino_ini(), sys.stdout)
