@@ -51,7 +51,6 @@ struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; ///< 6 bin wmi correction table for timing advance (2D)
-struct table2D tpsCurveTable; /// For non linear TPS curves (2D)
 struct table2D ego_PropTable; /// For ego Propotional Control (2D)
 struct table2D ego_IntegralTable; /// For ego Integral Control (2D)
 

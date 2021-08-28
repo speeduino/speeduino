@@ -459,7 +459,6 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
-extern struct table2D tpsCurveTable; // For non linear TPS curves (2D)
 extern struct table2D ego_PropTable; // For ego Propotional Control (2D)
 extern struct table2D ego_IntegralTable; // For ego Integral Control (2D)
 
@@ -1085,8 +1084,6 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-  byte tpsCurveADC[3];    //X axis ADC values for TPS curve
-  byte tpsCurveTPS[3];    //Y axis TPS values for TPS curve
   byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
   byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
   byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
