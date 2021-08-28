@@ -287,8 +287,8 @@
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
-#define EGO_ALGORITHM_SIMPLE  0
-#define EGO_ALGORITHM_PID     2
+#define EGO_ALGORITHM_NARROWBAND  0
+#define EGO_ALGORITHM_WIDEBAND     2
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
@@ -398,6 +398,7 @@ but is instead dictates how fast certain operations will be allowed to run. Lowe
 This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215 */
 #define OFFSET_FUELTRIM 127 ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downards to allow for negative spark timing
+#define OFFSET_AFR_ERR 127 ///< AFR error Prop and Int control offset.
 
 #define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -458,6 +459,9 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D tpsCurveTable; // For non linear TPS curves (2D)
+extern struct table2D ego_PropTable; // For ego Propotional Control (2D)
+extern struct table2D ego_IntegralTable; // For ego Integral Control (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -555,6 +559,7 @@ extern volatile byte toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
+extern bool O2_Readflag; /**< Flag to indicate O2 has been updated since the last main time based loop by O2 algo  */
 //The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
 #if defined(CORE_SAMD21)
   extern PinStatus primaryTriggerEdge;
@@ -994,11 +999,11 @@ struct config6 {
   byte vvtEnabled : 1;   ///< 
   byte engineProtectType : 2;
 
-  byte egoKP;
-  byte egoKI;
-  byte egoKD;
+  byte egoFuelMaxLoad;  /// value that represents maximum fuel load for setting ego ignition counts to run the algo. Fuel load above this will freeze O2 correction
+  byte egoSensorDelay; /// minimum update rate in secx10 that the algo can update to allow O2 sensor value to update.
   byte egoTemp;     ///< The temperature above which closed loop is enabled
-  byte egoCount;    ///< The number of ignition cylces per (ego AFR ?) step
+  byte egoCountL;    ///< The number of ignition cylces per step at low load
+  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte vvtMode : 2; ///< Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; ///< Load source for VVT (TPS or MAP)
   byte vvtPWMdir : 1; ///< VVT direction (normal or reverse)
@@ -1006,11 +1011,13 @@ struct config6 {
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
   byte egoLimit;    /// Maximum amount the closed loop EGO control will vary the fueling
-  byte ego_min;     /// AFR must be above this for closed loop to function
-  byte ego_max;     /// AFR must be below this for closed loop to function
-  byte ego_sdelay;  /// Time in seconds after engine starts that closed loop becomes available
+  byte egoMin;     /// AFR measured must be above this for closed loop to function
+  byte egoMax;     /// AFR measured must be below this for closed loop to function
+  byte egoStartdelay;  /// Time in seconds after engine starts that closed loop becomes available
   byte egoRPM;      /// RPM must be above this for closed loop to function
-  byte egoTPSMax;   /// TPS must be below this for closed loop to function
+  byte egoAFRTargetMin;  /// AFR target value below this will freeze closed loop control
+  byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
+  byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
   byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
@@ -1078,6 +1085,12 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+  byte tpsCurveADC[3];    //X axis ADC values for TPS curve
+  byte tpsCurveTPS[3];    //Y axis TPS values for TPS curve
+  byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
+  byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
+  byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
+  byte egoIntDelay;       // ego integral delay x control loops
 
 #if defined(CORE_AVR)
   };

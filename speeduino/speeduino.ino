@@ -192,7 +192,8 @@ void loop()
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
-      AFRnextCycle = 0;
+      egoNextCycleCount = 0;
+      AFRnextTimeDelay = 0;
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
@@ -225,6 +226,14 @@ void loop()
       #if TPS_READ_FREQUENCY == 15
         readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
       #endif
+	  
+      if (O2_Readflag == false) 
+      { // O2 has not been updated since the last loop by O2 algo (engine cycle based) so update it here to enfore a minimum update rate for logging etc.
+        readO2(); // Moved HRW
+        readO2_2(); // Moved HRW
+      }
+      else { O2_Readflag = false; } // Reset flag to see if O2 algo reads the O2 next loop.
+	  
       #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -273,6 +282,9 @@ void loop()
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      #if TPS_READ_FREQUENCY == 30
+        readTPS();
+      #endif
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
@@ -282,10 +294,6 @@ void loop()
       //FOR TEST PURPOSES ONLY!!!
       //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
       //else { vvt2_pwm_value = 1; }
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
-
       if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -294,8 +302,8 @@ void loop()
       //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
-      readO2();
-      readO2_2();
+      //readO2(); - Moved HRW
+      //readO2_2(); - Moved HRW
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
@@ -1262,11 +1270,11 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
   else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.egoStartdelay) ) {
+    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include measured O2 AFR from sensor (vs target) if enabled
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich / target AFR, if enabled.
   }
   iCorrections = (corrections << bitShift) / 100;
 
@@ -1274,7 +1282,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.egoStartdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }

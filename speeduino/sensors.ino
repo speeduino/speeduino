@@ -520,8 +520,9 @@ void readO2()
 
 void readO2_2()
 {
-  //Second O2 currently disabled as its not being used
-  //Get the current O2 value.
+  if(configPage6.egoType > 0)
+  {
+  //Get the current O2 value of sensor 2.
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
     tempReading = fastMap1023toX(AnChannel[pinO2_2-A0], 511); //Get the current O2 value.
@@ -532,6 +533,12 @@ void readO2_2()
   #endif
   currentStatus.O2_2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
   currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  }
+  else
+  {
+	currentStatus.O2_2ADC = 0;
+	currentStatus.O2_2 = 0;
+  }
 }
 
 void readBat()
