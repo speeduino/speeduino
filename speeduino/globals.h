@@ -287,8 +287,8 @@
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
-#define EGO_ALGORITHM_NARROWBAND  0
-#define EGO_ALGORITHM_WIDEBAND     2
+#define EGO_ALGORITHM_SINGLEO2  0
+#define EGO_ALGORITHM_DUALO2    1
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
@@ -878,8 +878,11 @@ struct config2 {
   int8_t rtc_trim;
   byte idleAdvVss;
   byte mapSwitchPoint;
+  byte unused2a_126[1];
+  byte unused2b_127 : 1;
+  byte egoResetwAFR : 1;  ///<ego freeze or reset output when AFR target less than min
+  byte egoResetwfuelLoad : 1;  ///<ego freeze or reset output when fuel load greater than max
 
-  byte unused2_95[2];
 
 #if defined(CORE_AVR)
   };
@@ -992,17 +995,17 @@ See the ini file for further reference.
 */
 struct config6 {
 
-  byte egoAlgorithm : 2; ///< EGO Algorithm - Simple, PID, No correction
+  byte egoAlgorithm : 2; ///< EGO Algorithm 0=SingleSensor, 1=DualBank, 3 =INVALID, 4= No correction
   byte egoType : 2;      ///< EGO Sensor Type 0=Disabled/None, 1=Narrowband, 2=Wideband
   byte boostEnabled : 1; ///< Boost control enabled 0 =off, 1 = on
   byte vvtEnabled : 1;   ///< 
   byte engineProtectType : 2;
 
-  byte egoFuelMaxLoad;  /// value that represents maximum fuel load for setting ego ignition counts to run the algo. Fuel load above this will freeze O2 correction
+  byte egoFuelLoadMax;  /// value that represents maximum fuel load for setting ego ignition counts to run the algo. Fuel load above this will freeze O2 correction
+  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte egoSensorDelay; /// minimum update rate in secx10 that the algo can update to allow O2 sensor value to update.
   byte egoTemp;     ///< The temperature above which closed loop is enabled
   byte egoCountL;    ///< The number of ignition cylces per step at low load
-  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte vvtMode : 2; ///< Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; ///< Load source for VVT (TPS or MAP)
   byte vvtPWMdir : 1; ///< VVT direction (normal or reverse)
@@ -1015,8 +1018,6 @@ struct config6 {
   byte egoStartdelay;  /// Time in seconds after engine starts that closed loop becomes available
   byte egoRPM;      /// RPM must be above this for closed loop to function
   byte egoAFRTargetMin;  /// AFR target value below this will freeze closed loop control
-  byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
-  byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
   byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
@@ -1084,10 +1085,6 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-  byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
-  byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
-  byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
-  byte egoIntDelay;       // ego integral delay x control loops
 
 #if defined(CORE_AVR)
   };
@@ -1146,24 +1143,15 @@ struct config9 {
   byte unused10_165;
   byte unused10_166;
   byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
-  byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
-  byte unused10_179;
-  byte unused10_180;
-  byte unused10_181;
-  byte unused10_182;
-  byte unused10_183;
-  byte unused10_184;
-  byte unused10_185;
+  
+  byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
+  byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
+  byte egoIntDelay;       // ego integral delay x control loops
+  byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
+  byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
+  byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
+
+
   byte unused10_186;
   byte unused10_187;
   byte unused10_188;
