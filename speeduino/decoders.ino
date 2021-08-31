@@ -383,7 +383,6 @@ void triggerSetup_missingTooth()
   
   if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) // Tacho config 0 = WhlToothSync
   { 
-    TACHO_PULSE_HIGH(); //Turn off tacho output on init
     decoderTachoOutSkipTeeth = (configPage4.triggerTeeth >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
     if (decoderTachoOutSkipTeeth < (configPage4.triggerMissingTeeth * 2)){ decoderTachoOutSkipTeeth = (configPage4.triggerMissingTeeth * 2); } // limit to missing teeth * 2
   }
@@ -732,8 +731,7 @@ void triggerSetup_DualWheel()
   triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) // Tacho config 0 = WhlToothSync
-  {
-    TACHO_PULSE_HIGH(); //Turn off tacho output on init	  
+  { 
     decoderTachoOutSkipTeeth = (configPage4.triggerTeeth >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
     if (decoderTachoOutSkipTeeth < 1){ decoderTachoOutSkipTeeth = 1; } // limit to 1 tooth to skip
   }
