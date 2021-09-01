@@ -122,14 +122,14 @@ uint32_t getIgn7Counter();
 uint32_t getIgn8Counter();
 
 //those small functions are needed to use ignition counter compare definitions on different platvorms
-void setIgnition1Compare(uint32_t value);
-void setIgnition2Compare(uint32_t value);
-void setIgnition3Compare(uint32_t value);
-void setIgnition4Compare(uint32_t value);
-void setIgnition5Compare(uint32_t value);
-void setIgnition6Compare(uint32_t value);
-void setIgnition7Compare(uint32_t value);
-void setIgnition8Compare(uint32_t value);
+void setIgnition1Compare(COMPARE_TYPE value);
+void setIgnition2Compare(COMPARE_TYPE value);
+void setIgnition3Compare(COMPARE_TYPE value);
+void setIgnition4Compare(COMPARE_TYPE value);
+void setIgnition5Compare(COMPARE_TYPE value);
+void setIgnition6Compare(COMPARE_TYPE value);
+void setIgnition7Compare(COMPARE_TYPE value);
+void setIgnition8Compare(COMPARE_TYPE value);
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 

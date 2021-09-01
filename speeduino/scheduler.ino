@@ -550,20 +550,20 @@ uint32_t getIgn6Counter() {return IGN6_COUNTER;}
 uint32_t getIgn7Counter() {return IGN7_COUNTER;}
 uint32_t getIgn8Counter() {return IGN8_COUNTER;}
 
-void setIgnition1Compare(COMPARE_TYPE compareValue){IGN1_COMPARE =(uint16_t)compareValue;}
-void setIgnition2Compare(COMPARE_TYPE compareValue){IGN2_COMPARE =(uint16_t)compareValue;}
-void setIgnition3Compare(COMPARE_TYPE compareValue){IGN3_COMPARE =(uint16_t)compareValue;}
-void setIgnition4Compare(COMPARE_TYPE compareValue){IGN4_COMPARE =(uint16_t)compareValue;}
-void setIgnition5Compare(COMPARE_TYPE compareValue){IGN5_COMPARE =(uint16_t)compareValue;}
-void setIgnition6Compare(COMPARE_TYPE compareValue){IGN6_COMPARE =(uint16_t)compareValue;}
-void setIgnition7Compare(COMPARE_TYPE compareValue){IGN7_COMPARE =(uint16_t)compareValue;}
-void setIgnition8Compare(COMPARE_TYPE compareValue){IGN8_COMPARE =(uint16_t)compareValue;}
+void setIgnition1Compare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
+void setIgnition2Compare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
+void setIgnition3Compare(COMPARE_TYPE compareValue){IGN3_COMPARE =compareValue;}
+void setIgnition4Compare(COMPARE_TYPE compareValue){IGN4_COMPARE =compareValue;}
+void setIgnition5Compare(COMPARE_TYPE compareValue){IGN5_COMPARE =compareValue;}
+void setIgnition6Compare(COMPARE_TYPE compareValue){IGN6_COMPARE =compareValue;}
+void setIgnition7Compare(COMPARE_TYPE compareValue){IGN7_COMPARE =compareValue;}
+void setIgnition8Compare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
 
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle, int channelIgnDegrees, int ignitionEndAngle, unsigned long duration)
 {  
   unsigned long timeout;
-  uint16_t timeout_timer_compare; 
+  COMPARE_TYPE timeout_timer_compare; 
   int16_t tempCrankAngle;
   int16_t tempEndAngle;     
 
@@ -585,7 +585,7 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
 
       noInterrupts(); // make sure start and end values are updated simultaneously
       ignitionSchedule->endCompare = ignitionSchedule->getIgnCounter() + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-      ignitionSchedule->startCompare = ignitionSchedule->endCompare - (uint16_t)uS_TO_TIMER_COMPARE(duration);   
+      ignitionSchedule->startCompare = ignitionSchedule->endCompare - (COMPARE_TYPE)uS_TO_TIMER_COMPARE(duration);   
       ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare - uS_TO_TIMER_COMPARE((IGNITION_REFRESH_THRESHOLD+60)));//set up time for staging (actual impulse starting and timing is done totally in interrupts)
       ignitionSchedule->Status = PENDING; //Turn this schedule on
       interrupts();      
