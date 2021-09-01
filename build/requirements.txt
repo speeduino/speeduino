@@ -1,0 +1,2 @@
+https://github.com/adbancroft/TunerStudioIniParser/archive/refs/tags/v0.5.zip#egg=tsiniparser
+# https://github.com/adbancroft/TunerStudioIniParser/archive/refs/heads/master.zip#egg=tsiniparser
