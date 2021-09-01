@@ -37,6 +37,9 @@ STM32_CAN Can0 (_CAN1,DEF);
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+#elif defined(STM32F411xE)
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #else //default case, internal flash as EEPROM for STM32F4
