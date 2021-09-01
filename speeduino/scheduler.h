@@ -112,14 +112,14 @@ inline void ign7TimerEnable();
 inline void ign8TimerEnable();
 
 //those small functions are needed to use ignition counter definitions on different platvorms
-inline uint32_t getIgn1Counter();
-inline uint32_t getIgn2Counter();
-inline uint32_t getIgn3Counter();
-inline uint32_t getIgn4Counter();
-inline uint32_t getIgn5Counter();
-inline uint32_t getIgn6Counter();
-inline uint32_t getIgn7Counter();
-inline uint32_t getIgn8Counter();
+inline COMPARE_TYPE getIgn1Counter();
+inline COMPARE_TYPE getIgn2Counter();
+inline COMPARE_TYPE getIgn3Counter();
+inline COMPARE_TYPE getIgn4Counter();
+inline COMPARE_TYPE getIgn5Counter();
+inline COMPARE_TYPE getIgn6Counter();
+inline COMPARE_TYPE getIgn7Counter();
+inline COMPARE_TYPE getIgn8Counter();
 
 //those small functions are needed to use ignition counter compare definitions on different platvorms
 inline void setIgnition1Compare(COMPARE_TYPE value);
@@ -201,7 +201,7 @@ struct Schedule {
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 
-  uint32_t (*getIgnCounter)(); //Function for getting counter value
+  COMPARE_TYPE (*getIgnCounter)(); //Function for getting counter value
   void (*setIgnitionCompare)(COMPARE_TYPE); //Function for setting counter compare value
   void (*ignTimerEnable)(); //Function to enable timer for specific channel
   int channelIgnDegrees=0; // The number of crank degrees until corresponding cylinder is at TDC (cylinder1 is obviously 0 for virtually ALL engines, but there's some weird ones)

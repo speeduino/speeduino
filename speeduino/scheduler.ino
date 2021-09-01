@@ -541,14 +541,14 @@ inline void ign6TimerEnable(){IGN6_TIMER_ENABLE();}
 inline void ign7TimerEnable(){IGN7_TIMER_ENABLE();}
 inline void ign8TimerEnable(){IGN8_TIMER_ENABLE();}
 
-inline uint32_t getIgn1Counter() {return IGN1_COUNTER;}
-inline uint32_t getIgn2Counter() {return IGN2_COUNTER;}
-inline uint32_t getIgn3Counter() {return IGN3_COUNTER;}
-inline uint32_t getIgn4Counter() {return IGN4_COUNTER;}
-inline uint32_t getIgn5Counter() {return IGN5_COUNTER;}
-inline uint32_t getIgn6Counter() {return IGN6_COUNTER;}
-inline uint32_t getIgn7Counter() {return IGN7_COUNTER;}
-inline uint32_t getIgn8Counter() {return IGN8_COUNTER;}
+inline COMPARE_TYPE getIgn1Counter() {return IGN1_COUNTER;}
+inline COMPARE_TYPE getIgn2Counter() {return IGN2_COUNTER;}
+inline COMPARE_TYPE getIgn3Counter() {return IGN3_COUNTER;}
+inline COMPARE_TYPE getIgn4Counter() {return IGN4_COUNTER;}
+inline COMPARE_TYPE getIgn5Counter() {return IGN5_COUNTER;}
+inline COMPARE_TYPE getIgn6Counter() {return IGN6_COUNTER;}
+inline COMPARE_TYPE getIgn7Counter() {return IGN7_COUNTER;}
+inline COMPARE_TYPE getIgn8Counter() {return IGN8_COUNTER;}
 
 inline void setIgnition1Compare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
 inline void setIgnition2Compare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
