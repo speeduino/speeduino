@@ -196,8 +196,8 @@ struct Schedule {
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  unsigned int nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 
