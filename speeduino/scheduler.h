@@ -102,34 +102,34 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,
 
 void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 
-void ign1TimerEnable();
-void ign2TimerEnable();
-void ign3TimerEnable();
-void ign4TimerEnable();
-void ign5TimerEnable();
-void ign6TimerEnable();
-void ign7TimerEnable();
-void ign8TimerEnable();
+inline void ign1TimerEnable();
+inline void ign2TimerEnable();
+inline void ign3TimerEnable();
+inline void ign4TimerEnable();
+inline void ign5TimerEnable();
+inline void ign6TimerEnable();
+inline void ign7TimerEnable();
+inline void ign8TimerEnable();
 
 //those small functions are needed to use ignition counter definitions on different platvorms
-uint32_t getIgn1Counter();
-uint32_t getIgn2Counter();
-uint32_t getIgn3Counter();
-uint32_t getIgn4Counter();
-uint32_t getIgn5Counter();
-uint32_t getIgn6Counter();
-uint32_t getIgn7Counter();
-uint32_t getIgn8Counter();
+inline uint32_t getIgn1Counter();
+inline uint32_t getIgn2Counter();
+inline uint32_t getIgn3Counter();
+inline uint32_t getIgn4Counter();
+inline uint32_t getIgn5Counter();
+inline uint32_t getIgn6Counter();
+inline uint32_t getIgn7Counter();
+inline uint32_t getIgn8Counter();
 
 //those small functions are needed to use ignition counter compare definitions on different platvorms
-void setIgnition1Compare(COMPARE_TYPE value);
-void setIgnition2Compare(COMPARE_TYPE value);
-void setIgnition3Compare(COMPARE_TYPE value);
-void setIgnition4Compare(COMPARE_TYPE value);
-void setIgnition5Compare(COMPARE_TYPE value);
-void setIgnition6Compare(COMPARE_TYPE value);
-void setIgnition7Compare(COMPARE_TYPE value);
-void setIgnition8Compare(COMPARE_TYPE value);
+inline void setIgnition1Compare(COMPARE_TYPE value);
+inline void setIgnition2Compare(COMPARE_TYPE value);
+inline void setIgnition3Compare(COMPARE_TYPE value);
+inline void setIgnition4Compare(COMPARE_TYPE value);
+inline void setIgnition5Compare(COMPARE_TYPE value);
+inline void setIgnition6Compare(COMPARE_TYPE value);
+inline void setIgnition7Compare(COMPARE_TYPE value);
+inline void setIgnition8Compare(COMPARE_TYPE value);
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 

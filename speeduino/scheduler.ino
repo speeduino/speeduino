@@ -532,32 +532,32 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 //ignition timer enable functions
-void ign1TimerEnable(){IGN1_TIMER_ENABLE();}
-void ign2TimerEnable(){IGN2_TIMER_ENABLE();}
-void ign3TimerEnable(){IGN3_TIMER_ENABLE();}
-void ign4TimerEnable(){IGN4_TIMER_ENABLE();}
-void ign5TimerEnable(){IGN5_TIMER_ENABLE();}
-void ign6TimerEnable(){IGN6_TIMER_ENABLE();}
-void ign7TimerEnable(){IGN7_TIMER_ENABLE();}
-void ign8TimerEnable(){IGN8_TIMER_ENABLE();}
+inline void ign1TimerEnable(){IGN1_TIMER_ENABLE();}
+inline void ign2TimerEnable(){IGN2_TIMER_ENABLE();}
+inline void ign3TimerEnable(){IGN3_TIMER_ENABLE();}
+inline void ign4TimerEnable(){IGN4_TIMER_ENABLE();}
+inline void ign5TimerEnable(){IGN5_TIMER_ENABLE();}
+inline void ign6TimerEnable(){IGN6_TIMER_ENABLE();}
+inline void ign7TimerEnable(){IGN7_TIMER_ENABLE();}
+inline void ign8TimerEnable(){IGN8_TIMER_ENABLE();}
 
-uint32_t getIgn1Counter() {return IGN1_COUNTER;}
-uint32_t getIgn2Counter() {return IGN2_COUNTER;}
-uint32_t getIgn3Counter() {return IGN3_COUNTER;}
-uint32_t getIgn4Counter() {return IGN4_COUNTER;}
-uint32_t getIgn5Counter() {return IGN5_COUNTER;}
-uint32_t getIgn6Counter() {return IGN6_COUNTER;}
-uint32_t getIgn7Counter() {return IGN7_COUNTER;}
-uint32_t getIgn8Counter() {return IGN8_COUNTER;}
+inline uint32_t getIgn1Counter() {return IGN1_COUNTER;}
+inline uint32_t getIgn2Counter() {return IGN2_COUNTER;}
+inline uint32_t getIgn3Counter() {return IGN3_COUNTER;}
+inline uint32_t getIgn4Counter() {return IGN4_COUNTER;}
+inline uint32_t getIgn5Counter() {return IGN5_COUNTER;}
+inline uint32_t getIgn6Counter() {return IGN6_COUNTER;}
+inline uint32_t getIgn7Counter() {return IGN7_COUNTER;}
+inline uint32_t getIgn8Counter() {return IGN8_COUNTER;}
 
-void setIgnition1Compare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
-void setIgnition2Compare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
-void setIgnition3Compare(COMPARE_TYPE compareValue){IGN3_COMPARE =compareValue;}
-void setIgnition4Compare(COMPARE_TYPE compareValue){IGN4_COMPARE =compareValue;}
-void setIgnition5Compare(COMPARE_TYPE compareValue){IGN5_COMPARE =compareValue;}
-void setIgnition6Compare(COMPARE_TYPE compareValue){IGN6_COMPARE =compareValue;}
-void setIgnition7Compare(COMPARE_TYPE compareValue){IGN7_COMPARE =compareValue;}
-void setIgnition8Compare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
+inline void setIgnition1Compare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
+inline void setIgnition2Compare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
+inline void setIgnition3Compare(COMPARE_TYPE compareValue){IGN3_COMPARE =compareValue;}
+inline void setIgnition4Compare(COMPARE_TYPE compareValue){IGN4_COMPARE =compareValue;}
+inline void setIgnition5Compare(COMPARE_TYPE compareValue){IGN5_COMPARE =compareValue;}
+inline void setIgnition6Compare(COMPARE_TYPE compareValue){IGN6_COMPARE =compareValue;}
+inline void setIgnition7Compare(COMPARE_TYPE compareValue){IGN7_COMPARE =compareValue;}
+inline void setIgnition8Compare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
 
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle, int channelIgnDegrees, int ignitionEndAngle, unsigned long duration)
