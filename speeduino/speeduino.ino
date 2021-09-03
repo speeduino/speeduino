@@ -821,7 +821,7 @@ void loop()
           if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
           if (injector1StartAngle > crankAngle)
           {
-            setFuelSchedule1(
+            setFuelSchedule(&fuelSchedule1,
                       ((injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW1
                       );
@@ -849,7 +849,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule2(
+            setFuelSchedule(&fuelSchedule2,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW2
                       );
@@ -867,7 +867,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule3(
+            setFuelSchedule(&fuelSchedule3,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW3
                       );
@@ -885,7 +885,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule4(
+            setFuelSchedule(&fuelSchedule4,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW4
                       );
@@ -911,7 +911,7 @@ void loop()
                       closeInjector3and5
                     );*/
             
-            setFuelSchedule5(
+            setFuelSchedule(&fuelSchedule5,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW5
                       );
@@ -929,7 +929,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule6(
+            setFuelSchedule(&fuelSchedule6,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW6
                       );
@@ -947,7 +947,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule7(
+            setFuelSchedule(&fuelSchedule7,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW7
                       );
@@ -965,7 +965,7 @@ void loop()
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            setFuelSchedule8(
+            setFuelSchedule(&fuelSchedule8,
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW8
                       );

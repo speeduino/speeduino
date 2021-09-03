@@ -46,22 +46,45 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
-extern void (*inj1StartFunction)();
-extern void (*inj1EndFunction)();
-extern void (*inj2StartFunction)();
-extern void (*inj2EndFunction)();
-extern void (*inj3StartFunction)();
-extern void (*inj3EndFunction)();
-extern void (*inj4StartFunction)();
-extern void (*inj4EndFunction)();
-extern void (*inj5StartFunction)();
-extern void (*inj5EndFunction)();
-extern void (*inj6StartFunction)();
-extern void (*inj6EndFunction)();
-extern void (*inj7StartFunction)();
-extern void (*inj7EndFunction)();
-extern void (*inj8StartFunction)();
-extern void (*inj8EndFunction)();
+//(convert macros to inline functions for now)
+inline void setFuel1Compare(COMPARE_TYPE compareValue);
+inline void setFuel2Compare(COMPARE_TYPE compareValue);
+inline void setFuel3Compare(COMPARE_TYPE compareValue);
+inline void setFuel4Compare(COMPARE_TYPE compareValue);
+inline void setFuel5Compare(COMPARE_TYPE compareValue);
+inline void setFuel6Compare(COMPARE_TYPE compareValue);
+inline void setFuel7Compare(COMPARE_TYPE compareValue);
+inline void setFuel8Compare(COMPARE_TYPE compareValue);
+
+//fuel counter getting functions(convert macros to inline functions)
+inline COMPARE_TYPE getFuel1Counter();
+inline COMPARE_TYPE getFuel2Counter();
+inline COMPARE_TYPE getFuel3Counter();
+inline COMPARE_TYPE getFuel4Counter();
+inline COMPARE_TYPE getFuel5Counter();
+inline COMPARE_TYPE getFuel6Counter();
+inline COMPARE_TYPE getFuel7Counter();
+inline COMPARE_TYPE getFuel8Counter();
+
+//(convert macros to inline functions for now)
+inline void fuel1TimerDisable();//fuel timer disable functions 
+inline void fuel2TimerDisable();//fuel timer disable functions 
+inline void fuel3TimerDisable();//fuel timer disable functions 
+inline void fuel4TimerDisable();//fuel timer disable functions 
+inline void fuel5TimerDisable();//fuel timer disable functions 
+inline void fuel6TimerDisable();//fuel timer disable functions 
+inline void fuel7TimerDisable();//fuel timer disable functions 
+inline void fuel8TimerDisable();//fuel timer disable functions 
+
+//(convert macros to inline functions for now)
+inline void fuel1TimerEnable();//fuel timer enable functions 
+inline void fuel2TimerEnable();//fuel timer enable functions
+inline void fuel3TimerEnable();//fuel timer enable functions 
+inline void fuel4TimerEnable();//fuel timer enable functions 
+inline void fuel5TimerEnable();//fuel timer enable functions
+inline void fuel6TimerEnable();//fuel timer enable functions
+inline void fuel7TimerEnable();//fuel timer enable functions
+inline void fuel8TimerEnable();//fuel timer enable functions
 
 /** @name IgnitionCallbacks
  * These are the (global) function pointers that get called to begin and end the ignition coil charging.
@@ -88,15 +111,7 @@ extern void (*ign8EndFunction)();
 
 void initialiseSchedulers();
 void beginInjectorPriming();
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
+void setFuelSchedule(struct FuelSchedule *targetSchedule, unsigned long timeout, unsigned long duration);
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
@@ -186,9 +201,16 @@ struct FuelSchedule {
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;
-  unsigned int nextEndCompare;
+  COMPARE_TYPE nextStartCompare;
+  COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
+
+  void (*injStartFunction)();        ///< Start function for injection
+  void (*injEndFunction)();        ///< End function for injection
+  COMPARE_TYPE (*getFuelCounter)(); //Function for getting counter value
+  void (*setFuelCompare)(COMPARE_TYPE); //Function for setting counter compare value
+  void (*fuelTimerDisable)(); //Function to disable timer for specific channel
+  void (*fuelTimerEnable)(); //Function to enable timer for specific channel
 };
 
 //volatile Schedule *timer3Aqueue[4];

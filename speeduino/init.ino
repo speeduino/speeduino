@@ -893,106 +893,106 @@ void initialiseAll()
     {
     case INJ_PAIRED:
         //Paired injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
+        fuelSchedule1.injStartFunction = openInjector1;
+        fuelSchedule1.injEndFunction = closeInjector1;
+        fuelSchedule2.injStartFunction = openInjector2;
+        fuelSchedule2.injEndFunction = closeInjector2;
+        fuelSchedule3.injStartFunction = openInjector3;
+        fuelSchedule3.injEndFunction = closeInjector3;
+        fuelSchedule4.injStartFunction = openInjector4;
+        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule5.injStartFunction = openInjector5;
+        fuelSchedule5.injEndFunction = closeInjector5;
         break;
 
     case INJ_SEMISEQUENTIAL:
         //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and3;
-          inj2EndFunction = closeInjector2and3;
+          fuelSchedule1.injStartFunction = openInjector1and4;
+          fuelSchedule1.injEndFunction = closeInjector1and4;
+          fuelSchedule2.injStartFunction = openInjector2and3;
+          fuelSchedule2.injEndFunction = closeInjector2and3;
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
-          inj1StartFunction = openInjector1;
-          inj1EndFunction = closeInjector1;
-          inj2StartFunction = openInjector2;
-          inj2EndFunction = closeInjector2;
-          inj3StartFunction = openInjector3and5;
-          inj3EndFunction = closeInjector3and5;
-          inj4StartFunction = openInjector4;
-          inj4EndFunction = closeInjector4;
+          fuelSchedule1.injStartFunction = openInjector1;
+          fuelSchedule1.injEndFunction = closeInjector1;
+          fuelSchedule2.injStartFunction = openInjector2;
+          fuelSchedule2.injEndFunction = closeInjector2;
+          fuelSchedule3.injStartFunction = openInjector3and5;
+          fuelSchedule3.injEndFunction = closeInjector3and5;
+          fuelSchedule4.injStartFunction = openInjector4;
+          fuelSchedule4.injEndFunction = closeInjector4;
         }
         else if( configPage2.nCylinders == 6 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and5;
-          inj2EndFunction = closeInjector2and5;
-          inj3StartFunction = openInjector3and6;
-          inj3EndFunction = closeInjector3and6;
+          fuelSchedule1.injStartFunction = openInjector1and4;
+          fuelSchedule1.injEndFunction = closeInjector1and4;
+          fuelSchedule2.injStartFunction = openInjector2and5;
+          fuelSchedule2.injEndFunction = closeInjector2and5;
+          fuelSchedule3.injStartFunction = openInjector3and6;
+          fuelSchedule3.injEndFunction = closeInjector3and6;
         }
         else if( configPage2.nCylinders == 8 )
         {
-          inj1StartFunction = openInjector1and5;
-          inj1EndFunction = closeInjector1and5;
-          inj2StartFunction = openInjector2and6;
-          inj2EndFunction = closeInjector2and6;
-          inj3StartFunction = openInjector3and7;
-          inj3EndFunction = closeInjector3and7;
-          inj4StartFunction = openInjector4and8;
-          inj4EndFunction = closeInjector4and8;
+          fuelSchedule1.injStartFunction = openInjector1and5;
+          fuelSchedule1.injEndFunction = closeInjector1and5;
+          fuelSchedule2.injStartFunction = openInjector2and6;
+          fuelSchedule2.injEndFunction = closeInjector2and6;
+          fuelSchedule3.injStartFunction = openInjector3and7;
+          fuelSchedule3.injEndFunction = closeInjector3and7;
+          fuelSchedule4.injStartFunction = openInjector4and8;
+          fuelSchedule4.injEndFunction = closeInjector4and8;
         }
         else
         {
           //Fall back to paired injection
-          inj1StartFunction = openInjector1;
-          inj1EndFunction = closeInjector1;
-          inj2StartFunction = openInjector2;
-          inj2EndFunction = closeInjector2;
-          inj3StartFunction = openInjector3;
-          inj3EndFunction = closeInjector3;
-          inj4StartFunction = openInjector4;
-          inj4EndFunction = closeInjector4;
-          inj5StartFunction = openInjector5;
-          inj5EndFunction = closeInjector5;
+          fuelSchedule1.injStartFunction = openInjector1;
+          fuelSchedule1.injEndFunction = closeInjector1;
+          fuelSchedule2.injStartFunction = openInjector2;
+          fuelSchedule2.injEndFunction = closeInjector2;
+          fuelSchedule3.injStartFunction = openInjector3;
+          fuelSchedule3.injEndFunction = closeInjector3;
+          fuelSchedule4.injStartFunction = openInjector4;
+          fuelSchedule4.injEndFunction = closeInjector4;
+          fuelSchedule5.injStartFunction = openInjector5;
+          fuelSchedule5.injEndFunction = closeInjector5;
         }
         break;
 
     case INJ_SEQUENTIAL:
         //Sequential injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
-        inj6StartFunction = openInjector6;
-        inj6EndFunction = closeInjector6;
-        inj7StartFunction = openInjector7;
-        inj7EndFunction = closeInjector7;
-        inj8StartFunction = openInjector8;
-        inj8EndFunction = closeInjector8;
+        fuelSchedule1.injStartFunction = openInjector1;
+        fuelSchedule1.injEndFunction = closeInjector1;
+        fuelSchedule2.injStartFunction = openInjector2;
+        fuelSchedule2.injEndFunction = closeInjector2;
+        fuelSchedule3.injStartFunction = openInjector3;
+        fuelSchedule3.injEndFunction = closeInjector3;
+        fuelSchedule4.injStartFunction = openInjector4;
+        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule5.injStartFunction = openInjector5;
+        fuelSchedule5.injEndFunction = closeInjector5;
+        fuelSchedule6.injStartFunction = openInjector6;
+        fuelSchedule6.injEndFunction = closeInjector6;
+        fuelSchedule7.injStartFunction = openInjector7;
+        fuelSchedule7.injEndFunction = closeInjector7;
+        fuelSchedule8.injStartFunction = openInjector8;
+        fuelSchedule8.injEndFunction = closeInjector8;
         break;
 
     default:
         //Paired injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
+        fuelSchedule1.injStartFunction = openInjector1;
+        fuelSchedule1.injEndFunction = closeInjector1;
+        fuelSchedule2.injStartFunction = openInjector2;
+        fuelSchedule2.injEndFunction = closeInjector2;
+        fuelSchedule3.injStartFunction = openInjector3;
+        fuelSchedule3.injEndFunction = closeInjector3;
+        fuelSchedule4.injStartFunction = openInjector4;
+        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule5.injStartFunction = openInjector5;
+        fuelSchedule5.injEndFunction = closeInjector5;
         break;
     }
 
