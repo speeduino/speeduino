@@ -1,0 +1,64 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Unit Tests
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+        pip install wheel
+        platformio update
+        platformio platform update
+        
+    - name: Run Unit Tests
+      env:
+        PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+      run: | 
+        platformio run -e megaatmega2560
+        platformio remote test --force-remote --environment megaatmega2560
+
+    - name: Slack Notification (Passed)
+      uses: rtCamp/action-slack-notify@v2
+      if: success()
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Unit tests successful :white_check_mark:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
+    
+    - name: Slack Notification (Failed)
+      uses: rtCamp/action-slack-notify@v2
+      if: failure()
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Unit tests FAILED :warning:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
