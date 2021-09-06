@@ -68,16 +68,41 @@ void openInjector4and8() { openInjector4(); openInjector8(); }
 void closeInjector4and8() { closeInjector4(); closeInjector8(); }
 
 inline void beginCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil1Charging_DIRECT(); } else { coil1Charging_MC33810(); } tachoOutputFlag = READY; }
-inline void endCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil1StopCharging_DIRECT(); } else { coil1StopCharging_MC33810(); } }
+inline void endCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) 
+{ coil1StopCharging_DIRECT();
+#ifdef MJR 
+FAN_PIN_HIGH();
+//digitalWrite(pinFan,HIGH);
+debugPinFan = true;
+#endif 
+} else { coil1StopCharging_MC33810(); } }
 
 inline void beginCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2Charging_DIRECT(); } else { coil2Charging_MC33810(); } tachoOutputFlag = READY; }
-inline void endCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2StopCharging_DIRECT(); } else { coil2StopCharging_MC33810(); } }
+inline void endCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2StopCharging_DIRECT(); 
+#ifdef MJR 
+FAN_PIN_HIGH();
+//digitalWrite(pinFan,HIGH);
+debugPinFan = true;
+#endif 
+} else { coil2StopCharging_MC33810(); } }
 
 inline void beginCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3Charging_DIRECT(); } else { coil3Charging_MC33810(); } tachoOutputFlag = READY; }
-inline void endCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3StopCharging_DIRECT(); } else { coil3StopCharging_MC33810(); } }
+inline void endCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3StopCharging_DIRECT(); 
+#ifdef MJR 
+FAN_PIN_HIGH();
+//digitalWrite(pinFan,HIGH);
+debugPinFan = true;
+#endif 
+} else { coil3StopCharging_MC33810(); } }
 
 inline void beginCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4Charging_DIRECT(); } else { coil4Charging_MC33810(); } tachoOutputFlag = READY; }
-inline void endCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4StopCharging_DIRECT(); } else { coil4StopCharging_MC33810(); } }
+inline void endCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4StopCharging_DIRECT(); 
+#ifdef MJR 
+FAN_PIN_HIGH();
+//digitalWrite(pinFan,HIGH);
+debugPinFan = true;
+#endif 
+} else { coil4StopCharging_MC33810(); } }
 
 inline void beginCoil5Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil5Charging_DIRECT(); } else { coil5Charging_MC33810(); } tachoOutputFlag = READY; }
 inline void endCoil5Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil5StopCharging_DIRECT(); } else { coil5StopCharging_MC33810(); } }

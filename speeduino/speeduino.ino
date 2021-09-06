@@ -1,3 +1,10 @@
+#define MJRx1 1
+
+#ifdef MJRx1
+int debugPinFan = false;
+
+#endif
+
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -973,6 +980,15 @@ void loop()
         }
 #endif
       }
+
+      #ifdef MJRx1
+        if( debugPinFan == true)
+        { 
+          //digitalWrite(pinFan, LOW); 
+          FAN_PIN_LOW();
+          debugPinFan = false; 
+        }
+      #endif
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition
