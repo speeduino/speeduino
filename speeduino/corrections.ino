@@ -42,7 +42,7 @@ byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint16_t aseTaperStart;
-uint16_t dfcoStart;
+uint32_t dfcoStart;
 uint16_t idleAdvStart;
 bool O2_SensorIsRich;
 bool O2_SensorIsRichPrev;
@@ -222,7 +222,7 @@ uint16_t correctionCranking()
   }
   
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
-  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
+  else if (runSecsX10 <= configPage10.crankingEnrichTaper)
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
@@ -252,7 +252,7 @@ byte correctionASE()
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
       ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-      aseTaperStart = runSecsX10; //!! HRW 16bit variable assignment to 32bit timer
+      aseTaperStart = runSecsX10;
     }
     else
     {
@@ -622,24 +622,24 @@ byte correctionAFRClosedLoop()
         (currentStatus.launchCorrection != 100) || // Launch Control Active
         (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) //Fuel Cut
     { 
-      ego_FreezeEndTime = runSecsX10 + (uint32_t)configPage9.egoFreezeDelay; // Set ego freeze condition timer
+      ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay; // Set ego freeze condition timer
     }
-    ego_FuelLoadPrev = currentStatus.fuelLoad; // save last value. 
-    
+       
     if ((ego_EngineCycleCheck == true) && (runSecsX10 >= AFRnextTimeDelay))
     {
-      AFRnextTimeDelay = runSecsX10 + (uint32_t)configPage6.egoSensorDelay; // Save the target sensor delay time for next loop
+      AFRnextTimeDelay = runSecsX10 + configPage6.egoSensorDelay; // Save the minimum sensor delay time for next loop
       // Read the O2 sensors before the algo runs, may be faster than the main loop.
       readO2();
       readO2_2();
-      O2_Readflag = true;    
-        
+      O2_Readflag = true;
+      ego_FuelLoadPrev = currentStatus.fuelLoad; // save last value to check for load change
+
       //Requirements TO run Closed Loop else its reset to 100pct. These are effectively errors where closed loop cannot run.
       if( (currentStatus.O2 >= configPage6.egoMin) && // Not too rich
           ((currentStatus.O2 <= configPage6.egoMax) ||
            (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) && // Not too lean but ignore egoMax (lean) if in DFCO. 
           (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && 
-          (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) &&
+          (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) &&
           (currentStatus.runSecs > configPage6.egoStartdelay) &&
           (currentStatus.engineProtectStatus == 0) &&      // Engine protection , fuel or ignition cut is active.     
           ((configPage2.egoResetwAFR == false) ||
@@ -694,18 +694,19 @@ byte correctionAFRClosedLoop()
         egoAdjustPct = 100; 
         ego_Integral = 0; 
         ego_IntDelayLoops = 0; 
-        ego_FreezeEndTime = runSecsX10 + (uint32_t)configPage9.egoFreezeDelay;
+        ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay;
       }
     } //End O2 Algorithm Run Loop check
     else
     {
-      if (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) { egoAdjustPct = currentStatus.egoCorrection; } // hold last value
+      if (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) { egoAdjustPct = currentStatus.egoCorrection; } // hold last value
       else 
       {// Engine speed probably stopped or recranking so don't apply EGO during crank.
         egoAdjustPct = 100;
-        ego_Integral = 0;
+        AFRnextTimeDelay = 0;
+        ego_FreezeEndTime = 0;
         ego_IntDelayLoops = 0;
-        ego_FreezeEndTime = runSecsX10;
+        ego_Integral = 0;
       } 
     }
   } //End egoType
@@ -714,9 +715,9 @@ byte correctionAFRClosedLoop()
     egoAdjustPct = 100;
     egoNextCycleCount = 0;
     AFRnextTimeDelay = 0;
+    ego_FreezeEndTime = 0;
     ego_IntDelayLoops = 0;
     ego_Integral = 0;
-    ego_FreezeEndTime = runSecsX10;
   }
 
   return egoAdjustPct;

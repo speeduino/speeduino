@@ -192,8 +192,6 @@ void loop()
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
-      egoNextCycleCount = 0;
-      AFRnextTimeDelay = 0;
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;

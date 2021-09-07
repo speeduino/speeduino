@@ -1002,8 +1002,8 @@ struct config6 {
   byte engineProtectType : 2;
 
   byte egoFuelLoadMax;  /// value that represents maximum fuel load for setting ego ignition counts to run the algo. Fuel load above this will freeze O2 correction
-  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte egoSensorDelay; /// minimum update rate in secx10 that the algo can update to allow O2 sensor value to update.
+  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte egoTemp;     ///< The temperature above which closed loop is enabled
   byte egoCountL;    ///< The number of ignition cylces per step at low load
   byte vvtMode : 2; ///< Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
@@ -1144,9 +1144,9 @@ struct config9 {
   byte unused10_166;
   byte unused10_167;
   
+  byte egoIntDelay;       // ego integral delay x control loops
   byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
   byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
-  byte egoIntDelay;       // ego integral delay x control loops
   byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
   byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
   byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127

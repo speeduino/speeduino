@@ -44,14 +44,11 @@ extern int TPS_rateOfChange;
 extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 extern byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 
-extern uint16_t egoNextCycleCount;
-extern uint32_t AFRnextTimeDelay;
 extern unsigned long knockStartTime;
 extern byte lastKnockCount;
 extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 extern uint16_t aseTaperStart;
-extern uint16_t dfcoStart;
 extern uint16_t idleAdvStart;
 
 #endif // CORRECTIONS_H
