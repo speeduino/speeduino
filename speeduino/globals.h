@@ -974,8 +974,8 @@ struct config4 {
   byte unusedBits4 : 7;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
-
-  byte unused4_124[2];
+  byte vvtMinClt;
+  byte vvtDelay;
 
 #if defined(CORE_AVR)
   };
