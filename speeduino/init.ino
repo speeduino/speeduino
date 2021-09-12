@@ -84,11 +84,15 @@ void initialiseAll()
     #if defined(EEPROM_RESET_PIN)
     pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
     if (digitalRead(EEPROM_RESET_PIN) != HIGH){
-      for (int i = 0 ; i < EEPROM.length() ; i++) {
-        EEPROM.write(i, 255);
-      }
-    }
-    #endif
+        #if defined(FLASH_AS_EEPROM_h)
+          EEPROM.clear(); 
+        #else 
+        for (int i = 0 ; i < EEPROM.length() ; i++) {
+          EEPROM.write(i, 255);
+        }
+        #endif
+     }
+     #endif
     
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)

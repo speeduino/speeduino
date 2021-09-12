@@ -27,7 +27,7 @@
 #define TIMER_RESOLUTION 4
 
 #if defined(USER_BTN) 
-  #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards, keep pressed during boot to reset eeprom
+  #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
 #endif
 
 #ifdef SD_LOGGING
