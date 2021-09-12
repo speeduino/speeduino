@@ -76,6 +76,19 @@ void initialiseAll()
     configPage9.intcan_available = 1;   // device has internal canbus
     //STM32 can not currently enabled
     #endif
+
+    /*
+    ***********************************************************************************************************
+    * EEPROM reset
+    */
+    #if defined(EEPROM_RESET_PIN)
+    pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
+    if (digitalRead(EEPROM_RESET_PIN) != HIGH){
+      for (int i = 0 ; i < EEPROM.length() ; i++) {
+        EEPROM.write(i, 255);
+      }
+    }
+    #endif
     
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
