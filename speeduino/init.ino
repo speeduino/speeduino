@@ -245,12 +245,6 @@ void initialiseAll()
     o2CalibrationTable.xSize = 32;
     o2CalibrationTable.values = o2Calibration_values;
     o2CalibrationTable.axisX = o2Calibration_bins;
-	
-	tpsCurveTable.valueSize = SIZE_BYTE;
-    tpsCurveTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    tpsCurveTable.xSize = 3;
-    tpsCurveTable.values = configPage6.tpsCurveTPS;
-    tpsCurveTable.axisX = configPage6.tpsCurveADC;
 
     //Setup the calibration tables
     loadCalibration();
@@ -2556,8 +2550,8 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for Idle Up Output
   pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
 
-  //Currently there's no default pin for closed throttle position sensor
-  pinCTPS = pinTranslate(configPage2.CTPSPin);
+  //Currently there's no default pin for 2nd TPS Pin, Functionality is either closed throttle position sensor or TPS 2 ADC.
+  pinCTPS_TPS2 = pinTranslate(configPage2.CTPS_TPS2Pin);
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
@@ -2728,10 +2722,10 @@ void setPinMapping(byte boardID)
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if(configPage2.CTPSEnabled > 0)
+  if(configPage2.CTPSEnabled == true)
   {
-    if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
-    else { pinMode(pinCTPS, INPUT); } //inverted setting
+    if ( (configPage2.CTPSPolarity == 0) && (configPage2.tpsType != TPS_MODE_DUALSENSOR) ) { pinMode(pinCTPS_TPS2, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinCTPS_TPS2, INPUT); } //inverted setting
   }
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
   {

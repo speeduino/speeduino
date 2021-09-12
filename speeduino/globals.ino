@@ -51,7 +51,6 @@ struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; ///< 6 bin wmi correction table for timing advance (2D)
-struct table2D tpsCurveTable; /// For non linear TPS curves (2D)
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
 volatile PORT_TYPE *inj1_pin_port;
@@ -207,7 +206,7 @@ byte pinIdle1;    //Single wire idle control
 byte pinIdle2;    //2 wire idle control (Not currently used)
 byte pinIdleUp;   //Input for triggering Idle Up
 byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-byte pinCTPS;     //Input for triggering closed throttle state
+byte pinCTPS_TPS2;     //Input for triggering closed throttle state
 byte pinFuel2Input;  //Input for switching to the 2nd fuel table
 byte pinSpark2Input; //Input for switching to the 2nd ignition table
 byte pinSpareTemp1;  // Future use only

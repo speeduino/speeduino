@@ -395,50 +395,81 @@ void readTPS(bool useFilter)
 {
   TPSlast = currentStatus.TPS;
   TPSlast_time = TPS_time;
-  #if defined(ANALOG_ISR)
-    byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
-  #else
-    analogRead(pinTPS);
-    byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
-  #endif
-  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
-  else { currentStatus.tpsADC = tempTPS; }
-  //currentStatus.tpsADC = ADC_FILTER(tempTPS, 128, currentStatus.tpsADC);
-  byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
-
-
-  if (configPage2.tpsCurveEnbl == true){ currentStatus.TPS = table2D_getValue(&tpsCurveTable, tempADC); } // Enable a curve fit of TPS for non-linear sensors
-
-  else if(configPage2.tpsMax > configPage2.tpsMin)
+  
+  //Check whether the closed throttle position sensor is active (shared calibrations with dual sensor so can only have one or the other.)
+  if ( (configPage2.CTPSEnabled == true) && (configPage2.tpsType != TPS_MODE_DUALSENSOR) )
   {
+    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS_TPS2); } //Normal mode (ground switched)
+    else { currentStatus.CTPSActive = digitalRead(pinCTPS_TPS2); } //Inverted mode (5v activates closed throttle position sensor)
+  }
+  else { currentStatus.CTPSActive = false; }
+    
+  //Get ADC Values if enabled
+  if (configPage2.tpsType != TPS_MODE_DISABLED)
+  {
+    byte tempADC = 0;
+    byte tempADC2 = 0;
+    
+    #if defined(ANALOG_ISR)
+      byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+    #else
+      analogRead(pinTPS);
+      byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
+    #endif
+    //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+    if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
+    else { currentStatus.tpsADC = tempTPS; }
+
+    tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+    
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
     if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
     else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-  }
-  else
-  {
-    //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
-    //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
+    
+    if (configPage2.tpsType == TPS_MODE_DUALSENSOR )
+    {
+      #if defined(ANALOG_ISR)
+        byte tempTPS2 = fastMap1023toX(AnChannel[pinCTPS_TPS2-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+      #else
+        analogRead(pinCTPS_TPS2);
+        byte tempTPS2 = fastMap1023toX(analogRead(pinCTPS_TPS2), 255); //Get the current raw TPS ADC value and map it into a byte
+      #endif
+      //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+      if(useFilter == true) { currentStatus.tps2ADC = ADC_FILTER(tempTPS2, configPage4.ADCFILTER_TPS, currentStatus.tps2ADC); }
+      else { currentStatus.tps2ADC = tempTPS2; }
 
-    tempADC = 255 - currentStatus.tpsADC; //Reverse the ADC values
-    uint16_t tempTPSMax = 255 - configPage2.tpsMax;
-    uint16_t tempTPSMin = 255 - configPage2.tpsMin;
+      tempADC2 = currentStatus.tps2ADC; //The tempADC2 value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+      
+      //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+      if (currentStatus.tps2ADC < configPage9.tps2Min) { tempADC2 = configPage9.tps2Min; }
+      else if(currentStatus.tps2ADC > configPage9.tps2Max) { tempADC2 = configPage9.tps2Max; }
+    }
 
-    //All checks below are reversed from the standard case above
-    if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
-    else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
+    /* Map ADC to TPS depending on the sensor type */   
+    if (configPage2.tpsType == TPS_MODE_2POINT) // Traditional linear TPS, supports reversed connection.
+    {     
+      if(configPage2.tpsMax > configPage2.tpsMin) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); } //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+      else { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 100, 0); } // Reversed connection support. 
+    }
+    
+    if (configPage2.tpsType == TPS_MODE_3POINT) // Single sensor 3 point calibration for non-linear TPS and dual slope. Does not support backwards TPS wiring.
+    {
+      if ( currentStatus.tpsADC < configPage9.tps2Min ) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage9.tps2Min, 0, configPage9.tpsMidPoint); }
+      else {currentStatus.TPS = map(tempADC, configPage9.tps2Min, configPage2.tpsMax, configPage9.tpsMidPoint, 100); }
+    }
+    
+    if (configPage2.tpsType == TPS_MODE_DUALSENSOR) // Two linear independent TPS sensors with an overlap in the range. Used on some BOSCH 4 wire TPS. Does not support backwards TPS wiring.
+    { //TPS 1 is 0% -> midpoint), TPS2 is (midpoint -> 100%)
+      if ( currentStatus.tpsADC < configPage2.tpsMax ) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, configPage9.tpsMidPoint); }
+      else {currentStatus.TPS = map(tempADC2, configPage9.tps2Min, configPage9.tps2Max, configPage9.tpsMidPoint, 100); }
+    }
+  } // End TPS ADC enabled
+  else 
+  { 
+    if (currentStatus.CTPSActive == true) { currentStatus.TPS = 0; } // Works to help DFCO run when there is only a CTPS and TPS is set to disabled
+    else { currentStatus.TPS = 25; } // Disable value is fixed at 25% should not trip DFCO etc.
   }
 
-  //Check whether the closed throttle position sensor is active
-  if(configPage2.CTPSEnabled == true)
-  {
-    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
-    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
-  }
-  else { currentStatus.CTPSActive = 0; }
   TPS_time = micros();
 }
 

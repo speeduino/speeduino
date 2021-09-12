@@ -166,6 +166,13 @@
 #define LOAD_SOURCE_TPS         1
 #define LOAD_SOURCE_IMAPEMAP    2
 
+//Define TPS Sensor Mode
+#define TPS_MODE_2POINT     0  // 2 point linear
+#define TPS_MODE_3POINT     1  // 3 point curve
+#define TPS_MODE_DUALSENSOR 2  // Dual sensors with a common crossover TPS% Value
+#define TPS_MODE_DISABLED   3  // No TPS (Defaults to 25%)
+
+
 //Define bit positions within engine virable
 #define BIT_ENGINE_RUN      0   // Engine running
 #define BIT_ENGINE_CRANK    1   // Engine cranking
@@ -458,7 +465,6 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
-extern struct table2D tpsCurveTable; // For non linear TPS curves (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -608,6 +614,7 @@ struct statuses {
   byte baro;   ///< Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
   byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  byte tps2ADC; /**< byte (valued: 0-255) representation of the TPS2 sensor. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
   byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
   byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
   volatile int rpmDOT; /**< RPM delta over time (RPM increase / s ?) */
@@ -832,7 +839,7 @@ struct config2 {
   byte primePulse[4];//Priming pulsewidth values (mS, copied to @ref PrimingPulseTable)
   byte primeBins[4]; //Priming temperatures (source,x-axis)
 
-  byte CTPSPin : 6;
+  byte CTPS_TPS2Pin : 6;
   byte CTPSPolarity : 1;
   byte CTPSEnabled : 1;
 
@@ -876,7 +883,7 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
   
-  byte tpsCurveEnbl : 1; ///<TPS Enables 3 point curve vs max min.
+  byte tpsType : 2; ///< TPS Sensor Type 
 
   byte unused2_95[1];
 
@@ -1081,8 +1088,6 @@ struct config6 {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
-  byte tpsCurveADC[3];    //X axis ADC values for TPS curve
-  byte tpsCurveTPS[3];    //Y axis TPS values for TPS curve
 
 #if defined(CORE_AVR)
   };
@@ -1135,12 +1140,12 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_162;
-  byte unused10_163;
-  byte unused10_164;
-  byte unused10_165;
-  byte unused10_166;
-  byte unused10_167;
+
+  byte tps2Min; // 2nd TPS sensor min ADC Value
+  byte tps2Max; // 2nd TPS sensor max ADC Value
+  byte tpsMidPoint; // Midpoint between two sensors (dual sensor) or Midpoint for non linear curve (3 point)
+  byte unused10_165[3];
+  
   byte unused10_168;
   byte unused10_169;
   byte unused10_170;
@@ -1409,7 +1414,7 @@ extern byte ignitionOutputControl; //Specifies whether the coils are controlled 
 extern byte pinTrigger; //The CAS pin
 extern byte pinTrigger2; //The Cam Sensor pin
 extern byte pinTrigger3;	//the 2nd cam sensor pin
-extern byte pinTPS;//TPS input pin
+extern byte pinTPS; //TPS input pin
 extern byte pinMAP; //MAP sensor pin
 extern byte pinEMAP; //EMAP sensor pin
 extern byte pinMAP2; //2nd MAP sensor (Currently unused)
@@ -1425,7 +1430,7 @@ extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
 extern byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-extern byte pinCTPS; //Input for triggering closed throttle state
+extern byte pinCTPS_TPS2; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
 extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
 extern byte pinSpareTemp1; // Future use only
