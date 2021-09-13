@@ -32,20 +32,14 @@ uint8_t Glow, Ghigh;
 bool canCmdPending = false;
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  #define CANSerial_AVAILABLE
-  #ifndef Serial2
-    #define Serial2 Serial1
-  #endif
   #if defined(STM32GENERIC) // STM32GENERIC core
     SerialUART &CANSerial = Serial2;
   #else //libmaple core aka STM32DUINO
     HardwareSerial &CANSerial = Serial2;
   #endif
 #elif defined(CORE_TEENSY)
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial2;
 #endif
 
