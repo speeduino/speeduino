@@ -290,7 +290,7 @@ static inline table3d_value_t* get_value(uint16_t table_key, void* pTable, uint1
 #define GEN_INVALIDATE_CACHE(size, xDom, yDom) \
   static inline void invalidate_cache(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
   { \
-      pTable->get_value_cache.cacheIsValid = false; \
+     invalidate_cache(&pTable->get_value_cache); \
   } 
 TABLE_GENERATOR(GEN_INVALIDATE_CACHE)
 static inline void invalidate_cache(uint16_t table_key, void* pTable)

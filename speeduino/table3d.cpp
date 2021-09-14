@@ -31,7 +31,7 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable,
     if(X < xMinValue) { X = xMinValue; }
 
     //0th check is whether the same X and Y values are being sent as last time. If they are, this not only prevents a lookup of the axis, but prevents the interpolation calcs being performed
-    if( (X_in == fromTable->lastXInput) && (Y_in == fromTable->lastYInput) && (fromTable->cacheIsValid == true))
+    if( (X_in == fromTable->lastXInput) && (Y_in == fromTable->lastYInput))
     {
       return fromTable->lastOutput;
     }
@@ -221,7 +221,6 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable,
     fromTable->lastXInput = X_in;
     fromTable->lastYInput = Y_in;
     fromTable->lastOutput = tableResult;
-    fromTable->cacheIsValid = true;
 
     return tableResult;
 }
