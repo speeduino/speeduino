@@ -326,7 +326,6 @@ void initialiseAll()
     if ( configPage6.useExtBaro != 0 )
     {
       readBaro();
-      //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
       storeLastBaro(currentStatus.baro);
     }
     else
@@ -339,7 +338,6 @@ void initialiseAll()
       if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
       {
         currentStatus.baro = currentStatus.MAP;
-        //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
         storeLastBaro(currentStatus.baro);
       }
       else

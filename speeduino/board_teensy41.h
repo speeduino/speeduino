@@ -17,6 +17,7 @@
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
+  typedef int eeprom_address_t;
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
 
