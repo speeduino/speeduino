@@ -127,8 +127,7 @@ void initialiseADC()
 
   flexStartTime = micros();
 
-  vssCount = 0;
-  vssTotalTime = 0;
+  vssIndex = 0;
 }
 
 static inline void validateMAP()
@@ -571,16 +570,31 @@ void readBat()
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+/**
+ * @brief Returns the VSS pulse gap for a given history point
+ * 
+ * @param historyIndex The gap number that is wanted. EG:
+ * historyIndex = 0 = Latest entry
+ * historyIndex = 1 = 2nd entry entry
+ */
+uint32_t vssGetPulseGap(byte historyIndex)
+{
+  uint32_t tempGap = 0;
+  
+  noInterrupts();
+  int8_t tempIndex = vssIndex - historyIndex;
+  if(tempIndex < 0) { tempIndex += VSS_SAMPLES; }
+
+  if(tempIndex > 0) { tempGap = vssTimes[tempIndex] - vssTimes[tempIndex - 1]; }
+  else { tempGap = vssTimes[0] - vssTimes[(VSS_SAMPLES-1)]; }
+  interrupts();
+
+  return tempGap;
+}
+
 uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
-  uint32_t pulseTime = 0;
-
-  //Need to temp store the pulse time variables to prevent them changing during an interrupt
-  noInterrupts();
-  uint32_t temp_vssLastPulseTime = vssLastPulseTime;
-  uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
-  interrupts();
 
   if(configPage2.vssMode == 1)
   {
@@ -589,26 +603,20 @@ uint16_t getSpeed()
   // Interrupt driven mode
   else if(configPage2.vssMode > 1)
   {
-    if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
-    {
-      if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
-      else
-      {
-        pulseTime = vssTotalTime / VSS_SAMPLES;
-        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
-        if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
-      }
+    uint32_t pulseTime = 0;
+    uint32_t vssTotalTime = 0;
 
-      vssCount = 0;
-      vssTotalTime = 0;
-    }
-    else
+    //Add up the time between the teeth. Note that the total number of gaps is equal to the number of samples minus 1
+    for(byte x = 0; x<(VSS_SAMPLES-1); x++)
     {
-      //Either not enough samples taken yet or speed has dropped to 0
-      if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
-      else { tempSpeed = currentStatus.vss; } 
+      vssTotalTime += vssGetPulseGap(x);
     }
+
+    pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
+    tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
+
   }
   return tempSpeed;
 }
@@ -720,15 +728,10 @@ void knockPulse()
 void vssPulse()
 {
   //TODO: Add basic filtering here
-  vssLastMinusOnePulseTime = vssLastPulseTime;
-  vssLastPulseTime = micros();
+  vssIndex++;
+  if(vssIndex == VSS_SAMPLES) { vssIndex = 0; }
 
-  if(vssCount < VSS_SAMPLES)
-  {
-    vssTotalTime += (vssLastPulseTime - vssLastMinusOnePulseTime);
-    vssCount++;
-  }
-  
+  vssTimes[vssIndex] = micros();
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)
