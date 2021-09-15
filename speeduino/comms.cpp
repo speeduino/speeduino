@@ -17,8 +17,8 @@ A full copy of the license may be found in the projects root directory
 #include "errors.h"
 #include "pages.h"
 #include "page_crc.h"
-#include "table_iterator.h"
 #include "logger.h"
+#include "table3d_iterator.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif

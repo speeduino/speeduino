@@ -10,7 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
-#include "table_iterator.h"
+#include "table3d_iterator.h"
 #include "pages.h"
 
 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)

@@ -1,6 +1,6 @@
 #pragma once
 #include <Arduino.h>
-#include "table3d_types.h"
+#include "table3d.h"
 
 /**
  * Page count, as defined in the INI file
@@ -61,7 +61,7 @@ enum entity_type {
 // A entity on a logical page.
 struct page_iterator_t {
     void *pData;
-    uint16_t table_key;
+    table_type_t table_key;
     uint8_t page;   // The page the entity belongs to
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
     uint16_t size;  // Size of the entity in bytes

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Arduino.h>
+#include "table3d_interpolate.h"
+#include "table3d_iterator.h"
 
 // Overview
 //
@@ -11,7 +12,7 @@
 //      Y-Int    V3      V4      V5
 //      Y-Min    V0      V1      V2
 //              X-Min   X-Int   X-Max
-//  Assumptions:
+// Assumptions:
 //      The axis values are increasing. I.e. x[n] >= x[n-1]
 //
 // Physical:
@@ -21,11 +22,10 @@
 //          value[0][0] is the first value on the last row.
 //          value[2][0] ia the first value on the first row.
 
-// Table typedefs - for consistency
-typedef byte table3d_dim_t;      // The x,y axis size & indices fit in this type
-typedef byte table3d_value_t;    // The type of each table value
-typedef int16_t table3d_axis_t;  // The type of each axis element
 
+// For I/O purposes, table axes are transferred as 8-bit values. So they need scaled
+// up & down from 16-bit. The scale factor depends on the axis data domain, as
+// defined by this enum.
 enum axis_domain { axis_domain_Rpm, axis_domain_Load, axis_domain_Tps };
 
 #define TABLE_RPM_MULTIPLIER 100
@@ -38,37 +38,97 @@ constexpr inline uint8_t getTableAxisFactor(axis_domain domain)
                     1;
 }
 
-struct table3DGetValueCache {
-  //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  table3d_dim_t lastXMax, lastXMin;
-  table3d_dim_t lastYMax, lastYMin;
+// With no inheritance or virtual functions, we need to pass around void*
+// In order to cast that back to a concrete type, we need to somehow identify
+// the type. This packed int stores just enough information to do that.
 
-  //Store the last input and output values, again for caching purposes
-  table3d_axis_t lastXInput = INT16_MAX, lastYInput;
-  table3d_value_t lastOutput; // This will need changing if we ever have 16-bit table values
-};
-
-inline void invalidate_cache(table3DGetValueCache *pCache)
+typedef uint16_t table_type_t;
+constexpr inline table_type_t table_type_key(uint8_t size, axis_domain x, axis_domain y)
 {
-    pCache->lastXInput = INT16_MAX;
+  return size | (x<<8) | (y<<12);
 }
 
-/*
-3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.
-Eg: 2x2 table
------
-|2 7|
-|1 4|
------
+constexpr inline uint8_t key_to_axissize(table_type_t key)
+{
+    return (uint8_t)key;
+}
+constexpr inline axis_domain key_to_xdomain(table_type_t key)
+{
+    return (axis_domain)((key>>8) & 0x0F);
+}
+constexpr inline axis_domain key_to_ydomain(table_type_t key)
+{
+    return (axis_domain)(key>>12);
+}
 
-(0,1) = 7
-(0,0) = 2
-(1,0) = 1
+// We have a fixed number of table types: they are defined by this macro
+// GENERATOR is expected to be another macros that takes at least 3 arguments:
+//    axis length, x-axis domain, y-axis domain
+#define TABLE_GENERATOR(GENERATOR, ...) \
+    GENERATOR(6, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(4, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(8, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(8, Rpm, Tps, ##__VA_ARGS__) \
+    GENERATOR(16, Rpm, Load, ##__VA_ARGS__)
 
-*/
-table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache, 
-                    table3d_dim_t axisSize,
-                    const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
-                    const table3d_axis_t *pYAxis,
-                    table3d_axis_t y, table3d_axis_t x);
+// ================================== Core 3D table ========================
+
+// Each 3d table is given a distinct type based on size & axis domains
+// This encapsulates the generation of the type name
+#define DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) table3d ## size ## xDom ## yDom
+
+// Generate the 3D table types
+#define GEN_DECLARE_3DTABLE_TYPE(size, xDom, yDom) \
+    struct DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) \
+    { \
+        /* This will take up zero space unless we take the address somewhere */ \
+        static constexpr const table_type_t type_key = table_type_key(size, axis_domain_ ## xDom, axis_domain_ ## yDom); \
+        table3DGetValueCache get_value_cache; \
+        table3d_value_t values[size*size]; \
+        table3d_axis_t axisX[size]; \
+        table3d_axis_t axisY[size]; \
+    };
+TABLE_GENERATOR(GEN_DECLARE_3DTABLE_TYPE)
+
+// Generate get3DTableValue() functions
+#define GEN_GET3D_TABLE_VALUE(size, xDom, yDom) \
+    inline int get3DTableValue(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
+    { \
+      return get3DTableValue( &pTable->get_value_cache, \
+                              size, \
+                              pTable->values, \
+                              pTable->axisX, \
+                              pTable->axisY, \
+                              y, x); \
+    } 
+TABLE_GENERATOR(GEN_GET3D_TABLE_VALUE)
+
+// ================================== Iterator support ========================
+
+#define GEN_ROWS_BEGIN(size, xDom, yDom) \
+    inline table_row_iterator_t rows_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
+    { \
+        return rows_begin(pTable->values, size);\
+    }
+TABLE_GENERATOR(GEN_ROWS_BEGIN)
+
+#define GEN_Y_BEGIN(size, xDom, yDom) \
+    inline table_axis_iterator_t y_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
+    { \
+        return y_begin(pTable->axisY, size, getTableAxisFactor(axis_domain_ ## yDom));\
+    }
+TABLE_GENERATOR(GEN_Y_BEGIN)
+
+#define GEN_Y_RBEGIN(size, xDom, yDom) \
+    inline table_axis_iterator_t y_rbegin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
+    { \
+        return y_rbegin(pTable->axisY, size, getTableAxisFactor(axis_domain_ ## yDom));\
+    }
+TABLE_GENERATOR(GEN_Y_RBEGIN)
+
+#define GEN_X_BEGIN(size, xDom, yDom) \
+    inline table_axis_iterator_t x_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
+    { \
+        return x_begin(pTable->axisX, size, getTableAxisFactor(axis_domain_ ## xDom)); \
+    }
+TABLE_GENERATOR(GEN_X_BEGIN)

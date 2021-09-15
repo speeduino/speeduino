@@ -1,7 +1,7 @@
 #include "pages.h"
 #include "globals.h"
 #include "utilities.h"
-#include "table_iterator.h"
+#include "table3d_iterator.h"
 
 // This namespace maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -36,7 +36,7 @@ enum table3D_section_t {
 
 // Stores enough information to access a table element
 struct table_entity_t {
-  uint16_t table_key;
+  table_type_t table_key;
   uint8_t xIndex; // Value X index or X axis index
   uint8_t yIndex; // Value Y index or Y axis index
   table3D_section_t section;

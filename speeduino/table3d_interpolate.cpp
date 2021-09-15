@@ -1,5 +1,4 @@
-#include <Arduino.h>
-#include "table3d.h"
+#include "table3d_interpolate.h"
 
 //The shift amount used for the 3D table calculations
 #define TABLE_SHIFT_FACTOR  8
@@ -23,8 +22,8 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable,
     //      This is because the important tables (fuel and injection) will have the highest RPM at the top of the X axis, so starting there will mean the best case occurs when the RPM is highest (And hence the CPU is needed most)
     table3d_axis_t xMinValue = pXAxis[0];
     table3d_axis_t xMaxValue = pXAxis[axisSize-1];
-    byte xMin = 0;
-    byte xMax = 0;
+    table3d_axis_t xMin = 0;
+    table3d_axis_t xMax = 0;
 
     //If the requested X value is greater/small than the maximum/minimum bin, reset X to be that value
     if(X > xMaxValue) { X = xMaxValue; }
@@ -99,8 +98,8 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable,
     //Loop through the Y axis bins for the min/max pair
     table3d_axis_t yMaxValue = pYAxis[0];
     table3d_axis_t yMinValue = pYAxis[axisSize-1];
-    byte yMin = 0;
-    byte yMax = 0;
+    table3d_axis_t yMin = 0;
+    table3d_axis_t yMax = 0;
 
     //If the requested Y value is greater/small than the maximum/minimum bin, reset Y to be that value
     if(Y > yMaxValue) { Y = yMaxValue; }

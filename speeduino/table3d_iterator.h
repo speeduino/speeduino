@@ -1,6 +1,6 @@
 #pragma once
-#include <Arduino.h>
-#include "table3d.h"
+
+#include "table3d_typedefs.h"
 
 // ========================= AXIS ITERATION =========================  
 typedef struct table_axis_iterator_t

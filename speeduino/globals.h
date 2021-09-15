@@ -26,7 +26,7 @@
 #define GLOBALS_H
 #include <Arduino.h>
 #include "table2d.h"
-#include "table3d_types.h"
+#include "table3d.h"
 #include <assert.h>
 #include "logger.h"
 
