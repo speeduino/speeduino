@@ -93,7 +93,37 @@ void initialiseAll()
 
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    if (configPage9.enable_secondarySerial == 1) {
+    //Mega2560 lacks the ram to make secondary serial selectable with pointers. (Each serial port is instantiated taking up ram) 
+    #if !defined(__AVR_ATmega2560__) 
+       switch (configPage9.secondarySerial)
+       {
+        case 0/* Serial USB or 1 */:
+          Serial.begin(115200);
+          CANSerial = &Serial;
+          break;
+        case 1/* Serial 1 */:
+          Serial1.begin(115200);
+          CANSerial = &Serial1;
+          break;
+        case 2/* Serial 2 */:
+          Serial2.begin(115200);
+          CANSerial = &Serial2;
+          break;
+        case 3/* Serial 3 */:
+          Serial3.begin(115200);
+          CANSerial = &Serial3;
+          break;
+         default: /* Serial 3 */
+          Serial3.begin(115200);
+          CANSerial = &Serial3;
+          break;
+      }
+    #else //if it is the Mega select the default serial 3
+    Serial3.begin(115200);
+    CANSerial = &Serial3;
+    #endif
+    }
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded

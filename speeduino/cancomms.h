@@ -4,22 +4,8 @@
 #define NEW_CAN_PACKET_SIZE   119
 #define CAN_PACKET_SIZE   75
 
-#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
+#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(CORE_STM32) || defined(CORE_TEENSY))
   #define CANSerial_AVAILABLE
-  extern HardwareSerial &CANSerial;
-#elif defined(CORE_STM32)
-  #define CANSerial_AVAILABLE
-  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
-    #define Serial2 Serial1
-  #endif
-  #if defined(STM32GENERIC) // STM32GENERIC core
-    extern SerialUART &CANSerial;
-  #else //libmaple core aka STM32DUINO
-    extern HardwareSerial &CANSerial;
-  #endif
-#elif defined(CORE_TEENSY)
-  #define CANSerial_AVAILABLE
-  extern HardwareSerial &CANSerial;
 #endif
 
 void secondserial_Command();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.

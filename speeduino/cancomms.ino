@@ -31,28 +31,12 @@ uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
 bool canCmdPending = false;
 
-#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  #define CANSerial_AVAILABLE
-  HardwareSerial &CANSerial = Serial3;
-#elif defined(CORE_STM32)
-  #define CANSerial_AVAILABLE
-  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
-    #define Serial2 Serial1
-  #endif
-  #if defined(STM32GENERIC) // STM32GENERIC core
-    SerialUART &CANSerial = Serial2;
-  #else //libmaple core aka STM32DUINO
-    HardwareSerial &CANSerial = Serial2;
-  #endif
-#elif defined(CORE_TEENSY)
-  #define CANSerial_AVAILABLE
-  HardwareSerial &CANSerial = Serial2;
-#endif
+Stream *CANSerial;
 
 void secondserial_Command()
 {
   #if defined(CANSerial_AVAILABLE)
-  if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
+  if (! canCmdPending) {  currentsecondserialCommand = CANSerial->read();  }
 
   switch (currentsecondserialCommand)
   {
@@ -62,16 +46,16 @@ void secondserial_Command()
 
     case 'G': // this is the reply command sent by the Can interface
        byte destcaninchannel;
-      if (CANSerial.available() >= 9)
+      if (CANSerial->available() >= 9)
       {
         canCmdPending = false;
-        cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
-        destcaninchannel = CANSerial.read();  // the input channel that requested the data value
+        cancmdfail = CANSerial->read();        //0 == fail,  1 == good.
+        destcaninchannel = CANSerial->read();  // the input channel that requested the data value
         if (cancmdfail != 0)
            {                                 // read all 8 bytes of data.
             for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
               {
-                Gdata[Gx] = CANSerial.read();
+                Gdata[Gx] = CANSerial->read();
               }
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
             if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
@@ -106,8 +90,8 @@ void secondserial_Command()
         
     case 'L':
         uint8_t Llength;
-        while (CANSerial.available() == 0) { }
-        canlisten = CANSerial.read();
+        while (CANSerial->available() == 0) { }
+        canlisten = CANSerial->read();
 
         if (canlisten == 0)
         {
@@ -115,14 +99,14 @@ void secondserial_Command()
           break;
         }
 
-        while (CANSerial.available() == 0) { }
-        Llength= CANSerial.read();              // next the number of bytes expected value
+        while (CANSerial->available() == 0) { }
+        Llength= CANSerial->read();              // next the number of bytes expected value
 
         for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
         {
-          while (CANSerial.available() == 0){}
+          while (CANSerial->available() == 0){}
           // receive all x bytes into "Lbuffer"
-          Lbuffer[Lcount] = CANSerial.read();
+          Lbuffer[Lcount] = CANSerial->read();
         }
         break;
 
@@ -132,19 +116,19 @@ void secondserial_Command()
 
     case 'r': //New format for the optimised OutputChannels over CAN
       byte Cmd;
-      if (CANSerial.available() >= 6)
+      if (CANSerial->available() >= 6)
       {
-        CANSerial.read(); //Read the $tsCanId
-        Cmd = CANSerial.read();
+        CANSerial->read(); //Read the $tsCanId
+        Cmd = CANSerial->read();
 
         uint16_t offset, length;
         if( (Cmd == 0x30) || ( (Cmd >= 0x40) && (Cmd <0x50) ) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
         {
           byte tmp;
-          tmp = CANSerial.read();
-          offset = word(CANSerial.read(), tmp);
-          tmp = CANSerial.read();
-          length = word(CANSerial.read(), tmp);
+          tmp = CANSerial->read();
+          offset = word(CANSerial->read(), tmp);
+          tmp = CANSerial->read();
+          length = word(CANSerial->read(), tmp);
           sendcanValues(offset, length,Cmd, 1);
           canCmdPending = false;
           //Serial.print(Cmd);
@@ -161,18 +145,18 @@ void secondserial_Command()
       break;
 
     case 's': // send the "a" stream code version
-      CANSerial.print(F("Speeduino csx02019.8"));
+      CANSerial->print(F("Speeduino csx02019.8"));
       break;
 
     case 'S': // send code version
-      CANSerial.print(F("Speeduino 2019.08-ser"));
+      CANSerial->print(F("Speeduino 2019.08-ser"));
       break;
       
     case 'Q': // send code version
        //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
        for (unsigned int revn = 0; revn < 10 - 1; revn++)
        {
-         CANSerial.write( TSfirmwareVersion[revn]);
+         CANSerial->write( TSfirmwareVersion[revn]);
        }
        //Serial3.print("speeduino 201609-dev");
        break;
@@ -191,18 +175,18 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
     #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)|| defined(CORE_STM32) || defined (CORE_TEENSY) //ATmega2561 does not have Serial3
       if (cmd == 0x30) 
           {
-           CANSerial.write("r");         //confirm cmd type
-           CANSerial.write(cmd);
+           CANSerial->write("r");         //confirm cmd type
+           CANSerial->write(cmd);
           }
         else if (cmd == 0x31)
           {
-           CANSerial.write("A");         // confirm command type   
+           CANSerial->write("A");         // confirm command type   
           }
         else if (cmd == 0x32)
           {
-           CANSerial.write("n");                       // confirm command type
-           CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
-           CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+           CANSerial->write("n");                       // confirm command type
+           CANSerial->write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+           CANSerial->write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
           }
     #endif
 
@@ -346,7 +330,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
   for(byte x=0; x<packetLength; x++)
   {
-      if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
+      if (portType == 1){ CANSerial->write(fullStatus[offset+x]); }
       else if (portType == 2)
       {
         //sendto canbus transmit routine
@@ -411,22 +395,22 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
     switch (cmdtype)
     {
       case 0:
-        CANSerial.print("G");
-        CANSerial.write(canaddress);  //tscanid of speeduino device
-        CANSerial.write(candata1);    // table id
-        CANSerial.write(candata2);    //table memory offset
+        CANSerial->print("G");
+        CANSerial->write(canaddress);  //tscanid of speeduino device
+        CANSerial->write(candata1);    // table id
+        CANSerial->write(candata2);    //table memory offset
         break;
 
       case 1:                      //send request to listen for a can message
-        CANSerial.print("L");
-        CANSerial.write(canaddress);  //11 bit canaddress of device to listen for
+        CANSerial->print("L");
+        CANSerial->write(canaddress);  //11 bit canaddress of device to listen for
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
-        CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
-        CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
-        CANSerial.write(highByte(sourcecanAddress) );
+        CANSerial->print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
+        CANSerial->write(candata1);                    //the currentStatus.current_caninchannel
+        CANSerial->write(lowByte(sourcecanAddress) );       //send lsb first
+        CANSerial->write(highByte(sourcecanAddress) );
         break;
 
      case 3:

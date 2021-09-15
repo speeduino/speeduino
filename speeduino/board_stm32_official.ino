@@ -69,6 +69,30 @@ HardwareTimer Timer11(TIM7);
 STM32RTC& rtc = STM32RTC::getInstance();
 #endif
 
+#if defined(STM32F407xx)
+  #ifndef ENABLE_HWSERIAL1
+    HardwareSerial Serial1(PA10, PA9); //RX ,TX
+  #endif
+  #ifndef ENABLE_HWSERIAL2
+    HardwareSerial Serial2(PD6, PD5);
+  #endif
+  #ifndef ENABLE_HWSERIAL3
+    HardwareSerial Serial3(PB11, PB10);
+  #endif
+#endif
+
+#if defined(STM32F411xE) || defined(STM32F401xC)
+  #ifndef ENABLE_HWSERIAL1
+    HardwareSerial Serial1(PA10, PA9); //RX ,TX
+  #endif
+  #ifndef ENABLE_HWSERIAL2
+    HardwareSerial Serial2(PA12, PA11);
+  #endif
+  #ifndef ENABLE_HWSERIAL3
+    HardwareSerial Serial3(PA3, PA2);
+  #endif
+#endif
+
   void initBoard()
   {
     /*

@@ -39,6 +39,7 @@ bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
 
+extern  Stream *CANSerial;
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 - cmdPending = If a command has started but is wairing on further data to complete
@@ -942,10 +943,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     #if defined(USE_SERIAL3)
       if (cmd == 30)
       {
-        CANSerial.write("r");         //confirm cmd type
-        CANSerial.write(cmd);
+        CANSerial->write("r");         //confirm cmd type
+        CANSerial->write(cmd);
       }
-      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
+      else if (cmd == 31) { CANSerial->write("A"); }        //confirm cmd type
     #else
       UNUSED(cmd);
     #endif
@@ -962,7 +963,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   {
     if (portNum == 0) { Serial.write(getStatusEntry(offset+x)); }
     #if defined(CANSerial_AVAILABLE)
-      else if (portNum == 3){ CANSerial.write(getStatusEntry(offset+x)); }
+      else if (portNum == 3){ CANSerial->write(getStatusEntry(offset+x)); }
     #endif
 
     //Check whether the tx buffer still has space
