@@ -4129,3 +4129,42 @@ void triggerSetEndTeeth_FordST170()
 }
 /** @} */
 
+
+void triggerSetup_DRZ400()
+{
+  triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  if(configPage4.TrigSpeed == 1) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
+  toothCurrentCount = 255; //Default value
+  triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  triggerSecFilterTime = (1000000 / (MAX_RPM / 60 * 2)); //Same as above, but fixed at 2 teeth on the secondary input
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+  triggerToothAngleIsCorrect = true; //This is always true for this pattern
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+}
+
+void triggerSec_DRZ400()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+    toothLastSecToothTime = curTime2;
+
+    if(currentStatus.hasSync == false)
+    {
+      toothLastToothTime = micros();
+      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+      toothCurrentCount = configPage4.triggerTeeth;
+      currentStatus.syncLossCounter++;
+      currentStatus.hasSync = true;
+    }
+    else 
+    {
+      // have rotation, set tooth to six so next tooth is 1 & duel wheel rotation code kicks in 
+      toothCurrentCount = 6;
+    }
+  }
+
+  triggerSecFilterTime = (toothOneTime - toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
+}

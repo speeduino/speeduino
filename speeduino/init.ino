@@ -3215,6 +3215,27 @@ void initialiseTriggers()
 
       break;
 
+    case DECODER_DRZ400:
+      triggerSetup_DRZ400();
+      triggerHandler = triggerPri_DualWheel;
+      triggerSecondaryHandler = triggerSec_DRZ400;
+      decoderHasSecondary = true;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+
+
+
     default:
       triggerHandler = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
