@@ -16,8 +16,10 @@
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
   #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H <Fram.h>
+    typedef uint16_t eeprom_address_t;
   #else
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #endif
 
   #ifndef USE_SERIAL3

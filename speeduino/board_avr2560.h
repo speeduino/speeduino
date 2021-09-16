@@ -15,8 +15,10 @@
   #define COUNTER_TYPE uint16_t
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #else
     #define EEPROM_LIB_H <EEPROM.h>
+    typedef int eeprom_address_t;
   #endif
   #define RTC_LIB_H "TimeLib.h"
   void initBoard();
