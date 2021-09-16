@@ -32,10 +32,8 @@ uint8_t Glow, Ghigh;
 bool canCmdPending = false;
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  #define CANSerial_AVAILABLE
   #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
     #define Serial2 Serial1
   #endif
@@ -45,7 +43,6 @@ bool canCmdPending = false;
     HardwareSerial &CANSerial = Serial2;
   #endif
 #elif defined(CORE_TEENSY)
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial2;
 #endif
 
