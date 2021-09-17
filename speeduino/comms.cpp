@@ -1078,10 +1078,11 @@ namespace {
     Serial.println();
   }
 
-  void print_x_axis(table_axis_iterator_t &x_it)
+  void print_x_axis(const void *pTable, table_type_t key)
   {
     Serial.print(F("    "));
 
+    auto x_it = x_begin(pTable, key);
     while(!at_end(x_it))
     {
       serial_print_prepadded_value(get_value(x_it));
@@ -1089,8 +1090,11 @@ namespace {
     }
   }
 
-  void serial_print_3dtable_elements(table_row_iterator_t row_it, table_axis_iterator_t x_it, table_axis_iterator_t y_it)
+  void serial_print_3dtable(const void *pTable, table_type_t key)
   {
+    auto y_it = y_begin(pTable, key);
+    auto row_it = rows_begin(pTable, key);
+
     while (!at_end(row_it))
     {
       print_row(y_it, get_row(row_it));
@@ -1098,12 +1102,9 @@ namespace {
       advance_row(row_it);
     }
 
-    print_x_axis(x_it);
+    print_x_axis(pTable, key);
     Serial.println();
   }
-
-  #define serial_print_3dtable(table) \
-    serial_print_3dtable_elements(rows_begin(&table), x_begin(&table), y_begin(&table))
 }
 
 /** Send page as ASCII for debugging purposes.
@@ -1117,7 +1118,7 @@ void sendPageASCII()
   {
     case veMapPage:
       Serial.println(F("\nVE Map"));
-      serial_print_3dtable(fuelTable);
+      serial_print_3dtable(&fuelTable, fuelTable.type_key);
       break;
 
     case veSetPage:
@@ -1138,7 +1139,7 @@ void sendPageASCII()
 
     case ignMapPage:
       Serial.println(F("\nIgnition Map"));
-      serial_print_3dtable(ignitionTable);
+      serial_print_3dtable(&ignitionTable, ignitionTable.type_key);
       break;
 
     case ignSetPage:
@@ -1156,7 +1157,7 @@ void sendPageASCII()
 
     case afrMapPage:
       Serial.println(F("\nAFR Map"));
-      serial_print_3dtable(afrTable);
+      serial_print_3dtable(&afrTable, afrTable.type_key);
       break;
 
     case afrSetPage:
@@ -1180,14 +1181,14 @@ void sendPageASCII()
 
     case boostvvtPage:
       Serial.println(F("\nBoost Map"));
-      serial_print_3dtable(boostTable);
+      serial_print_3dtable(&boostTable, boostTable.type_key);
       Serial.println(F("\nVVT Map"));
-      serial_print_3dtable(vvtTable);
+      serial_print_3dtable(&vvtTable, vvtTable.type_key);
       break;
 
     case seqFuelPage:
       Serial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(trim1Table);
+      serial_print_3dtable(&trim1Table, trim1Table.type_key);
       break;
 
     case canbusPage:
@@ -1197,12 +1198,12 @@ void sendPageASCII()
 
     case fuelMap2Page:
       Serial.println(F("\n2nd Fuel Map"));
-      serial_print_3dtable(fuelTable2);
+      serial_print_3dtable(&fuelTable2, fuelTable2.type_key);
       break;
    
     case ignMap2Page:
       Serial.println(F("\n2nd Ignition Map"));
-      serial_print_3dtable(ignitionTable2);
+      serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
       break;
 
     case warmupPage:

@@ -283,17 +283,6 @@ entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
   }
 }
 
-// =============================== Table function calls =========================
-
-// With no templates or inheritance we need some way to call functions
-// for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
-// to a caller defined function overloaded by the type of the table. 
-#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
-  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
-#define CONCRETE_TABLE_ACTION(testKey, action, ...) \
-  switch (testKey) { \
-  TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
-  default: abort(); }
 
 // ============================ Page iteration support ======================
 
@@ -392,9 +381,7 @@ page_iterator_t advance(const page_iterator_t &it)
  */
 table_row_iterator_t rows_begin(const page_iterator_t &it)
 {
-  #define GET_ROW_ITERATOR(size, xDomain, yDomain, pTable) \
-      return rows_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
-  CONCRETE_TABLE_ACTION(it.table_key, GET_ROW_ITERATOR, it.pData);
+  return rows_begin(it.pData, it.table_key);
 }
 
 /**
@@ -402,18 +389,13 @@ table_row_iterator_t rows_begin(const page_iterator_t &it)
  */
 table_axis_iterator_t x_begin(const page_iterator_t &it)
 {
-  #define GET_X_ITERATOR(size, xDomain, yDomain, pTable) \
-      return x_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
-  CONCRETE_TABLE_ACTION(it.table_key, GET_X_ITERATOR, it.pData);
+  return x_begin(it.pData, it.table_key);
 }
-
 
 /**
  * Convert page iterator to table y axis iterator.
  */
 table_axis_iterator_t y_begin(const page_iterator_t &it)
 {
-  #define GET_Y_ITERATOR(size, xDomain, yDomain, pTable) \
-      return y_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
-  CONCRETE_TABLE_ACTION(it.table_key, GET_Y_ITERATOR, it.pData);
+  return y_begin(it.pData, it.table_key);
 }

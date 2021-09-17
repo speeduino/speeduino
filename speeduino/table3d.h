@@ -132,3 +132,25 @@ TABLE_GENERATOR(GEN_Y_RBEGIN)
         return x_begin(pTable->axisX, size, getTableAxisFactor(axis_domain_ ## xDom)); \
     }
 TABLE_GENERATOR(GEN_X_BEGIN)
+
+// =============================== Table function calls =========================
+
+// With no templates or inheritance we need some way to call functions
+// for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
+// to a caller defined function overloaded by the type of the table. 
+#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
+  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
+#define CONCRETE_TABLE_ACTION(testKey, action, ...) \
+  switch (testKey) { \
+  TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
+  default: abort(); }
+
+// =============================== Table function calls =========================
+
+table_row_iterator_t rows_begin(const void *pTable, table_type_t key);
+
+table_axis_iterator_t x_begin(const void *pTable, table_type_t key);
+
+table_axis_iterator_t y_begin(const void *pTable, table_type_t key);
+
+table_axis_iterator_t y_rbegin(const void *pTable, table_type_t key);

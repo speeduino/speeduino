@@ -22,12 +22,12 @@ inline bool at_end(const table_axis_iterator_t &it)
     return it._pAxis == it._pAxisEnd;
 }
 
-inline byte get_value(const table_axis_iterator_t &it)
+inline char get_value(const table_axis_iterator_t &it)
 {
     return *it._pAxis / it._axisFactor;
 }
 
-inline void set_value(table_axis_iterator_t &it, byte value)
+inline void set_value(table_axis_iterator_t &it, char value)
 {
     *it._pAxis = value * it._axisFactor;
 }
