@@ -1267,6 +1267,7 @@ void setPinMapping(byte boardID)
       pinTrigger3 = 3; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
+      pinBaro = A5; //Baro Sensor Input
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLS sensor pin
       pinO2 = A8; //O2 Sensor pin
@@ -1286,6 +1287,8 @@ void setPinMapping(byte boardID)
       pinLaunch = 51; //Can be overwritten below
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 50; //Reset control output
+      pinVSS = 20; //Vehicle Speed Sensor Input
+      pinBaro = A5; //Baro Sensor Input
 
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;
