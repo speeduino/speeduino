@@ -49,7 +49,7 @@ Current layout of EEPROM data (Version 3) is as follows (All sizes are in bytes)
 | 1275  |8    | Xbins Map2                          |
 | 1283  |8    | Ybins Map2                          |
 | 1291  |2    | X and Y sizes1                      |
-| 1293``|36   | PAGE 9 MAP1                         |
+| 1293  |36   | PAGE 9 MAP1                         |
 | 1329  |12   | X and Y Bins1                       |
 | 1341  |2    | X and Y size2                       |
 | 1343  |36   | PAGE 9 MAP2                         |

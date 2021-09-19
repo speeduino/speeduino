@@ -9,9 +9,13 @@ void boostDisable();
 void idleControl();
 void vvtControl();
 void initialiseFan();
+void initialiseAirCon();
 void nitrousControl();
 void fanControl();
+void airConControl();
 void wmiControl();
+
+bool READ_AIRCON_REQUEST();
 
 #define SIMPLE_BOOST_P  1
 #define SIMPLE_BOOST_I  1
@@ -29,6 +33,10 @@ void wmiControl();
 #define VVT2_PIN_OFF()    VVT2_PIN_LOW();
 #define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
 #define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
+#define AIRCON_ON()      {(((configPage13.airConCompPol&1==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_OFF()      {(((configPage13.airConCompPol&1==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_PIN_LOW()    *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
+#define AIRCON_PIN_HIGH()   *aircon_comp_pin_port |= (aircon_comp_pin_mask)
 #define N2O_STAGE1_PIN_LOW()  *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask)
 #define N2O_STAGE1_PIN_HIGH() *n2o_stage1_pin_port |= (n2o_stage1_pin_mask)
 #define N2O_STAGE2_PIN_LOW()  *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask)
@@ -50,12 +58,17 @@ volatile PORT_TYPE *vvt2_pin_port;
 volatile PINMASK_TYPE vvt2_pin_mask;
 volatile PORT_TYPE *fan_pin_port;
 volatile PINMASK_TYPE fan_pin_mask;
+volatile PORT_TYPE *aircon_comp_pin_port;
+volatile PINMASK_TYPE aircon_comp_pin_mask;
+volatile PORT_TYPE *aircon_req_pin_port;
+volatile PINMASK_TYPE aircon_req_pin_mask;
 volatile PORT_TYPE *n2o_stage1_pin_port;
 volatile PINMASK_TYPE n2o_stage1_pin_mask;
 volatile PORT_TYPE *n2o_stage2_pin_port;
 volatile PINMASK_TYPE n2o_stage2_pin_mask;
 volatile PORT_TYPE *n2o_arming_pin_port;
 volatile PINMASK_TYPE n2o_arming_pin_mask;
+
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
@@ -70,6 +83,11 @@ bool vvtTimeHold;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
+
+uint8_t acStartDelay;
+uint8_t acTPSLockoutDelay;
+uint8_t engineRunSeconds;
+bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
 volatile bool vvt1_pwm_state;
 volatile bool vvt2_pwm_state;

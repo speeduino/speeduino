@@ -228,6 +228,8 @@ byte pinBoost;
 byte pinVVT_1;     ///< vvt (variable valve timing) output 1
 byte pinVVT_2;     ///< vvt (variable valve timing) output 2
 byte pinFan;       ///< Cooling fan output (on/off? See: auxiliaries.ino)
+byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
+byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
 byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off

@@ -147,6 +147,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
       //else { last250msLoopCount = mainLoopCount; }
     #endif
+
+    // Air conditioning control
+    airConControl();
   }
 
   //1Hz loop
@@ -270,4 +273,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
 #endif
 }
-
