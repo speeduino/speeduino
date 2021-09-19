@@ -32,6 +32,7 @@
 #define DECODER_420A              18
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
+#define DECODER_DRZ400            21
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
@@ -183,6 +184,9 @@ void triggerSec_FordST170();
 uint16_t getRPM_FordST170();
 int getCrankAngle_FordST170();
 void triggerSetEndTeeth_FordST170();
+
+void triggerSetup_DRZ400();
+void triggerSec_DRZ400();
 
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
