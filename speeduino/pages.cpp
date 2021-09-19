@@ -92,7 +92,7 @@ static const entity_t page_end_template = {
 #define TABLE_VALUE_END(size) ((uint16_t)size*(uint16_t)size)
 #define TABLE_AXISX_END(size) (TABLE_VALUE_END(size)+(uint16_t)size)
 #define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+(uint16_t)size)
-#define TABLE_SIZE(pTable) TABLE_AXISY_END(key_to_axissize((pTable)->type_key))
+#define TABLE_SIZE(pTable) TABLE_AXISY_END((pTable)->_metadata.axis_length)
 
 #define OFFSET_TO_XAXIS_INDEX(offset, size) (offset - sq(size))
 #define OFFSET_TO_YAXIS_INDEX(offset, size) ((size-1) - (offset - (sq(size)+size)))
@@ -114,25 +114,25 @@ static const entity_t page_end_template = {
   (FIRST_ELEMENT_INDEX(size)+(2*((uint8_t)offset % (uint8_t)size))-(uint8_t)offset)
 
 #define CREATE_TABLE_ENTITY(pTable, intra_address, entityNum) \
-  { .type = Table, .pEntity = pTable, .table_key = (pTable)->type_key, \
+  { .type = Table, .pEntity = pTable, .table_key = (pTable)->_metadata.type_key, \
     .start = ENTITY_START_VAR(entityNum),\
     .size = TABLE_SIZE(pTable), \
     .address = intra_address }
 
 #define CREATE_VALUE_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->values + OFFSET_TO_VALUE_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
+  { (pTable)->values + OFFSET_TO_VALUE_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
      1 }
 #define CREATE_XAXIS_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->axisX + OFFSET_TO_XAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
-    getTableAxisFactor(key_to_xdomain((pTable)->type_key))}
+  { (pTable)->axisX + OFFSET_TO_XAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
+    (pTable)->_metadata.xaxis_io_factor}
 #define CREATE_YAXIS_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->axisY + OFFSET_TO_YAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), key_to_axissize((pTable)->type_key)), \
-    getTableAxisFactor(key_to_ydomain((pTable)->type_key))}
+  { (pTable)->axisY + OFFSET_TO_YAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
+    (pTable)->_metadata.yaxis_io_factor}
 
 // If the offset is in range, create a Table entity_t
 #define CHECK_TABLE(offset, pTable, entityNum) \
   { \
-    constexpr uint16_t axis_length = key_to_axissize((pTable)->type_key); \
+    constexpr uint16_t axis_length = (pTable)->_metadata.axis_length; \
     constexpr uint16_t start_address = ENTITY_START_VAR(entityNum); \
     /* Limit table size to max 16 so we can force 8-bit calculations */ \
     /* for performance. See comments around OFFSET_TO_VALUE_INDEX */ \

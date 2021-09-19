@@ -134,7 +134,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable, fuelTable.type_key, { EEPROM_CONFIG1_MAP, 0 });
+      result = writeTable(&fuelTable, fuelTable._metadata.type_key, { EEPROM_CONFIG1_MAP, 0 });
       break;
 
     case veSetPage:
@@ -150,7 +150,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable, ignitionTable.type_key, { EEPROM_CONFIG3_MAP, 0 });
+      result = writeTable(&ignitionTable, ignitionTable._metadata.type_key, { EEPROM_CONFIG3_MAP, 0 });
       break;
 
     case ignSetPage:
@@ -166,7 +166,7 @@ void writeConfig(uint8_t pageNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&afrTable, afrTable.type_key, {  EEPROM_CONFIG5_MAP, 0 });
+      result = writeTable(&afrTable, afrTable._metadata.type_key, {  EEPROM_CONFIG5_MAP, 0 });
       break;
 
     case afrSetPage:
@@ -182,9 +182,9 @@ void writeConfig(uint8_t pageNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&boostTable, boostTable.type_key, { EEPROM_CONFIG7_MAP1, 0 });
-      result = writeTable(&vvtTable, vvtTable.type_key, { EEPROM_CONFIG7_MAP2, result.counter });
-      result = writeTable(&stagingTable, stagingTable.type_key, { EEPROM_CONFIG7_MAP3, result.counter });
+      result = writeTable(&boostTable, boostTable._metadata.type_key, { EEPROM_CONFIG7_MAP1, 0 });
+      result = writeTable(&vvtTable, vvtTable._metadata.type_key, { EEPROM_CONFIG7_MAP2, result.counter });
+      result = writeTable(&stagingTable, stagingTable._metadata.type_key, { EEPROM_CONFIG7_MAP3, result.counter });
       break;
 
     case seqFuelPage:
@@ -192,14 +192,14 @@ void writeConfig(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&trim1Table, trim1Table.type_key, { EEPROM_CONFIG8_MAP1, 0 });
-      result = writeTable(&trim2Table, trim2Table.type_key, { EEPROM_CONFIG8_MAP2, result.counter });
-      result = writeTable(&trim3Table, trim3Table.type_key, { EEPROM_CONFIG8_MAP3, result.counter });
-      result = writeTable(&trim4Table, trim4Table.type_key, { EEPROM_CONFIG8_MAP4, result.counter });
-      result = writeTable(&trim5Table, trim5Table.type_key, { EEPROM_CONFIG8_MAP5, result.counter });
-      result = writeTable(&trim6Table, trim6Table.type_key, { EEPROM_CONFIG8_MAP6, result.counter });
-      result = writeTable(&trim7Table, trim7Table.type_key, { EEPROM_CONFIG8_MAP7, result.counter });
-      result = writeTable(&trim8Table, trim8Table.type_key, { EEPROM_CONFIG8_MAP8, result.counter });
+      result = writeTable(&trim1Table, trim1Table._metadata.type_key, { EEPROM_CONFIG8_MAP1, 0 });
+      result = writeTable(&trim2Table, trim2Table._metadata.type_key, { EEPROM_CONFIG8_MAP2, result.counter });
+      result = writeTable(&trim3Table, trim3Table._metadata.type_key, { EEPROM_CONFIG8_MAP3, result.counter });
+      result = writeTable(&trim4Table, trim4Table._metadata.type_key, { EEPROM_CONFIG8_MAP4, result.counter });
+      result = writeTable(&trim5Table, trim5Table._metadata.type_key, { EEPROM_CONFIG8_MAP5, result.counter });
+      result = writeTable(&trim6Table, trim6Table._metadata.type_key, { EEPROM_CONFIG8_MAP6, result.counter });
+      result = writeTable(&trim7Table, trim7Table._metadata.type_key, { EEPROM_CONFIG8_MAP7, result.counter });
+      result = writeTable(&trim8Table, trim8Table._metadata.type_key, { EEPROM_CONFIG8_MAP8, result.counter });
       break;
 
     case canbusPage:
@@ -223,7 +223,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable2, fuelTable2.type_key, { EEPROM_CONFIG11_MAP, 0 });
+      result = writeTable(&fuelTable2, fuelTable2._metadata.type_key, { EEPROM_CONFIG11_MAP, 0 });
       break;
 
     case wmiMapPage:
@@ -233,9 +233,9 @@ void writeConfig(uint8_t pageNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&wmiTable, wmiTable.type_key, { EEPROM_CONFIG12_MAP, 0 });
-      result = writeTable(&vvt2Table, vvt2Table.type_key, { EEPROM_CONFIG12_MAP2, result.counter });
-      result = writeTable(&dwellTable, dwellTable.type_key, { EEPROM_CONFIG12_MAP3, result.counter });
+      result = writeTable(&wmiTable, wmiTable._metadata.type_key, { EEPROM_CONFIG12_MAP, 0 });
+      result = writeTable(&vvt2Table, vvt2Table._metadata.type_key, { EEPROM_CONFIG12_MAP2, result.counter });
+      result = writeTable(&dwellTable, dwellTable._metadata.type_key, { EEPROM_CONFIG12_MAP3, result.counter });
       break;
       
   case progOutsPage:
@@ -250,7 +250,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
+      result = writeTable(&ignitionTable2, ignitionTable2._metadata.type_key, { EEPROM_CONFIG14_MAP, 0 });
       break;
 
     default:
@@ -335,37 +335,37 @@ static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_
  */
 void loadConfig()
 {
-  loadTable(&fuelTable, fuelTable.type_key, EEPROM_CONFIG1_MAP);
+  loadTable(&fuelTable, fuelTable._metadata.type_key, EEPROM_CONFIG1_MAP);
   load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
   
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
-  loadTable(&ignitionTable, ignitionTable.type_key, EEPROM_CONFIG3_MAP);
+  loadTable(&ignitionTable, ignitionTable._metadata.type_key, EEPROM_CONFIG3_MAP);
   load_range(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
-  loadTable(&afrTable, afrTable.type_key, EEPROM_CONFIG5_MAP);
+  loadTable(&afrTable, afrTable._metadata.type_key, EEPROM_CONFIG5_MAP);
   load_range(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  loadTable(&boostTable, boostTable.type_key, EEPROM_CONFIG7_MAP1);
-  loadTable(&vvtTable, vvtTable.type_key,  EEPROM_CONFIG7_MAP2);
-  loadTable(&stagingTable, stagingTable.type_key, EEPROM_CONFIG7_MAP3);
+  loadTable(&boostTable, boostTable._metadata.type_key, EEPROM_CONFIG7_MAP1);
+  loadTable(&vvtTable, vvtTable._metadata.type_key,  EEPROM_CONFIG7_MAP2);
+  loadTable(&stagingTable, stagingTable._metadata.type_key, EEPROM_CONFIG7_MAP3);
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
-  loadTable(&trim1Table, trim1Table.type_key, EEPROM_CONFIG8_MAP1);
-  loadTable(&trim2Table, trim2Table.type_key, EEPROM_CONFIG8_MAP2);
-  loadTable(&trim3Table, trim3Table.type_key, EEPROM_CONFIG8_MAP3);
-  loadTable(&trim4Table, trim4Table.type_key, EEPROM_CONFIG8_MAP4);
-  loadTable(&trim5Table, trim5Table.type_key, EEPROM_CONFIG8_MAP5);
-  loadTable(&trim6Table, trim6Table.type_key, EEPROM_CONFIG8_MAP6);
-  loadTable(&trim7Table, trim7Table.type_key, EEPROM_CONFIG8_MAP7);
-  loadTable(&trim8Table, trim8Table.type_key, EEPROM_CONFIG8_MAP8);
+  loadTable(&trim1Table, trim1Table._metadata.type_key, EEPROM_CONFIG8_MAP1);
+  loadTable(&trim2Table, trim2Table._metadata.type_key, EEPROM_CONFIG8_MAP2);
+  loadTable(&trim3Table, trim3Table._metadata.type_key, EEPROM_CONFIG8_MAP3);
+  loadTable(&trim4Table, trim4Table._metadata.type_key, EEPROM_CONFIG8_MAP4);
+  loadTable(&trim5Table, trim5Table._metadata.type_key, EEPROM_CONFIG8_MAP5);
+  loadTable(&trim6Table, trim6Table._metadata.type_key, EEPROM_CONFIG8_MAP6);
+  loadTable(&trim7Table, trim7Table._metadata.type_key, EEPROM_CONFIG8_MAP7);
+  loadTable(&trim8Table, trim8Table._metadata.type_key, EEPROM_CONFIG8_MAP8);
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load
@@ -378,13 +378,13 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
-  loadTable(&fuelTable2, fuelTable2.type_key, EEPROM_CONFIG11_MAP);
+  loadTable(&fuelTable2, fuelTable2._metadata.type_key, EEPROM_CONFIG11_MAP);
 
   //*********************************************************************************************************************************************************************************
   // WMI, VVT2 and Dwell table load
-  loadTable(&wmiTable, wmiTable.type_key, EEPROM_CONFIG12_MAP);
-  loadTable(&vvt2Table, vvt2Table.type_key, EEPROM_CONFIG12_MAP2);
-  loadTable(&dwellTable, dwellTable.type_key, EEPROM_CONFIG12_MAP3);
+  loadTable(&wmiTable, wmiTable._metadata.type_key, EEPROM_CONFIG12_MAP);
+  loadTable(&vvt2Table, vvt2Table._metadata.type_key, EEPROM_CONFIG12_MAP2);
+  loadTable(&dwellTable, dwellTable._metadata.type_key, EEPROM_CONFIG12_MAP3);
 
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
@@ -393,7 +393,7 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
 
-  loadTable(&ignitionTable2, ignitionTable2.type_key, EEPROM_CONFIG14_MAP);
+  loadTable(&ignitionTable2, ignitionTable2._metadata.type_key, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
 }

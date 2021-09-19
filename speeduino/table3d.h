@@ -38,28 +38,6 @@ constexpr inline uint8_t getTableAxisFactor(axis_domain domain)
                     1;
 }
 
-// With no inheritance or virtual functions, we need to pass around void*
-// In order to cast that back to a concrete type, we need to somehow identify
-// the type. This packed int stores just enough information to do that.
-
-typedef uint16_t table_type_t;
-constexpr inline table_type_t table_type_key(uint8_t size, axis_domain x, axis_domain y)
-{
-  return size | (x<<8) | (y<<12);
-}
-
-constexpr inline uint8_t key_to_axissize(table_type_t key)
-{
-    return (uint8_t)key;
-}
-constexpr inline axis_domain key_to_xdomain(table_type_t key)
-{
-    return (axis_domain)((key>>8) & 0x0F);
-}
-constexpr inline axis_domain key_to_ydomain(table_type_t key)
-{
-    return (axis_domain)(key>>12);
-}
 
 // We have a fixed number of table types: they are defined by this macro
 // GENERATOR is expected to be another macros that takes at least 3 arguments:
@@ -73,6 +51,24 @@ constexpr inline axis_domain key_to_ydomain(table_type_t key)
 
 // ================================== Core 3D table ========================
 
+// With no inheritance or virtual functions, we need to pass around void*
+// In order to cast that back to a concrete type, we need to somehow identify
+// the type. This packed int stores just enough information to do that.
+typedef uint16_t table_type_t;
+constexpr inline table_type_t table_type_key(table3d_dim_t size, axis_domain x, axis_domain y)
+{
+  return size | (x<<8) | (y<<12);
+}
+
+struct table3d_metadata {
+    const table_type_t type_key;
+    const table3d_dim_t axis_length;
+    const axis_domain x_domain;
+    const axis_domain y_domain;
+    const uint8_t xaxis_io_factor;
+    const uint8_t yaxis_io_factor;
+};
+
 // Each 3d table is given a distinct type based on size & axis domains
 // This encapsulates the generation of the type name
 #define DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) table3d ## size ## xDom ## yDom
@@ -82,7 +78,15 @@ constexpr inline axis_domain key_to_ydomain(table_type_t key)
     struct DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) \
     { \
         /* This will take up zero space unless we take the address somewhere */ \
-        static constexpr const table_type_t type_key = table_type_key(size, axis_domain_ ## xDom, axis_domain_ ## yDom); \
+        static constexpr const table3d_metadata _metadata = { \
+            .type_key = table_type_key(size, axis_domain_ ## xDom, axis_domain_ ## yDom), \
+            .axis_length = size, \
+            .x_domain = axis_domain_ ## xDom, \
+            .y_domain = axis_domain_ ## yDom, \
+            .xaxis_io_factor = getTableAxisFactor(axis_domain_ ## xDom), \
+            .yaxis_io_factor = getTableAxisFactor(axis_domain_ ## yDom) \
+        }; \
+        \
         table3DGetValueCache get_value_cache; \
         table3d_value_t values[size*size]; \
         table3d_axis_t axisX[size]; \
@@ -95,7 +99,7 @@ TABLE_GENERATOR(GEN_DECLARE_3DTABLE_TYPE)
     inline int get3DTableValue(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
     { \
       return get3DTableValue( &pTable->get_value_cache, \
-                              size, \
+                              pTable->_metadata.axis_length, \
                               pTable->values, \
                               pTable->axisX, \
                               pTable->axisY, \
@@ -108,28 +112,28 @@ TABLE_GENERATOR(GEN_GET3D_TABLE_VALUE)
 #define GEN_ROWS_BEGIN(size, xDom, yDom) \
     inline table_row_iterator_t rows_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return rows_begin(pTable->values, size);\
+        return rows_begin(pTable->values, pTable->_metadata.axis_length);\
     }
 TABLE_GENERATOR(GEN_ROWS_BEGIN)
 
 #define GEN_Y_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator_t y_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return y_begin(pTable->axisY, size, getTableAxisFactor(axis_domain_ ## yDom));\
+        return y_begin(pTable->axisY, pTable->_metadata.axis_length, pTable->_metadata.yaxis_io_factor);\
     }
 TABLE_GENERATOR(GEN_Y_BEGIN)
 
 #define GEN_Y_RBEGIN(size, xDom, yDom) \
     inline table_axis_iterator_t y_rbegin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return y_rbegin(pTable->axisY, size, getTableAxisFactor(axis_domain_ ## yDom));\
+        return y_rbegin(pTable->axisY, pTable->_metadata.axis_length, pTable->_metadata.yaxis_io_factor);\
     }
 TABLE_GENERATOR(GEN_Y_RBEGIN)
 
 #define GEN_X_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator_t x_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return x_begin(pTable->axisX, size, getTableAxisFactor(axis_domain_ ## xDom)); \
+        return x_begin(pTable->axisX, pTable->_metadata.axis_length, pTable->_metadata.xaxis_io_factor); \
     }
 TABLE_GENERATOR(GEN_X_BEGIN)
 
@@ -139,7 +143,7 @@ TABLE_GENERATOR(GEN_X_BEGIN)
 // for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
 // to a caller defined function overloaded by the type of the table. 
 #define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
-  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
+  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::_metadata.type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
 #define CONCRETE_TABLE_ACTION(testKey, action, ...) \
   switch (testKey) { \
   TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
