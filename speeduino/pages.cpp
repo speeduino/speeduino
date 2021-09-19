@@ -35,6 +35,32 @@ struct intra_entity_address_t {
   uint8_t factor; 
 };
 
+inline byte get_value(const intra_entity_address_t &address)
+{
+  if (address.factor==1)
+  {
+    return *(byte*)(address.pData);
+  }
+  else if (address.factor>1)
+  {
+    return  (*(int16_t*)(address.pData)) / address.factor;
+  }
+
+  return 0U;
+}
+
+inline void set_value(byte value, const intra_entity_address_t &address)
+{
+  if (address.factor==1)
+  {
+    *(byte*)(address.pData) = value;
+  }
+  else if (address.factor>1)
+  {
+    (*(int16_t*)(address.pData)) = value * address.factor;
+  }
+}
+
 struct entity_t {
   entity_type type;
   void *pEntity; // The start of the entity
@@ -131,6 +157,7 @@ static const entity_t page_end_template = {
 
 // If the offset is in range, create a Table entity_t
 #define CHECK_TABLE(offset, pTable, entityNum) \
+  if (offset < ENTITY_START_VAR(entityNum)+TABLE_SIZE(pTable)) \
   { \
     constexpr uint16_t axis_length = (pTable)->_metadata.axis_length; \
     constexpr uint16_t start_address = ENTITY_START_VAR(entityNum); \
@@ -145,10 +172,7 @@ static const entity_t page_end_template = {
     { \
       return CREATE_TABLE_ENTITY(pTable, CREATE_XAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
     } \
-    if (offset < start_address+TABLE_AXISY_END(axis_length)) \
-    { \
-      return CREATE_TABLE_ENTITY(pTable, CREATE_YAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
-    } \
+    return CREATE_TABLE_ENTITY(pTable, CREATE_YAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, TABLE_SIZE(pTable))
 
@@ -322,14 +346,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   const entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
 
-  if (entity.address.factor==1)
-  {
-    *(byte*)(entity.address.pData) = value;
-  }
-  else if (entity.address.factor>1)
-  {
-    (*(int16_t*)(entity.address.pData)) = value * entity.address.factor;
-  }
+  set_value(value, entity.address);
   if (entity.type==Table)
   {
     #define GEN_INVALIDATE_CACHE(size, xDomain, yDomain, pTable) \
@@ -342,18 +359,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 
 byte getPageValue(byte page, uint16_t offset)
 {
-  const intra_entity_address_t address = map_page_offset_to_entity_inline(page, offset).address;
-
-  if (address.factor==1)
-  {
-    return *(byte*)(address.pData);
-  }
-  else if (address.factor>1)
-  {
-    return  (*(int16_t*)(address.pData)) / address.factor;
-  }
-
-  return 0U;
+  return get_value(map_page_offset_to_entity_inline(page, offset).address);
 }
 
 // Support iteration over a pages entities.
