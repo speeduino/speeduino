@@ -2724,9 +2724,11 @@ void setPinMapping(byte boardID)
   }
   if(configPage2.CTPSEnabled == true)
   {
-    if ( (configPage2.CTPSPolarity == 0) && (configPage2.tpsType != TPS_MODE_DUALSENSOR) ) { pinMode(pinCTPS_TPS2, INPUT_PULLUP); } //Normal setting
+    if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS_TPS2, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinCTPS_TPS2, INPUT); } //inverted setting
   }
+  else if (configPage2.tpsType == TPS_MODE_DUALSENSOR) { pinMode(pinCTPS_TPS2, INPUT); } //settings for CTPS are mutually exclusive with dual sensor TPS
+    
   if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
   {
     if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
