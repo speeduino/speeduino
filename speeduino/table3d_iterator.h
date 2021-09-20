@@ -7,7 +7,7 @@ typedef struct table_axis_iterator_t
 {
     table3d_axis_t *_pAxis;
     table3d_axis_t *_pAxisEnd;
-    table3d_axis_t _axisFactor;
+    uint8_t _axisFactor;
     int8_t _stride;
 } table_axis_iterator_t;
 
@@ -32,7 +32,7 @@ inline void set_value(table_axis_iterator_t &it, char value)
     *it._pAxis = value * it._axisFactor;
 }
 
-inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
+inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
 {
     return { const_cast<table3d_axis_t*>(pAxis)+(size-1), 
              const_cast<table3d_axis_t*>(pAxis)-1, 
@@ -40,12 +40,12 @@ inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t 
              -1 };
 }
 
-inline table_axis_iterator_t y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
+inline table_axis_iterator_t y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
 {
     return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
 }
 
-inline table_axis_iterator_t x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, table3d_axis_t factor)
+inline table_axis_iterator_t x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
 {
     return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
 }

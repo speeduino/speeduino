@@ -95,7 +95,7 @@ static inline void check_size() {
 static const entity_t page_end_template = { 
   .type = End,
   .pEntity = nullptr, 
-  .table_key = 0U, 
+  .table_key = table_type_None, 
   .start = 0U,
   .size = 0U, 
   .address = { nullptr, 0U } 
@@ -182,7 +182,7 @@ static const entity_t page_end_template = {
 #define CHECK_RAW(offset, pDataBlock, blockSize, entityNum) \
   if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
   { \
-    return  { .type = Raw, .pEntity = pDataBlock, .table_key = 0U, \
+    return  { .type = Raw, .pEntity = pDataBlock, .table_key = table_type_None, \
               .start = ENTITY_START_VAR(entityNum), \
               .size = blockSize,  \
               .address = { (byte*)pDataBlock+offset, 1 } } ; \
@@ -368,7 +368,7 @@ page_iterator_t page_begin(byte pageNum)
 {
   page_iterator_t start_page_it = {
     .pData = nullptr,
-    .table_key = 0U,
+    .table_key = table_type_None,
     .page = pageNum,
     .start = 0U,
     .size = 0U,

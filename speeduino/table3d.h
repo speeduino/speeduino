@@ -26,7 +26,9 @@
 // For I/O purposes, table axes are transferred as 8-bit values. So they need scaled
 // up & down from 16-bit. The scale factor depends on the axis data domain, as
 // defined by this enum.
-enum axis_domain { axis_domain_Rpm, axis_domain_Load, axis_domain_Tps };
+typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */  { 
+    axis_domain_Rpm, axis_domain_Load, axis_domain_Tps 
+} axis_domain;
 
 #define TABLE_Rpm_MULTIPLIER 100
 #define TABLE_Load_MULTIPLIER 2
@@ -46,13 +48,17 @@ enum axis_domain { axis_domain_Rpm, axis_domain_Load, axis_domain_Tps };
 
 // With no inheritance or virtual functions, we need to pass around void*
 // In order to cast that back to a concrete type, we need to somehow identify
-// the type. This packed int stores just enough information to do that.
-typedef uint16_t table_type_t;
-constexpr inline table_type_t table_type_key(table3d_dim_t size, axis_domain x, axis_domain y)
-{
-  return size | (x<<8) | (y<<12);
-}
+// the type. 
+//
+// We use a packed enum for size (8 bit) & performance (enum values are adjacent)
+#define TO_TYPE_KEY(size, xDom, yDom) table3d ## size ## xDom ## yDom ## _key
+typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ {
+    table_type_None,
+    #define GEN_TYPE_KEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
+    TABLE_GENERATOR(GEN_TYPE_KEY)
+} table_type_t;
 
+// 3D table type metadata
 struct table3d_metadata {
     const table_type_t type_key;
     const table3d_dim_t axis_length;
@@ -72,7 +78,7 @@ struct table3d_metadata {
     { \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr const table3d_metadata _metadata = { \
-            .type_key = table_type_key(size, axis_domain_ ## xDom, axis_domain_ ## yDom), \
+            .type_key = TO_TYPE_KEY(size, xDom, yDom), \
             .axis_length = size, \
             .x_domain = axis_domain_ ## xDom, \
             .y_domain = axis_domain_ ## yDom, \
@@ -136,9 +142,9 @@ TABLE_GENERATOR(GEN_X_BEGIN)
 // for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
 // to a caller defined function overloaded by the type of the table. 
 #define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
-  case DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)::_metadata.type_key: action(size, xDomain, yDomain, ##__VA_ARGS__);
+  case TO_TYPE_KEY(size, xDomain, yDomain): action(size, xDomain, yDomain, ##__VA_ARGS__);
 #define CONCRETE_TABLE_ACTION(testKey, action, ...) \
-  switch (testKey) { \
+  switch ((table_type_t)testKey) { \
   TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
   default: abort(); }
 
