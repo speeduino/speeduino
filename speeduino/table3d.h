@@ -28,16 +28,9 @@
 // defined by this enum.
 enum axis_domain { axis_domain_Rpm, axis_domain_Load, axis_domain_Tps };
 
-#define TABLE_RPM_MULTIPLIER 100
-#define TABLE_LOAD_MULTIPLIER 2
-
-constexpr inline uint8_t getTableAxisFactor(axis_domain domain)
-{
-    return domain==axis_domain_Rpm ? TABLE_RPM_MULTIPLIER :
-                domain==axis_domain_Load ? TABLE_LOAD_MULTIPLIER :
-                    1;
-}
-
+#define TABLE_Rpm_MULTIPLIER 100
+#define TABLE_Load_MULTIPLIER 2
+#define TABLE_Tps_MULTIPLIER 1
 
 // We have a fixed number of table types: they are defined by this macro
 // GENERATOR is expected to be another macros that takes at least 3 arguments:
@@ -83,8 +76,8 @@ struct table3d_metadata {
             .axis_length = size, \
             .x_domain = axis_domain_ ## xDom, \
             .y_domain = axis_domain_ ## yDom, \
-            .xaxis_io_factor = getTableAxisFactor(axis_domain_ ## xDom), \
-            .yaxis_io_factor = getTableAxisFactor(axis_domain_ ## yDom) \
+            .xaxis_io_factor = TABLE_ ## xDom ## _MULTIPLIER, \
+            .yaxis_io_factor = TABLE_ ## yDom ## _MULTIPLIER \
         }; \
         \
         table3DGetValueCache get_value_cache; \
