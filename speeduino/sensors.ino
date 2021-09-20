@@ -285,6 +285,10 @@ static inline void readMAP()
       {
         instanteneousMAPReading();
         MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
+        if(configPage6.useEMAP == true)
+        {
+          EMAPrunningValue = currentStatus.EMAPADC;
+        }
         MAPcount = 1;
       }
       break;
