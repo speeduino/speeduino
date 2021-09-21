@@ -1861,6 +1861,47 @@ void setPinMapping(byte boardID)
      #endif
       break;
 
+   case 35:
+      //Pin mappings for the Spark EFI V1.x by Emre TUNALI
+      #if defined(CORE_AVR)
+      //This is the regular MEGA2560 pin mapping
+      pinInjector1 = 8; //Output pin injector 1
+      pinInjector2 = 9; //Output pin injector 2
+      pinInjector3 = 10; //Output pin injector 3
+      pinInjector4 = 11; //Output pin injector 4
+      pinInjector5 = 12; //Output pin injector 5
+      pinInjector6 = 50; //Output pin injector 6
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 48; //Pin for coil 4
+      pinCoil5 = 36; //Pin for coil 5
+      pinCoil6 = 34; //Pin for coil 6
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinVSS = 20; //VSS input pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLT sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinTachOut = 49; //Tacho output pin
+      pinIdle1 = 5; //ICV pin1
+      pinIdle2 = 6; //ICV pin3
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //VVT1 output (intake vanos)
+      pinVVT_2 = 44; //VVT2 output (exhaust vanos)
+      pinFuelPump = 45; //Fuel pump output
+      pinStepperDir = 16; //Stepper valve isn't used with these
+      pinStepperStep = 17; //Stepper valve isn't used with these
+      pinStepperEnable = 24; //Stepper valve isn't used with these
+      pinFan = 47; //Pin for the fan output
+      pinLaunch = 51; //Launch control pin
+      pinFlex = 2; // Flex sensor
+     #endif
+      break;
+
     case 40:
      #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the NO2C shield
