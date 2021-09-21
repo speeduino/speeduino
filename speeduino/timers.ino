@@ -147,9 +147,6 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
       //else { last250msLoopCount = mainLoopCount; }
     #endif
-
-    // Air conditioning control
-    airConControl();
   }
 
   //1Hz loop

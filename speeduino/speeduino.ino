@@ -306,6 +306,9 @@ void loop()
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
 
+      // Air conditioning control
+      airConControl();
+
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
