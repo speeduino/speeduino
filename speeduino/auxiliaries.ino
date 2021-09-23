@@ -20,49 +20,57 @@ Air Conditioning Control
 */
 void initialiseAirCon()
 {
-  if( configPage13.airConEnable&1 == 1 )
+  if( configPage13.airConEnable&1 == 1 &&
+      pinAirConRequest != 0 &&
+      pinAirConComp != 0 )
   {
     // Hold the A/C off until a few seconds after cranking
-    engineRunSeconds = 0;
+    acAfterEngineStartDelay = 0;
     waitedAfterCranking = false;
     
     acStartDelay = 0;
     // Start with the delay already elapsed
     acTPSLockoutDelay = configPage13.airConTPSCutTime;
-
-    if(pinAirConRequest != 0)
-    {
-      aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
-      aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);  
-    }
-    if(pinAirConComp != 0)
-    {
-      aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
-      aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
-      AIRCON_OFF();
-    }
-    
+  
     BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_REQUEST);     // Bit 0
     BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);  // Bit 1
     BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_LOCKOUT);     // Bit 2
     BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT); // Bit 3
     BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);  // Bit 4
+    aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
+    aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
+    aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
+    aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
+    AIRCON_OFF();
+    acIsEnabled = true;
+    
+  }
+  else
+  {
+    acIsEnabled = false;
   }
 }
 
 void airConControl()
 {
-  if( configPage13.airConEnable&1 == 1)
+  if(acIsEnabled == true)
   {
     int offTemp = (int)configPage13.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
-    if ((currentStatus.coolant > offTemp) || (currentStatus.RPMdiv100 < configPage13.airConMinRPM || currentStatus.RPMdiv100 > configPage13.airConMaxRPM))
+    if ( (currentStatus.coolant > offTemp) ||
+         (currentStatus.RPMdiv100 < configPage13.airConMinRPM) ||
+         (currentStatus.RPMdiv100 > configPage13.airConMaxRPM) )
     {
       // A/C is cut off due to high coolant temperature or too high/low RPM
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_LOCKOUT);
     }
-    else if ((currentStatus.coolant < (offTemp - 1)) && (currentStatus.RPMdiv100 > (configPage13.airConMinRPM + 1) && currentStatus.RPMdiv100 < (configPage13.airConMaxRPM + 1)))
+    else if ( (currentStatus.coolant < (offTemp - 1)) &&
+              (currentStatus.RPMdiv100 > (configPage13.airConMinRPM + 1)) &&
+              (currentStatus.RPMdiv100 < (configPage13.airConMaxRPM + 1)) )
     {
       // Adds a bit of hysteresis to removing the lockouts
+      // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
+      // Hopefully configPage13.airConMinRPM wasn't 255... otherwise overflow... but that would be ridiculous
+      // Hopefully configPage13.airConMaxRPM wasn't 255... otherwise overflow... but that would be ridiculous
       BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_LOCKOUT);
     }
     
@@ -72,12 +80,17 @@ void airConControl()
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
       acTPSLockoutDelay = 0;
     }
-    else if ((BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) && (currentStatus.TPS <= ((configPage13.airConTPSCut < 5) ? 0 : (configPage13.airConTPSCut - 5))))
+    else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
+              (currentStatus.TPS <= ((configPage13.airConTPSCut < 5) ? 0 : (configPage13.airConTPSCut - 5))) )
     {
       // Adds a bit of hysteresis (5% throttle position) to removing the high TPS condition
-      if (++acTPSLockoutDelay >= configPage13.airConTPSCutTime)
+      if (acTPSLockoutDelay >= configPage13.airConTPSCutTime)
       {
         BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+      }
+      else
+      {
+        acTPSLockoutDelay++;
       }
     }
     else
@@ -85,35 +98,43 @@ void airConControl()
       acTPSLockoutDelay = 0;
     }
 
-    if(READ_AIRCON_REQUEST() == true && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == false && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_LOCKOUT) == false && waitedAfterCranking == true)
+    if( READ_AIRCON_REQUEST() == true &&
+        waitedAfterCranking == true &&
+        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == false &&
+        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_LOCKOUT) == false )
     {
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
-      if(++acStartDelay >= configPage13.airConCompOnDelay)
+      
+      if(acStartDelay >= configPage13.airConCompOnDelay)
       {
-        if(pinAirConComp != 0) { AIRCON_ON(); }
+        AIRCON_ON();
+      }
+      else
+      {
+        acStartDelay++;
       }
     }
     else
     {
       BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
-      if(pinAirConComp != 0) { AIRCON_OFF(); }
+      AIRCON_OFF();
       acStartDelay = 0;
     }
     
-    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) )
+    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     {
-      if(engineRunSeconds>=configPage13.airConAfterStartDelay)
+      if(acAfterEngineStartDelay >= configPage13.airConAfterStartDelay)
       {
         waitedAfterCranking = true;
       }
       else
       {
-        engineRunSeconds++;
+        acAfterEngineStartDelay++;
       }
     }
     else
     {
-      engineRunSeconds = 0;
+      acAfterEngineStartDelay = 0;
       waitedAfterCranking = false;
     }
   }
@@ -121,8 +142,13 @@ void airConControl()
 
 bool READ_AIRCON_REQUEST()
 {
-  if(pinAirConRequest == 0) { return false; }
-  bool acReqPinStatus = (((configPage13.airConReqPol&1)==1) ? !!(*aircon_req_pin_port & aircon_req_pin_mask) : !(*aircon_req_pin_port & aircon_req_pin_mask));
+  if(acIsEnabled == false)
+  {
+    return false;
+  }
+  bool acReqPinStatus = ( ((configPage13.airConReqPol&1)==1) ? 
+                             !!(*aircon_req_pin_port & aircon_req_pin_mask) :
+                             !(*aircon_req_pin_port & aircon_req_pin_mask));
   BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
   return acReqPinStatus;
 }

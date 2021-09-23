@@ -84,9 +84,10 @@ bool vvtTimeHold;
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output
 
+bool acIsEnabled;
 uint8_t acStartDelay;
 uint8_t acTPSLockoutDelay;
-uint8_t engineRunSeconds;
+uint8_t acAfterEngineStartDelay;
 bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
 volatile bool vvt1_pwm_state;
