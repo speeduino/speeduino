@@ -2543,8 +2543,8 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
   
-  if ( (configPage13.airConCompPin&63 != 0) && (configPage13.airConCompPin&63 < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage13.airConCompPin&63); }
-  if ( (configPage13.airConReqPin&63 != 0) && (configPage13.airConReqPin&63 < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage13.airConReqPin&63); }
+  if ( ((configPage13.airConEnable&1) == 1) && ((configPage13.airConCompPin&63) != 0) && ((configPage13.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage13.airConCompPin&63); }
+  if ( ((configPage13.airConEnable&1) == 1) && ((configPage13.airConReqPin&63) != 0) && ((configPage13.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage13.airConReqPin&63); }
   
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2582,7 +2582,7 @@ void setPinMapping(byte boardID)
   pinMode(pinVVT_2, OUTPUT);
   
   pinMode(pinAirConComp, OUTPUT);
-  if(configPage13.airConReqPol&1 == 1)
+  if((configPage13.airConReqPol&1) == 1)
   {
     // +5V is ON, Use external pull-down resistor for OFF
     pinMode(pinAirConRequest, INPUT);

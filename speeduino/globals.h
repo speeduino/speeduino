@@ -231,10 +231,10 @@
 
 #define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
 #define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
-#define BIT_AIRCON_LOCKOUT        2 //Indicates the A/C is locked out either due to the RPM being too high/low, or high coolant temp.
+#define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
 #define BIT_AIRCON_TPS_LOCKOUT    3 //Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
 #define BIT_AIRCON_TURNING_ON     4 //Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-#define BIT_AIRCON_UNUSED6        5
+#define BIT_AIRCON_CLT_LOCKOUT    5 //Indicates the A/C is locked out either due to high coolant temp.
 #define BIT_AIRCON_UNUSED7        6
 #define BIT_AIRCON_UNUSED8        7
 
@@ -1391,19 +1391,20 @@ struct config13 {
   byte airConReqPol : 1;
   byte airConTurnsFanOn : 5;
 
-  //Bytes 107-116 - Air conditioning analog points
+  //Bytes 107-117 - Air conditioning analog points
   byte airConCompPin;
   byte airConReqPin;
   byte airConTPSCut;
-  byte airConMinRPM;
-  byte airConMaxRPM;
+  byte airConMinRPMdiv100;
+  byte airConMaxRPMdiv100;
   byte airConClTempCut;
   byte airConIdleSteps;
   byte airConTPSCutTime;
   byte airConCompOnDelay;
   byte airConAfterStartDelay;
+  byte airConRPMCutTime;
   
-  byte unused13_117_127[11]; // Unused
+  byte unused13_118_127[10]; // Unused
 
 #if defined(CORE_AVR)
   };
