@@ -36,7 +36,7 @@ int TPS_rateOfChange;
 byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
-uint16_t egoNextCycleCount;
+uint16_t ego_NextCycleCount;
 unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
@@ -49,7 +49,7 @@ bool O2_SensorIsRichPrev;
 int16_t ego_FuelLoadPrev;
 uint32_t ego_FreezeEndTime;
 int8_t ego_Integral;
-uint32_t AFRnextTimeDelay;
+uint32_t ego_DelaySensorTime;
 uint8_t ego_IntDelayLoops;
 
 /** Initialize instances and vars related to corrections (at ECU boot-up).
@@ -58,15 +58,15 @@ void initialiseCorrections()
 {
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
-  egoNextCycleCount = 0;
+  ego_NextCycleCount = 0;
   ego_FreezeEndTime = 0;
-  AFRnextTimeDelay = 0;
+  ego_DelaySensorTime = 0;
   ego_Integral = 0;
   O2_SensorIsRich = false;
   O2_SensorIsRichPrev = O2_SensorIsRich;
   ego_FuelLoadPrev = currentStatus.fuelLoad;
   currentStatus.knockActive = false;
-  currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
+  currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)
 }
 
 /** Dispatch calculations for all fuel related corrections.
@@ -585,7 +585,7 @@ byte correctionFuelTemp()
 */
 byte correctionAFRClosedLoop()
 {
-  byte egoAdjustPct = 100;
+  byte ego_AdjustPct = 100;
   uint8_t O2_Error;
   int8_t ego_Prop;
   bool ego_EngineCycleCheck = false;
@@ -604,20 +604,19 @@ byte correctionAFRClosedLoop()
   else { currentStatus.afrTarget = currentStatus.O2; }
   // END AFR Target Determination    
     
-  if ((currentStatus.startRevolutions >> 1) >= egoNextCycleCount) // Crank revolutions divided by 2 is engine cycles. This check always needs to happen, to correctly align revolutions and the time delay
+  if ((currentStatus.startRevolutions >> 1) >= ego_NextCycleCount) // Crank revolutions divided by 2 is engine cycles. This check always needs to happen, to correctly align revolutions and the time delay
     {
       ego_EngineCycleCheck = true;
       // Scale the revolution counts between the two values linearly based on load value used in VE table.
-      //map(value, fromLow, fromHigh, toLow, toHigh)
-      egoNextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
+      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
     }
   
-  //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and include AFR from sensor since this would be 2x proportional controls.
+  //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
   if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
   {
     //Requirements to NOT run Closed Loop (Freeze), check this rapidly so we don't miss freeze events.
     if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
-        (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for Narrowband or just generally inhibiting O2 correction
+        (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for inhibiting O2 correction using AFR Target Table
         (currentStatus.fuelLoad > configPage6.egoFuelLoadMax) || // Too much load
         (currentStatus.launchCorrection != 100) || // Launch Control Active
         (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) //Fuel Cut
@@ -625,13 +624,13 @@ byte correctionAFRClosedLoop()
       ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay; // Set ego freeze condition timer
     }
        
-    if ((ego_EngineCycleCheck == true) && (runSecsX10 >= AFRnextTimeDelay))
+    if ((ego_EngineCycleCheck == true) && (runSecsX10 >= ego_DelaySensorTime))
     {
-      AFRnextTimeDelay = runSecsX10 + configPage6.egoSensorDelay; // Save the minimum sensor delay time for next loop
+      ego_DelaySensorTime = runSecsX10 + configPage6.egoSensorDelay; // Save the minimum sensor delay time for next loop
       // Read the O2 sensors before the algo runs, may be faster than the main loop.
       readO2();
       readO2_2();
-      O2_Readflag = true;
+      O2_Readflag = true; // Used for informing the time based O2 sensor read function that we read the O2 value here.
       ego_FuelLoadPrev = currentStatus.fuelLoad; // save last value to check for load change
 
       //Requirements TO run Closed Loop else its reset to 100pct. These are effectively errors where closed loop cannot run.
@@ -656,10 +655,13 @@ byte correctionAFRClosedLoop()
           //Proportional
           ego_Prop = (int8_t)(table2D_getValue(&ego_PropTable, O2_Error) - OFFSET_AFR_ERR);
           
-          /* Tracking of rich and lean (compared to target). Used for integrator delay which is intended to allow proportional switching control
-           * time to operate for narrowband control. If the proportional control alone is not enough to switch then integral will start to move to adjust the mean value. 
-          */
-          if (configPage9.egoIntDelay > 0 )
+          /* Tracking of rich and lean (compared to target). Used for an integrator delay which is intended to allow proportional switching control
+           * time to intentionally over-correct the fuel to generate a switch from rich to lean. If the proportional control alone is not enough to switch 
+           * only then will the integral will start to move to adjust the mean value.
+           * This is designed to generate the correct oscillation of rich and lean pulses required for 3 way catalyst control.
+           * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel so best suited for Narrowband only control.           
+          */ 
+          if (configPage9.egoIntDelay > 0)
           {
             if (O2_Error >= OFFSET_AFR_ERR) { O2_SensorIsRich = true; } //Positive error = rich.
             else { O2_SensorIsRich = false; }
@@ -677,21 +679,23 @@ byte correctionAFRClosedLoop()
           if (ego_Integral > configPage6.egoLimit) { ego_Integral = configPage6.egoLimit; }
           
           //2nd check to limit total value after update with prop and output the final correction
-          if ((ego_Integral + ego_Prop) < -configPage6.egoLimit) { egoAdjustPct = 100 - configPage6.egoLimit; }
-          else if ((ego_Integral + ego_Prop) > configPage6.egoLimit) { egoAdjustPct = 100 + configPage6.egoLimit; }
-          else { egoAdjustPct = 100 + ego_Integral + ego_Prop; }
+          if ((ego_Integral + ego_Prop) < -configPage6.egoLimit) { ego_AdjustPct = 100 - configPage6.egoLimit; }
+          else if ((ego_Integral + ego_Prop) > configPage6.egoLimit) { ego_AdjustPct = 100 + configPage6.egoLimit; }
+          else { ego_AdjustPct = 100 + ego_Integral + ego_Prop; }
          
           O2_SensorIsRichPrev = O2_SensorIsRich;
+          
           if(configPage6.egoAlgorithm == EGO_ALGORITHM_DUALO2) // 2nd Sensor Logic
           {
-            //PLACEHOLDER
+            //PLACEHOLDER - TODO run the algo again using 2nd O2 sensor, then feedback 2nd ego correction to main fuel algo.
           }
-        } // End Conditions to not freeze ego
-        else { egoAdjustPct = currentStatus.egoCorrection; } // hold last value
+          
+        } // End Conditions to run ego correction
+        else { ego_AdjustPct = currentStatus.egoCorrection; } // hold last value
   	  } // End Conditions not to reset ego
   	  else 
       { //Reset closed loop. Also activate freeze delay to re-engage.
-        egoAdjustPct = 100; 
+        ego_AdjustPct = 100; 
         ego_Integral = 0; 
         ego_IntDelayLoops = 0; 
         ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay;
@@ -699,11 +703,12 @@ byte correctionAFRClosedLoop()
     } //End O2 Algorithm Run Loop check
     else
     {
-      if (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) { egoAdjustPct = currentStatus.egoCorrection; } // hold last value
+      if (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) { ego_AdjustPct = currentStatus.egoCorrection; } // hold last value
       else 
       {// Engine speed probably stopped or recranking so don't apply EGO during crank.
-        egoAdjustPct = 100;
-        AFRnextTimeDelay = 0;
+        ego_AdjustPct = 100;
+        ego_NextCycleCount = 0;
+        ego_DelaySensorTime = 0;
         ego_FreezeEndTime = 0;
         ego_IntDelayLoops = 0;
         ego_Integral = 0;
@@ -712,15 +717,15 @@ byte correctionAFRClosedLoop()
   } //End egoType
   else
   { // No O2 sensors or incorrect config to run closed loop O2
-    egoAdjustPct = 100;
-    egoNextCycleCount = 0;
-    AFRnextTimeDelay = 0;
+    ego_AdjustPct = 100;
+    ego_NextCycleCount = 0;
+    ego_DelaySensorTime = 0;
     ego_FreezeEndTime = 0;
     ego_IntDelayLoops = 0;
     ego_Integral = 0;
   }
 
-  return egoAdjustPct;
+  return ego_AdjustPct;
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
