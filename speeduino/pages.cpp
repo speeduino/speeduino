@@ -28,49 +28,75 @@ constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288
 
 // ========================= Offset to Entity Mapping types =========================
 
-struct intra_entity_address_t {
-  // The byte where the requested offset maps to
-  void *pData;
-  // In some cases we convert 16-bit values to 8-bit. This is the factor applied during that conversion.
-  uint8_t factor; 
+typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */  { 
+    location_raw, location_table_values, location_table_axis, location_none
+} offset_location_t;
+
+struct entity_byte_address_t {
+  // The byte address that the offset mapped to.
+  offset_location_t location_type;
+  union {
+      table_axis_iterator_t axis_iterator;
+      table_row_t row_iterator;
+      byte *pData;
+  };  
 };
 
-inline byte get_value(const intra_entity_address_t &address)
-{
-  if (address.factor==1)
-  {
-    return *(byte*)(address.pData);
-  }
-  else if (address.factor>1)
-  {
-    return  (*(int16_t*)(address.pData)) / address.factor;
-  }
+struct entity_t {
+  // Entity details
+  page_iterator_t page_iterator;
 
+  // The byte address that the offset mapped to.
+  entity_byte_address_t entity_byte_address;
+};
+
+#define CREATE_ENTITY_T(page_it, byte_address) entity_t { .page_iterator = page_it, .entity_byte_address = byte_address }
+
+inline byte get_value(const entity_t &entity)
+{
+  // Multiple 'if' statements are faster than a switch on Mega2560
+  if (location_raw==entity.entity_byte_address.location_type)
+  {
+    return *entity.entity_byte_address.pData;
+  }
+  if (location_table_values==entity.entity_byte_address.location_type)
+  {
+    return get_value(entity.entity_byte_address.row_iterator);
+  }
+  if (location_table_axis==entity.entity_byte_address.location_type)
+  {
+    return get_value(entity.entity_byte_address.axis_iterator); 
+  }
   return 0U;
 }
 
-inline void set_value(byte value, const intra_entity_address_t &address)
+inline void invalidate_table_cache(void *pTable, table_type_t table_key)
 {
-  if (address.factor==1)
-  {
-    *(byte*)(address.pData) = value;
-  }
-  else if (address.factor>1)
-  {
-    (*(int16_t*)(address.pData)) = value * address.factor;
-  }
+    #define GEN_INVALIDATE_CACHE(size, xDomain, yDomain, pTable) \
+        invalidate_cache(&((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable)->get_value_cache); \
+        break;
+
+    CONCRETE_TABLE_ACTION(table_key, GEN_INVALIDATE_CACHE, pTable); 
 }
 
-struct entity_t {
-  entity_type type;
-  void *pEntity; // The start of the entity
-  table_type_t table_key;
-  uint16_t start; // The start position of the entity, in bytes, from the start of the page
-  uint16_t size;  // Size of the entity in bytes
-
-  // The byte address that the offset mapped to.
-  intra_entity_address_t address;
-};
+inline void set_value(entity_t &entity, byte value)
+{    
+  // Multiple 'if' statements are faster than a switch on Mega2560
+  if (location_raw==entity.entity_byte_address.location_type)
+  {
+    *entity.entity_byte_address.pData = value;
+  }
+  else if (location_table_values==entity.entity_byte_address.location_type)
+  {
+    set_value(entity.entity_byte_address.row_iterator, value);
+    invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
+  }
+  else if (location_table_axis==entity.entity_byte_address.location_type)
+  {
+    set_value(entity.entity_byte_address.axis_iterator, value); 
+    invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
+  }
+}
 
 // ========================= Static page size computation & checking ===================
 
@@ -90,15 +116,23 @@ static inline void check_size() {
 #define DECLARE_NEXT_ENTITY_START(entityIndex, entitySize) \
   constexpr uint16_t ENTITY_START_VAR( PP_INC(entityIndex) ) = ENTITY_START_VAR(entityIndex)+entitySize;
 
+#define PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) (offset-ENTITY_START_VAR(entityNum))
+
 // ========================= Logical page end processing ===================
 
 static const entity_t page_end_template = { 
-  .type = End,
-  .pEntity = nullptr, 
-  .table_key = table_type_None, 
-  .start = 0U,
-  .size = 0U, 
-  .address = { nullptr, 0U } 
+  .page_iterator = page_iterator_t { 
+    .pData = nullptr,
+    .table_key = table_type_None,
+    .page = 0U,
+    .start = 0U,
+    .size = 0U,
+    .type = End,
+  },
+  .entity_byte_address = entity_byte_address_t {
+    .location_type = location_none,
+    { .pData = nullptr }
+  }, 
 };
 
 // Signal the end of a page
@@ -115,77 +149,99 @@ static const entity_t page_end_template = {
 // We take the offset & map it to a single value, x-axis or y-axis element
 
 // Handy table macros
-#define TABLE_VALUE_END(size) ((uint16_t)size*(uint16_t)size)
-#define TABLE_AXISX_END(size) (TABLE_VALUE_END(size)+(uint16_t)size)
-#define TABLE_AXISY_END(size) (TABLE_AXISX_END(size)+(uint16_t)size)
-#define TABLE_SIZE(pTable) TABLE_AXISY_END((pTable)->_metadata.axis_length)
+#define TABLE_AXIS_LENGTH(pTable) (pTable)->_metadata.axis_length
+#define TABLE_VALUE_END(pTable) (sq((uint16_t)TABLE_AXIS_LENGTH(pTable)))
+#define TABLE_AXISX_END(pTable) (TABLE_VALUE_END(pTable)+(uint16_t)TABLE_AXIS_LENGTH(pTable))
+#define TABLE_AXISY_END(pTable) (TABLE_AXISX_END(pTable)+(uint16_t)TABLE_AXIS_LENGTH(pTable))
+#define TABLE_SIZE(pTable) TABLE_AXISY_END((pTable))
 
-#define OFFSET_TO_XAXIS_INDEX(offset, size) (offset - sq(size))
-#define OFFSET_TO_YAXIS_INDEX(offset, size) ((size-1) - (offset - (sq(size)+size)))
+#define CREATE_TABLE_PAGEITERATOR(pTable, entityNum) \
+  page_iterator_t { \
+    .pData = pTable, \
+    .table_key = (pTable)->_metadata.type_key, \
+    .page = 0U, \
+    .start = ENTITY_START_VAR(entityNum), \
+    .size = TABLE_SIZE(pTable), \
+    .type = Table, \
+  }
 
-// This computes the index of the logical first element of the first row
-// Which isn't at values[0]
-#define FIRST_ELEMENT_INDEX(size) ((uint8_t)((size*size)-size))
+#define CREATE_VALUE_BYTEACCESSOR(row, col, pTable, entityNum) \
+  entity_byte_address_t { \
+    .location_type = location_table_values, \
+    { .row_iterator = advance_intra_row(get_row(advance_row(rows_begin(pTable), row)), col) }  \
+  }
 
+#define CREATE_XAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
+ entity_byte_address_t { \
+    .location_type = location_table_axis, \
+    { .axis_iterator = advance_axis(x_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable)) } \
+ }
+
+#define CREATE_YAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
+  entity_byte_address_t { \
+    .location_type = location_table_axis, \
+    { .axis_iterator = advance_axis(y_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable)) } \
+  }
+
+// If the offset is in range, create a Table entity_t
+//
 // Since table values aren't laid out linearily, converting a linear 
-// TS offset to the equivalent memory address requires a modulus operation
+// TS offset to the equivalent memory address requires a divison AND modulus 
+// operations.
+
 // This is slow, since AVR hardware has no divider. We can gain performance
-// by forcing uint8_t calculations.
+// by forcing uint8_t calculations. GCC will recognize that the code below
+// is doing both division & modulus on the same operands and call the
+// __udivmodqi4 builtin to do both at once. 
 //
 // THIS IS WORTH 20% to 30% speed up
 //
 // This limits us to 16x16 tables. If we need bigger and move to 16-bit 
 // operations, consider using libdivide.
-#define OFFSET_TO_VALUE_INDEX(offset, size) \
-  (FIRST_ELEMENT_INDEX(size)+(2*((uint8_t)offset % (uint8_t)size))-(uint8_t)offset)
-
-#define CREATE_TABLE_ENTITY(pTable, intra_address, entityNum) \
-  { .type = Table, .pEntity = pTable, .table_key = (pTable)->_metadata.type_key, \
-    .start = ENTITY_START_VAR(entityNum),\
-    .size = TABLE_SIZE(pTable), \
-    .address = intra_address }
-
-#define CREATE_VALUE_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->values + OFFSET_TO_VALUE_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
-     1 }
-#define CREATE_XAXIS_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->axisX + OFFSET_TO_XAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
-    (pTable)->_metadata.xaxis_io_factor}
-#define CREATE_YAXIS_ADDRESS(offset, pTable, entityNum) \
-  { (pTable)->axisY + OFFSET_TO_YAXIS_INDEX((offset-ENTITY_START_VAR(entityNum)), (pTable)->_metadata.axis_length), \
-    (pTable)->_metadata.yaxis_io_factor}
-
-// If the offset is in range, create a Table entity_t
 #define CHECK_TABLE(offset, pTable, entityNum) \
   if (offset < ENTITY_START_VAR(entityNum)+TABLE_SIZE(pTable)) \
   { \
-    constexpr uint16_t axis_length = (pTable)->_metadata.axis_length; \
     constexpr uint16_t start_address = ENTITY_START_VAR(entityNum); \
-    /* Limit table size to max 16 so we can force 8-bit calculations */ \
-    /* for performance. See comments around OFFSET_TO_VALUE_INDEX */ \
+    constexpr uint8_t axis_length = TABLE_AXIS_LENGTH(pTable); \
     static_assert(axis_length<17, "Table is too big"); \
-    if (offset < start_address+TABLE_VALUE_END(axis_length)) \
+    if (offset < start_address+TABLE_VALUE_END(pTable)) \
     { \
-      return CREATE_TABLE_ENTITY(pTable, CREATE_VALUE_ADDRESS(offset, pTable, entityNum), entityNum); \
+      const uint8_t entity_offset = PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum); \
+      const uint8_t row = entity_offset / axis_length; \
+      const uint8_t col = entity_offset % axis_length; \
+      return CREATE_ENTITY_T(CREATE_TABLE_PAGEITERATOR(pTable, entityNum), CREATE_VALUE_BYTEACCESSOR(row, col, pTable, entityNum)); \
     } \
-    if (offset < start_address+TABLE_AXISX_END(axis_length)) \
+    if (offset < start_address+TABLE_AXISX_END(pTable)) \
     { \
-      return CREATE_TABLE_ENTITY(pTable, CREATE_XAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
+      return CREATE_ENTITY_T(CREATE_TABLE_PAGEITERATOR(pTable, entityNum), CREATE_XAXIS_BYTEACCESSOR(offset, pTable, entityNum)); \
     } \
-    return CREATE_TABLE_ENTITY(pTable, CREATE_YAXIS_ADDRESS(offset, pTable, entityNum), entityNum); \
+    return CREATE_ENTITY_T(CREATE_TABLE_PAGEITERATOR(pTable, entityNum), CREATE_YAXIS_BYTEACCESSOR(offset, pTable, entityNum)); \
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, TABLE_SIZE(pTable))
 
 // ========================= Raw memory block processing  ===================
 
+#define CREATE_RAW_PAGEIT(pDataBlock, blockSize, entityNum) \
+  page_iterator_t { \
+    .pData = pDataBlock, \
+    .table_key = table_type_None, \
+    .page = 0U, \
+    .start = ENTITY_START_VAR(entityNum), \
+    .size = blockSize, \
+    .type = Raw, \
+  }
+
+#define CREATE_RAW_BYTEADDRESS(offset, pDataBlock, entityNum) \
+  entity_byte_address_t { \
+    .location_type = location_raw, \
+    { .pData = (byte*)pDataBlock+PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) } \
+  }
+
 // If the offset is in range, create a Raw entity_t
 #define CHECK_RAW(offset, pDataBlock, blockSize, entityNum) \
   if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
   { \
-    return  { .type = Raw, .pEntity = pDataBlock, .table_key = table_type_None, \
-              .start = ENTITY_START_VAR(entityNum), \
-              .size = blockSize,  \
-              .address = { (byte*)pDataBlock+offset, 1 } } ; \
+    return CREATE_ENTITY_T(CREATE_RAW_PAGEIT(pDataBlock, blockSize, entityNum), CREATE_RAW_BYTEADDRESS(offset, pDataBlock, entityNum)); \
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
 
@@ -321,13 +377,12 @@ static entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
 static inline page_iterator_t to_page_entity(const page_iterator_t &priorIt, entity_t mapped)
 {
-  return { .pData = mapped.pEntity,
-           .table_key = mapped.table_key, 
-           .page = priorIt.page, 
-           .start =mapped.type==End ? priorIt.start+priorIt.size : mapped.start, 
-           // Hit the end? Then size is the total actual page size (might be different than declared in the INI)
-           .size = mapped.type==End ? priorIt.start+priorIt.size : mapped.size, 
-           .type = mapped.type };
+  page_iterator_t page_it = mapped.page_iterator;
+  page_it.page = priorIt.page;
+  page_it.start = page_it.type==End ? priorIt.start+priorIt.size : page_it.start;
+  // Hit the end? Then size is the total actual page size (might be different than declared in the INI)
+  page_it.size = page_it.type==End ? priorIt.start+priorIt.size : page_it.size;
+  return page_it;
 }
 
 // ====================================== External functions  ====================================
@@ -344,22 +399,14 @@ uint16_t getPageSize(byte pageNum)
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  const entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
+  entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
 
-  set_value(value, entity.address);
-  if (entity.type==Table)
-  {
-    #define GEN_INVALIDATE_CACHE(size, xDomain, yDomain, pTable) \
-        invalidate_cache(&((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable)->get_value_cache); \
-        break;
-
-    CONCRETE_TABLE_ACTION(entity.table_key, GEN_INVALIDATE_CACHE, entity.pEntity);      
-  }    
+  set_value(entity, value);
 }
 
-byte getPageValue(byte page, uint16_t offset)
+byte getPageValue(byte pageNum, uint16_t offset)
 {
-  return get_value(map_page_offset_to_entity_inline(page, offset).address);
+  return get_value(map_page_offset_to_entity_inline(pageNum, offset));
 }
 
 // Support iteration over a pages entities.
