@@ -189,7 +189,7 @@
 //Define masks for spark variable
 #define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
 #define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
-#define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
+#define BIT_SPARK_UNUSED3         2
 #define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
 #define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
 #define BIT_SPARK_ERROR           5  // Error is detected
