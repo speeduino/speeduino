@@ -3,4 +3,5 @@
   (lib (name Connector)(type Legacy)(uri ${KIPRJMOD}/lib/Connector_Automotive/Connector_Automotive.lib)(options "")(descr ""))
   (lib (name Misc)(type Legacy)(uri ${KIPRJMOD}/lib/Misc/Misc.lib)(options "")(descr ""))
   (lib (name IC_Automotive)(type Legacy)(uri ${KIPRJMOD}/lib/IC_Automotive/IC_Automotive.lib)(options "")(descr ""))
+  (lib (name v0.4.4b-rescue)(type Legacy)(uri ${KIPRJMOD}/v0.4.4b-rescue.lib)(options "")(descr ""))
 )

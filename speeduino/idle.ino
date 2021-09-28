@@ -18,6 +18,20 @@ Currently limited to on/off control and open loop PWM and stepper drive
 */
 integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
+//Any common functions associated with starting the Idle
+//Typically this is enabling the PWM interrupt
+static inline void enableIdle()
+{
+  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  {
+    IDLE_TIMER_ENABLE();
+  }
+  else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
+  {
+
+  }
+}
+
 void initialiseIdle()
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
@@ -76,6 +90,32 @@ void initialiseIdle()
       iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
+
+      iacClosedLoopTable.xSize = 10;
+      iacClosedLoopTable.valueSize = SIZE_BYTE;
+      iacClosedLoopTable.axisSize = SIZE_BYTE;
+      iacClosedLoopTable.values = configPage6.iacCLValues;
+      iacClosedLoopTable.axisX = configPage6.iacBins;
+
+      iacCrankDutyTable.xSize = 4;
+      iacCrankDutyTable.valueSize = SIZE_BYTE;
+      iacCrankDutyTable.axisSize = SIZE_BYTE;
+      iacCrankDutyTable.values = configPage6.iacCrankDuty;
+      iacCrankDutyTable.axisX = configPage6.iacCrankBins;
+
+      #if defined(CORE_AVR)
+        idle_pwm_max_count = 1000000L / (16 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #elif defined(CORE_TEENSY)
+        idle_pwm_max_count = 1000000L / (32 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #elif defined(CORE_TEENSY41)
+        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
+      idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+      idlePID.SetMode(AUTOMATIC); //Turn PID on
+
+      idleCounter = 0;
+
       break;
 
     case IAC_ALGORITHM_PWM_CL:
@@ -198,6 +238,117 @@ void initialiseIdleUpOutput()
 
   idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
   idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
+}
+
+/*
+Checks whether a step is currently underway or whether the motor is in 'cooling' state (ie whether it's ready to begin another step or not)
+Returns:
+True: If a step is underway or motor is 'cooling'
+False: If the motor is ready for another step
+*/
+static inline byte checkForStepping()
+{
+  bool isStepping = false;
+  unsigned int timeCheck;
+  
+  if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
+  {
+    if (idleStepper.stepperStatus == STEPPING)
+    {
+      timeCheck = iacStepTime_uS;
+    }
+    else 
+    {
+      timeCheck = iacCoolTime_uS;
+    }
+
+    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
+    {         
+      if(idleStepper.stepperStatus == STEPPING)
+      {
+        //Means we're currently in a step, but it needs to be turned off
+        digitalWrite(pinStepperStep, LOW); //Turn off the step
+        idleStepper.stepStartTime = micros_safe();
+        
+        // if there is no cool time we can miss that step out completely.
+        if (iacCoolTime_uS > 0)
+        {
+          idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
+        }
+        else
+        {
+          idleStepper.stepperStatus = SOFF;  
+        }
+          
+        isStepping = true;
+      }
+      else
+      {
+        //Means we're in COOLING status but have been in this state long enough. Go into off state
+        idleStepper.stepperStatus = SOFF;
+        digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
+      }
+    }
+    else
+    {
+      //Means we're in a step, but it doesn't need to turn off yet. No further action at this time
+      isStepping = true;
+    }
+  }
+  return isStepping;
+}
+
+/*
+Performs a step
+*/
+static inline void doStep()
+{
+  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteris check
+  {
+    // the home position for a stepper is pintle fully seated, i.e. no airflow.
+    if(idleStepper.targetIdleStep < idleStepper.curIdleStep)
+    {
+      // we are moving toward the home position (reducing air)
+      digitalWrite(pinStepperDir, idleStepper.lessAirDirection);
+      idleStepper.curIdleStep--;
+    }
+    else
+    if (idleStepper.targetIdleStep > idleStepper.curIdleStep)
+    {
+      // we are moving away from the home position (adding air).
+      digitalWrite(pinStepperDir, idleStepper.moreAirDirection);
+      idleStepper.curIdleStep++;
+    }
+
+    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+    digitalWrite(pinStepperStep, HIGH);
+    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepperStatus = STEPPING;
+    idleOn = true;
+  }
+}
+
+/*
+Checks whether the stepper has been homed yet. If it hasn't, will handle the next step
+Returns:
+True: If the system has been homed. No other action is taken
+False: If the motor has not yet been homed. Will also perform another homing step.
+*/
+static inline byte isStepperHomed()
+{
+  bool isHomed = true; //As it's the most common scenario, default value is true
+  if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+  {
+    digitalWrite(pinStepperDir, idleStepper.lessAirDirection); //homing the stepper closes off the air bleed
+    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+    digitalWrite(pinStepperStep, HIGH);
+    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepperStatus = STEPPING;
+    completedHomeSteps++;
+    idleOn = true;
+    isHomed = false;
+  }
+  return isHomed;
 }
 
 void idleControl()
@@ -503,119 +654,9 @@ void idleControl()
   }
 }
 
-/*
-Checks whether the stepper has been homed yet. If it hasn't, will handle the next step
-Returns:
-True: If the system has been homed. No other action is taken
-False: If the motor has not yet been homed. Will also perform another homing step.
-*/
-static inline byte isStepperHomed()
-{
-  bool isHomed = true; //As it's the most common scenario, default value is true
-  if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
-  {
-    digitalWrite(pinStepperDir, idleStepper.lessAirDirection); //homing the stepper closes off the air bleed
-    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
-    digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
-    idleStepper.stepperStatus = STEPPING;
-    completedHomeSteps++;
-    idleOn = true;
-    isHomed = false;
-  }
-  return isHomed;
-}
-
-/*
-Checks whether a step is currently underway or whether the motor is in 'cooling' state (ie whether it's ready to begin another step or not)
-Returns:
-True: If a step is underway or motor is 'cooling'
-False: If the motor is ready for another step
-*/
-static inline byte checkForStepping()
-{
-  bool isStepping = false;
-  unsigned int timeCheck;
-  
-  if( (idleStepper.stepperStatus == STEPPING) || (idleStepper.stepperStatus == COOLING) )
-  {
-    if (idleStepper.stepperStatus == STEPPING)
-    {
-      timeCheck = iacStepTime_uS;
-    }
-    else 
-    {
-      timeCheck = iacCoolTime_uS;
-    }
-
-    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
-    {         
-      if(idleStepper.stepperStatus == STEPPING)
-      {
-        //Means we're currently in a step, but it needs to be turned off
-        digitalWrite(pinStepperStep, LOW); //Turn off the step
-        idleStepper.stepStartTime = micros_safe();
-        
-        // if there is no cool time we can miss that step out completely.
-        if (iacCoolTime_uS > 0)
-        {
-          idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
-        }
-        else
-        {
-          idleStepper.stepperStatus = SOFF;  
-        }
-          
-        isStepping = true;
-      }
-      else
-      {
-        //Means we're in COOLING status but have been in this state long enough. Go into off state
-        idleStepper.stepperStatus = SOFF;
-        digitalWrite(pinStepperEnable, HIGH); //Disable the DRV8825
-      }
-    }
-    else
-    {
-      //Means we're in a step, but it doesn't need to turn off yet. No further action at this time
-      isStepping = true;
-    }
-  }
-  return isStepping;
-}
-
-/*
-Performs a step
-*/
-static inline void doStep()
-{
-  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteris check
-  {
-    // the home position for a stepper is pintle fully seated, i.e. no airflow.
-    if(idleStepper.targetIdleStep < idleStepper.curIdleStep)
-    {
-      // we are moving toward the home position (reducing air)
-      digitalWrite(pinStepperDir, idleStepper.lessAirDirection);
-      idleStepper.curIdleStep--;
-    }
-    else
-    if (idleStepper.targetIdleStep > idleStepper.curIdleStep)
-    {
-      // we are moving away from the home position (adding air).
-      digitalWrite(pinStepperDir, idleStepper.moreAirDirection);
-      idleStepper.curIdleStep++;
-    }
-
-    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
-    digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
-    idleStepper.stepperStatus = STEPPING;
-    idleOn = true;
-  }
-}
 
 //This function simply turns off the idle PWM and sets the pin low
-static inline void disableIdle()
+void disableIdle()
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
@@ -645,24 +686,10 @@ static inline void disableIdle()
   currentStatus.idleLoad = 0;
 }
 
-//Any common functions associated with starting the Idle
-//Typically this is enabling the PWM interrupt
-static inline void enableIdle()
-{
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
-  {
-    IDLE_TIMER_ENABLE();
-  }
-  else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
-  {
-
-  }
-}
-
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER1_COMPC_vect)
 #else
-static inline void idleInterrupt() //Most ARM chips can simply call a function
+void idleInterrupt() //Most ARM chips can simply call a function
 #endif
 {
   if (idle_pwm_state)

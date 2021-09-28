@@ -68,6 +68,12 @@ unsigned long percentage(byte x, unsigned long y)
   //return divu100(y * x);
 }
 
+//Same as above, but 0.5% accuracy
+unsigned long halfPercentage(byte x, unsigned long y)
+{
+  return (y * x) / 200;
+}
+
 /*
  * Calculates integer power values. Same as pow() but with ints
  */
