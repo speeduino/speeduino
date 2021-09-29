@@ -323,7 +323,7 @@ void initialiseAll()
     //Lookup the current MAP reading for barometric pressure
     instanteneousMAPReading();
     //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
-    if ( configPage6.useExtBaro != 0 )
+    if ( configPage6.useExtBaro == true )
     {
       readBaro();
       storeLastBaro(currentStatus.baro);

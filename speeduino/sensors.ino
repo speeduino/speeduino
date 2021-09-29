@@ -475,7 +475,7 @@ void readIAT()
 
 void readBaro()
 {
-  if ( configPage6.useExtBaro != 0 )
+  if ( configPage6.useExtBaro == true )
   {
     int tempReading;
     // readings
@@ -490,6 +490,11 @@ void readBaro()
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
   }
+  else if ( configPage6.useIntBaro == true )
+  {// This logic is to only update baro at 1kpa per sec, this slow filter helps prevent any noise or dropout on MAP causing issues with fueling.
+    if ( (currentStatus.baro < currentStatus.MAP) && (currentStatus.MAP < BARO_MAX) ) { currentStatus.baro++; }
+    else if ( (currentStatus.baro > currentStatus.MAP) && (currentStatus.MAP > BARO_MIN) ) { currentStatus.baro--; }
+  }    
 }
 
 void readO2()
