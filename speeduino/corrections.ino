@@ -663,6 +663,7 @@ byte correctionAFRClosedLoop()
           */ 
           if (configPage9.egoIntDelay > 0)
           {
+            O2_SensorIsRichPrev = O2_SensorIsRich;
             if (O2_Error >= OFFSET_AFR_ERR) { O2_SensorIsRich = true; } //Positive error = rich.
             else { O2_SensorIsRich = false; }
             
@@ -683,7 +684,7 @@ byte correctionAFRClosedLoop()
           else if ((ego_Integral + ego_Prop) > configPage6.egoLimit) { ego_AdjustPct = 100 + configPage6.egoLimit; }
           else { ego_AdjustPct = 100 + ego_Integral + ego_Prop; }
          
-          O2_SensorIsRichPrev = O2_SensorIsRich;
+        
           
           if(configPage6.egoAlgorithm == EGO_ALGORITHM_DUALO2) // 2nd Sensor Logic
           {

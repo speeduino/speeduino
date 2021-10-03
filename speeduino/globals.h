@@ -879,9 +879,10 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
   byte unused2a_126[1];
-  byte unused2b_127 : 1;
+  byte unused2b_127 : 2;
   byte egoResetwAFR : 1;  ///<ego freeze or reset output when AFR target less than min
   byte egoResetwfuelLoad : 1;  ///<ego freeze or reset output when fuel load greater than max
+  byte unused2c_127 : 4;
 
 
 #if defined(CORE_AVR)
