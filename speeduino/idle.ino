@@ -469,6 +469,7 @@ void idleControl()
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idleTaper = 0;
       }
       else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
       {
@@ -476,17 +477,18 @@ void idleControl()
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
           currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          idleTaper = 0;
         }
       }
       else
       {
-        
-        if ( runSecsX10 < configPage2.idleTaperTime )
+        if ( idleTaper < configPage2.idleTaperTime )
         {
           //Tapering between cranking IAC value and running
-          currentStatus.idleDuty = map(runSecsX10, 0, configPage2.idleTaperTime,\
+          currentStatus.idleDuty = map(idleTaper, 0, configPage2.idleTaperTime,\
           table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET),\
           table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
+          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
         }
         else
         {
@@ -619,18 +621,20 @@ void idleControl()
           }
 
           doStep();
+          idleTaper = 0;
         }
         else
         {
           //Standard running
           if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) && (currentStatus.RPM > 0))
           {
-            if ( runSecsX10 < configPage2.idleTaperTime )
+            if ( idleTaper < configPage2.idleTaperTime )
             {
               //Tapering between cranking IAC value and running
-              idleStepper.targetIdleStep = map(runSecsX10, 0, configPage2.idleTaperTime,\
+              idleStepper.targetIdleStep = map(idleTaper, 0, configPage2.idleTaperTime,\
               table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3,\
               table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3);
+              if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
             }
             else
             {
@@ -685,7 +689,7 @@ void idleControl()
           {
             currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
             idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-            if( runSecsX10 < configPage2.idleTaperTime )
+            if( idleTaper < configPage2.idleTaperTime )
             {
               uint16_t minValue = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3;
               if( idle_pid_target_value < minValue<<2 ) { idle_pid_target_value = minValue<<2; }
@@ -693,7 +697,7 @@ void idleControl()
               if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL ) { maxValue = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; }
 
               //Tapering between cranking IAC value and running
-              FeedForwardTerm = map(runSecsX10, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              FeedForwardTerm = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
               idle_pid_target_value = FeedForwardTerm;
             }
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
@@ -713,7 +717,7 @@ void idleControl()
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue
-          || ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) && (runSecsX10 < configPage2.idleTaperTime)) )
+          || ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) && (idleTaper < configPage2.idleTaperTime)) )
           {
             idle_pid_target_value = FeedForwardTerm;
           }
