@@ -154,7 +154,7 @@
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
-#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET(var, pos) : bitClear(var, pos))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
 
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
@@ -536,7 +536,7 @@ extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
 //These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[33];
+extern const byte PROGMEM fsIntIndex[34];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -837,7 +837,7 @@ struct config2 {
 
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
-  byte IdleAdvDelay : 5;
+  byte idleAdvDelay : 5;
   
   byte idleAdvRPM;
   byte idleAdvTPS;
@@ -974,8 +974,8 @@ struct config4 {
   byte unusedBits4 : 7;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
-
-  byte unused4_124[2];
+  byte vvtMinClt;
+  byte vvtDelay;
 
 #if defined(CORE_AVR)
   };

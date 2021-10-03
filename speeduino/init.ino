@@ -326,29 +326,27 @@ void initialiseAll()
     if ( configPage6.useExtBaro != 0 )
     {
       readBaro();
-      //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
       storeLastBaro(currentStatus.baro);
     }
     else
     {
-     /*
-        * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-        * with record highs close to 108.5 kPa.
-        * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
-        */
-    if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
-    {
+      /*
+      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+      * with record highs close to 108.5 kPa.
+      * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+      */
+      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+      {
         currentStatus.baro = currentStatus.MAP;
-        //EEPROM.update(EEPROM_LAST_BARO, currentStatus.baro);
         storeLastBaro(currentStatus.baro);
-    }
-    else
-    {
+      }
+      else
+      {
         //Attempt to use the last known good baro reading from EEPROM
         if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
         { currentStatus.baro = readLastBaro(); } //last baro correction
         else { currentStatus.baro = 100; } //Final fall back position.
-    }
+      }
     }
 
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
@@ -3216,6 +3214,27 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
 
       break;
+
+    case DECODER_DRZ400:
+      triggerSetup_DRZ400();
+      triggerHandler = triggerPri_DualWheel;
+      triggerSecondaryHandler = triggerSec_DRZ400;
+      decoderHasSecondary = true;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+
+
 
     default:
       triggerHandler = triggerPri_missingTooth;
