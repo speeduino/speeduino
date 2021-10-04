@@ -6,22 +6,31 @@
 
 void initSD()
 {
-  //Init the SPI connection to the card reader
-  //if (SD_card.begin(SD_CS_PIN)) 
-  if (SD_card.init(SPI_HALF_SPEED, SD_CS_PIN))
+  //Set default state to ready. If any stage of the init fails, this will be changed
+  SD_status = SD_STATUS_READY; 
+
+  // Initialize the SD.
+  if (!sd.begin(SD_CONFIG)) 
   {
-    //Check for usable FAT32 volume
-    if (SD_volume.init(SD_card))
-    {
-      //Attempt to create a log file for writing
-      //logFile = SD_card.open("datalog.csv", FILE_WRITE);
-      //if(!logFile) { SD_status = SD_STATUS_ERROR_NO_WRITE; } //Cannot write to SD card
-      //else { SD_status = SD_STATUS_READY;
-      SD_status = SD_STATUS_READY;
-    }
-    else { SD_status = SD_STATUS_ERROR_NO_FS; }
-  }   
-  else { SD_status = SD_STATUS_ERROR_NO_CARD; }
+    //sd.initErrorHalt(&Serial);
+    //if (sdErrorCode() == SD_CARD_ERROR_CMD0) { SD_status = SD_STATUS_ERROR_NO_CARD;
+    SD_status = SD_STATUS_ERROR_NO_CARD;
+  }
+
+  // Open or create file - truncate existing file.
+  if (!logFile.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC)) 
+  {
+    SD_status = SD_STATUS_ERROR_NO_WRITE;
+  }
+
+  //Perform pre-allocation on card. This dramatically inproves write speed
+  if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
+  {
+    SD_status = SD_STATUS_ERROR_NO_SPACE;
+  }
+
+  //initialize the RingBuf.
+  rb.begin(&logFile);
 
   //Write a header row
   if(SD_status == SD_STATUS_READY)
@@ -35,19 +44,38 @@ void initSD()
 
 void endSD()
 {
-
+  // Write any RingBuf data to file.
+  rb.sync();
+  logFile.truncate();
+  logFile.rewind();
+  logFile.close();
 }
 
 void writeSDLogEntry()
 {
-    //uint8_t logEntry[LOG_ENTRY_SIZE];
+  //uint8_t logEntry[LOG_ENTRY_SIZE];
 
-    if(SD_status == SD_STATUS_READY)
+  if(SD_status == SD_STATUS_READY)
+  {
+    for(byte x=0; x<SD_LOG_ENTRY_SIZE; x++)
     {
-      //createSDLog(&logEntry);
-
+      rb.write(getLogEntry(x));
+      rb.print(",");
     }
-    
+    rb.println("");
+  }
+
+  //Check if write to SD from ringbuffer is needed
+  //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
+  if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy() )
+  {
+    uint16_t bytesWritten = rb.writeOut(SD_SECTOR_SIZE); 
+    //Make sure that the entire sector was written successfully
+    if (SD_SECTOR_SIZE != bytesWritten) 
+    {
+      SD_status = SD_STATUS_ERROR_WRITE_FAIL;
+    }
+  }
 }
 
 //Sets the status variable for TunerStudio
