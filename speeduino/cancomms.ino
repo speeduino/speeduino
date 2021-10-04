@@ -484,7 +484,7 @@ if (PIDmode == 0x01)
             outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
             outMsg.buf[2] =  0x00;    // PID code
             outMsg.buf[3] =  0x08;   //B0000 1000   1-8
-            outMsg.buf[4] =  B00111110;   //9-16
+            outMsg.buf[4] =  B01111110;   //9-16
             outMsg.buf[5] =  B10100000;   //17-24
             outMsg.buf[6] =  B00010001;   //17-32
             outMsg.buf[7] =  B00000000;   
@@ -500,14 +500,26 @@ if (PIDmode == 0x01)
             outMsg.buf[6] =  0x00; 
             outMsg.buf[7] =  0x00;
           break;
-         
+
+          case 10:        // PID-0x0A , Fuel Pressure (Gauge) , range is 0 to 765 kPa , formula == A / 3)
+            uint16_t temp_fuelpressure;
+            // Fuel pressure is in PSI. PSI to kPa is 6.89475729, but that needs to be divided by 3 for OBD2 formula. So 2.298.... 2.3 is close enough, so that in fraction.
+            temp_fuelpressure = (currentStatus.fuelPressure * 23) / 10;
+            outMsg.buf[0] =  0x03;    // sending 3 byte
+            outMsg.buf[1] =  0x41;    // 
+            outMsg.buf[2] =  0x0A;    // pid code
+            outMsg.buf[3] =  lowByte(temp_fuelpressure);
+            outMsg.buf[4] =  0x00;
+            outMsg.buf[5] =  0x00; 
+            outMsg.buf[6] =  0x00; 
+            outMsg.buf[7] =  0x00;
+          break;
+
           case 11:        // PID-0x0B , MAP , range is 0 to 255 kPa , Formula == A
-            uint16_t temp_engineMap;
-            temp_engineMap = (highByte(currentStatus.MAP - currentStatus.baro)<<8) | lowByte(currentStatus.MAP - currentStatus.baro);
             outMsg.buf[0] =  0x03;    // sending 3 byte
             outMsg.buf[1] =  0x41;    // 
             outMsg.buf[2] =  0x0B;    // pid code
-            outMsg.buf[3] =  temp_engineMap;    // absolute map is map gauge value - baro , baro is 100ish 
+            outMsg.buf[3] =  lowByte(currentStatus.MAP);    // absolute map
             outMsg.buf[4] =  0x00;
             outMsg.buf[5] =  0x00; 
             outMsg.buf[6] =  0x00; 
@@ -528,13 +540,11 @@ if (PIDmode == 0x01)
           break;
 
           case 13:        //PID-0x0D , Vehicle speed , range is 0 to 255 km/h , formula == A 
-            uint8_t temp_vehiclespeed;
-            temp_vehiclespeed = 120;               // TEST VALUE !!!!!   
-            outMsg.buf[0] =  0x03;                    // sending 3 bytes
-            outMsg.buf[1] =  0x41;                    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-            outMsg.buf[2] =  0x0D;                    // pid code
-            outMsg.buf[3] =  temp_vehiclespeed;       // A
-            outMsg.buf[4] =  0x00;                    // B
+            outMsg.buf[0] =  0x03;                       // sending 3 bytes
+            outMsg.buf[1] =  0x41;                       // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
+            outMsg.buf[2] =  0x0D;                       // pid code
+            outMsg.buf[3] =  lowByte(currentStatus.vss); // A
+            outMsg.buf[4] =  0x00;                       // B
             outMsg.buf[5] =  0x00; 
             outMsg.buf[6] =  0x00; 
             outMsg.buf[7] =  0x00;
@@ -611,27 +621,11 @@ if (PIDmode == 0x01)
           outMsg.buf[0] =  0x06;          // sending 4 bytes
           outMsg.buf[1] =  0x41;          // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
           outMsg.buf[2] =  0x20;          // pid code
-          outMsg.buf[3] =  B01011000;     // 33-40
+          outMsg.buf[3] =  B00011000;     // 33-40
           outMsg.buf[4] =  B00000000;     //41 - 48
           outMsg.buf[5] =  B00100000;     //49-56
           outMsg.buf[6] =  B00000001;     //57-64
           outMsg.buf[7] = 0x00;
-        break;
-
-        case 34:      // PID-0x22 Fuel /Pressure (Relative to manifold vacuum) , range is 0 to 5177.265 kPa , formula == 0.079(256A+B)
-          int16_t temp_fuelpressure;
-          temp_fuelpressure = 3165;                 // test value !!!!!! currentStatus.fuelPressure ;           
-          obdcalcG16 = temp_fuelpressure ;        //  this needs converting to kpa !
-          obdcalcA = highByte(obdcalcG16);
-          obdcalcB = lowByte(obdcalcG16);      
-          outMsg.buf[0] =  0x03;                 // sending 3 bytes
-          outMsg.buf[1] =  0x41;                 // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-          outMsg.buf[2] =  0x22;                 // pid code
-          outMsg.buf[3] =  obdcalcA;             // A
-          outMsg.buf[4] =  obdcalcB;             // B 
-          outMsg.buf[5] =  0x00; 
-          outMsg.buf[6] =  0x00; 
-          outMsg.buf[7] =  0x00;
         break;
    
         case 36:      // PID-0x24 O2 sensor2, AB: fuel/air equivalence ratio, CD: voltage ,  Formula == (2/65536)(256A +B) , 8/65536(256C+D) , Range is 0 to <2 and 0 to >8V 
