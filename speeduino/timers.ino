@@ -69,11 +69,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
   //Tacho output check
-  //Tacho Mode: 0 = WhlToothSync, 1 = IGNPulse, 2 = IGNSkipPulse 
-  //Tacho Pulses: Either pulses per revolution or number of igition pulses to use;
+  //Tacho output here is one pulse of a defined duration either every ignition event (IGNPULSE) or every other event (IGNSKIPPULSE).
 
-  // This generates a square wave turning on and off at each ignition event +/- 1ms
-  if((configPage2.TachoOutput == 1) && (configPage2.tachoMode > TACHOUT_MODE_WHLTOOTHSYNC))
+  if((configPage2.TachoOutput == 1) && (configPage2.tachoMode < TACHOUT_MODE_WHLTOOTHSYNC))
   { 
     //Tacho is flagged as being ready for a pulse by the ignition outputs. 
     //Check for half speed tacho
