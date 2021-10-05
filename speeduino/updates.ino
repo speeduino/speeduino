@@ -14,7 +14,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    18
+  #define CURRENT_DATA_VERSION    19
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -509,13 +509,13 @@ void doUpdates()
     storeEEPROMVersion(18);
   }
   
-  if(EEPROM.read(EEPROM_DATA_VERSION) == 18)
+  if(readEEPROMVersion() == 17)
   {
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
 
     writeAllConfig();
-    EEPROM.write(EEPROM_DATA_VERSION, 19);
+    storeEEPROMVersion(19);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
