@@ -50,6 +50,11 @@ inline table_axis_iterator_t y_begin(const table3D *pTable)
             -1 };
 }
 
+inline table_axis_iterator_t y_rbegin(const table3D *pTable)
+{
+    return { pTable->axisY, pTable->axisY + pTable->ySize, getTableYAxisFactor(pTable), 1 };
+}
+
 inline table_axis_iterator_t x_begin(const table3D *pTable)
 {
     return { pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable), 1 };

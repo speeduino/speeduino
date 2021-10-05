@@ -18,11 +18,14 @@
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #else
     #define EEPROM_LIB_H <EEPROM.h>
+    typedef int eeprom_address_t;
   #endif
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
+  #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbiden pins like USB
