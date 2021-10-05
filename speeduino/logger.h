@@ -17,7 +17,7 @@
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD car.*/
 #endif
 
-void createLog(uint8_t *array);
+byte getLogEntry(uint16_t);
 void createSDLog(uint8_t *array);
 
 #endif
