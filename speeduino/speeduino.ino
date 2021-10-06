@@ -305,7 +305,7 @@ void loop()
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
-
+      currentStatus.VarLaunch = getVarLaunch();
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
