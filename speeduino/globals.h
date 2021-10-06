@@ -1374,8 +1374,18 @@ struct config13 {
   struct cmpOperation operation[8]; ///< I/O variable comparison operations (See @ref cmpOperation)
 
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
+ 
+ //Amesus Project Throttle & ThrottleBody
+  byte tbEnabled : 1;
+  byte throttlePin1 : 3;
+  byte throttlePin2 : 3;
+  byte APthrottle1Min;
+  byte APthrottle1Max;
+  byte APthrottle2Min;
+  byte APthrottle2Max;
 
-  byte unused12_106_127[22]; // Unused
+  //byte unused12_106_127[22]; // Unused
+byte unused12_112_127[16]; // Unused
 
 #if defined(CORE_AVR)
   };
