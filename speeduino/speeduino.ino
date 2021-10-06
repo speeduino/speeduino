@@ -243,10 +243,10 @@ void loop()
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
 
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+     if  (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.VarLaunch * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
       { 
-        //HardCut rev limit for 2-step launch control.
-        currentStatus.launchingHard = true; 
+       
+       currentStatus.launchingHard = true; 
         BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
       } 
       else 
