@@ -720,6 +720,7 @@ struct statuses {
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
+  byte VarLaunch;
   byte engineProtectStatus;
   byte wmiPW;
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
@@ -728,7 +729,7 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
-  byte VarLaunch; //variable launch
+
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1495,11 +1496,13 @@ extern byte pinBaro; //Pin that an external barometric pressure sensor is attach
 extern byte pinResetControl; // Output pin used control resetting the Arduino
 extern byte pinFuelPressure;
 extern byte pinOilPressure;
+extern byte pinVarLaunch;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
+
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif
