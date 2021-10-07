@@ -1152,7 +1152,7 @@ struct config9 {
 
   byte VarLaunchPin: 5;  //variable launch pin for potentiometer
   int8_t VarLaunchMax;    //variable launch max rpm
-  byte trimoverall;    //trim over all cylinders
+  byte unused10_164;
   byte unused10_165;
   byte unused10_166;
   byte unused10_167;
