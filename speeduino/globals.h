@@ -710,6 +710,7 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
+  byte APthrottle; //Amesis Project Throttle PPS%
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.

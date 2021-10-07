@@ -916,6 +916,8 @@ byte getStatusEntry(uint16_t byteNum)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
+    //Amesis Project
+    case 121: statusValue = currentStatus.APthrottle; break; //Throttle PPS% 
   }
 
   return statusValue;
