@@ -340,7 +340,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[116] = currentStatus.advance2; //advance 2 
   fullStatus[117] = currentStatus.nitrous_status;
   fullStatus[118] = currentStatus.TS_SD_Status; //SD card status
-
+  fullStatus[119] = currentStatus.VarLaunch;
   for(byte x=0; x<packetLength; x++)
   {
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
