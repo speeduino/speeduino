@@ -248,7 +248,8 @@ void loop()
        
        currentStatus.launchingHard = true; 
         BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
-      } 
+       
+      }
       else 
       { 
         //FLag launch as being off
