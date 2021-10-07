@@ -687,7 +687,7 @@ byte getOilPressure()
 }
 
 
-byte getVarLaunch() //variable launch sensor read
+byte getVarLaunch() //fera launch
 {
   int16_t tempVarLaunch = 0;
   uint16_t tempReading;
