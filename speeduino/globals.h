@@ -1378,8 +1378,10 @@ struct config13 {
  
  //Amesus Project Throttle & ThrottleBody
   byte tbEnabled : 1;
-  byte throttlePin1 : 3;
-  byte throttlePin2 : 3;
+  byte APPedalePositionPin1 : 5;
+  byte unused13_106 : 2;
+  byte APPedalePositionPin2 : 5;
+  byte unused13_107 : 3;
   byte APthrottle1Min;
   byte APthrottle1Max;
   byte APthrottle2Min;

@@ -305,6 +305,7 @@ void loop()
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
+      currentStatus.APthrottle = getAPthrottle(); //Amesis Project
 
       if(auxIsEnabled == true)
       {

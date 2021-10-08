@@ -755,3 +755,29 @@ uint16_t readAuxdigital(uint8_t digitalPin)
   tempReading = digitalRead(digitalPin); 
   return tempReading;
 } 
+
+//Amesis Project 
+byte getAPthrottle()
+{
+  uint16_t tempAPthrottle = 0; 
+  uint16_t tempReading;
+
+  if(configPage13.tbEnabled > 0) // si l'option est activé
+  {
+    //Perform ADC read
+    tempReading = analogRead(pin1APPedalePosition); // Lecture du pin declaré dans la fenêtre TunerStudio
+    tempReading = analogRead(pin1APPedalePosition); // Nous lisons a la suite une seconde foie la valeur pour etre sur que soit bonne est precise
+
+   // fastMap10bit c'est le fait que l'arduino lit le pin analigique entre 0 et 5v qui convertie ça en numerique de 0 a 1023 valeur
+   // c'est ce qu'on appel un adc 10 bits. 
+   // Nous pouvons donc colibrer notre capteur grace aux valeur mini maxi, la fonction map fait donc une propotion de notre 0->1023 à notre 0->100% pédale WOT
+    tempAPthrottle = fastMap10Bit(tempReading, configPage13.APthrottle1Min, configPage13.APthrottle1Max);
+    tempAPthrottle = ADC_FILTER(tempAPthrottle, 150, currentStatus.APthrottle); //Apply speed smoothing factor
+    //Sanity check
+    if(tempAPthrottle > configPage13.APthrottle1Max) { tempAPthrottle = configPage13.APthrottle1Max; } //Si la valeur depasse la valeur max, nous mettons la valeur max
+    if(tempAPthrottle < 0 ) { tempAPthrottle = 0; } //si la valeur est négative, nous l'a mettons à 0
+  }
+
+
+  return (byte)tempAPthrottle; // on renvoie la valeur lu
+}
