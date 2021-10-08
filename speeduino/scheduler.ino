@@ -112,14 +112,6 @@ void initialiseSchedulers()
     ignitionSchedule7.Status = OFF;
     ignitionSchedule8.Status = OFF;
 
-    IGN1_TIMER_ENABLE();
-    IGN2_TIMER_ENABLE();
-    IGN3_TIMER_ENABLE();
-    IGN4_TIMER_ENABLE();
-    IGN5_TIMER_ENABLE();
-    IGN6_TIMER_ENABLE();
-    IGN7_TIMER_ENABLE();
-    IGN8_TIMER_ENABLE();
 
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
@@ -176,6 +168,14 @@ void initialiseSchedulers()
     ignitionSchedule7.EndCallback = ign7EndFunction; //Name the end callback function
     ignitionSchedule8.EndCallback = ign8EndFunction; //Name the end callback function
 
+    IGN1_TIMER_ENABLE();
+    IGN2_TIMER_ENABLE();
+    IGN3_TIMER_ENABLE();
+    IGN4_TIMER_ENABLE();
+    IGN5_TIMER_ENABLE();
+    IGN6_TIMER_ENABLE();
+    IGN7_TIMER_ENABLE();
+    IGN8_TIMER_ENABLE();    
 
 }
 
@@ -607,6 +607,15 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
     }
 
   }
+}
+
+//overload function for starting schedule(dwell) immediately
+void setIgnitionSchedule(struct Schedule *ignitionSchedule)
+{            
+             ignitionSchedule->StartCallback(); //start coil charging
+             ignitionSchedule->endCompare=ignitionSchedule->getIgnCounter()+ uS_TO_TIMER_COMPARE(currentStatus.dwell);
+             ignitionSchedule->setIgnitionCompare(ignitionSchedule->endCompare);
+             ignitionSchedule->Status=RUNNING;
 }
 
 extern void beginInjectorPriming()

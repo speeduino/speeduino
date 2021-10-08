@@ -969,26 +969,9 @@ void loop()
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition
 
-      //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
-      {
-        fixedCrankingOverride = currentStatus.dwell * 3;
-        //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
-        if(currentStatus.RPM < 250)
-        {
-          ignition1StartAngle -= 5;
-          ignition2StartAngle -= 5;
-          ignition3StartAngle -= 5;
-          ignition4StartAngle -= 5;
-          ignition5StartAngle -= 5;
-          ignition6StartAngle -= 5;
-          ignition7StartAngle -= 5;
-          ignition8StartAngle -= 5;
-        }
-      }
-      else { fixedCrankingOverride = 0; }
 
-      if(ignitionOn)
+      //fixedCrankingOverride is currently only available on the basic distributor and 4g63 and Miata9905 and MazdaAU and Subaru 67 and Daihatsu decoders.
+      if(ignitionOn && (!configPage4.ignCranklock || !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) //fixed cranking override do not need schedulers here, it starts directly from decoders
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
@@ -996,18 +979,18 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
         //dwell limiter(overdwell protection), makes it impossible to set too long pulses using schedulers.
-        if(configPage4.useDwellLim && ((currentStatus.dwell + fixedCrankingOverride) > dwellLimit_uS ))
-        {
-          fixedCrankingOverride = 0; //at first cancel the fixedCrankingOverride
-            if(currentStatus.dwell > dwellLimit_uS){ 
-            currentStatus.dwell = dwellLimit_uS;  //Still too much? How could this happen? Not any more!
-            }
-        } 
+        if(configPage4.useDwellLim){
+          dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed        
+          if ((currentStatus.dwell) > dwellLimit_uS ){
+            currentStatus.dwell = dwellLimit_uS;  //cap dwell
+          }
+        }          
+       
 
 #if IGN_CHANNELS >= 1
         if (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT) )
         {
-          setIgnitionSchedule(&ignitionSchedule1, crankAngle, ignition1EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule1, crankAngle, ignition1EndAngle, currentStatus.dwell);
         }
 #endif
 
@@ -1015,49 +998,49 @@ void loop()
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2 && !BIT_CHECK(curRollingCut, IGN2_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignition2EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignition2EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 3
         if (maxIgnOutputs >= 3 && !BIT_CHECK(curRollingCut, IGN3_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule3, crankAngle, ignition3EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule3, crankAngle, ignition3EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 4
         if (maxIgnOutputs >= 4 && !BIT_CHECK(curRollingCut, IGN4_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignition4EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignition4EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 5
         if (maxIgnOutputs >= 5  && !BIT_CHECK(curRollingCut, IGN5_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignition5EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignition5EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 6
         if (maxIgnOutputs >= 6 && !BIT_CHECK(curRollingCut, IGN6_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignition6EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignition6EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 7
         if (maxIgnOutputs >= 7 && !BIT_CHECK(curRollingCut, IGN7_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignition7EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignition7EndAngle, currentStatus.dwell);
         }
 #endif
 
 #if IGN_CHANNELS >= 8
         if (maxIgnOutputs >= 8  && !BIT_CHECK(curRollingCut, IGN8_CMD_BIT))
         {
-          setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignition8EndAngle, currentStatus.dwell + fixedCrankingOverride);
+          setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignition8EndAngle, currentStatus.dwell);
         } 
 #endif
 

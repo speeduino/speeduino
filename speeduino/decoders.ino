@@ -960,13 +960,12 @@ void triggerPri_BasicDistributor()
 
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
     {
-      endCoil1Charge();
-      endCoil2Charge();
-      endCoil3Charge();
-      endCoil4Charge();
+      setIgnitionSchedule(&ignitionSchedule1);
+      setIgnitionSchedule(&ignitionSchedule2);
+      setIgnitionSchedule(&ignitionSchedule3);
+      setIgnitionSchedule(&ignitionSchedule4);
     }
-
-    if(configPage2.perToothIgn == true)
+    else if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits((crankAngle));
@@ -1272,14 +1271,31 @@ void triggerPri_4G63()
         if(configPage2.nCylinders == 4)
         {
           //This operates in forced wasted spark mode during cranking to align with crank teeth
-          if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
-          else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
+          if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) {
+            setIgnitionSchedule(&ignitionSchedule1);
+            setIgnitionSchedule(&ignitionSchedule3);
+            }
+          else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) {
+            setIgnitionSchedule(&ignitionSchedule2); setIgnitionSchedule(&ignitionSchedule4); }
         }
         else if(configPage2.nCylinders == 6)
         {
-          if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoil1Charge(); }
-          else if( (toothCurrentCount == 3) || (toothCurrentCount == 9) ) { endCoil2Charge(); }
-          else if( (toothCurrentCount == 5) || (toothCurrentCount == 11) ) { endCoil3Charge(); }
+          if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) {setIgnitionSchedule(&ignitionSchedule1); }
+          else if( (toothCurrentCount == 3) || (toothCurrentCount == 9) ) {setIgnitionSchedule(&ignitionSchedule2); }
+          else if( (toothCurrentCount == 5) || (toothCurrentCount == 11) ) {setIgnitionSchedule(&ignitionSchedule3); }
+        }
+      }
+             //EXPERIMENTAL!
+      //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
+      else if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
+      {
+        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
+        {
+          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+
+          //Handle non-sequential tooth counts 
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
+          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
         }
       }
 
@@ -1388,19 +1404,7 @@ void triggerPri_4G63()
         }
       }
 
-      //EXPERIMENTAL!
-      //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
-      if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
-      {
-        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
-        {
-          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
-          //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
-        }
-      }
     } //Has sync
     else
     {
@@ -2175,9 +2179,15 @@ void triggerPri_Miata9905()
         else { triggerToothAngle = 110; }
       }
 
+      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
+//    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
+      {
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { setIgnitionSchedule(&ignitionSchedule1); setIgnitionSchedule(&ignitionSchedule3); }
+        else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { setIgnitionSchedule(&ignitionSchedule2); setIgnitionSchedule(&ignitionSchedule4); }
+      }
       //EXPERIMENTAL!
       //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
-      if( (configPage2.perToothIgn == true) || (configPage4.triggerAngle == 0) )
+      else if( (configPage2.perToothIgn == true) || (configPage4.triggerAngle == 0) ) //per tooth ignition only allowed when fixed cranking ignition is not
       {
         if (currentStatus.advance > 0)
         {
@@ -2188,18 +2198,11 @@ void triggerPri_Miata9905()
           else { checkPerToothTiming(crankAngle, toothCurrentCount); }
         }
       }
-
     } //Has sync
 
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
 
-    //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-    {
-      if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
-      else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
-    }
     secondaryToothCount = 0;
   } //Trigger filter
 
@@ -2394,8 +2397,8 @@ void triggerPri_MazdaAU()
       // Locked cranking timing is available, fixed at 12* BTDC
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock )
       {
-        if( toothCurrentCount == 1 ) { endCoil1Charge(); }
-        else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
+        if( toothCurrentCount == 1 ) { setIgnitionSchedule(&ignitionSchedule1); }
+        else if( toothCurrentCount == 3 ) { setIgnitionSchedule(&ignitionSchedule2); }
       }
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
@@ -2818,6 +2821,7 @@ void triggerSetup_Subaru67()
   triggerToothAngleIsCorrect = false;
   toothSystemCount = 0;
   MAX_STALL_TIME = (3333UL * 93); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  decoderHasFixedCrankingTiming = true;
 
   toothAngles[0] = 710; //tooth #1
   toothAngles[1] = 83; //tooth #2
@@ -2894,8 +2898,8 @@ void triggerPri_Subaru67()
       //Locked timing during cranking. This is fixed at 10* BTDC.
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
       {
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoil1Charge(); endCoil3Charge(); }
-        else if( (toothCurrentCount == 4) || (toothCurrentCount == 10) ) { endCoil2Charge(); endCoil4Charge(); }
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { setIgnitionSchedule(&ignitionSchedule1); setIgnitionSchedule(&ignitionSchedule3); }
+        else if( (toothCurrentCount == 4) || (toothCurrentCount == 10) ) { setIgnitionSchedule(&ignitionSchedule2); setIgnitionSchedule(&ignitionSchedule4); }
       }
 
       if ( toothCurrentCount > 12 ) //2 complete crank revolutions
@@ -3066,6 +3070,7 @@ void triggerSetup_Daihatsu()
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   secondDerivEnabled = false;
   decoderIsSequential = false;
+  decoderHasFixedCrankingTiming = true;
 
   MAX_STALL_TIME = (1851UL * triggerToothAngle)*4;//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
 
@@ -3119,10 +3124,10 @@ void triggerPri_Daihatsu()
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //This locks the cranking timing to 0 degrees BTDC (All the triggers allow for)
-        if(toothCurrentCount == 1) { endCoil1Charge(); }
-        else if(toothCurrentCount == 2) { endCoil2Charge(); }
-        else if(toothCurrentCount == 3) { endCoil3Charge(); }
-        else if(toothCurrentCount == 4) { endCoil4Charge(); }
+        if(toothCurrentCount == 1) { setIgnitionSchedule(&ignitionSchedule1); }
+        else if(toothCurrentCount == 2) { setIgnitionSchedule(&ignitionSchedule2); }
+        else if(toothCurrentCount == 3) { setIgnitionSchedule(&ignitionSchedule3); }
+        else if(toothCurrentCount == 4) { setIgnitionSchedule(&ignitionSchedule4); }
       }
     }
     else //NO SYNC

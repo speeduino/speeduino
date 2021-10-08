@@ -99,6 +99,7 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
 
 void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int ignitionEndAngle, unsigned long duration);
+void setIgnitionSchedule(struct Schedule *ignitionSchedule);
 
 void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 
