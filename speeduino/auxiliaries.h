@@ -35,6 +35,8 @@ void wmiControl();
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
+#define VVT_TIME_DELAY_MULTIPLIER  50
+
 #define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
 #define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
 
@@ -62,6 +64,9 @@ long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
 byte vvtCounter;
+uint32_t vvtWarmTime;
+bool vvtIsHot;
+bool vvtTimeHold;
 
 byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 byte fanLOW = LOW;               // Used to invert the cooling fan output

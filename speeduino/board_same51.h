@@ -18,6 +18,7 @@
   #define COUNTER_TYPE uint16_t
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     //SPIClass SPI_for_flash(1, 2, 3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
     SPIClass SPI_for_flash = SPI; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
@@ -29,6 +30,7 @@
   #else
     //#define EEPROM_LIB_H <EEPROM.h>
     #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #endif
   #define RTC_LIB_H "TimeLib.h"
   void initBoard();
