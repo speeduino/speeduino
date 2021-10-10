@@ -65,6 +65,8 @@ volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the
 volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
+volatile unsigned long toothLastToothRisingTime = 0; //The time (micros()) that the last tooth rose (used by special decoders to determine missing teeth polarity)
+volatile unsigned long toothLastSecToothRisingTime = 0; //The time (micros()) that the last tooth rose on the secondary input (used by special decoders to determine missing teeth polarity)
 volatile unsigned long targetGap2;
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
@@ -4176,3 +4178,251 @@ void triggerSec_DRZ400()
 
   triggerSecFilterTime = (toothOneTime - toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
 }
+
+/** Chrysler NGC - a dedicated decoder for vehicles with 4 cylinder NGC pattern.
+36+2-2 trigger wheel running at crank speed
+7 tooth trigger wheel running at cam speed
+Both wheels use the polarity of the missing teeth to determine position
+* @defgroup dec Chrysler NGC 4-cylinder
+* @{
+*/
+
+void triggerSetup_NGC()
+{
+  secondDerivEnabled = false;
+  decoderIsSequential = true;
+
+  //Primary trigger
+  configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
+  triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
+  triggerFilterTime = (int)(1000000 / (MAX_RPM / 60 * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+  toothCurrentCount = 0;
+  toothOneTime = 0;
+  toothOneMinusOneTime = 0;  
+  toothLastMinusOneToothTime = 0;
+  toothLastToothRisingTime = 0;
+  MAX_STALL_TIME = (3333UL * triggerToothAngle * 2 ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  //Secondary trigger
+  triggerSecFilterTime = (1000000 / MAX_RPM * 60 / (360 / 36) / 2); //Two nearest edges are 36 degrees apart. Divide by 2 for cam speed.
+  secondaryToothCount = 0;
+  toothLastSecToothRisingTime = 0;
+  toothLastSecToothTime = 0;
+  toothLastMinusOneSecToothTime = 0;
+}
+
+void triggerPri_NGC() {
+  curTime = micros();
+  // We need to know the polarity of the missing tooth to determine position
+  if (READ_PRI_TRIGGER() == HIGH) {
+    toothLastToothRisingTime = curTime;
+    return;
+  }
+
+  curGap = curTime - toothLastToothTime;
+  if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger.
+  {
+    toothCurrentCount++;
+    validTrigger = true;
+
+    if ( toothLastToothTime > 0 && toothLastMinusOneToothTime > 0 ) { //Make sure we haven't enough tooth information to calculate missing tooth length
+
+      bool isMissingTooth = false;
+
+      //Only check for missing tooth if we expect this one to be it or if we haven't found one yet
+      if (toothCurrentCount == 17 || toothCurrentCount == 35 || ( currentStatus.hasSync == false && BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) == false) ) {
+        //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+        if (curGap > ( (toothLastToothTime - toothLastMinusOneToothTime) * 2 ) )
+        {
+          isMissingTooth = true; //Missing tooth detected
+          triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+          triggerToothAngleIsCorrect = false; //The tooth angle is bigger at this point
+          
+          // Figure out the polarity of the missing tooth by comparing how far ago the last tooth rose
+          if ((toothLastToothRisingTime - toothLastToothTime) < (curTime - toothLastToothRisingTime)) {
+            //Just passed the HIGH missing tooth
+            toothCurrentCount = 1;
+
+            toothOneMinusOneTime = toothOneTime;
+            toothOneTime = curTime;
+
+            if (currentStatus.hasSync == true) { currentStatus.startRevolutions++; }
+            else { currentStatus.startRevolutions = 0; }
+          }
+          else {
+            //Just passed the first tooth after the LOW missing tooth
+            toothCurrentCount = 19;
+          }
+
+          //If Sequential fuel or ignition is in use, further checks are needed before determining sync
+          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+          {
+            // Verify the tooth counters are valid and use this to determine current revolution
+            if ( (toothCurrentCount == 1 && (secondaryToothCount == 1 || secondaryToothCount == 2) ) || (toothCurrentCount == 19 && secondaryToothCount == 4) )
+            {
+              revolutionOne = false;
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+            }
+            else if ( (toothCurrentCount == 1 && secondaryToothCount == 5) || (toothCurrentCount == 19 && secondaryToothCount == 7) )
+            {
+              revolutionOne = true;
+              currentStatus.hasSync = true;
+              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+            }
+            // If tooth counters are not valid, set half sync bit
+            else {
+              if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
+              currentStatus.hasSync = false;
+              BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+          }
+          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+
+        }
+        else {
+          // If we have found a missing tooth and don't get the next one at the correct tooth we end up here -> Resync
+          if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
+          currentStatus.hasSync = false;
+          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+        }
+      }
+
+      if(isMissingTooth == false)
+      {
+        //Regular (non-missing) tooth
+        setFilter(curGap);
+        triggerToothAngleIsCorrect = true;
+      }
+    }
+
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+  }
+
+  //NEW IGNITION MODE
+  if( (configPage2.perToothIgn == true) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == false) ) 
+    {
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits(crankAngle);
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
+      {
+        crankAngle += 360;
+        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+      }
+    else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+  }
+}
+
+void triggerSec_NGC4()
+{
+  //Only check the cam wheel for sequential operation
+  if( configPage4.sparkMode != IGN_MODE_SEQUENTIAL && configPage2.injLayout != INJ_SEQUENTIAL ) {
+    return;
+  }
+
+  curTime2 = micros();
+
+  // We need to know the polarity of the missing tooth to determine position
+  if (READ_SEC_TRIGGER() == HIGH) {
+    toothLastSecToothRisingTime = curTime2;
+    return;
+  }
+
+  curGap2 = curTime2 - toothLastSecToothTime;
+
+  if ( curGap2 > triggerSecFilterTime )
+  {
+    if ( toothLastSecToothTime > 0 && toothLastMinusOneSecToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
+    {
+      if (secondaryToothCount > 0) { secondaryToothCount++; }
+
+      if (curGap2 >= ((3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1)) // Check if we have a bigger gap, that is a long tooth
+      {
+        // Check long tooth polarity
+        if ((toothLastSecToothRisingTime - toothLastSecToothTime) < (curTime2 - toothLastSecToothRisingTime)) {
+          //Just passed the HIGH missing tooth
+          if ( secondaryToothCount == 0 || secondaryToothCount == 8 ) { secondaryToothCount = 1; } // synced
+          else if (secondaryToothCount > 0) { secondaryToothCount = 0; } //Any other number of teeth seen means we missed something or something extra was seen so attempt resync.
+        }
+        else {
+          //Just passed the first tooth after the LOW missing tooth
+          if ( secondaryToothCount == 0 || secondaryToothCount == 5 ) { secondaryToothCount = 5; }
+          else if (secondaryToothCount > 0) { secondaryToothCount = 0; }
+        }
+
+        triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+      }
+      else if (secondaryToothCount > 0) {
+        triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+      }
+
+    }
+    
+    toothLastMinusOneSecToothTime = toothLastSecToothTime;
+    toothLastSecToothTime = curTime2;
+  }
+}
+
+uint16_t getRPM_NGC()
+{
+  uint16_t tempRPM = 0;
+  if( currentStatus.RPM < currentStatus.crankRPM)
+  {
+    if (triggerToothAngleIsCorrect == true) { tempRPM = crankingGetRPM(36, 360); }
+    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at any of the missing teeth as it messes the calculation
+  }
+  else
+  {
+    tempRPM = stdGetRPM(360);
+  }
+  return tempRPM;
+}
+
+void triggerSetEndTeeth_NGC()
+{
+  byte toothAdder = 0;
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
+  
+  int16_t tempIgnition1EndTooth;
+  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  if(tempIgnition1EndTooth < 1) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
+  else if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
+  if(tempIgnition1EndTooth == 17 || tempIgnition1EndTooth == 18) { tempIgnition1EndTooth = 16; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition1EndTooth == 35 || tempIgnition1EndTooth == 36) { tempIgnition1EndTooth = 34; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition1EndTooth == 53 || tempIgnition1EndTooth == 54) { tempIgnition1EndTooth = 52; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition1EndTooth > 70) { tempIgnition1EndTooth = 70; } // These are missing teeth, so set the next one before instead
+  ignition1EndTooth = tempIgnition1EndTooth;
+
+  int16_t tempIgnition2EndTooth;
+  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  if(tempIgnition2EndTooth < 1) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
+  else if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
+  if(tempIgnition2EndTooth == 17 || tempIgnition2EndTooth == 18) { tempIgnition2EndTooth = 16; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition2EndTooth == 35 || tempIgnition2EndTooth == 36) { tempIgnition2EndTooth = 34; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition2EndTooth == 53 || tempIgnition2EndTooth == 54) { tempIgnition2EndTooth = 52; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition2EndTooth > 70) { tempIgnition2EndTooth = 70; } // These are missing teeth, so set the next one before instead
+  ignition2EndTooth = tempIgnition2EndTooth;
+
+  int16_t tempIgnition3EndTooth;
+  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  if(tempIgnition3EndTooth < 1) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
+  else if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
+  if(tempIgnition3EndTooth == 17 || tempIgnition3EndTooth == 18) { tempIgnition3EndTooth = 16; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition3EndTooth == 35 || tempIgnition3EndTooth == 36) { tempIgnition3EndTooth = 34; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition3EndTooth == 53 || tempIgnition3EndTooth == 54) { tempIgnition3EndTooth = 52; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition3EndTooth > 70) { tempIgnition3EndTooth = 70; } // These are missing teeth, so set the next one before instead
+  ignition3EndTooth = tempIgnition3EndTooth;
+
+  int16_t tempIgnition4EndTooth;
+  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  if(tempIgnition4EndTooth < 1) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
+  else if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
+  if(tempIgnition4EndTooth == 17 || tempIgnition4EndTooth == 18) { tempIgnition4EndTooth = 16; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition4EndTooth == 35 || tempIgnition4EndTooth == 36) { tempIgnition4EndTooth = 34; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition4EndTooth == 53 || tempIgnition4EndTooth == 54) { tempIgnition4EndTooth = 52; } // These are missing teeth, so set the next one before instead
+  else if(tempIgnition4EndTooth > 70) { tempIgnition4EndTooth = 70; } // These are missing teeth, so set the next one before instead
+  ignition4EndTooth = tempIgnition4EndTooth;
+
+  lastToothCalcAdvance = currentStatus.advance;
+}
+/** @} */
