@@ -60,6 +60,12 @@ typedef struct write_location {
   uint8_t counter;
 } write_location;
 
+
+inline bool can_write(const write_location &location)
+{
+  return location.counter<=EEPROM_MAX_WRITE_BLOCK;
+}
+
 /** Update byte to EEPROM by first comparing content and the need to write it.
 We only ever write to the EEPROM where the new value is different from the currently stored byte
 This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
@@ -76,7 +82,7 @@ static inline write_location update(uint8_t value, const write_location &locatio
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while (location.counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  while (can_write(location) && pStart!=pEnd)
   {
     location = update(*pStart, location);
     ++pStart; 
@@ -91,7 +97,7 @@ static inline write_location write(const table_row_t &row, write_location locati
 
 static inline write_location write(table_row_iterator_t it, write_location location)
 {
-  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
+  while (can_write(location) && !at_end(it))
   {
     location = write(get_row(it), location);
     it = advance_row(it);
@@ -101,7 +107,7 @@ static inline write_location write(table_row_iterator_t it, write_location locat
 
 static inline write_location write(table_axis_iterator_t it, write_location location)
 {
-  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
+  while (can_write(location) && !at_end(it))
   {
     location = update(get_value(it), location);
     it = advance_axis(it);
@@ -257,7 +263,7 @@ void writeConfig(uint8_t pageNum)
       break;
   }
 
-  eepromWritesPending = result.counter > EEPROM_MAX_WRITE_BLOCK;
+  eepromWritesPending = !can_write(result);
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
