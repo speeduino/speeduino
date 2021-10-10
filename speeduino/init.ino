@@ -2546,6 +2546,9 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
 
+  if ( (configPage2.idle1Pin != 0) && (configPage2.idle1Pin < BOARD_MAX_IO_PINS) ) { pinIdle1 = pinTranslate(configPage2.idle1Pin); }
+  if ( (configPage2.idle2Pin != 0) && (configPage2.idle2Pin < BOARD_MAX_IO_PINS) ) { pinIdle2 = pinTranslate(configPage2.idle2Pin); }
+
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
