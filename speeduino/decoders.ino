@@ -4171,6 +4171,14 @@ void triggerSec_DRZ400()
   triggerSecFilterTime = (toothOneTime - toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
 }
 
+/** Chrysler NGC - a dedicated decoder for vehicles with 4 cylinder NGC pattern.
+36+2-2 trigger wheel running at crank speed
+7 tooth trigger wheel running at cam speed
+Both wheels use the polarity of the missing teeth to determine position
+* @defgroup dec Chrysler NGC 4-cylinder
+* @{
+*/
+
 void triggerSetup_NGC()
 {
   secondDerivEnabled = false;
@@ -4194,14 +4202,6 @@ void triggerSetup_NGC()
   toothLastSecToothTime = 0;
   toothLastMinusOneSecToothTime = 0;
 }
-
-/** Chrysler NGC - a dedicated decoder for vehicles with 4 cylinder NGC pattern.
-36+2-2 trigger wheel running at crank speed
-7 tooth trigger wheel running at cam speed
-Both wheels use the polarity of the missing teeth to determine position
-* @defgroup dec Chrysler NGC 4-cylinder
-* @{
-*/
 
 void triggerPri_NGC() {
   curTime = micros();
