@@ -526,14 +526,6 @@ extern int ignition6EndAngle;
 extern int ignition7EndAngle;
 extern int ignition8EndAngle;
 
-extern int ignition1StartAngle;
-extern int ignition2StartAngle;
-extern int ignition3StartAngle;
-extern int ignition4StartAngle;
-extern int ignition5StartAngle;
-extern int ignition6StartAngle;
-extern int ignition7StartAngle;
-extern int ignition8StartAngle;
 
 //These are variables used across multiple files
 extern const byte PROGMEM fsIntIndex[33];
