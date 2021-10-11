@@ -5,11 +5,9 @@
 byte checkEngineProtect()
 {
   byte protectActive = 0;
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
-    if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
-    {
-      if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
-    }
+  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
+  {
+    if(currentStatus.RPM > (configPage4.engineProtectMaxRPM*100U)) { protectActive = 1; }
   }
 
   return protectActive;
