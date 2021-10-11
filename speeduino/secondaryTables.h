@@ -1,4 +1,4 @@
 void calculateSecondaryFuel();
-void calculateSecondarySpark();
+bool shouldWeUseSparkTable2();
 byte getVE2();
 byte getAdvance2();

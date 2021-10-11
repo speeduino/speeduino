@@ -75,84 +75,31 @@ void calculateSecondaryFuel()
   }
 }
 
+/** Checks if we should use spark table 2
+ * 
+ * @return bool Returns true if the settings and currentStatus says we should use spark table 2
+ */
 
-void calculateSecondarySpark()
-{
-  //Same as above but for the secondary ignition table
-  BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
-  if(configPage10.spark2Mode > 0)
-  { 
-    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
-    {
-      BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE);
-      currentStatus.advance2 = getAdvance2();
-      //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
-      if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
-      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-      int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
-      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
-      else { currentStatus.advance = 127; }
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
-    {
-      BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-      currentStatus.advance2 = getAdvance2();
-      //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
-      int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
-      //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-      if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
-      else { currentStatus.advance = 127; }
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH )
-    {
-      if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_RPM)
-      {
-        if(currentStatus.RPM > configPage10.spark2SwitchValue)
-        {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-          currentStatus.advance2 = getAdvance2();
-          currentStatus.advance = currentStatus.advance2;
-        }
-      }
-      else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_MAP)
-      {
-        if(currentStatus.MAP > configPage10.spark2SwitchValue)
-        {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-          currentStatus.advance2 = getAdvance2();
-          currentStatus.advance = currentStatus.advance2;
-        }
-      }
-      else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS)
-      {
-        if(currentStatus.TPS > configPage10.spark2SwitchValue)
-        {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-          currentStatus.advance2 = getAdvance2();
-          currentStatus.advance = currentStatus.advance2;
-        }
-      }
-      else if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_ETH)
-      {
-        if(currentStatus.ethanolPct > configPage10.spark2SwitchValue)
-        {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-          currentStatus.advance2 = getAdvance2();
-          currentStatus.advance = currentStatus.advance2;
-        }
-      }
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH)
-    {
-      if(digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity)
-      {
-        BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
-        currentStatus.advance2 = getAdvance2();
-        currentStatus.advance = currentStatus.advance2;
-      }
-    }
+bool shouldWeUseSparkTable2() {
+  if (configPage10.spark2Mode <= 0)
+  { return false; }
+
+  if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD )
+  { return true; }
+
+  if (configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH) {
+    if ( (configPage10.spark2SwitchVariable == SPARK2_CONDITION_RPM && currentStatus.RPM > configPage10.spark2SwitchValue       ) ||
+         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_MAP && currentStatus.MAP > configPage10.spark2SwitchValue       ) ||
+         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS && currentStatus.TPS > configPage10.spark2SwitchValue       ) ||
+         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_ETH && currentStatus.ethanolPct > configPage10.spark2SwitchValue) )
+    { return true; }
   }
+
+  else if ( configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH && digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity)
+  { return true; }
+
+  //Default
+  return false;
 }
 
 /**
@@ -211,7 +158,6 @@ byte getAdvance2()
   }
   else { currentStatus.ignLoad2 = currentStatus.MAP; }
   tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;
 }

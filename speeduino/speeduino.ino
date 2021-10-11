@@ -421,11 +421,9 @@ void loop()
     currentStatus.VE1 = getVE1();
     currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
 
-    currentStatus.advance1 = getAdvance1();
-    currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
-
+    currentStatus.advance = getAdvance();
+    
     calculateSecondaryFuel();
-    calculateSecondarySpark();
 
     //Always check for sync
     //Main loop runs within this clause
@@ -1407,7 +1405,47 @@ byte getAdvance1()
     currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
   tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
+
+  return tempAdvance;
+}
+
+/** Gets the correct advance based on which table and corrections
+ * 
+ * @return byte The current target advance value in degrees
+ */
+
+int8_t getAdvance() {
+  int8_t tempAdvance = 0; // Result
+
+  if( shouldWeUseSparkTable2() == true )
+  {
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
+    int8_t tempAdvance2 = getAdvance2(); // Advance from table 2
+
+    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
+    {
+      if(tempAdvance2 < 0) { tempAdvance2 = 0; } //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
+      int16_t combinedAdvance = ((int16_t)getAdvance1() * (int16_t)tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      if(combinedAdvance <= 127) { tempAdvance2 = combinedAdvance; } //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      else { tempAdvance2 = 127; }
+    }
+    else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
+    {
+      int16_t combinedAdvance = (int16_t)getAdvance1() + (int16_t)tempAdvance2; //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
+      if(combinedAdvance <= 127) { tempAdvance2 = combinedAdvance; }
+      else { tempAdvance2 = 127; }
+    }
+
+    if (currentStatus.advance1 != 0) { currentStatus.advance1 = 0; }
+
+    tempAdvance = currentStatus.advance2 = correctionsIgn(tempAdvance2);
+  }
+  else {
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
+    if (currentStatus.advance2 != 0) { currentStatus.advance2 = 0; }
+
+    tempAdvance = currentStatus.advance1 = correctionsIgn(getAdvance1());
+  }
 
   return tempAdvance;
 }
