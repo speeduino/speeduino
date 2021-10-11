@@ -137,9 +137,9 @@ byte getVE2()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance2()
+int16_t getAdvance2()
 {
-  byte tempAdvance = 0;
+  int16_t tempAdvance = 0;
   if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
@@ -157,6 +157,7 @@ byte getAdvance2()
     currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
   else { currentStatus.ignLoad2 = currentStatus.MAP; }
+
   tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
 
   return tempAdvance;
