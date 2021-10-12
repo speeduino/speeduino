@@ -707,9 +707,7 @@ void loop()
       }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
-
-      calculateIgnitionAngles(dwellAngle);
+      calculateIgnitionAngles();
 
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
@@ -1175,61 +1173,61 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
   return tempInjectorStartAngle;
 }
 
-void calculateIgnitionAngle1(int dwellAngle)
+void calculateIgnitionAngle1()
 {
   ignition1EndAngle = ignitionSchedule1.channelIgnDegrees - currentStatus.advance;
   if(ignition1EndAngle > CRANK_ANGLE_MAX_IGN) {ignition1EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle2(int dwellAngle)
+void calculateIgnitionAngle2()
 {
   ignition2EndAngle = ignitionSchedule2.channelIgnDegrees - currentStatus.advance;
   if(ignition2EndAngle > CRANK_ANGLE_MAX_IGN) {ignition2EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle3(int dwellAngle)
+void calculateIgnitionAngle3()
 {
   ignition3EndAngle = ignitionSchedule3.channelIgnDegrees - currentStatus.advance;
   if(ignition3EndAngle > CRANK_ANGLE_MAX_IGN) {ignition3EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
 // ignition 3 for rotary
-void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
+void calculateIgnitionAngle3(int rotarySplitDegrees)
 {
   ignition3EndAngle = ignition1EndAngle + rotarySplitDegrees;
 }
 
-void calculateIgnitionAngle4(int dwellAngle)
+void calculateIgnitionAngle4()
 {
   ignition4EndAngle = ignitionSchedule4.channelIgnDegrees - currentStatus.advance;
   if(ignition4EndAngle > CRANK_ANGLE_MAX_IGN) {ignition4EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
 // ignition 4 for rotary
-void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
+void calculateIgnitionAngle4(int rotarySplitDegrees)
 {
   ignition4EndAngle = ignition2EndAngle + rotarySplitDegrees;
 }
 
-void calculateIgnitionAngle5(int dwellAngle)
+void calculateIgnitionAngle5()
 {
   ignition5EndAngle = ignitionSchedule5.channelIgnDegrees - currentStatus.advance;
   if(ignition5EndAngle > CRANK_ANGLE_MAX_IGN) {ignition5EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle6(int dwellAngle)
+void calculateIgnitionAngle6()
 {
   ignition6EndAngle = ignitionSchedule6.channelIgnDegrees - currentStatus.advance;
   if(ignition6EndAngle > CRANK_ANGLE_MAX_IGN) {ignition6EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle7(int dwellAngle)
+void calculateIgnitionAngle7()
 {
   ignition7EndAngle = ignitionSchedule7.channelIgnDegrees - currentStatus.advance;
   if(ignition7EndAngle > CRANK_ANGLE_MAX_IGN) {ignition7EndAngle -= CRANK_ANGLE_MAX_IGN;}
 }
 
-void calculateIgnitionAngle8(int dwellAngle)
+void calculateIgnitionAngle8()
 {
   ignition8EndAngle = ignitionSchedule8.channelIgnDegrees - currentStatus.advance;
   if(ignition8EndAngle > CRANK_ANGLE_MAX_IGN) {ignition8EndAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -1238,7 +1236,7 @@ void calculateIgnitionAngle8(int dwellAngle)
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-void calculateIgnitionAngles(int dwellAngle)
+void calculateIgnitionAngles()
 {
   
 
@@ -1247,29 +1245,29 @@ void calculateIgnitionAngles(int dwellAngle)
   {
     //1 cylinder
     case 1:
-      calculateIgnitionAngle1(dwellAngle);
+      calculateIgnitionAngle1();
       break;
     //2 cylinders
     case 2:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
       break;
     //3 cylinders
     case 3:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
-      calculateIgnitionAngle3(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
+      calculateIgnitionAngle3();
       break;
     //4 cylinders
     case 4:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
 
       #if IGN_CHANNELS >= 4
       if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
       {
-        calculateIgnitionAngle3(dwellAngle);
-        calculateIgnitionAngle4(dwellAngle);
+        calculateIgnitionAngle3();
+        calculateIgnitionAngle4();
       }
       else if(configPage4.sparkMode == IGN_MODE_ROTARY)
       {
@@ -1278,48 +1276,48 @@ void calculateIgnitionAngles(int dwellAngle)
         else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
 
         //The trailing angles are set relative to the leading ones
-        calculateIgnitionAngle3(dwellAngle, splitDegrees);
-        calculateIgnitionAngle4(dwellAngle, splitDegrees);
+        calculateIgnitionAngle3(splitDegrees);
+        calculateIgnitionAngle4(splitDegrees);
       }
       #endif
       break;
     //5 cylinders
     case 5:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
-      calculateIgnitionAngle3(dwellAngle);
-      calculateIgnitionAngle4(dwellAngle);
-      calculateIgnitionAngle5(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
+      calculateIgnitionAngle3();
+      calculateIgnitionAngle4();
+      calculateIgnitionAngle5();
       break;
     //6 cylinders
     case 6:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
-      calculateIgnitionAngle3(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
+      calculateIgnitionAngle3();
 
       #if IGN_CHANNELS >= 6
       if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
       {
-        calculateIgnitionAngle4(dwellAngle);
-        calculateIgnitionAngle5(dwellAngle);
-        calculateIgnitionAngle6(dwellAngle);
+        calculateIgnitionAngle4();
+        calculateIgnitionAngle5();
+        calculateIgnitionAngle6();
       }
       #endif
       break;
     //8 cylinders
     case 8:
-      calculateIgnitionAngle1(dwellAngle);
-      calculateIgnitionAngle2(dwellAngle);
-      calculateIgnitionAngle3(dwellAngle);
-      calculateIgnitionAngle4(dwellAngle);
+      calculateIgnitionAngle1();
+      calculateIgnitionAngle2();
+      calculateIgnitionAngle3();
+      calculateIgnitionAngle4();
 
       #if IGN_CHANNELS >= 8
       if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
       {
-        calculateIgnitionAngle5(dwellAngle);
-        calculateIgnitionAngle6(dwellAngle);
-        calculateIgnitionAngle7(dwellAngle);
-        calculateIgnitionAngle8(dwellAngle);
+        calculateIgnitionAngle5();
+        calculateIgnitionAngle6();
+        calculateIgnitionAngle7();
+        calculateIgnitionAngle8();
       }
       #endif
       break;
