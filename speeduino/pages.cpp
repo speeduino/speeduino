@@ -167,19 +167,19 @@ static const entity_t page_end_template = {
 #define CREATE_VALUE_BYTEACCESSOR(row, col, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_values, \
-    { .pData = &get_value(advance(get_row(advance_row2(rows_begin(pTable), row)), col)) }  \
+    { .pData = &*(*rows_begin(pTable).advance(row)).advance(col) } \
   }
 
 #define CREATE_XAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
  entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_value = get_value(advance_axis2(x_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable))) } \
+    { .axis_value = *x_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable)) } \
  }
 
 #define CREATE_YAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_value = get_value(advance_axis2(y_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable))) } \
+    { .axis_value = *y_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable)) } \
   }
 
 // If the offset is in range, create a Table entity_t
@@ -431,7 +431,7 @@ page_iterator_t advance(const page_iterator_t &it)
 /**
  * Convert page iterator to table value iterator.
  */
-table_row_iterator_t rows_begin(const page_iterator_t &it)
+table_value_iterator rows_begin(const page_iterator_t &it)
 {
   return rows_begin(it.pData, it.table_key);
 }
@@ -439,7 +439,7 @@ table_row_iterator_t rows_begin(const page_iterator_t &it)
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator_t x_begin(const page_iterator_t &it)
+table_axis_iterator x_begin(const page_iterator_t &it)
 {
   return x_begin(it.pData, it.table_key);
 }
@@ -447,7 +447,7 @@ table_axis_iterator_t x_begin(const page_iterator_t &it)
 /**
  * Convert page iterator to table y axis iterator.
  */
-table_axis_iterator_t y_begin(const page_iterator_t &it)
+table_axis_iterator y_begin(const page_iterator_t &it)
 {
   return y_begin(it.pData, it.table_key);
 }

@@ -23,14 +23,15 @@ void doUpdates()
   if(readEEPROMVersion() == 2)
   {
     auto table_it = rows_begin(&ignitionTable);
-    while (!at_end(table_it))
+    while (!table_it.at_end())
     {
-      auto row = get_row(table_it);
-      while (row.pValue!=row.pEnd)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        *row.pValue++ += 40;
+        *row = *row + 40;
+        ++row;
       }      
-      table_it = advance_row(table_it);
+      ++table_it;
     }
     writeAllConfig();
     storeEEPROMVersion(3);
@@ -469,15 +470,15 @@ void doUpdates()
   {
     //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
     auto table_it = rows_begin(&vvtTable);
-    while (!at_end(table_it))
+    while (!table_it.at_end())
     {
-      auto row = get_row(table_it);
-      while (row.pValue!=row.pEnd)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        *row.pValue =*row.pValue << 1;
-        ++row.pValue;
+        *row = *row << 1;
+        ++row;
       }      
-      table_it = advance_row(table_it);
+      ++table_it;
     }
 
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;

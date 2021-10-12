@@ -90,27 +90,27 @@ static inline write_location write_range(const byte *pStart, const byte *pEnd, w
   return location;
 }
 
-static inline write_location write(const table_row_t &row, write_location location)
+static inline write_location write(const table_row_iterator &row, write_location location)
 {
   return write_range(row.pValue, row.pEnd, location);
 }
 
-static inline write_location write(table_row_iterator_t it, write_location location)
+static inline write_location write(table_value_iterator it, write_location location)
 {
-  while (can_write(location) && !at_end(it))
+  while (can_write(location) && !it.at_end())
   {
-    location = write(get_row(it), location);
-    it = advance_row(it);
+    location = write(*it, location);
+    ++it;
   }
   return location;
 }
 
-static inline write_location write(table_axis_iterator_t it, write_location location)
+static inline write_location write(table_axis_iterator it, write_location location)
 {
-  while (can_write(location) && !at_end(it))
+  while (can_write(location) && !it.at_end())
   {
-    location = update(get_value(it), location);
-    it = advance_axis(it);
+    location = update(*it, location);
+    ++it;
   }
   return location;
 }
@@ -300,28 +300,28 @@ static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst
   return address;
 }
 
-static inline eeprom_address_t load(table_row_t row, eeprom_address_t address)
+static inline eeprom_address_t load(table_row_iterator row, eeprom_address_t address)
 {
   return load_range(address, row.pValue, row.pEnd);
 }
 
-static inline eeprom_address_t load(table_row_iterator_t it, eeprom_address_t address)
+static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t address)
 {
-  while (!at_end(it))
+  while (!it.at_end())
   {
-    address = load(get_row(it), address);
-    it = advance_row(it);
+    address = load(*it, address);
+    ++it;
   }
   return address; 
 }
 
-static inline eeprom_address_t load(table_axis_iterator_t it, eeprom_address_t address)
+static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
-  while (!at_end(it))
+  while (!it.at_end())
   {
-    get_value(it) = EEPROM.read(address);
+    *it = EEPROM.read(address);
     ++address;
-    it = advance_axis(it);
+    ++it;
   }
   return address;    
 }

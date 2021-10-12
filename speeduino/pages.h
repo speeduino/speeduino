@@ -82,14 +82,14 @@ page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator
 /**
  * Convert page iterator to table value iterator.
  */
-table_row_iterator_t rows_begin(const page_iterator_t &it);
+table_value_iterator rows_begin(const page_iterator_t &it);
 
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator_t x_begin(const page_iterator_t &it);
+table_axis_iterator x_begin(const page_iterator_t &it);
 
 /**
  * Convert page iterator to table y axis iterator.
  */
-table_axis_iterator_t y_begin(const page_iterator_t &it);
+table_axis_iterator y_begin(const page_iterator_t &it);

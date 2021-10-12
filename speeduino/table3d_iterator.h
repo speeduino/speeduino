@@ -9,108 +9,163 @@ typedef uint8_t byte;
 // Represents a 16-bit value as a byte
 //
 // Modelled after the Arduino EERef class
-struct int16_ref
+class int16_ref
 {
-    int16_t *_pValue;
-    uint8_t _factor;
+public:
+
+    int16_ref(int16_t *pValue, uint8_t factor) 
+        : _pValue(pValue), _factor(factor)
+    {
+    }
 
     // Getters
     inline byte operator*() const { return (byte)(*_pValue /_factor); }
     inline operator byte() const { return **this; }
     // Setter
     inline int16_ref &operator=( byte in )  { return (*_pValue = (int16_t)in * (int16_t)_factor), *this;  }
+
+private:
+    int16_t *_pValue;
+    uint8_t _factor;
 };
 
 
-typedef struct table_axis_iterator_t
+class table_axis_iterator
 {
+public:
+
+    inline table_axis_iterator& advance(uint8_t steps)
+    {
+        _pAxis = _pAxis + (_stride * steps);
+        return *this;
+    }
+
+    inline table_axis_iterator& operator++()
+    {
+        return advance(1);
+    }
+
+    inline bool at_end() const
+    {
+        return _pAxis == _pAxisEnd;
+    }
+
+    inline int16_ref operator *() const
+    {
+        return int16_ref(_pAxis, _axisFactor);
+    }
+
+    static table_axis_iterator y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
+    {
+        table_axis_iterator it;
+        it._pAxis = const_cast<table3d_axis_t*>(pAxis)+(size-1);
+        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)-1;
+        it._axisFactor = factor;
+        it._stride = -1;
+        return it;
+    }
+
+    static table_axis_iterator y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
+    {
+        table_axis_iterator it;
+        it._pAxis = const_cast<table3d_axis_t*>(pAxis);
+        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)+size;
+        it._axisFactor = factor;
+        it._stride = 1;
+        return it;
+    }
+
+    static table_axis_iterator x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
+    {
+        table_axis_iterator it;
+        it._pAxis = const_cast<table3d_axis_t*>(pAxis);
+        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)+size;
+        it._axisFactor = factor;
+        it._stride = 1;
+        return it;
+    }
+
+private:
     table3d_axis_t *_pAxis;
     table3d_axis_t *_pAxisEnd;
     uint8_t _axisFactor;
     int8_t _stride;
-} table_axis_iterator_t;
+};
 
-inline table_axis_iterator_t& advance_axis(table_axis_iterator_t &it)
-{ 
-    it._pAxis += it._stride;
-    return it;
-}
-
-inline bool at_end(const table_axis_iterator_t &it)
-{
-    return it._pAxis == it._pAxisEnd;
-}
-
-inline int16_ref get_value(const table_axis_iterator_t &it)
-{
-    return int16_ref { ._pValue = it._pAxis, ._factor = it._axisFactor };
-}
-
-
-inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
-{
-    return { const_cast<table3d_axis_t*>(pAxis)+(size-1), 
-             const_cast<table3d_axis_t*>(pAxis)-1, 
-             factor,
-             -1 };
-}
-
-inline table_axis_iterator_t y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
-{
-    return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
-}
-
-inline table_axis_iterator_t x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
-{
-    return { const_cast<table3d_axis_t*>(pAxis), const_cast<table3d_axis_t*>(pAxis)+size, factor, 1 };
-}
 
 // ========================= INTRA-ROW ITERATION ========================= 
 
 // A table row is directly iterable & addressable.
-typedef struct table_row_t {
+class table_row_iterator {
+public:
+
+    table_row_iterator(table3d_value_t *pRowStart,  uint8_t rowWidth)
+    : pValue(pRowStart), pEnd(pRowStart+rowWidth)
+    {
+    }
+
+    inline table_row_iterator& advance(uint8_t steps)
+    { 
+        pValue  = pValue + steps;
+        return *this;
+    }
+
+    inline table_row_iterator& operator++()
+    {
+        return advance(1);
+    }
+
+    inline bool at_end() const
+    {
+        return pValue == pEnd;
+    }
+
+    inline table3d_value_t& operator*() const
+    {
+        return *pValue;
+    }
+
     table3d_value_t *pValue;
     table3d_value_t *pEnd;
-} table_row_t;
+};
 
-inline bool at_end(const table_row_t &it)
-{
-    return it.pValue == it.pEnd;
-}
-
-inline table3d_value_t& get_value(const table_row_t &it)
-{
-    return *it.pValue;
-}
 
 // ========================= INTER-ROW ITERATION ========================= 
-typedef struct table_row_iterator_t
+
+class table_value_iterator
 {
+public:
+
+    table_value_iterator(const table3d_value_t *pValues, table3d_dim_t axisSize)
+    : pRowsStart(const_cast<table3d_value_t*>(pValues) + (axisSize*(axisSize-1))),
+      pRowsEnd(const_cast<table3d_value_t*>(pValues) - axisSize),
+      rowWidth(axisSize)
+    {
+    }
+
+    inline table_value_iterator& advance(uint8_t steps)
+    {
+        pRowsStart = pRowsStart - (rowWidth * steps);
+        return *this;
+    }
+
+    inline table_value_iterator& operator++()
+    {
+        return advance(1);
+    }
+
+    inline table_row_iterator operator*() const
+    {
+        return table_row_iterator(pRowsStart, rowWidth);
+    }
+
+    inline bool at_end() const
+    {
+        return pRowsStart == pRowsEnd;
+    }
+
+private:
     table3d_value_t *pRowsStart;
     table3d_value_t *pRowsEnd;
     uint8_t rowWidth;
-} table_row_iterator_t;
-
-inline table_row_iterator_t rows_begin(const table3d_value_t *pValues, table3d_dim_t axisSize)
-{
-    return {    const_cast<table3d_value_t*>(pValues) + (axisSize*(axisSize-1)),
-                const_cast<table3d_value_t*>(pValues) - axisSize,
-                axisSize
-    };
-}
-
-inline bool at_end(const table_row_iterator_t &it)
-{
-    return it.pRowsStart == it.pRowsEnd;
-}
-
-inline table_row_t get_row(const table_row_iterator_t &it)
-{
-    return { it.pRowsStart, it.pRowsStart + it.rowWidth };
-}
-
-inline table_row_iterator_t& advance_row(table_row_iterator_t &it)
-{
-    it.pRowsStart -= it.rowWidth;
-    return it;
-}
+};

@@ -949,22 +949,22 @@ namespace {
     Serial.write((byte *)entity.pData, entity.size);
   }
 
-  inline void send_table_values(table_row_iterator_t it)
+  inline void send_table_values(table_value_iterator it)
   {
-    while (!at_end(it))
+    while (!it.at_end())
     {
-      auto row = get_row(it);
+      auto row = *it;
       Serial.write(row.pValue, row.pEnd-row.pValue);
-      advance_row(it);
+      ++it;
     }
   }
 
-  inline void send_table_axis(table_axis_iterator_t it)
+  inline void send_table_axis(table_axis_iterator it)
   {
-    while (!at_end(it))
+    while (!it.at_end())
     {
-      Serial.write(get_value(it));
-      it = advance_axis(it);
+      Serial.write(*it);
+      ++it;
     }
   }
 
@@ -1067,11 +1067,11 @@ namespace {
       Serial.print(F(" "));
   }
 
-  void print_row(const table_axis_iterator_t &y_it, table_row_t row)
+  void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(get_value(y_it));
+    serial_print_prepadded_value(*y_it);
 
-    while (!at_end(row))
+    while (!row.at_end())
     {
       serial_print_prepadded_value(*row.pValue++);
     }
@@ -1083,10 +1083,10 @@ namespace {
     Serial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
-    while(!at_end(x_it))
+    while(!x_it.at_end())
     {
-      serial_print_prepadded_value(get_value(x_it));
-      advance_axis(x_it);
+      serial_print_prepadded_value(*x_it);
+      ++x_it;
     }
   }
 
@@ -1095,11 +1095,11 @@ namespace {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);
 
-    while (!at_end(row_it))
+    while (!row_it.at_end())
     {
-      print_row(y_it, get_row(row_it));
-      advance_axis(y_it);
-      advance_row(row_it);
+      print_row(y_it, *row_it);
+      ++y_it;
+      ++row_it;
     }
 
     print_x_axis(pTable, key);
