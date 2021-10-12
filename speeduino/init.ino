@@ -2540,7 +2540,8 @@ void setPinMapping(byte boardID)
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_MAX_IO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinFuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
   if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinOilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
-  
+  if ( (configPage6.launchEnabled) && (configPage9.VarLaunchPin < BOARD_MAX_IO_PINS) ) { pinVarLaunch = pinTranslateAnalog(configPage9.VarLaunchPin); } //fera launch
+
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_MAX_IO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
@@ -2746,6 +2747,10 @@ void setPinMapping(byte boardID)
   if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinOilPressure)) )
   {
     pinMode(pinOilPressure, INPUT);
+  }
+      if(configPage6.launchEnabled > 0)
+  {
+    pinMode(pinVarLaunch, INPUT);
   }
   if(configPage10.wmiEnabled > 0)
   {

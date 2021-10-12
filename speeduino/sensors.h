@@ -85,6 +85,7 @@ uint16_t getSpeed();
 byte getGear();
 byte getFuelPressure();
 byte getOilPressure();
+byte getVarLaunch(); 
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter
@@ -92,7 +93,6 @@ void readIAT();
 void readO2();
 void readBat();
 void readBaro();
-
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];
 

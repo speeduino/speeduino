@@ -686,6 +686,29 @@ byte getOilPressure()
   return (byte)tempOilPressure;
 }
 
+
+byte getVarLaunch() //fera launch
+{
+  int16_t tempVarLaunch = 0;
+  uint16_t tempReading;
+
+  if(configPage6.launchEnabled > 0)
+  {
+    //Perform ADC read
+    tempReading = analogRead(pinVarLaunch);
+    tempReading = analogRead(pinVarLaunch);
+
+
+    tempVarLaunch = fastMap10Bit(tempReading, configPage6.lnchHardLim, configPage9.VarLaunchMax);
+    tempVarLaunch = ADC_FILTER(tempVarLaunch, 150, currentStatus.VarLaunch); //Apply speed smoothing factor
+    //Sanity check
+   if(tempVarLaunch > configPage9.VarLaunchMax) { tempVarLaunch = configPage9.VarLaunchMax; }
+   if(tempVarLaunch < 0 ) { tempVarLaunch = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
+  }
+
+
+  return (byte)tempVarLaunch;
+}
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second
