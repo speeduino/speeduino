@@ -319,7 +319,7 @@ static inline eeprom_address_t load(table_axis_iterator_t it, eeprom_address_t a
 {
   while (!at_end(it))
   {
-    set_value(it, EEPROM.read(address));
+    get_value(it) = EEPROM.read(address);
     ++address;
     it = advance_axis(it);
   }

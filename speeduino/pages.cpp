@@ -36,8 +36,7 @@ struct entity_byte_address_t {
   // The byte address that the offset mapped to.
   offset_location_t location_type;
   union {
-      table_axis_iterator_t axis_iterator;
-      table_row_t row_iterator;
+      int16_ref axis_value;
       byte *pData;
   };  
 };
@@ -61,11 +60,11 @@ inline byte get_value(const entity_t &entity)
   }
   if (location_table_values==entity.entity_byte_address.location_type)
   {
-    return get_value(entity.entity_byte_address.row_iterator);
+    return *entity.entity_byte_address.pData;
   }
   if (location_table_axis==entity.entity_byte_address.location_type)
   {
-    return get_value(entity.entity_byte_address.axis_iterator); 
+    return (byte)entity.entity_byte_address.axis_value;
   }
   return 0U;
 }
@@ -88,12 +87,12 @@ inline void set_value(entity_t &entity, byte value)
   }
   else if (location_table_values==entity.entity_byte_address.location_type)
   {
-    set_value(entity.entity_byte_address.row_iterator, value);
+    *entity.entity_byte_address.pData = value;
     invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
   }
   else if (location_table_axis==entity.entity_byte_address.location_type)
   {
-    set_value(entity.entity_byte_address.axis_iterator, value); 
+    entity.entity_byte_address.axis_value = value;
     invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
   }
 }
@@ -168,19 +167,19 @@ static const entity_t page_end_template = {
 #define CREATE_VALUE_BYTEACCESSOR(row, col, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_values, \
-    { .row_iterator = advance_intra_row(get_row(advance_row(rows_begin(pTable), row)), col) }  \
+    { .pData = &get_value(advance(get_row(advance_row2(rows_begin(pTable), row)), col)) }  \
   }
 
 #define CREATE_XAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
  entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_iterator = advance_axis(x_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable)) } \
+    { .axis_value = get_value(advance_axis2(x_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable))) } \
  }
 
 #define CREATE_YAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_iterator = advance_axis(y_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable)) } \
+    { .axis_value = get_value(advance_axis2(y_begin(pTable), PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable))) } \
   }
 
 // If the offset is in range, create a Table entity_t

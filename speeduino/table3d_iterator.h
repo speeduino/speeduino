@@ -3,6 +3,25 @@
 #include "table3d_typedefs.h"
 
 // ========================= AXIS ITERATION =========================  
+
+typedef uint8_t byte;
+
+// Represents a 16-bit value as a byte
+//
+// Modelled after the Arduino EERef class
+struct int16_ref
+{
+    int16_t *_pValue;
+    uint8_t _factor;
+
+    // Getters
+    inline byte operator*() const { return (byte)(*_pValue /_factor); }
+    inline operator byte() const { return **this; }
+    // Setter
+    inline int16_ref &operator=( byte in )  { return (*_pValue = (int16_t)in * (int16_t)_factor), *this;  }
+};
+
+
 typedef struct table_axis_iterator_t
 {
     table3d_axis_t *_pAxis;
@@ -22,15 +41,11 @@ inline bool at_end(const table_axis_iterator_t &it)
     return it._pAxis == it._pAxisEnd;
 }
 
-inline char get_value(const table_axis_iterator_t &it)
+inline int16_ref get_value(const table_axis_iterator_t &it)
 {
-    return *it._pAxis / it._axisFactor;
+    return int16_ref { ._pValue = it._pAxis, ._factor = it._axisFactor };
 }
 
-inline void set_value(table_axis_iterator_t &it, char value)
-{
-    *it._pAxis = value * it._axisFactor;
-}
 
 inline table_axis_iterator_t y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
 {
@@ -61,6 +76,11 @@ typedef struct table_row_t {
 inline bool at_end(const table_row_t &it)
 {
     return it.pValue == it.pEnd;
+}
+
+inline table3d_value_t& get_value(const table_row_t &it)
+{
+    return *it.pValue;
 }
 
 // ========================= INTER-ROW ITERATION ========================= 
