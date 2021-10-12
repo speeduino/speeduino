@@ -55,37 +55,42 @@ void writeAllConfig()
 
 //  ================================= Internal write support ===============================
 
-typedef struct write_location {
+struct write_location {
   eeprom_address_t address;
   uint8_t counter;
-} write_location;
 
-
-inline bool can_write(const write_location &location)
-{
-  return location.counter<=EEPROM_MAX_WRITE_BLOCK;
-}
-
-/** Update byte to EEPROM by first comparing content and the need to write it.
-We only ever write to the EEPROM where the new value is different from the currently stored byte
-This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-*/
-static inline write_location update(uint8_t value, const write_location &location)
-{
-  if (EEPROM.read(location.address)!=value)
+  /** Update byte to EEPROM by first comparing content and the need to write it.
+  We only ever write to the EEPROM where the new value is different from the currently stored byte
+  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
+  */
+  void update(uint8_t value)
   {
-    EEPROM.write(location.address, value);
-    return { location.address+1, (uint8_t)(location.counter+1U) };
+    if (EEPROM.read(address)!=value)
+    {
+      EEPROM.write(address, value);
+      ++counter;
+    }
   }
-  return { location.address+1, location.counter };
-}
+
+  write_location& operator++()
+  {
+    ++address;
+    return *this;
+  }
+
+  bool can_write() const
+  {
+    return counter<=EEPROM_MAX_WRITE_BLOCK;
+  }
+};
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while (can_write(location) && pStart!=pEnd)
+  while (location.can_write() && pStart!=pEnd)
   {
-    location = update(*pStart, location);
+    location.update(*pStart);
     ++pStart; 
+    ++location;
   }
   return location;
 }
@@ -97,7 +102,7 @@ static inline write_location write(const table_row_iterator &row, write_location
 
 static inline write_location write(table_value_iterator it, write_location location)
 {
-  while (can_write(location) && !it.at_end())
+  while (location.can_write() && !it.at_end())
   {
     location = write(*it, location);
     ++it;
@@ -107,9 +112,10 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  while (can_write(location) && !it.at_end())
+  while (location.can_write() && !it.at_end())
   {
-    location = update(*it, location);
+    location.update(*it);
+    ++location;
     ++it;
   }
   return location;
@@ -263,7 +269,7 @@ void writeConfig(uint8_t pageNum)
       break;
   }
 
-  eepromWritesPending = !can_write(result);
+  eepromWritesPending = !result.can_write();
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
