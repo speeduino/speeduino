@@ -39,6 +39,7 @@ struct entity_byte_address_t {
       int16_ref axis_value;
       byte *pData;
   };  
+  table3DGetValueCache *pCache;
 };
 
 struct entity_t {
@@ -69,15 +70,6 @@ inline byte get_value(const entity_t &entity)
   return 0U;
 }
 
-inline void invalidate_table_cache(void *pTable, table_type_t table_key)
-{
-    #define GEN_INVALIDATE_CACHE(size, xDomain, yDomain, pTable) \
-        invalidate_cache(&((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable)->get_value_cache); \
-        break;
-
-    CONCRETE_TABLE_ACTION(table_key, GEN_INVALIDATE_CACHE, pTable); 
-}
-
 inline void set_value(entity_t &entity, byte value)
 {    
   // Multiple 'if' statements are faster than a switch on Mega2560
@@ -88,12 +80,12 @@ inline void set_value(entity_t &entity, byte value)
   else if (location_table_values==entity.entity_byte_address.location_type)
   {
     *entity.entity_byte_address.pData = value;
-    invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
+    invalidate_cache(entity.entity_byte_address.pCache);
   }
   else if (location_table_axis==entity.entity_byte_address.location_type)
   {
     entity.entity_byte_address.axis_value = value;
-    invalidate_table_cache(entity.page_iterator.pData, entity.page_iterator.table_key);
+    invalidate_cache(entity.entity_byte_address.pCache);
   }
 }
 
@@ -130,7 +122,8 @@ static const entity_t page_end_template = {
   },
   .entity_byte_address = entity_byte_address_t {
     .location_type = location_none,
-    { .pData = nullptr }
+    { .pData = nullptr },
+    .pCache = nullptr
   }, 
 };
 
@@ -167,19 +160,22 @@ static const entity_t page_end_template = {
 #define CREATE_VALUE_BYTEACCESSOR(row, col, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_values, \
-    { .pData = &*(*rows_begin(pTable).advance(row)).advance(col) } \
+    { .pData = &*(*rows_begin(pTable).advance(row)).advance(col) }, \
+    .pCache = &((pTable)->get_value_cache), \
   }
 
 #define CREATE_XAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
  entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_value = *x_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable)) } \
+    { .axis_value = *x_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_VALUE_END(pTable)) }, \
+    .pCache = &((pTable)->get_value_cache), \
  }
 
 #define CREATE_YAXIS_BYTEACCESSOR(offset, pTable, entityNum) \
   entity_byte_address_t { \
     .location_type = location_table_axis, \
-    { .axis_value = *y_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable)) } \
+    { .axis_value = *y_begin(pTable).advance(PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) - TABLE_AXISX_END(pTable)) }, \
+    .pCache = &((pTable)->get_value_cache), \
   }
 
 // If the offset is in range, create a Table entity_t
@@ -233,7 +229,8 @@ static const entity_t page_end_template = {
 #define CREATE_RAW_BYTEADDRESS(offset, pDataBlock, entityNum) \
   entity_byte_address_t { \
     .location_type = location_raw, \
-    { .pData = (byte*)pDataBlock+PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) } \
+    { .pData = (byte*)pDataBlock+PAGEOFFSET_TO_ENTITYOFFSET(offset, entityNum) }, \
+    .pCache = nullptr, \
   }
 
 // If the offset is in range, create a Raw entity_t
