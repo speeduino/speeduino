@@ -87,6 +87,7 @@ byte getFuelPressure();
 byte getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
+byte getAPthrottle(); //Amesis Project
 void readCLT(bool=true); //Allows the option to override the use of the filter
 void readIAT();
 void readO2();
