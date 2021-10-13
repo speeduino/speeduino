@@ -17,7 +17,9 @@
 #define STEPPER_BACKWARD 1
 #define IDLE_TABLE_SIZE 10
 
-enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper can have. STEPPING means that a high pulse is currently being sent and will need to be turned off at some point.
+typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ {
+  SOFF, STEPPING, COOLING
+} StepperStatus; //The 2 statuses that a stepper can have. STEPPING means that a high pulse is currently being sent and will need to be turned off at some point.
 
 struct StepperIdle
 {
@@ -64,11 +66,7 @@ byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output
 
 void initialiseIdle();
 void initialiseIdleUpOutput();
-static inline void disableIdle();
-static inline void enableIdle();
-static inline byte isStepperHomed();
-static inline byte checkForStepping();
-static inline void doStep();
-static inline void idleInterrupt();
+void disableIdle();
+void idleInterrupt();
 
 #endif

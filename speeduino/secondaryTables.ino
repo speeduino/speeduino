@@ -193,23 +193,24 @@ byte getVE2()
 byte getAdvance2()
 {
   byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
+  if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
+    currentStatus.ignLoad2 = currentStatus.MAP;
   }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
+  else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS;
 
   }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
+  else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
   }
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
+  else { currentStatus.ignLoad2 = currentStatus.MAP; }
+  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;

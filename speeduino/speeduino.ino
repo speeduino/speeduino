@@ -16,7 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
-
+/** @file
+ * Speeduino initialization and main loop.
+ */
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
@@ -38,6 +40,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "utilities.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
+#include "SD_logger.h"
+#include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -85,7 +89,22 @@ void setup()
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
-
+/** Speeduino main loop.
+ * 
+ * Main loop chores (roughly in  order they are preformed):
+ * - Check if serial comms or tooth logging are in progress (send or reveive, prioritize communication)
+ * - Record loop timing vars
+ * - Check tooth time, update @ref statuses (currentStatus) variables
+ * - Read sensors
+ * - get VE for fuel calcs and spark advance for ignition
+ * - Check crank/cam/tooth/timing sync (skip remaining ops if out-of-sync)
+ * - execute doCrankSpeedCalcs()
+ * 
+ * single byte variable @ref LOOP_TIMER plays a big part here as:
+ * - it contains expire-bits for interval based frequency driven events (e.g. 15Hz, 4Hz, 1Hz)
+ * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
+ * 
+ */
 void loop()
 {
       mainLoopCount++;
@@ -252,6 +271,13 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
+
+      currentStatus.vss = getSpeed();
+      currentStatus.gear = getGear();
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
+      #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -269,7 +295,11 @@ void loop()
         readTPS();
       #endif
 
-      if(eepromWritesPending == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+      if(isEepromWritePending() == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+      #endif
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -282,9 +312,11 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+      #endif  
       
-      currentStatus.vss = getSpeed();
-      currentStatus.gear = getGear();
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
 
@@ -353,7 +385,7 @@ void loop()
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
         // water tank empty
-        if (currentStatus.wmiEmpty > 0)
+        if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) > 0)
         {
           // flash with 1sec inverval
           digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
@@ -363,6 +395,10 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+      #endif
 
     } //1Hz timer
 
@@ -406,7 +442,7 @@ void loop()
           //Check whether the user has selected to disable to the fan during cranking
           if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
-      //END SETTING STATUSES
+      //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
 
       //Begin the fuel calculation
@@ -465,7 +501,7 @@ void loop()
 
       //Calculate staging pulsewidths if used
       //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS) && (currentStatus.PW1 > inj_opentime_uS) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (currentStatus.PW1 > inj_opentime_uS) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
       {
         //Scale the 'full' pulsewidth by each of the injector capacities
         currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
@@ -541,7 +577,16 @@ void loop()
         case 2:
           //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
-          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          
+          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
+            {
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              
+              if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+              if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+            }
+          else if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
@@ -557,6 +602,17 @@ void loop()
           //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+          
+          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
+            {
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+
+              if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+              if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+              if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+            }
           break;
         //4 cylinders
         case 4:
@@ -572,10 +628,10 @@ void loop()
 
             if(configPage6.fuelTrimEnabled > 0)
             {
-              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -619,12 +675,12 @@ void loop()
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
                 if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
                 if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -658,14 +714,14 @@ void loop()
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
                 if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
                 if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -1241,7 +1297,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   
   iVE = ((unsigned int)VE << 7) / 100;
 
-  //Check whether either of the mutiply MAP modes is turned on
+  //Check whether either of the multiply MAP modes is turned on
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
   else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
   
@@ -1283,8 +1339,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   return (unsigned int)(intermediate);
 }
 
-/**
- * @brief Lookup the current VE value from the primary 3D fuel map. The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc)
+/** Lookup the current VE value from the primary 3D fuel map.
+ * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
  * 
  * @return byte The current VE value
  */
@@ -1312,8 +1368,8 @@ byte getVE1()
   return tempVE;
 }
 
-/**
- * @brief Performs a lookup of the ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
+/** Lookup the ignition advance from 3D ignition table.
+ * The values used to look this up will be RPM and whatever load source the user has configured.
  * 
  * @return byte The current target advance value in degrees
  */
@@ -1433,10 +1489,13 @@ void calculateIgnitionAngle8(int dwellAngle)
   ignition8StartAngle = ignition8EndAngle - dwellAngle;
   if(ignition8StartAngle < 0) {ignition8StartAngle += CRANK_ANGLE_MAX_IGN;}
 }
-
+/** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
+ * both start and end angles are calculated for each channel.
+ * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
+ */
 void calculateIgnitionAngles(int dwellAngle)
 {
-  //Calculate start and end angle for each channel
+  
 
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)
