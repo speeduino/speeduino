@@ -6,6 +6,12 @@
 void initRTC()
 {
 
+#ifdef RTC_ENABLED
+  #if defined(CORE_TEENSY)
+    setSyncProvider(getTeensy3Time);
+  #elif defined(CORE_STM32)
+  #endif
+#endif
 
 }
 

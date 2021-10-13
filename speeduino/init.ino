@@ -87,8 +87,8 @@ void initialiseAll()
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
   #ifdef SD_LOGGING
-    initSD();
     initRTC();
+    initSD();
   #endif
 
     Serial.begin(115200);
