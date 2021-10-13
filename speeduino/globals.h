@@ -594,7 +594,7 @@ extern volatile byte LOOP_TIMER;
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
-#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinAirConComp) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
+#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinAirConComp) || ((pin) == pinAirConFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
 #define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
 /** The status struct with current values for all 'live' variables.
@@ -1140,19 +1140,28 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_162;
-  byte unused10_163;
-  byte unused10_164;
-  byte unused10_165;
-  byte unused10_166;
-  byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
+  //Byte 162 - Air conditioning binary points
+  byte airConEnable : 1;
+  byte airConCompPol : 1;
+  byte airConReqPol : 1;
+  byte airConTurnsFanOn : 1;
+  byte airConFanEnabled : 1;
+  byte airConFanPol : 3;
+  
+  //Bytes 163-173 - Air conditioning analog points
+  byte airConCompPin;
+  byte airConReqPin;
+  byte airConTPSCut;
+  byte airConMinRPMdiv100;
+  byte airConMaxRPMdiv100;
+  byte airConClTempCut;
+  byte airConIdleSteps;
+  byte airConTPSCutTime;
+  byte airConCompOnDelay;
+  byte airConAfterStartDelay;
+  byte airConRPMCutTime;
+  byte airConFanPin;
+  
   byte unused10_175;
   byte unused10_176;
   byte unused10_177;
@@ -1384,27 +1393,8 @@ struct config13 {
   struct cmpOperation operation[8]; ///< I/O variable comparison operations (See @ref cmpOperation)
   // Byte 90-105
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
-
-  //Byte 106 - Air conditioning binary points
-  byte airConEnable : 1;
-  byte airConCompPol : 1;
-  byte airConReqPol : 1;
-  byte airConTurnsFanOn : 5;
-
-  //Bytes 107-117 - Air conditioning analog points
-  byte airConCompPin;
-  byte airConReqPin;
-  byte airConTPSCut;
-  byte airConMinRPMdiv100;
-  byte airConMaxRPMdiv100;
-  byte airConClTempCut;
-  byte airConIdleSteps;
-  byte airConTPSCutTime;
-  byte airConCompOnDelay;
-  byte airConAfterStartDelay;
-  byte airConRPMCutTime;
   
-  byte unused13_118_127[10]; // Unused
+  byte unused13_106_127[22]; // Unused
 
 #if defined(CORE_AVR)
   };
@@ -1472,6 +1462,7 @@ extern byte pinVVT_1;		// vvt output 1
 extern byte pinVVT_2;		// vvt output 2
 extern byte pinFan;       // Cooling fan output
 extern byte pinAirConComp;    // Air conditioning compressor output
+extern byte pinAirConFan;    // Stand-alone air conditioning fan output
 extern byte pinAirConRequest; // Air conditioning request input
 extern byte pinStepperDir; //Direction pin for the stepper motor driver
 extern byte pinStepperStep; //Step pin for the stepper motor driver

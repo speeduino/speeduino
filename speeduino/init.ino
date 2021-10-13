@@ -2543,8 +2543,9 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
   
-  if ( ((configPage13.airConEnable&1) == 1) && ((configPage13.airConCompPin&63) != 0) && ((configPage13.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage13.airConCompPin&63); }
-  if ( ((configPage13.airConEnable&1) == 1) && ((configPage13.airConReqPin&63) != 0) && ((configPage13.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage13.airConReqPin&63); }
+  if ( ((configPage9.airConEnable&1) == 1) && ((configPage9.airConCompPin&63) != 0) && ((configPage9.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage9.airConCompPin&63); }
+  if ( ((configPage9.airConEnable&1) == 1) && ((configPage9.airConFanEnabled&1) == 1) && ((configPage9.airConFanPin&63) != 0) && ((configPage9.airConFanPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage9.airConFanPin&63); }
+  if ( ((configPage9.airConEnable&1) == 1) && ((configPage9.airConReqPin&63) != 0) && ((configPage9.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage9.airConReqPin&63); }
   
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2580,18 +2581,31 @@ void setPinMapping(byte boardID)
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
   pinMode(pinVVT_2, OUTPUT);
+
+  if(pinAirConComp>0)
+  {
+    pinMode(pinAirConComp, OUTPUT);
+  }
+
+  if(pinAirConRequest > 0)
+  {
+    if((configPage9.airConReqPol&1) == 1)
+    {
+      // +5V is ON, Use external pull-down resistor for OFF
+      pinMode(pinAirConRequest, INPUT);
+    }
+    else
+    {
+      // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
+      pinMode(pinAirConRequest, INPUT_PULLUP);
+    }
+  }
+
+  if(pinAirConFan > 0)
+  {
+    pinMode(pinAirConFan, OUTPUT);
+  }
   
-  pinMode(pinAirConComp, OUTPUT);
-  if((configPage13.airConReqPol&1) == 1)
-  {
-    // +5V is ON, Use external pull-down resistor for OFF
-    pinMode(pinAirConRequest, INPUT);
-  }
-  else
-  {
-    // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
-    pinMode(pinAirConRequest, INPUT_PULLUP);
-  }
   
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }

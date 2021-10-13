@@ -20,7 +20,7 @@ Air Conditioning Control
 */
 void initialiseAirCon()
 {
-  if( (configPage13.airConEnable&1) == 1 &&
+  if( (configPage9.airConEnable&1) == 1 &&
       pinAirConRequest != 0 &&
       pinAirConComp != 0 )
   {
@@ -42,7 +42,21 @@ void initialiseAirCon()
     aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
     aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
     aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
+    
     AIRCON_OFF();
+
+    if(pinAirConFan != 0)
+    {
+      aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
+      aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
+      AIRCON_FAN_OFF();
+      acStandAloneFanIsEnabled = true;
+    }
+    else
+    {
+      acStandAloneFanIsEnabled = false;
+    }
+    
     acIsEnabled = true;
     
   }
@@ -61,7 +75,7 @@ void airConControl()
     // ------------------------------------------------------------------------------------------------------
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     {
-      if(acAfterEngineStartDelay >= configPage13.airConAfterStartDelay)
+      if(acAfterEngineStartDelay >= configPage9.airConAfterStartDelay)
       {
         waitedAfterCranking = true;
       }
@@ -79,7 +93,7 @@ void airConControl()
     // ---------------------------
     // Coolant Temperature Lockout
     // ---------------------------
-    int offTemp = (int)configPage13.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
+    int offTemp = (int)configPage9.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
     if (currentStatus.coolant > offTemp)
     {
       // A/C is cut off due to high coolant
@@ -99,18 +113,18 @@ void airConControl()
     // --------------------
     // High/Low RPM Lockout
     // --------------------
-    if ( (currentStatus.RPMdiv100 < configPage13.airConMinRPMdiv100) ||
-         (currentStatus.RPMdiv100 > configPage13.airConMaxRPMdiv100) )
+    if ( (currentStatus.RPMdiv100 < configPage9.airConMinRPMdiv100) ||
+         (currentStatus.RPMdiv100 > configPage9.airConMaxRPMdiv100) )
     {
       // A/C is cut off due to high/low RPM
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
       acRPMLockoutDelay = 0;
     }
-    else if ( (currentStatus.RPMdiv100 >= configPage13.airConMinRPMdiv100) &&
-              (currentStatus.RPMdiv100 <= configPage13.airConMaxRPMdiv100) )
+    else if ( (currentStatus.RPMdiv100 >= configPage9.airConMinRPMdiv100) &&
+              (currentStatus.RPMdiv100 <= configPage9.airConMaxRPMdiv100) )
     {
       // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
-      if (acRPMLockoutDelay >= configPage13.airConRPMCutTime)
+      if (acRPMLockoutDelay >= configPage9.airConRPMCutTime)
       {
         BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
       }
@@ -127,17 +141,17 @@ void airConControl()
     // ------------------------------
     // High Throttle Position Lockout
     // ------------------------------
-    if (currentStatus.TPS > configPage13.airConTPSCut)
+    if (currentStatus.TPS > configPage9.airConTPSCut)
     {
       // A/C is cut off due to high TPS
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
       acTPSLockoutDelay = 0;
     }
     else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
-              (currentStatus.TPS <= configPage13.airConTPSCut) )
+              (currentStatus.TPS <= configPage9.airConTPSCut) )
     {
       // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
-      if (acTPSLockoutDelay >= configPage13.airConTPSCutTime)
+      if (acTPSLockoutDelay >= configPage9.airConTPSCutTime)
       {
         BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
       }
@@ -163,8 +177,14 @@ void airConControl()
       // Set the BIT_AIRCON_TURNING_ON bit to notify the idle system to idle up & the cooling fan to start (if enabled)
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
 
+      // Stand-alone fan operation
+      if(acStandAloneFanIsEnabled == true)
+      {
+        AIRCON_FAN_ON();
+      }
+      
       // Start the A/C compressor after the "Compressor On" delay period
-      if(acStartDelay >= configPage13.airConCompOnDelay)
+      if(acStartDelay >= configPage9.airConCompOnDelay)
       {
         AIRCON_ON();
       }
@@ -176,6 +196,13 @@ void airConControl()
     else
     {
       BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+      
+      // Stand-alone fan operation
+      if(acStandAloneFanIsEnabled == true)
+      {
+        AIRCON_FAN_OFF();
+      }
+      
       AIRCON_OFF();
       acStartDelay = 0;
     }
@@ -189,7 +216,7 @@ bool READ_AIRCON_REQUEST()
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  bool acReqPinStatus = ( ((configPage13.airConReqPol&1)==1) ? 
+  bool acReqPinStatus = ( ((configPage9.airConReqPol&1)==1) ? 
                              !!(*aircon_req_pin_port & aircon_req_pin_mask) :
                              !(*aircon_req_pin_port & aircon_req_pin_mask));
   BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
@@ -223,7 +250,7 @@ void fanControl()
 
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
-           ((configPage13.airConTurnsFanOn&1) == 1 &&
+           ((configPage9.airConTurnsFanOn&1) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
       //Fan needs to be turned on.
