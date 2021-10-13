@@ -315,7 +315,6 @@ void loop()
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
-        if(currentStatus.secl == 10) { endSD(); }
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();

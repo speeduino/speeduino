@@ -11,7 +11,7 @@ void initSD()
   SD_status = SD_STATUS_READY; 
 
   //Set the RTC callback. This is used to set the correct timestamp on file creation and sync operations
-  //FsDateTime::setCallback(dateTime);
+  FsDateTime::setCallback(dateTime);
 
   // Initialize the SD.
   if (!sd.begin(SD_CONFIG)) 
@@ -60,7 +60,33 @@ bool createLogFile()
   return returnValue;
 }
 
-void endSD()
+void beginSDLogging()
+{
+  if(SD_status == SD_STATUS_READY)
+  {
+    SD_status = SD_STATUS_ACTIVE; //Set the status as being active so that entries will beging to be written. This will be updated below if there is an error
+
+    // Open or create file - truncate existing file.
+    if (!createLogFile()) 
+    {
+      SD_status = SD_STATUS_ERROR_NO_WRITE;
+    }
+
+    //Perform pre-allocation on card. This dramatically inproves write speed
+    if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
+    {
+      SD_status = SD_STATUS_ERROR_NO_SPACE;
+    }
+
+    //initialize the RingBuf.
+    rb.begin(&logFile);
+
+    //Write a header row
+    writeSDLogHeader();
+  }
+}
+
+void endSDLogging()
 {
   if(SD_status > 0)
   {
@@ -70,20 +96,17 @@ void endSD()
     logFile.rewind();
     logFile.close();
 
-    SD_status = SD_STATUS_OFF;
-    setTS_SD_status();
+    SD_status = SD_STATUS_READY;
   }
 }
 
 void writeSDLogEntry()
 {
-  //uint8_t logEntry[LOG_ENTRY_SIZE];
-
   //Check if we're already running a log
   if(SD_status == SD_STATUS_READY)
   {
     //Log not currently running, check if it should be
-
+    checkForSDStart();
   }
 
   if(SD_status == SD_STATUS_ACTIVE)
@@ -95,46 +118,39 @@ void writeSDLogEntry()
     }
     rb.println("");
 
+    //Check if write to SD from ringbuffer is needed
+    //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
+    if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy() )
+    {
+      uint16_t bytesWritten = rb.writeOut(SD_SECTOR_SIZE); 
+      //Make sure that the entire sector was written successfully
+      if (SD_SECTOR_SIZE != bytesWritten) 
+      {
+        SD_status = SD_STATUS_ERROR_WRITE_FAIL;
+      }
+    }
+
     //Check whether we should stop logging
     checkForSDStop();
   }
-
-  //Check if write to SD from ringbuffer is needed
-  //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
-  if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy() )
-  {
-    uint16_t bytesWritten = rb.writeOut(SD_SECTOR_SIZE); 
-    //Make sure that the entire sector was written successfully
-    if (SD_SECTOR_SIZE != bytesWritten) 
-    {
-      SD_status = SD_STATUS_ERROR_WRITE_FAIL;
-      setTS_SD_status();
-    }
-  }
-  
+  setTS_SD_status();
 }
 
 void writeSDLogHeader()
 {
-  if(SD_status == SD_STATUS_READY)
+  for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
   {
-    for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
-    //for(byte x=0; x<4; x++)
-    {
-      #ifdef CORE_AVR
-        //This will probably never be used
-        char buffer[30];
-        strcpy_P(buffer, (char *)pgm_read_word(&(header_table[x])));
-        rb.print(buffer);
-      #else
-        rb.print(header_table[x]);
-      #endif
-      if(x < (SD_LOG_NUM_FIELDS - 1)) { rb.print(","); }
-    }
-    rb.println("");
+    #ifdef CORE_AVR
+      //This will probably never be used
+      char buffer[30];
+      strcpy_P(buffer, (char *)pgm_read_word(&(header_table[x])));
+      rb.print(buffer);
+    #else
+      rb.print(header_table[x]);
+    #endif
+    if(x < (SD_LOG_NUM_FIELDS - 1)) { rb.print(","); }
   }
-
-  SD_status = SD_STATUS_ACTIVE;
+  rb.println("");
 }
 
 //Sets the status variable for TunerStudio
@@ -158,28 +174,41 @@ void setTS_SD_status()
 void checkForSDStart()
 {
   //Logging can only start if we're in the ready state
-  if(SD_status == SD_STATUS_READY)
+  //We must check the SD_status each time to prevent trying to init a new log file multiple times
+
+  //Check for enable at boot
+  if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
   {
-    // Open or create file - truncate existing file.
-    if (!createLogFile()) 
+    //Check that we're not already finished the logging
+    if((millis() / 1000) < configPage13.onboard_log_tr1_duration)
     {
-      SD_status = SD_STATUS_ERROR_NO_WRITE;
-    }
+      beginSDLogging(); //Setup the log file, prallocation, header row
+    }    
+  }
 
-    //Perform pre-allocation on card. This dramatically inproves write speed
-    if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
+  //Check for RPM based Enable
+  if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
+  {
+    if(currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on)
     {
-      SD_status = SD_STATUS_ERROR_NO_SPACE;
+      beginSDLogging(); //Setup the log file, prallocation, header row
     }
+  }
 
-    //initialize the RingBuf.
-    rb.begin(&logFile);
+  //Check for engine protection based enable
+  if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
+  {
 
-    //Write a header row
-    if(SD_status == SD_STATUS_READY)
-    {
-      writeSDLogHeader();
-    }
+  }
+
+  if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
+  {
+
+  }
+
+  if(( configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
+  {
+
   }
 }
 
@@ -188,10 +217,18 @@ void checkForSDStart()
  */
 void checkForSDStop()
 {
-  //Logging can only start if we're in the ready state
+  //Logging only needs to be stopped if already active
   if(SD_status == SD_STATUS_ACTIVE)
   {
-
+    //Check for enable at boot
+    if(configPage13.onboard_log_trigger_boot)
+    {
+      //Check if we're past the logging duration
+      if((millis() / 1000) > configPage13.onboard_log_tr1_duration)
+      {
+        endSDLogging(); //Setup the log file, prallocation, header row
+      }
+    }
   }
 }
 

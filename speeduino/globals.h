@@ -1402,6 +1402,7 @@ struct config13 {
   byte onboard_log_trigger_prot  :1;  // "Disabled", "Enabled"
   byte onboard_log_trigger_Vbat  :1;  // "Disabled", "Enabled"
   byte onboard_log_trigger_Epin  :2;  // "Disabled", "polling", "toggle" , "INVALID" 
+  uint16_t onboard_log_tr1_duration;  // Duration of logging that starts on boot
   byte onboard_log_tr2_thr_on;        //  "RPM",      100.0,  0.0,    0,     10000,  0
   byte onboard_log_tr2_thr_off;       //  "RPM",      100.0,  0.0,    0,     10000,  0
   byte onboard_log_tr3_thr_RPM   :1;  // "Disabled", "Enabled"
@@ -1413,7 +1414,7 @@ struct config13 {
   byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
 
 
-  byte unused12_125_127[4];
+  byte unused12_125_127[2];
 
 #if defined(CORE_AVR)
   };
