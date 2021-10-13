@@ -251,7 +251,7 @@ static const entity_t page_end_template = {
 // Alternative implementation would be to encode the mapping into data structures
 // That uses flash memory, which is scarce. And it was too slow.
 static inline __attribute__((always_inline)) // <-- this is critical for performance
-entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
+entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 {
   // The start address of the 1st entity in any page.
   static constexpr uint16_t ENTITY_START_VAR(0) = 0U;
@@ -365,15 +365,6 @@ entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
 
 // ============================ Page iteration support ======================
 
-// Because the page iterators will not be called for every single byte
-// inlining the mapping function is not performance critical.
-//
-// So save some memory.
-static entity_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
-{
-  return map_page_offset_to_entity_inline(pageNumber, offset);
-}
-
 static inline page_iterator_t to_page_entity(const page_iterator_t &priorIt, entity_t mapped)
 {
   page_iterator_t page_it = mapped.page_iterator;
@@ -398,14 +389,14 @@ uint16_t getPageSize(byte pageNum)
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
-  entity_t entity = map_page_offset_to_entity_inline(pageNum, offset);
+  entity_t entity = map_page_offset_to_entity(pageNum, offset);
 
   set_value(entity, value);
 }
 
 byte getPageValue(byte pageNum, uint16_t offset)
 {
-  return get_value(map_page_offset_to_entity_inline(pageNum, offset));
+  return get_value(map_page_offset_to_entity(pageNum, offset));
 }
 
 // Support iteration over a pages entities.
