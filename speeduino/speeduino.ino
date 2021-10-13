@@ -40,6 +40,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "utilities.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
+#include "SD_logger.h"
+#include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -272,6 +274,10 @@ void loop()
 
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
+      #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -290,6 +296,10 @@ void loop()
       #endif
 
       if(isEepromWritePending() == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+      #endif
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -302,6 +312,10 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+      #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
@@ -384,6 +398,10 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+      #endif
 
     } //1Hz timer
 
@@ -562,7 +580,16 @@ void loop()
         case 2:
           //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
-          if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
+          
+          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
+            {
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              
+              if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+              if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+            }
+          else if( (configPage10.stagingEnabled == true) && (currentStatus.PW3 > 0) )
           {
             PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
@@ -578,6 +605,17 @@ void loop()
           //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+          
+          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
+            {
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+
+              if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+              if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+              if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+            }
           break;
         //4 cylinders
         case 4:
@@ -593,10 +631,10 @@ void loop()
 
             if(configPage6.fuelTrimEnabled > 0)
             {
-              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+              unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
               if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
               if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -640,12 +678,12 @@ void loop()
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
                 if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
                 if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
@@ -679,14 +717,14 @@ void loop()
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
-                unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.MAP, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+                unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
 
                 if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
                 if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }

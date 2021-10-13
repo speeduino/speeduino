@@ -120,8 +120,6 @@ int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
 //These are variables used across multiple files
-/// int (member) indexes in fullStatus array
-const byte PROGMEM fsIntIndex[] = {4, 14, 17, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 93, 97, 102, 109, 119 };
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)

@@ -372,8 +372,7 @@
 #define GOING_LOW         0
 #define GOING_HIGH        1
 
-#define MAX_RPM 18000 /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter,
-but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
+#define MAX_RPM 18000 /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
@@ -418,6 +417,24 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
   #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);
   #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
 #endif
+
+#define LOGGER_CSV_SEPARATOR_SEMICOLON  0
+#define LOGGER_CSV_SEPARATOR_COMMA      1
+#define LOGGER_CSV_SEPARATOR_TAB        2
+#define LOGGER_CSV_SEPARATOR_SPACE      3
+
+#define LOGGER_DISABLED                 0
+#define LOGGER_CSV                      1
+#define LOGGER_BINARY                   2
+
+#define LOGGER_RATE_1HZ                 0
+#define LOGGER_RATE_4HZ                 1
+#define LOGGER_RATE_10HZ                2
+#define LOGGER_RATE_30HZ                3
+
+#define LOGGER_FILENAMING_OVERWRITE     0
+#define LOGGER_FILENAMING_DATETIME      1
+#define LOGGER_FILENAMING_SEQENTIAL     2
 
 extern const char TSfirmwareVersion[] PROGMEM;
 
@@ -544,8 +561,6 @@ extern int ignition6StartAngle;
 extern int ignition7StartAngle;
 extern int ignition8StartAngle;
 
-//These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[34];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -593,9 +608,9 @@ extern volatile byte LOOP_TIMER;
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
+#define pinIsOutput(pin)    ( pinIsInjector((pin)) || pinIsIgnition((pin)) || ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinAirConComp) || ((pin) == pinAirConFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ( ((pin) == pinBoost) && configPage6.boostEnabled) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) || ((pin) == pinStepperEnable) || ((pin) == pinStepperStep) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
-#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinAirConComp) || ((pin) == pinAirConFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
+#define pinIsUsed(pin)      ( pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
 /** The status struct with current values for all 'live' variables.
 * In current version this is 64 bytes. Instantiated as global currentStatus.
@@ -1393,8 +1408,32 @@ struct config13 {
   struct cmpOperation operation[8]; ///< I/O variable comparison operations (See @ref cmpOperation)
   // Byte 90-105
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
-  
-  byte unused13_106_127[22]; // Unused
+
+  byte unused12_106_116[10];
+
+  byte onboard_log_csv_separator :2;  //";", ",", "tab", "space"  
+  byte onboard_log_file_style    :2;  // "Disabled", "CSV", "Binary", "INVALID" 
+  byte onboard_log_file_rate     :2;  // "1Hz", "4Hz", "10Hz", "30Hz" 
+  byte onboard_log_filenaming    :2;  // "Overwrite", "Date-time", "Sequential", "INVALID" 
+  byte onboard_log_storage       :2;  // "sd-card", "INVALID", "INVALID", "INVALID" ;In the future maybe an onboard spi flash can be used, or switch between SDIO vs SPI sd card interfaces.
+  byte onboard_log_trigger_boot  :1;  // "Disabled", "On boot"
+  byte onboard_log_trigger_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_prot  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Vbat  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Epin  :2;  // "Disabled", "polling", "toggle" , "INVALID" 
+  uint16_t onboard_log_tr1_duration;  // Duration of logging that starts on boot
+  byte onboard_log_tr2_thr_on;        //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr2_thr_off;       //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr3_thr_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_MAP   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_Oil   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_AFR   :1;  // "Disabled", "Enabled"     
+  byte onboard_log_tr4_thr_on;        // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)    
+  byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)   
+  byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
+
+
+  byte unused12_125_127[2];
 
 #if defined(CORE_AVR)
   };
