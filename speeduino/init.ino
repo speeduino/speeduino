@@ -2134,7 +2134,7 @@ void setPinMapping(byte boardID)
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
-      pinTachOut = 7; //Tacho output pin
+      pinTachOut = 5; //Tacho output pin
       pinIdle1 = 27; //Single wire idle control
       pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
       pinFuelPump = 8; //Fuel pump output
