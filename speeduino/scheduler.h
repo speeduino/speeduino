@@ -94,8 +94,6 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
-inline COMPARE_TYPE getIgnitionCounter(int i);
-inline void setIgnitionCompare(int i, COMPARE_TYPE val);
 inline void setIgnitionTimerRunning(int i, bool enabled);
 
 //The ARM cores use seprate functions for their ISRs
@@ -165,6 +163,9 @@ struct Schedule {
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
+
+  volatile COUNTER_TYPE * counter;
+  volatile COMPARE_TYPE * compare;
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.

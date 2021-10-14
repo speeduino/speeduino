@@ -60,6 +60,28 @@ void (*inj8EndFunction)();
 void (*ignStartFunction[8])();
 void (*ignEndFunction[8])();
 
+volatile static inline COMPARE_TYPE * getIgnitionComparePointer(int i) {
+  if (i == 0) { return &IGN1_COMPARE; }
+  else if (i == 1 ) { return &IGN2_COMPARE; }
+  else if (i == 2 ) { return &IGN3_COMPARE; }
+  else if (i == 3 ) { return &IGN4_COMPARE; }
+  else if (i == 4 ) { return &IGN5_COMPARE; }
+  else if (i == 5 ) { return &IGN6_COMPARE; }
+  else if (i == 6 ) { return &IGN7_COMPARE; }
+  else if (i == 7 ) { return &IGN8_COMPARE; }
+}
+
+volatile static inline COUNTER_TYPE * getIgnitionCounterPointer(int i) {
+  if (i == 0) { return &IGN1_COUNTER; }
+  else if (i == 1 ) { return &IGN2_COUNTER; }
+  else if (i == 2 ) { return &IGN3_COUNTER; }
+  else if (i == 3 ) { return &IGN4_COUNTER; }
+  else if (i == 4 ) { return &IGN5_COUNTER; }
+  else if (i == 5 ) { return &IGN6_COUNTER; }
+  else if (i == 6 ) { return &IGN7_COUNTER; }
+  else if (i == 7 ) { return &IGN8_COUNTER; }
+}
+
 void initialiseSchedulers()
 {
     //nullSchedule.Status = OFF;
@@ -86,6 +108,8 @@ void initialiseSchedulers()
       ignitionSchedule[i].Status = OFF;
       setIgnitionTimerRunning(i, true);
       ignitionSchedule[i].schedulesSet = 0;
+      ignitionSchedule[i].compare = getIgnitionComparePointer(i);
+      ignitionSchedule[i].counter = getIgnitionCounterPointer(i);
     }
 }
 
@@ -457,9 +481,9 @@ void setIgnitionSchedule(int i, void (*startCallback)(), unsigned long timeout, 
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    thisIgnitionSchedule->startCompare = getIgnitionCounter(i) + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    thisIgnitionSchedule->startCompare = *thisIgnitionSchedule->counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     if(thisIgnitionSchedule->endScheduleSetByDecoder == false) { thisIgnitionSchedule->endCompare = thisIgnitionSchedule->startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    setIgnitionCompare(i, thisIgnitionSchedule->startCompare);
+    *thisIgnitionSchedule->compare = thisIgnitionSchedule->startCompare;
     thisIgnitionSchedule->Status = PENDING; //Turn this schedule on
     thisIgnitionSchedule->schedulesSet++;
     interrupts();
@@ -471,62 +495,12 @@ void setIgnitionSchedule(int i, void (*startCallback)(), unsigned long timeout, 
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      thisIgnitionSchedule->nextStartCompare = getIgnitionCounter(i) + uS_TO_TIMER_COMPARE(timeout);
+      thisIgnitionSchedule->nextStartCompare = *thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
       thisIgnitionSchedule->nextEndCompare = thisIgnitionSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
       thisIgnitionSchedule->hasNextSchedule = true;
     }
 
   }
-}
-
-inline COMPARE_TYPE getIgnitionCounter(int i) {
-  if (i == 0) { return IGN1_COUNTER; }
-  #if IGN_CHANNELS >= 2
-    else if (i == 1 ) { return IGN2_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 3
-    else if (i == 2 ) { return IGN3_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 4
-    else if (i == 3 ) { return IGN4_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 5
-    else if (i == 4 ) { return IGN5_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 6
-    else if (i == 5 ) { return IGN6_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 7
-    else if (i == 6 ) { return IGN7_COUNTER; }
-  #endif
-  #if IGN_CHANNELS >= 8
-    else if (i == 7 ) { return IGN8_COUNTER; }
-  #endif
-}
-
-inline void setIgnitionCompare(int i, COMPARE_TYPE val) {
-  if (i == 0) { IGN1_COMPARE = (uint16_t) val; }
-  #if IGN_CHANNELS >= 2
-    else if (i == 1 ) { IGN2_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 3
-    else if (i == 2 ) { IGN3_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 4
-    else if (i == 3 ) { IGN4_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 5
-    else if (i == 4 ) { IGN5_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 6
-    else if (i == 5 ) { IGN6_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 7
-    else if (i == 6 ) { IGN7_COMPARE = (uint16_t) val; }
-  #endif
-  #if IGN_CHANNELS >= 8
-    else if (i == 7 ) { IGN8_COMPARE = (uint16_t) val; }
-  #endif
 }
 
 inline void setIgnitionTimerRunning(int i, bool enabled) {
@@ -562,13 +536,14 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
-  if( (ignitionSchedule[0].Status == RUNNING) && (timeToEnd < ignitionSchedule[0].duration) )
+  Schedule *thisIgnitionSchedule = &(ignitionSchedule[0]);
+  if( (thisIgnitionSchedule->Status == RUNNING) && (timeToEnd < thisIgnitionSchedule->duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule[0].duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
-    ignitionSchedule[0].endCompare = getIgnitionCounter(0) + uS_TO_TIMER_COMPARE(timeToEnd);
-    setIgnitionCompare(0, ignitionSchedule[0].endCompare);
+    thisIgnitionSchedule->endCompare = *thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(timeToEnd);
+    *thisIgnitionSchedule->compare = thisIgnitionSchedule->endCompare;
     interrupts();
   }
 }
@@ -931,8 +906,8 @@ inline void ignitionScheduleInterrupt(int i) {
     thisIgnitionSchedule->StartCallback();
     thisIgnitionSchedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     thisIgnitionSchedule->startTime = micros();
-    if(thisIgnitionSchedule->endScheduleSetByDecoder == true) { setIgnitionCompare(i, thisIgnitionSchedule->endCompare); }
-    else { setIgnitionCompare(i, (getIgnitionCounter(i) + uS_TO_TIMER_COMPARE(thisIgnitionSchedule->duration))); } //Doing this here prevents a potential overflow on restarts
+    if(thisIgnitionSchedule->endScheduleSetByDecoder == true) { *thisIgnitionSchedule->compare = thisIgnitionSchedule->endCompare; }
+    else { *thisIgnitionSchedule->compare = (*thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(thisIgnitionSchedule->duration)); } //Doing this here prevents a potential overflow on restarts
   }
   else if (thisIgnitionSchedule->Status == RUNNING)
   {
@@ -945,7 +920,7 @@ inline void ignitionScheduleInterrupt(int i) {
     //If there is a next schedule queued up, activate it
     if(thisIgnitionSchedule->hasNextSchedule == true)
     {
-      setIgnitionCompare(i, thisIgnitionSchedule->nextStartCompare);
+      *thisIgnitionSchedule->compare = thisIgnitionSchedule->nextStartCompare;
       thisIgnitionSchedule->Status = PENDING;
       thisIgnitionSchedule->schedulesSet = 1;
       thisIgnitionSchedule->hasNextSchedule = false;
