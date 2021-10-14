@@ -54,6 +54,15 @@ public:
     {
         return int16_ref(_pAxis, _axisFactor);
     }
+    
+    inline table_axis_iterator& reverse()
+    {
+        table3d_axis_t *_pOldAxis = _pAxis;
+        _pAxis = _pAxisEnd - _stride;
+        _pAxisEnd = _pOldAxis - _stride;
+        _stride = (int8_t)(_stride * -1);
+        return *this;
+    }
 
     static table_axis_iterator y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
     {
@@ -62,16 +71,6 @@ public:
         it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)-1;
         it._axisFactor = factor;
         it._stride = -1;
-        return it;
-    }
-
-    static table_axis_iterator y_rbegin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
-    {
-        table_axis_iterator it;
-        it._pAxis = const_cast<table3d_axis_t*>(pAxis);
-        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)+size;
-        it._axisFactor = factor;
-        it._stride = 1;
         return it;
     }
 

@@ -31,13 +31,3 @@ table_axis_iterator y_begin(const void *pTable, table_type_t key)
       return y_begin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
   CONCRETE_TABLE_ACTION(key, GET_Y_ITERATOR, pTable);
 }
-
-/**
- * Convert page iterator to table y axis iterator.
- */
-table_axis_iterator y_rbegin(const void *pTable, table_type_t key)
-{
-  #define GET_Y_RITERATOR(size, xDomain, yDomain, pTable) \
-      return y_rbegin(((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable));
-  CONCRETE_TABLE_ACTION(key, GET_Y_RITERATOR, pTable);
-}

@@ -122,21 +122,12 @@ TABLE_GENERATOR(GEN_ROWS_BEGIN)
     }
 TABLE_GENERATOR(GEN_Y_BEGIN)
 
-#define GEN_Y_RBEGIN(size, xDom, yDom) \
-    inline table_axis_iterator y_rbegin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
-    { \
-        return table_axis_iterator::y_rbegin(pTable->axisY, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.axis_length, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.yaxis_io_factor);\
-    }
-TABLE_GENERATOR(GEN_Y_RBEGIN)
-
 #define GEN_X_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator x_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
         return table_axis_iterator::x_begin(pTable->axisX, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.axis_length, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.xaxis_io_factor); \
     }
 TABLE_GENERATOR(GEN_X_BEGIN)
-
-
 
 // =============================== Table function calls =========================
 
@@ -157,5 +148,3 @@ table_value_iterator rows_begin(const void *pTable, table_type_t key);
 table_axis_iterator x_begin(const void *pTable, table_type_t key);
 
 table_axis_iterator y_begin(const void *pTable, table_type_t key);
-
-table_axis_iterator y_rbegin(const void *pTable, table_type_t key);
