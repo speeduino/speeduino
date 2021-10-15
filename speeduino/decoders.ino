@@ -1292,7 +1292,19 @@ void triggerPri_4G63()
           else if( (toothCurrentCount == 5) || (toothCurrentCount == 11) ) { endCoil3Charge(); }
         }
       }
+      //EXPERIMENTAL!
+      //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
+      else if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
+      {
+        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
+        {
+          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
+          //Handle non-sequential tooth counts 
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
+          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
+        }
+      }
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
       {
@@ -1395,20 +1407,6 @@ void triggerPri_4G63()
         { 
           if(configPage2.nCylinders == 4) { triggerToothAngle = 110; }
           else  { triggerToothAngle = 50; }
-        }
-      }
-
-      //EXPERIMENTAL!
-      //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
-      if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
-      {
-        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
-        {
-          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
-
-          //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
         }
       }
     } //Has sync
