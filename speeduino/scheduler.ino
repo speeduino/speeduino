@@ -69,39 +69,10 @@ void (*getIgnTimer(int i, bool enable))(void) {
   return nullCallback;
 }
 
-volatile static inline COMPARE_TYPE * getIgnitionComparePointer(int i) {
-  if (i == 0) { return &IGN1_COMPARE; }
-  else if (i == 1 ) { return &IGN2_COMPARE; }
-  else if (i == 2 ) { return &IGN3_COMPARE; }
-  else if (i == 3 ) { return &IGN4_COMPARE; }
-  else if (i == 4 ) { return &IGN5_COMPARE; }
-  else if (i == 5 ) { return &IGN6_COMPARE; }
-  else if (i == 6 ) { return &IGN7_COMPARE; }
-  else if (i == 7 ) { return &IGN8_COMPARE; }
-}
+volatile static COMPARE_TYPE * const ignitionCompares[] { &IGN1_COMPARE, &IGN2_COMPARE, &IGN3_COMPARE, &IGN4_COMPARE, &IGN5_COMPARE, &IGN6_COMPARE, &IGN7_COMPARE, &IGN8_COMPARE };
+volatile static COUNTER_TYPE * const ignitionCounters[] { &IGN1_COUNTER, &IGN2_COUNTER, &IGN3_COUNTER, &IGN4_COUNTER, &IGN5_COUNTER, &IGN6_COUNTER, &IGN7_COUNTER, &IGN8_COUNTER };
 
-volatile static inline COUNTER_TYPE * getIgnitionCounterPointer(int i) {
-  if (i == 0) { return &IGN1_COUNTER; }
-  else if (i == 1 ) { return &IGN2_COUNTER; }
-  else if (i == 2 ) { return &IGN3_COUNTER; }
-  else if (i == 3 ) { return &IGN4_COUNTER; }
-  else if (i == 4 ) { return &IGN5_COUNTER; }
-  else if (i == 5 ) { return &IGN6_COUNTER; }
-  else if (i == 6 ) { return &IGN7_COUNTER; }
-  else if (i == 7 ) { return &IGN8_COUNTER; }
-}
-
-// This needs a better solution
-static inline uint8_t getIgnitionCmdBit(int i) {
-  if (i == 0) { return IGN1_CMD_BIT; }
-  else if (i == 1 ) { return IGN2_CMD_BIT; }
-  else if (i == 2 ) { return IGN3_CMD_BIT; }
-  else if (i == 3 ) { return IGN4_CMD_BIT; }
-  else if (i == 4 ) { return IGN5_CMD_BIT; }
-  else if (i == 5 ) { return IGN6_CMD_BIT; }
-  else if (i == 6 ) { return IGN7_CMD_BIT; }
-  else if (i == 7 ) { return IGN8_CMD_BIT; }
-}
+const uint8_t ignitionCmdBits[] { IGN1_CMD_BIT, IGN2_CMD_BIT, IGN3_CMD_BIT, IGN4_CMD_BIT, IGN5_CMD_BIT, IGN6_CMD_BIT, IGN7_CMD_BIT, IGN8_CMD_BIT };
 
 void initialiseSchedulers()
 {
@@ -128,12 +99,12 @@ void initialiseSchedulers()
     for (int i = 0; i < IGN_CHANNELS; i++) {
       ignitionSchedule[i].Status = OFF;
       ignitionSchedule[i].schedulesSet = 0;
-      ignitionSchedule[i].compare = getIgnitionComparePointer(i);
-      ignitionSchedule[i].counter = getIgnitionCounterPointer(i);
+      ignitionSchedule[i].compare = ignitionCompares[i];
+      ignitionSchedule[i].counter = ignitionCounters[i];
+      ignitionSchedule[i].channel = ignitionCmdBits[i];
       ignitionSchedule[i].timerEnable = getIgnTimer(i, true);
       ignitionSchedule[i].timerDisable = getIgnTimer(i, false);
       ignitionSchedule[i].timerEnable(); // Why enable here?
-      ignitionSchedule[i].channel = i;
     }
 }
 
