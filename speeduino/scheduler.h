@@ -68,8 +68,6 @@ extern void (*inj8EndFunction)();
  * They are required for the various spark output modes.
  * @{
 */
-extern void (*ignStartFunction[8])();
-extern void (*ignEndFunction[8])();
 /** @} */
 
 void initialiseSchedulers();
@@ -83,18 +81,6 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
-
-inline void setIgnitionTimerRunning(int i, bool enabled);
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -164,8 +150,15 @@ struct Schedule {
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 
+  void (*timerEnable)();
+  void (*timerDisable)();
   volatile COUNTER_TYPE * counter;
   volatile COMPARE_TYPE * compare;
+
+  int startAngle = 0;
+  int endAngle = 0;
+  int degreesUntilTDC; // The number of crank degrees until cylinder is at TDC
+  uint8_t channel;
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
@@ -197,6 +190,9 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 
 extern Schedule ignitionSchedule[IGN_CHANNELS];
+
+extern void setIgnitionSchedule(Schedule * thisIgnitionSchedule, unsigned long timeout, unsigned long duration);
+inline void refreshIgnitionSchedule1(Schedule * thisIgnitionSchedule, unsigned long timeToEnd) __attribute__((always_inline));
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

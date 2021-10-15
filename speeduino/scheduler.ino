@@ -57,8 +57,17 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
-void (*ignStartFunction[8])();
-void (*ignEndFunction[8])();
+void (*getIgnTimer(int i, bool enable))(void) {
+       if (i == 0) { if (enable == true) { return ign1TimerEnable; } else { return ign1TimerDisable; } }
+  else if (i == 1) { if (enable == true) { return ign2TimerEnable; } else { return ign2TimerDisable; } }
+  else if (i == 2) { if (enable == true) { return ign3TimerEnable; } else { return ign3TimerDisable; } }
+  else if (i == 3) { if (enable == true) { return ign4TimerEnable; } else { return ign4TimerDisable; } }
+  else if (i == 4) { if (enable == true) { return ign5TimerEnable; } else { return ign5TimerDisable; } }
+  else if (i == 5) { if (enable == true) { return ign6TimerEnable; } else { return ign6TimerDisable; } }
+  else if (i == 6) { if (enable == true) { return ign7TimerEnable; } else { return ign7TimerDisable; } }
+  else if (i == 7) { if (enable == true) { return ign8TimerEnable; } else { return ign8TimerDisable; } }
+  return nullCallback;
+}
 
 volatile static inline COMPARE_TYPE * getIgnitionComparePointer(int i) {
   if (i == 0) { return &IGN1_COMPARE; }
@@ -80,6 +89,18 @@ volatile static inline COUNTER_TYPE * getIgnitionCounterPointer(int i) {
   else if (i == 5 ) { return &IGN6_COUNTER; }
   else if (i == 6 ) { return &IGN7_COUNTER; }
   else if (i == 7 ) { return &IGN8_COUNTER; }
+}
+
+// This needs a better solution
+static inline uint8_t getIgnitionCmdBit(int i) {
+  if (i == 0) { return IGN1_CMD_BIT; }
+  else if (i == 1 ) { return IGN2_CMD_BIT; }
+  else if (i == 2 ) { return IGN3_CMD_BIT; }
+  else if (i == 3 ) { return IGN4_CMD_BIT; }
+  else if (i == 4 ) { return IGN5_CMD_BIT; }
+  else if (i == 5 ) { return IGN6_CMD_BIT; }
+  else if (i == 6 ) { return IGN7_CMD_BIT; }
+  else if (i == 7 ) { return IGN8_CMD_BIT; }
 }
 
 void initialiseSchedulers()
@@ -106,10 +127,13 @@ void initialiseSchedulers()
     
     for (int i = 0; i < IGN_CHANNELS; i++) {
       ignitionSchedule[i].Status = OFF;
-      setIgnitionTimerRunning(i, true);
       ignitionSchedule[i].schedulesSet = 0;
       ignitionSchedule[i].compare = getIgnitionComparePointer(i);
       ignitionSchedule[i].counter = getIgnitionCounterPointer(i);
+      ignitionSchedule[i].timerEnable = getIgnTimer(i, true);
+      ignitionSchedule[i].timerDisable = getIgnTimer(i, false);
+      ignitionSchedule[i].timerEnable(); // Why enable here?
+      ignitionSchedule[i].channel = i;
     }
 }
 
@@ -465,13 +489,10 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 }
 #endif
 
-void setIgnitionSchedule(int i, void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+extern void setIgnitionSchedule(Schedule *thisIgnitionSchedule, unsigned long timeout, unsigned long duration)
 {
-  Schedule *thisIgnitionSchedule = &(ignitionSchedule[i]);
   if(thisIgnitionSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    thisIgnitionSchedule->StartCallback = startCallback; //Name the start callback function
-    thisIgnitionSchedule->EndCallback = endCallback; //Name the start callback function
     thisIgnitionSchedule->duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -487,7 +508,7 @@ void setIgnitionSchedule(int i, void (*startCallback)(), unsigned long timeout, 
     thisIgnitionSchedule->Status = PENDING; //Turn this schedule on
     thisIgnitionSchedule->schedulesSet++;
     interrupts();
-    setIgnitionTimerRunning(i, true);
+    thisIgnitionSchedule->timerEnable();
   }
   else
   {
@@ -503,40 +524,8 @@ void setIgnitionSchedule(int i, void (*startCallback)(), unsigned long timeout, 
   }
 }
 
-inline void setIgnitionTimerRunning(int i, bool enabled) {
-  if (i == 0) { if (enabled) { IGN1_TIMER_ENABLE(); } else { IGN1_TIMER_ENABLE(); }}
-  #if IGN_CHANNELS >= 2
-    else if (i == 1) { if (enabled) { IGN2_TIMER_ENABLE(); } else { IGN2_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 3
-    else if (i == 2) { if (enabled) { IGN3_TIMER_ENABLE(); } else { IGN3_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 4
-    else if (i == 3) { if (enabled) { IGN4_TIMER_ENABLE(); } else { IGN4_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 5
-    else if (i == 4) { if (enabled) { IGN5_TIMER_ENABLE(); } else { IGN5_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 6
-    else if (i == 5) { if (enabled) { IGN6_TIMER_ENABLE(); } else { IGN6_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 7
-    else if (i == 6) { if (enabled) { IGN7_TIMER_ENABLE(); } else { IGN7_TIMER_ENABLE(); }}
-  #endif
-  #if IGN_CHANNELS >= 8
-    else if (i == 7) { if (enabled) { IGN8_TIMER_ENABLE(); } else { IGN8_TIMER_ENABLE(); }}
-  #endif
-}
-
-//Ignition schedulers use Timer 5
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+inline void refreshIgnitionSchedule1(Schedule * thisIgnitionSchedule, unsigned long timeToEnd)
 {
-  setIgnitionSchedule(0, startCallback, timeout, duration, endCallback);
-}
-
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
-{
-  Schedule *thisIgnitionSchedule = &(ignitionSchedule[0]);
   if( (thisIgnitionSchedule->Status == RUNNING) && (timeToEnd < thisIgnitionSchedule->duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule[0].duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
@@ -548,34 +537,6 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(1, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(2, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(3, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(4, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(5, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(6, startCallback, timeout, duration, endCallback);
-}
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
-{
-  setIgnitionSchedule(7, startCallback, timeout, duration, endCallback);
-}
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
@@ -899,8 +860,7 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 }
 #endif
 
-inline void ignitionScheduleInterrupt(int i) {
-  Schedule *thisIgnitionSchedule = &(ignitionSchedule[i]);
+inline void ignitionScheduleInterrupt(Schedule * thisIgnitionSchedule) {
   if (thisIgnitionSchedule->Status == PENDING) //Check to see if this schedule is turn on
   {
     thisIgnitionSchedule->StartCallback();
@@ -925,12 +885,12 @@ inline void ignitionScheduleInterrupt(int i) {
       thisIgnitionSchedule->schedulesSet = 1;
       thisIgnitionSchedule->hasNextSchedule = false;
     }
-    else{ setIgnitionTimerRunning(i, false); }
+    else{ thisIgnitionSchedule->timerDisable(); }
   }
   else if (thisIgnitionSchedule->Status == OFF)
   {
     //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-    setIgnitionTimerRunning(i, false);
+    thisIgnitionSchedule->timerDisable();
   }
 }
 
@@ -941,7 +901,7 @@ ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(0);
+    ignitionScheduleInterrupt(&ignitionSchedule[0]);
   }
 #endif
 
@@ -952,7 +912,7 @@ ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(1);
+    ignitionScheduleInterrupt(&ignitionSchedule[1]);
   }
 #endif
 
@@ -963,7 +923,7 @@ ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(2);
+    ignitionScheduleInterrupt(&ignitionSchedule[2]);
   }
 #endif
 
@@ -974,7 +934,7 @@ ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(3);
+    ignitionScheduleInterrupt(&ignitionSchedule[3]);
   }
 #endif
 
@@ -985,7 +945,7 @@ ISR(TIMER4_COMPC_vect) //ignitionSchedule5
 static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(4);
+    ignitionScheduleInterrupt(&ignitionSchedule[4]);
   }
 #endif
 
@@ -996,7 +956,7 @@ ISR(TIMER4_COMPB_vect) //ignitionSchedule6
 static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(5);
+    ignitionScheduleInterrupt(&ignitionSchedule[5]);
   }
 #endif
 
@@ -1007,7 +967,7 @@ ISR(TIMER3_COMPC_vect) //ignitionSchedule6
 static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(6);
+    ignitionScheduleInterrupt(&ignitionSchedule[6]);
   }
 #endif
 
@@ -1018,6 +978,6 @@ ISR(TIMER3_COMPB_vect) //ignitionSchedule8
 static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(7);
+    ignitionScheduleInterrupt(&ignitionSchedule[7]);
   }
 #endif

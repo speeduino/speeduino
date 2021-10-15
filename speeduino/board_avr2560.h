@@ -101,24 +101,23 @@
   #define FUEL7_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C); //
   #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
 
-  //These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
-  #define IGN1_TIMER_ENABLE() TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN2_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define IGN3_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define IGN4_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN6_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Replaces injector 2
+  extern inline void ign1TimerEnable();
+  extern inline void ign2TimerEnable();
+  extern inline void ign3TimerEnable();
+  extern inline void ign4TimerEnable();
+  extern inline void ign5TimerEnable();
+  extern inline void ign6TimerEnable();
+  extern inline void ign7TimerEnable();
+  extern inline void ign8TimerEnable();
 
-  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit
-  #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
-  #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
-  #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
-  #define IGN5_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C) //Turn off this output compare unit
-  #define IGN6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B) //Replaces injector 2
+  extern inline void ign1TimerDisable();
+  extern inline void ign2TimerDisable();
+  extern inline void ign3TimerDisable();
+  extern inline void ign4TimerDisable();
+  extern inline void ign5TimerDisable();
+  extern inline void ign6TimerDisable();
+  extern inline void ign7TimerDisable();
+  extern inline void ign8TimerDisable();
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
