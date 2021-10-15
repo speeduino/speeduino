@@ -191,8 +191,8 @@ extern FuelSchedule fuelSchedule8;
 
 extern Schedule ignitionSchedule[IGN_CHANNELS];
 
-extern void setIgnitionSchedule(Schedule * thisIgnitionSchedule, unsigned long timeout, unsigned long duration);
-inline void refreshIgnitionSchedule1(Schedule * thisIgnitionSchedule, unsigned long timeToEnd) __attribute__((always_inline));
+extern void setIgnitionSchedule(Schedule * schedule, unsigned long timeout, unsigned long duration);
+inline void refreshIgnitionSchedule1(Schedule * schedule, unsigned long timeToEnd) __attribute__((always_inline));
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

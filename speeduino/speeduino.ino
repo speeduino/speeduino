@@ -1183,24 +1183,24 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   return (unsigned int)(intermediate);
 }
 
-extern void checkIgnitionSchedule(Schedule * thisIgnitionSchedule, int crankAngle) {
+extern void checkIgnitionSchedule(Schedule * schedule, int crankAngle) {
   int tempCrankAngle;
   int tempStartAngle;
 
-  tempCrankAngle = crankAngle - thisIgnitionSchedule->degreesUntilTDC;
+  tempCrankAngle = crankAngle - schedule->degreesUntilTDC;
   if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
-  tempStartAngle = thisIgnitionSchedule->startAngle - thisIgnitionSchedule->degreesUntilTDC;
+  tempStartAngle = schedule->startAngle - schedule->degreesUntilTDC;
   if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
   unsigned long ignitionStartTime = 0;
-  if ( (tempStartAngle <= tempCrankAngle) && (thisIgnitionSchedule->Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+  if ( (tempStartAngle <= tempCrankAngle) && (schedule->Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
   if(tempStartAngle > tempCrankAngle) { ignitionStartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
   //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
   else { ignitionStartTime = 0; }
 
-  if ( (ignitionStartTime > 0) && (!BIT_CHECK(curRollingCut, thisIgnitionSchedule->channel)) )
+  if ( (ignitionStartTime > 0) && (!BIT_CHECK(curRollingCut, schedule->channel)) )
   {
-    setIgnitionSchedule(thisIgnitionSchedule, ignitionStartTime, currentStatus.dwell + fixedCrankingOverride);
+    setIgnitionSchedule(schedule, ignitionStartTime, currentStatus.dwell + fixedCrankingOverride);
   }
 }
 
@@ -1273,21 +1273,21 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
   return tempInjectorStartAngle;
 }
 
-void calculateIgnitionAngle(Schedule * thisIgnitionSchedule, int dwellAngle)
+void calculateIgnitionAngle(Schedule * schedule, int dwellAngle)
 {
-  thisIgnitionSchedule->endAngle = thisIgnitionSchedule->degreesUntilTDC - currentStatus.advance;
-  if(thisIgnitionSchedule->endAngle > CRANK_ANGLE_MAX_IGN) {thisIgnitionSchedule->endAngle -= CRANK_ANGLE_MAX_IGN;}
-  thisIgnitionSchedule->startAngle = thisIgnitionSchedule->endAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
-  if(thisIgnitionSchedule->startAngle < 0) {thisIgnitionSchedule->startAngle += CRANK_ANGLE_MAX_IGN;}
+  schedule->endAngle = schedule->degreesUntilTDC - currentStatus.advance;
+  if(schedule->endAngle > CRANK_ANGLE_MAX_IGN) {schedule->endAngle -= CRANK_ANGLE_MAX_IGN;}
+  schedule->startAngle = schedule->endAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
+  if(schedule->startAngle < 0) {schedule->startAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
 // Used by rotary
-void calculateIgnitionAngleWithSpecificEndAngle(Schedule * thisIgnitionSchedule, int dwellAngle, int endAngle)
+void calculateIgnitionAngleWithSpecificEndAngle(Schedule * schedule, int dwellAngle, int endAngle)
 {
-  thisIgnitionSchedule->endAngle = endAngle;
-  thisIgnitionSchedule->startAngle = thisIgnitionSchedule->endAngle - dwellAngle;
-  if(thisIgnitionSchedule->startAngle > CRANK_ANGLE_MAX_IGN) {thisIgnitionSchedule->startAngle -= CRANK_ANGLE_MAX_IGN;}
-  if(thisIgnitionSchedule->startAngle < 0) {thisIgnitionSchedule->startAngle += CRANK_ANGLE_MAX_IGN;}
+  schedule->endAngle = endAngle;
+  schedule->startAngle = schedule->endAngle - dwellAngle;
+  if(schedule->startAngle > CRANK_ANGLE_MAX_IGN) {schedule->startAngle -= CRANK_ANGLE_MAX_IGN;}
+  if(schedule->startAngle < 0) {schedule->startAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).

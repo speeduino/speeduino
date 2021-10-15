@@ -460,11 +460,11 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 }
 #endif
 
-extern void setIgnitionSchedule(Schedule *thisIgnitionSchedule, unsigned long timeout, unsigned long duration)
+extern void setIgnitionSchedule(Schedule *schedule, unsigned long timeout, unsigned long duration)
 {
-  if(thisIgnitionSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
+  if(schedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    thisIgnitionSchedule->duration = duration;
+    schedule->duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
     COMPARE_TYPE timeout_timer_compare;
@@ -473,13 +473,13 @@ extern void setIgnitionSchedule(Schedule *thisIgnitionSchedule, unsigned long ti
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
     noInterrupts();
-    thisIgnitionSchedule->startCompare = *thisIgnitionSchedule->counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(thisIgnitionSchedule->endScheduleSetByDecoder == false) { thisIgnitionSchedule->endCompare = thisIgnitionSchedule->startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    *thisIgnitionSchedule->compare = thisIgnitionSchedule->startCompare;
-    thisIgnitionSchedule->Status = PENDING; //Turn this schedule on
-    thisIgnitionSchedule->schedulesSet++;
+    schedule->startCompare = *schedule->counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+    if(schedule->endScheduleSetByDecoder == false) { schedule->endCompare = schedule->startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+    *schedule->compare = schedule->startCompare;
+    schedule->Status = PENDING; //Turn this schedule on
+    schedule->schedulesSet++;
     interrupts();
-    thisIgnitionSchedule->timerEnable();
+    schedule->timerEnable();
   }
   else
   {
@@ -487,23 +487,23 @@ extern void setIgnitionSchedule(Schedule *thisIgnitionSchedule, unsigned long ti
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if (timeout < MAX_TIMER_PERIOD)
     {
-      thisIgnitionSchedule->nextStartCompare = *thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
-      thisIgnitionSchedule->nextEndCompare = thisIgnitionSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      thisIgnitionSchedule->hasNextSchedule = true;
+      schedule->nextStartCompare = *schedule->counter + uS_TO_TIMER_COMPARE(timeout);
+      schedule->nextEndCompare = schedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+      schedule->hasNextSchedule = true;
     }
 
   }
 }
 
-inline void refreshIgnitionSchedule1(Schedule * thisIgnitionSchedule, unsigned long timeToEnd)
+inline void refreshIgnitionSchedule1(Schedule * schedule, unsigned long timeToEnd)
 {
-  if( (thisIgnitionSchedule->Status == RUNNING) && (timeToEnd < thisIgnitionSchedule->duration) )
+  if( (schedule->Status == RUNNING) && (timeToEnd < schedule->duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule[0].duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
     noInterrupts();
-    thisIgnitionSchedule->endCompare = *thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(timeToEnd);
-    *thisIgnitionSchedule->compare = thisIgnitionSchedule->endCompare;
+    schedule->endCompare = *schedule->counter + uS_TO_TIMER_COMPARE(timeToEnd);
+    *schedule->compare = schedule->endCompare;
     interrupts();
   }
 }
@@ -831,37 +831,37 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 }
 #endif
 
-inline void ignitionScheduleInterrupt(Schedule * thisIgnitionSchedule) {
-  if (thisIgnitionSchedule->Status == PENDING) //Check to see if this schedule is turn on
+inline void ignitionScheduleInterrupt(Schedule * schedule) {
+  if (schedule->Status == PENDING) //Check to see if this schedule is turn on
   {
-    thisIgnitionSchedule->StartCallback();
-    thisIgnitionSchedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    thisIgnitionSchedule->startTime = micros();
-    if(thisIgnitionSchedule->endScheduleSetByDecoder == true) { *thisIgnitionSchedule->compare = thisIgnitionSchedule->endCompare; }
-    else { *thisIgnitionSchedule->compare = (*thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE(thisIgnitionSchedule->duration)); } //Doing this here prevents a potential overflow on restarts
+    schedule->StartCallback();
+    schedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    schedule->startTime = micros();
+    if(schedule->endScheduleSetByDecoder == true) { *schedule->compare = schedule->endCompare; }
+    else { *schedule->compare = (*schedule->counter + uS_TO_TIMER_COMPARE(schedule->duration)); } //Doing this here prevents a potential overflow on restarts
   }
-  else if (thisIgnitionSchedule->Status == RUNNING)
+  else if (schedule->Status == RUNNING)
   {
-    thisIgnitionSchedule->EndCallback();
-    thisIgnitionSchedule->Status = OFF; //Turn off the schedule
-    thisIgnitionSchedule->schedulesSet = 0;
-    thisIgnitionSchedule->endScheduleSetByDecoder = false;
+    schedule->EndCallback();
+    schedule->Status = OFF; //Turn off the schedule
+    schedule->schedulesSet = 0;
+    schedule->endScheduleSetByDecoder = false;
     ignitionCount += 1; //Increment the igintion counter
 
     //If there is a next schedule queued up, activate it
-    if(thisIgnitionSchedule->hasNextSchedule == true)
+    if(schedule->hasNextSchedule == true)
     {
-      *thisIgnitionSchedule->compare = thisIgnitionSchedule->nextStartCompare;
-      thisIgnitionSchedule->Status = PENDING;
-      thisIgnitionSchedule->schedulesSet = 1;
-      thisIgnitionSchedule->hasNextSchedule = false;
+      *schedule->compare = schedule->nextStartCompare;
+      schedule->Status = PENDING;
+      schedule->schedulesSet = 1;
+      schedule->hasNextSchedule = false;
     }
-    else{ thisIgnitionSchedule->timerDisable(); }
+    else{ schedule->timerDisable(); }
   }
-  else if (thisIgnitionSchedule->Status == OFF)
+  else if (schedule->Status == OFF)
   {
     //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-    thisIgnitionSchedule->timerDisable();
+    schedule->timerDisable();
   }
 }
 

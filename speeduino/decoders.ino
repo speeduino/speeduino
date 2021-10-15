@@ -302,9 +302,9 @@ Only if both these conditions are met will the schedule be updated with the late
 If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
 */
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
-inline void refreshIgnitionTiming(Schedule * thisIgnitionSchedule, int16_t crankAngle) {
-  if( thisIgnitionSchedule->Status == RUNNING ) { *thisIgnitionSchedule->compare = (*thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (thisIgnitionSchedule->endAngle - crankAngle) ) ) ) ); }
-  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { thisIgnitionSchedule->endCompare = *thisIgnitionSchedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (thisIgnitionSchedule->endAngle - crankAngle) ) ) ); thisIgnitionSchedule->endScheduleSetByDecoder = true; }
+inline void refreshIgnitionTiming(Schedule * schedule, int16_t crankAngle) {
+  if( schedule->Status == RUNNING ) { *schedule->compare = (*schedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (schedule->endAngle - crankAngle) ) ) ) ); }
+  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { schedule->endCompare = *schedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (schedule->endAngle - crankAngle) ) ) ); schedule->endScheduleSetByDecoder = true; }
 }
 
 static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
