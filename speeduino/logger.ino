@@ -134,5 +134,9 @@ void createLog(uint8_t *logBuffer)
     logBuffer[110] = (byte) currentStatus.vvt2Duty;
     logBuffer[111] = currentStatus.advance1;
     logBuffer[112] = currentStatus.advance2;
+    //Amesis Project
+    logBuffer[121] = currentStatus.APthrottle;
+    logBuffer[122] = currentStatus.ppsADC;
+    
 
 }

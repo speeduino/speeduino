@@ -2541,7 +2541,7 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
-  if ( (configPage13.tbEnabled != 0) && (configPage13.APPedalePositionPin1 < BOARD_MAX_IO_PINS) ) { pin1APPedalePosition = pinTranslateAnalog(configPage13.APPedalePositionPin1); }// Amesis Project
+  if ( (configPage13.tbEnabled != 0) && (configPage13.APPedalePositionPin1 < BOARD_MAX_IO_PINS) ) { pinPPS = pinTranslateAnalog(configPage13.APPedalePositionPin1); }// Amesis Project
 
   //Currently there's no default pin for Idle Up
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2761,7 +2761,7 @@ void setPinMapping(byte boardID)
   //Amesis Project
   if(configPage13.tbEnabled > 0)
   {
-    pinMode(pin1APPedalePosition, INPUT);
+    pinMode(pinPPS,INPUT);
   } 
 
   //These must come after the above pinMode statements

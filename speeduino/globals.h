@@ -711,7 +711,9 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte APthrottle; //Amesis Project Throttle PPS%
-};
+  byte ppsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+
+  };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
  * These are "non-live" EFI setting, engine and "system" variables that remain fixed once sent
@@ -1376,19 +1378,22 @@ struct config13 {
 
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
  
- //Amesus Project Throttle & ThrottleBody
-  byte tbEnabled : 1;
-  byte APPedalePositionPin1 : 5;
-  byte unused13_106 : 2;
-  byte APPedalePositionPin2 : 5;
-  byte unused13_107 : 3;
-  byte APthrottle1Min;
-  byte APthrottle1Max;
-  byte APthrottle2Min;
-  byte APthrottle2Max;
+ //Amesis Project Throttle & ThrottleBody
+  byte tbEnabled : 1;            //106
+  byte APPedalePositionPin1 : 5; //106
+  byte unused13_106 : 2;         //106
+  byte APPedalePositionPin2 : 5; //107
+  byte unused13_107 : 3;         //107
+  byte APthrottle1Min;           //108
+  byte APthrottle1Max;           //109
+  byte APthrottle2Min;           //110
+  byte APthrottle2Max;           //111
+  byte ppsMin;                   //112
+  byte ppsMax;                   //113
+  byte ADCFILTER_PPS;            //114 
 
   //byte unused12_106_127[22]; // Unused
-byte unused12_112_127[16]; // Unused
+  byte unused12_115_127[13];   //Unused
 
 #if defined(CORE_AVR)
   };
@@ -1471,6 +1476,7 @@ extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
+extern byte pinPPS;//Amesis Project PPS input pin
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif

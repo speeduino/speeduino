@@ -124,7 +124,8 @@ void initialiseADC()
   if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
   if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
-
+  if(configPage13.ADCFILTER_PPS > 240) { configPage13.ADCFILTER_PPS = 50; writeConfig(ignSetPage); }
+  
   flexStartTime = micros();
 
   vssIndex = 0;
@@ -757,27 +758,52 @@ uint16_t readAuxdigital(uint8_t digitalPin)
 } 
 
 //Amesis Project 
-byte getAPthrottle()
+
+void readPPS(bool useFilter)
 {
-  uint16_t tempAPthrottle = 0; 
-  uint16_t tempReading;
+  PPSlast = currentStatus.APthrottle ; //currentStatus.PPS
+  PPSlast_time = PPS_time;
+  #if defined(ANALOG_ISR)
+    byte tempPPS = fastMap1023toX(AnChannel[pinPPS-A0], 255); //Get the current raw PPS ADC value and map it into a byte
+  #else
+    analogRead(pinPPS);
+    byte tempPPS = fastMap1023toX(analogRead(pinPPS), 255); //Get the current raw PPS ADC value and map it into a byte
+  #endif
+  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+  if(useFilter == true) { currentStatus.ppsADC = ADC_FILTER(tempPPS, configPage13.ADCFILTER_PPS, currentStatus.ppsADC); }
+  else { currentStatus.ppsADC = tempPPS; }
+  //currentStatus.ppsADC = ADC_FILTER(temppPS, 128, currentStatus.ppsADC);
+  byte tempADC = currentStatus.ppsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the PPS calibration if this somehow gets corrupted
 
-  if(configPage13.tbEnabled > 0) // si l'option est activé
+  if(configPage13.ppsMax > configPage13.ppsMin)
   {
-    //Perform ADC read
-    tempReading = analogRead(pin1APPedalePosition); // Lecture du pin declaré dans la fenêtre TunerStudio
-    tempReading = analogRead(pin1APPedalePosition); // Nous lisons a la suite une seconde foie la valeur pour etre sur que soit bonne est precise
+    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+    if (currentStatus.ppsADC < configPage13.ppsMin) { tempADC = configPage13.ppsMin; }
+    else if(currentStatus.ppsADC > configPage13.ppsMax) { tempADC = configPage13.ppsMax; }
+    currentStatus.APthrottle = map(tempADC, configPage13.ppsMin, configPage13.ppsMax, 0, 100); //Take the raw PPS ADC value and convert it into a PPS% based on the calibrated values
+  }
+  else
+  {
+    //This case occurs when the PPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
+    //In such a case, ppsMin will be greater then ppsMax and hence checks and mapping needs to be reversed
 
-   // fastMap10bit c'est le fait que l'arduino lit le pin analigique entre 0 et 5v qui convertie ça en numerique de 0 a 1023 valeur
-   // c'est ce qu'on appel un adc 10 bits. 
-   // Nous pouvons donc colibrer notre capteur grace aux valeur mini maxi, la fonction map fait donc une propotion de notre 0->1023 à notre 0->100% pédale WOT
-    tempAPthrottle = fastMap10Bit(tempReading, configPage13.APthrottle1Min, configPage13.APthrottle1Max);
-    tempAPthrottle = ADC_FILTER(tempAPthrottle, 150, currentStatus.APthrottle); //Apply speed smoothing factor
-    //Sanity check
-    if(tempAPthrottle > configPage13.APthrottle1Max) { tempAPthrottle = configPage13.APthrottle1Max; } //Si la valeur depasse la valeur max, nous mettons la valeur max
-    if(tempAPthrottle < 0 ) { tempAPthrottle = 0; } //si la valeur est négative, nous l'a mettons à 0
+    tempADC = 255 - currentStatus.ppsADC; //Reverse the ADC values
+    uint16_t tempPPSMax = 255 - configPage13.ppsMax;
+    uint16_t tempPPSMin = 255 - configPage13.ppsMin;
+
+    //All checks below are reversed from the standard case above
+    if (tempADC > tempPPSMax) { tempADC = tempPPSMax; }
+    else if(tempADC < tempPPSMin) { tempADC = tempPPSMin; }
+    currentStatus.APthrottle = map(tempADC, tempPPSMin, tempPPSMax, 0, 100);
   }
 
-
-  return (byte)tempAPthrottle; // on renvoie la valeur lu
+ /* //Check whether the closed throttle position sensor is active
+  if(configPage13.CPPSEnabled == true)
+  {
+    if(configPage13.CPPSPolarity == 0) { currentStatus.CPPSActive = !digitalRead(pinCPPS); } //Normal mode (ground switched)
+    else { currentStatus.CPPSActive = digitalRead(pinCPPS); } //Inverted mode (5v activates closed throttle position sensor)
+  }
+  else { currentStatus.CPPSActive = 0; }
+  PPS_time = micros(); 
+  */
 }

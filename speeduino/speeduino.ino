@@ -321,7 +321,7 @@ void loop()
 #if TPS_READ_FREQUENCY == 30
     readTPS();
 #endif
-
+   
     if (isEepromWritePending() == true) {
       writeAllConfig();  //Check for any outstanding EEPROM writes.
     }
@@ -340,7 +340,7 @@ void loop()
 
     currentStatus.fuelPressure = getFuelPressure();
     currentStatus.oilPressure = getOilPressure();
-    currentStatus.APthrottle = getAPthrottle(); //Amesis Project
+    readPPS (); //Amesis Project
 
     if (auxIsEnabled == true)
     {

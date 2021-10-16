@@ -87,7 +87,12 @@ byte getFuelPressure();
 byte getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
-byte getAPthrottle(); //Amesis Project
+//byte getAPthrottle(); //Amesis Project
+void readPPS(bool=true);
+byte PPSlast; /**< The previous TPS reading */
+unsigned long PPS_time; //The time the TPS sample was taken
+unsigned long PPSlast_time; //The time the previous TPS sample was taken
+
 void readCLT(bool=true); //Allows the option to override the use of the filter
 void readIAT();
 void readO2();

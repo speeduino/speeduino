@@ -247,7 +247,8 @@ byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
-byte pin1APPedalePosition; //Amesis Project
+byte pinPPS;      //Amesis Project PPS input pin
+
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
