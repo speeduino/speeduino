@@ -944,7 +944,7 @@ void loop()
       //Same as above, except for ignition
 
 
-      //fixedCrankingOverride is currently only available on the basic distributor and 4g63 and Miata9905 and MazdaAU and Subaru 67 and Daihatsu decoders.
+      //fixed Cranking Override is currently only available on the basic distributor and 4g63 and Miata9905 and MazdaAU and Subaru 67 and Daihatsu decoders.
       if(ignitionOn && (!configPage4.ignCranklock || !BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) //fixed cranking override do not need schedulers here, it starts directly from decoders
       {
         //Refresh the current crank angle info
