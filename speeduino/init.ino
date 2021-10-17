@@ -413,7 +413,7 @@ void initialiseAll()
 
     switch (configPage2.nCylinders) {
     case 1:
-        ignitionSchedule[0].degreesUntilTDC = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 1;
 
@@ -438,11 +438,11 @@ void initialiseAll()
         break;
 
     case 2:
-        ignitionSchedule[0].degreesUntilTDC = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2;
-        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule[1].degreesUntilTDC = 180; }
-        else { ignitionSchedule[1].degreesUntilTDC = configPage2.oddfire2; }
+        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule[1].degreesAfterTDC1 = 180; }
+        else { ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -479,28 +479,28 @@ void initialiseAll()
         break;
 
     case 3:
-        ignitionSchedule[0].degreesUntilTDC = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
         //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
         if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
-          ignitionSchedule[1].degreesUntilTDC = 240;
-          ignitionSchedule[2].degreesUntilTDC = 480;
+          ignitionSchedule[1].degreesAfterTDC1 = 240;
+          ignitionSchedule[2].degreesAfterTDC1 = 480;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
         else
         {
-          ignitionSchedule[1].degreesUntilTDC = 120;
-          ignitionSchedule[2].degreesUntilTDC = 240;
+          ignitionSchedule[1].degreesAfterTDC1 = 120;
+          ignitionSchedule[2].degreesAfterTDC1 = 240;
         }
         }
         else
         {
-        ignitionSchedule[1].degreesUntilTDC = configPage2.oddfire2;
-        ignitionSchedule[2].degreesUntilTDC = configPage2.oddfire3;
+        ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2;
+        ignitionSchedule[2].degreesAfterTDC1 = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -540,17 +540,17 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 4:
-        ignitionSchedule[0].degreesUntilTDC = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
         if (configPage2.engineType == EVEN_FIRE )
         {
-          ignitionSchedule[1].degreesUntilTDC = 180;
+          ignitionSchedule[1].degreesAfterTDC1 = 180;
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
-            ignitionSchedule[2].degreesUntilTDC = 360;
-            ignitionSchedule[3].degreesUntilTDC = 540;
+            ignitionSchedule[2].degreesAfterTDC1 = 360;
+            ignitionSchedule[3].degreesAfterTDC1 = 540;
 
             CRANK_ANGLE_MAX_IGN = 720;
             maxIgnOutputs = 4;
@@ -558,8 +558,8 @@ void initialiseAll()
           else if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-            ignitionSchedule[2].degreesUntilTDC = 0;
-            ignitionSchedule[3].degreesUntilTDC = 180;
+            ignitionSchedule[2].degreesAfterTDC1 = 0;
+            ignitionSchedule[3].degreesAfterTDC1 = 180;
             maxIgnOutputs = 4;
 
             configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
@@ -567,9 +567,9 @@ void initialiseAll()
         }
         else
         {
-          ignitionSchedule[1].degreesUntilTDC = configPage2.oddfire2;
-          ignitionSchedule[2].degreesUntilTDC = configPage2.oddfire3;
-          ignitionSchedule[3].degreesUntilTDC = configPage2.oddfire4;
+          ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2;
+          ignitionSchedule[2].degreesAfterTDC1 = configPage2.oddfire3;
+          ignitionSchedule[3].degreesAfterTDC1 = configPage2.oddfire4;
           maxIgnOutputs = 4;
         }
 
@@ -618,19 +618,19 @@ void initialiseAll()
         channel2InjEnabled = true;
         break;
     case 5:
-        ignitionSchedule[0].degreesUntilTDC = 0;
-        ignitionSchedule[1].degreesUntilTDC = 72;
-        ignitionSchedule[2].degreesUntilTDC = 144;
-        ignitionSchedule[3].degreesUntilTDC = 216;
-        ignitionSchedule[4].degreesUntilTDC = 288;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 72;
+        ignitionSchedule[2].degreesAfterTDC1 = 144;
+        ignitionSchedule[3].degreesAfterTDC1 = 216;
+        ignitionSchedule[4].degreesAfterTDC1 = 288;
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
-          ignitionSchedule[1].degreesUntilTDC = 144;
-          ignitionSchedule[2].degreesUntilTDC = 288;
-          ignitionSchedule[3].degreesUntilTDC = 432;
-          ignitionSchedule[4].degreesUntilTDC = 576;
+          ignitionSchedule[1].degreesAfterTDC1 = 144;
+          ignitionSchedule[2].degreesAfterTDC1 = 288;
+          ignitionSchedule[3].degreesAfterTDC1 = 432;
+          ignitionSchedule[4].degreesAfterTDC1 = 576;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -681,9 +681,9 @@ void initialiseAll()
         channel4InjEnabled = true;
         break;
     case 6:
-        ignitionSchedule[0].degreesUntilTDC = 0;
-        ignitionSchedule[1].degreesUntilTDC = 120;
-        ignitionSchedule[2].degreesUntilTDC = 240;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 120;
+        ignitionSchedule[2].degreesAfterTDC1 = 240;
         maxIgnOutputs = 3;
 
     #if IGN_CHANNELS >= 6
@@ -743,10 +743,10 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 8:
-        ignitionSchedule[0].degreesUntilTDC = 0;
-        ignitionSchedule[1].degreesUntilTDC = 90;
-        ignitionSchedule[2].degreesUntilTDC = 180;
-        ignitionSchedule[3].degreesUntilTDC = 270;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 90;
+        ignitionSchedule[2].degreesAfterTDC1 = 180;
+        ignitionSchedule[3].degreesAfterTDC1 = 270;
         maxIgnOutputs = 4;
 
     #if IGN_CHANNELS >= 1
@@ -1144,7 +1144,7 @@ void initialiseAll()
     //Assign the callbacks to the ignition schedules
     for (int i = 0; i < IGN_CHANNELS; i++) {
       ignitionSchedule[i].StartCallback = ignStartFunction[i];
-      ignitionSchedule[i].EndCallback = ignStartFunction[i];
+      ignitionSchedule[i].EndCallback = ignEndFunction[i];
     }
 
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino

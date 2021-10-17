@@ -296,7 +296,7 @@ static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 }
 
 /**
-On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
+On decoders that are enabled for per tooth based timing adjustments, these 2 functions perform the timer compare changes on the schedules themselves
 For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
 Only if both these conditions are met will the schedule be updated with the latest timing information.
 If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
@@ -4391,7 +4391,7 @@ void triggerSetEndTeeth_NGC()
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
   
   int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  tempIgnition1EndTooth = ( (ignitionSchedule[0].endAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
   if(tempIgnition1EndTooth < 1) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
   else if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
   if(tempIgnition1EndTooth == 17 || tempIgnition1EndTooth == 18) { tempIgnition1EndTooth = 16; } // These are missing teeth, so set the next one before instead
@@ -4401,7 +4401,7 @@ void triggerSetEndTeeth_NGC()
   ignition1EndTooth = tempIgnition1EndTooth;
 
   int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  tempIgnition2EndTooth = ( (ignitionSchedule[1].endAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
   if(tempIgnition2EndTooth < 1) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
   else if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
   if(tempIgnition2EndTooth == 17 || tempIgnition2EndTooth == 18) { tempIgnition2EndTooth = 16; } // These are missing teeth, so set the next one before instead
@@ -4411,7 +4411,7 @@ void triggerSetEndTeeth_NGC()
   ignition2EndTooth = tempIgnition2EndTooth;
 
   int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  tempIgnition3EndTooth = ( (ignitionSchedule[2].endAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
   if(tempIgnition3EndTooth < 1) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
   else if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
   if(tempIgnition3EndTooth == 17 || tempIgnition3EndTooth == 18) { tempIgnition3EndTooth = 16; } // These are missing teeth, so set the next one before instead
@@ -4421,7 +4421,7 @@ void triggerSetEndTeeth_NGC()
   ignition3EndTooth = tempIgnition3EndTooth;
 
   int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
+  tempIgnition4EndTooth = ( (ignitionSchedule[3].endAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
   if(tempIgnition4EndTooth < 1) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
   else if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
   if(tempIgnition4EndTooth == 17 || tempIgnition4EndTooth == 18) { tempIgnition4EndTooth = 16; } // These are missing teeth, so set the next one before instead

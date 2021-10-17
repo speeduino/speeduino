@@ -1187,9 +1187,9 @@ extern void checkIgnitionSchedule(Schedule * schedule, int crankAngle) {
   int tempCrankAngle;
   int tempStartAngle;
 
-  tempCrankAngle = crankAngle - schedule->degreesUntilTDC;
+  tempCrankAngle = crankAngle - schedule->degreesAfterTDC1;
   if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_IGN; }
-  tempStartAngle = schedule->startAngle - schedule->degreesUntilTDC;
+  tempStartAngle = schedule->startAngle - schedule->degreesAfterTDC1;
   if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
   unsigned long ignitionStartTime = 0;
@@ -1275,7 +1275,7 @@ uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injCh
 
 void calculateIgnitionAngle(Schedule * schedule, int dwellAngle)
 {
-  schedule->endAngle = schedule->degreesUntilTDC - currentStatus.advance;
+  schedule->endAngle = schedule->degreesAfterTDC1 - currentStatus.advance;
   if(schedule->endAngle > CRANK_ANGLE_MAX_IGN) {schedule->endAngle -= CRANK_ANGLE_MAX_IGN;}
   schedule->startAngle = schedule->endAngle - dwellAngle; // 360 - desired advance angle - number of degrees the dwell will take
   if(schedule->startAngle < 0) {schedule->startAngle += CRANK_ANGLE_MAX_IGN;}

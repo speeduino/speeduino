@@ -155,10 +155,10 @@ struct Schedule {
   volatile COUNTER_TYPE * counter;
   volatile COMPARE_TYPE * compare;
 
-  int startAngle = 0;
-  int endAngle = 0;
-  int degreesUntilTDC; // The number of crank degrees until cylinder is at TDC
-  uint8_t channel;
+  int startAngle = 0; // Dwell start
+  int endAngle = 0; // Dwell end / ignition
+  int degreesAfterTDC1; // How many degrees after TDC for ignition channel 1 that this ignition channel reaches TDC
+  uint8_t channel; // To keep track of this cylinder, used for comparison against IGNx_CMD_BIT
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
