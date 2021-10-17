@@ -948,40 +948,43 @@ void initialiseAll()
         break;
     }
 
+    void (*ignStartFunction[8])();
+    void (*ignEndFunction[8])();
+
     switch(configPage4.sparkMode)
     {
     case IGN_MODE_WASTED:
         //Wasted Spark (Normal mode)
-        ignitionSchedule[0].StartCallback = beginCoil1Charge;
-        ignitionSchedule[0].EndCallback = endCoil1Charge;
-        ignitionSchedule[1].StartCallback = beginCoil2Charge;
-        ignitionSchedule[1].EndCallback = endCoil2Charge;
-        ignitionSchedule[2].StartCallback = beginCoil3Charge;
-        ignitionSchedule[2].EndCallback = endCoil3Charge;
-        ignitionSchedule[3].StartCallback = beginCoil4Charge;
-        ignitionSchedule[3].EndCallback = endCoil4Charge;
-        ignitionSchedule[4].StartCallback = beginCoil5Charge;
-        ignitionSchedule[4].EndCallback = endCoil5Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
         break;
 
     case IGN_MODE_SINGLE:
         //Single channel mode. All ignition pulses are on channel 1
-        ignitionSchedule[0].StartCallback = beginCoil1Charge;
-        ignitionSchedule[0].EndCallback = endCoil1Charge;
-        ignitionSchedule[1].StartCallback = beginCoil1Charge;
-        ignitionSchedule[1].EndCallback = endCoil1Charge;
-        ignitionSchedule[2].StartCallback = beginCoil1Charge;
-        ignitionSchedule[2].EndCallback = endCoil1Charge;
-        ignitionSchedule[3].StartCallback = beginCoil1Charge;
-        ignitionSchedule[3].EndCallback = endCoil1Charge;
-        ignitionSchedule[4].StartCallback = beginCoil1Charge;
-        ignitionSchedule[4].EndCallback = endCoil1Charge;
-        ignitionSchedule[5].StartCallback = beginCoil1Charge;
-        ignitionSchedule[5].EndCallback = endCoil1Charge;
-        ignitionSchedule[6].StartCallback = beginCoil1Charge;
-        ignitionSchedule[6].EndCallback = endCoil1Charge;
-        ignitionSchedule[7].StartCallback = beginCoil1Charge;
-        ignitionSchedule[7].EndCallback = endCoil1Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil1Charge;
+        ignEndFunction[1] = endCoil1Charge;
+        ignStartFunction[2] = beginCoil1Charge;
+        ignEndFunction[2] = endCoil1Charge;
+        ignStartFunction[3] = beginCoil1Charge;
+        ignEndFunction[3] = endCoil1Charge;
+        ignStartFunction[4] = beginCoil1Charge;
+        ignEndFunction[4] = endCoil1Charge;
+        ignStartFunction[5] = beginCoil1Charge;
+        ignEndFunction[5] = endCoil1Charge;
+        ignStartFunction[6] = beginCoil1Charge;
+        ignEndFunction[6] = endCoil1Charge;
+        ignStartFunction[7] = beginCoil1Charge;
+        ignEndFunction[7] = endCoil1Charge;
         break;
 
     case IGN_MODE_WASTEDCOP:
@@ -989,118 +992,118 @@ void initialiseAll()
         //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
-          ignitionSchedule[0].StartCallback = beginCoil1and3Charge;
-          ignitionSchedule[0].EndCallback = endCoil1and3Charge;
-          ignitionSchedule[1].StartCallback = beginCoil2and4Charge;
-          ignitionSchedule[1].EndCallback = endCoil2and4Charge;
+          ignStartFunction[0] = beginCoil1and3Charge;
+          ignEndFunction[0] = endCoil1and3Charge;
+          ignStartFunction[1] = beginCoil2and4Charge;
+          ignEndFunction[1] = endCoil2and4Charge;
 
-          ignitionSchedule[2].StartCallback = nullCallback;
-          ignitionSchedule[2].EndCallback = nullCallback;
-          ignitionSchedule[3].StartCallback = nullCallback;
-          ignitionSchedule[3].EndCallback = nullCallback;
+          ignStartFunction[2] = nullCallback;
+          ignEndFunction[2] = nullCallback;
+          ignStartFunction[3] = nullCallback;
+          ignEndFunction[3] = nullCallback;
         }
         //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
         else if( configPage2.nCylinders == 6 )
           {
-          ignitionSchedule[0].StartCallback = beginCoil1and4Charge;
-          ignitionSchedule[0].EndCallback = endCoil1and4Charge;
-          ignitionSchedule[1].StartCallback = beginCoil2and5Charge;
-          ignitionSchedule[1].EndCallback = endCoil2and5Charge;
-          ignitionSchedule[2].StartCallback = beginCoil3and6Charge;
-          ignitionSchedule[2].EndCallback = endCoil3and6Charge;
+          ignStartFunction[0] = beginCoil1and4Charge;
+          ignEndFunction[0] = endCoil1and4Charge;
+          ignStartFunction[1] = beginCoil2and5Charge;
+          ignEndFunction[1] = endCoil2and5Charge;
+          ignStartFunction[2] = beginCoil3and6Charge;
+          ignEndFunction[2] = endCoil3and6Charge;
 
-          ignitionSchedule[3].StartCallback = nullCallback;
-          ignitionSchedule[3].EndCallback = nullCallback;
-          ignitionSchedule[4].StartCallback = nullCallback;
-          ignitionSchedule[4].EndCallback = nullCallback;
-          ignitionSchedule[5].StartCallback = nullCallback;
-          ignitionSchedule[5].EndCallback = nullCallback;
+          ignStartFunction[3] = nullCallback;
+          ignEndFunction[3] = nullCallback;
+          ignStartFunction[4] = nullCallback;
+          ignEndFunction[4] = nullCallback;
+          ignStartFunction[5] = nullCallback;
+          ignEndFunction[5] = nullCallback;
         }
         //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
           {
-          ignitionSchedule[0].StartCallback = beginCoil1and5Charge;
-          ignitionSchedule[0].EndCallback = endCoil1and5Charge;
-          ignitionSchedule[1].StartCallback = beginCoil2and6Charge;
-          ignitionSchedule[1].EndCallback = endCoil2and6Charge;
-          ignitionSchedule[2].StartCallback = beginCoil3and7Charge;
-          ignitionSchedule[2].EndCallback = endCoil3and7Charge;
-          ignitionSchedule[3].StartCallback = beginCoil4and8Charge;
-          ignitionSchedule[3].EndCallback = endCoil4and8Charge;
+          ignStartFunction[0] = beginCoil1and5Charge;
+          ignEndFunction[0] = endCoil1and5Charge;
+          ignStartFunction[1] = beginCoil2and6Charge;
+          ignEndFunction[1] = endCoil2and6Charge;
+          ignStartFunction[2] = beginCoil3and7Charge;
+          ignEndFunction[2] = endCoil3and7Charge;
+          ignStartFunction[3] = beginCoil4and8Charge;
+          ignEndFunction[3] = endCoil4and8Charge;
 
-          ignitionSchedule[4].StartCallback = nullCallback;
-          ignitionSchedule[4].EndCallback = nullCallback;
-          ignitionSchedule[5].StartCallback = nullCallback;
-          ignitionSchedule[5].EndCallback = nullCallback;
-          ignitionSchedule[6].StartCallback = nullCallback;
-          ignitionSchedule[6].EndCallback = nullCallback;
-          ignitionSchedule[7].StartCallback = nullCallback;
-          ignitionSchedule[7].EndCallback = nullCallback;
+          ignStartFunction[4] = nullCallback;
+          ignEndFunction[4] = nullCallback;
+          ignStartFunction[5] = nullCallback;
+          ignEndFunction[5] = nullCallback;
+          ignStartFunction[6] = nullCallback;
+          ignEndFunction[6] = nullCallback;
+          ignStartFunction[7] = nullCallback;
+          ignEndFunction[7] = nullCallback;
         }
         else
         {
           //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
-          ignitionSchedule[0].StartCallback = beginCoil1Charge;
-          ignitionSchedule[0].EndCallback = endCoil1Charge;
-          ignitionSchedule[1].StartCallback = beginCoil2Charge;
-          ignitionSchedule[1].EndCallback = endCoil2Charge;
-          ignitionSchedule[2].StartCallback = beginCoil3Charge;
-          ignitionSchedule[2].EndCallback = endCoil3Charge;
-          ignitionSchedule[3].StartCallback = beginCoil4Charge;
-          ignitionSchedule[3].EndCallback = endCoil4Charge;
-          ignitionSchedule[4].StartCallback = beginCoil5Charge;
-          ignitionSchedule[4].EndCallback = endCoil5Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil2Charge;
+          ignEndFunction[1] = endCoil2Charge;
+          ignStartFunction[2] = beginCoil3Charge;
+          ignEndFunction[2] = endCoil3Charge;
+          ignStartFunction[3] = beginCoil4Charge;
+          ignEndFunction[3] = endCoil4Charge;
+          ignStartFunction[4] = beginCoil5Charge;
+          ignEndFunction[4] = endCoil5Charge;
         }
         break;
 
     case IGN_MODE_SEQUENTIAL:
-        ignitionSchedule[0].StartCallback = beginCoil1Charge;
-        ignitionSchedule[0].EndCallback = endCoil1Charge;
-        ignitionSchedule[1].StartCallback = beginCoil2Charge;
-        ignitionSchedule[1].EndCallback = endCoil2Charge;
-        ignitionSchedule[2].StartCallback = beginCoil3Charge;
-        ignitionSchedule[2].EndCallback = endCoil3Charge;
-        ignitionSchedule[3].StartCallback = beginCoil4Charge;
-        ignitionSchedule[3].EndCallback = endCoil4Charge;
-        ignitionSchedule[4].StartCallback = beginCoil5Charge;
-        ignitionSchedule[4].EndCallback = endCoil5Charge;
-        ignitionSchedule[5].StartCallback = beginCoil6Charge;
-        ignitionSchedule[5].EndCallback = endCoil6Charge;
-        ignitionSchedule[6].StartCallback = beginCoil7Charge;
-        ignitionSchedule[6].EndCallback = endCoil7Charge;
-        ignitionSchedule[7].StartCallback = beginCoil8Charge;
-        ignitionSchedule[7].EndCallback = endCoil8Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
+        ignStartFunction[5] = beginCoil6Charge;
+        ignEndFunction[5] = endCoil6Charge;
+        ignStartFunction[6] = beginCoil7Charge;
+        ignEndFunction[6] = endCoil7Charge;
+        ignStartFunction[7] = beginCoil8Charge;
+        ignEndFunction[7] = endCoil8Charge;
         break;
 
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ignitionSchedule[0].StartCallback = beginCoil1Charge;
-          ignitionSchedule[0].EndCallback = endCoil1Charge;
-          ignitionSchedule[1].StartCallback = beginCoil1Charge;
-          ignitionSchedule[1].EndCallback = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil1Charge;
+          ignEndFunction[1] = endCoil1Charge;
 
-          ignitionSchedule[2].StartCallback = beginTrailingCoilCharge;
-          ignitionSchedule[2].EndCallback = endTrailingCoilCharge1;
-          ignitionSchedule[3].StartCallback = beginTrailingCoilCharge;
-          ignitionSchedule[3].EndCallback = endTrailingCoilCharge2;
+          ignStartFunction[2] = beginTrailingCoilCharge;
+          ignEndFunction[2] = endTrailingCoilCharge1;
+          ignStartFunction[3] = beginTrailingCoilCharge;
+          ignEndFunction[3] = endTrailingCoilCharge2;
         }
         else if(configPage10.rotaryType == ROTARY_IGN_FD)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ignitionSchedule[0].StartCallback = beginCoil1Charge;
-          ignitionSchedule[0].EndCallback = endCoil1Charge;
-          ignitionSchedule[1].StartCallback = beginCoil1Charge;
-          ignitionSchedule[1].EndCallback = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil1Charge;
+          ignEndFunction[1] = endCoil1Charge;
 
           //Trailing coils have their own channel each
           //IGN2 = front rotor trailing spark
-          ignitionSchedule[2].StartCallback = beginCoil2Charge;
-          ignitionSchedule[2].EndCallback = endCoil2Charge;
+          ignStartFunction[2] = beginCoil2Charge;
+          ignEndFunction[2] = endCoil2Charge;
           //IGN3 = rear rotor trailing spark
-          ignitionSchedule[3].StartCallback = beginCoil3Charge;
-          ignitionSchedule[3].EndCallback = endCoil3Charge;
+          ignStartFunction[3] = beginCoil3Charge;
+          ignEndFunction[3] = endCoil3Charge;
 
           //IGN4 not used
         }
@@ -1109,33 +1112,39 @@ void initialiseAll()
           //RX8 outputs are simply 1 coil and 1 output per plug
 
           //IGN1 is front rotor, leading spark
-          ignitionSchedule[0].StartCallback = beginCoil1Charge;
-          ignitionSchedule[0].EndCallback = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
           //IGN2 is rear rotor, leading spark
-          ignitionSchedule[1].StartCallback = beginCoil2Charge;
-          ignitionSchedule[1].EndCallback = endCoil2Charge;
+          ignStartFunction[1] = beginCoil2Charge;
+          ignEndFunction[1] = endCoil2Charge;
           //IGN3 = front rotor trailing spark
-          ignitionSchedule[2].StartCallback = beginCoil3Charge;
-          ignitionSchedule[2].EndCallback = endCoil3Charge;
+          ignStartFunction[2] = beginCoil3Charge;
+          ignEndFunction[2] = endCoil3Charge;
           //IGN4 = rear rotor trailing spark
-          ignitionSchedule[3].StartCallback = beginCoil4Charge;
-          ignitionSchedule[3].EndCallback = endCoil4Charge;
+          ignStartFunction[3] = beginCoil4Charge;
+          ignEndFunction[3] = endCoil4Charge;
         }
         break;
 
     default:
         //Wasted spark (Shouldn't ever happen anyway)
-        ignitionSchedule[0].StartCallback = beginCoil1Charge;
-        ignitionSchedule[0].EndCallback = endCoil1Charge;
-        ignitionSchedule[1].StartCallback = beginCoil2Charge;
-        ignitionSchedule[1].EndCallback = endCoil2Charge;
-        ignitionSchedule[2].StartCallback = beginCoil3Charge;
-        ignitionSchedule[2].EndCallback = endCoil3Charge;
-        ignitionSchedule[3].StartCallback = beginCoil4Charge;
-        ignitionSchedule[3].EndCallback = endCoil4Charge;
-        ignitionSchedule[4].StartCallback = beginCoil5Charge;
-        ignitionSchedule[4].EndCallback = endCoil5Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
         break;
+    }
+
+    //Assign the callbacks to the ignition schedules
+    for (int i = 0; i < IGN_CHANNELS; i++) {
+      ignitionSchedule[i].StartCallback = ignStartFunction[i];
+      ignitionSchedule[i].EndCallback = ignStartFunction[i];
     }
 
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
