@@ -57,6 +57,25 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
+//These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
+inline void ign1TimerEnable() { IGN1_TIMER_ENABLE(); }
+inline void ign2TimerEnable() { IGN2_TIMER_ENABLE(); }
+inline void ign3TimerEnable() { IGN3_TIMER_ENABLE(); }
+inline void ign4TimerEnable() { IGN4_TIMER_ENABLE(); }
+inline void ign5TimerEnable() { IGN5_TIMER_ENABLE(); }
+inline void ign6TimerEnable() { IGN6_TIMER_ENABLE(); }
+inline void ign7TimerEnable() { IGN7_TIMER_ENABLE(); }
+inline void ign8TimerEnable() { IGN8_TIMER_ENABLE(); }
+
+inline void ign1TimerDisable() { IGN1_TIMER_DISABLE(); }
+inline void ign2TimerDisable() { IGN2_TIMER_DISABLE(); }
+inline void ign3TimerDisable() { IGN3_TIMER_DISABLE(); }
+inline void ign4TimerDisable() { IGN4_TIMER_DISABLE(); }
+inline void ign5TimerDisable() { IGN5_TIMER_DISABLE(); }
+inline void ign6TimerDisable() { IGN6_TIMER_DISABLE(); }
+inline void ign7TimerDisable() { IGN7_TIMER_DISABLE(); }
+inline void ign8TimerDisable() { IGN8_TIMER_DISABLE(); }
+
 void (*getIgnTimer(int i, bool enable))(void) {
        if (i == 0) { if (enable == true) { return ign1TimerEnable; } else { return ign1TimerDisable; } }
   else if (i == 1) { if (enable == true) { return ign2TimerEnable; } else { return ign2TimerDisable; } }

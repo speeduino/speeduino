@@ -16,25 +16,6 @@
 #define TIMER_MODE_CTC       ((1<<WGM01)|(0<<WGM00))
 #define TIMER_MODE_FASTPWM   ((1<<WGM01)|(1<<WGM00))
 
-//These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
-inline void ign1TimerEnable() { TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A); }
-inline void ign2TimerEnable() { TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B); }
-inline void ign3TimerEnable() { TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C); }
-inline void ign4TimerEnable() { TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A); }
-inline void ign5TimerEnable() { TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C); }
-inline void ign6TimerEnable() { TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B); }
-inline void ign7TimerEnable() { TIMSK3 |= (1 << OCIE3C); }
-inline void ign8TimerEnable() { TIMSK3 |= (1 << OCIE3B); }
-
-inline void ign1TimerDisable() { TIMSK5 &= ~(1 << OCIE5A); }
-inline void ign2TimerDisable() { TIMSK5 &= ~(1 << OCIE5B); }
-inline void ign3TimerDisable() { TIMSK5 &= ~(1 << OCIE5C); }
-inline void ign4TimerDisable() { TIMSK4 &= ~(1 << OCIE4A); }
-inline void ign5TimerDisable() { TIMSK4 &= ~(1 << OCIE4C); }
-inline void ign6TimerDisable() { TIMSK4 &= ~(1 << OCIE4B); }
-inline void ign7TimerDisable() { TIMSK3 &= ~(1 << OCIE3C); }
-inline void ign8TimerDisable() { TIMSK3 &= ~(1 << OCIE3B); }
-
 void initBoard()
 {
     /*
