@@ -1027,7 +1027,7 @@ ignitionScheduleInterrupt(&ignitionSchedule8);
 
 void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common function that all ignition channel interrupts use
 {
-  { if (ignitionSchedule->Status == PENDING){ //Check to see if this schedule is ready to be locked for action
+    if (ignitionSchedule->Status == PENDING){ //Check to see if this schedule is ready to be locked for action
     ignitionSchedule->Status = STAGED;
     ignitionSchedule->setIgnitionCompare(ignitionSchedule->startCompare);//ignition pulse start timing now locked.     
     }
@@ -1058,8 +1058,6 @@ void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common func
 
     }
     else if (ignitionSchedule->Status == OFF)
-    {      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      
-    }
+    {      //do nothing
   }
 }

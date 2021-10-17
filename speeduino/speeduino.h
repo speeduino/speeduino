@@ -20,17 +20,17 @@ byte getVE1();
 byte getAdvance1();
 
 uint16_t calculateInjectorStartAngle(uint16_t, int16_t);
-void calculateIgnitionAngle1(int);
-void calculateIgnitionAngle2(int);
+void calculateIgnitionAngle1();
+void calculateIgnitionAngle2();
+void calculateIgnitionAngle3();
 void calculateIgnitionAngle3(int);
-void calculateIgnitionAngle3(int, int);
+void calculateIgnitionAngle4();
 void calculateIgnitionAngle4(int);
-void calculateIgnitionAngle4(int, int);
-void calculateIgnitionAngle5(int);
-void calculateIgnitionAngle6(int);
-void calculateIgnitionAngle7(int);
-void calculateIgnitionAngle8(int);
-void calculateIgnitionAngles(int);
+void calculateIgnitionAngle5();
+void calculateIgnitionAngle6();
+void calculateIgnitionAngle7();
+void calculateIgnitionAngle8();
+void calculateIgnitionAngles();
 
 extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
