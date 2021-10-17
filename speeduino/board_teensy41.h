@@ -12,8 +12,8 @@
   void jumpToBootloader();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
-  #define COMPARE_TYPE uint32_t
-  #define COUNTER_TYPE uint32_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
