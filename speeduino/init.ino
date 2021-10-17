@@ -689,9 +689,9 @@ void initialiseAll()
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        ignitionSchedule[3].degreesUntilTDC = 360;
-        ignitionSchedule[4].degreesUntilTDC = 480;
-        ignitionSchedule[5].degreesUntilTDC = 600;
+        ignitionSchedule[3].degreesAfterTDC1 = 360;
+        ignitionSchedule[4].degreesAfterTDC1 = 480;
+        ignitionSchedule[5].degreesAfterTDC1 = 600;
         CRANK_ANGLE_MAX_IGN = 720;
         maxIgnOutputs = 6;
         }
@@ -760,10 +760,10 @@ void initialiseAll()
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        ignitionSchedule[4].degreesUntilTDC = 360;
-        ignitionSchedule[5].degreesUntilTDC = 450;
-        ignitionSchedule[6].degreesUntilTDC = 540;
-        ignitionSchedule[7].degreesUntilTDC = 630;
+        ignitionSchedule[4].degreesAfterTDC1 = 360;
+        ignitionSchedule[5].degreesAfterTDC1 = 450;
+        ignitionSchedule[6].degreesAfterTDC1 = 540;
+        ignitionSchedule[7].degreesAfterTDC1 = 630;
         maxIgnOutputs = 8;
         CRANK_ANGLE_MAX_IGN = 720;
         }
