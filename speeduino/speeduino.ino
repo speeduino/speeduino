@@ -1017,7 +1017,6 @@ void loop()
         //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
         if(currentStatus.RPM < 250)
         {
-          //Maybe this can be improved?
           ignitionSchedule[0].startAngle -= 5;
           ignitionSchedule[1].startAngle -= 5;
           ignitionSchedule[2].startAngle -= 5;
@@ -1332,7 +1331,6 @@ void calculateIgnitionAngles(int dwellAngle)
         byte splitDegrees = 0;
         if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
         else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
-        //TODO Fix rotary
 
         //The trailing angles are set relative to the leading ones
         calculateIgnitionAngleWithSpecificEndAngle(&ignitionSchedule[2], dwellAngle, ignitionSchedule[0].endAngle + splitDegrees);
