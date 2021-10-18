@@ -87,8 +87,8 @@ void initialiseAll()
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
   #ifdef SD_LOGGING
-    initSD();
     initRTC();
+    initSD();
   #endif
 
     Serial.begin(115200);
@@ -318,7 +318,7 @@ void initialiseAll()
     #if (INJ_CHANNELS >= 8)
     closeInjector8();
     #endif
-
+    
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
@@ -1644,6 +1644,8 @@ void setPinMapping(byte boardID)
       pinBoost = 4;
       pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinFuelPump = 37; //Fuel pump output
+      //Note that there is no stepper driver output on the PNP boards. These pins are unconnected and remain here just to prevent issues with random pin numbers occurring
+      pinStepperEnable = 15; //Enable pin for the DRV8825
       pinStepperDir = 16; //Direction pin  for DRV8825 driver
       pinStepperStep = 17; //Step pin for DRV8825 driver
       pinFan = 35; //Pin for the fan output
@@ -1651,6 +1653,8 @@ void setPinMapping(byte boardID)
       pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 44; //Reset control output
       pinVSS = 20;
+      pinIdleUp = 48;
+      pinCTPS = 47;
       #endif
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;
@@ -2142,7 +2146,7 @@ void setPinMapping(byte boardID)
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
-      pinTachOut = 7; //Tacho output pin
+      pinTachOut = 5; //Tacho output pin
       pinIdle1 = 27; //Single wire idle control
       pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
       pinFuelPump = 8; //Fuel pump output
@@ -2665,7 +2669,7 @@ void setPinMapping(byte boardID)
     inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
     inj8_pin_mask = digitalPinToBitMask(pinInjector8);
   }
-
+  
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
     mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
@@ -2714,44 +2718,44 @@ void setPinMapping(byte boardID)
   pinMode(pinTrigger3, INPUT);
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
-  if(configPage2.flexEnabled > 0)
+  if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
   {
     pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
   }
-  if(configPage2.vssMode > 1) //Pin mode 1 for VSS is CAN
+  if( (configPage2.vssMode > 1) && (!pinIsOutput(pinVSS)) ) //Pin mode 1 for VSS is CAN
   {
     pinMode(pinVSS, INPUT);
   }
-  if(configPage6.launchEnabled > 0)
+  if( (configPage6.launchEnabled > 0) && (!pinIsOutput(pinLaunch)) )
   {
     if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
     else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   }
-  if(configPage2.idleUpEnabled > 0)
+  if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinIdleUp)) )
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if(configPage2.CTPSEnabled > 0)
+  if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinCTPS)) )
   {
     if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinCTPS, INPUT); } //inverted setting
   }
-  if(configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
+  if( (configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH) && (!pinIsOutput(pinFuel2Input)) )
   {
     if (configPage10.fuel2InputPullup == true) { pinMode(pinFuel2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinFuel2Input, INPUT); } //Normal input
   }
-  if(configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH)
+  if( (configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH) && (!pinIsOutput(pinSpark2Input)) )
   {
     if (configPage10.spark2InputPullup == true) { pinMode(pinSpark2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinSpark2Input, INPUT); } //Normal input
   }
-  if(configPage10.fuelPressureEnable > 0)
+  if( (configPage10.fuelPressureEnable > 0)  && (!pinIsOutput(pinFuelPressure)) )
   {
     pinMode(pinFuelPressure, INPUT);
   }
-  if(configPage10.oilPressureEnable > 0)
+  if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinOilPressure)) )
   {
     pinMode(pinOilPressure, INPUT);
   }
@@ -2763,7 +2767,7 @@ void setPinMapping(byte boardID)
       pinMode(pinWMIIndicator, OUTPUT);
       if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
     }
-    if(configPage10.wmiEmptyEnabled > 0)
+    if( (configPage10.wmiEmptyEnabled > 0) && (!pinIsOutput(pinWMIEmpty)) )
     {
       if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinWMIEmpty, INPUT_PULLUP); } //Normal setting
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
@@ -3245,8 +3249,22 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_NGC:
+      //Chrysler NGC 4 cylinder
+      triggerSetup_NGC();
+      triggerHandler = triggerPri_NGC;
+      triggerSecondaryHandler = triggerSec_NGC4;
+      decoderHasSecondary = true;
+      getRPM = getRPM_NGC;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_NGC;
 
+      primaryTriggerEdge = CHANGE;
+      secondaryTriggerEdge = CHANGE;
 
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;

@@ -40,6 +40,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "utilities.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
+#include "SD_logger.h"
+#include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 int ignition1StartAngle = 0;
@@ -279,6 +281,10 @@ void loop()
 
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
+      #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -298,6 +304,10 @@ void loop()
 
       if(isEepromWritePending() == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+      #endif
+
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -310,6 +320,10 @@ void loop()
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+      #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
@@ -389,6 +403,10 @@ void loop()
           digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+      #endif
 
     } //1Hz timer
 

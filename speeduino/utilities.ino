@@ -267,8 +267,8 @@ int16_t ProgrammableIOGetData(uint16_t index)
       // Stop at desired field
       if (pgm_read_byte(&(fsIntIndex[x])) == index) { break; }
     }
-    if (x >= sizeof(fsIntIndex)) { result = getLogEntry(index); } // 8-bit, coerce to 16 bit result
-    else { result = word(getLogEntry(index+1), getLogEntry(index)); } // Assemble 2 bytes to word of 16 bit result
+    if (x >= sizeof(fsIntIndex)) { result = getTSLogEntry(index); } // 8-bit, coerce to 16 bit result
+    else { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); } // Assemble 2 bytes to word of 16 bit result
     
 
     //Special cases for temperatures
