@@ -21,8 +21,8 @@
 */
 #define PORT_TYPE uint32_t
 #define PINMASK_TYPE uint32_t
-#define COMPARE_TYPE uint32_t
-#define COUNTER_TYPE uint32_t
+#define COMPARE_TYPE typeof(((TIM_TypeDef *)0)->CCR1)
+#define COUNTER_TYPE typeof(((TIM_TypeDef *)0)->CNT)
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
