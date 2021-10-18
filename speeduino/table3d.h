@@ -106,6 +106,34 @@ TABLE_GENERATOR(GEN_DECLARE_3DTABLE_TYPE)
     } 
 TABLE_GENERATOR(GEN_GET3D_TABLE_VALUE)
 
+// Generate single byte value access function.
+//
+// Since table values aren't laid out linearily, converting a linear 
+// offset to the equivalent memory address requires a modulus operation.
+//
+// This is slow, since AVR hardware has no divider. We can gain performance
+// in 2 ways:
+//  1. Forcing uint8_t calculations. These are much faster than 16-bit calculations
+//  2. Compiling this per table *type*. This encodes the axis length as a constant
+//  thus allowing the optimizing compiler more opportunity. E.g. for axis lengths
+//  that are a power of 2, the modulus can be optimised to add/multiple/shift - much
+//  cheaper than calling a software division routine such as __udivmodqi4
+//
+// THIS IS WORTH 20% to 30% speed up
+//
+// This limits us to 16x16 tables. If we need bigger and move to 16-bit 
+// operations, consider using libdivide.
+#define GEN_TABLE_VALUE(size, xDom, yDom) \
+    inline byte& get_table_value(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, uint8_t linear_index) \
+    { \
+        static_assert(pTable->_metadata.axis_length<17, "Table is too big"); \
+        constexpr uint8_t first_index = pTable->_metadata.axis_length*(pTable->_metadata.axis_length-1); \
+        const uint8_t index = first_index + (2*(linear_index % pTable->_metadata.axis_length)) - linear_index; \
+        return pTable->values[index]; \
+    }
+TABLE_GENERATOR(GEN_TABLE_VALUE)
+
+
 // ================================== Iterator support ========================
 
 #define GEN_ROWS_BEGIN(size, xDom, yDom) \
