@@ -13,19 +13,19 @@ class int16_ref
 {
 public:
 
-    int16_ref(int16_t *pValue, uint8_t factor) 
-        : _pValue(pValue), _factor(factor)
+    int16_ref(int16_t &value, uint8_t factor) 
+        : _value(value), _factor(factor)
     {
     }
 
     // Getters
-    inline byte operator*() const { return (byte)(*_pValue /_factor); }
-    inline operator byte() const { return **this; }
+    inline byte operator*() const { return (byte)(_value /_factor); }
+    inline explicit operator byte() const { return **this; }
     // Setter
-    inline int16_ref &operator=( byte in )  { return (*_pValue = (int16_t)in * (int16_t)_factor), *this;  }
+    inline int16_ref &operator=( byte in )  { _value = (int16_t)in * (int16_t)_factor; return *this;  }
 
 private:
-    int16_t *_pValue;
+    int16_t &_value;
     uint8_t _factor;
 };
 
@@ -52,7 +52,7 @@ public:
 
     inline int16_ref operator *() const
     {
-        return int16_ref(_pAxis, _axisFactor);
+        return int16_ref(*_pAxis, _axisFactor);
     }
     
     inline table_axis_iterator& reverse()

@@ -36,7 +36,7 @@ static inline uint32_t compute_tableaxis_crc(table_axis_iterator it, uint32_t cr
     byte *pValue = values;
     while (!it.at_end())
     {
-        *pValue++ = *it;
+        *pValue++ = (byte)*it;
         ++it;
     }
     return pValue-values==0 ? crc : CRC32.crc32_upd(values, pValue-values, false);

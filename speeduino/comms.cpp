@@ -963,7 +963,7 @@ namespace {
   {
     while (!it.at_end())
     {
-      Serial.write(*it);
+      Serial.write((byte)*it);
       ++it;
     }
   }
@@ -1069,7 +1069,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(*y_it);
+    serial_print_prepadded_value((byte)*y_it);
 
     while (!row.at_end())
     {
@@ -1085,7 +1085,7 @@ namespace {
     auto x_it = x_begin(pTable, key);
     while(!x_it.at_end())
     {
-      serial_print_prepadded_value(*x_it);
+      serial_print_prepadded_value((byte)*x_it);
       ++x_it;
     }
   }

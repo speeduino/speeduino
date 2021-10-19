@@ -114,7 +114,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 {
   while (location.can_write() && !it.at_end())
   {
-    location.update(*it);
+    location.update((byte)*it);
     ++location;
     ++it;
   }
