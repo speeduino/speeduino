@@ -143,7 +143,7 @@ void initialiseProgrammableIO()
   }
 }
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
- * Compare 2 (16 bit) vars in a way configured by @ref config13.cmpOperation.
+ * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
