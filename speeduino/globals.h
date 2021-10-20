@@ -524,6 +524,10 @@ extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
 
+extern byte triggerInterrupt;
+extern byte triggerInterrupt2;
+extern byte triggerInterrupt3;
+
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;
 extern bool channel2InjEnabled;
@@ -795,8 +799,8 @@ struct config2 {
   byte flexEnabled : 1; ///< Enable Flex fuel sensing (pin / interrupt)
   byte legacyMAP  : 1;  ///< Legacy MAP reading behavior
   byte baroCorr : 1;    // Unused ?
-  byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (#outputs == #cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but #outputs == #cyls, only for 4 cyl),
-                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (#ouputs == #cyls, timed over full cycle, 2 crank revs) */
+  byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (number outputs == number cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but number outputs == number cyls, only for 4 cyl),
+                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (number ouputs == number cyls, timed over full cycle, 2 crank revs) */
   byte perToothIgn : 1; ///< Experimental / New ign. mode ... (?) (See decoders.ino)
   byte dfcoEnabled : 1; ///< Whether or not DFCO (deceleration fuel cut-off) is turned on
 
