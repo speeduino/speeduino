@@ -580,8 +580,8 @@ byte correctionFuelTemp()
   return fuelTempValue;
 }
 
-/** Closed loop using Oxygen Sensors. Lookup the AFR target table and perform a Proportional + Integral fueling adjustment based on this.
-*
+/*
+* Closed loop using Oxygen Sensors. Lookup the AFR target table and perform a Proportional + Integral fueling adjustment based on this.
 */
 byte correctionAFRClosedLoop()
 {

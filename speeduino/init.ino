@@ -1213,7 +1213,7 @@ void initialiseAll()
     digitalWrite(LED_BUILTIN, HIGH);
 }
 /** Set board / microcontroller specfic pin mappings / assignments.
- * The boardID is switch-case compared against raw boardID integers (not enum or #define:d label, and probably no need for that either)
+ * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
  * which are originated from tuning SW (e.g. TS) set values and are avilable in reference/speeduino.ini (See pinLayout, note also that
  * numbering is not contiguous here).
  */
