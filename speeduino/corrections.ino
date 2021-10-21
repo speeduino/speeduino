@@ -667,7 +667,10 @@ byte correctionAFRClosedLoop()
             if (O2_Error >= OFFSET_AFR_ERR) { O2_SensorIsRich = true; } //Positive error = rich.
             else { O2_SensorIsRich = false; }
             
-            if ((O2_SensorIsRich == O2_SensorIsRichPrev) && (ego_IntDelayLoops < configPage9.egoIntDelay)) { ego_IntDelayLoops++;  } // Increment delay loops for the integrator if switch not detected
+            if (O2_SensorIsRich == O2_SensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
+            {
+              if (ego_IntDelayLoops < configPage9.egoIntDelay) { ego_IntDelayLoops++; } // Limit to max value.
+            }              
             else { ego_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
           }
           else { ego_IntDelayLoops = 0; }
@@ -683,8 +686,7 @@ byte correctionAFRClosedLoop()
           if ((ego_Integral + ego_Prop) < -configPage6.egoLimit) { ego_AdjustPct = 100 - configPage6.egoLimit; }
           else if ((ego_Integral + ego_Prop) > configPage6.egoLimit) { ego_AdjustPct = 100 + configPage6.egoLimit; }
           else { ego_AdjustPct = 100 + ego_Integral + ego_Prop; }
-         
-        
+
           
           if(configPage6.egoAlgorithm == EGO_ALGORITHM_DUALO2) // 2nd Sensor Logic
           {
