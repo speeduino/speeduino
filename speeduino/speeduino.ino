@@ -1,8 +1,8 @@
-#define MJRx1 1
+#define MJR 1
 
-#ifdef MJRx1
+#ifdef MJR
 int debugPinFan = false;
-
+int debugPinVVT = false; 
 #endif
 
 /*
@@ -981,12 +981,17 @@ void loop()
 #endif
       }
 
-      #ifdef MJRx1
+      #ifdef MJR
         if( debugPinFan == true)
         { 
           //digitalWrite(pinFan, LOW); 
           FAN_PIN_LOW();
           debugPinFan = false; 
+        }
+        if (debugPinVVT == true)
+        {
+          VVT2_PIN_LOW();
+          debugPinVVT = false; 
         }
       #endif
       //***********************************************************************************************
