@@ -30,6 +30,30 @@ private:
 };
 
 
+// For I/O purposes, table axes are transferred as 8-bit values. So they need scaled
+// up & down from 16-bit. The scale factor depends on the axis data domain, as
+// defined by this enum.
+typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */  { 
+    axis_domain_Rpm, axis_domain_Load, axis_domain_Tps 
+} axis_domain;
+
+#define TABLE_Rpm_MULTIPLIER 100
+#define TABLE_Load_MULTIPLIER 2
+#define TABLE_Tps_MULTIPLIER 1
+
+struct axis_metadata {
+    table3d_dim_t axis_length;
+    axis_domain domain;
+    uint8_t io_factor;
+};
+
+#define CREATE_AXIS_METADATA(size, Dom) \
+    axis_metadata { \
+        .axis_length = size, \
+        .domain = axis_domain_ ## Dom, \
+        .io_factor = TABLE_ ## Dom ## _MULTIPLIER, \
+    }
+
 class table_axis_iterator
 {
 public:
@@ -64,22 +88,22 @@ public:
         return *this;
     }
 
-    static table_axis_iterator y_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
+    static table_axis_iterator y_begin(const table3d_axis_t *pAxis, const axis_metadata &metadata)
     {
         table_axis_iterator it;
-        it._pAxis = const_cast<table3d_axis_t*>(pAxis)+(size-1);
+        it._pAxis = const_cast<table3d_axis_t*>(pAxis)+(metadata.axis_length-1);
         it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)-1;
-        it._axisFactor = factor;
+        it._axisFactor = metadata.io_factor;
         it._stride = -1;
         return it;
     }
 
-    static table_axis_iterator x_begin(const table3d_axis_t *pAxis, table3d_dim_t size, uint8_t factor)
+    static table_axis_iterator x_begin(const table3d_axis_t *pAxis, const axis_metadata &metadata)
     {
         table_axis_iterator it;
         it._pAxis = const_cast<table3d_axis_t*>(pAxis);
-        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)+size;
-        it._axisFactor = factor;
+        it._pAxisEnd = const_cast<table3d_axis_t*>(pAxis)+metadata.axis_length;
+        it._axisFactor = metadata.io_factor;
         it._stride = 1;
         return it;
     }

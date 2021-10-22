@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include "table3d.h"
 
+#define DEFINE_TABLE_STATICS(size, xDom, yDom) \
+  constexpr table3d_metadata DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata;
+TABLE_GENERATOR(DEFINE_TABLE_STATICS)
+
 // =============================== Iterators =========================
 
 table_value_iterator rows_begin(const void *pTable, table_type_t key)

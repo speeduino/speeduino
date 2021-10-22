@@ -22,18 +22,6 @@
 //          value[0][0] is the first value on the last row.
 //          value[2][0] ia the first value on the first row.
 
-
-// For I/O purposes, table axes are transferred as 8-bit values. So they need scaled
-// up & down from 16-bit. The scale factor depends on the axis data domain, as
-// defined by this enum.
-typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */  { 
-    axis_domain_Rpm, axis_domain_Load, axis_domain_Tps 
-} axis_domain;
-
-#define TABLE_Rpm_MULTIPLIER 100
-#define TABLE_Load_MULTIPLIER 2
-#define TABLE_Tps_MULTIPLIER 1
-
 // We have a fixed number of table types: they are defined by this macro
 // GENERATOR is expected to be another macros that takes at least 3 arguments:
 //    axis length, x-axis domain, y-axis domain
@@ -60,12 +48,10 @@ typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8
 
 // 3D table type metadata
 struct table3d_metadata {
-    const table_type_t type_key;
-    const table3d_dim_t axis_length;
-    const axis_domain x_domain;
-    const axis_domain y_domain;
-    const uint8_t xaxis_io_factor;
-    const uint8_t yaxis_io_factor;
+    table_type_t type_key;
+    table3d_dim_t axis_length;
+    axis_metadata x_axis_meta;
+    axis_metadata y_axis_meta;
 };
 
 // Each 3d table is given a distinct type based on size & axis domains
@@ -77,13 +63,11 @@ struct table3d_metadata {
     struct DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) \
     { \
         /* This will take up zero space unless we take the address somewhere */ \
-        static constexpr const table3d_metadata _metadata = { \
+        static constexpr table3d_metadata _metadata = { \
             .type_key = TO_TYPE_KEY(size, xDom, yDom), \
             .axis_length = size, \
-            .x_domain = axis_domain_ ## xDom, \
-            .y_domain = axis_domain_ ## yDom, \
-            .xaxis_io_factor = TABLE_ ## xDom ## _MULTIPLIER, \
-            .yaxis_io_factor = TABLE_ ## yDom ## _MULTIPLIER \
+            .x_axis_meta = CREATE_AXIS_METADATA(size, xDom), \
+            .y_axis_meta = CREATE_AXIS_METADATA(size, yDom), \
         }; \
         \
         table3DGetValueCache get_value_cache; \
@@ -146,14 +130,14 @@ TABLE_GENERATOR(GEN_ROWS_BEGIN)
 #define GEN_Y_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator y_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return table_axis_iterator::y_begin(pTable->axisY, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.axis_length, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.yaxis_io_factor);\
+        return table_axis_iterator::y_begin(pTable->axisY, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.y_axis_meta);\
     }
 TABLE_GENERATOR(GEN_Y_BEGIN)
 
 #define GEN_X_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator x_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return table_axis_iterator::x_begin(pTable->axisX, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.axis_length, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.xaxis_io_factor); \
+        return table_axis_iterator::x_begin(pTable->axisX, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.x_axis_meta); \
     }
 TABLE_GENERATOR(GEN_X_BEGIN)
 

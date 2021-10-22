@@ -38,12 +38,12 @@ inline constexpr uint16_t get_table_value_end()
 template <class table_t>
 inline constexpr uint16_t get_table_axisx_end()
 {
-  return get_table_value_end<table_t>()+table_t::_metadata.axis_length;
+  return get_table_value_end<table_t>()+table_t::_metadata.x_axis_meta.axis_length;
 }
 template <class table_t>
 inline constexpr uint16_t get_table_axisy_end(const table_t *)
 {
-  return get_table_axisx_end<table_t>()+table_t::_metadata.axis_length;
+  return get_table_axisx_end<table_t>()+table_t::_metadata.y_axis_meta.axis_length;
 }
 
 // ========================= Intra-table offset to byte class =========================
