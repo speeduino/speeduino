@@ -157,9 +157,8 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  * - STAGED - (???, Not used)
  * - RUNNING - Schedule is currently running
  */
-typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ {  
-  OFF, PENDING, STAGED, RUNNING
-} ScheduleStatus; //The statuses that a schedule can have
+enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+
 /** Ignition schedule.
  */
 struct Schedule {
