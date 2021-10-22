@@ -490,7 +490,7 @@ void readBaro()
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
   }
-  else if ( configPage6.useIntBaro == true )
+  else if ( configPage6.pressAMapBaro == true )
   {// This logic is to only update baro at 1kpa per sec, this slow filter helps prevent any noise or dropout on MAP causing issues with fueling.
     if ( (currentStatus.baro < currentStatus.MAP) && (currentStatus.MAP < BARO_MAX) ) { currentStatus.baro++; }
     else if ( (currentStatus.baro > currentStatus.MAP) && (currentStatus.MAP > BARO_MIN) ) { currentStatus.baro--; }
