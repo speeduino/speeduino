@@ -133,7 +133,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
  * @brief Returns an value from the 2D table given an index value. No interpolation is performed
  * 
  * @param fromTable 
- * @param X_in 
+ * @param X_index 
  * @return int16_t 
  */
 int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)

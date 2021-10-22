@@ -954,7 +954,7 @@ namespace {
     while (!it.at_end())
     {
       auto row = *it;
-      Serial.write(row.pValue, row.pEnd-row.pValue);
+      Serial.write(&*row, row.size());
       ++it;
     }
   }
@@ -1073,7 +1073,8 @@ namespace {
 
     while (!row.at_end())
     {
-      serial_print_prepadded_value(*row.pValue++);
+      serial_print_prepadded_value(*row);
+      ++row;
     }
     Serial.println();
   }

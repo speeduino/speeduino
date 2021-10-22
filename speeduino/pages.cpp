@@ -125,9 +125,10 @@ private:
     return *y_begin(_pTable).advance(_table_offset - get_table_axisx_end<table_t>());
   }
 
-  typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */  { 
+  enum table_location {
       table_location_values, table_location_xaxis, table_location_yaxis 
-  } table_location;
+  };
+  
   inline table_location get_table_location() const
   {
     if (_table_offset<get_table_value_end<table_t>())

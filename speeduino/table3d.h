@@ -1,26 +1,49 @@
+/** 
+ * @defgroup table_3d 3D Tables
+ * @brief Structures and functions related to 3D tables, such as VE, Spark Advance, AFR etc.
+ * 
+ * Logical: 
+ *      - each 3D table is a continuous height map spread over a cartesian (x, y) plane
+ *          - Continuous: we expect to interpolate between any 4 points
+ *      - The axes are
+ *          - Bounded. I.e. non-infnite 
+ *          - Non-linear. I.e. x[n]-x[n-1] != x[n+1]-x[n]
+ *          - Increasing. I.e. x[n] >= x[n-1]
+ *          - Do not have to start at [0,0]
+ * 
+ * E.g. for a 3x3 table, this is what the TS table editor would show:
+ * <pre>
+ *      Y-Max    V6      V7      V8
+ *      Y-Int    V3      V4      V5
+ *      Y-Min    V0      V1      V2
+ *              X-Min   X-Int   X-Max
+ * </pre>
+ *
+ * In memory, we store rows in reverse:
+ *      - The X axis is conventional: <c>x[0]</c> stores \c X-Min
+ *      - The Y-axis is inverted: <c>y[0]</c> stores \c Y-Max
+ *      - The value locations match the axes.
+ *          - <c>value[0][0]</c> stores \c V6.
+ *          - <c>value[2][0]</c> stores \c V0.
+ * 
+ * I.e.
+ * <pre>
+ *      Y-Min    V0      V1      V2
+ *      Y-Int    V3      V4      V5
+ *      Y-Max    V6      V7      V8
+ *              X-Min   X-Int   X-Max
+ * </pre>
+ *  @{
+ */
+
+/** \file
+ * @brief 3D table data types and functions
+ */
+
 #pragma once
 
 #include "table3d_interpolate.h"
 #include "table3d_iterator.h"
-
-// Overview
-//
-// Logical: each 3D table is a continuous height map spread over
-// 2 orthogonal and bounded axes. The X & Y axes are non-linear.
-// E.g. for a 3x3 table
-//      Y-Max    V6      V7      V8
-//      Y-Int    V3      V4      V5
-//      Y-Min    V0      V1      V2
-//              X-Min   X-Int   X-Max
-// Assumptions:
-//      The axis values are increasing. I.e. x[n] >= x[n-1]
-//
-// Physical:
-//      The X axis is conventional: [0] is the min
-//      The Y-axis is inverted: y[0] is the max
-//      The value locations match the axes. E.g.for a 3x3 table:
-//          value[0][0] is the first value on the last row.
-//          value[2][0] ia the first value on the first row.
 
 // We have a fixed number of table types: they are defined by this macro
 // GENERATOR is expected to be another macros that takes at least 3 arguments:
@@ -37,14 +60,12 @@
 // With no inheritance or virtual functions, we need to pass around void*
 // In order to cast that back to a concrete type, we need to somehow identify
 // the type. 
-//
-// We use a packed enum for size (8 bit) & performance (enum values are adjacent)
 #define TO_TYPE_KEY(size, xDom, yDom) table3d ## size ## xDom ## yDom ## _key
-typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ {
+enum table_type_t {
     table_type_None,
     #define GEN_TYPE_KEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
     TABLE_GENERATOR(GEN_TYPE_KEY)
-} table_type_t;
+};
 
 // 3D table type metadata
 struct table3d_metadata {
@@ -66,8 +87,8 @@ struct table3d_metadata {
         static constexpr table3d_metadata _metadata = { \
             .type_key = TO_TYPE_KEY(size, xDom, yDom), \
             .axis_length = size, \
-            .x_axis_meta = CREATE_AXIS_METADATA(size, xDom), \
-            .y_axis_meta = CREATE_AXIS_METADATA(size, yDom), \
+            .x_axis_meta = axis_metadata(size, axis_domain_ ## xDom), \
+            .y_axis_meta = axis_metadata(size, axis_domain_ ## yDom), \
         }; \
         \
         table3DGetValueCache get_value_cache; \
@@ -130,14 +151,22 @@ TABLE_GENERATOR(GEN_ROWS_BEGIN)
 #define GEN_Y_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator y_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return table_axis_iterator::y_begin(pTable->axisY, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.y_axis_meta);\
+        return table_axis_iterator( \
+            pTable->axisY+(pTable->_metadata.axis_length-1), \
+            pTable->axisY-1, \
+            pTable->_metadata.y_axis_meta.io_factor,\
+            -1); \
     }
 TABLE_GENERATOR(GEN_Y_BEGIN)
 
 #define GEN_X_BEGIN(size, xDom, yDom) \
     inline table_axis_iterator x_begin(const DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable) \
     { \
-        return table_axis_iterator::x_begin(pTable->axisX, DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::_metadata.x_axis_meta); \
+        return table_axis_iterator( \
+            pTable->axisX, \
+            pTable->axisX+pTable->_metadata.axis_length, \
+            pTable->_metadata.x_axis_meta.io_factor,\
+            1); \
     }
 TABLE_GENERATOR(GEN_X_BEGIN)
 
@@ -160,3 +189,5 @@ table_value_iterator rows_begin(const void *pTable, table_type_t key);
 table_axis_iterator x_begin(const void *pTable, table_type_t key);
 
 table_axis_iterator y_begin(const void *pTable, table_type_t key);
+
+/** @} */

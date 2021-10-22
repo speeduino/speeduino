@@ -14,7 +14,7 @@ static inline uint32_t compute_raw_crc(const page_iterator_t &entity, pCrcCalc c
 
 static inline uint32_t compute_row_crc(const table_row_iterator &row, pCrcCalc calcFunc)
 {
-    return (CRC32.*calcFunc)(row.pValue, row.pEnd-row.pValue, false);
+    return (CRC32.*calcFunc)(&*row, row.size(), false);
 }
 
 static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc calcFunc)

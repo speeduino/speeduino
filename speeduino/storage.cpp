@@ -97,7 +97,7 @@ static inline write_location write_range(const byte *pStart, const byte *pEnd, w
 
 static inline write_location write(const table_row_iterator &row, write_location location)
 {
-  return write_range(row.pValue, row.pEnd, location);
+  return write_range(&*row, row.end(), location);
 }
 
 static inline write_location write(table_value_iterator it, write_location location)
@@ -308,7 +308,7 @@ static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst
 
 static inline eeprom_address_t load(table_row_iterator row, eeprom_address_t address)
 {
-  return load_range(address, row.pValue, row.pEnd);
+  return load_range(address, &*row, row.end());
 }
 
 static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t address)
