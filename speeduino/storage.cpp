@@ -443,8 +443,8 @@ static eeprom_address_t compute_crc_address(uint8_t pageNum)
 
 /** Write CRC32 checksum to EEPROM.
 Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
-@param pageNo - Config page number
-@param crc32_val - CRC32 checksum
+@param pageNum - Config page number
+@param crcValue - CRC32 checksum
 */
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue)
 {
@@ -452,7 +452,7 @@ void storePageCRC32(uint8_t pageNum, uint32_t crcValue)
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given page from EEPROM.
-@param pageNo - Config page number
+@param pageNum - Config page number
 */
 uint32_t readPageCRC32(uint8_t pageNum)
 {

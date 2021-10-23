@@ -175,7 +175,7 @@ byte getTSLogEntry(uint16_t byteNum)
 }
 
 /** 
- * Similar to the @getTSLogEntry function, however this returns a full, unadjusted (ie human readable) log entry value. 
+ * Similar to the @ref getTSLogEntry function, however this returns a full, unadjusted (ie human readable) log entry value.
  * See logger.h for the field names and order
  * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
  * @return Raw, unadjusted value of the log entry. No offset or multiply is applied like it is with the TS log
