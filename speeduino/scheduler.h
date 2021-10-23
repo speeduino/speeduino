@@ -158,6 +158,7 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  * - RUNNING - Schedule is currently running
  */
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+
 /** Ignition schedule.
  */
 struct Schedule {

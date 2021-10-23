@@ -32,6 +32,8 @@
 #define DECODER_420A              18
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
+#define DECODER_DRZ400            21
+#define DECODER_NGC               22
 #define DECODER_RENIX44           21
 #define DECODER_RENIX66           22
 
@@ -186,6 +188,8 @@ uint16_t getRPM_FordST170();
 int getCrankAngle_FordST170();
 void triggerSetEndTeeth_FordST170();
 
+void triggerSetup_DRZ400();
+void triggerSec_DRZ400();
 void triggerSetup_Renix();
 void triggerSec_Renix();
 uint16_t getRPM_Renix();
@@ -194,6 +198,12 @@ void triggerSetEndTeeth_Renix44();
 void triggerSetEndTeeth_Renix66();
 void triggerPrimary_Renix44();
 void triggerPrimary_Renix66();
+
+void triggerSetup_NGC();
+void triggerPri_NGC();
+void triggerSec_NGC4();
+uint16_t getRPM_NGC();
+void triggerSetEndTeeth_NGC();
 
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
