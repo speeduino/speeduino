@@ -20,7 +20,7 @@
     #define EEPROM_LIB_H <EEPROM.h>
     typedef int eeprom_address_t;
   #endif
-  #define RTC_LIB_H "TimeLib.h"
+  #define RTC_LIB_H <TimeLib.h>
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
