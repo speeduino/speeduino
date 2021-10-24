@@ -1,5 +1,4 @@
 /** 
- * @defgroup table_3d 3D Tables
  * @addtogroup table_3d 
  *  @{
  */
@@ -14,37 +13,7 @@
 
 // ========================= AXIS ITERATION =========================  
 
-/** @brief Byte type. This is not defined in any C or C++ standard header. */
-typedef uint8_t byte;
-
-/** @brief Represents a 16-bit value as a byte. Useful for I/O. */
-class int16_ref
-{
-public:
-
-    /**
-     * @brief Construct
-     * @param value The \c int16_t to encapsulate.
-     * @param factor The factor to scale the \c int16_t value by when converting to/from a \c byte
-     */
-    int16_ref(int16_t &value, uint8_t factor) 
-        : _value(value), _factor(factor)
-    {
-    }
-
-    /** Convert to a \c byte */
-    inline byte operator*() const { return (byte)(_value/_factor); }
-
-    /** Convert to a \c byte */
-    inline explicit operator byte() const { return **this; }
-
-    /** Convert from a \c byte */
-    inline int16_ref &operator=( byte in )  { _value = (int16_t)in * (int16_t)_factor; return *this;  }
-
-private:
-    int16_t &_value;
-    uint8_t _factor;
-};
+#include "int16_ref.h"
 
 /**\enum axis_domain
  * @brief Encodes the real world measurement that a table axis captures
