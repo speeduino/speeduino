@@ -22,9 +22,19 @@
 typedef uint8_t table3d_dim_t;
 
 /** @brief The type of each table value */
-typedef uint8_t table3d_value_t; // 
+typedef uint8_t table3d_value_t;
 
 /** @brief The type of each axis value */
 typedef int16_t table3d_axis_t;
 
+// We have a fixed number of table types: they are defined by this macro
+// GENERATOR is expected to be another macros that takes at least 3 arguments:
+//    axis length, x-axis domain, y-axis domain
+#define TABLE_GENERATOR(GENERATOR, ...) \
+    GENERATOR(6, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(4, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(8, Rpm, Load, ##__VA_ARGS__) \
+    GENERATOR(8, Rpm, Tps, ##__VA_ARGS__) \
+    GENERATOR(16, Rpm, Load, ##__VA_ARGS__)
+    
 /** @} */

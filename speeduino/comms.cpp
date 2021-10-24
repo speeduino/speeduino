@@ -18,7 +18,6 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
-#include "table3d_iterator.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -1119,7 +1118,7 @@ void sendPageASCII()
   {
     case veMapPage:
       Serial.println(F("\nVE Map"));
-      serial_print_3dtable(&fuelTable, fuelTable._metadata.type_key);
+      serial_print_3dtable(&fuelTable, fuelTable.type_key);
       break;
 
     case veSetPage:
@@ -1140,7 +1139,7 @@ void sendPageASCII()
 
     case ignMapPage:
       Serial.println(F("\nIgnition Map"));
-      serial_print_3dtable(&ignitionTable, ignitionTable._metadata.type_key);
+      serial_print_3dtable(&ignitionTable, ignitionTable.type_key);
       break;
 
     case ignSetPage:
@@ -1158,7 +1157,7 @@ void sendPageASCII()
 
     case afrMapPage:
       Serial.println(F("\nAFR Map"));
-      serial_print_3dtable(&afrTable, afrTable._metadata.type_key);
+      serial_print_3dtable(&afrTable, afrTable.type_key);
       break;
 
     case afrSetPage:
@@ -1182,14 +1181,14 @@ void sendPageASCII()
 
     case boostvvtPage:
       Serial.println(F("\nBoost Map"));
-      serial_print_3dtable(&boostTable, boostTable._metadata.type_key);
+      serial_print_3dtable(&boostTable, boostTable.type_key);
       Serial.println(F("\nVVT Map"));
-      serial_print_3dtable(&vvtTable, vvtTable._metadata.type_key);
+      serial_print_3dtable(&vvtTable, vvtTable.type_key);
       break;
 
     case seqFuelPage:
       Serial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(&trim1Table, trim1Table._metadata.type_key);
+      serial_print_3dtable(&trim1Table, trim1Table.type_key);
       break;
 
     case canbusPage:
@@ -1199,12 +1198,12 @@ void sendPageASCII()
 
     case fuelMap2Page:
       Serial.println(F("\n2nd Fuel Map"));
-      serial_print_3dtable(&fuelTable2, fuelTable2._metadata.type_key);
+      serial_print_3dtable(&fuelTable2, fuelTable2.type_key);
       break;
    
     case ignMap2Page:
       Serial.println(F("\n2nd Ignition Map"));
-      serial_print_3dtable(&ignitionTable2, ignitionTable2._metadata.type_key);
+      serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
       break;
 
     case warmupPage:

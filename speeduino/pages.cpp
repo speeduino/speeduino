@@ -1,7 +1,6 @@
 #include "pages.h"
 #include "globals.h"
 #include "utilities.h"
-#include "table3d_iterator.h"
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -33,17 +32,17 @@ constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288
 template <class table_t>
 inline constexpr uint16_t get_table_value_end()
 {
-  return sq(table_t::_metadata.axis_length);
+  return table_t::xaxis_t::length*table_t::yaxis_t::length;
 }
 template <class table_t>
 inline constexpr uint16_t get_table_axisx_end()
 {
-  return get_table_value_end<table_t>()+table_t::_metadata.x_axis_meta.axis_length;
+  return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
 inline constexpr uint16_t get_table_axisy_end(const table_t *)
 {
-  return get_table_axisx_end<table_t>()+table_t::_metadata.y_axis_meta.axis_length;
+  return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
 }
 
 // ========================= Intra-table offset to byte class =========================
@@ -112,17 +111,17 @@ private:
 
   inline byte& get_value_value() const
   {
-    return get_table_value(_pTable, (uint8_t)_table_offset);
+    return _pTable->values.value_at((uint8_t)_table_offset);
   }
 
   inline int16_ref get_xaxis_value() const
   {
-    return *x_begin(_pTable).advance(_table_offset - get_table_value_end<table_t>());
+    return *_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>());
   }
 
   inline int16_ref get_yaxis_value() const
   {
-    return *y_begin(_pTable).advance(_table_offset - get_table_axisx_end<table_t>());
+    return *_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>());
   }
 
   enum table_location {
@@ -258,7 +257,7 @@ inline const page_iterator_t create_table_iterator(void *pTable, table_type_t ke
 #define CHECK_TABLE(pageNum, offset, pTable, entityNum) \
   if (offset < ENTITY_START_VAR(entityNum)+get_table_axisy_end(pTable)) \
   { \
-    return create_table_iterator(pTable, (pTable)->_metadata.type_key, \
+    return create_table_iterator(pTable, (pTable)->type_key, \
                                   pageNum, \
                                   ENTITY_START_VAR(entityNum), get_table_axisy_end(pTable)); \
   } \
