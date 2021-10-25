@@ -50,7 +50,7 @@ static inline uint32_t compute_table_crc(page_iterator_t &entity, pCrcCalc calcF
 
 static inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
 {
-    uint8_t raw_value = 0u;
+    const uint8_t raw_value = 0u;
     while (padding>0)
     {
         crc = CRC32.crc32_upd(&raw_value, 1, false);

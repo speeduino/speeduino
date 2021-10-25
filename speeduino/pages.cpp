@@ -53,7 +53,7 @@ class offset_to_table
 public:
 
   // This class encapsulates mapping a linear offset to the various parts of a table
-  // and exposing the linear offset as an addressable byte.
+  // and exposing the linear offset as an mutable byte.
   //
   // Tables do not map linearly to the TS page address space, so special 
   // handling is necessary (we do not use the normal array layout for
@@ -154,9 +154,9 @@ inline byte& get_raw_location(page_iterator_t &entity, uint16_t offset)
 
 inline byte get_table_value(page_iterator_t &entity, uint16_t offset)
 {
-  #define GET_TABLE_VALUE_INNER(size, xDomain, yDomain, pTable, offset) \
-      return *offset_to_table<DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)>((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable, offset);
-  CONCRETE_TABLE_ACTION(entity.table_key, GET_TABLE_VALUE_INNER, entity.pData, (offset-entity.start));  
+  #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
+      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, entity.pData, (offset-entity.start));  
 }
 
 inline byte get_value(page_iterator_t &entity, uint16_t offset)
@@ -174,9 +174,9 @@ inline byte get_value(page_iterator_t &entity, uint16_t offset)
 
 inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
 {
-  #define SET_TABLE_VALUE_INNER(size, xDomain, yDomain, pTable, offset, new_value) \
-      offset_to_table<DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)>((DECLARE_3DTABLE_TYPENAME(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
-  CONCRETE_TABLE_ACTION(entity.table_key, SET_TABLE_VALUE_INNER, entity.pData, (offset-entity.start), new_value);  
+  #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
+      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, entity.pData, (offset-entity.start), new_value);  
 }
 
 inline void set_value(page_iterator_t &entity, byte value, uint16_t offset)

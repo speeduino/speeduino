@@ -25,16 +25,15 @@ public:
      * @param pRowStart Pointer to the 1st element in the row
      * @param rowWidth The number of elements to in the row
     */
-    table_row_iterator(table3d_value_t *pRowStart,  table3d_dim_t rowWidth)
+    table_row_iterator(const table3d_value_t *pRowStart, table3d_dim_t rowWidth)
         : pValue(pRowStart), pEnd(pRowStart+rowWidth)
     {
     }
 
-    /** Pointer to the end of the row */
+    /** @brief Pointer to the end of the row */
     inline const table3d_value_t* end() const { return pEnd; }
-
-    /** Pointer to the end of the row */
-    inline table3d_value_t* end() { return pEnd; }
+    /** @copydoc table_row_iterator::end() const */
+    inline table3d_value_t* end() { return const_cast<table3d_value_t *>(pEnd); }
 
     /** @brief Advance the iterator
      * @param steps The number of elements to move the iterator
@@ -58,19 +57,23 @@ public:
     }
 
     /** @brief Dereference the iterator */
-    inline table3d_value_t& operator*() const
+    inline const table3d_value_t& operator*() const
     {
         return *pValue;
+    }
+    /** @copydoc table_row_iterator::operator*() const */
+    inline table3d_value_t& operator*()
+    {
+        return *const_cast<table3d_value_t *>(pValue);
     }
 
     /** @brief Number of elements available */
     inline table3d_dim_t size() const { return pEnd-pValue; }
 
 private:
-    table3d_value_t *pValue;
-    table3d_value_t *pEnd;
+    const table3d_value_t *pValue;
+    const table3d_value_t *pEnd;
 };
-
 
 // ========================= INTER-ROW ITERATION ========================= 
 
@@ -85,9 +88,9 @@ public:
      * @param axisSize The number of columns & elements per row (square tables only)
     */
     table_value_iterator(const table3d_value_t *pValues, table3d_dim_t axisSize)
-    : pRowsStart(const_cast<table3d_value_t*>(pValues) + (axisSize*(axisSize-1))),
-      pRowsEnd(const_cast<table3d_value_t*>(pValues) - axisSize),
-      rowWidth(axisSize)
+        : pRowsStart(pValues + (axisSize*(axisSize-1))),
+        pRowsEnd(pValues - axisSize),
+        rowWidth(axisSize)
     {
         // Table values are not linear in memory - rows are in reverse order
         // E.g. a 4x4 table with logical element [0][0] at the bottom left
@@ -118,10 +121,15 @@ public:
     }
 
     /** @brief Dereference the iterator to access a row of data */
-    inline table_row_iterator operator*() const
+    inline const table_row_iterator operator*() const
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }
+    /** @copydoc table_value_iterator::operator*() const */
+    inline table_row_iterator operator*()
+    {
+        return table_row_iterator(pRowsStart, rowWidth);
+    }    
 
     /** @brief Test for end of iteration */
     inline bool at_end() const
@@ -130,43 +138,53 @@ public:
     }
 
 private:
-    table3d_value_t *pRowsStart;
-    table3d_value_t *pRowsEnd;
+    const table3d_value_t *pRowsStart;
+    const table3d_value_t *pRowsEnd;
     table3d_dim_t rowWidth;
 };
 
-#define TABLE3D_VALUE_TYPENAME(size, xDom, yDom) table3d_values_ ##size ## xDom ## yDom
+#define TABLE3D_TYPENAME_VALUE(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _values)
 
-#define GEN_TABLE3D_VALUES(size, xDom, yDom) \
-    struct TABLE3D_VALUE_TYPENAME(size, xDom, yDom) { \
+#define TABLE3D_GEN_VALUES(size, xDom, yDom) \
+    /** @brief The values for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
+    struct TABLE3D_TYPENAME_VALUE(size, xDom, yDom) { \
+        /** @brief The number of items in a row. I.e. it's length  */ \
         static constexpr table3d_dim_t row_size = size; \
+        /** @brief The number of rows */ \
         static constexpr table3d_dim_t num_rows = size; \
+        /** \
+         @brief The row values \
+         @details Table values are not linear in memory - rows are in reverse order<br> \
+         E.g. a 3x3 table with logical element [0][0] at the bottom left \
+         (normal cartesian coordinates) has this layout:<br> \
+         6, 7, 8, 3, 4, 5, 0, 1, 2 \
+        */ \
         table3d_value_t values[row_size*num_rows]; \
         \
+        /** @brief Iterate over the values */ \
         inline table_value_iterator begin() \
         {  \
             return table_value_iterator(values, row_size); \
         } \
         \
-        \
-        /** Generate single byte value access function. \
-         * \
-         * Since table values aren't laid out linearily, converting a linear \
-         * offset to the equivalent memory address requires a modulus operation. \
-         * \
-         * This is slow, since AVR hardware has no divider. We can gain performance \
-         * in 2 ways: \
-         *  1. Forcing uint8_t calculations. These are much faster than 16-bit calculations \
-         *  2. Compiling this per table *type*. This encodes the axis length as a constant \
-         *  thus allowing the optimizing compiler more opportunity. E.g. for axis lengths \
-         *  that are a power of 2, the modulus can be optimised to add/multiple/shift - much \
-         *  cheaper than calling a software division routine such as __udivmodqi4 \
-         * \
-         * THIS IS WORTH 20% to 30% speed up \
-         * \
-         * This limits us to 16x16 tables. If we need bigger and move to 16-bit  \
-         * operations, consider using libdivide.  \
-         */  \
+        /** \
+         @brief Direct access to table value element from a linear index \
+         @details Since table values aren't laid out linearly, converting a linear \
+         offset to the equivalent memory address requires a modulus operation.<br> \
+         <br> \
+         This is slow, since AVR hardware has no divider. We can gain performance \
+         in 2 ways:<br> \
+          1. Forcing uint8_t calculations. These are much faster than 16-bit calculations<br> \
+          2. Compiling this per table *type*. This encodes the axis length as a constant \
+          thus allowing the optimizing compiler more opportunity. E.g. for axis lengths \
+          that are a power of 2, the modulus can be optimised to add/multiply/shift - much \
+          cheaper than calling a software division routine such as __udivmodqi4<br> \
+         <br> \
+         THIS IS WORTH 20% to 30% speed up<br> \
+         <br> \
+         This limits us to 16x16 tables. If we need bigger and move to 16-bit \
+         operations, consider using libdivide. <br> \
+         */ \
         inline table3d_value_t& value_at(table3d_dim_t linear_index) \
         { \
             static_assert(row_size<17, "Table is too big"); \
@@ -176,4 +194,6 @@ private:
             return values[index]; \
         } \
     };
-TABLE_GENERATOR(GEN_TABLE3D_VALUES)
+TABLE3D_GENERATOR(TABLE3D_GEN_VALUES)
+
+/** @} */

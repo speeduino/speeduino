@@ -30,13 +30,13 @@ public:
     {
     }
 
-    /** Convert to a \c byte */
+    /** @brief Convert to a \c byte */
     inline byte operator*() const { return (byte)(_value/_factor); }
 
-    /** Convert to a \c byte */
+    /** @brief Convert to a \c byte */
     inline explicit operator byte() const { return **this; }
 
-    /** Convert from a \c byte */
+    /** @brief Convert from a \c byte */
     inline int16_ref &operator=( byte in )  { _value = (int16_t)in * (int16_t)_factor; return *this;  }
 
 private:

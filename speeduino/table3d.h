@@ -46,51 +46,59 @@
 #include "table3d_axes.h"
 #include "table3d_values.h"
 
-// ================================== Core 3D table ========================
-
-// With no inheritance or virtual functions, we need to pass around void*
-// In order to cast that back to a concrete type, we need to somehow identify
-// the type. 
 #define TO_TYPE_KEY(size, xDom, yDom) table3d ## size ## xDom ## yDom ## _key
+
+/**
+ * @brief Table \b type identifiers. Limited compile time RTTI
+ * 
+ * With no virtual functions (they have quite a bit of overhead in both space & 
+ * time), we have to pass void* around in certain cases. In order to cast that 
+ * back to a concrete table type, we need to somehow identify the type.
+ * 
+ * Once approach is to register each type - but that requires a central registry
+ * which will use RAM.
+ * 
+ * Since we have a compile time fixed set of table types, we can map a unique
+ * identifer to the type via a cast - this enum is that unique identifier.
+ * 
+ * Typically used in conjunction with the '#CONCRETE_TABLE_ACTION' macro
+ */
 enum table_type_t {
     table_type_None,
-    #define GEN_TYPE_KEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
-    TABLE_GENERATOR(GEN_TYPE_KEY)
+    #define TABLE3D_GEN_TYPEKEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
+    TABLE3D_GENERATOR(TABLE3D_GEN_TYPEKEY)
 };
 
-// Each 3d table is given a distinct type based on size & axis domains
-// This encapsulates the generation of the type name
-#define DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) table3d ## size ## xDom ## yDom
-
 // Generate the 3D table types
-#define GEN_DECLARE_3DTABLE_TYPE(size, xDom, yDom) \
-    struct DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) \
+#define TABLE3D_GEN_TYPE(size, xDom, yDom) \
+    /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
+    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) \
     { \
+        typedef TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) xaxis_t; \
+        typedef TABLE3D_TYPENAME_YAXIS(size, xDom, yDom) yaxis_t; \
+        typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
-        typedef XAXIS_TYPENAME(size, xDom, yDom) xaxis_t; \
-        typedef YAXIS_TYPENAME(size, xDom, yDom) yaxis_t; \
-        typedef TABLE3D_VALUE_TYPENAME(size, xDom, yDom) value_t; \
         static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \
         \
         table3DGetValueCache get_value_cache; \
-        TABLE3D_VALUE_TYPENAME(size, xDom, yDom) values; \
-        XAXIS_TYPENAME(size, xDom, yDom) axisX; \
-        YAXIS_TYPENAME(size, xDom, yDom) axisY; \
+        TABLE3D_TYPENAME_VALUE(size, xDom, yDom) values; \
+        TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) axisX; \
+        TABLE3D_TYPENAME_YAXIS(size, xDom, yDom) axisY; \
     };
-TABLE_GENERATOR(GEN_DECLARE_3DTABLE_TYPE)
+TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 
 // Generate get3DTableValue() functions
-#define GEN_GET3D_TABLE_VALUE(size, xDom, yDom) \
-    inline int get3DTableValue(DECLARE_3DTABLE_TYPENAME(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
+#define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
+    inline int get3DTableValue(TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
     { \
       return get3DTableValue( &pTable->get_value_cache, \
-                              DECLARE_3DTABLE_TYPENAME(size, xDom, yDom)::value_t::row_size, \
+                              TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
                               pTable->values.values, \
                               pTable->axisX.axis, \
                               pTable->axisY.axis, \
                               y, x); \
     } 
-TABLE_GENERATOR(GEN_GET3D_TABLE_VALUE)
+TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
 
 // =============================== Table function calls =========================
 
@@ -101,7 +109,7 @@ TABLE_GENERATOR(GEN_GET3D_TABLE_VALUE)
   case TO_TYPE_KEY(size, xDomain, yDomain): action(size, xDomain, yDomain, ##__VA_ARGS__);
 #define CONCRETE_TABLE_ACTION(testKey, action, ...) \
   switch ((table_type_t)testKey) { \
-  TABLE_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
+  TABLE3D_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
   default: abort(); }
 
 // =============================== Table function calls =========================
