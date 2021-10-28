@@ -1208,6 +1208,7 @@ void sendPageASCII()
 
     case warmupPage:
     case progOutsPage:
+    case miscSetPage:
     default:
     #ifndef SMALL_FLASH_MODE
         Serial.println(F("\nPage has not been implemented yet"));
