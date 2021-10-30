@@ -40,7 +40,7 @@ inline byte get_value(const table_axis_iterator_t &it)
 
 inline int16_t get_value16(const table_axis_iterator_t &it)
 {
-    return *it._pAxis / it._axisFactor;
+    return *it._pAxis;
 }
 
 inline void set_value(table_axis_iterator_t &it, byte value)
@@ -65,11 +65,6 @@ inline table_axis_iterator_t x_begin(const table3D *pTable)
     return { pTable->axisX, pTable->axisX+pTable->xSize, getTableXAxisFactor(pTable), 1 };
 } 
 
-
-inline table_axis_iterator_t x_raw_begin(const table3D *pTable)
-{
-    return { pTable->axisX, pTable->axisX+pTable->xSize, 1, 1 };
-}
 
 // ========================= INTRA-ROW ITERATION ========================= 
 

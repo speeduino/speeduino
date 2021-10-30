@@ -120,7 +120,7 @@ static void serial_print_3dtable(Print &target, table_row_iterator_t row_it, tab
 
 static void serial_print_3dtable(Print &target, const table3D &currentTable)
 {
-    serial_print_3dtable(target, rows_begin_rev(&currentTable), x_raw_begin(&currentTable), y_raw_begin_rev(&currentTable));
+    serial_print_3dtable(target, rows_begin_rev(&currentTable), x_begin(&currentTable), y_rbegin(&currentTable));
 }
 
 #define print_array(outputName, array) serial_print_space_delimited(outputName, array, array+_countof(array));

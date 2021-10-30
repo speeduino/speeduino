@@ -10,7 +10,7 @@ The generated code is not stand alone. It relies on supporting code defined in t
 Example usage: py ./gen-printpageascii.py > ../speeduino/page_printascii.g.hpp
 """
 
-from TsIniParser import BitVariable, ScalarVariable, Array1dVariable, Page, Variable, TableArray1dVariable, TableArray2dVariable, CurveArray1dVariable
+from TsIniParser import BitVariable, ScalarVariable, Array1dVariable, Page, Variable, Table
 
 # Code printing
 
@@ -46,34 +46,32 @@ def generate_printfields(page_num, fields, file):
         ScalarVariable : gen_scalar,
         BitVariable : gen_bit,
         Array1dVariable: gen_array,
-        CurveArray1dVariable: gen_array,
     }       
 
+    fields = [field for field in fields if not field.Unused]
     fields = apply_overrides(fields)
     fields = unique_fields(fields)
     for generator, field in ((print_map.get(type(field), gen_unknown), field) for field in fields): 
         print(generator(page_num, field), file=file)
 
-def generate_printtables(print_table_vars, file):
+def generate_printtables(tables, file):
     """ Print each table in the page """
-    tables = []
-    for t in print_table_vars:
-        if t.table not in tables:
-            tables.append(t.table)    
     for table in tables: 
         print(f'\t{OUTPUT_VAR_NAME}.println(F("\\n{table.title}"));', file=file)
         print(f'\tserial_print_3dtable({OUTPUT_VAR_NAME}, {table.CodeName});', file=file)
 
-def generate_pageprintfunction(function_name, page_node, file):
+def generate_pageprintfunction(function_name, page_node, tables, file):
     print(f'static void {function_name}(Print &{OUTPUT_VAR_NAME}) {{', file=file)
     print(f'\t{OUTPUT_VAR_NAME}.println(F("\\nPg {page_node.page_num} Cfg"));', file=file)
 
     all_vars = [v for v in page_node.values() if isinstance(v, Variable)]
-    print_table_vars = [v for v in all_vars if isinstance(v, TableArray1dVariable) or isinstance(v, TableArray2dVariable)]
-    print_fields = [v for v in all_vars if v not in print_table_vars]
+    table_vars = [[t.table_xbin.variable, t.table_ybin.variable, t.zbins.variable] for t in tables]
+    # flatten the list
+    table_vars = [item for sublist in table_vars for item in sublist]   
+    print_fields = [v for v in all_vars if v not in table_vars]
 
     generate_printfields(page_node.page_num, print_fields, file)
-    generate_printtables(print_table_vars, file)
+    generate_printtables(tables, file)
 
     print('}', file=file) 
     print('', file=file)
@@ -93,7 +91,8 @@ def generate_printpageascii(parsetree, file):
 
     pages = [p for p in parsetree['Constants'].values() if isinstance(p, Page)]
     for page in pages:
-        generate_pageprintfunction(get_printpagefunctionname(page.page_num), page, file)
+        tables = [t for t in parsetree['TableEditor'].values() if isinstance(t, Table) and t.page_num == page.page_num]
+        generate_pageprintfunction(get_printpagefunctionname(page.page_num), page, tables, file)
 
     print(f'void printPageAscii(byte pageNum, Print &{OUTPUT_VAR_NAME}) {{', file=file)
     print('\tswitch(pageNum) {', file=file)

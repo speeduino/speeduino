@@ -22,6 +22,10 @@ def _name_override(self:Union[Variable, Table]):
     code_override = self.CodeOverride
     return code_override[1] if code_override and is_name_override(code_override) else None
 
+def _var_unused(self:Variable):
+    code_override = self.CodeOverride
+    return code_override and isinstance(code_override, tuple) and "unused"==code_override[0]
+
 def _var_code_name(self:Variable):
     """The name of the variable in the C source code. Accounts for over ride directives in the INI"""
     code_override = _name_override(self)
@@ -40,6 +44,7 @@ def load_speeduino_ini():
         # Add some Speeduino specific properties to the generic INI classes
         Variable.CodeOverride = property(_code_override)
         Table.CodeOverride = property(_code_override)
+        Variable.Unused = property(_var_unused)
         Variable.CodeName = property(_var_code_name)
         Table.CodeName = property(_tab_code_name)
 

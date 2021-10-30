@@ -13,4 +13,4 @@ try:
 except NameError:  # We are the main py2exe script, not a module
     requirements = Path(env['PROJECT_DIR']) / 'build' / 'requirements.txt'
 
-subprocess.check_call([python, '-m', 'pip', 'install', '-r', requirements])
+subprocess.check_call([python, '-m', 'pip', 'install', '-r', requirements, '--upgrade'])
