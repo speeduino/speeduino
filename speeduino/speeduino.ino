@@ -1043,22 +1043,22 @@ void loop()
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
+        if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule[0].Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
         //if ( (ignition1StartAngle > crankAngle) && (curRollingCut != 1) )
         if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
           
-          setIgnitionSchedule1(ign1StartFunction,
+          setIgnitionSchedule1(ignStartFunction[0],
                     //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                     angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
                     currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
-                    ign1EndFunction
+                    ignEndFunction[0]
                     );
         }
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( (ignitionSchedule[0].Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
           unsigned long uSToEnd = 0;
 
@@ -1086,17 +1086,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition2StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[1].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition2StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition2StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition2StartTime = 0; }
 
             if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
             {
-              setIgnitionSchedule2(ign2StartFunction,
+              setIgnitionSchedule2(ignStartFunction[1],
                         ignition2StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign2EndFunction
+                        ignEndFunction[1]
                         );
             }
         }
@@ -1111,17 +1111,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition3StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[2].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition3StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition3StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition3StartTime = 0; }
 
             if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
             {
-              setIgnitionSchedule3(ign3StartFunction,
+              setIgnitionSchedule3(ignStartFunction[2],
                         ignition3StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign3EndFunction
+                        ignEndFunction[2]
                         );
             }
         }
@@ -1136,17 +1136,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition4StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[3].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition4StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition4StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition4StartTime = 0; }
 
             if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
             {
-              setIgnitionSchedule4(ign4StartFunction,
+              setIgnitionSchedule4(ignStartFunction[3],
                         ignition4StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign4EndFunction
+                        ignEndFunction[3]
                         );
             }
         }
@@ -1161,17 +1161,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition5StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[4].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition5StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition5StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition5StartTime = 0; }
 
             if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
             {
-              setIgnitionSchedule5(ign5StartFunction,
+              setIgnitionSchedule5(ignStartFunction[4],
                         ignition5StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign5EndFunction
+                        ignEndFunction[4]
                         );
             }
         }
@@ -1186,17 +1186,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition6StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[5].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition6StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition6StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition6StartTime = 0; }
 
             if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
             {
-              setIgnitionSchedule6(ign6StartFunction,
+              setIgnitionSchedule6(ignStartFunction[5],
                         ignition6StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign6EndFunction
+                        ignEndFunction[5]
                         );
             }
         }
@@ -1211,17 +1211,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition7StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[6].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition7StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition7StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition7StartTime = 0; }
 
             if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
             {
-              setIgnitionSchedule7(ign7StartFunction,
+              setIgnitionSchedule7(ignStartFunction[6],
                         ignition7StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign7EndFunction
+                        ignEndFunction[6]
                         );
             }
         }
@@ -1236,17 +1236,17 @@ void loop()
             if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
 
             unsigned long ignition8StartTime = 0;
-            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
+            if ( (tempStartAngle <= tempCrankAngle) && (ignitionSchedule[7].Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
             if(tempStartAngle > tempCrankAngle) { ignition8StartTime = angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); }
             //else if (tempStartAngle < tempCrankAngle) { ignition8StartTime = ((long)(360 - tempCrankAngle + tempStartAngle) * (long)timePerDegree); }
             else { ignition8StartTime = 0; }
 
             if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
             {
-              setIgnitionSchedule8(ign8StartFunction,
+              setIgnitionSchedule8(ignStartFunction[7],
                         ignition8StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
-                        ign8EndFunction
+                        ignEndFunction[7]
                         );
             }
         }

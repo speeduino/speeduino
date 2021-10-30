@@ -68,22 +68,8 @@ extern void (*inj8EndFunction)();
  * They are required for the various spark output modes.
  * @{
 */
-extern void (*ign1StartFunction)();
-extern void (*ign1EndFunction)();
-extern void (*ign2StartFunction)();
-extern void (*ign2EndFunction)();
-extern void (*ign3StartFunction)();
-extern void (*ign3EndFunction)();
-extern void (*ign4StartFunction)();
-extern void (*ign4EndFunction)();
-extern void (*ign5StartFunction)();
-extern void (*ign5EndFunction)();
-extern void (*ign6StartFunction)();
-extern void (*ign6EndFunction)();
-extern void (*ign7StartFunction)();
-extern void (*ign7EndFunction)();
-extern void (*ign8StartFunction)();
-extern void (*ign8EndFunction)();
+extern void (*ignStartFunction[8])();
+extern void (*ignEndFunction[8])();
 /** @} */
 
 void initialiseSchedulers();
@@ -107,6 +93,10 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+
+inline COMPARE_TYPE getIgnitionCounter(int i);
+inline void setIgnitionCompare(int i, COMPARE_TYPE val);
+inline void setIgnitionTimerRunning(int i, bool enabled);
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -205,14 +195,7 @@ extern FuelSchedule fuelSchedule6;
 extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 
-extern Schedule ignitionSchedule1;
-extern Schedule ignitionSchedule2;
-extern Schedule ignitionSchedule3;
-extern Schedule ignitionSchedule4;
-extern Schedule ignitionSchedule5;
-extern Schedule ignitionSchedule6;
-extern Schedule ignitionSchedule7;
-extern Schedule ignitionSchedule8;
+extern Schedule ignitionSchedule[IGN_CHANNELS];
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
