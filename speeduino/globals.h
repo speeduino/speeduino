@@ -1388,10 +1388,10 @@ struct config13 {
   byte unused13_106 : 2;         //106
   byte APPedalePositionPin2 : 5; //107
   byte unused13_107 : 3;         //107
-  byte APpedal1Min;              //108
-  byte APpedal1Max;              //109
-  byte APpedal2Min;              //110
-  byte APpedal2Max;              //111
+  byte APpedal1Min;              //108 ;je croi que cette variable n'est plus utilisée déclaré egalement dans le fichier .ini ligne 1303
+  byte APpedal1Max;              //109 ;je croi que cette variable n'est plus utilisée déclaré egalement dans le fichier .ini ligne 1304
+  byte APpedal2Min;              //110 ;je croi que cette variable n'est plus utilisée déclaré egalement dans le fichier .ini ligne 1305
+  byte APpedal2Max;              //111 ;je croi que cette variable n'est plus utilisée déclaré egalement dans le fichier .ini ligne 1306
   byte pps1Min;                  //112
   byte pps1Max;                  //113
   byte ADCFILTER_PPS1;           //114 
