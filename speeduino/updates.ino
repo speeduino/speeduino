@@ -163,7 +163,8 @@ void doUpdates()
     configPage4.ADCFILTER_BAT = 128;
     configPage4.ADCFILTER_MAP = 20;
     configPage4.ADCFILTER_BARO= 64;
-    configPage13.ADCFILTER_PPS= 0; //Amesis Project 
+    configPage13.ADCFILTER_PPS1= 0; //Amesis Project 
+    configPage13.ADCFILTER_PPS2= 0; //Amesis Project 
 
     writeAllConfig();
     storeEEPROMVersion(10);

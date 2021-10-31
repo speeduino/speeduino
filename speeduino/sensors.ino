@@ -124,7 +124,8 @@ void initialiseADC()
   if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
   if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
-  if(configPage13.ADCFILTER_PPS > 240) { configPage13.ADCFILTER_PPS = 50; writeConfig(ignSetPage); }
+  if(configPage13.ADCFILTER_PPS1 > 240) { configPage13.ADCFILTER_PPS1 = 50; writeConfig(ignSetPage); }
+  if(configPage13.ADCFILTER_PPS2 > 240) { configPage13.ADCFILTER_PPS2 = 50; writeConfig(ignSetPage); }
   
   flexStartTime = micros();
 
@@ -761,49 +762,106 @@ uint16_t readAuxdigital(uint8_t digitalPin)
 
 void readPPS(bool useFilter)
 {
-  PPSlast = currentStatus.APthrottle ; //currentStatus.PPS
-  PPSlast_time = PPS_time;
+  //PPS1
+  PPS1last = currentStatus.PPS1; //currentStatus.PPS1
+  PPS1last_time = PPS1_time;
   #if defined(ANALOG_ISR)
-    byte tempPPS = fastMap1023toX(AnChannel[pinPPS-A0], 255); //Get the current raw PPS ADC value and map it into a byte
+    byte tempPPS1 = fastMap1023toX(AnChannel[pinPPS1-A0], 255); //Get the current raw PPS ADC value and map it into a byte
   #else
-    analogRead(pinPPS);
-    byte tempPPS = fastMap1023toX(analogRead(pinPPS), 255); //Get the current raw PPS ADC value and map it into a byte
+    analogRead(pinPPS1);
+    byte tempPPS1 = fastMap1023toX(analogRead(pinPPS1), 255); //Get the current raw PPS ADC value and map it into a byte
   #endif
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.ppsADC = ADC_FILTER(tempPPS, configPage13.ADCFILTER_PPS, currentStatus.ppsADC); }
-  else { currentStatus.ppsADC = tempPPS; }
-  //currentStatus.ppsADC = ADC_FILTER(temppPS, 128, currentStatus.ppsADC);
-  byte tempADC = currentStatus.ppsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the PPS calibration if this somehow gets corrupted
+  if(useFilter == true) { currentStatus.pps1ADC = ADC_FILTER(tempPPS1, configPage13.ADCFILTER_PPS1, currentStatus.pps1ADC); }
+  else { currentStatus.pps1ADC = tempPPS1; }
+  //currentStatus.pps1ADC = ADC_FILTER(tempPPS1, 128, currentStatus.pps1ADC);
+  byte temp1ADC = currentStatus.pps1ADC; //The temp1ADC value is used in order to allow TunerStudio to recover and redo the PPS calibration if this somehow gets corrupted
 
-  if(configPage13.ppsMax > configPage13.ppsMin)
+  if(configPage13.pps1Max > configPage13.pps1Min) 
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    if (currentStatus.ppsADC < configPage13.ppsMin) { tempADC = configPage13.ppsMin; }
-    else if(currentStatus.ppsADC > configPage13.ppsMax) { tempADC = configPage13.ppsMax; }
-    currentStatus.APthrottle = map(tempADC, configPage13.ppsMin, configPage13.ppsMax, 0, 100); //Take the raw PPS ADC value and convert it into a PPS% based on the calibrated values
+    if (currentStatus.pps1ADC < configPage13.pps1Min) { temp1ADC = configPage13.pps1Min; }
+    else if(currentStatus.pps1ADC > configPage13.pps1Max) { temp1ADC = configPage13.pps1Max; }
+    currentStatus.PPS1 = map(temp1ADC, configPage13.pps1Min, configPage13.pps1Max, 0, 100); //Take the raw PPS ADC value and convert it into a PPS% based on the calibrated values
   }
   else
   {
     //This case occurs when the PPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
-    //In such a case, ppsMin will be greater then ppsMax and hence checks and mapping needs to be reversed
+    //In such a case, pps1Min will be greater then pps1Max and hence checks and mapping needs to be reversed
 
-    tempADC = 255 - currentStatus.ppsADC; //Reverse the ADC values
-    uint16_t tempPPSMax = 255 - configPage13.ppsMax;
-    uint16_t tempPPSMin = 255 - configPage13.ppsMin;
+    temp1ADC = 255 - currentStatus.pps1ADC; //Reverse the ADC values
+    uint16_t tempPPS1Max = 255 - configPage13.pps1Max;
+    uint16_t tempPPS1Min = 255 - configPage13.pps1Min;
 
     //All checks below are reversed from the standard case above
-    if (tempADC > tempPPSMax) { tempADC = tempPPSMax; }
-    else if(tempADC < tempPPSMin) { tempADC = tempPPSMin; }
-    currentStatus.APthrottle = map(tempADC, tempPPSMin, tempPPSMax, 0, 100);
+    if (temp1ADC > tempPPS1Max) { temp1ADC = tempPPS1Max; }
+    else if(temp1ADC < tempPPS1Min) { temp1ADC = tempPPS1Min; }
+    currentStatus.PPS1 = map(temp1ADC, tempPPS1Min, tempPPS1Max, 0, 100);
   }
 
- /* //Check whether the closed throttle position sensor is active
+  /* //Check whether the closed throttle position sensor is active
   if(configPage13.CPPSEnabled == true)
   {
-    if(configPage13.CPPSPolarity == 0) { currentStatus.CPPSActive = !digitalRead(pinCPPS); } //Normal mode (ground switched)
-    else { currentStatus.CPPSActive = digitalRead(pinCPPS); } //Inverted mode (5v activates closed throttle position sensor)
+    if(configPage13.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.CPPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
-  else { currentStatus.CPPSActive = 0; }
-  PPS_time = micros(); 
+  else { currentStatus.CTPSActive = 0; }
   */
+  PPS1_time = micros(); 
+  
+
+
+ // PPS2
+  PPS2last = currentStatus.PPS2; //currentStatus.PPS2
+  PPS2last_time = PPS2_time;
+  #if defined(ANALOG_ISR)
+    byte tempPPS2 = fastMap1023toX(AnChannel[pinPPS2-A0], 255); //Get the current raw PPS ADC value and map it into a byte
+  #else
+    analogRead(pinPPS2);
+    byte tempPPS2 = fastMap1023toX(analogRead(pinPPS2), 255); //Get the current raw PPS ADC value and map it into a byte
+  #endif
+  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+  if(useFilter == true) { currentStatus.pps2ADC = ADC_FILTER(tempPPS2, configPage13.ADCFILTER_PPS2, currentStatus.pps2ADC); }
+  else { currentStatus.pps2ADC = tempPPS2; }
+  //currentStatus.pps2ADC = ADC_FILTER(tempPPS2, 128, currentStatus.pps2ADC);
+  byte temp2ADC = currentStatus.pps2ADC; //The temp2ADC value is used in order to allow TunerStudio to recover and redo the PPS calibration if this somehow gets corrupted
+
+  if(configPage13.pps2Max > configPage13.pps2Min)
+  {
+    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+    if (currentStatus.pps2ADC < configPage13.pps2Min) { temp2ADC = configPage13.pps2Min; }
+    else if(currentStatus.pps2ADC > configPage13.pps2Max) { temp2ADC = configPage13.pps2Max; }
+    currentStatus.PPS2 = map(temp2ADC, configPage13.pps2Min, configPage13.pps2Max, 0, 100); //Take the raw PPS ADC value and convert it into a PPS% based on the calibrated values
+  }
+  else
+  {
+    //This case occurs when the PPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
+    //In such a case, pps2Min will be greater then pps2Max and hence checks and mapping needs to be reversed
+
+    temp2ADC = 255 - currentStatus.pps2ADC; //Reverse the ADC values
+    uint16_t tempPPS2Max = 255 - configPage13.pps2Max;
+    uint16_t tempPPS2Min = 255 - configPage13.pps2Min;
+
+    //All checks below are reversed from the standard case above
+    if (temp2ADC > tempPPS2Max) { temp2ADC = tempPPS2Max; }
+    else if(temp2ADC < tempPPS2Min) { temp2ADC = tempPPS2Min; }
+    currentStatus.PPS2 = map(temp2ADC, tempPPS2Min, tempPPS2Max, 0, 100);
+  }
+
+  /* //Check whether the closed throttle position sensor is active
+  if(configPage13.APthrottleBodyEnable == true)
+  {
+    if(configPage13.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
+  }
+  else { currentStatus.CTPSActive = 0; }
+ */
+
+  PPS2_time = micros(); 
+  
+
+//PPS Total
+//si ((V1+V2)/2 == V1 "-+x%") && ((V1+V2)/2 == V2 "-+x%"
+//Alors V3 = (V1+V2) /2
+//Sinon V3 = 0
 }

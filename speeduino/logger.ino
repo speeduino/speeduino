@@ -135,8 +135,10 @@ void createLog(uint8_t *logBuffer)
     logBuffer[111] = currentStatus.advance1;
     logBuffer[112] = currentStatus.advance2;
     //Amesis Project
-    logBuffer[121] = currentStatus.APthrottle;
-    logBuffer[122] = currentStatus.ppsADC;
+    logBuffer[121] = currentStatus.PPS1; // PPS1 %
+    logBuffer[122] = currentStatus.pps1ADC;  // PPS1 ADC
+    logBuffer[123] = currentStatus.PPS2; // PPS2 %
+    logBuffer[124] = currentStatus.pps2ADC;  // PPS2 ADC 
+    logBuffer[125] = currentStatus.PPSTotal; // (PPS1 + PPS2) /2
     
-
 }

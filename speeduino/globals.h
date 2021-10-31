@@ -711,7 +711,11 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte APthrottle; //Amesis Project Throttle PPS%
-  byte ppsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  byte PPS1;
+  byte pps1ADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  byte PPS2;
+  byte pps2ADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  byte PPSTotal;
 
   };
 
@@ -1379,21 +1383,24 @@ struct config13 {
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
  
  //Amesis Project Throttle & ThrottleBody
-  byte tbEnabled : 1;            //106
+  byte APthrottleBodyEnable : 1; //106
   byte APPedalePositionPin1 : 5; //106
   byte unused13_106 : 2;         //106
   byte APPedalePositionPin2 : 5; //107
   byte unused13_107 : 3;         //107
-  byte APthrottle1Min;           //108
-  byte APthrottle1Max;           //109
-  byte APthrottle2Min;           //110
-  byte APthrottle2Max;           //111
-  byte ppsMin;                   //112
-  byte ppsMax;                   //113
-  byte ADCFILTER_PPS;            //114 
+  byte APpedal1Min;              //108
+  byte APpedal1Max;              //109
+  byte APpedal2Min;              //110
+  byte APpedal2Max;              //111
+  byte pps1Min;                  //112
+  byte pps1Max;                  //113
+  byte ADCFILTER_PPS1;           //114 
+  byte pps2Min;                  //115
+  byte pps2Max;                  //116
+  byte ADCFILTER_PPS2;           //117 
 
   //byte unused12_106_127[22]; // Unused
-  byte unused12_115_127[13];   //Unused
+  byte unused12_118_127[10];   //Unused
 
 #if defined(CORE_AVR)
   };
@@ -1476,7 +1483,8 @@ extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
-extern byte pinPPS;//Amesis Project PPS input pin
+extern byte pinPPS1;//Amesis Project PPS input pin
+extern byte pinPPS2;
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif

@@ -917,10 +917,12 @@ byte getStatusEntry(uint16_t byteNum)
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
     //Amesis Project
-    case 121: statusValue = currentStatus.APthrottle; break; //Throttle PPS% 
-    case 122: statusValue = currentStatus.ppsADC; break; //
+    case 121: statusValue = currentStatus.PPS1;  break;  //PPS1 %
+    case 122: statusValue = currentStatus.pps1ADC;   break;  //PPS 1 ADC
+    case 123: statusValue = currentStatus.PPS2;  break;  //PPS2 %
+    case 124: statusValue = currentStatus.pps2ADC;   break;  //PPS 2 ADC
+    case 125: statusValue = currentStatus.PPSTotal;  break;  //(PPS 1 + PPS 2)/2
     
-
   }
 
   return statusValue;
