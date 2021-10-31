@@ -4438,17 +4438,13 @@ void triggerSetEndTeeth_NGC()
 }
 /** @} */
 
-#define TA_targetGap 10
-#define TA_curGap 11
-#define TA_toothLastToothTime 12
-#define TA_toothLastMinusOneToothTime 13
 
 void triggerSetup_Renix()
 {
   if( configPage4.TrigPattern == DECODER_RENIX44)
   {
     triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
-    toothAngles[0] = 0;
+    toothAngles[0] = 360;
     toothAngles[1] = 41;
     toothAngles[2] = 90;
     toothAngles[3] = 131;
@@ -4465,7 +4461,7 @@ void triggerSetup_Renix()
   {
     triggerToothAngle = 60;
     triggerToothAngleIsCorrect = true; 
-    configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
+    configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
     configPage4.triggerMissingTeeth = 0;
     triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
     toothAngles[0] = 0;
@@ -4474,10 +4470,16 @@ void triggerSetup_Renix()
     toothAngles[3] = 180;
     toothAngles[4] = 240;
     toothAngles[5] = 300;
-    toothAngles[TA_toothLastToothTime]=0;
-    toothAngles[TA_toothLastMinusOneToothTime]=0;
-    toothAngles[TA_targetGap]=0;
-    toothAngles[TA_curGap]=0;
+
+    toothAngles[6] =  0   + 360;
+    toothAngles[7] =  60  + 360;
+    toothAngles[8] =  120 + 360;
+    toothAngles[9] =  180 + 360;
+    toothAngles[10] = 240 + 360;
+    toothAngles[11] = 300 + 360;
+
+  
+  
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 44)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   }
 
@@ -4485,11 +4487,467 @@ void triggerSetup_Renix()
   MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
   secondDerivEnabled = false;
   decoderIsSequential = true;
-  configPage2.perToothIgn = true;
   toothLastToothTime = micros();
   toothSystemCount = 1;
-  toothCurrentCount = 0;
+  toothCurrentCount = 1;
 }
+
+
+/* 
+Renix 66-2-2-2
+    toothAngles[0] = 0;
+    toothAngles[1] = 60;
+    toothAngles[2] = 120;
+    toothAngles[3] = 180;
+    toothAngles[4] = 240;
+    toothAngles[5] = 300;
+*/
+
+long tmptoothLastToothTime = 0, tmptoothLastMinusOneToothTime = 0, tmpcurGap =0;
+
+void triggerPri_Renix66()
+{
+  bool isMissingTooth = false;
+  curTime = micros();
+  curGap = curTime - tmptoothLastToothTime;
+  
+  if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
+  {
+    toothSystemCount++;
+    validTrigger = true;
+
+    if( tmptoothLastToothTime != 0 && tmptoothLastMinusOneToothTime != 0)
+    { targetGap = (2 * (tmptoothLastToothTime - tmptoothLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
+    else 
+    { targetGap = 100000000L; } // random large number to stop system thinking we have a gap for the first few teeth
+
+    if( curGap >= targetGap )
+    { 
+      /* add two teeth to account for the gap we've just seen */
+      isMissingTooth = true;
+      toothSystemCount++;
+      toothSystemCount++;
+
+      if ( toothSystemCount != 23 && toothSystemCount !=45 && toothSystemCount != 67) // if not the tooth after the gap then we've lost sync
+      {
+        // lost sync
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;            
+        toothSystemCount = 1; // pick a tooth it could be, when we get a sync from the cam we'll know the correct tooth.
+        Serial3.print(" LS1 ");
+      }
+    }
+    else
+    { 
+      //Recalc the new filter value, only do this on the single gap tooth 
+      setFilter(curGap);
+      //Regular (non-missing) tooth
+      triggerToothAngleIsCorrect = true;
+    }
+    tmptoothLastMinusOneToothTime = tmptoothLastToothTime;
+    tmptoothLastToothTime = curTime;
+ 
+
+    switch (toothSystemCount)
+    {
+      case 1:
+      case 67:  // 66 teeth + 1  start of next set of 66 teeth (ie rotation)
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        currentStatus.hasSync = true;
+        currentStatus.startRevolutions++; //Counter               
+        revolutionOne = !revolutionOne;
+
+        toothCurrentCount = 0;
+        toothSystemCount = 1;
+
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime; 
+#ifdef MJR        
+        VVT2_PIN_HIGH();
+        debugPinVVT = true;
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth); Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+
+      case 11:
+        toothCurrentCount++;
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+#ifdef MJR
+        VVT2_PIN_HIGH();
+        debugPinVVT = true; 
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth) ; Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+
+      case 23:
+        toothCurrentCount++;
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+#ifdef MJR
+        VVT2_PIN_HIGH();
+        debugPinVVT = true; 
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth); Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+
+      case 33:
+        toothCurrentCount++;
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+#ifdef MJR
+        VVT2_PIN_HIGH();
+        debugPinVVT = true; 
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth); Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+
+      case 45:
+        toothCurrentCount++;
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+        
+#ifdef MJR
+        VVT2_PIN_HIGH();
+        debugPinVVT = true; 
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth); Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+
+      case 56:
+        toothCurrentCount++;
+        toothLastMinusOneToothTime = toothLastToothTime;
+        toothLastToothTime = curTime;
+#ifdef MJR
+        VVT2_PIN_HIGH();
+        debugPinVVT = true; 
+        Serial3.print(tempgetCrankAngle_Renix());  Serial3.print(" 1SA:");
+        Serial3.print(ignition1StartAngle); Serial3.print(" 1EA:");
+        Serial3.print(ignition1EndAngle); Serial3.print(" 1ET:");
+        Serial3.print(ignition1EndTooth); Serial3.print(" 2SA:");
+        Serial3.print(ignition2StartAngle); Serial3.print(" 2EA:");
+        Serial3.print(ignition2EndAngle); Serial3.print(" 2ET:");
+        Serial3.print(ignition2EndTooth); Serial3.println(" ");
+#endif
+        break;
+    }
+
+    // if we've counted more teeth than on the trigger wheel + 1 we must have lost sync
+    if (toothSystemCount > 67)
+    {
+      currentStatus.hasSync = false;
+      currentStatus.syncLossCounter++;            
+      toothSystemCount = 1;
+      Serial3.print(" LS2 ");
+    }
+
+  
+    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    {
+      int16_t crankAngle = (toothAngles[toothCurrentCount]) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits(crankAngle);
+      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
+      {
+        crankAngle += 360;
+        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+      }
+      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }
+  } 
+
+//  Serial3.print(toothCurrentCount);
+//  Serial3.print(":");
+//  Serial3.print(getCrankAngle_Renix() ); 
+//  Serial3.print(" ");
+
+/*
+Tooth:Angle
+11:715 
+1:175
+4:355
+7:535
+*/
+
+}
+
+
+
+void triggerSec_Renix()
+{
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+
+  //Safety check for initial startup
+  if( (toothLastSecToothTime == 0) )
+  { 
+    curGap2 = 0; 
+    toothLastSecToothTime = curTime2;
+  }
+
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+    currentStatus.hasSync = true;
+    //Standard single tooth cam trigger
+    triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
+    secondaryToothCount++;
+    toothLastSecToothTime = curTime2;
+  
+    if (configPage4.TrigPattern == DECODER_RENIX44)
+    {
+      if( toothSystemCount != 1)
+      {
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++; 
+        Serial3.print(" LS3 ");           
+      }
+      toothCurrentCount= 7;
+      toothSystemCount = 42;
+
+    }
+    else if (configPage4.TrigPattern == DECODER_RENIX66)
+    {
+      if( toothSystemCount == 64)
+      {
+        revolutionOne = 0;
+        currentStatus.startRevolutions++; //Counter
+        currentStatus.hasSync = true;
+      }
+      else
+      {
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;            
+        revolutionOne = 0;
+        Serial3.print(" LS4 ");
+      }
+      toothCurrentCount= 5;
+      toothSystemCount = 64;
+    }
+  } //Trigger filter
+
+  //Record the VVT Angle
+  if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
+  {
+    int16_t curAngle;
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
+
+    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+  }
+}
+
+
+
+uint16_t getRPM_Renix()
+{
+   return stdGetRPM(360);
+}
+
+int tempgetCrankAngle_Renix()
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. 
+    // It is only accurate to the resolution of the trigger wheel (as we can't use the 44 / 66 teeth we are accurate to 8 or 6 teeth
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    interrupts();
+
+    int crankAngle;
+    crankAngle = (toothAngles[tempToothCurrentCount]) + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+
+    //Estimate the number of degrees travelled since the last tooth
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+
+//    Serial3.print("TA2:");
+//    Serial3.print(crankAngle);
+//    Serial3.print(" ");
+
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (revolutionOne) { crankAngle += 360; }
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
+
+    return crankAngle;
+}
+
+
+int getCrankAngle_Renix()
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. 
+    // It is only accurate to the resolution of the trigger wheel (as we can't use the 44 / 66 teeth we are accurate to 8 or 6 teeth
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    interrupts();
+
+    int crankAngle;
+    crankAngle = (toothAngles[tempToothCurrentCount]) + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+
+    //Estimate the number of degrees travelled since the last tooth
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
+
+    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
+    if (revolutionOne) { crankAngle += 360; }
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
+    if (crankAngle < 0) { crankAngle += 360; }
+
+    return crankAngle;
+}
+
+
+
+void triggerSetEndTeeth_Renix66()
+{
+
+
+  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+
+
+/* 
+ignition1EndTooth = 0;
+ignition2EndTooth = 1; 
+ignition3EndTooth = 3; 
+ignition4EndTooth = 5; 
+ignition5EndTooth = 0; 
+ignition6EndTooth = 3; 
+*/
+
+
+  byte toothAdder = 0;
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
+
+ 
+  int16_t tempIgnition1EndTooth;
+  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
+  if((uint16_t)tempIgnition1EndTooth > triggerActualTeeth && tempIgnition1EndTooth <= configPage4.triggerTeeth) { tempIgnition1EndTooth = triggerActualTeeth; } 
+  ignition1EndTooth = tempIgnition1EndTooth;
+
+//  int16_t tempIgnition2EndTooth;
+//  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+//  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+//  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
+//  if((uint16_t)tempIgnition2EndTooth > triggerActualTeeth && tempIgnition2EndTooth <= configPage4.triggerTeeth) { tempIgnition2EndTooth = triggerActualTeeth; }
+//  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
+//  ignition2EndTooth = tempIgnition2EndTooth;
+
+  int16_t tempIgnition2EndTooth;
+  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition2EndTooth = tempIgnition2EndTooth;
+
+  int16_t tempIgnition3EndTooth;
+  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition3EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition3EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition3EndTooth = tempIgnition3EndTooth;
+
+  int16_t tempIgnition4EndTooth;
+  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition4EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition4EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition4EndTooth = tempIgnition4EndTooth;
+
+#if IGN_CHANNELS >= 5
+  int16_t tempIgnition5EndTooth;
+  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition5EndTooth <= 0) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition5EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition5EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition5EndTooth = tempIgnition5EndTooth;
+#endif
+#if IGN_CHANNELS >= 6
+  int16_t tempIgnition6EndTooth;
+  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition6EndTooth <= 0) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition6EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition6EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition6EndTooth = tempIgnition6EndTooth;
+#endif
+#if IGN_CHANNELS >= 7
+  int16_t tempIgnition7EndTooth;
+  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition7EndTooth <= 0) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition7EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition7EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition7EndTooth = tempIgnition7EndTooth;
+#endif
+#if IGN_CHANNELS >= 8
+  int16_t tempIgnition8EndTooth;
+  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
+  if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempIgnition8EndTooth <= 0) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempIgnition8EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition8EndTooth = (triggerActualTeeth + toothAdder); }
+  ignition8EndTooth = tempIgnition8EndTooth;
+#endif
+
+  lastToothCalcAdvance = currentStatus.advance;
+
+//    Serial3.println("");
+//    Serial3.print(tempIgnition1EndTooth); Serial3.print(":"); Serial3.print(ignition1EndAngle - configPage4.triggerAngle); Serial3.print(" ");
+//    Serial3.print(tempIgnition2EndTooth); Serial3.print(":"); Serial3.print(ignition2EndAngle - configPage4.triggerAngle); Serial3.print(" ");
+//    Serial3.print(tempIgnition3EndTooth); Serial3.print(":"); Serial3.print(ignition3EndAngle - configPage4.triggerAngle); Serial3.print(" ");
+//    Serial3.print(tempIgnition4EndTooth); Serial3.print(":"); Serial3.print(ignition4EndAngle - configPage4.triggerAngle); Serial3.println("");
+    
+    
+}
+
+
 
 void triggerPri_Renix44()
 {
@@ -4607,283 +5065,6 @@ void triggerPri_Renix44()
   
 }
 
-/* 
-Renix 66-2-2-2
-    toothAngles[0] = 0;
-    toothAngles[1] = 60;
-    toothAngles[2] = 120;
-    toothAngles[3] = 180;
-    toothAngles[4] = 240;
-    toothAngles[5] = 300;
-*/
-
-long tmptoothLastToothTime = 0, tmptoothLastMinusOneToothTime = 0, tmpcurGap =0;
-
-void triggerPri_Renix66()
-{
-  bool isMissingTooth = false;
-  curTime = micros();
-  curGap = curTime - tmptoothLastToothTime;
-  
-  if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
-  {
-    toothSystemCount++;
-//    Serial3.print("."); 
-    validTrigger = true;
-
-    if( tmptoothLastToothTime != 0 && tmptoothLastMinusOneToothTime != 0)
-    {
-      targetGap = (2 * (tmptoothLastToothTime - tmptoothLastMinusOneToothTime));  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
-    }
-    else 
-    {
-      targetGap = 100000000L; // random large number to stop system thinking we have a gap for the first few teeth
-    }
-
-
-//    //Serial3.print(" Gap:"); //Serial3.print(curGap); //Serial3.print(" TG:"); //Serial3.print(targetGap); //Serial3.print(" LT:"); //Serial3.print(tmptoothLastToothTime); //Serial3.print(" LT1:"); //Serial3.print(tmptoothLastMinusOneToothTime); 
-
-    if( curGap >= targetGap )
-    { 
-      /* add two teeth to account for the gap we've just seen */
-      isMissingTooth = true;
-      toothSystemCount++;
-      toothSystemCount++;
-//      Serial3.print("G"); 
-//      Serial3.print("G"); 
-
-      if ( toothSystemCount != 23 && toothSystemCount !=45 && toothSystemCount != 67) // if not the tooth after the gap then we've lost sync
-      {
-        // lost sync
-        Serial3.print(" Invalid Gap tc:") ; Serial3.print(toothSystemCount); Serial3.println(" ");
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;            
-        toothSystemCount = 1; // pick a tooth it could be, when we get a sync from the cam we'll know the correct tooth.
-      }
-      else
-      {
-//        //Serial3.print(" Valid GAP tc:");//Serial3.print(toothSystemCount); //Serial3.println(" ");
-//        toothSystemCount = 1;
-      }
-    }
-    else
-    { 
-      //Recalc the new filter value, only do this on the single gap tooth 
-      setFilter(curGap);
-      //Regular (non-missing) tooth
-      triggerToothAngleIsCorrect = true;
-    }
-    tmptoothLastMinusOneToothTime = tmptoothLastToothTime;
-    tmptoothLastToothTime = curTime;
- 
-  
-
-    switch (toothSystemCount)
-    {
-      case 1:
-      case 67:  // 66 teeth + 1  start of next set of 66 teeth (ie rotation)
-        toothOneMinusOneTime = toothOneTime;
-        toothOneTime = curTime;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-//        Serial3.print(" ROT");  Serial3.print(toothSystemCount); Serial3.print(" c-"); Serial3.println(toothCurrentCount);          
-//        Serial3.print("0");
-        currentStatus.hasSync = true;
-        currentStatus.startRevolutions++; //Counter
-        revolutionOne = !revolutionOne;
-        toothCurrentCount = 0;
-        toothSystemCount = 1;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-        break;
-
-      case 11:
-        toothCurrentCount = 1;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-//        Serial3.print("1");
-        break;
-
-      case 23:
-//        Serial3.print("2");
-        toothCurrentCount = 2;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-        break;
-
-      case 33:
-//        Serial3.print("3");
-        toothCurrentCount = 3;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-        break;
-
-      case 45:
-//        Serial3.print("4");
-        toothCurrentCount = 4;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-        break;
-
-      case 56:
-//        Serial3.print("5");
-        toothCurrentCount = 5;
-        toothLastMinusOneToothTime = toothLastToothTime;
-        toothLastToothTime = curTime;
-        VVT2_PIN_HIGH();
-        debugPinVVT = true; 
-        break;
-    }
-
-    // if we've counted more teeth than on the trigger wheel + 1 we must have lost sync
-    if (  toothSystemCount > 67)
-    {
-      currentStatus.hasSync = false;
-      currentStatus.syncLossCounter++;            
-      toothSystemCount = 1;
-      //Serial3.println("Sync2");
-    }
-
-  
-    validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
-    {
-      int16_t crankAngle = toothAngles[toothCurrentCount] + configPage4.triggerAngle;
-      crankAngle = ignitionLimits(crankAngle);
-      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-      {
-        crankAngle += 360;
-        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
-      }
-      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
-    }
-
-  }  
-  
-}
-
-
-
-void triggerSec_Renix()
-{
-  curTime2 = micros();
-  curGap2 = curTime2 - toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (toothLastSecToothTime == 0) )
-  { 
-    curGap2 = 0; 
-    toothLastSecToothTime = curTime2;
-  }
-
-  if ( curGap2 >= triggerSecFilterTime )
-  {
-    currentStatus.hasSync = true;
-    //Standard single tooth cam trigger
-    triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
-    secondaryToothCount++;
-    toothLastSecToothTime = curTime2;
-  
-    if (configPage4.TrigPattern == DECODER_RENIX44)
-    {
-      if( toothSystemCount != 1)
-      {
-        //Serial3.print(" BadCam1 "); //Serial3.print(toothSystemCount); //Serial3.print(" c-"); //Serial3.println(toothCurrentCount);
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;            
-      }
-      else
-      {
-//        //Serial3.println("cam ok "); 
-      }
-      toothCurrentCount= 7;
-      toothSystemCount = 42;
-
-    }
-    else if (configPage4.TrigPattern == DECODER_RENIX66)
-    {
-      if( toothSystemCount != 64)
-      {
-        //Serial3.print(" BadCam2 "); //Serial3.print(toothSystemCount); //Serial3.print(" c-"); //Serial3.println(toothCurrentCount);
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;            
-      }
-      else
-      {
-        //Serial3.println("cam ok "); 
-      }
-      toothCurrentCount= 5;
-      toothSystemCount = 64;
-
-    }
-    currentStatus.startRevolutions++; //Counter
-    revolutionOne = true;
-    currentStatus.hasSync = true;
-
-  } //Trigger filter
-
-  //Record the VVT Angle
-  if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
-  {
-    int16_t curAngle;
-    curAngle = getCrankAngle();
-    while(curAngle > 360) { curAngle -= 360; }
-    curAngle -= configPage4.triggerAngle; //Value at TDC
-    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
-
-    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
-  }
-}
-
-
-
-uint16_t getRPM_Renix()
-{
-   return stdGetRPM(360);
-}
-
-int getCrankAngle_Renix()
-{
-    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. 
-    // It is only accurate to the resolution of the trigger wheel (as we can't use the 44 / 66 teeth we are accurate to 8 or 6 teeth
-    unsigned long tempToothLastToothTime;
-    int tempToothCurrentCount;
-    //Grab some variables that are used in the trigger code and assign them to temp variables.
-    noInterrupts();
-    tempToothCurrentCount = toothCurrentCount;
-    tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
-    interrupts();
-
-    int crankAngle;
-    crankAngle = toothAngles[tempToothCurrentCount] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-
-    //Estimate the number of degrees travelled since the last tooth
-    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
-//    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_TOOTH);
-    crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
-
-    //Sequential check (simply sets whether we're on the first or 2nd revoltuion of the cycle)
-    if (revolutionOne) { crankAngle += 360; }
-
-    if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
-    if (crankAngle < 0) { crankAngle += 360; }
-
-    return crankAngle;
-}
-
-
 /*
 Renix 44-2-2
     toothAngles[0] = 0;
@@ -4896,12 +5077,20 @@ Renix 44-2-2
     toothAngles[7] = 311;
 
 Renix 66-2-2-2
-    toothAngles[0] = 0;
+    toothAngles[0] = 720;
     toothAngles[1] = 60;
     toothAngles[2] = 120;
     toothAngles[3] = 180;
     toothAngles[4] = 240;
     toothAngles[5] = 300;
+
+    toothAngles[6] = 360;
+    toothAngles[7] = 420;
+    toothAngles[8] = 480;
+    toothAngles[9] = 540;
+    toothAngles[10] = 600;
+    toothAngles[11] = 660;
+
 */
 
 
@@ -4911,7 +5100,7 @@ void triggerSetEndTeeth_Renix44()
 
   int16_t tempIgnitionEndTooth[5];
   byte tempCounter; 
-  char tempCounter2;
+  byte tempCounter2;
 
   tempIgnitionEndTooth[1] =  (ignition1EndAngle - configPage4.triggerAngle);  
   tempIgnitionEndTooth[2] =  (ignition2EndAngle - configPage4.triggerAngle);  
@@ -4948,90 +5137,4 @@ void triggerSetEndTeeth_Renix44()
   ignition4EndTooth = tempIgnitionEndTooth[4];
 
   lastToothCalcAdvance = currentStatus.advance;
-}
-
-void triggerSetEndTeeth_Renix66()
-{
-
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-
-/*
-ignition1EndTooth = 5;
-ignition2EndTooth = 1; 
-ignition3EndTooth = 3; 
-ignition4EndTooth = 5; 
-ignition5EndTooth = 1; 
-ignition6EndTooth = 3; 
-*/
-
-
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition2EndTooth = tempIgnition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition3EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition3EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition4EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition4EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition4EndTooth = tempIgnition4EndTooth;
-
-#if IGN_CHANNELS >= 5
-  int16_t tempIgnition5EndTooth;
-  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition5EndTooth <= 0) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition5EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition5EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition5EndTooth = tempIgnition5EndTooth;
-#endif
-#if IGN_CHANNELS >= 6
-  int16_t tempIgnition6EndTooth;
-  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition6EndTooth <= 0) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition6EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition6EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition6EndTooth = tempIgnition6EndTooth;
-#endif
-#if IGN_CHANNELS >= 7
-  int16_t tempIgnition7EndTooth;
-  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition7EndTooth <= 0) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition7EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition7EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition7EndTooth = tempIgnition7EndTooth;
-#endif
-#if IGN_CHANNELS >= 8
-  int16_t tempIgnition8EndTooth;
-  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition8EndTooth <= 0) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition8EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition8EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition8EndTooth = tempIgnition8EndTooth;
-#endif
-
-  lastToothCalcAdvance = currentStatus.advance;
-
 }

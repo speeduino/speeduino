@@ -1,4 +1,4 @@
-#define MJR 1
+//#define MJR 1
 
 #ifdef MJR
 int debugPinFan = false;
@@ -1076,6 +1076,8 @@ void loop()
                     ign1EndFunction
                     );
         }
+//        Serial3.print (" I1: NA ");;
+
 #endif
 
 #if defined(USE_IGN_REFRESH)
@@ -1120,6 +1122,8 @@ void loop()
                         ign2EndFunction
                         );
             }
+//Serial3.print (" I2:"); Serial3.print(ignition2StartTime);
+
         }
 #endif
 
@@ -1145,6 +1149,9 @@ void loop()
                         ign3EndFunction
                         );
             }
+//Serial3.print (" I3:"); Serial3.print(ignition3StartTime);
+
+
         }
 #endif
 
@@ -1170,6 +1177,7 @@ void loop()
                         ign4EndFunction
                         );
             }
+//Serial3.print (" I4:"); Serial3.print(ignition4StartTime);
         }
 #endif
 

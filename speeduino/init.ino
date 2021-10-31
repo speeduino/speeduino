@@ -3262,7 +3262,9 @@ void initialiseTriggers()
       decoderHasSecondary = true;
       getRPM = getRPM_Renix;
       getCrankAngle = getCrankAngle_Renix;
-      triggerSetEndTeeth = triggerSetEndTeeth_Renix44;
+
+// trying renix66 code instead of renix44
+      triggerSetEndTeeth = triggerSetEndTeeth_Renix66;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
@@ -3275,14 +3277,16 @@ void initialiseTriggers()
       break;
 
     case DECODER_RENIX66:
-      //Renault 44 tooth decoder
+      //Renault 66 tooth decoder
       triggerSetup_Renix();
       triggerHandler = triggerPri_Renix66;
       triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
       getRPM = getRPM_Renix;
       getCrankAngle = getCrankAngle_Renix;
-      triggerSetEndTeeth = triggerSetEndTeeth_Renix66;
+      
+      //triggerSetEndTeeth = triggerSetEndTeeth_Renix66;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
