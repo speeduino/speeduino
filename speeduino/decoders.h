@@ -190,14 +190,16 @@ void triggerSetEndTeeth_FordST170();
 
 void triggerSetup_DRZ400();
 void triggerSec_DRZ400();
+
 void triggerSetup_Renix();
+void triggerPrimary_Renix();
 void triggerSec_Renix();
 uint16_t getRPM_Renix();
 int getCrankAngle_Renix();
 void triggerSetEndTeeth_Renix44();
 void triggerSetEndTeeth_Renix66();
 void triggerPrimary_Renix44();
-void triggerPrimary_Renix66();
+
 
 void triggerSetup_NGC();
 void triggerPri_NGC();

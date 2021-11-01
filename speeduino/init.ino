@@ -3257,14 +3257,12 @@ void initialiseTriggers()
     case DECODER_RENIX44:
       //Renault 44 tooth decoder
       triggerSetup_Renix();
-      triggerHandler = triggerPri_Renix44;
+      triggerHandler = triggerPri_Renix;
       triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
-      getRPM = getRPM_Renix;
-      getCrankAngle = getCrankAngle_Renix;
-
-// trying renix66 code instead of renix44
-      triggerSetEndTeeth = triggerSetEndTeeth_Renix66;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
@@ -3273,20 +3271,17 @@ void initialiseTriggers()
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-
       break;
 
     case DECODER_RENIX66:
       //Renault 66 tooth decoder
       triggerSetup_Renix();
-      triggerHandler = triggerPri_Renix66;
+      triggerHandler = triggerPri_Renix;
       triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
-      getRPM = getRPM_Renix;
-      getCrankAngle = getCrankAngle_Renix;
-      
-      //triggerSetEndTeeth = triggerSetEndTeeth_Renix66;
-      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
@@ -3295,7 +3290,6 @@ void initialiseTriggers()
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-
       break;
 
 

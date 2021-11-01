@@ -67,52 +67,36 @@ void closeInjector3and7() { closeInjector3(); closeInjector7(); }
 void openInjector4and8() { openInjector4(); openInjector8(); }
 void closeInjector4and8() { closeInjector4(); closeInjector8(); }
 
-inline void beginCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil1Charging_DIRECT(); } else { coil1Charging_MC33810(); } tachoOutputFlag = READY; 
-Serial3.print(" C1 ");
-}
+inline void beginCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil1Charging_DIRECT(); } else { coil1Charging_MC33810(); } tachoOutputFlag = READY; }
 inline void endCoil1Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) 
 { coil1StopCharging_DIRECT();
 #ifdef MJR 
-FAN_PIN_HIGH();
-//digitalWrite(pinFan,HIGH);
+FAN_PIN_LOW();
 debugPinFan = true;
-Serial3.print(" F1 ");
 #endif 
 } else { coil1StopCharging_MC33810(); } }
 
-inline void beginCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2Charging_DIRECT(); } else { coil2Charging_MC33810(); } tachoOutputFlag = READY; 
-Serial3.print(" C2 ");
-}
+inline void beginCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2Charging_DIRECT(); } else { coil2Charging_MC33810(); } tachoOutputFlag = READY; }
 inline void endCoil2Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil2StopCharging_DIRECT(); 
 #ifdef MJR 
 FAN_PIN_HIGH();
-//digitalWrite(pinFan,HIGH);
 debugPinFan = true;
-Serial3.print(" F2 ");
 #endif 
 } else { coil2StopCharging_MC33810(); } }
 
-inline void beginCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3Charging_DIRECT(); } else { coil3Charging_MC33810(); } tachoOutputFlag = READY; 
-Serial3.print(" C3 ");
-}
+inline void beginCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3Charging_DIRECT(); } else { coil3Charging_MC33810(); } tachoOutputFlag = READY; }
 inline void endCoil3Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil3StopCharging_DIRECT(); 
 #ifdef MJR 
 FAN_PIN_HIGH();
-//digitalWrite(pinFan,HIGH);
 debugPinFan = true;
-Serial3.print(" F3 ");
 #endif 
 } else { coil3StopCharging_MC33810(); } }
 
-inline void beginCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4Charging_DIRECT(); } else { coil4Charging_MC33810(); } tachoOutputFlag = READY; 
-Serial3.print(" C4 ");
-}
+inline void beginCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4Charging_DIRECT(); } else { coil4Charging_MC33810(); } tachoOutputFlag = READY; }
 inline void endCoil4Charge() { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil4StopCharging_DIRECT(); 
 #ifdef MJR 
 FAN_PIN_HIGH();
-//digitalWrite(pinFan,HIGH);
 debugPinFan = true;
-Serial3.print(" F4 ");
 #endif 
 } else { coil4StopCharging_MC33810(); } }
 
