@@ -207,6 +207,7 @@ int STM32_CAN::write(CAN_message_t &CAN_tx_msg)
     }
   }
   #endif
+  return -1; // transmit failed, requested can channel not available
 }
 
 int STM32_CAN::write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg)
@@ -235,6 +236,7 @@ int STM32_CAN::write(CAN_MAILBOX mb_num, CAN_message_t &CAN_tx_msg)
     }
   }
   #endif
+  return -1; // transmit failed, requested can channel not available
 }
 
 int STM32_CAN::read(CAN_message_t &CAN_rx_msg)
