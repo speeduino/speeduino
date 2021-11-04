@@ -1,10 +1,3 @@
-#define MJR 1
-
-#ifdef MJR
-int debugPinFan = false;
-int debugPinVVT = false; 
-#endif
-
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart

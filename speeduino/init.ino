@@ -3262,7 +3262,7 @@ void initialiseTriggers()
       decoderHasSecondary = true;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
-      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
@@ -3281,7 +3281,7 @@ void initialiseTriggers()
       decoderHasSecondary = true;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
-      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
