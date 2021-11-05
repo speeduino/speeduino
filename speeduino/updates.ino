@@ -10,6 +10,7 @@
  */
 #include "globals.h"
 #include "storage.h"
+#include "sensors.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
@@ -160,13 +161,13 @@ void doUpdates()
     }
 
     //Ability to change the analog filter values was added. Set default values for these:
-    configPage4.ADCFILTER_TPS = 50;
-    configPage4.ADCFILTER_CLT = 180;
-    configPage4.ADCFILTER_IAT = 180;
-    configPage4.ADCFILTER_O2  = 128;
-    configPage4.ADCFILTER_BAT = 128;
-    configPage4.ADCFILTER_MAP = 20;
-    configPage4.ADCFILTER_BARO= 64;
+    configPage4.ADCFILTER_TPS  = ADCFILTER_TPS_DEFAULT;
+    configPage4.ADCFILTER_CLT  = ADCFILTER_CLT_DEFAULT;
+    configPage4.ADCFILTER_IAT  = ADCFILTER_IAT_DEFAULT;
+    configPage4.ADCFILTER_O2   = ADCFILTER_O2_DEFAULT;
+    configPage4.ADCFILTER_BAT  = ADCFILTER_BAT_DEFAULT;
+    configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
+    configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
 
     writeAllConfig();
     storeEEPROMVersion(10);
@@ -541,7 +542,7 @@ void doUpdates()
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
 
-    configPage4.FILTER_FLEX = 75;
+    configPage4.FILTER_FLEX = FILTER_FLEX_DEFAULT;
 
     storeEEPROMVersion(CURRENT_DATA_VERSION);
   }
