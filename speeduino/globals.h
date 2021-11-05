@@ -1015,7 +1015,7 @@ struct config6 {
   byte useSensorBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
   byte boostPin : 6;
-  byte useMAPforBaro : 1; /// Use internal MAP sensor for Baro.
+  byte unused_bit : 1; //Previously was VVTasOnOff
   byte useEMAP : 1;    ///< Enable EMAP
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
@@ -1338,8 +1338,12 @@ struct config10 {
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
-
-  byte unused11_187_191[2]; //Bytes 187-191
+  
+  byte useSensorMAP :1;
+  byte mapSensPin : 4;
+  
+  byte unused11_190 : 3;
+  byte unused11_191;
 
 #if defined(CORE_AVR)
   };

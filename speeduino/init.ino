@@ -321,12 +321,22 @@ void initialiseAll()
     initialiseProgrammableIO();
 
     //Lookup the current MAP reading for barometric pressure
-    instanteneousMAPReading();
+    instanteneousMAPReading(false); // No filter on first read to init MAP and For Accurate Baro Read when first MAP used to set baro.
     //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
     if ( configPage6.useSensorBaro == true )
     {
-      readBaro();
-      storeLastBaro(currentStatus.baro);
+      readBaro(false); // read baro sensor without filter since ADC values start at 0.
+      if ((currentStatus.baro >= BARO_MIN) && (currentStatus.baro <= BARO_MAX)) // Check that read was within a reasonable range for saving.
+      {
+        storeLastBaro(currentStatus.baro);
+      }
+      else
+      {
+        //Attempt to use the last known good baro reading from EEPROM
+        if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+        { currentStatus.baro = readLastBaro(); } //last baro correction
+        else { currentStatus.baro = 100; } //Final fall back position.
+      }
     }
     else
     {
@@ -1195,7 +1205,9 @@ void initialiseAll()
 
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    readIAT(false); // Init IAT ADC without filter.
     readTPS(false); // Need to read tps to detect flood clear state
+    readBat(false); // Init battery ADC without filter.
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -2521,7 +2533,7 @@ void setPinMapping(byte boardID)
   }
 
   //Setup any devices that are using selectable pins
-
+  if ( (configPage10.useSensorMAP != 0) && (configPage10.mapSensPin < BOARD_MAX_IO_PINS) )  { pinMAP = pinTranslateAnalog(configPage10.mapSensPin); }
   if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_MAX_IO_PINS) ) { pinLaunch = pinTranslate(configPage6.launchPin); }
   if ( (configPage4.ignBypassPin != 0) && (configPage4.ignBypassPin < BOARD_MAX_IO_PINS) ) { pinIgnBypass = pinTranslate(configPage4.ignBypassPin); }
   if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_MAX_IO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
