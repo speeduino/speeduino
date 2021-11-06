@@ -178,16 +178,16 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
 /**
  * @brief Returns an axis (bin) value from the 2D table. This works regardless of whether that axis is bytes or int16_ts
  * 
- * @param fromTable 
- * @param X_in 
- * @return int16_t 
+ * @param fromTable
+ * @param X_index
+ * @return int16_t
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_index)
 {
   int returnValue = 0;
 
-  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
-  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
+  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_index]; }
+  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_index]; }
 
   return returnValue;
 }
@@ -195,9 +195,9 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
 /**
  * @brief Returns an value from the 2D table given an index value. No interpolation is performed
  * 
- * @param fromTable 
- * @param X_in 
- * @return int16_t 
+ * @param fromTable
+ * @param X_index
+ * @return int16_t
  */
 int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
 {

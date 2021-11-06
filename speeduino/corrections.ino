@@ -579,11 +579,11 @@ byte correctionFuelTemp()
 
 Simple (Best suited to narrowband sensors):
 If the O2 sensor reports that the mixture is lean/rich compared to the desired AFR target, it will make a 1% adjustment
-It then waits <egoDelta> number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
+It then waits egoDelta number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
 
 This continues until either:
 - the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
-- the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
+- the adjustment amount increases to egoLimit at which point it stays at this level until the O2 state (rich/lean) changes
 
 PID (Best suited to wideband sensors):
 
@@ -787,12 +787,14 @@ int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
-  {
-    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
-    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
-    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
-    
+  if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) {
+    if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+    {
+      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+      if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
+      else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+      
+    }
   }
 
   return ignSoftRevValue;
