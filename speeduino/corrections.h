@@ -23,19 +23,19 @@ byte correctionLaunch(); //Launch control correction
 bool correctionDFCO(); //Decelleration fuel cutoff
 
 
-int8_t correctionsIgn(int8_t advance);
-int8_t correctionFixedTiming(int8_t);
-int8_t correctionCrankingFixedTiming(int8_t);
-int8_t correctionFlexTiming(int8_t);
-int8_t correctionWMITiming(int8_t);
-int8_t correctionIATretard(int8_t);
-int8_t correctionCLTadvance(int8_t);
-int8_t correctionIdleAdvance(int8_t);
-int8_t correctionSoftRevLimit(int8_t);
-int8_t correctionNitrous(int8_t);
-int8_t correctionSoftLaunch(int8_t);
-int8_t correctionSoftFlatShift(int8_t);
-int8_t correctionKnock(int8_t);
+int8_t correctionsIgn(int16_t);
+void correctionFixedTiming(int8_t*);
+void correctionCrankingFixedTiming(int8_t*);
+int8_t correctionFlexTiming();
+int8_t correctionWMITiming();
+int8_t correctionIATretard();
+int8_t correctionCLTadvance();
+int8_t correctionIdleAdvance(int8_t*);
+int8_t correctionSoftRevLimit(int8_t*);
+int8_t correctionNitrous();
+void correctionSoftLaunch(int8_t*);
+void correctionSoftFlatShift(int8_t*);
+int8_t correctionKnock();
 
 uint16_t correctionsDwell(uint16_t dwell);
 
