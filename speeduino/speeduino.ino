@@ -1385,7 +1385,7 @@ byte getVE1()
  * 
  * @return byte The current target advance value in degrees
  */
-int8_t getAdvance1()
+int16_t getAdvance1()
 {
   int16_t tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
@@ -1406,7 +1406,6 @@ int8_t getAdvance1()
   }
 
   tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  if (tempAdvance > 127) { tempAdvance = 127; }
 
   return tempAdvance;
 }
@@ -1429,11 +1428,11 @@ int8_t getAdvance() {
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
     {
       if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-      tempAdvance2 = ((int16_t)getAdvance1() * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      tempAdvance2 = (getAdvance1() * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
-      tempAdvance2 = (int16_t)getAdvance1() + tempAdvance2;
+      tempAdvance2 = getAdvance1() + tempAdvance2;
     }
 
     if (tempAdvance2 > 127) { tempAdvance2 = 127; } //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
