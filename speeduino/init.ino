@@ -3254,6 +3254,25 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_3A92:
+      //3A92 tooth decoder
+      triggerSetup_3A92();
+      triggerHandler = triggerPri_3A92;
+      triggerSecondaryHandler = triggerSec_3A92;
+      decoderHasSecondary = true;
+      getRPM = getRPM_3A92;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; }
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
     default:
       triggerHandler = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
