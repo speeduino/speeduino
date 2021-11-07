@@ -175,14 +175,21 @@ void setupAdvanceDC() { // One time table/test input setup
     engineParameters[18] = engineParameters[13] = engineParameters[8] = engineParameters[3];
     engineParameters[19] = engineParameters[14] = engineParameters[9] = engineParameters[4];
     
+    // 0-4 should use spark table 1 but spark table 2 conditional is enabled but the conditions are not met
     engineParameters[0].spark2Mode = engineParameters[1].spark2Mode = engineParameters[2].spark2Mode = engineParameters[3].spark2Mode = engineParameters[4].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
+    
+    // 5-9 should use spark table 2 multiplied
     engineParameters[5].spark2Mode = engineParameters[6].spark2Mode = engineParameters[7].spark2Mode = engineParameters[8].spark2Mode = engineParameters[9].spark2Mode = SPARK2_MODE_MULTIPLY;
     engineParameters[5].ignitionTable2Value = 215;
     engineParameters[6].ignitionTable2Value = 120;
     engineParameters[7].ignitionTable2Value = 100;
     engineParameters[8].ignitionTable2Value = 80;
     engineParameters[9].ignitionTable2Value = 0;
+    
+    // 10-14 should use spark table 2 added to spark table 1
     engineParameters[10].spark2Mode = engineParameters[11].spark2Mode = engineParameters[12].spark2Mode = engineParameters[13].spark2Mode = engineParameters[14].spark2Mode = SPARK2_MODE_ADD;
+
+    // 15-19 should use spark table 2, spark table 2 conditional is enabled and the conditions are met
     engineParameters[15].spark2Mode = engineParameters[16].spark2Mode = engineParameters[17].spark2Mode = engineParameters[18].spark2Mode = engineParameters[19].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
     engineParameters[15].TPS = engineParameters[16].TPS = engineParameters[17].TPS = engineParameters[18].TPS = engineParameters[19].TPS = 97;
 }
