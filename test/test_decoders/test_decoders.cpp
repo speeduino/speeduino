@@ -4,6 +4,7 @@
 
 #include "missing_tooth/missing_tooth.h"
 #include "dual_wheel/dual_wheel.h"
+#include "init.h"
 
 void setup()
 {
@@ -15,6 +16,7 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
+    initialiseAll();
     testMissingTooth();
     testDualWheel();
 
