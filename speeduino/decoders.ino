@@ -303,7 +303,7 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
 */
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
 inline void refreshIgnitionTiming(Schedule * schedule, int16_t crankAngle) {
-  if( schedule->Status == RUNNING ) { *schedule->compare = (*schedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (schedule->endAngle - crankAngle) ) ) ) ); }
+  if( schedule->Status == RUNNING ) { SET_COMPARE(*schedule->compare, *schedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (schedule->endAngle - crankAngle) ) ) ) ); }
   else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { schedule->endCompare = *schedule->counter + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (schedule->endAngle - crankAngle) ) ) ); schedule->endScheduleSetByDecoder = true; }
 }
 

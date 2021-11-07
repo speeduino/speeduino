@@ -152,8 +152,8 @@ struct Schedule {
 
   void (*timerEnable)();
   void (*timerDisable)();
-  volatile COUNTER_TYPE * counter;
-  volatile COMPARE_TYPE * compare;
+  volatile typeof(IGN1_COUNTER) * counter;
+  volatile typeof(IGN1_COMPARE) * compare;
 
   int startAngle = 0; // Dwell start
   int endAngle = 0; // Dwell end / ignition

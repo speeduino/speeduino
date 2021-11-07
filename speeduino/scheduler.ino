@@ -57,7 +57,6 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
-//These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
 inline void ign1TimerEnable() { IGN1_TIMER_ENABLE(); }
 inline void ign2TimerEnable() { IGN2_TIMER_ENABLE(); }
 inline void ign3TimerEnable() { IGN3_TIMER_ENABLE(); }
@@ -88,8 +87,8 @@ void (*getIgnTimer(int i, bool enable))(void) {
   return nullCallback;
 }
 
-volatile static COMPARE_TYPE * const ignitionCompares[] { &IGN1_COMPARE, &IGN2_COMPARE, &IGN3_COMPARE, &IGN4_COMPARE, &IGN5_COMPARE, &IGN6_COMPARE, &IGN7_COMPARE, &IGN8_COMPARE };
-volatile static COUNTER_TYPE * const ignitionCounters[] { &IGN1_COUNTER, &IGN2_COUNTER, &IGN3_COUNTER, &IGN4_COUNTER, &IGN5_COUNTER, &IGN6_COUNTER, &IGN7_COUNTER, &IGN8_COUNTER };
+volatile static typeof(IGN1_COMPARE) * const ignitionCompares[] { &IGN1_COMPARE, &IGN2_COMPARE, &IGN3_COMPARE, &IGN4_COMPARE, &IGN5_COMPARE, &IGN6_COMPARE, &IGN7_COMPARE, &IGN8_COMPARE };
+volatile static typeof(IGN1_COUNTER) * const ignitionCounters[] { &IGN1_COUNTER, &IGN2_COUNTER, &IGN3_COUNTER, &IGN4_COUNTER, &IGN5_COUNTER, &IGN6_COUNTER, &IGN7_COUNTER, &IGN8_COUNTER };
 
 const uint8_t ignitionCmdBits[] { IGN1_CMD_BIT, IGN2_CMD_BIT, IGN3_CMD_BIT, IGN4_CMD_BIT, IGN5_CMD_BIT, IGN6_CMD_BIT, IGN7_CMD_BIT, IGN8_CMD_BIT };
 
@@ -494,7 +493,7 @@ extern void setIgnitionSchedule(Schedule *schedule, unsigned long timeout, unsig
     noInterrupts();
     schedule->startCompare = *schedule->counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
     if(schedule->endScheduleSetByDecoder == false) { schedule->endCompare = schedule->startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    *schedule->compare = schedule->startCompare;
+    SET_COMPARE(*schedule->compare, schedule->startCompare);
     schedule->Status = PENDING; //Turn this schedule on
     schedule->schedulesSet++;
     interrupts();
@@ -522,7 +521,7 @@ inline void refreshIgnitionSchedule1(Schedule * schedule, unsigned long timeToEn
   {
     noInterrupts();
     schedule->endCompare = *schedule->counter + uS_TO_TIMER_COMPARE(timeToEnd);
-    *schedule->compare = schedule->endCompare;
+    SET_COMPARE(*schedule->compare, schedule->endCompare);
     interrupts();
   }
 }
@@ -856,8 +855,8 @@ inline void ignitionScheduleInterrupt(Schedule * schedule) {
     schedule->StartCallback();
     schedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     schedule->startTime = micros();
-    if(schedule->endScheduleSetByDecoder == true) { *schedule->compare = schedule->endCompare; }
-    else { *schedule->compare = (*schedule->counter + uS_TO_TIMER_COMPARE(schedule->duration)); } //Doing this here prevents a potential overflow on restarts
+    if(schedule->endScheduleSetByDecoder == true) { SET_COMPARE(*schedule->compare, schedule->endCompare); }
+    else { SET_COMPARE(*schedule->compare, *schedule->counter + uS_TO_TIMER_COMPARE(schedule->duration)); } //Doing this here prevents a potential overflow on restarts
   }
   else if (schedule->Status == RUNNING)
   {
@@ -870,7 +869,7 @@ inline void ignitionScheduleInterrupt(Schedule * schedule) {
     //If there is a next schedule queued up, activate it
     if(schedule->hasNextSchedule == true)
     {
-      *schedule->compare = schedule->nextStartCompare;
+      SET_COMPARE(*schedule->compare, schedule->nextStartCompare);
       schedule->Status = PENDING;
       schedule->schedulesSet = 1;
       schedule->hasNextSchedule = false;
