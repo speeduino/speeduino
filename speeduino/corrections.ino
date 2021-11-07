@@ -701,7 +701,7 @@ int8_t correctionFixedTiming(int8_t advance)
  */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  byte ignCrankFixValue = advance;
+  int8_t ignCrankFixValue = advance;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
