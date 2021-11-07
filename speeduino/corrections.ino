@@ -733,14 +733,9 @@ int8_t correctionWMITiming(int8_t advance)
  */
 int8_t correctionIATretard(int8_t advance)
 {
-  byte ignIATValue = advance;
-  //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-  int tempAdvance = (advance - advanceIATadjust);
-  if (tempAdvance >= -OFFSET_IGNITION) { ignIATValue = tempAdvance; }
-  else { ignIATValue = -OFFSET_IGNITION; }
 
-  return ignIATValue;
+  return advance - advanceIATadjust;
 }
 /** Ignition correction for coolant temperature (CLT).
  */
