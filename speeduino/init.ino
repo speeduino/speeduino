@@ -424,7 +424,6 @@ void initialiseAll()
     }
 
     //Initial values for loop times
-    previousLoopTime = 0;
     currentLoopTime = micros_safe();
     mainLoopCount = 0;
 

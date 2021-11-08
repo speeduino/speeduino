@@ -136,7 +136,6 @@ volatile bool injPrimed = false; ///< Tracks whether or not the injectors primin
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 volatile byte toothHistorySerialIndex = 0;
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 #if defined(CORE_SAMD21)
   PinStatus primaryTriggerEdge;
