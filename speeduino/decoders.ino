@@ -119,7 +119,7 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
  * @param toothTime - Tooth Time
  * @param whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
  */
-static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
+static inline void addToothLogEntry(const volatile unsigned long &toothTime, bool whichTooth)
 {
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
@@ -259,7 +259,7 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
  * Sets the new filter time based on the current settings.
  * This ONLY works for even spaced decoders.
  */
-static inline void setFilter(unsigned long curGap)
+static inline void setFilter(const volatile unsigned long &curGap)
 {
   if(configPage4.triggerFilter == 0) { triggerFilterTime = 0; } //trigger filter is turned off.
   else if(configPage4.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 25% of previous gap
