@@ -58,6 +58,7 @@ void initialiseCorrections()
 {
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  currentStatus.afrTarget = configPage2.stoich; // Init AFR Target at stoich.
   ego_NextCycleCount = 0;
   ego_FreezeEndTime = 0;
   ego_DelaySensorTime = 0;
@@ -601,7 +602,7 @@ byte correctionAFRClosedLoop()
   {
     currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); 
   }
-  else { currentStatus.afrTarget = currentStatus.O2; }
+  else { currentStatus.afrTarget = configPage2.stoich; }
   // END AFR Target Determination    
     
   if ((currentStatus.startRevolutions >> 1) >= ego_NextCycleCount) // Crank revolutions divided by 2 is engine cycles. This check always needs to happen, to correctly align revolutions and the time delay
@@ -611,7 +612,7 @@ byte correctionAFRClosedLoop()
       ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
     }
   
-  //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
+  //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor. Also no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
   if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
   {
     //Requirements to NOT run Closed Loop (Freeze), check this rapidly so we don't miss freeze events.
