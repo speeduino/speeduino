@@ -87,8 +87,8 @@ void initialiseAll()
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
   #ifdef SD_LOGGING
-    initSD();
     initRTC();
+    initSD();
   #endif
 
     Serial.begin(115200);
@@ -1201,7 +1201,7 @@ void initialiseAll()
     digitalWrite(LED_BUILTIN, HIGH);
 }
 /** Set board / microcontroller specfic pin mappings / assignments.
- * The boardID is switch-case compared against raw boardID integers (not enum or #define:d label, and probably no need for that either)
+ * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
  * which are originated from tuning SW (e.g. TS) set values and are avilable in reference/speeduino.ini (See pinLayout, note also that
  * numbering is not contiguous here).
  */
@@ -2134,7 +2134,7 @@ void setPinMapping(byte boardID)
       pinBat = A14; //Battery reference voltage pin
       pinSpareTemp1 = A17; //spare Analog input 1
       pinLaunch = A15; //Can be overwritten below
-      pinTachOut = 7; //Tacho output pin
+      pinTachOut = 5; //Tacho output pin
       pinIdle1 = 27; //Single wire idle control
       pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
       pinFuelPump = 8; //Fuel pump output
@@ -3237,8 +3237,22 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_NGC:
+      //Chrysler NGC 4 cylinder
+      triggerSetup_NGC();
+      triggerHandler = triggerPri_NGC;
+      triggerSecondaryHandler = triggerSec_NGC4;
+      decoderHasSecondary = true;
+      getRPM = getRPM_NGC;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_NGC;
 
+      primaryTriggerEdge = CHANGE;
+      secondaryTriggerEdge = CHANGE;
 
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;

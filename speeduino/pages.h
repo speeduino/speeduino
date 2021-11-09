@@ -34,14 +34,16 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
  * Gets a single value from a page, with data aligned as per the ini file
  */
 byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
-                    uint16_t offset);   /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+                    uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+                    );
 
 /**
  * Sets a single value from a page, with data aligned as per the ini file
  */
 void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
                     uint16_t offset,    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
-                    byte value);        /**< [in] The new value */
+                    byte value          /**< [in] The new value */
+                    );
 
 // ============================== Page Iteration ==========================
 
@@ -49,12 +51,12 @@ void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve da
 // over those entities.
 
 // Type of entity
-typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ { 
+enum entity_type { 
     Raw,        // A block of memory
     Table,      // A 3D table
     NoEntity,   // No entity, but a valid offset
     End         // The offset was past any known entity for the page
-} entity_type;
+};
 
 // A entity on a logical page.
 struct page_iterator_t {
