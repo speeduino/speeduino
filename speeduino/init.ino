@@ -2908,7 +2908,7 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case 2:
+    case DECODER_DUAL_WHEEL:
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_DualWheel;
       triggerSecondaryHandler = triggerSec_DualWheel;
@@ -2922,8 +2922,8 @@ void initialiseTriggers()
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
 
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); 
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, CHANGE);
       break;
 
     case DECODER_GM7X:
