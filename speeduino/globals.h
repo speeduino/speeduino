@@ -543,10 +543,6 @@ extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
 
-extern byte triggerInterrupt;
-extern byte triggerInterrupt2;
-extern byte triggerInterrupt3;
-
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;
 extern bool channel2InjEnabled;
@@ -592,16 +588,6 @@ extern volatile bool injPrimed; //Tracks whether or not the injector priming has
 extern volatile unsigned int toothHistoryIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-//The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
-#if defined(CORE_SAMD21)
-  extern PinStatus primaryTriggerEdge;
-  extern PinStatus secondaryTriggerEdge;
-  extern PinStatus tertiaryTriggerEdge;
-#else
-  extern byte primaryTriggerEdge;
-  extern byte secondaryTriggerEdge;
-  extern byte tertiaryTriggerEdge;
-#endif
 extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential

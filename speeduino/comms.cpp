@@ -324,11 +324,8 @@ void processSerialCommand()
       currentStatus.toothLogEnabled = false;
 
       //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      attachDecoderIsrToPin(pinTrigger, getDecoder().primary);
+      attachDecoderIsrToPin(pinTrigger2, getDecoder().secondary);
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
@@ -359,11 +356,8 @@ void processSerialCommand()
       currentStatus.compositeLogEnabled = false;
 
       //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      attachDecoderIsrToPin(pinTrigger, getDecoder().primary);
+      attachDecoderIsrToPin(pinTrigger2, getDecoder().secondary);
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 

@@ -188,7 +188,7 @@ void loop()
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.longRPM = getDecoder().getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       FUEL_PUMP_ON();
@@ -795,7 +795,7 @@ void loop()
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      if( (configPage2.perToothIgn == true) ) { getDecoder().triggerSetEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -804,7 +804,7 @@ void loop()
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = getCrankAngle();
+      int crankAngle = getDecoder().getCrankAngle();
       while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
 
       // if(Serial && false)
@@ -1065,7 +1065,7 @@ void loop()
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = getCrankAngle(); //Refresh with the latest crank angle
+        crankAngle = getDecoder().getCrankAngle(); //Refresh with the latest crank angle
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
@@ -1088,7 +1088,7 @@ void loop()
         {
           unsigned long uSToEnd = 0;
 
-          crankAngle = getCrankAngle(); //Refresh with the latest crank angle
+          crankAngle = getDecoder().getCrankAngle(); //Refresh with the latest crank angle
           if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
           
           //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):

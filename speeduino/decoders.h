@@ -11,6 +11,9 @@
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
 #endif
 
+// This has to match the ordering & numbering in speeduino.ini
+//
+// TODO: generate this list from the ini file
 #define DECODER_MISSING_TOOTH     0
 #define DECODER_BASIC_DISTRIBUTOR 1
 #define DECODER_DUAL_WHEEL        2
@@ -42,168 +45,98 @@
 void loggerPrimaryISR();
 void loggerSecondaryISR();
 
-//All of the below are the 6 required functions for each decoder / pattern
+// A decoder Interrupt Service Routine
+struct decoderISR
+{
+  // Pointer to the ISR function
+  void (*triggerHandler)();
+
+  // The ISR function edge trigger 
+  // E.g. RISING, FALLING or CHANGE
+#if defined(CORE_SAMD21) // The Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
+  PinStatus triggerEdge;
+#else
+  byte triggerEdge;
+#endif
+};
+
+inline void attachDecoderIsrToPin(byte pinTrigger, const decoderISR &isr)
+{
+  detachInterrupt(digitalPinToInterrupt(pinTrigger));
+  if (isr.triggerHandler!=NULL) {
+    attachInterrupt(digitalPinToInterrupt(pinTrigger), isr.triggerHandler, isr.triggerEdge);
+  }
+}
+
+// The decoder configuration. This will be initialised by a call to one of
+// the triggerSetup_xx() functions
+struct decoder_t
+{
+  decoderISR primary;
+  decoderISR secondary;
+  decoderISR tertiary;
+  
+  uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
+  int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
+  void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
+
+  // Other decoder specific data will eventually go here.
+};
+
+// External *read only* access to the decoder configuration
+//
+// This is just as fast as direct variable access - no drop in
+// loops/sec.
+const decoder_t& getDecoder();
+
+void triggerSetup_Default();
+
 void triggerSetup_missingTooth();
-void triggerPri_missingTooth();
-void triggerSec_missingTooth();
-void triggerThird_missingTooth();
-uint16_t getRPM_missingTooth();
-int getCrankAngle_missingTooth();
-extern void triggerSetEndTeeth_missingTooth();
 
 void triggerSetup_DualWheel();
-void triggerPri_DualWheel();
-void triggerSec_DualWheel();
-uint16_t getRPM_DualWheel();
-int getCrankAngle_DualWheel();
-void triggerSetEndTeeth_DualWheel();
 
 void triggerSetup_BasicDistributor();
-void triggerPri_BasicDistributor();
-void triggerSec_BasicDistributor();
-uint16_t getRPM_BasicDistributor();
-int getCrankAngle_BasicDistributor();
-void triggerSetEndTeeth_BasicDistributor();
 
 void triggerSetup_GM7X();
-void triggerPri_GM7X();
-void triggerSec_GM7X();
-uint16_t getRPM_GM7X();
-int getCrankAngle_GM7X();
-void triggerSetEndTeeth_GM7X();
 
 void triggerSetup_4G63();
-void triggerPri_4G63();
-void triggerSec_4G63();
-uint16_t getRPM_4G63();
-int getCrankAngle_4G63();
-void triggerSetEndTeeth_4G63();
 
 void triggerSetup_24X();
-void triggerPri_24X();
-void triggerSec_24X();
-uint16_t getRPM_24X();
-int getCrankAngle_24X();
-void triggerSetEndTeeth_24X();
 
 void triggerSetup_Jeep2000();
-void triggerPri_Jeep2000();
-void triggerSec_Jeep2000();
-uint16_t getRPM_Jeep2000();
-int getCrankAngle_Jeep2000();
-void triggerSetEndTeeth_Jeep2000();
 
 void triggerSetup_Audi135();
-void triggerPri_Audi135();
-void triggerSec_Audi135();
-uint16_t getRPM_Audi135();
-int getCrankAngle_Audi135();
-void triggerSetEndTeeth_Audi135();
 
 void triggerSetup_HondaD17();
-void triggerPri_HondaD17();
-void triggerSec_HondaD17();
-uint16_t getRPM_HondaD17();
-int getCrankAngle_HondaD17();
-void triggerSetEndTeeth_HondaD17();
 
 void triggerSetup_Miata9905();
-void triggerPri_Miata9905();
-void triggerSec_Miata9905();
-uint16_t getRPM_Miata9905();
-int getCrankAngle_Miata9905();
-void triggerSetEndTeeth_Miata9905();
-int getCamAngle_Miata9905();
 
 void triggerSetup_MazdaAU();
-void triggerPri_MazdaAU();
-void triggerSec_MazdaAU();
-uint16_t getRPM_MazdaAU();
-int getCrankAngle_MazdaAU();
-void triggerSetEndTeeth_MazdaAU();
 
 void triggerSetup_non360();
-void triggerPri_non360();
-void triggerSec_non360();
-uint16_t getRPM_non360();
-int getCrankAngle_non360();
-void triggerSetEndTeeth_non360();
 
 void triggerSetup_Nissan360();
-void triggerPri_Nissan360();
-void triggerSec_Nissan360();
-uint16_t getRPM_Nissan360();
-int getCrankAngle_Nissan360();
-void triggerSetEndTeeth_Nissan360();
 
 void triggerSetup_Subaru67();
-void triggerPri_Subaru67();
-void triggerSec_Subaru67();
-uint16_t getRPM_Subaru67();
-int getCrankAngle_Subaru67();
-void triggerSetEndTeeth_Subaru67();
 
 void triggerSetup_Daihatsu();
-void triggerPri_Daihatsu();
-void triggerSec_Daihatsu();
-uint16_t getRPM_Daihatsu();
-int getCrankAngle_Daihatsu();
-void triggerSetEndTeeth_Daihatsu();
 
 void triggerSetup_Harley();
-void triggerPri_Harley();
-void triggerSec_Harley();
-uint16_t getRPM_Harley();
-int getCrankAngle_Harley();
-void triggerSetEndTeeth_Harley();
 
 void triggerSetup_ThirtySixMinus222();
-void triggerPri_ThirtySixMinus222();
-void triggerSec_ThirtySixMinus222();
-uint16_t getRPM_ThirtySixMinus222();
-int getCrankAngle_ThirtySixMinus222();
-void triggerSetEndTeeth_ThirtySixMinus222();
 
 void triggerSetup_ThirtySixMinus21();
-void triggerPri_ThirtySixMinus21();
-void triggerSec_ThirtySixMinus21();
-uint16_t getRPM_ThirtySixMinus21();
-int getCrankAngle_ThirtySixMinus21();
-void triggerSetEndTeeth_ThirtySixMinus21();
 
 void triggerSetup_420a();
-void triggerPri_420a();
-void triggerSec_420a();
-uint16_t getRPM_420a();
-int getCrankAngle_420a();
-void triggerSetEndTeeth_420a();
 
-void triggerPri_Webber();
-void triggerSec_Webber();
+void triggerSetup_Webber();
 
 void triggerSetup_FordST170();
-void triggerSec_FordST170();
-uint16_t getRPM_FordST170();
-int getCrankAngle_FordST170();
-void triggerSetEndTeeth_FordST170();
 
 void triggerSetup_DRZ400();
-void triggerSec_DRZ400();
 
 void triggerSetup_NGC();
-void triggerPri_NGC();
-void triggerSec_NGC4();
-void triggerSec_NGC68();
-uint16_t getRPM_NGC();
-void triggerSetEndTeeth_NGC();
-
-extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-extern void (*triggerTertiaryHandler)(); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
-
-extern uint16_t (*getRPM)(); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-extern int (*getCrankAngle)(); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
-extern void (*triggerSetEndTeeth)(); //Pointer to the triggerSetEndTeeth function of each decoder
+void triggerSetup_Vmax();
 
 extern volatile unsigned long curTime;
 extern volatile unsigned long curGap;
@@ -243,7 +176,6 @@ extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToo
 extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 extern bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 extern bool decoderIsLowRes; //Is set true, certain extra calculations are performed for better timing accuracy
-extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
 extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
 extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
