@@ -4193,7 +4193,9 @@ void triggerSec_DRZ400()
 4-cyl: 36+2-2 crank wheel and 7 tooth cam
 6-cyl: 36-2+2 crank wheel and 12 tooth cam in 6 groups
 8-cyl: 36-2+2 crank wheel and 15 tooth cam in 8 groups
-The crank wheel uses the polarity of the missing teeth to determine position
+The crank decoder uses the polarity of the missing teeth to determine position
+The 4-cyl cam decoder uses the polarity of the missing teeth to determine position
+The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups of teeth to determine position
 * @defgroup dec Chrysler NGC - 4, 6 and 8-cylinder
 * @{
 */
