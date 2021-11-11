@@ -192,6 +192,7 @@ void triggerSec_DRZ400();
 void triggerSetup_NGC();
 void triggerPri_NGC();
 void triggerSec_NGC4();
+void triggerSec_NGC68();
 uint16_t getRPM_NGC();
 void triggerSetEndTeeth_NGC();
 
