@@ -153,7 +153,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
   } //Tooth/Composite log enabled
 }
 
-static inline bool isTrggered(const decoderISR &decoder, const uint8_t triggerState)
+static inline bool isTriggered(const decoderISR &decoder, const uint8_t triggerState)
 {
   return ( (decoder.triggerEdge == RISING) && (triggerState == HIGH) ) || 
          ( (decoder.triggerEdge == FALLING) && (triggerState == LOW) ) || 
@@ -169,7 +169,7 @@ void loggerPrimaryISR()
 {
   validTrigger = false; //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
   // Need to still call the standard decoder primary trigger. 
-  bool validEdge = isTrggered(decoder.primary, READ_PRI_TRIGGER());
+  bool validEdge = isTriggered(decoder.primary, READ_PRI_TRIGGER());
   if (validEdge)
   {
     decoder.primary.triggerHandler();
@@ -196,7 +196,7 @@ void loggerSecondaryISR()
   validTrigger = true;
 
   // Need to still call the standard decoder secondary trigger. 
-  if(isTrggered(decoder.secondary, READ_SEC_TRIGGER()))
+  if(isTriggered(decoder.secondary, READ_SEC_TRIGGER()))
   {
     decoder.secondary.triggerHandler();
   }
