@@ -4350,10 +4350,9 @@ void triggerPri_NGC() {
       toothLastMinusOneToothTime = toothLastToothTime;
     }
     toothLastToothTime = curTime;
-  }
 
-  //NEW IGNITION MODE
-  if( (configPage2.perToothIgn == true) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == false) ) 
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == false) ) 
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits(crankAngle);
@@ -4363,6 +4362,7 @@ void triggerPri_NGC() {
         checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
       }
     else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }
   }
 }
 
