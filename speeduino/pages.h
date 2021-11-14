@@ -27,6 +27,7 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define wmiMapPage   12
 #define progOutsPage 13
 #define ignMap2Page  14
+#define miscSetPage  15
 
 // ============================== Per-byte page access ==========================
 
@@ -51,12 +52,12 @@ void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve da
 // over those entities.
 
 // Type of entity
-typedef enum __attribute__ ((__packed__)) /* Packed is required to minimize to 8-bit */ { 
+enum entity_type { 
     Raw,        // A block of memory
     Table,      // A 3D table
     NoEntity,   // No entity, but a valid offset
     End         // The offset was past any known entity for the page
-} entity_type;
+};
 
 // A entity on a logical page.
 struct page_iterator_t {

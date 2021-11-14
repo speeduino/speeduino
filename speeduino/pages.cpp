@@ -24,7 +24,7 @@
 //  2. Offset to intra-entity byte
 
 // Page sizes as defined in the .ini file
-constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288 };
+constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 128 };
 
 // What section of a 3D table the offset mapped to
 enum table3D_section_t { 
@@ -234,7 +234,12 @@ entity_t map_page_offset_to_entity_inline(uint8_t pageNumber, uint16_t offset)
     case progOutsPage: 
       CHECK_RAW(offset, 0U, &configPage13, sizeof(configPage13), pageNumber)
       END_OF_PAGE(progOutsPage, sizeof(configPage13));
-      break;      
+      break;
+
+    case miscSetPage:  
+      CHECK_RAW(offset, 0U, &configPage15, sizeof(configPage15), pageNumber)
+      END_OF_PAGE(progOutsPage, sizeof(configPage15));
+      break;    
 
     default:
       abort(); // Unkown page number. Not a lot  we can do.

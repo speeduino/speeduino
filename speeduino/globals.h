@@ -917,7 +917,7 @@ struct config4 {
 
   int16_t triggerAngle; ///< Angle (ATDC) when tooth No:1 on the primary wheel sends signal (-360 to +360 deg.)
   int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref configPage2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
-  byte CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
+  int8_t CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
   byte TrigAngMul; ///< Multiplier for non evenly divisible tooth counts.
 
   byte TrigEdge : 1;  ///< Primary (RPM1) Trigger Edge - 0 - RISING, 1 = FALLING (Copied from this config to primaryTriggerEdge)
@@ -1425,6 +1425,18 @@ struct config13 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/**
+Page 15 - miscellaneous section .
+128 bytes long.
+*/
+struct config15 {
+  byte unused15_1_128[128];
+  #if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
 extern byte pinInjector3; //Output pin injector 3
@@ -1517,6 +1529,7 @@ extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
+extern struct config15 configPage15;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
