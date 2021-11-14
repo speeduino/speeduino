@@ -909,7 +909,7 @@ struct config4 {
 
   int16_t triggerAngle; ///< Angle (ATDC) when tooth No:1 on the primary wheel sends signal (-360 to +360 deg.)
   int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref configPage2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
-  byte CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
+  int8_t CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
   byte TrigAngMul; ///< Multiplier for non evenly divisible tooth counts.
 
   byte TrigEdge : 1;  ///< Primary (RPM1) Trigger Edge - 0 - RISING, 1 = FALLING (Copied from this config to primaryTriggerEdge)

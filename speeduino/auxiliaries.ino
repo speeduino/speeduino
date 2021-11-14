@@ -8,6 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
+#include "timers.h"
 
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -607,13 +608,13 @@ void boostDisable()
   if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
   }
   else
   {
     BOOST_PIN_HIGH();  // Switch pin high
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
@@ -641,7 +642,7 @@ void boostDisable()
 
     if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt1_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
@@ -649,12 +650,12 @@ void boostDisable()
     }
     else if( vvt2_pwm_state == true )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt2_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       nextVVT = 1; //Next event is for PWM1
     }
-    else { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_max_count; } //Shouldn't ever get here
+    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
   }
   else
   {
@@ -668,10 +669,10 @@ void boostDisable()
       }
       else { vvt1_max_pwm = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvt2_pwm_state == true){ VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value); }
+      if(vvt2_pwm_state == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -685,10 +686,10 @@ void boostDisable()
       }
       else { vvt2_max_pwm = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvt1_pwm_state == true) { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value); }
+      if(vvt1_pwm_state == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -699,7 +700,7 @@ void boostDisable()
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
       }
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
@@ -707,7 +708,7 @@ void boostDisable()
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
       }
       else { vvt2_max_pwm = true; }
     }
