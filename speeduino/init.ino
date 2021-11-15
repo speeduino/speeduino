@@ -2700,7 +2700,7 @@ void setPinMapping(byte boardID)
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinIdleUp, INPUT); } //inverted setting
   }
-  if( (configPage2.CTPSEnabled == true)  && (!pinIsOutput(pinCTPS)) )
+  if( (configPage2.CTPSEnabled == true)  && (!pinIsOutput(pinCTPS_TPS2)) )
   {
     if (configPage2.CTPSPolarity == 0) { pinMode(pinCTPS_TPS2, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinCTPS_TPS2, INPUT); } //inverted setting
