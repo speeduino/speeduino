@@ -10,6 +10,7 @@
   uint16_t freeRam();
   void doSystemReset();
   void jumpToBootloader();
+  time_t getTeensy3Time();
   #define PORT_TYPE uint8_t //Size of the port variables
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
@@ -25,6 +26,7 @@
   #endif
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
+  #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbiden pins like USB

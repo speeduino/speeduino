@@ -63,6 +63,5 @@ void sendToothLog(uint8_t);
 void testComm();
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);
-byte getStatusEntry(uint16_t);
 
 #endif // COMMS_H
