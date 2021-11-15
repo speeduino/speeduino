@@ -403,8 +403,8 @@ void readTPS(bool useFilter)
   //Check whether the closed throttle position sensor is active (shared calibrations with dual sensor so can only have one or the other.)
   if ( (configPage2.CTPSEnabled == true) && (configPage2.tpsType != TPS_MODE_DUALSENSOR) )
   {
-    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS_TPS2); } //Normal mode (ground switched)
-    else { currentStatus.CTPSActive = digitalRead(pinCTPS_TPS2); } //Inverted mode (5v activates closed throttle position sensor)
+    if(configPage2.CTPSPolarity == 0) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
+    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = false; }
     
@@ -433,10 +433,10 @@ void readTPS(bool useFilter)
     if (configPage2.tpsType == TPS_MODE_DUALSENSOR )
     {
       #if defined(ANALOG_ISR)
-        byte tempTPS2 = fastMap1023toX(AnChannel[pinCTPS_TPS2-A0], 255); //Get the current raw TPS ADC value and map it into a byte
+        byte tempTPS2 = fastMap1023toX(AnChannel[pinCTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
       #else
-        analogRead(pinCTPS_TPS2);
-        byte tempTPS2 = fastMap1023toX(analogRead(pinCTPS_TPS2), 255); //Get the current raw TPS ADC value and map it into a byte
+        analogRead(pinCTPS);
+        byte tempTPS2 = fastMap1023toX(analogRead(pinCTPS), 255); //Get the current raw TPS ADC value and map it into a byte
       #endif
       //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
       if(useFilter == true) { currentStatus.tps2ADC = ADC_FILTER(tempTPS2, configPage4.ADCFILTER_TPS, currentStatus.tps2ADC); }

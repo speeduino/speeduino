@@ -1473,7 +1473,7 @@ extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up
 extern byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-extern byte pinCTPS_TPS2; //Input for triggering closed throttle state
+extern byte pinCTPS; //Input for triggering closed throttle state
 extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
 extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
 extern byte pinSpareTemp1; // Future use only
