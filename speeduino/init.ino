@@ -332,35 +332,6 @@ void initialiseAll()
     initialiseADC();
     initialiseProgrammableIO();
 
-    //Lookup the current MAP reading for barometric pressure
-    instanteneousMAPReading();
-    //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
-    if ( configPage6.useExtBaro != 0 )
-    {
-      readBaro();
-      storeLastBaro(currentStatus.baro);
-    }
-    else
-    {
-      /*
-      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
-      * with record highs close to 108.5 kPa.
-      * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
-      */
-      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
-      {
-        currentStatus.baro = currentStatus.MAP;
-        storeLastBaro(currentStatus.baro);
-      }
-      else
-      {
-        //Attempt to use the last known good baro reading from EEPROM
-        if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-        { currentStatus.baro = readLastBaro(); } //last baro correction
-        else { currentStatus.baro = 100; } //Final fall back position.
-      }
-    }
-
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
@@ -424,6 +395,11 @@ void initialiseAll()
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     toothHistorySerialIndex = 0;
+    toothLastToothTime = 0;
+
+    //Lookup the current MAP reading for barometric pressure
+    instanteneousMAPReading();
+    readBaro();
     
     noInterrupts();
     initialiseTriggers();

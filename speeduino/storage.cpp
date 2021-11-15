@@ -253,13 +253,6 @@ void writeConfig(uint8_t pageNum)
       -----------------------------------------------------*/
       result = writeTable(&ignitionTable2, { EEPROM_CONFIG14_MAP, 0});
       break;
-      
-    case miscSetPage:
-      /*---------------------------------------------------
-      | Config page 15 (See storage.h for data layout)
-      -----------------------------------------------------*/
-      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0});
-      break;
 
     default:
       break;

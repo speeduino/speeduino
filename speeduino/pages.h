@@ -27,7 +27,6 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define wmiMapPage   12
 #define progOutsPage 13
 #define ignMap2Page  14
-#define miscSetPage  15
 
 // ============================== Per-byte page access ==========================
 
