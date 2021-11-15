@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "errors.h"
 #include "corrections.h"
 #include "pages.h"
+#include "decoders.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
@@ -127,8 +128,7 @@ void initialiseADC()
 
   flexStartTime = micros();
 
-  vssCount = 0;
-  vssTotalTime = 0;
+  vssIndex = 0;
 }
 
 static inline void validateMAP()
@@ -521,9 +521,41 @@ void readBaro()
       tempReading = analogRead(pinBaro);
     #endif
 
-    currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+    if(initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
+    else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
+  }
+  else
+  {
+    /*
+    * If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
+    * 1. Verify that the engine is not running
+    * 2. Verify that the reading from the MAP sensor is within the possible physical limits
+    */
+
+    //Attempt to use the last known good baro reading from EEPROM as a starting point
+    byte lastBaro = readLastBaro();
+    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = lastBaro; } //last baro correction
+    else { currentStatus.baro = 100; } //Fall back position.
+
+    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
+    unsigned long timeToLastTooth = (micros() - toothLastToothTime);
+    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    {
+      instanteneousMAPReading(); //Get the current MAP value
+      /* 
+      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+      * with record highs close to 108.5 kPa.
+      * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+      */
+      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+      {
+        currentStatus.baro = currentStatus.MAP;
+        storeLastBaro(currentStatus.baro);
+      }
+    }
   }
 }
 
@@ -605,16 +637,31 @@ void readBat()
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+/**
+ * @brief Returns the VSS pulse gap for a given history point
+ * 
+ * @param historyIndex The gap number that is wanted. EG:
+ * historyIndex = 0 = Latest entry
+ * historyIndex = 1 = 2nd entry entry
+ */
+uint32_t vssGetPulseGap(byte historyIndex)
+{
+  uint32_t tempGap = 0;
+  
+  noInterrupts();
+  int8_t tempIndex = vssIndex - historyIndex;
+  if(tempIndex < 0) { tempIndex += VSS_SAMPLES; }
+
+  if(tempIndex > 0) { tempGap = vssTimes[tempIndex] - vssTimes[tempIndex - 1]; }
+  else { tempGap = vssTimes[0] - vssTimes[(VSS_SAMPLES-1)]; }
+  interrupts();
+
+  return tempGap;
+}
+
 uint16_t getSpeed()
 {
   uint16_t tempSpeed = 0;
-  uint32_t pulseTime = 0;
-
-  //Need to temp store the pulse time variables to prevent them changing during an interrupt
-  noInterrupts();
-  uint32_t temp_vssLastPulseTime = vssLastPulseTime;
-  uint32_t temp_vssLastMinusOnePulseTime  = vssLastMinusOnePulseTime;
-  interrupts();
 
   if(configPage2.vssMode == 1)
   {
@@ -623,26 +670,20 @@ uint16_t getSpeed()
   // Interrupt driven mode
   else if(configPage2.vssMode > 1)
   {
-    if( vssCount == VSS_SAMPLES ) //We only change the reading if we've reached the required number of samples
-    {
-      if(temp_vssLastPulseTime < temp_vssLastMinusOnePulseTime) { tempSpeed = currentStatus.vss; } //Check for overflow of micros()
-      else
-      {
-        pulseTime = vssTotalTime / VSS_SAMPLES;
-        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
-        if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
-      }
+    uint32_t pulseTime = 0;
+    uint32_t vssTotalTime = 0;
 
-      vssCount = 0;
-      vssTotalTime = 0;
-    }
-    else
+    //Add up the time between the teeth. Note that the total number of gaps is equal to the number of samples minus 1
+    for(byte x = 0; x<(VSS_SAMPLES-1); x++)
     {
-      //Either not enough samples taken yet or speed has dropped to 0
-      if ( (micros() - temp_vssLastPulseTime) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop (1s timeout)
-      else { tempSpeed = currentStatus.vss; } 
+      vssTotalTime += vssGetPulseGap(x);
     }
+
+    pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
+    tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
+
   }
   return tempSpeed;
 }
@@ -754,15 +795,10 @@ void knockPulse()
 void vssPulse()
 {
   //TODO: Add basic filtering here
-  vssLastMinusOnePulseTime = vssLastPulseTime;
-  vssLastPulseTime = micros();
+  vssIndex++;
+  if(vssIndex == VSS_SAMPLES) { vssIndex = 0; }
 
-  if(vssCount < VSS_SAMPLES)
-  {
-    vssTotalTime += (vssLastPulseTime - vssLastMinusOnePulseTime);
-    vssCount++;
-  }
-  
+  vssTimes[vssIndex] = micros();
 }
 
 uint16_t readAuxanalog(uint8_t analogPin)
