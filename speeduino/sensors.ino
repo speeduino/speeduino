@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "errors.h"
 #include "corrections.h"
 #include "pages.h"
+#include "decoders.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
@@ -486,9 +487,41 @@ void readBaro()
       tempReading = analogRead(pinBaro);
     #endif
 
-    currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+    if(initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
+    else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
+  }
+  else
+  {
+    /*
+    * If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
+    * 1. Verify that the engine is not running
+    * 2. Verify that the reading from the MAP sensor is within the possible physical limits
+    */
+
+    //Attempt to use the last known good baro reading from EEPROM as a starting point
+    byte lastBaro = readLastBaro();
+    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = lastBaro; } //last baro correction
+    else { currentStatus.baro = 100; } //Fall back position.
+
+    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
+    unsigned long timeToLastTooth = (micros() - toothLastToothTime);
+    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    {
+      instanteneousMAPReading(); //Get the current MAP value
+      /* 
+      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+      * with record highs close to 108.5 kPa.
+      * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+      */
+      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+      {
+        currentStatus.baro = currentStatus.MAP;
+        storeLastBaro(currentStatus.baro);
+      }
+    }
   }
 }
 
