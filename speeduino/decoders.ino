@@ -743,6 +743,7 @@ void triggerPri_DualWheel()
           toothOneMinusOneTime = toothOneTime;
           toothOneTime = curTime;
           currentStatus.startRevolutions++; //Counter
+          if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
         }
 
         setFilter(curGap); //Recalc the new filter value
@@ -802,8 +803,16 @@ uint16_t getRPM_DualWheel()
   uint16_t tempRPM = 0;
   if( currentStatus.hasSync == true )
   {
-    if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage4.triggerTeeth, 360); }
-    else { tempRPM = stdGetRPM(360); }
+    if( currentStatus.RPM < currentStatus.crankRPM )
+    {
+      if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = crankingGetRPM(configPage4.triggerTeeth, 720); } //Account for cam speed
+      else { tempRPM = crankingGetRPM(configPage4.triggerTeeth, 360); }
+    }
+    else
+    {
+      if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = stdGetRPM(720); } //Account for cam speed
+      else { tempRPM = stdGetRPM(360); }
+    }
   }
   return tempRPM;
 }
