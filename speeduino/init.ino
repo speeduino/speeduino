@@ -1618,7 +1618,7 @@ void setPinMapping(byte boardID)
       pinResetControl = 44; //Reset control output
       pinVSS = 20;
       pinIdleUp = 48;
-      pinCTPS = 47;
+      pinCTPS_TPS2 = 47;
       #endif
       #if defined(CORE_TEENSY35)
         pinTrigger = 23;
