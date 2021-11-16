@@ -894,7 +894,13 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte unused2_95[2];
+  byte unused2_95_1 : 1;
+  byte unused2_95_2 : 1;
+  byte idle1Pin     : 6;
+
+  byte unused2_95_3 : 1;
+  byte unused2_95_4 : 1;
+  byte idle2Pin     : 6;
 
 #if defined(CORE_AVR)
   };
