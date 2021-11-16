@@ -1,11 +1,17 @@
 #include "globals.h"
+#include RTC_LIB_H //Defined in each boards .h file
 #ifdef RTC_ENABLED
 #include "rtc_common.h"
-#include RTC_LIB_H //Defined in each boards .h file
+
 
 void initRTC()
 {
 
+  #if defined(CORE_TEENSY35) || defined(CORE_TEENSY36)
+    setSyncProvider(getTeensy3Time);
+  #elif defined(CORE_STM32)
+  
+  #endif
 
 }
 
