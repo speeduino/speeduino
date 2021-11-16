@@ -33,6 +33,7 @@
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
 #define DECODER_DRZ400            21
+#define DECODER_NGC               22
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
@@ -188,6 +189,11 @@ void triggerSetEndTeeth_FordST170();
 void triggerSetup_DRZ400();
 void triggerSec_DRZ400();
 
+void triggerSetup_NGC();
+void triggerPri_NGC();
+void triggerSec_NGC4();
+uint16_t getRPM_NGC();
+void triggerSetEndTeeth_NGC();
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
