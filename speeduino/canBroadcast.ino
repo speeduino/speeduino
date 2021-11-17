@@ -34,14 +34,12 @@ void DashMessage(uint16_t DashMessageID)
   switch (DashMessageID)
   {
     case CAN_BMW_DME1:
-      uint16_t temp_RPM;
-      temp_RPM =  currentStatus.RPM * 6.4; //RPM conversion
       outMsg.id = DashMessageID;
       outMsg.len = 8;
-      outMsg.buf[0] = 0x01;  //bitfield, Bit0 = 1 = terminal 15 on detected, Bit2 = 1 = the ASC message ASC1 was received within the last 500 ms and contains no plausibility errors
+      outMsg.buf[0] = 0x05;  //bitfield, Bit0 = 1 = terminal 15 on detected, Bit2 = 1 = the ASC message ASC1 was received within the last 500 ms and contains no plausibility errors
       outMsg.buf[1] = 0x0C;  //Indexed Engine Torque in % of C_TQ_STND TBD do torque calculation.
-      outMsg.buf[2] = lowByte(temp_RPM);
-      outMsg.buf[3] = highByte(temp_RPM);
+      outMsg.buf[2] = 0x00;  //lsb RPM
+      outMsg.buf[3] = currentStatus.RPM / 40; //msb RPM. RPM conversion is currentStatus.RPM * 6.4, but this does close enough without floats.
       outMsg.buf[4] = 0x0C;  //Indicated Engine Torque in % of C_TQ_STND TBD do torque calculation!! Use same as for byte 1
       outMsg.buf[5] = 0x15;  //Engine Torque Loss (due to engine friction, AC compressor and electrical power consumption)
       outMsg.buf[6] = 0x00;  //not used
@@ -62,7 +60,7 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[0] = 0x11;  //Multiplexed Information
       outMsg.buf[1] = temp_CLT;
       outMsg.buf[2] = temp_BARO;
-      outMsg.buf[3] = 0x00;  //bitfield, Bit0 = 0 = Clutch released, Bit 3 = 1 = engine running
+      outMsg.buf[3] = 0x08;  //bitfield, Bit0 = 0 = Clutch released, Bit 3 = 1 = engine running
       outMsg.buf[4] = 0x00;  //TPS_VIRT_CRU_CAN (Not used)
       outMsg.buf[5] = temp_TPS;
       outMsg.buf[6] = 0x00;  //bitfield, Bit0 = 0 = brake not actuated, Bit1 = 0 = brake switch system OK etc...
@@ -97,7 +95,7 @@ void DashMessage(uint16_t DashMessageID)
 
     case 0x5A0:       //VSS for VW instrument cluster
       uint16_t temp_VSS;
-      temp_VSS =  currentStatus.vss / 0.0075; //VSS conversion
+      temp_VSS =  currentStatus.vss * 133; //VSS conversion
       outMsg.id = DashMessageID;
       outMsg.len = 8;
       outMsg.buf[0] = 0xFF;
