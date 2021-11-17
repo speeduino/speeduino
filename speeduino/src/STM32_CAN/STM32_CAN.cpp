@@ -192,7 +192,7 @@ void STM32_CAN::begin( bool retransmission ) {
     {
       __HAL_RCC_GPIOA_CLK_ENABLE();
       GPIO_InitStruct.Alternate = GPIO_AF11_CAN3;
-      GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_12;
+      GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_15;
       GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
       GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
       HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
