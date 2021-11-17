@@ -381,7 +381,6 @@ void triggerSetup_missingTooth()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
   toothOneTime = 0;
@@ -399,7 +398,7 @@ void triggerPri_missingTooth()
      validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
      //if(toothCurrentCount > checkSyncToothCount || currentStatus.hasSync == false)
-      if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+      if( lastGap > 0 )
       {
         bool isMissingTooth = false;
 
@@ -417,7 +416,7 @@ void triggerPri_missingTooth()
           if(configPage4.triggerMissingTeeth == 1) { targetGap = (3 * lastGap) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
           else { targetGap = lastGap * configPage4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
-          if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; }
+          if( lastGap == 0 ) { curGap = 0; }
 
           if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
           {
@@ -466,7 +465,7 @@ void triggerPri_missingTooth()
                 else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
                 triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-                toothLastMinusOneToothTime = toothLastToothTime;
+                lastGap = curGap;
                 toothLastToothTime = curTime;
                 triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
             }
@@ -477,7 +476,7 @@ void triggerPri_missingTooth()
         {
           //Regular (non-missing) tooth
           setFilter(curGap);
-          toothLastMinusOneToothTime = toothLastToothTime;
+          lastGap = curGap;
           toothLastToothTime = curTime;
           triggerToothAngleIsCorrect = true;
         }
@@ -485,7 +484,7 @@ void triggerPri_missingTooth()
       else
       {
         //We fall here on initial startup when enough teeth have not yet been seen
-        toothLastMinusOneToothTime = toothLastToothTime;
+        if (toothLastToothTime > 0) { lastGap = curGap; }
         toothLastToothTime = curTime;
       }
      
@@ -732,7 +731,7 @@ void triggerPri_DualWheel()
       toothCurrentCount++; //Increment the tooth counter
       validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-      toothLastMinusOneToothTime = toothLastToothTime;
+      lastGap = curGap;
       toothLastToothTime = curTime;
 
       if ( currentStatus.hasSync == true )
@@ -778,7 +777,7 @@ void triggerSec_DualWheel()
     if(currentStatus.hasSync == false)
     {
       toothLastToothTime = micros();
-      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+      lastGap = (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = configPage4.triggerTeeth;
 
       currentStatus.hasSync = true;
