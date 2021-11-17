@@ -80,6 +80,7 @@ void DashMessage(uint16_t DashMessageID)
     break;
 
     case 0x280:       //RPM for VW instrument cluster
+      int16_t temp_RPM;
       temp_RPM =  currentStatus.RPM * 4; //RPM conversion
       outMsg.id = DashMessageID;
       outMsg.len = 8;
