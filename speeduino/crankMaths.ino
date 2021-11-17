@@ -30,7 +30,7 @@ unsigned long angleToTime(int16_t angle, byte method)
         if(triggerToothAngleIsCorrect == true)
         {
           noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          unsigned long toothTime = lastGap;
           interrupts();
           
           returnTime = ( (toothTime / triggerToothAngle) * angle );
@@ -65,7 +65,7 @@ uint16_t timeToAngle(unsigned long time, byte method)
         if(triggerToothAngleIsCorrect == true)
         {
           noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          unsigned long toothTime = lastGap;
           interrupts();
 
           returnAngle = ( (unsigned long)(time * triggerToothAngle) / toothTime );
@@ -131,14 +131,13 @@ void doCrankSpeedCalcs()
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
         noInterrupts();
-        if( (triggerToothAngleIsCorrect == true) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
+        if( (triggerToothAngleIsCorrect == true) && (lastGap > 0) && (abs(currentStatus.rpmDOT) > 30) )
         {
           //noInterrupts();
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
+          unsigned long tempLastGap = lastGap;
           uint16_t tempTriggerToothAngle = triggerToothAngle;
           interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
+          timePerDegreex16 = (unsigned long)(tempLastGap*16) / tempTriggerToothAngle;
           timePerDegree = timePerDegreex16 / 16;
         }
         else
