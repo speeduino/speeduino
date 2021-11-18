@@ -48,13 +48,13 @@ void setup_FuelTable(void)
   */
   
   table3d_axis_t tempXAxis[] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
-  memcpy(fuelTable.axisX, tempXAxis, sizeof(fuelTable.axisX));
+  memcpy(fuelTable.axisX.axis, tempXAxis, sizeof(fuelTable.axisX));
   table3d_axis_t tempYAxis[] = {100, 96, 90, 86, 76, 70, 66, 60, 56, 50, 46, 40, 36, 30, 26, 16};
-  memcpy(fuelTable.axisY, tempYAxis, sizeof(fuelTable.axisY));
+  memcpy(fuelTable.axisY.axis, tempYAxis, sizeof(fuelTable.axisY));
 
   for (int loop=0; loop<sizeof(fuelTable.values); ++loop) 
   { 
-    fuelTable.values[loop] = pgm_read_byte_near(values + loop);
+    fuelTable.values.values[loop] = pgm_read_byte_near(values + loop);
   }
 }
 
