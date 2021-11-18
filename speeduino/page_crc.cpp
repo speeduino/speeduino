@@ -1,7 +1,6 @@
 #include "page_crc.h"
 #include "pages.h"
 #include "src/FastCRC/FastCRC.h"
-#include "table_iterator.h"
 
 static FastCRC32 CRC32;
 
@@ -12,43 +11,46 @@ static inline uint32_t compute_raw_crc(const page_iterator_t &entity, pCrcCalc c
     return (CRC32.*calcFunc)((uint8_t*)entity.pData, entity.size, false);
 }
 
-static inline uint32_t compute_tablevalues_crc(table_row_iterator_t it, pCrcCalc calcFunc)
+static inline uint32_t compute_row_crc(const table_row_iterator &row, pCrcCalc calcFunc)
 {
-    table_row_t row = get_row(it);
-    uint32_t crc = (CRC32.*calcFunc)(row.pValue, row.pEnd-row.pValue, false);
-    advance_row(it);
+    return (CRC32.*calcFunc)(&*row, row.size(), false);
+}
 
-    while (!at_end(it))
+static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc calcFunc)
+{
+    uint32_t crc = compute_row_crc(*it, calcFunc);
+    ++it;
+
+    while (!it.at_end())
     {
-        row = get_row(it);
-        crc = CRC32.crc32_upd(row.pValue, row.pEnd-row.pValue, false);
-        advance_row(it);
+        crc = compute_row_crc(*it, &FastCRC32::crc32_upd);
+        ++it;
     }
     return crc;
 }
 
-static inline uint32_t compute_tableaxis_crc(table_axis_iterator_t it, uint32_t crc)
+static inline uint32_t compute_tableaxis_crc(table_axis_iterator it, uint32_t crc)
 {
     byte values[32]; // Fingers crossed we don't have a table bigger than 32x32
     byte *pValue = values;
-    while (!at_end(it))
+    while (!it.at_end())
     {
-        *pValue++ = get_value(it);
-        it = advance_axis(it);
+        *pValue++ = (byte)*it;
+        ++it;
     }
     return pValue-values==0 ? crc : CRC32.crc32_upd(values, pValue-values, false);
 }
 
-static inline uint32_t compute_table_crc(table3D *pTable, pCrcCalc calcFunc)
+static inline uint32_t compute_table_crc(page_iterator_t &entity, pCrcCalc calcFunc)
 {
-    return compute_tableaxis_crc(y_begin(pTable), 
-                compute_tableaxis_crc(x_begin(pTable),
-                    compute_tablevalues_crc(rows_begin(pTable), calcFunc)));
+    return compute_tableaxis_crc(y_begin(entity), 
+                compute_tableaxis_crc(x_begin(entity),
+                    compute_tablevalues_crc(rows_begin(entity), calcFunc)));
 }
 
 static inline uint32_t pad_crc(uint16_t padding, uint32_t crc)
 {
-    uint8_t raw_value = 0u;
+    const uint8_t raw_value = 0u;
     while (padding>0)
     {
         crc = CRC32.crc32_upd(&raw_value, 1, false);
@@ -66,7 +68,7 @@ static inline uint32_t compute_crc(page_iterator_t &entity, pCrcCalc calcFunc)
         break;
 
     case Table:
-        return compute_table_crc(entity.pTable, calcFunc);
+        return compute_table_crc(entity, calcFunc);
         break;
 
     case NoEntity:

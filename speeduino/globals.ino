@@ -7,25 +7,25 @@ const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. (outdated ?)
 
-struct table3D fuelTable; ///< 16x16 fuel map
-struct table3D fuelTable2; ///< 16x16 fuel map
-struct table3D ignitionTable; ///< 16x16 ignition map
-struct table3D ignitionTable2; ///< 16x16 ignition map
-struct table3D afrTable; ///< 16x16 afr target map
-struct table3D stagingTable; ///< 8x8 fuel staging table
-struct table3D boostTable; ///< 8x8 boost map
-struct table3D vvtTable; ///< 8x8 vvt map
-struct table3D vvt2Table; ///< 8x8 vvt2 map
-struct table3D wmiTable; ///< 8x8 wmi map
-struct table3D trim1Table; ///< 6x6 Fuel trim 1 map
-struct table3D trim2Table; ///< 6x6 Fuel trim 2 map
-struct table3D trim3Table; ///< 6x6 Fuel trim 3 map
-struct table3D trim4Table; ///< 6x6 Fuel trim 4 map
-struct table3D trim5Table; ///< 6x6 Fuel trim 5 map
-struct table3D trim6Table; ///< 6x6 Fuel trim 6 map
-struct table3D trim7Table; ///< 6x6 Fuel trim 7 map
-struct table3D trim8Table; ///< 6x6 Fuel trim 8 map
-struct table3D dwellTable; ///< 4x4 Dwell map
+struct table3d16RpmLoad fuelTable; ///< 16x16 fuel map
+struct table3d16RpmLoad fuelTable2; ///< 16x16 fuel map
+struct table3d16RpmLoad ignitionTable; ///< 16x16 ignition map
+struct table3d16RpmLoad ignitionTable2; ///< 16x16 ignition map
+struct table3d16RpmLoad afrTable; ///< 16x16 afr target map
+struct table3d8RpmLoad stagingTable; ///< 8x8 fuel staging table
+struct table3d8RpmTps boostTable; ///< 8x8 boost map
+struct table3d8RpmTps vvtTable; ///< 8x8 vvt map
+struct table3d8RpmTps vvt2Table; ///< 8x8 vvt2 map
+struct table3d8RpmLoad wmiTable; ///< 8x8 wmi map
+struct table3d6RpmLoad trim1Table; ///< 6x6 Fuel trim 1 map
+struct table3d6RpmLoad trim2Table; ///< 6x6 Fuel trim 2 map
+struct table3d6RpmLoad trim3Table; ///< 6x6 Fuel trim 3 map
+struct table3d6RpmLoad trim4Table; ///< 6x6 Fuel trim 4 map
+struct table3d6RpmLoad trim5Table; ///< 6x6 Fuel trim 5 map
+struct table3d6RpmLoad trim6Table; ///< 6x6 Fuel trim 6 map
+struct table3d6RpmLoad trim7Table; ///< 6x6 Fuel trim 7 map
+struct table3d6RpmLoad trim8Table; ///< 6x6 Fuel trim 8 map
+struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 struct table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
 struct table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
