@@ -299,7 +299,7 @@ void resetConfigPages()
 static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, const byte *pLast)
 {
 #if defined(CORE_AVR)
-  // The code below works but this provides a 45% speed up
+  // The generic code in the #else branch works but this provides a 45% speed up on AVR
   size_t size = pLast-pFirst;
   eeprom_read_block(pFirst, (void*)address, size);
   return address+size;
