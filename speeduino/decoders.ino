@@ -982,7 +982,7 @@ void triggerPri_BasicDistributor(void)
       else { checkPerToothTiming(crankAngle, toothCurrentCount); }
     }
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
   } //Trigger filter
 }
@@ -1070,13 +1070,12 @@ void triggerSetup_GM7X(void)
 
 void triggerPri_GM7X(void)
 {
-    lastGap = curGap;
     curTime = micros();
     curGap = curTime - toothLastToothTime;
     toothCurrentCount++; //Increment the tooth counter
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    if( lastGap > 0 )
     {
       if( toothCurrentCount > 7 )
       {
@@ -1122,7 +1121,7 @@ void triggerPri_GM7X(void)
       } 
     }
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
 
@@ -1259,7 +1258,7 @@ void triggerPri_4G63(void)
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
     triggerFilterTime = curGap >> 2; //This only applies during non-sync conditions. If there is sync then triggerFilterTime gets changed again below with a better value.
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
     toothCurrentCount++;
@@ -1528,12 +1527,12 @@ uint16_t getRPM_4G63(void)
     {
       int tempToothAngle;
       unsigned long toothTime;
-      if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      if( lastGap == 0 ) { tempRPM = 0; }
       else
       {
         noInterrupts();
         tempToothAngle = triggerToothAngle;
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen (or 70/50 for 6 cylinders)
+        toothTime = lastGap; //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen (or 70/50 for 6 cylinders)
         interrupts();
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
@@ -1809,7 +1808,7 @@ void triggerPri_Jeep2000(void)
 
       BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-      toothLastMinusOneToothTime = toothLastToothTime;
+      if (toothLastToothTime > 0) { lastGap = curGap; }
       toothLastToothTime = curTime;
     } //Trigger filter
   } //Sync check
