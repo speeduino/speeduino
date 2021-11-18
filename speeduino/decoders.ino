@@ -3139,11 +3139,11 @@ void triggerPri_Daihatsu(void)
         //Aim for tooth times less than about 60 degrees
         if(configPage2.nCylinders == 3)
         {
-          targetTime = (toothLastToothTime -  toothLastMinusOneToothTime) / 4; //Teeth are 240 degrees apart for 3 cylinder. 240/4 = 60
+          targetTime = lastGap / 4; //Teeth are 240 degrees apart for 3 cylinder. 240/4 = 60
         }
         else
         {
-          targetTime = ((toothLastToothTime -  toothLastMinusOneToothTime) * 3) / 8; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
+          targetTime = (lastGap * 3) / 8; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
         }
         if(curGap < targetTime)
         {
@@ -3155,7 +3155,7 @@ void triggerPri_Daihatsu(void)
       }
     }
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
   } //Trigger filter
 }
@@ -3174,7 +3174,7 @@ uint16_t getRPM_Daihatsu(void)
       else
       {
         noInterrupts();
-        revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1);
+        revolutionTime = lastGap * (triggerActualTeeth-1);
         interrupts();
         tempRPM = (US_IN_MINUTE / revolutionTime);
         if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
@@ -3238,7 +3238,6 @@ void triggerSetup_Harley(void)
 
 void triggerPri_Harley(void)
 {
-  lastGap = curGap;
   curTime = micros();
   curGap = curTime - toothLastToothTime;
   setFilter(curGap); // Filtering adjusted according to setting
@@ -3264,7 +3263,7 @@ void triggerPri_Harley(void)
           //     toothOneMinusOneTime = toothOneTime;
           //     toothOneTime = curTime;
         }
-        toothLastMinusOneToothTime = toothLastToothTime;
+        if (toothLastToothTime > 0) { lastGap = curGap; }
         toothLastToothTime = curTime;
         currentStatus.startRevolutions++; //Counter
     }
@@ -3295,7 +3294,7 @@ uint16_t getRPM_Harley(void)
       // No difference with this option?
       int tempToothAngle;
       unsigned long toothTime;
-      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      if ( lastGap > 0 ) { tempRPM = 0; }
       else
       {
         noInterrupts();
@@ -3305,7 +3304,7 @@ uint16_t getRPM_Harley(void)
           else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
         */
         revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 129 and 332 depending on the last tooth that was seen
+        toothTime = lastGap; //Note that trigger tooth angle changes between 129 and 332 depending on the last tooth that was seen
         interrupts();
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
@@ -3725,8 +3724,6 @@ void triggerPri_420a(void)
     toothCurrentCount++; //Increment the tooth counter
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; }
-
     if( (toothCurrentCount > 16) && (currentStatus.hasSync == true) )
     {
       //Means a complete rotation has occurred.
@@ -3742,7 +3739,7 @@ void triggerPri_420a(void)
 
     BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
     //EXPERIMENTAL!
@@ -3878,7 +3875,7 @@ void triggerPri_Webber(void)
     if ( triggerSecFilterTime <= curGap ) { triggerSecFilterTime = curGap + (curGap>>1); } //150% crank tooth
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
     if ( currentStatus.hasSync == true )
@@ -3932,7 +3929,7 @@ void triggerSec_Webber(void)
       if(currentStatus.hasSync == false)
       {
         toothLastToothTime = micros();
-        toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
+        lastGap = 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
         toothCurrentCount = configPage4.triggerTeeth-1;
 
         currentStatus.hasSync = true;
@@ -3949,7 +3946,7 @@ void triggerSec_Webber(void)
     else if ( (currentStatus.hasSync == false) && (toothCurrentCount >= 3) && (secondaryToothCount == 0) )
     {
       toothLastToothTime = micros();
-      toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
+      lastGap = 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = 1;
       revolutionOne = 1; //Sequential revolution reset
 
