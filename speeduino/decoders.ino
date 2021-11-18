@@ -239,8 +239,8 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
 
   if( currentStatus.hasSync == true )
   {
-    if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.startRevolutions == 0) ) { tempRPM = 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
-    else if( (toothOneTime == 0) || (toothOneMinusOneTime == 0) ) { tempRPM = 0; }
+    if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.startRevolutions == 0) ) { return tempRPM; } //Prevents crazy RPM spike when there has been less than 1 full revolution
+    else if( (toothOneTime == 0) || (toothOneMinusOneTime == 0) ) { return tempRPM; }
     else
     {
       noInterrupts();
@@ -251,8 +251,6 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
       if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
     }
   }
-  else { tempRPM = 0; }
-
   return tempRPM;
 }
 
@@ -1541,7 +1539,7 @@ uint16_t getRPM_4G63()
     {
       int tempToothAngle;
       unsigned long toothTime;
-      if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { return tempRPM; }
       else
       {
         noInterrupts();
@@ -2258,7 +2256,7 @@ uint16_t getRPM_Miata9905()
   uint16_t tempRPM = 0;
   if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
   {
-    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { return tempRPM; }
     else
     {
       int tempToothAngle;
@@ -2750,7 +2748,7 @@ void triggerSec_Nissan360()
 uint16_t getRPM_Nissan360()
 {
   //Can't use stdGetRPM as there is no separate cranking RPM calc (stdGetRPM returns 0 if cranking)
-  uint16_t tempRPM;
+  uint16_t tempRPM = 0;
   if( (currentStatus.hasSync == true) && (toothLastToothTime != 0) && (toothLastMinusOneToothTime != 0) )
   {
     if(currentStatus.startRevolutions < 2)
@@ -2769,8 +2767,6 @@ uint16_t getRPM_Nissan360()
     if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
     MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   }
-  else { tempRPM = 0; }
-
   return tempRPM;
 }
 
@@ -3196,7 +3192,7 @@ uint16_t getRPM_Daihatsu()
         if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
       } //is tooth #2
     }
-    else { tempRPM = 0; } //No sync
+    else { return tempRPM; } //No sync
   }
   else
   { tempRPM = stdGetRPM(720); } //TRacking over 2 crank revolutions
@@ -3311,7 +3307,7 @@ uint16_t getRPM_Harley()
       // Kein Unterschied mit dieser Option
       int tempToothAngle;
       unsigned long toothTime;
-      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { return tempRPM; }
       else
       {
         noInterrupts();
