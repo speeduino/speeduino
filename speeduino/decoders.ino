@@ -1907,7 +1907,7 @@ void triggerPri_Audi135(void)
 
          setFilter(curGap); //Recalc the new filter value
 
-         toothLastMinusOneToothTime = toothLastToothTime;
+         if (toothLastToothTime > 0) { lastGap = curTime - toothLastToothTime; }
          toothLastToothTime = curTime;
        } //3rd tooth check
      } // Sync check
@@ -1992,7 +1992,6 @@ void triggerSetup_HondaD17(void)
 
 void triggerPri_HondaD17(void)
 {
-   lastGap = curGap;
    curTime = micros();
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
@@ -2010,7 +2009,7 @@ void triggerPri_HondaD17(void)
      toothOneTime = curTime;
      currentStatus.startRevolutions++; //Counter
 
-     toothLastMinusOneToothTime = toothLastToothTime;
+     if (toothLastToothTime > 0) { lastGap = curGap; }
      toothLastToothTime = curTime;
    }
    else
@@ -2025,7 +2024,7 @@ void triggerPri_HondaD17(void)
      else
      {
        //The tooth times below don't get set on tooth 13(The magical 13th tooth should not be considered for any calculations that use those times)
-       toothLastMinusOneToothTime = toothLastToothTime;
+       if (toothLastToothTime > 0) { lastGap = curGap; }
        toothLastToothTime = curTime;
      }
    }
@@ -2602,7 +2601,7 @@ void triggerPri_Nissan360(void)
    toothCurrentCount++; //Increment the tooth counter
    BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-   toothLastMinusOneToothTime = toothLastToothTime;
+   if (toothLastToothTime > 0) { lastGap = curGap; }
    toothLastToothTime = curTime;
 
    if ( currentStatus.hasSync == true )
@@ -2735,12 +2734,12 @@ uint16_t getRPM_Nissan360(void)
 {
   //Can't use stdGetRPM as there is no separate cranking RPM calc (stdGetRPM returns 0 if cranking)
   uint16_t tempRPM;
-  if( (currentStatus.hasSync == true) && (toothLastToothTime != 0) && (toothLastMinusOneToothTime != 0) )
+  if( (currentStatus.hasSync == true) && lastGap > 0 )
   {
     if(currentStatus.startRevolutions < 2)
     {
       noInterrupts();
-      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
+      revolutionTime = lastGap * 180; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
       interrupts();
     }
     else
@@ -2762,19 +2761,19 @@ int getCrankAngle_Nissan360(void)
 {
   //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   int crankAngle = 0;
+  int tempLastGap;
   int tempToothLastToothTime;
-  int tempToothLastMinusOneToothTime;
   int tempToothCurrentCount;
 
   noInterrupts();
+  tempLastGap = lastGap;
   tempToothLastToothTime = toothLastToothTime;
-  tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
   tempToothCurrentCount = toothCurrentCount;
   lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
   interrupts();
 
   crankAngle = ( (tempToothCurrentCount - 1) * 2) + configPage4.triggerAngle;
-  unsigned long halfTooth = (tempToothLastToothTime - tempToothLastMinusOneToothTime) / 2;
+  unsigned long halfTooth = tempLastGap / 2;
   elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
   if (elapsedTime > halfTooth)
   {
@@ -2848,7 +2847,7 @@ void triggerPri_Subaru67(void)
    toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
    BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-   toothLastMinusOneToothTime = toothLastToothTime;
+   if (toothLastToothTime > 0) { lastGap = curTime - toothLastToothTime; }
    toothLastToothTime = curTime;
 
    if ( (currentStatus.hasSync == false) || (configPage4.useResync == true) )
