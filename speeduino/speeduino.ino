@@ -1103,7 +1103,7 @@ void loop(void)
           if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
           else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
           //*********
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+          //uSToEnd = ((ignition1EndAngle - crankAngle) * lastGap) / triggerToothAngle;
           //*********
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
