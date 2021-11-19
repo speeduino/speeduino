@@ -62,7 +62,6 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
     #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
