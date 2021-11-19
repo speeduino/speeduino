@@ -1,8 +1,7 @@
+#include "globals.h"
 #include "page_crc.h"
 #include "pages.h"
-#include "src/FastCRC/FastCRC.h"
-
-static FastCRC32 CRC32;
+//#include "src/FastCRC/FastCRC.h"
 
 typedef uint32_t (FastCRC32::*pCrcCalc)(const uint8_t *, const uint16_t, bool);
 
@@ -81,7 +80,7 @@ static inline uint32_t compute_crc(page_iterator_t &entity, pCrcCalc calcFunc)
     }
 }
 
-uint32_t calculateCRC32(byte pageNum)
+uint32_t calculatePageCRC32(byte pageNum)
 {
   page_iterator_t entity = page_begin(pageNum);
   // Initial CRC calc

@@ -29,6 +29,7 @@
 #include "table3d.h"
 #include <assert.h>
 #include "logger.h"
+#include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
@@ -431,6 +432,8 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
+extern FastCRC32 CRC32;
+
 
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map

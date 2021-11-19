@@ -38,6 +38,7 @@ uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
+bool legacySerial = false;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -48,7 +49,7 @@ Comands are single byte (letter symbol) commands.
 */
 void command()
 {
-  if (cmdPending == false) { currentCommand = Serial.read(); }
+  if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
@@ -100,7 +101,7 @@ void command()
       if (Serial.available() >= 2)
       {
         Serial.read(); //Ignore the first byte value, it's always 0
-        uint32_t CRC32_val = calculateCRC32( Serial.read() );
+        uint32_t CRC32_val = calculatePageCRC32( Serial.read() );
         
         //Split the 4 bytes of the CRC32 value into individual bytes and send
         Serial.write( ((CRC32_val >> 24) & 255) );
