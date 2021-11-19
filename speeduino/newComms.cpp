@@ -116,8 +116,8 @@ void parseSerial()
 
 void sendSerialReturnCode(byte returnCode)
 {
-  Serial.write(0);
-  Serial.write(1); //Size is always 1
+  Serial.write((uint8_t)0);
+  Serial.write((uint8_t)1); //Size is always 1
 
   Serial.write(returnCode);
 
