@@ -14,6 +14,7 @@
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint32_t
   #define COUNTER_TYPE uint32_t
+  #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>

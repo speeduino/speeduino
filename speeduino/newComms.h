@@ -51,7 +51,7 @@ extern uint16_t serialPayloadLength;
 extern uint32_t serialCRC;
 extern bool serialReceivePending; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 //extern uint8_t *serialPayload; /**< Pointer to the serial payload buffer. */
-extern uint8_t serialPayload[257]; /**< Pointer to the serial payload buffer. */
+extern uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
 extern uint16_t serialBytesReceived; /**< The number of bytes received in the serial buffer during the current command. */
 extern bool serialWriteInProgress;
 

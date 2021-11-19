@@ -23,12 +23,15 @@ A full copy of the license may be found in the projects root directory
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
+#ifdef SD_LOGGING
+  #include "SD_logger.h"
+#endif
 
 uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0;
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[257]; /**< Pointer to the serial payload buffer. */
+uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -373,14 +376,16 @@ void processSerialCommand()
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
       {
-        Serial.write(rtc_getSecond()); //Seconds
-        Serial.write(rtc_getMinute()); //Minutes
-        Serial.write(rtc_getHour()); //Hours
-        Serial.write(rtc_getDOW()); //Day of Week
-        Serial.write(rtc_getDay()); //Date
-        Serial.write(rtc_getMonth()); //Month
-        Serial.write(lowByte(rtc_getYear())); //Year - NOTE 2 bytes
-        Serial.write(highByte(rtc_getYear())); //Year
+        serialPayload[0] = SERIAL_RC_OK;
+        serialPayload[1] = rtc_getSecond(); //Seconds
+        serialPayload[2] = rtc_getMinute(); //Minutes
+        serialPayload[3] = rtc_getHour(); //Hours
+        serialPayload[4] = rtc_getDOW(); //Day of week
+        serialPayload[5] = rtc_getDay(); //Day of month
+        serialPayload[6] = rtc_getMonth(); //Month
+        serialPayload[7] = highByte(rtc_getYear()); //Year
+        serialPayload[8] = lowByte(rtc_getYear()); //Year
+        sendSerialPayload(&serialPayload, 9);
 
       }
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
@@ -390,74 +395,39 @@ void processSerialCommand()
         {
           //Read the status of the SD card
           
-          //Serial.write(0);
+          serialPayload[0] = SERIAL_RC_OK;
 
 
           //Serial.write(currentStatus.TS_SD_Status);
-          Serial.write((uint8_t)5);
-          Serial.write((uint8_t)0);
+          serialPayload[1] = 5;
+          serialPayload[2] = 0;
 
-          //All other values are 2 bytes          
-          Serial.write((uint8_t)2); //Sector size
-          Serial.write((uint8_t)0); //Sector size
+          //All other values are 2 bytes   
+          //Sector size     
+          serialPayload[3] = 2;
+          serialPayload[4] = 0;
 
           //Max blocks (4 bytes)
-          Serial.write((uint8_t)0);
-          Serial.write((uint8_t)0x20); //1gb dummy card
-          Serial.write((uint8_t)0);
-          Serial.write((uint8_t)0);
+          serialPayload[5] = 0;
+          serialPayload[6] = 0x20; //1gb dummy card
+          serialPayload[7] = 0;
+          serialPayload[8] = 0;
 
           //Max roots (Number of files)
-          Serial.write((uint8_t)0);
-          Serial.write((uint8_t)1);
+          serialPayload[9] = 0;
+          serialPayload[10] = 1;
 
           //Dir Start (4 bytes)
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
+          serialPayload[11] = 0;
+          serialPayload[12] = 0;
+          serialPayload[13] = 0;
+          serialPayload[14] = 0;
 
           //Unkown purpose for last 2 bytes
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
-          Serial.write((uint8_t)0); //Dir start lower 2 bytes
-          
-          /*
-          Serial.write(lowByte(23));
-          Serial.write(highByte(23));
+          serialPayload[15] = 0;
+          serialPayload[16] = 0;
 
-          byte packet[17];
-          packet[0] = 0;
-          packet[1] = 5;
-          packet[2] = 0;
-
-          packet[3] = 2;
-          packet[4] = 0;
-
-          packet[5] = 0;
-          packet[6] = 0x20;
-          packet[7] = 0;
-          packet[8] = 0;
-
-          packet[9] = 0;
-          packet[10] = 1;
-
-          packet[11] = 0;
-          packet[12] = 0;
-          packet[13] = 0;
-          packet[14] = 0;
-
-          packet[15] = 0;
-          packet[16] = 0;
-
-          Serial.write(packet, 17);
-          uint32_t CRC32_val = CRC32.crc32((byte *)packet, sizeof(packet) );;
-      
-          //Split the 4 bytes of the CRC32 value into individual bytes and send
-          Serial.write( ((CRC32_val >> 24) & 255) );
-          Serial.write( ((CRC32_val >> 16) & 255) );
-          Serial.write( ((CRC32_val >> 8) & 255) );
-          Serial.write( (CRC32_val & 255) );
-          */
+          sendSerialPayload(&serialPayload, 17);
 
         }
         //else if(length == 0x202)
@@ -577,27 +547,20 @@ void processSerialCommand()
     }
 
     case 'w':
-      if(Serial.available() >= 7)
-        {
-          byte offset1, offset2, length1, length2;
+    {
+      byte offset1, offset2, length1, length2;
 
-          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-          currentPage = Serial.read();
-          //currentPage = 1;
-          offset1 = Serial.read();
-          offset2 = Serial.read();
-          valueOffset = word(offset2, offset1);
-          length1 = Serial.read();
-          length2 = Serial.read();
-          chunkSize = word(length2, length1);
-        }
+      uint8_t cmd = serialPayload[2];
+      offset1 = serialPayload[3];
+      offset2 = serialPayload[4];
+      uint16_t valueOffset = word(offset2, offset1);
+      length1 = serialPayload[5];
+      length2 = serialPayload[6];
+      uint16_t chunkSize = word(length2, length1);
+
 #ifdef RTC_ENABLED
-      if(currentPage == SD_READWRITE_PAGE)
+      if(cmd == SD_READWRITE_PAGE)
         { 
-          cmdPending = false;
-
-          //Reserved for the SD card settings. Appears to be hardcoded into TS. Flush the final byte in the buffer as its not used for now
-          Serial.read(); 
           if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
           {
             /*
@@ -609,7 +572,8 @@ void processSerialCommand()
             4 Load status variable
             5 Init SD card
             */
-            Serial.read();
+            setTS_SD_status(); //Set SD status values
+            sendSerialReturnCode(SERIAL_RC_OK);
           }
           else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
           {
@@ -634,42 +598,47 @@ void processSerialCommand()
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
-            Serial.read();
-            Serial.read();
-            Serial.read();
-            Serial.read();
+            uint32_t sector;
+            uint8_t sector1 = serialPayload[7];
+            uint8_t sector2 = serialPayload[8];
+            uint8_t sector3 = serialPayload[9];
+            uint8_t sector4 = serialPayload[10];
+            sector = (sector1 << 24) | (sector2 << 16) | (sector3 << 8) | sector4;
+
 
             //Last 4 bytes are the number of sectors to test
-            Serial.read();
-            Serial.read();
-            Serial.read();
-            Serial.read();
+            uint32_t testSize;
+            uint8_t testSize1 = serialPayload[11];
+            uint8_t testSize2 = serialPayload[12];
+            uint8_t testSize3 = serialPayload[13];
+            uint8_t testSize4 = serialPayload[14];
+            testSize = (testSize1 << 24) | (testSize2 << 16) | (testSize3 << 8) | testSize4; 
+
+            sendSerialReturnCode(SERIAL_RC_OK);
+
           }
         }
-        else if(currentPage == SD_RTC_PAGE)
+        else if(cmd == SD_RTC_PAGE)
         {
           cmdPending = false;
           //Used for setting RTC settings
           if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
           {
             //Set the RTC date/time
-            //Need to ensure there are 9 more bytes with the new values
-            while(Serial.available() < 9) {} //Terrible hack, but RTC values should not be set with the engine running anyway
-            byte second = Serial.read();
-            byte minute = Serial.read();
-            byte hour = Serial.read();
-            //byte dow = Serial.read();
-            Serial.read(); // This is the day of week value, which is currently unused
-            byte day = Serial.read();
-            byte month = Serial.read();
-            uint16_t year = Serial.read();
-            year = word(Serial.read(), year);
-            Serial.read(); //Final byte is unused (Always has value 0x5a)
+            byte second = serialPayload[7];
+            byte minute = serialPayload[8];
+            byte hour = serialPayload[9];
+            //byte dow = serialPayload[10]; //Not used
+            byte day = serialPayload[11];
+            byte month = serialPayload[12];
+            uint16_t year = word(serialPayload[14], serialPayload[13]);
             rtc_setTime(second, minute, hour, day, month, year);
+            sendSerialReturnCode(SERIAL_RC_OK);
           }
         }
 #endif
       break;
+    }
 
     default:
       break;
