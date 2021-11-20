@@ -3378,7 +3378,7 @@ void triggerSetup_ThirtySixMinus222(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  toothLastMinusOneToothTime = 0;
+  lastGap = 0;
   toothCurrentCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
@@ -3397,10 +3397,10 @@ void triggerPri_ThirtySixMinus222(void)
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
      //toothSystemCount is used to keep track of which missed tooth we're on. It will be set to 1 if that last tooth seen was the middle one in the -2-2 area. At all other times it will be 0
-     if(toothSystemCount == 0) { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+     if(toothSystemCount == 0) { targetGap = lastGap * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
 
-     if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; }
+     if(toothLastToothTime == 0) { curGap = 0; }
 
      if ( (curGap > targetGap) )
      {
@@ -3462,7 +3462,7 @@ void triggerPri_ThirtySixMinus222(void)
        toothSystemCount = 0;
      }
 
-     toothLastMinusOneToothTime = toothLastToothTime;
+     if (toothLastToothTime > 0) { lastGap = curGap; }
      toothLastToothTime = curTime;
 
      //EXPERIMENTAL!
@@ -3560,7 +3560,7 @@ void triggerSetup_ThirtySixMinus21(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  toothLastMinusOneToothTime = 0;
+  lastGap = 0;
   toothCurrentCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
@@ -3579,10 +3579,10 @@ void triggerPri_ThirtySixMinus21(void)
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
     
-     targetGap2 = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) ; //Multiply by 3 (Checks for a gap 3x greater than the last one)
+     targetGap2 = 3 * lastGap; //Multiply by 3 (Checks for a gap 3x greater than the last one)
      targetGap = targetGap2 >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth decoder)
 
-     if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { curGap = 0; }
+     if(toothLastToothTime == 0) { curGap = 0; }
 
      if ( (curGap > targetGap) )
      {
@@ -3623,7 +3623,7 @@ void triggerPri_ThirtySixMinus21(void)
 
      }
 
-     toothLastMinusOneToothTime = toothLastToothTime;
+     if (toothLastToothTime > 0) { lastGap = curGap; }
      toothLastToothTime = curTime;
 
      //EXPERIMENTAL!
