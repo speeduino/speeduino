@@ -63,7 +63,6 @@ volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for de
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
 volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
-volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 volatile unsigned long toothLastToothRisingTime = 0; //The time (micros()) that the last tooth rose (used by special decoders to determine missing teeth polarity)
 volatile unsigned long toothLastSecToothRisingTime = 0; //The time (micros()) that the last tooth rose on the secondary input (used by special decoders to determine missing teeth polarity)
@@ -2095,7 +2094,7 @@ void triggerSetup_Miata9905(void)
 
   if(initialisationComplete == false) { secondaryToothCount = 0; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   else { toothLastToothTime = 0; }
-  toothLastMinusOneToothTime = 0;
+  lastGap = 0;
 
   //Note that these angles are for every rising and falling edge
 
@@ -2195,7 +2194,7 @@ void triggerPri_Miata9905(void)
       }
     } //Has sync
 
-    toothLastMinusOneToothTime = toothLastToothTime;
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
     //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
@@ -2222,7 +2221,6 @@ void triggerSec_Miata9905(void)
   if ( curGap2 >= triggerSecFilterTime )
   {
     toothLastSecToothTime = curTime2;
-    lastGap = curGap2;
     secondaryToothCount++;
 
     //TODO Add some secondary filtering here
@@ -2242,14 +2240,14 @@ uint16_t getRPM_Miata9905(void)
   uint16_t tempRPM = 0;
   if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
   {
-    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+    if( lastGap == 0 ) { tempRPM = 0; }
     else
     {
       int tempToothAngle;
       unsigned long toothTime;
       noInterrupts();
       tempToothAngle = triggerToothAngle;
-      toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
+      toothTime = lastGap; //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
       interrupts();
       toothTime = toothTime * 36;
       tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
@@ -2406,7 +2404,7 @@ void triggerPri_MazdaAU(void)
       if( (toothCurrentCount == 1) || (toothCurrentCount == 3) ) { triggerToothAngle = 72; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
       else { triggerToothAngle = 108; triggerFilterTime = (curGap * 3) >> 3; } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
 
-      toothLastMinusOneToothTime = toothLastToothTime;
+      if (toothLastToothTime > 0) { lastGap = curGap; }
       toothLastToothTime = curTime;
     } //Has sync
   } //Filter time
@@ -2415,7 +2413,7 @@ void triggerPri_MazdaAU(void)
 void triggerSec_MazdaAU(void)
 {
   curTime2 = micros();
-  lastGap = curGap2;
+  unsigned long lastGap2 = curGap2;
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
@@ -2433,7 +2431,7 @@ void triggerSec_MazdaAU(void)
     else
     {
       triggerFilterTime = 1500; //In case the engine has been running and then lost sync.
-      targetGap = (lastGap) >> 1; //The target gap is set at half the last tooth gap
+      targetGap = (lastGap2) >> 1; //The target gap is set at half the last tooth gap
       if ( curGap2 < targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
       {
         secondaryToothCount = 2;
@@ -2457,7 +2455,7 @@ uint16_t getRPM_MazdaAU(void)
       int tempToothAngle;
       noInterrupts();
       tempToothAngle = triggerToothAngle;
-      revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
+      revolutionTime = lastGap; //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
       interrupts();
       revolutionTime = revolutionTime * 36;
       tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
