@@ -1,8 +1,7 @@
 #include "table3d_interpolate.h"
 
-// These are used to avoid floating point calculations
-// We convert 16-bit int values to unsigned long which then allows us to do
-// integer division with enough pseudo-precision. 
+// These are used to avoid floating point calculations.
+// Instead we use fixed point math with 8 bits of fractional precision.
 #define TABLE_SHIFT_FACTOR  8
 #define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
 #define TABLE_SHIFT_HALF    (1UL<<(TABLE_SHIFT_FACTOR-1))
@@ -109,36 +108,21 @@ static inline table3d_bin_t find_ybin(table3d_axis_t &value, const table3d_axis_
   return convert_ybin(find_bin(value, pAxis+size-1, size, -1, convert_ybin(lastBin, size)), size);
 }
 
-static inline unsigned long compute_x_position(table3d_axis_t x, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
+static inline uint16_t compute_bin_position(table3d_axis_t value, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
 {
   table3d_axis_t binMaxValue = pAxis[bin.max];
   table3d_axis_t binMinValue = pAxis[bin.min];
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
-  unsigned long p = (long)x - binMinValue;
-  //This only occurs if the requested X value was equal to one of the X axis bins
-  if (binWidth==0)
-  { 
-    return (p << TABLE_SHIFT_FACTOR); 
-  }  
-  //This is the standard case
-  return (p << TABLE_SHIFT_FACTOR) / binWidth;
+  // Since we can have bins of any width, we need to use 
+  // 24.8 fixed point to avoid overflow
+  uint32_t p = (uint32_t)(value - binMinValue) << TABLE_SHIFT_FACTOR;
+  // But since we are computing the ratio (0 to 1), p is guarenteed to be
+  // less than binWidth and thus the division below will result in a value
+  // <=1. So we can reduce the data type from 24.8 (uint32_t) to 1.8 (uint16_t)
+  return p / binWidth;  
 }
 
-static inline unsigned long compute_y_position(table3d_axis_t y, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
-{
-  table3d_axis_t binMaxValue = pAxis[bin.max];
-  table3d_axis_t binMinValue = pAxis[bin.min];
-  table3d_axis_t binWidth = binMaxValue-binMinValue;
-
-  unsigned long q = (long)y - binMinValue;
-  if (binWidth==0)
-  { 
-    return (q << TABLE_SHIFT_FACTOR);
-  }
-  //Standard case
-  return TABLE_SHIFT_POWER - ( (q << TABLE_SHIFT_FACTOR) / binWidth );
-}
 
 // ============================= End internal support functions =========================
 
@@ -192,17 +176,16 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
 
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      unsigned long p = compute_x_position(X_in, pValueCache->lastXBins, pXAxis);
-      unsigned long q = compute_y_position(Y_in, pValueCache->lastYBins, pYAxis);
+      uint16_t p = compute_bin_position(X_in, pValueCache->lastXBins, pXAxis);
+      uint16_t q = compute_bin_position(Y_in, pValueCache->lastYBins, pYAxis);
 
-      // Add the equivalent of 0.5 to the final calculation pre-rounding.
-      // This will have the effect of rounding to the nearest integer, rather
-      // than always rounding down.
-      uint32_t m = (((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      uint32_t n = ((p * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      uint32_t o = (((TABLE_SHIFT_POWER-p) * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      uint32_t r = ((p * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r)) >> TABLE_SHIFT_FACTOR;
+      // p & q are in the range 0-256.
+      uint16_t m = (((TABLE_SHIFT_POWER-p) * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      // Careful of multiplication overflow in this one case
+      uint16_t n = (((uint32_t)p * (uint32_t)q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      uint16_t o = (((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      uint16_t r = ((p * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> TABLE_SHIFT_FACTOR;
     }
 
     return pValueCache->lastOutput;
