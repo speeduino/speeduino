@@ -154,7 +154,6 @@ void initialiseAuxPWM()
 
 }
 
-#define BOOST_HYSTER  40
 void boostControl()
 {
   if( configPage6.boostEnabled==1 )
@@ -243,10 +242,10 @@ void boostControl()
         }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
-      if(currentStatus.MAP >= currentStatus.baro ) //Only engage boost control above baro pressure
+      if(((configPage6.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage6.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage2.boostControlEnableThreshold))) //Only engage boost control above baro pressure
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-        if( configPage2.flexEnabled == 1 )
+        if(configPage2.flexEnabled == 1)
         {
           currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
         }
@@ -266,12 +265,14 @@ void boostControl()
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
-          bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
+          bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
           if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
           else
           {
             if(PIDcomputed == true)
             {
+              // int16_t boostDutyTemp = (int16_t)currentStatus.boostDuty  + (int16_t)(get3DTableValue(&boostTableLookupDuty, currentStatus.MAP, currentStatus.RPM) * 50) + (int16_t)-5000;
+              // currentStatus.boostDuty = (int16_t(get3DTableValue(&boostTableLookupDuty, currentStatus.MAP, currentStatus.RPM)) * 50); 
               boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
               ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
@@ -286,10 +287,13 @@ void boostControl()
       }
       else
       {
-        //Boost control does nothing if kPa below the hyster point
-        boostDisable();
+        boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
+        //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
+        currentStatus.boostDuty = configPage2.boostDCWhenDisabled*100;
+        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       } //MAP above boost + hyster
-    } //Open / Cloosed loop
+    } //Open / Closed loop
   }
   else { // Disable timer channel and zero the flex boost correction status
     DISABLE_BOOST_TIMER();

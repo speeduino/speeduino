@@ -489,8 +489,8 @@ void doUpdates()
     configPage4.vvt2PWMdir = 0;
     configPage10.TrigEdgeThrd = 0;
 
-    //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    //Old use as On/Off selection is removed, bit is now reused for boost, so change VVT mode to On/Off based on that
+    if(configPage6.boostControlEnable == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -516,6 +516,17 @@ void doUpdates()
 
     writeAllConfig();
     storeEEPROMVersion(18);
+  }
+
+  if(readEEPROMVersion() == 18)
+  {
+    configPage2.boostDCWhenDisabled = 0;
+    configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;
+    
+    //TODO fill the boostTableLookupDuty with all 50% duty cycle for backward compatibilty.  
+
+    // writeAllConfig();
+    // storeEEPROMVersion(19);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)

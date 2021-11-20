@@ -274,6 +274,9 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define EN_BOOST_CONTROL_BARO   0
+#define EN_BOOST_CONTROL_FIXED  1
+
 #define WMI_MODE_SIMPLE       0
 #define WMI_MODE_PROPORTIONAL 1
 #define WMI_MODE_OPENLOOP     2
@@ -441,6 +444,7 @@ extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
 extern struct table3d8RpmTps boostTable; //8x8 boost map
+extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
 extern struct table3d8RpmTps vvtTable; //8x8 vvt map
 extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
@@ -897,7 +901,8 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte unused2_95[2];
+  byte boostDCWhenDisabled;
+  byte boostControlEnableThreshold; //if fixed value enable set threshold here.
 
 #if defined(CORE_AVR)
   };
@@ -1037,7 +1042,7 @@ struct config6 {
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
   byte boostPin : 6;
-  byte unused_bit : 1; //Previously was VVTasOnOff
+  byte boostControlEnable : 1; //Previously was VVTasOnOff
   byte useEMAP : 1;    ///< Enable EMAP
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage

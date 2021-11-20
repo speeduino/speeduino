@@ -196,6 +196,7 @@ void writeConfig(uint8_t pageNum)
       result = writeTable(&boostTable, boostTable.type_key, { EEPROM_CONFIG7_MAP1, 0 });
       result = writeTable(&vvtTable, vvtTable.type_key, { EEPROM_CONFIG7_MAP2, result.counter });
       result = writeTable(&stagingTable, stagingTable.type_key, { EEPROM_CONFIG7_MAP3, result.counter });
+      result = writeTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, { EEPROM_CONFIG7_MAP4, result.counter });
       break;
 
     case seqFuelPage:
@@ -373,6 +374,7 @@ void loadConfig()
   loadTable(&boostTable, boostTable.type_key, EEPROM_CONFIG7_MAP1);
   loadTable(&vvtTable, vvtTable.type_key,  EEPROM_CONFIG7_MAP2);
   loadTable(&stagingTable, stagingTable.type_key, EEPROM_CONFIG7_MAP3);
+  loadTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, EEPROM_CONFIG7_MAP4);
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
