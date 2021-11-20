@@ -371,6 +371,7 @@ void triggerSetup_missingTooth(void)
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
+  lastGap = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage4.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -3988,7 +3989,7 @@ void triggerSetup_FordST170(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   checkSyncToothCount = (36) >> 1; //50% of the total teeth.
-  toothLastMinusOneToothTime = 0;
+  lastGap = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
   toothOneTime = 0;
@@ -4155,7 +4156,7 @@ void triggerSec_DRZ400(void)
     if(currentStatus.hasSync == false)
     {
       toothLastToothTime = micros();
-      toothLastMinusOneToothTime = micros() - (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+      lastGap = (6000000 / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       toothCurrentCount = configPage4.triggerTeeth;
       currentStatus.syncLossCounter++;
       currentStatus.hasSync = true;
@@ -4193,7 +4194,7 @@ void triggerSetup_NGC(void)
   toothCurrentCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
-  toothLastMinusOneToothTime = 0;
+  lastGap = 0;
   toothLastToothRisingTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * 2 ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
@@ -4250,12 +4251,12 @@ void triggerPri_NGC(void)
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
     bool isMissingTooth = false;
 
-    if ( toothLastToothTime > 0 && toothLastMinusOneToothTime > 0 ) { //Make sure we haven't enough tooth information to calculate missing tooth length
+    if ( lastGap > 0 ) { //Make sure we have enough tooth information to calculate missing tooth length
 
       //Only check for missing tooth if we expect this one to be it or if we haven't found one yet
       if (toothCurrentCount == 17 || toothCurrentCount == 35 || ( currentStatus.hasSync == false && BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) == false) ) {
         //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-        if (curGap > ( (toothLastToothTime - toothLastMinusOneToothTime) * 2 ) )
+        if (curGap > ( lastGap * 2 ) )
         {
           isMissingTooth = true; //Missing tooth detected
           triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
@@ -4325,12 +4326,7 @@ void triggerPri_NGC(void)
       }
     }
 
-    if (isMissingTooth == true) { // If we have a missing tooth, copy the gap from the previous tooth as that is the correct normal tooth length
-      toothLastMinusOneToothTime = curTime - (toothLastToothTime - toothLastMinusOneToothTime);
-    }
-    else {
-      toothLastMinusOneToothTime = toothLastToothTime;
-    }
+    if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastToothTime = curTime;
 
     //NEW IGNITION MODE
