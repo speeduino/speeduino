@@ -25,6 +25,7 @@ void initialiseFan()
   else { fanHIGH = HIGH; fanLOW = LOW; }
   digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
   currentStatus.fanOn = false;
+  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_RAD_FAN_STAT);
 
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
@@ -54,12 +55,14 @@ void fanControl()
         FAN_ON(); 
       }
       currentStatus.fanOn = true;
+      BIT_SET(currentStatus.status4, BIT_STATUS4_RAD_FAN_STAT);
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       FAN_OFF();
       currentStatus.fanOn = false;
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_RAD_FAN_STAT);
     }
   }
 }
