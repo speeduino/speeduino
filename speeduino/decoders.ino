@@ -380,7 +380,6 @@ void triggerSetup_missingTooth()
   }
   secondDerivEnabled = false;
   decoderIsSequential = false;
-  checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
