@@ -235,13 +235,31 @@ void loop()
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
+      ATFS_previousShiftState = ATFS_shiftState;  //Not used for now.
+
       //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
       if(configPage6.flatSEnable || configPage6.launchEnabled){
         if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
         else { clutchTrigger = !digitalRead(pinLaunch); }
       }
 
+      if (configPage6.ATFS_enable){
+
+        if ((currentStatus.RPM >= configPage9.ATFS_RPM_MIN*100) && (currentStatus.rpmDOT < 0) && (currentStatus.rpmDOT <= configPage9.ATFS_RPM_drop*100) &&  (currentStatus.TPS >= configPage9.ATFS_TPS_th) && (currentStatus.MAP >= configPage9.ATFS_MAP_th))
+        {
+          ATFS_shiftState = true;
+        }
+        else
+        {
+          ATFS_shiftState = false;
+        }
+
+      }
+
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
+      if(!ATFS_previousShiftState && ATFS_shiftState){ATFS_shift_engaged_RPM = currentStatus.RPM;}  //not used, actually.
+
+
 
       if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
       { 
@@ -258,6 +276,14 @@ void loop()
         //If launch is not active, check whether flat shift should be active
         if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
         else { currentStatus.flatShiftingHard = false; }
+
+        if(configPage6.ATFS_enable &&  ATFS_shiftState && (currentStatus.RPM > configPage9.ATFS_RPM_MAX*100))
+        { currentStatus.flatShiftingHard = true;
+         BIT_SET(currentStatus.spark, BIT_SPARK2_FLATSH);} //not sure if need to set bit,   MT code up here does not.
+        else 
+        { currentStatus.flatShiftingHard = false; 
+        BIT_CLEAR(currentStatus.spark, BIT_SPARK2_FLATSH);}
+
       }
 
       //And check whether the tooth log buffer is ready

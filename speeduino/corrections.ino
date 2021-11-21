@@ -679,6 +679,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
+  advance = correctionATFlatShift(advance);
   advance = correctionKnock(advance);
 
   //Fixed timing check must go last
@@ -838,6 +839,8 @@ int8_t correctionSoftLaunch(int8_t advance)
 
   return ignSoftLaunchValue;
 }
+
+
 /** Ignition correction for soft flat shift.
  */
 int8_t correctionSoftFlatShift(int8_t advance)
@@ -853,6 +856,38 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   return ignSoftFlatValue;
 }
+
+
+
+/** Ignition correction for soft flat shift for AT trans.
+ */
+int8_t correctionATFlatShift(int8_t advance)
+{
+  int8_t ignSoftFlatValue = advance;
+
+  if(configPage6.ATFS_enable && ATFS_shiftState && (currentStatus.RPM >= configPage9.ATFS_RPM_MIN*100) && (currentStatus.RPM <= configPage9.ATFS_RPM_MAX*100))
+  {
+    //int8_t temp_adv = FS_advance_when_min + int(FS_slope*(currentStatus.RPM-FS_RPM_MAX));
+    int8_t temp_adv = map(currentStatus.RPM, configPage9.ATFS_RPM_MIN*100, configPage9.ATFS_RPM_MAX*100, configPage9.ATFS_adv_when_min, configPage9.ATFS_adv_when_max);
+    if (temp_adv<advance){
+      BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+      ignSoftFlatValue = temp_adv;
+    }
+    else{
+      BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
+
+    }
+  }
+  else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
+
+  return ignSoftFlatValue;
+}
+
+
+
+
+
+
 /** Ignition knock (retard) correction.
  */
 int8_t correctionKnock(int8_t advance)

@@ -546,6 +546,12 @@ extern volatile unsigned long ms_counter; //A counter that increments once per m
 extern uint16_t fixedCrankingOverride;
 extern bool clutchTrigger;
 extern bool previousClutchTrigger;
+
+//722 flatshiftvars  ATFS_
+extern bool ATFS_previousShiftState;
+extern bool ATFS_shiftState;
+extern uint16_t ATFS_shift_engaged_RPM;
+
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
@@ -1015,7 +1021,7 @@ struct config6 {
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
   byte boostPin : 6;
-  byte unused_bit : 1; //Previously was VVTasOnOff
+  byte ATFS_enable : 1; //Previously was VVTasOnOff
   byte useEMAP : 1;    ///< Enable EMAP
   byte voltageCorrectionBins[6]; //X axis bins for voltage correction tables
   byte injVoltageCorrectionValues[6]; //Correction table for injector PW vs battery voltage
@@ -1130,13 +1136,16 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_162;
-  byte unused10_163;
-  byte unused10_164;
-  byte unused10_165;
-  byte unused10_166;
-  byte unused10_167;
-  byte unused10_168;
+  // AT flatshift here ATFS_ prefix, also ATFS_enable in page 6
+  uint8_t ATFS_RPM_MIN;
+  uint8_t ATFS_RPM_MAX;
+  int8_t ATFS_adv_when_min;
+  int8_t ATFS_adv_when_max;
+  uint8_t ATFS_TPS_th;
+  uint8_t ATFS_MAP_th;
+  int8_t ATFS_RPM_drop;
+
+
   byte unused10_169;
   byte unused10_170;
   byte unused10_171;
