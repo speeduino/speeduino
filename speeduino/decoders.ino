@@ -386,6 +386,7 @@ void triggerSetup_missingTooth()
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage4.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  lastGap = 0;
 }
 
 void triggerPri_missingTooth()
@@ -397,7 +398,7 @@ void triggerPri_missingTooth()
     toothCurrentCount++; //Increment the tooth counter
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
+    if( lastGap > 0 )
     {
       bool isMissingTooth = false;
 
@@ -412,8 +413,8 @@ void triggerPri_missingTooth()
       {
         //Begin the missing tooth detection
         //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-        if(configPage4.triggerMissingTeeth == 1) { targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-        else { targetGap = ((toothLastToothTime - toothLastMinusOneToothTime)) * configPage4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+        if(configPage4.triggerMissingTeeth == 1) { targetGap = (3 * lastGap) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+        else { targetGap = lastGap * configPage4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
         if ( (curGap > targetGap) || (toothCurrentCount > triggerActualTeeth) )
         {
@@ -460,7 +461,8 @@ void triggerPri_missingTooth()
             else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
             triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-            toothLastMinusOneToothTime = toothLastToothTime;
+            if (toothLastToothTime > 0) { lastGap = curGap; }
+            toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
             toothLastToothTime = curTime;
             triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
           }
@@ -471,7 +473,8 @@ void triggerPri_missingTooth()
       {
         //Regular (non-missing) tooth
         setFilter(curGap);
-        toothLastMinusOneToothTime = toothLastToothTime;
+        if (toothLastToothTime > 0) { lastGap = curGap; }
+        toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
         toothLastToothTime = curTime;
         triggerToothAngleIsCorrect = true;
       }
@@ -479,7 +482,8 @@ void triggerPri_missingTooth()
     else
     {
       //We fall here on initial startup when enough teeth have not yet been seen
-      toothLastMinusOneToothTime = toothLastToothTime;
+      if (toothLastToothTime > 0) { lastGap = curGap; }
+      toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
       toothLastToothTime = curTime;
     }
     
