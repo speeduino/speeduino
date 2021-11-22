@@ -1,12 +1,7 @@
 #include "table3d_interpolate.h"
 
-// These are used to avoid floating point calculations.
-// Instead we use fixed point math with 8 bits of fractional precision.
-#define TABLE_SHIFT_FACTOR  8
-#define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
-#define TABLE_SHIFT_HALF    (1UL<<(TABLE_SHIFT_FACTOR-1))
 
-// ============================= Internal support functions =========================
+// ============================= Axis Bin Searching =========================
 
 static inline bool is_in_bin(table3d_axis_t testValue, const table3d_axis_t *pMin, const table3d_axis_t *pMax)
 {
@@ -27,13 +22,13 @@ static inline table3d_bin_t find_bin(
   if (value>=pAxis[(size-1)*stride])
   {
     value = pAxis[(size-1)*stride];
-    return { static_cast<table3d_dim_t>(size-1), static_cast<table3d_dim_t>(size-1) };
+    return { .min = static_cast<table3d_dim_t>(size-1), .max = static_cast<table3d_dim_t>(size-1) };
   }
   // At or below minimum - clamp to lowest value
   if (value<=pAxis[0])
   {
     value = pAxis[0];
-    return { 0, 0 };
+    return { .min = 0, .max = 0 };
   }
   
   // Check the last bin and either side
@@ -50,12 +45,12 @@ static inline table3d_bin_t find_bin(
     // Check the bin above the last one
     if (lastBin.min>0 && is_in_bin(value, pMin - stride, pMax - stride))
     {
-      return { static_cast<table3d_dim_t>(lastBin.min-1), static_cast<table3d_dim_t>(lastBin.max-1) };    
+      return { .min = static_cast<table3d_dim_t>(lastBin.min-1), .max = static_cast<table3d_dim_t>(lastBin.max-1) };    
     }
     // Check the bin below the last one
     if (lastBin.max<(size-1) && is_in_bin(value, pMin + stride, pMax + stride))
     {
-      return { static_cast<table3d_dim_t>(lastBin.min+1), static_cast<table3d_dim_t>(lastBin.max+1) };    
+      return { .min = static_cast<table3d_dim_t>(lastBin.min+1), .max = static_cast<table3d_dim_t>(lastBin.max+1) };    
     }
   }
 
@@ -70,11 +65,11 @@ static inline table3d_bin_t find_bin(
   {
     if (value==*pIt || loop==0)
     {
-      return { static_cast<table3d_dim_t>(loop), static_cast<table3d_dim_t>(loop)};
+      return { .min = static_cast<table3d_dim_t>(loop), .max = static_cast<table3d_dim_t>(loop)};
     }
     if (is_in_bin(value, pIt - stride, pIt))
     {
-      return { static_cast<table3d_dim_t>(loop-1), static_cast<table3d_dim_t>(loop) };
+      return { .min = static_cast<table3d_dim_t>(loop-1), .max = static_cast<table3d_dim_t>(loop) };
     }
     --loop;
     pIt -= stride;
@@ -108,17 +103,47 @@ static inline table3d_bin_t find_ybin(table3d_axis_t &value, const table3d_axis_
   return convert_ybin(find_bin(value, pAxis+size-1, size, -1, convert_ybin(lastBin, size)), size);
 }
 
-static inline uint16_t compute_bin_position(table3d_axis_t value, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
+// ========================= Fixed point math =========================
+
+typedef uint16_t Q1X8_t;
+static constexpr uint8_t Q1X8_INTEGER_SHIFT = 8;
+static constexpr Q1X8_t Q1X8_ONE = 1U << Q1X8_INTEGER_SHIFT;
+static constexpr Q1X8_t Q1X8_HALF = 1U << (Q1X8_INTEGER_SHIFT-1);
+
+inline Q1X8_t mulQ1X8(Q1X8_t a, Q1X8_t b)
+{
+    // 1x1 == 1....but the real reason for this is to avoid 16-bit multiplication overflow.
+    //
+    // We are using uint16_t as our underlying fixed point type. If we follow the regular
+    // code path, we'd need to promote to uint32_t to avoid overflow.
+    //
+    // The overflow can only happen when *both* the X & Y inputs
+    // are at the edge of a bin. 
+    //
+    // This is a rare condition, so most of the time we can use 16-bit mutiplication and gain performance
+    if (a==Q1X8_ONE && b==Q1X8_ONE)
+    {
+        return Q1X8_ONE;
+    }
+  // Add the equivalent of 0.5 to the final calculation pre-rounding.
+  // This will have the effect of rounding to the nearest integer, rather
+  // than always rounding down.
+  return ((a * b) + Q1X8_HALF) >> Q1X8_INTEGER_SHIFT;
+}
+
+// ============================= Axis value to bin % =========================
+
+static inline Q1X8_t compute_bin_position(table3d_axis_t value, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
 {
   if (bin.max==bin.min) { return 0; }
   table3d_axis_t binMaxValue = pAxis[bin.max];
-  if (value==binMaxValue) { return TABLE_SHIFT_POWER; }
+  if (value==binMaxValue) { return Q1X8_ONE; }
   table3d_axis_t binMinValue = pAxis[bin.min];
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
   // Since we can have bins of any width, we need to use 
   // 24.8 fixed point to avoid overflow
-  uint32_t p = (uint32_t)(value - binMinValue) << TABLE_SHIFT_FACTOR;
+  uint32_t p = (uint32_t)(value - binMinValue) << Q1X8_INTEGER_SHIFT;
   // But since we are computing the ratio (0 to 1), p is guarenteed to be
   // less than binWidth and thus the division below will result in a value
   // <=1. So we can reduce the data type from 24.8 (uint32_t) to 1.8 (uint16_t)
@@ -127,7 +152,6 @@ static inline uint16_t compute_bin_position(table3d_axis_t value, const table3d_
 
 
 // ============================= End internal support functions =========================
-
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
@@ -178,16 +202,14 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
 
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      uint16_t p = compute_bin_position(X_in, pValueCache->lastXBins, pXAxis);
-      uint16_t q = compute_bin_position(Y_in, pValueCache->lastYBins, pYAxis);
+      const Q1X8_t p = compute_bin_position(X_in, pValueCache->lastXBins, pXAxis);
+      const Q1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBins, pYAxis);
 
-      // p & q are in the range 0-256.
-      uint16_t m = (((TABLE_SHIFT_POWER-p) * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      // Careful of multiplication overflow in this one case
-      uint16_t n = (((uint32_t)p * (uint32_t)q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      uint16_t o = (((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      uint16_t r = ((p * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
-      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> TABLE_SHIFT_FACTOR;
+      Q1X8_t m = mulQ1X8(Q1X8_ONE-p, q);
+      Q1X8_t n = mulQ1X8(p, q);
+      Q1X8_t o = mulQ1X8(Q1X8_ONE-p, Q1X8_ONE-q);
+      Q1X8_t r = mulQ1X8(p, Q1X8_ONE-q);
+      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> Q1X8_INTEGER_SHIFT;
     }
 
     return pValueCache->lastOutput;
