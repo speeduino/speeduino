@@ -449,12 +449,12 @@ void triggerPri_missingTooth()
 
         }
         else if (toothCurrentCount > triggerActualTeeth) { // Syncloss when we expect a missing tooth but don't find one
-          if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
+          if (currentStatus.hasSync == true || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) == true) { currentStatus.syncLossCounter++; }
           currentStatus.hasSync = false;
           BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
           setFilter(0); //Reset the filter to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
         }
-        else if (currentStatus.hasSync == false) { //Found a normal tooth and don't have sync
+        else { //Found a normal tooth and don't have sync
           setFilter(curGap);
         }
       }
