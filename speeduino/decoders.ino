@@ -405,16 +405,19 @@ void triggerPri_missingTooth()
       // Performance optimisation: Only check for missing tooth if we expect to find one
       if( currentStatus.hasSync == false || toothCurrentCount > triggerActualTeeth )
       {
-        //Begin the missing tooth detection
-        //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-        if(configPage4.triggerMissingTeeth == 1) { targetGap = (3 * lastGap) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-        else { targetGap = lastGap * configPage4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+        //We should only be here if we are trying to sync with a missing tooth or if this tooth is supposed to be a missing tooth
+        if(configPage4.triggerMissingTeeth == 1) { targetGap = (lastGap * 3) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+        else { targetGap = lastGap * configPage4.triggerMissingTeeth; } //Multiply by the number of missing teeth
 
-        if ( (curGap > targetGap) )
+        //This tooth is a missing tooth if the current gap is bigger (as calculated for targetGap) than a normal gap
+        if ( curGap > targetGap )
         {
           //Missing tooth detected
           isMissingTooth = true;
           toothCurrentCount = 1;
+          toothOneMinusOneTime = toothOneTime;
+          toothOneTime = curTime;
+          triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
 
           if(currentStatus.hasSync == true)
           {
@@ -429,8 +432,6 @@ void triggerPri_missingTooth()
             else { revolutionOne = 0; }
           }
           else {revolutionOne = !revolutionOne;} //Flip sequential revolution tracker if poll level is not used
-          toothOneMinusOneTime = toothOneTime;
-          toothOneTime = curTime;
 
           //if Sequential fuel or ignition is in use, further checks are needed before determining sync
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
@@ -446,7 +447,6 @@ void triggerPri_missingTooth()
           }
           else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
-          triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
         }
         else if (toothCurrentCount > triggerActualTeeth) { // Syncloss when we expect a missing tooth but don't find one
           if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
