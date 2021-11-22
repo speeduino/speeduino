@@ -110,7 +110,9 @@ static inline table3d_bin_t find_ybin(table3d_axis_t &value, const table3d_axis_
 
 static inline uint16_t compute_bin_position(table3d_axis_t value, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
 {
+  if (bin.max==bin.min) { return 0; }
   table3d_axis_t binMaxValue = pAxis[bin.max];
+  if (value==binMaxValue) { return TABLE_SHIFT_POWER; }
   table3d_axis_t binMinValue = pAxis[bin.min];
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
