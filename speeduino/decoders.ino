@@ -447,9 +447,6 @@ void triggerPri_missingTooth()
           else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
           triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-          if (toothLastToothTime > 0) { lastGap = curGap; }
-          toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
-          toothLastToothTime = curTime;
           triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
         }
         else {
@@ -466,20 +463,15 @@ void triggerPri_missingTooth()
       {
         //Regular (non-missing) tooth
         setFilter(curGap);
-        if (toothLastToothTime > 0) { lastGap = curGap; }
-        toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
-        toothLastToothTime = curTime;
         triggerToothAngleIsCorrect = true;
       }
     }
-    else
-    {
-      //We fall here on initial startup when enough teeth have not yet been seen
-      if (toothLastToothTime > 0) { lastGap = curGap; }
-      toothLastMinusOneToothTime = toothLastToothTime; //This is used by crankingGetRPM
-      toothLastToothTime = curTime;
-    }
     
+    //Always update these when we find a tooth
+    
+    if (toothLastToothTime > 0) { lastGap = curGap; }
+    toothLastMinusOneToothTime = toothLastToothTime; //This is used by multiple other functions
+    toothLastToothTime = curTime;
 
     //NEW IGNITION MODE
     if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
