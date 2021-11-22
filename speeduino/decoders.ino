@@ -400,7 +400,7 @@ void triggerPri_missingTooth()
     if( lastGap > 0 )
     {
       bool isMissingTooth = false;
-      toothCurrentCount++; //Only increment the tooth counter when we can check if it's a missing tooth
+      toothCurrentCount++; //Only start increment the tooth counter after we can check if there's a missing tooth
 
       // Performance optimisation: Only check for missing tooth if we expect to find one
       if( currentStatus.hasSync == false || toothCurrentCount > triggerActualTeeth )
