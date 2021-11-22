@@ -164,10 +164,10 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
 
               C          D
     */
-    table3d_axis_t A = pValues[pValueCache->lastYBins.max * axisSize + pValueCache->lastXBins.min];
-    table3d_axis_t B = pValues[pValueCache->lastYBins.max * axisSize + pValueCache->lastXBins.max];
-    table3d_axis_t C = pValues[pValueCache->lastYBins.min * axisSize + pValueCache->lastXBins.min];
-    table3d_axis_t D = pValues[pValueCache->lastYBins.min * axisSize + pValueCache->lastXBins.max];
+    table3d_value_t A = pValues[pValueCache->lastYBins.max * axisSize + pValueCache->lastXBins.min];
+    table3d_value_t B = pValues[pValueCache->lastYBins.max * axisSize + pValueCache->lastXBins.max];
+    table3d_value_t C = pValues[pValueCache->lastYBins.min * axisSize + pValueCache->lastXBins.min];
+    table3d_value_t D = pValues[pValueCache->lastYBins.min * axisSize + pValueCache->lastXBins.max];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { pValueCache->lastOutput = A; }
