@@ -446,29 +446,25 @@ void triggerPri_missingTooth()
           }
           else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
 
-          triggerFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
           triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
         }
-        else {
-          // We end up with re-sync when:
-          // 1. We are not synced and find a tooth that isn't a missing tooth
-          // 2. We are synced and there isn't a missing tooth where we expected to find one
+        else if (toothCurrentCount > triggerActualTeeth) { // Syncloss when we expect a missing tooth but don't find one
           if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
           currentStatus.hasSync = false;
           BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+          setFilter(0); //Reset the filter to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+        }
+        else if (currentStatus.hasSync == false) { //Found a normal tooth and don't have sync
+          setFilter(curGap);
         }
       }
-      
-      if(isMissingTooth == false)
-      {
-        //Regular (non-missing) tooth
+      else { //Found a normal tooth and have sync
         setFilter(curGap);
         triggerToothAngleIsCorrect = true;
       }
     }
     
     //Always update these when we find a tooth
-    
     if (toothLastToothTime > 0) { lastGap = curGap; }
     toothLastMinusOneToothTime = toothLastToothTime; //This is used by multiple other functions
     toothLastToothTime = curTime;
