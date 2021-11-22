@@ -399,7 +399,6 @@ void triggerPri_missingTooth()
 
     if( lastGap > 0 )
     {
-      bool isMissingTooth = false;
       toothCurrentCount++; //Only start increment the tooth counter after we can check if there's a missing tooth
 
       // Performance optimisation: Only check for missing tooth if we expect to find one
@@ -413,7 +412,6 @@ void triggerPri_missingTooth()
         if ( curGap > targetGap )
         {
           //Missing tooth detected
-          isMissingTooth = true;
           toothCurrentCount = 1;
           toothOneMinusOneTime = toothOneTime;
           toothOneTime = curTime;
