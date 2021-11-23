@@ -15,14 +15,17 @@
 #define SD_RTC_PAGE         0x07
 #define SD_READ_STAT_OFFSET 0x0000
 #define SD_READ_STAT_LENGTH 0x1000
-#define SD_READ_DIR_OFFSET  0x0100
-#define SD_READ_DIR_LENGTH  0x0200
+#define SD_READ_DIR_OFFSET  0x0000
+#define SD_READ_DIR_LENGTH  0x0202
 #define SD_READ_SEC_OFFSET  0x0200
 #define SD_READ_SEC_LENGTH  0x0400
 #define SD_READ_STRM_OFFSET 0x0400
 #define SD_READ_STRM_LENGTH 0x0100
 #define SD_WRITE_DO_OFFSET  0x0000
-#define SD_WRITE_DO_LENGTH  0x0001
+//#define SD_WRITE_DO_LENGTH  0x0001
+#define SD_WRITE_DO_LENGTH  0x0100
+#define SD_WRITE_DIR_OFFSET 0x0100
+#define SD_WRITE_DIR_LENGTH 0x0200
 #define SD_WRITE_SEC_OFFSET 0x0300
 #define SD_WRITE_SEC_LENGTH 0x0402
 #define SD_ERASEFILE_OFFSET 0x0600
@@ -54,6 +57,7 @@ extern bool serialReceivePending; /**< Whether or not a serial request has only 
 extern uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
 extern uint16_t serialBytesReceived; /**< The number of bytes received in the serial buffer during the current command. */
 extern bool serialWriteInProgress;
+extern uint16_t SDcurrentDirChunk;
 
 void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void processSerialCommand();

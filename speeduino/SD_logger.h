@@ -23,6 +23,7 @@
 #define SD_STATUS_CARD_ERROR        4 //0=no error, 1=error
 #define SD_STATUS_CARD_VERSION      5 //0=1.x, 1=2.x
 #define SD_STATUS_CARD_FS           6 //0=no FAT16, 1=FAT32
+#define SD_STATUS_CARD_UNUSED       7 //0=normal, 1=unused
 
 
 #define SD_SECTOR_SIZE              512 // Standard SD sector size
@@ -35,7 +36,9 @@
 
 //Test values only
 #define SD_LOG_FILE_SIZE  10000000 //Defuault 10mb file size
-#define LOG_FILENAME "SdioLogger.csv"
+#define MAX_LOG_FILES     10000
+#define LOG_FILE_PREFIX "SPD_"
+#define LOG_FILE_EXTENSION "csv"
 #define RING_BUF_CAPACITY SD_LOG_ENTRY_SIZE * 10 //Allow for 10 entries in the ringbuffer. Will need tuning
 
 /*
@@ -50,6 +53,7 @@ extern ExFile logFile;
 extern RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 
 extern uint8_t SD_status;
+extern uint16_t currentLogFileNumber;
 
 void initSD();
 void writeSDLogEntry();
@@ -60,6 +64,8 @@ void setTS_SD_status();
 void formatExFat();
 bool createLogFile();
 void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
+uint16_t getNextSDLogFileNumber();
+bool getSDLogFileDetails(uint8_t* , uint16_t);
 
 
 
