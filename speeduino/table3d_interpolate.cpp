@@ -18,20 +18,8 @@ static inline table3d_bin_t find_bin(
   int8_t stride,                // Direction to search (1 coventional, -1 to go backwards from pAxis)
   const table3d_bin_t &lastBin) // The last result from this call - used to speed up searches
 {
-  // At or above maximum - clamp to final value
-  if (value>=pAxis[(size-1)*stride])
-  {
-    value = pAxis[(size-1)*stride];
-    return { .min = static_cast<table3d_dim_t>(size-1), .max = static_cast<table3d_dim_t>(size-1) };
-  }
-  // At or below minimum - clamp to lowest value
-  if (value<=pAxis[0])
-  {
-    value = pAxis[0];
-    return { .min = 0, .max = 0 };
-  }
-  
-  // Check the last bin and either side
+  // Check the cached last bin and either side first - it's likely that this will give a hit under
+  // real world conditions
   {
     // Pointer arith is quicker than offseting every call
     const table3d_axis_t *pMin = pAxis+(lastBin.min*stride);
@@ -54,49 +42,49 @@ static inline table3d_bin_t find_bin(
     }
   }
 
+  // At or above maximum - clamp to final value
+  if (value>=pAxis[(size-1)*stride])
+  {
+    value = pAxis[(size-1)*stride];
+    return { .min = static_cast<table3d_dim_t>(size-2), .max = static_cast<table3d_dim_t>(size-1) };
+  }
+  // At or below minimum - clamp to lowest value
+  if (value<=pAxis[0])
+  {
+    value = pAxis[0];
+    return { .min = 0, .max = 1 };
+  }
+
   // No hits above, so run a linear search.
   // We start at the maximum & work down, rather than looping from [0] up to [max]
   // This is because the important tables (fuel and injection) will have the highest
   // RPM at the top of the X axis, so starting there will mean the best case occurs 
   // when the RPM is highest (and hence the CPU is needed most)
   int8_t loop=size-1;
-  const table3d_axis_t *pIt = pAxis + (loop*stride);
-  while (loop>=0)
+  const table3d_axis_t *pMax = pAxis + (loop*stride);
+  while (loop>1 && !is_in_bin(value, pMax - stride, pMax))
   {
-    if (value==*pIt || loop==0)
-    {
-      return { .min = static_cast<table3d_dim_t>(loop), .max = static_cast<table3d_dim_t>(loop)};
-    }
-    if (is_in_bin(value, pIt - stride, pIt))
-    {
-      return { .min = static_cast<table3d_dim_t>(loop-1), .max = static_cast<table3d_dim_t>(loop) };
-    }
     --loop;
-    pIt -= stride;
+    pMax -= stride;
   }
-
-  // Should never get here - above loop will exit if nothing is found.
-  return { 0, 0 };
+  return { .min = static_cast<table3d_dim_t>(loop-1), .max = static_cast<table3d_dim_t>(loop)};
 }
 
-static inline table3d_bin_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, const table3d_bin_t &lastBin)
+table3d_bin_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, const table3d_bin_t &lastBin)
 {
   return find_bin(value, pAxis, size, 1, lastBin);
 }
 
 static inline table3d_bin_t convert_ybin(const table3d_bin_t &bin, table3d_dim_t size)
 {
-  // The Y-axis runs [max..min] (backwards).
-  //
-  // The bin find algorithm assumes that [min] is at index 0 (even though it 
-  // searches from [min] to [max]). 
+  // The Y-axis runs [max..min] (backwards). The bin find algorithm assumes that [min] is at index 0.
   //
   // So to allow normal array indexing, we need to adjust the bin indices
   return { static_cast<table3d_dim_t>(size-1-bin.min), 
           static_cast<table3d_dim_t>(size-1-bin.max) };
 }
 
-static inline table3d_bin_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, const table3d_bin_t &lastBin)
+table3d_bin_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, const table3d_bin_t &lastBin)
 {
   // Y axis is stored in reverse for performance purposes (not sure that's still valid). 
   // The minimum value is at the end & max at the start. So need to adjust for that. 
@@ -135,10 +123,10 @@ inline Q1X8_t mulQ1X8(Q1X8_t a, Q1X8_t b)
 
 static inline Q1X8_t compute_bin_position(table3d_axis_t value, const table3d_bin_t &bin, const table3d_axis_t *pAxis)
 {
-  if (bin.max==bin.min) { return 0; }
+  table3d_axis_t binMinValue = pAxis[bin.min];
+  if (value==binMinValue) { return 0; }
   table3d_axis_t binMaxValue = pAxis[bin.max];
   if (value==binMaxValue) { return Q1X8_ONE; }
-  table3d_axis_t binMinValue = pAxis[bin.min];
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
   // Since we can have bins of any width, we need to use 
@@ -154,14 +142,14 @@ static inline Q1X8_t compute_bin_position(table3d_axis_t value, const table3d_bi
 // ============================= End internal support functions =========================
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
-//It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
+//It performs a 2D linear interpolation as described in: www.megamanual.com/v22manual/ve_tuner.pdf
 table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache, 
                     table3d_dim_t axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
                     table3d_axis_t Y_in, table3d_axis_t X_in)
-  {
+{
     //0th check is whether the same X and Y values are being sent as last time. 
     // If they are, this not only prevents a lookup of the axis, but prevents the 
     //interpolation calcs being performed
@@ -199,7 +187,6 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
     if( (A == B) && (A == C) && (A == D) ) { pValueCache->lastOutput = A; }
     else
     {
-
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
       const Q1X8_t p = compute_bin_position(X_in, pValueCache->lastXBins, pXAxis);
