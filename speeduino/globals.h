@@ -666,7 +666,6 @@ struct statuses {
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
-  bool fanOn;        /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
