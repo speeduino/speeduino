@@ -25,6 +25,7 @@ void initialiseFan()
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
   FAN_OFF();  //Initiallise program with the fan in the off state
+  currentStatus.fanDuty = 0;
 
 #if defined(PWM_FAN_AVAILABLE)
   DISABLE_FAN_TIMER(); //disable FAN timer if available
@@ -33,7 +34,6 @@ void initialiseFan()
     #if defined(CORE_TEENSY)
      fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
-    currentStatus.fanDuty = 0;
     fan_pwm_value = 0;
   }
 #endif
@@ -72,7 +72,6 @@ void fanControl()
       currentStatus.fanOn = false;
     }
   }
-  #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
   else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
     bool fanPermit = false;
@@ -84,17 +83,21 @@ void fanControl()
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
         currentStatus.fanOn = false;
+        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
         DISABLE_FAN_TIMER();
+        #endif
       }
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+		#if defined(PWM_FAN_AVAILABLE)
         fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
         if (currentStatus.fanDuty > 0)
         {
           currentStatus.fanOn = true; // update fan on status. Is this even used anywhere??
           ENABLE_FAN_TIMER();
         }
+		#endif
       }
     }
     else if (!fanPermit)
@@ -102,6 +105,7 @@ void fanControl()
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
     }
 
+    #if defined(PWM_FAN_AVAILABLE)
     if(currentStatus.fanDuty == 0)
     {
       //Make sure fan has 0% duty)
@@ -115,8 +119,21 @@ void fanControl()
       FAN_ON();
       DISABLE_FAN_TIMER();
     }
+    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+    if(currentStatus.fanDuty == 0)
+    {
+      //Make sure fan has 0% duty)
+      FAN_OFF();
+      currentStatus.fanOn = false;
+    }
+    else if (currentStatus.fanDuty > 0)
+    {
+      //Make sure fan has 100% duty
+      FAN_ON();
+	  currentStatus.fanOn = true;
+    }
+    #endif
   }
-  #endif
 }
 
 void initialiseAuxPWM()
