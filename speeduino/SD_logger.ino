@@ -5,6 +5,11 @@
 #include "logger.h"
 #include "rtc_common.h"
 
+SdExFat sd;
+ExFile logFile;
+RingBuf<ExFile, RING_BUF_CAPACITY> rb;
+uint8_t SD_status = SD_STATUS_OFF;
+
 void initSD()
 {
   //Set default state to ready. If any stage of the init fails, this will be changed
@@ -162,9 +167,22 @@ void setTS_SD_status()
    indicator = { sd_status & 8}, "SD Log", "SD Log",           white, black, green, black
    indicator = { sd_status & 16}, "SD Err", "SD Err",           white, black, red, black
    */
-  currentStatus.TS_SD_Status = SD_status;
-  //if(SD_status != SD_STATUS_ERROR_NO_CARD) { BIT_SET(currentStatus.TS_SD_Status, 0); } //Set bit for SD card being present
-  //if(SD_status == SD_STATUS_READY) { BIT_SET(currentStatus.TS_SD_Status, 2); } //Set bit for SD card being ready
+  //currentStatus.TS_SD_Status = SD_status;
+
+  if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
+  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
+
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_TYPE); // CARD is SDHC
+  
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); // CARD is ready
+  
+  if( SD_status == SD_STATUS_ACTIVE ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is logging
+  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is not logging
+
+  if( (SD_status >= SD_STATUS_ERROR_NO_FS) ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has an error
+  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has no error
+
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_FS); // CARD has a FAT32 filesystem (Though this will be exFAT)
 
 }
 

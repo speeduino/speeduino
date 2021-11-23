@@ -1,5 +1,5 @@
-#ifndef SD_H
-#define SD_H
+#ifndef SD_LOGGER_H
+#define SD_LOGGER_H
 
 #ifdef SD_LOGGING
 
@@ -15,6 +15,15 @@
 #define SD_STATUS_ERROR_NO_SPACE    6 /**< File could not be preallocated as there is not enough space on card */
 #define SD_STATUS_ERROR_WRITE_FAIL  7 /**< Log file created and opened, but a sector write failed during logging */
 #define SD_STATUS_ERROR_FORMAT_FAIL 8 /**< Attempted formatting of SD card failed */
+
+#define SD_STATUS_CARD_PRESENT      0 //0=no card, 1=card present
+#define SD_STATUS_CARD_TYPE         1 //0=SD, 1=SDHC
+#define SD_STATUS_CARD_READY        2 //0=not ready, 1=ready
+#define SD_STATUS_CARD_LOGGING      3 //0=not logging, 1=logging
+#define SD_STATUS_CARD_ERROR        4 //0=no error, 1=error
+#define SD_STATUS_CARD_VERSION      5 //0=1.x, 1=2.x
+#define SD_STATUS_CARD_FS           6 //0=no FAT16, 1=FAT32
+
 
 #define SD_SECTOR_SIZE              512 // Standard SD sector size
 
@@ -36,11 +45,11 @@ FsFile logFile;
 RingBuf<FsFile, RING_BUF_CAPACITY> rb;
 */
 //ExFat
-SdExFat sd;
-ExFile logFile;
-RingBuf<ExFile, RING_BUF_CAPACITY> rb;
+extern SdExFat sd;
+extern ExFile logFile;
+extern RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 
-uint8_t SD_status = SD_STATUS_OFF;
+extern uint8_t SD_status;
 
 void initSD();
 void writeSDLogEntry();
@@ -56,4 +65,4 @@ void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
 
 
 #endif //SD_LOGGING
-#endif //SD_H
+#endif //SD_LOGGER_H

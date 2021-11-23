@@ -23,9 +23,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //************************************************
 #include "globals.h"
 #include "speeduino.h"
-#include "table.h"
 #include "scheduler.h"
 #include "comms.h"
+#include "newComms.h"
 #include "cancomms.h"
 #include "maths.h"
 #include "corrections.h"
@@ -127,7 +127,9 @@ void loop()
       }
 
       //Check for any new requets from serial.
-      if ( (Serial.available()) > 0) { command(); }
+      //if ( (Serial.available()) > 0) { command(); }
+      if ( (Serial.available()) > 0) { parseSerial(); }
+      
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers

@@ -47,6 +47,7 @@ extern int valueOffset; /**< THe memory offset within a given page for a value t
 extern byte tsCanId;     // current tscanid requested
 extern byte inProgressOffset;
 extern byte inProgressLength;
+extern bool legacySerial;
 extern uint32_t inProgressCompositeTime;
 extern bool serialInProgress;
 extern bool toothLogSendInProgress;

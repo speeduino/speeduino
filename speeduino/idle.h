@@ -2,7 +2,7 @@
 #define IDLE_H
 
 #include "globals.h"
-#include "table.h"
+#include "table2d.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 #define IAC_ALGORITHM_NONE    0
