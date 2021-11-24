@@ -4,7 +4,9 @@
 #ifdef SD_LOGGING
 
 #include <SD.h>
+//#include <SdSpiCard.h>
 #include "RingBuf.h"
+
 
 #define SD_STATUS_OFF               0 /**< SD system is inactive. FS and file remain closed */
 #define SD_STATUS_READY             1 /**< File has been openeed and preallocated, but a log session has not commenced */
@@ -54,6 +56,7 @@ extern RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 
 extern uint8_t SD_status;
 extern uint16_t currentLogFileNumber;
+extern bool manualLogActive;
 
 void initSD();
 void writeSDLogEntry();

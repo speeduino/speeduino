@@ -62,7 +62,7 @@ extern uint16_t SDcurrentDirChunk;
 void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void processSerialCommand();
 void sendSerialReturnCode(byte returnCode);
-void sendSerialPayload(void*, byte payloadLength);
+void sendSerialPayload(void*, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t, uint16_t);
 void saveConfig();

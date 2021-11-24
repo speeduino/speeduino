@@ -133,7 +133,7 @@ void sendSerialReturnCode(byte returnCode)
   Serial.write( (CRC32_val & 255) );
 }
 
-void sendSerialPayload(void *payload, byte payloadLength)
+void sendSerialPayload(void *payload, uint16_t payloadLength)
 {
   //uint16_t totalPayloadLength = payloadLength + SERIAL_CRC_LENGTH;
   uint16_t totalPayloadLength = payloadLength;
@@ -444,10 +444,10 @@ void processSerialCommand()
             filesInCurrentChunk++;
             payloadIndex += 32;
           }
-          serialPayload[33] = lowByte(SDcurrentDirChunk);
-          serialPayload[34] = highByte(SDcurrentDirChunk);
-          
-          
+          serialPayload[payloadIndex] = lowByte(SDcurrentDirChunk);
+          serialPayload[payloadIndex + 1] = highByte(SDcurrentDirChunk);
+          //Serial.print("Index:");
+          //Serial.print(payloadIndex);
 
           sendSerialPayload(&serialPayload, (payloadIndex + 2));
 
@@ -596,14 +596,17 @@ void processSerialCommand()
             5 Init SD card
             */
             uint8_t command = serialPayload[7];
-            if(command == 4) { setTS_SD_status(); } //Set SD status values
+            if(command == 2) { endSDLogging(); manualLogActive = false; }
+            else if(command == 3) { beginSDLogging(); manualLogActive = true; }
+            else if(command == 4) { setTS_SD_status(); }
+            //else if(command == 5) { initSD(); }
             
             sendSerialReturnCode(SERIAL_RC_OK);
           }
           else if((valueOffset == SD_WRITE_DIR_OFFSET) && (chunkSize == SD_WRITE_DIR_LENGTH))
           {
             //Begin SD directory read. Value in payload represents the directory chunk to read
-            //Directory chunks are each 32 files long
+            //Directory chunks are each 16 files long
             SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
             sendSerialReturnCode(SERIAL_RC_OK);
           }

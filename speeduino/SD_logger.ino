@@ -10,6 +10,7 @@ ExFile logFile;
 RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 uint8_t SD_status = SD_STATUS_OFF;
 uint16_t currentLogFileNumber;
+bool manualLogActive = false;
 
 void initSD()
 {
@@ -100,6 +101,7 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
 
   char filenameBuffer[13]; //8 + 1 + 3 + 1
   sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, logNumber, LOG_FILE_EXTENSION);
+  
   if(sd.exists(filenameBuffer))
   {
     fileFound = true;
@@ -125,8 +127,8 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
     uint16_t pTime = 0;
     logFile.getCreateDateTime(&pDate, &pTime);
     buffer[13] = 0; //Not sure what this byte is for yet
-    buffer[14] = lowByte(pDate);
-    buffer[15] = highByte(pDate);
+    buffer[14] = lowByte(pTime);
+    buffer[15] = highByte(pTime);
     buffer[16] = lowByte(pDate);
     buffer[17] = highByte(pDate);
 
@@ -328,6 +330,12 @@ void checkForSDStart()
  */
 void checkForSDStop()
 {
+  //Check the various conditions to see if we should stop logging
+  bool log_boot = false;
+  bool log_RPM = false;
+  bool log_prot = false;
+  bool log_Vbat = false;
+
   //Logging only needs to be stopped if already active
   if(SD_status == SD_STATUS_ACTIVE)
   {
@@ -335,12 +343,35 @@ void checkForSDStop()
     if(configPage13.onboard_log_trigger_boot)
     {
       //Check if we're past the logging duration
-      if((millis() / 1000) > configPage13.onboard_log_tr1_duration)
+      if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
       {
-        endSDLogging(); //Setup the log file, prallocation, header row
+        log_boot = true;
       }
     }
+    if(configPage13.onboard_log_trigger_RPM)
+    {
+      if(currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off)
+      {
+        log_RPM = true;
+      }
+    }
+    if(configPage13.onboard_log_trigger_prot)
+    {
+
+    }
+    if(configPage13.onboard_log_trigger_Vbat)
+    {
+
+    }
+
+    //Check all conditions to see if we should stop logging
+    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (manualLogActive == false) )
+    {
+      endSDLogging(); //Setup the log file, prallocation, header row
+    }
   }
+
+  
 }
 
 /** 
