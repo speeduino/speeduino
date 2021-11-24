@@ -23,7 +23,7 @@ void initialiseFan()
 {
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
-  FAN_OFF();  //Initiallise program with the fan in the off state
+  FAN_OFF();  //Initialise program with the fan in the off state
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
   currentStatus.fanDuty = 0;
 
@@ -58,14 +58,13 @@ void fanControl()
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
-		BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
       {
         FAN_ON();
-		BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
-      BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
@@ -92,12 +91,12 @@ void fanControl()
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-		#if defined(PWM_FAN_AVAILABLE)
+        #if defined(PWM_FAN_AVAILABLE)
         fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
         if (currentStatus.fanDuty > 0)
         {
-          BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
           ENABLE_FAN_TIMER();
+          BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
         }
 		#endif
       }
@@ -105,7 +104,7 @@ void fanControl()
     else if (!fanPermit)
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
-	  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
 
     #if defined(PWM_FAN_AVAILABLE)
@@ -120,7 +119,7 @@ void fanControl()
     {
       //Make sure fan has 100% duty
       FAN_ON();
-	  BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       DISABLE_FAN_TIMER();
     }
     #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
@@ -134,7 +133,7 @@ void fanControl()
     {
       //Make sure fan has 100% duty
       FAN_ON();
-	  BIT_SETcurrentStatus.status4, BIT_STATUS4_FAN;
+      BIT_SETcurrentStatus.status4, BIT_STATUS4_FAN;
     }
     #endif
   }
