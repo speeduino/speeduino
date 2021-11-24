@@ -27,17 +27,16 @@ void initialiseFan()
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
   currentStatus.fanDuty = 0;
 
-#if defined(PWM_FAN_AVAILABLE)
-  DISABLE_FAN_TIMER(); //disable FAN timer if available
-  if ( configPage2.fanEnable == 2 ) // PWM Fan control
-  {
-    #if defined(CORE_TEENSY)
-      fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #endif
-    fan_pwm_value = 0;
-  }
-#endif
-
+  #if defined(PWM_FAN_AVAILABLE)
+    DISABLE_FAN_TIMER(); //disable FAN timer if available
+    if ( configPage2.fanEnable == 2 ) // PWM Fan control
+    {
+      #if defined(CORE_TEENSY)
+        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
+      fan_pwm_value = 0;
+    }
+  #endif
 }
 
 void fanControl()
