@@ -14,37 +14,44 @@ static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis
 static inline table3d_dim_t find_bin_max(
   table3d_axis_t &value,        // Value to search for
   const table3d_axis_t *pAxis,  // The axis to search
-  table3d_dim_t minElement,     // Axis index of the element with the lowest value
-  table3d_dim_t maxElement,     // Axis index of the element with the highest value
-  table3d_dim_t lastBin)        // The last result from this call - used to speed up searches
+  table3d_dim_t minElement,     // Axis index of the element with the lowest value (at one end of the array)
+  table3d_dim_t maxElement,     // Axis index of the element with the highest value (at the other end of the array)
+  table3d_dim_t lastBinMax)     // The last result from this call - used to speed up searches
 {
   // Direction to search (1 coventional, -1 to go backwards from pAxis)
   int8_t stride = maxElement>minElement ? 1 : -1;
-  // It's quicker to increment/adjust these pointers than to repeatedly 
+  // It's quicker to increment/adjust this pointer than to repeatedly 
   // index the array - minimum 2%, often >5%
   const table3d_axis_t *pMax = nullptr;
+  // minElement is at one end of the array, so the "lowest" bin 
+  // is [minElement, minElement+stride]. Since we're working with the upper
+  // index of the bin pair, we can't go below minElement + stride.
+  table3d_dim_t minBinIndex = minElement + stride;
 
   // Check the cached last bin and either side first - it's likely that this will give a hit under
   // real world conditions
+
   // Check if we're still in the same bin as last time
-  pMax = pAxis + lastBin;
+  pMax = pAxis + lastBinMax;
   if (is_in_bin(value, *(pMax - stride), *pMax))
   {
-    return lastBin;
+    return lastBinMax;
   }
   // Check the bin above the last one
   pMax = pMax - stride;
-  if (lastBin!=(minElement+stride) && is_in_bin(value, *(pMax - stride), *pMax))
+  if (lastBinMax!=minBinIndex && is_in_bin(value, *(pMax - stride), *pMax))
   {
-    return lastBin-stride;    
+    return lastBinMax-stride;    
   }
   // Check the bin below the last one
   pMax += stride*2;
-  if (lastBin!=maxElement && is_in_bin(value, *(pMax - stride), *pMax))
+  if (lastBinMax!=maxElement && is_in_bin(value, *(pMax - stride), *pMax))
   {
-    return lastBin+stride;
+    return lastBinMax+stride;
   }
 
+  // Check if outside array limits - won't happen often in the real world
+  // so check after the cache check
   // At or above maximum - clamp to final value
   if (value>=pAxis[maxElement])
   {
@@ -63,15 +70,14 @@ static inline table3d_dim_t find_bin_max(
   // This is because the important tables (fuel and injection) will have the highest
   // RPM at the top of the X axis, so starting there will mean the best case occurs 
   // when the RPM is highest (and hence the CPU is needed most)
-  lastBin = maxElement;
-  table3d_dim_t stop = minElement+stride;
-  pMax = pAxis + lastBin;
-  while (lastBin!=stop && !is_in_bin(value, *(pMax - stride), *pMax))
+  lastBinMax = maxElement;
+  pMax = pAxis + lastBinMax;
+  while (lastBinMax!=minBinIndex && !is_in_bin(value, *(pMax - stride), *pMax))
   {
-    lastBin -= stride;
+    lastBinMax -= stride;
     pMax -= stride;
   }
-  return lastBin;
+  return lastBinMax;
 }
 
 table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
@@ -88,12 +94,17 @@ table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, tabl
 
 // ========================= Fixed point math =========================
 
-typedef uint16_t Q1X8_t;
-static constexpr uint8_t Q1X8_INTEGER_SHIFT = 8;
-static constexpr Q1X8_t Q1X8_ONE = 1U << Q1X8_INTEGER_SHIFT;
-static constexpr Q1X8_t Q1X8_HALF = 1U << (Q1X8_INTEGER_SHIFT-1);
+// An unsigned fixed point number type with 1 integer bit & 8 fractional bits.
+// See https://en.wikipedia.org/wiki/Q_(number_format).
+// This is specialized for the number range 0..1 - a generic fixed point
+// class would miss some important optimizations. Specifically, we can avoid
+// type promotion during multiplication.
+typedef uint16_t QU1X8_t;
+static constexpr uint8_t QU1X8_INTEGER_SHIFT = 8;
+static constexpr QU1X8_t QU1X8_ONE = 1U << QU1X8_INTEGER_SHIFT;
+static constexpr QU1X8_t QU1X8_HALF = 1U << (QU1X8_INTEGER_SHIFT-1);
 
-inline Q1X8_t mulQ1X8(Q1X8_t a, Q1X8_t b)
+inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 {
     // 1x1 == 1....but the real reason for this is to avoid 16-bit multiplication overflow.
     //
@@ -104,29 +115,29 @@ inline Q1X8_t mulQ1X8(Q1X8_t a, Q1X8_t b)
     // are at the edge of a bin. 
     //
     // This is a rare condition, so most of the time we can use 16-bit mutiplication and gain performance
-    if (a==Q1X8_ONE && b==Q1X8_ONE)
+    if (a==QU1X8_ONE && b==QU1X8_ONE)
     {
-        return Q1X8_ONE;
+        return QU1X8_ONE;
     }
   // Add the equivalent of 0.5 to the final calculation pre-rounding.
   // This will have the effect of rounding to the nearest integer, rather
   // than always rounding down.
-  return ((a * b) + Q1X8_HALF) >> Q1X8_INTEGER_SHIFT;
+  return ((a * b) + QU1X8_HALF) >> QU1X8_INTEGER_SHIFT;
 }
 
 // ============================= Axis value to bin % =========================
 
-static inline Q1X8_t compute_bin_position(table3d_axis_t value, const table3d_dim_t &bin, int8_t stride, const table3d_axis_t *pAxis)
+static inline QU1X8_t compute_bin_position(table3d_axis_t value, const table3d_dim_t &bin, int8_t stride, const table3d_axis_t *pAxis)
 {
   table3d_axis_t binMinValue = pAxis[bin-stride];
   if (value==binMinValue) { return 0; }
   table3d_axis_t binMaxValue = pAxis[bin];
-  if (value==binMaxValue) { return Q1X8_ONE; }
+  if (value==binMaxValue) { return QU1X8_ONE; }
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
   // Since we can have bins of any width, we need to use 
   // 24.8 fixed point to avoid overflow
-  uint32_t p = (uint32_t)(value - binMinValue) << Q1X8_INTEGER_SHIFT;
+  uint32_t p = (uint32_t)(value - binMinValue) << QU1X8_INTEGER_SHIFT;
   // But since we are computing the ratio (0 to 1), p is guarenteed to be
   // less than binWidth and thus the division below will result in a value
   // <=1. So we can reduce the data type from 24.8 (uint32_t) to 1.8 (uint16_t)
@@ -186,14 +197,14 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
     {
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const Q1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, 1, pXAxis);
-      const Q1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBinMax, -1, pYAxis);
+      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, 1, pXAxis);
+      const QU1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBinMax, -1, pYAxis);
 
-      Q1X8_t m = mulQ1X8(Q1X8_ONE-p, q);
-      Q1X8_t n = mulQ1X8(p, q);
-      Q1X8_t o = mulQ1X8(Q1X8_ONE-p, Q1X8_ONE-q);
-      Q1X8_t r = mulQ1X8(p, Q1X8_ONE-q);
-      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> Q1X8_INTEGER_SHIFT;
+      const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
+      const QU1X8_t n = mulQU1X8(p, q);
+      const QU1X8_t o = mulQU1X8(QU1X8_ONE-p, QU1X8_ONE-q);
+      const QU1X8_t r = mulQU1X8(p, QU1X8_ONE-q);
+      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> QU1X8_INTEGER_SHIFT;
     }
 
     return pValueCache->lastOutput;
