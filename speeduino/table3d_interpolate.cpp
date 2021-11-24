@@ -8,20 +8,20 @@ static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis
   return testValue > min && testValue <= max;
 }
 
-// Find the axis indices that cover the test value.
-// E.g. 4 in { 1, 3, 5, 7, 9 } would be [1, 2]
-// We assume the axis is in ascending order.
-static inline table3d_dim_t find_bin(
+// Find the axis index for the top of the bin that covers the test value.
+// E.g. 4 in { 1, 3, 5, 7, 9 } would be 2
+// We assume the axis is in order.
+static inline table3d_dim_t find_bin_max(
   table3d_axis_t &value,        // Value to search for
-  const table3d_axis_t *pAxis,  // Start of the axis - this is the smallest axis value & the address we start searching from
-  table3d_dim_t minElement,
-  table3d_dim_t maxElement,
-  table3d_dim_t lastBin) // Thevlast result from this call - used to speed up searches
+  const table3d_axis_t *pAxis,  // The axis to search
+  table3d_dim_t minElement,     // Axis index of the element with the lowest value
+  table3d_dim_t maxElement,     // Axis index of the element with the highest value
+  table3d_dim_t lastBin)        // The last result from this call - used to speed up searches
 {
   // Direction to search (1 coventional, -1 to go backwards from pAxis)
   int8_t stride = maxElement>minElement ? 1 : -1;
   // It's quicker to increment/adjust these pointers than to repeatedly 
-  // index the array - minimum 2%.
+  // index the array - minimum 2%, often >5%
   const table3d_axis_t *pMax = nullptr;
 
   // Check the cached last bin and either side first - it's likely that this will give a hit under
@@ -76,14 +76,14 @@ static inline table3d_dim_t find_bin(
 
 table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
-  return find_bin(value, pAxis, 0, size-1, lastBin);
+  return find_bin_max(value, pAxis, 0, size-1, lastBin);
 }
 
 table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
   // Y axis is stored in reverse for performance purposes (not sure that's still valid). 
   // The minimum value is at the end & max at the start. So need to adjust for that. 
-  return find_bin(value, pAxis, size-1, 0, lastBin);
+  return find_bin_max(value, pAxis, size-1, 0, lastBin);
 }
 
 // ========================= Fixed point math =========================
