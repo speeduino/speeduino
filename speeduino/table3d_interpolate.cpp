@@ -34,7 +34,7 @@ static inline table3d_dim_t find_bin_max(
   }
   // Check the bin above the last one
   pMax = pMax - stride;
-  if (lastBin!=(minElement-stride) && is_in_bin(value, *(pMax - stride), *pMax))
+  if (lastBin!=(minElement+stride) && is_in_bin(value, *(pMax - stride), *pMax))
   {
     return lastBin-stride;    
   }
