@@ -340,6 +340,9 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[116] = currentStatus.advance2; //advance 2 
   fullStatus[117] = currentStatus.nitrous_status;
   fullStatus[118] = currentStatus.TS_SD_Status; //SD card status
+  fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
+  fullStatus[120] = highByte(currentStatus.EMAP);
+  fullStatus[121] = currentStatus.fanDuty;
 
   for(byte x=0; x<packetLength; x++)
   {

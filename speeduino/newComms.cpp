@@ -31,6 +31,7 @@ uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0;
 uint32_t serialCRC = 0; 
+uint16_t SDcurrentDirChunk;
 uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -397,9 +398,8 @@ void processSerialCommand()
           
           serialPayload[0] = SERIAL_RC_OK;
 
-
-          //Serial.write(currentStatus.TS_SD_Status);
-          serialPayload[1] = 5;
+          serialPayload[1] = currentStatus.TS_SD_Status;
+          //serialPayload[1] = 5;
           serialPayload[2] = 0;
 
           //All other values are 2 bytes   
@@ -430,10 +430,33 @@ void processSerialCommand()
           sendSerialPayload(&serialPayload, 17);
 
         }
-        //else if(length == 0x202)
+        else if((offset == SD_READ_DIR_OFFSET) && (length == SD_READ_DIR_LENGTH))
+        {
+          //Send file details
+          serialPayload[0] = SERIAL_RC_OK;
+
+          uint16_t logFileNumber = (SDcurrentDirChunk * 16) + 1;
+          uint8_t filesInCurrentChunk = 0;
+          uint16_t payloadIndex = 1;
+          while((filesInCurrentChunk < 16) && (getSDLogFileDetails(&serialPayload[payloadIndex], logFileNumber) == true))
+          {
+            logFileNumber++;
+            filesInCurrentChunk++;
+            payloadIndex += 32;
+          }
+          serialPayload[33] = lowByte(SDcurrentDirChunk);
+          serialPayload[34] = highByte(SDcurrentDirChunk);
+          
+          
+
+          sendSerialPayload(&serialPayload, (payloadIndex + 2));
+
+        }
+        else if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
         {
           //File info
         }
+
       }
       else if(cmd == 0x14)
       {
@@ -572,7 +595,16 @@ void processSerialCommand()
             4 Load status variable
             5 Init SD card
             */
-            setTS_SD_status(); //Set SD status values
+            uint8_t command = serialPayload[7];
+            if(command == 4) { setTS_SD_status(); } //Set SD status values
+            
+            sendSerialReturnCode(SERIAL_RC_OK);
+          }
+          else if((valueOffset == SD_WRITE_DIR_OFFSET) && (chunkSize == SD_WRITE_DIR_LENGTH))
+          {
+            //Begin SD directory read. Value in payload represents the directory chunk to read
+            //Directory chunks are each 32 files long
+            SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
             sendSerialReturnCode(SERIAL_RC_OK);
           }
           else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))

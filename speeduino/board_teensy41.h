@@ -25,6 +25,7 @@
   #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
+  #define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
 
 /*
@@ -132,10 +133,16 @@
   #define ENABLE_VVT_TIMER()    TMR3_CSCTRL0 |= TMR_CSCTRL_TCF2EN
   #define DISABLE_VVT_TIMER()   TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF2EN
 
+  #define ENABLE_FAN_TIMER()    TMR3_CSCTRL1 |= TMR_CSCTRL_TCF2EN
+  #define DISABLE_FAN_TIMER()   TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF2EN
+
   #define BOOST_TIMER_COMPARE   PIT_LDVAL1
   #define BOOST_TIMER_COUNTER   0
   #define VVT_TIMER_COMPARE     PIT_LDVAL2
   #define VVT_TIMER_COUNTER     0
+  //these probaply need to be PIT_LDVAL something???
+  #define FAN_TIMER_COMPARE     TMR3_COMP22
+  #define FAN_TIMER_COUNTER     TMR3_CNTR1
 
   void boostInterrupt();
   void vvtInterrupt();
