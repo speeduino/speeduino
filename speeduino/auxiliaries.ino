@@ -98,7 +98,7 @@ void fanControl()
             ENABLE_FAN_TIMER();
             BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
           }
-		#endif
+	    	#endif
       }
     }
     else if (!fanPermit)
