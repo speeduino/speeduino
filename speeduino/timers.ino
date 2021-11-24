@@ -19,9 +19,55 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
+#include "idle.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
+#endif
+
+#if AVAILABLE_AUX_TIMERS > 0
+AuxTimer AuxTimers [AVAILABLE_AUX_TIMERS];
+
+inline void auxTimer1Enable() { AUX_TIMER1_ENABLE(); }
+inline void auxTimer1Disable() { AUX_TIMER1_DISABLE(); }
+
+//Auxiliary timer 1 interrupt, AVR uses extra function
+#if defined(CORE_AVR)
+ISR(TIMER1_COMPA_vect)
+#else
+inline void auxTimer1Interrupt()
+#endif
+{
+  AuxTimers[0].Interrupt();
+}
+#endif
+
+#if AVAILABLE_AUX_TIMERS > 1
+inline void auxTimer2Enable() { AUX_TIMER2_ENABLE(); }
+inline void auxTimer2Disable() { AUX_TIMER2_DISABLE(); }
+
+#if defined(CORE_AVR)
+ISR(TIMER1_COMPB_vect)
+#else
+inline void auxTimer2Interrupt()
+#endif
+{
+  AuxTimers[1].Interrupt();
+}
+#endif
+
+#if AVAILABLE_AUX_TIMERS > 2
+inline void auxTimer3Enable() { AUX_TIMER3_ENABLE(); }
+inline void auxTimer3Disable() { AUX_TIMER3_DISABLE(); }
+
+#if defined(CORE_AVR)
+ISR(TIMER1_COMPC_vect)
+#else
+inline void auxTimer3Interrupt()
+#endif
+{
+  AuxTimers[2].Interrupt();
+}
 #endif
 
 void initialiseTimers()
@@ -32,6 +78,48 @@ void initialiseTimers()
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
+
+  #if AVAILABLE_AUX_TIMERS > 0
+  AuxTimers[0].Enable = auxTimer1Enable;
+  AuxTimers[0].Disable = auxTimer1Disable;
+  AuxTimers[0].compare = &AUX_TIMER1_COMPARE;
+  AuxTimers[0].counter = &AUX_TIMER1_COUNTER;
+
+  #if AVAILABLE_AUX_TIMERS > 1
+  AuxTimers[1].Enable = auxTimer2Enable;
+  AuxTimers[1].Disable = auxTimer2Disable;
+  AuxTimers[1].compare = &AUX_TIMER2_COMPARE;
+  AuxTimers[1].counter = &AUX_TIMER2_COUNTER;
+  #endif
+
+  #if AVAILABLE_AUX_TIMERS > 2
+  AuxTimers[2].Enable = auxTimer3Enable;
+  AuxTimers[2].Disable = auxTimer3Disable;
+  AuxTimers[2].compare = &AUX_TIMER3_COMPARE;
+  AuxTimers[2].counter = &AUX_TIMER3_COUNTER;
+  #endif
+
+  //TODO: Give warning about number of used/available timers in tunerstudio
+  //TODO: Check boost/vvt/idleTimer are assigned before interacting with them
+
+  for (int i = 0; i < AVAILABLE_AUX_TIMERS; i++) {
+    if (configPage6.boostEnabled == 1 && !boostTimer) {
+      boostTimer = &AuxTimers[i];
+      boostTimer->Interrupt = boostInterrupt;
+    }
+    else if (configPage6.vvtEnabled > 0 && !vvtTimer) {
+      vvtTimer = &AuxTimers[i];
+      vvtTimer->Interrupt = vvtInterrupt;
+    }
+    else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) && !idleTimer) {
+      idleTimer = &AuxTimers[i];
+      idleTimer->Interrupt = idleInterrupt;
+    }
+    else {
+      break;
+    }
+  }
+  #endif
 }
 
 

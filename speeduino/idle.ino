@@ -24,7 +24,7 @@ static inline void enableIdle()
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
-    IDLE_TIMER_ENABLE();
+    idleTimer->Enable();
   }
   else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
@@ -35,7 +35,7 @@ static inline void enableIdle()
 void initialiseIdle()
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
-  IDLE_TIMER_DISABLE();
+  idleTimer->Disable();
 
   //Pin masks must always be initialized, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restat/overflow
   idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
@@ -660,7 +660,7 @@ void disableIdle()
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
-    IDLE_TIMER_DISABLE();
+    idleTimer->Disable();
     digitalWrite(pinIdle1, LOW);
   }
   else if ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
@@ -686,11 +686,7 @@ void disableIdle()
   currentStatus.idleLoad = 0;
 }
 
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect)
-#else
 void idleInterrupt() //Most ARM chips can simply call a function
-#endif
 {
   if (idle_pwm_state)
   {
@@ -706,7 +702,7 @@ void idleInterrupt() //Most ARM chips can simply call a function
       *idle_pin_port |= (idle_pin_mask);  // Switch pin high
       if(configPage6.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
-    SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value) );
+    SET_COMPARE(*idleTimer->compare, *idleTimer->counter + (idle_pwm_max_count - idle_pwm_cur_value) );
     idle_pwm_state = false;
   }
   else
@@ -723,7 +719,7 @@ void idleInterrupt() //Most ARM chips can simply call a function
       *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
       if(configPage6.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
-    SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + idle_pwm_target_value);
+    SET_COMPARE(*idleTimer->compare, *idleTimer->counter + idle_pwm_target_value);
     idle_pwm_cur_value = idle_pwm_target_value;
     idle_pwm_state = true;
   }

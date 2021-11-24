@@ -26,9 +26,8 @@ void initBoard()
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliary timers 1, 2, 3
     */
-    //PWM used by the Boost and VVT outputs. C Channel is used by ign5
     TCCR1B = TIMER_PRESCALER_OFF;   //Disbale Timer1 while we set it up
     TCNT1  = 0;                     //Reset Timer Count
     TCCR1A = TIMER_MODE_NORMAL;     //Timer1 Control Reg A: Wave Gen Mode normal (Simply counts up from 0 to 65535 (16-bit int)
