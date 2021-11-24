@@ -9,17 +9,23 @@ struct coord2d
     table3d_axis_t y;
 };
 
-// Table axis bin. Stores 2 axis *indices* that define a range
-struct table3d_bin_t
-{
-    table3d_dim_t min;
-    table3d_dim_t max;
-};
 
 struct table3DGetValueCache {
-  // Store the last X and Y coordinates in the table. This is used to make the next check faster
-  table3d_bin_t lastXBins;
-  table3d_bin_t lastYBins;
+  // Store the upper *index* of the X and Y axis bins that were last hit.
+  // This is used to make the next check faster since very likely the x & y values have
+  // only changed by a small amount & are in the same bin (or an adjacent bin).
+  //
+  // It's implicit that the other bin index is max bin index - 1 (a single axis
+  // value can't span 2 axis bins). This saves 1 byte.
+  //
+  // E.g. 6 element x-axis contents:
+  //   [ 8| 9|12|15|18|21]
+  // indices:
+  //     0, 1, 2, 3, 4, 5
+  // If lastXBinMax==3, the min index must be 2. I.e. the last X value looked
+  // up was between 12<X<=15.
+  table3d_dim_t lastXBinMax = 1;
+  table3d_dim_t lastYBinMax = 1;
 
   //Store the last input and output values, again for caching purposes
   coord2d last_lookup = { INT16_MAX, INT16_MAX };
