@@ -25,9 +25,11 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
-#include "table.h"
+#include "table2d.h"
+#include "table3d.h"
 #include <assert.h>
 #include "logger.h"
+#include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
@@ -60,7 +62,6 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
     #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
@@ -154,7 +155,7 @@
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
-#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET(var, pos) : bitClear(var, pos))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
 
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
@@ -363,8 +364,7 @@
 #define GOING_LOW         0
 #define GOING_HIGH        1
 
-#define MAX_RPM 18000 /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter,
-but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
+#define MAX_RPM 18000 /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
@@ -410,29 +410,49 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
   #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
 #endif
 
+#define LOGGER_CSV_SEPARATOR_SEMICOLON  0
+#define LOGGER_CSV_SEPARATOR_COMMA      1
+#define LOGGER_CSV_SEPARATOR_TAB        2
+#define LOGGER_CSV_SEPARATOR_SPACE      3
+
+#define LOGGER_DISABLED                 0
+#define LOGGER_CSV                      1
+#define LOGGER_BINARY                   2
+
+#define LOGGER_RATE_1HZ                 0
+#define LOGGER_RATE_4HZ                 1
+#define LOGGER_RATE_10HZ                2
+#define LOGGER_RATE_30HZ                3
+
+#define LOGGER_FILENAMING_OVERWRITE     0
+#define LOGGER_FILENAMING_DATETIME      1
+#define LOGGER_FILENAMING_SEQENTIAL     2
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
+extern FastCRC32 CRC32;
 
-extern struct table3D fuelTable; //16x16 fuel map
-extern struct table3D fuelTable2; //16x16 fuel map
-extern struct table3D ignitionTable; //16x16 ignition map
-extern struct table3D ignitionTable2; //16x16 ignition map
-extern struct table3D afrTable; //16x16 afr target map
-extern struct table3D stagingTable; //8x8 fuel staging table
-extern struct table3D boostTable; //8x8 boost map
-extern struct table3D vvtTable; //8x8 vvt map
-extern struct table3D vvt2Table; //8x8 vvt2 map
-extern struct table3D wmiTable; //8x8 wmi map
-extern struct table3D trim1Table; //6x6 Fuel trim 1 map
-extern struct table3D trim2Table; //6x6 Fuel trim 2 map
-extern struct table3D trim3Table; //6x6 Fuel trim 3 map
-extern struct table3D trim4Table; //6x6 Fuel trim 4 map
-extern struct table3D trim5Table; //6x6 Fuel trim 5 map
-extern struct table3D trim6Table; //6x6 Fuel trim 6 map
-extern struct table3D trim7Table; //6x6 Fuel trim 7 map
-extern struct table3D trim8Table; //6x6 Fuel trim 8 map
-extern struct table3D dwellTable; //4x4 Dwell map
+
+extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
+extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
+extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
+extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
+extern struct table3d16RpmLoad afrTable; //16x16 afr target map
+extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
+extern struct table3d8RpmTps boostTable; //8x8 boost map
+extern struct table3d8RpmTps vvtTable; //8x8 vvt map
+extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
+extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
+extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
+extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
+extern struct table3d6RpmLoad trim3Table; //6x6 Fuel trim 3 map
+extern struct table3d6RpmLoad trim4Table; //6x6 Fuel trim 4 map
+extern struct table3d6RpmLoad trim5Table; //6x6 Fuel trim 5 map
+extern struct table3d6RpmLoad trim6Table; //6x6 Fuel trim 6 map
+extern struct table3d6RpmLoad trim7Table; //6x6 Fuel trim 7 map
+extern struct table3d6RpmLoad trim8Table; //6x6 Fuel trim 8 map
+extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -507,6 +527,10 @@ extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
 
+extern byte triggerInterrupt;
+extern byte triggerInterrupt2;
+extern byte triggerInterrupt3;
+
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
 extern bool channel1InjEnabled;
 extern bool channel2InjEnabled;
@@ -527,8 +551,6 @@ extern int ignition7EndAngle;
 extern int ignition8EndAngle;
 
 
-//These are variables used across multiple files
-extern const byte PROGMEM fsIntIndex[33];
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern volatile uint16_t mainLoopCount;
@@ -577,9 +599,9 @@ extern volatile byte LOOP_TIMER;
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
+#define pinIsOutput(pin)    ( pinIsInjector((pin)) || pinIsIgnition((pin)) || ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ( ((pin) == pinBoost) && configPage6.boostEnabled) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) || ((pin) == pinStepperEnable) || ((pin) == pinStepperStep) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
-#define pinIsOutput(pin)    ( ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ((pin) == pinBoost) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) )
-#define pinIsUsed(pin)      ( pinIsInjector((pin)) || pinIsIgnition((pin)) || pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
+#define pinIsUsed(pin)      ( pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
 /** The status struct with current values for all 'live' variables.
 * In current version this is 64 bytes. Instantiated as global currentStatus.
@@ -775,8 +797,8 @@ struct config2 {
   byte flexEnabled : 1; ///< Enable Flex fuel sensing (pin / interrupt)
   byte legacyMAP  : 1;  ///< Legacy MAP reading behavior
   byte baroCorr : 1;    // Unused ?
-  byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (#outputs == #cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but #outputs == #cyls, only for 4 cyl),
-                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (#ouputs == #cyls, timed over full cycle, 2 crank revs) */
+  byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (number outputs == number cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but number outputs == number cyls, only for 4 cyl),
+                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (number ouputs == number cyls, timed over full cycle, 2 crank revs) */
   byte perToothIgn : 1; ///< Experimental / New ign. mode ... (?) (See decoders.ino)
   byte dfcoEnabled : 1; ///< Whether or not DFCO (deceleration fuel cut-off) is turned on
 
@@ -832,7 +854,7 @@ struct config2 {
 
   byte idleAdvEnabled : 2;
   byte idleAdvAlgorithm : 1;
-  byte IdleAdvDelay : 5;
+  byte idleAdvDelay : 5;
   
   byte idleAdvRPM;
   byte idleAdvTPS;
@@ -885,7 +907,7 @@ struct config4 {
 
   int16_t triggerAngle; ///< Angle (ATDC) when tooth No:1 on the primary wheel sends signal (-360 to +360 deg.)
   int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref configPage2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
-  byte CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
+  int8_t CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
   byte TrigAngMul; ///< Multiplier for non evenly divisible tooth counts.
 
   byte TrigEdge : 1;  ///< Primary (RPM1) Trigger Edge - 0 - RISING, 1 = FALLING (Copied from this config to primaryTriggerEdge)
@@ -969,8 +991,8 @@ struct config4 {
   byte unusedBits4 : 7;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
-
-  byte unused4_124[2];
+  byte vvtMinClt;
+  byte vvtDelay;
 
 #if defined(CORE_AVR)
   };
@@ -1370,7 +1392,31 @@ struct config13 {
 
   uint16_t candID[8]; ///< Actual CAN ID need 16bits, this is a placeholder
 
-  byte unused12_106_127[22]; // Unused
+  byte unused12_106_116[10];
+
+  byte onboard_log_csv_separator :2;  //";", ",", "tab", "space"  
+  byte onboard_log_file_style    :2;  // "Disabled", "CSV", "Binary", "INVALID" 
+  byte onboard_log_file_rate     :2;  // "1Hz", "4Hz", "10Hz", "30Hz" 
+  byte onboard_log_filenaming    :2;  // "Overwrite", "Date-time", "Sequential", "INVALID" 
+  byte onboard_log_storage       :2;  // "sd-card", "INVALID", "INVALID", "INVALID" ;In the future maybe an onboard spi flash can be used, or switch between SDIO vs SPI sd card interfaces.
+  byte onboard_log_trigger_boot  :1;  // "Disabled", "On boot"
+  byte onboard_log_trigger_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_prot  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Vbat  :1;  // "Disabled", "Enabled"
+  byte onboard_log_trigger_Epin  :2;  // "Disabled", "polling", "toggle" , "INVALID" 
+  uint16_t onboard_log_tr1_duration;  // Duration of logging that starts on boot
+  byte onboard_log_tr2_thr_on;        //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr2_thr_off;       //  "RPM",      100.0,  0.0,    0,     10000,  0
+  byte onboard_log_tr3_thr_RPM   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_MAP   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_Oil   :1;  // "Disabled", "Enabled"
+  byte onboard_log_tr3_thr_AFR   :1;  // "Disabled", "Enabled"     
+  byte onboard_log_tr4_thr_on;        // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)    
+  byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)   
+  byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
+
+
+  byte unused12_125_127[2];
 
 #if defined(CORE_AVR)
   };

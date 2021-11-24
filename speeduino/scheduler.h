@@ -184,6 +184,7 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  * - RUNNING - Schedule is currently running
  */
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+
 /** Ignition schedule.
  */
 struct Schedule {
@@ -218,8 +219,8 @@ struct FuelSchedule {
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;
-  unsigned int nextEndCompare;
+  COMPARE_TYPE nextStartCompare;
+  COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
 };
 
@@ -247,7 +248,7 @@ extern Schedule ignitionSchedule8;
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline COMPARE_TYPE setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
   unsigned int tmpQueue[4];

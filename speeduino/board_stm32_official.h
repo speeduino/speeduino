@@ -23,6 +23,7 @@
 #define PINMASK_TYPE uint32_t
 #define COMPARE_TYPE uint16_t
 #define COUNTER_TYPE uint16_t
+#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
@@ -78,11 +79,13 @@ extern "C" char* sbrk(int incr);
 */
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern BackupSramAsEEPROM EEPROM;
 
 #elif defined(USE_SPI_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
  
@@ -93,6 +96,7 @@ extern "C" char* sbrk(int incr);
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H "src/FRAM/Fram.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     #if defined(STM32F407xx)
       extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
@@ -102,13 +106,13 @@ extern "C" char* sbrk(int incr);
 
 #else //default case, internal flash as EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
     extern InternalSTM32F4_EEPROM_Class EEPROM;
   #if defined(STM32F401xC)
     #define SMALL_FLASH_MODE
   #endif
 #endif
-
 
 
 #define RTC_LIB_H "STM32RTC.h"
