@@ -112,7 +112,7 @@ void fanControl()
       {
         //Make sure fan has 0% duty)
         FAN_OFF();
-        BIT_CLEARcurrentStatus.status4, BIT_STATUS4_FAN;
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
@@ -127,13 +127,13 @@ void fanControl()
       {
         //Make sure fan has 0% duty)
         FAN_OFF();
-        BIT_CLEARcurrentStatus.status4, BIT_STATUS4_FAN;
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
         FAN_ON();
-        BIT_SETcurrentStatus.status4, BIT_STATUS4_FAN;
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
     #endif
   }
