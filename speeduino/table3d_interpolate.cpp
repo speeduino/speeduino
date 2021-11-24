@@ -16,29 +16,33 @@ static inline table3d_dim_t find_bin(
   const table3d_axis_t *pAxis,  // Start of the axis - this is the smallest axis value & the address we start searching from
   table3d_dim_t minElement,
   table3d_dim_t maxElement,
-  int8_t stride,                // Direction to search (1 coventional, -1 to go backwards from pAxis)
-  table3d_dim_t lastBin) // The last result from this call - used to speed up searches
+  table3d_dim_t lastBin) // Thevlast result from this call - used to speed up searches
 {
-  table3d_dim_t size = ((int8_t)maxElement - (int8_t)minElement) * stride;
+  // Direction to search (1 coventional, -1 to go backwards from pAxis)
+  int8_t stride = maxElement>minElement ? 1 : -1;
+  // It's quicker to increment/adjust these pointers than to repeatedly 
+  // index the array - minimum 2%.
+  const table3d_axis_t *pMax = nullptr;
+
   // Check the cached last bin and either side first - it's likely that this will give a hit under
   // real world conditions
-
   // Check if we're still in the same bin as last time
-  if (is_in_bin(value, pAxis[lastBin-stride], pAxis[lastBin]))
+  pMax = pAxis + lastBin;
+  if (is_in_bin(value, *(pMax - stride), *pMax))
   {
     return lastBin;
   }
   // Check the bin above the last one
-  lastBin -= stride;
-  if (lastBin>0 && is_in_bin(value, pAxis[lastBin-stride], pAxis[lastBin]))
+  pMax = pMax - stride;
+  if (lastBin!=(minElement-stride) && is_in_bin(value, *(pMax - stride), *pMax))
   {
-    return lastBin;    
+    return lastBin-stride;    
   }
   // Check the bin below the last one
-  lastBin += stride*2;
-  if (lastBin<=size && is_in_bin(value, pAxis[lastBin-stride], pAxis[lastBin]))
+  pMax += stride*2;
+  if (lastBin!=maxElement && is_in_bin(value, *(pMax - stride), *pMax))
   {
-    return lastBin;
+    return lastBin+stride;
   }
 
   // At or above maximum - clamp to final value
@@ -61,23 +65,25 @@ static inline table3d_dim_t find_bin(
   // when the RPM is highest (and hence the CPU is needed most)
   lastBin = maxElement;
   table3d_dim_t stop = minElement+stride;
-  while (lastBin!=stop && !is_in_bin(value, pAxis[lastBin-stride], pAxis[lastBin]))
+  pMax = pAxis + lastBin;
+  while (lastBin!=stop && !is_in_bin(value, *(pMax - stride), *pMax))
   {
     lastBin -= stride;
+    pMax -= stride;
   }
   return lastBin;
 }
 
 table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
-  return find_bin(value, pAxis, 0, size-1, 1, lastBin);
+  return find_bin(value, pAxis, 0, size-1, lastBin);
 }
 
 table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
   // Y axis is stored in reverse for performance purposes (not sure that's still valid). 
   // The minimum value is at the end & max at the start. So need to adjust for that. 
-  return find_bin(value, pAxis, size-1, 0, -1, lastBin);
+  return find_bin(value, pAxis, size-1, 0, lastBin);
 }
 
 // ========================= Fixed point math =========================
