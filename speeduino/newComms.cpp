@@ -31,8 +31,14 @@ uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0;
 uint32_t serialCRC = 0; 
-uint16_t SDcurrentDirChunk;
 uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
+#ifdef RTC_ENABLED
+  uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  uint16_t SDcurrentDirChunk;
+  uint32_t SDreadStartSector;
+  uint32_t SDreadNumSectors;
+  uint32_t SDreadCompletedSectors = 0;
+#endif
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -133,7 +139,7 @@ void sendSerialReturnCode(byte returnCode)
   Serial.write( (CRC32_val & 255) );
 }
 
-void sendSerialPayload(void *payload, byte payloadLength)
+void sendSerialPayload(void *payload, uint16_t payloadLength)
 {
   //uint16_t totalPayloadLength = payloadLength + SERIAL_CRC_LENGTH;
   uint16_t totalPayloadLength = payloadLength;
@@ -360,14 +366,11 @@ void processSerialCommand()
 
     case 'r': //New format for the optimised OutputChannels
     {
-
       uint8_t cmd = serialPayload[2];
-      uint8_t offset1 = serialPayload[3];
-      uint8_t offset2 = serialPayload[4];
-      uint16_t offset = word(offset2, offset1);
-      uint8_t length1 = serialPayload[5];
-      uint8_t length2 = serialPayload[6];
-      uint16_t length = word(length2, length1);
+      uint16_t offset = word(serialPayload[4], serialPayload[3]);
+      uint16_t length = word(serialPayload[6], serialPayload[5]);
+      uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
+      uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 
       if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {
@@ -392,7 +395,7 @@ void processSerialCommand()
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
       {
         //SD read commands use the offset and length fields to indicate the request type
-        if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
+        if((SD_arg1 == SD_READ_STAT_ARG1) && (SD_arg2 == SD_READ_STAT_ARG2))
         {
           //Read the status of the SD card
           
@@ -430,7 +433,7 @@ void processSerialCommand()
           sendSerialPayload(&serialPayload, 17);
 
         }
-        else if((offset == SD_READ_DIR_OFFSET) && (length == SD_READ_DIR_LENGTH))
+        else if((SD_arg1 == SD_READ_DIR_ARG1) && (SD_arg2 == SD_READ_DIR_ARG2))
         {
           //Send file details
           serialPayload[0] = SERIAL_RC_OK;
@@ -444,23 +447,46 @@ void processSerialCommand()
             filesInCurrentChunk++;
             payloadIndex += 32;
           }
-          serialPayload[33] = lowByte(SDcurrentDirChunk);
-          serialPayload[34] = highByte(SDcurrentDirChunk);
-          
-          
+          serialPayload[payloadIndex] = lowByte(SDcurrentDirChunk);
+          serialPayload[payloadIndex + 1] = highByte(SDcurrentDirChunk);
+          //Serial.print("Index:");
+          //Serial.print(payloadIndex);
 
           sendSerialPayload(&serialPayload, (payloadIndex + 2));
 
         }
-        else if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
-        {
-          //File info
-        }
 
       }
-      else if(cmd == 0x14)
+      else if(cmd == SD_READFILE_PAGE)
       {
         //Fetch data from file
+        if(SD_arg2 == SD_READ_COMP_ARG2)
+        {
+          //arg1 is the block number to return
+          serialSDTransmitPayload[0] = SERIAL_RC_OK;
+          serialSDTransmitPayload[1] = highByte(SD_arg1);
+          serialSDTransmitPayload[2] = lowByte(SD_arg1);
+
+          uint32_t currentSector = SDreadStartSector + (SD_arg1 * 4);
+          
+          int32_t numSectorsToSend = 0;
+          if(SDreadNumSectors > SDreadCompletedSectors)
+          {
+            numSectorsToSend = SDreadNumSectors - SDreadCompletedSectors;
+            if(numSectorsToSend > 4) //Maximum of 4 sectors at a time
+            {
+              numSectorsToSend = 4;
+            }
+          }
+          SDreadCompletedSectors += numSectorsToSend;
+          
+          if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
+          else
+          {
+            readSDSectors(&serialSDTransmitPayload[3], currentSector, numSectorsToSend); 
+            sendSerialPayload(&serialSDTransmitPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+          }
+        }
       }
 #endif
       else
@@ -571,20 +597,14 @@ void processSerialCommand()
 
     case 'w':
     {
-      byte offset1, offset2, length1, length2;
-
       uint8_t cmd = serialPayload[2];
-      offset1 = serialPayload[3];
-      offset2 = serialPayload[4];
-      uint16_t valueOffset = word(offset2, offset1);
-      length1 = serialPayload[5];
-      length2 = serialPayload[6];
-      uint16_t chunkSize = word(length2, length1);
+      uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
+      uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 
 #ifdef RTC_ENABLED
       if(cmd == SD_READWRITE_PAGE)
         { 
-          if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
+          if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
           {
             /*
             SD DO command. Single byte of data where the commands are:
@@ -596,22 +616,25 @@ void processSerialCommand()
             5 Init SD card
             */
             uint8_t command = serialPayload[7];
-            if(command == 4) { setTS_SD_status(); } //Set SD status values
+            if(command == 2) { endSDLogging(); manualLogActive = false; }
+            else if(command == 3) { beginSDLogging(); manualLogActive = true; }
+            else if(command == 4) { setTS_SD_status(); }
+            //else if(command == 5) { initSD(); }
             
             sendSerialReturnCode(SERIAL_RC_OK);
           }
-          else if((valueOffset == SD_WRITE_DIR_OFFSET) && (chunkSize == SD_WRITE_DIR_LENGTH))
+          else if((SD_arg1 == SD_WRITE_DIR_ARG1) && (SD_arg2 == SD_WRITE_DIR_ARG2))
           {
             //Begin SD directory read. Value in payload represents the directory chunk to read
-            //Directory chunks are each 32 files long
+            //Directory chunks are each 16 files long
             SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
             sendSerialReturnCode(SERIAL_RC_OK);
           }
-          else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
+          else if((SD_arg1 == SD_WRITE_SEC_ARG1) && (SD_arg2 == SD_WRITE_SEC_ARG2))
           {
             //SD write sector command
           }
-          else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
+          else if((SD_arg1 == SD_ERASEFILE_ARG1) && (SD_arg2 == SD_ERASEFILE_ARG2))
           {
             //Erase file command
             //First 4 bytes are the log number in ASCII
@@ -626,7 +649,7 @@ void processSerialCommand()
             Serial.read();
             Serial.read();
           }
-          else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
+          else if((SD_arg1 == SD_SPD_TEST_ARG1) && (SD_arg2 == SD_SPD_TEST_ARG2))
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
@@ -649,12 +672,35 @@ void processSerialCommand()
             sendSerialReturnCode(SERIAL_RC_OK);
 
           }
+          else if((SD_arg1 == SD_WRITE_COMP_ARG1) && (SD_arg2 == SD_WRITE_COMP_ARG2))
+          {
+            //Prepare to read a 2024 byte chunk of data from the SD card
+            uint8_t sector1 = serialPayload[7];
+            uint8_t sector2 = serialPayload[8];
+            uint8_t sector3 = serialPayload[9];
+            uint8_t sector4 = serialPayload[10];
+            //SDreadStartSector = (sector1 << 24) | (sector2 << 16) | (sector3 << 8) | sector4;
+            SDreadStartSector = (sector4 << 24) | (sector3 << 16) | (sector2 << 8) | sector1;
+            //SDreadStartSector = sector4 | (sector3 << 8) | (sector2 << 16) | (sector1 << 24);
+
+            //Next 4 bytes are the number of sectors to write
+            uint8_t sectorCount1 = serialPayload[11];
+            uint8_t sectorCount2 = serialPayload[12];
+            uint8_t sectorCount3 = serialPayload[13];
+            uint8_t sectorCount4 = serialPayload[14];
+            SDreadNumSectors = (sectorCount1 << 24) | (sectorCount2 << 16) | (sectorCount3 << 8) | sectorCount4;
+
+            //Reset the sector counter
+            SDreadCompletedSectors = 0;
+
+            sendSerialReturnCode(SERIAL_RC_OK);
+          }
         }
         else if(cmd == SD_RTC_PAGE)
         {
           cmdPending = false;
           //Used for setting RTC settings
-          if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
+          if((SD_arg1 == SD_RTC_WRITE_ARG1) && (SD_arg2 == SD_RTC_WRITE_ARG2))
           {
             //Set the RTC date/time
             byte second = serialPayload[7];
