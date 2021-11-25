@@ -1,3 +1,4 @@
+#if HAL_CAN_MODULE_ENABLED
 #include "STM32_CAN.h"
 
 STM32_CAN::STM32_CAN( CAN_TypeDef* canPort, CAN_PINS pins, RXQUEUE_TABLE rxSize, TXQUEUE_TABLE txSize ) {
@@ -936,4 +937,4 @@ extern "C" void CAN3_TX_IRQHandler(void)
   HAL_CAN_IRQHandler(&hcan3);
 }
 #endif
-
+#endif

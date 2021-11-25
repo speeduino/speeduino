@@ -11,7 +11,7 @@ https://github.com/jiauka/STM32F1_CAN
 
 STM32 core: https://github.com/stm32duino/Arduino_Core_STM32
 */
-
+#if HAL_CAN_MODULE_ENABLED
 #ifndef STM32_CAN_H
 #define STM32_CAN_H
 
@@ -181,4 +181,4 @@ static CAN_HandleTypeDef     hcan3;
 #endif
 
 #endif
-
+#endif
