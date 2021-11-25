@@ -327,7 +327,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[103] = currentStatus.fuelPressure;
   fullStatus[104] = currentStatus.oilPressure;
   fullStatus[105] = currentStatus.wmiPW;
-  fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), UnusedBits(3:7)
+  fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), fanStatus(3), UnusedBits(4:7)
   fullStatus[107] = (int8_t)currentStatus.vvt2Angle;
   fullStatus[108] = currentStatus.vvt2TargetAngle;
   fullStatus[109] = currentStatus.vvt2Duty;
