@@ -218,7 +218,7 @@ void loop()
 
       VVT1_PIN_LOW();
       VVT2_PIN_LOW();
-      vvtTimer->Disable();
+      if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }

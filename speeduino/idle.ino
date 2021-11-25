@@ -22,9 +22,9 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_targ
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
-    idleTimer->Enable();
+    if (idleTimer != nullptr) { idleTimer->Enable(); }
   }
   else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
   {
@@ -35,7 +35,7 @@ static inline void enableIdle()
 void initialiseIdle()
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
-  idleTimer->Disable();
+  if (idleTimer != nullptr) { idleTimer->Disable(); }
 
   //Pin masks must always be initialized, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restat/overflow
   idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
@@ -660,7 +660,7 @@ void disableIdle()
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
-    idleTimer->Disable();
+    if (idleTimer != nullptr) { idleTimer->Disable(); }
     digitalWrite(pinIdle1, LOW);
   }
   else if ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )

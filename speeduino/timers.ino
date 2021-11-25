@@ -100,18 +100,19 @@ void initialiseTimers()
   #endif
 
   //TODO: Give warning about number of used/available timers in tunerstudio
-  //TODO: Check boost/vvt/idleTimer are assigned before interacting with them
+  //TODO: Check vvt/idleTimer are assigned before interacting with them
+  //TODO: Change wmi/fan to use these timers too
 
   for (int i = 0; i < AVAILABLE_AUX_TIMERS; i++) {
-    if (configPage6.boostEnabled == 1 && !boostTimer) {
+    if (configPage6.boostEnabled == 1 && boostTimer == nullptr) {
       boostTimer = &AuxTimers[i];
       boostTimer->Interrupt = boostInterrupt;
     }
-    else if (configPage6.vvtEnabled > 0 && !vvtTimer) {
+    else if (configPage6.vvtEnabled > 0 && vvtTimer == nullptr) {
       vvtTimer = &AuxTimers[i];
       vvtTimer->Interrupt = vvtInterrupt;
     }
-    else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) && !idleTimer) {
+    else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) && idleTimer == nullptr) {
       idleTimer = &AuxTimers[i];
       idleTimer->Interrupt = idleInterrupt;
     }

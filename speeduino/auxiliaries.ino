@@ -198,7 +198,7 @@ void initialiseAuxPWM()
     vvt1_pwm_value = 0;
     currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
-    vvtTimer->Enable(); //Turn on the B compare unit (ie turn on the interrupt)
+    if (vvtTimer != nullptr) { vvtTimer->Enable(); } //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
     vvtTimeHold = false;
@@ -215,7 +215,7 @@ void initialiseAuxPWM()
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
-    vvtTimer->Enable(); //Turn on the B compare unit (ie turn on the interrupt)
+    if (vvtTimer != nullptr) { vvtTimer->Enable(); } //Turn on the B compare unit (ie turn on the interrupt)
   }
 
   currentStatus.boostDuty = 0;
@@ -239,11 +239,11 @@ void boostControl()
       currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { boostTimer->Disable(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      if(currentStatus.boostDuty == 0) { if (boostTimer != nullptr) { boostTimer->Disable(); } BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-        boostTimer->Enable(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+        if (boostTimer != nullptr) { boostTimer->Enable(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
@@ -341,13 +341,13 @@ void boostControl()
           }
 
           bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
-          if(currentStatus.boostDuty == 0) { boostTimer->Disable(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+          if(currentStatus.boostDuty == 0) { if (boostTimer != nullptr) { boostTimer->Disable(); } BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
           else
           {
             if(PIDcomputed == true)
             {
               boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-              boostTimer->Enable(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+              if (boostTimer != nullptr) { boostTimer->Enable(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
 
@@ -366,7 +366,7 @@ void boostControl()
     } //Open / Cloosed loop
   }
   else { // Disable timer channel and zero the flex boost correction status
-    boostTimer->Disable();
+    if (boostTimer != nullptr) { boostTimer->Disable(); }
     currentStatus.flexBoostCorrection = 0;
   }
 
@@ -502,7 +502,7 @@ void vvtControl()
         vvt1_max_pwm = false;
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        vvtTimer->Disable();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
       {
@@ -513,12 +513,12 @@ void vvtControl()
         vvt1_max_pwm = true;
         vvt2_pwm_state = true;
         vvt2_max_pwm = true;
-        vvtTimer->Disable();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else
       {
         //Duty cycle is between 0 and 100. Make sure the timer is enabled
-        vvtTimer->Enable();
+        if (vvtTimer != nullptr) { vvtTimer->Enable(); }
         if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
         if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
       }
@@ -528,7 +528,7 @@ void vvtControl()
   else 
   { 
     // Disable timer channel
-    vvtTimer->Disable();
+    if (vvtTimer != nullptr) { vvtTimer->Disable(); }
     currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
     currentStatus.vvt2Duty = 0;
@@ -644,7 +644,7 @@ void wmiControl()
     {
       // Make sure water pump is off
       VVT1_PIN_LOW();
-      vvtTimer->Disable();
+      if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       digitalWrite(pinWMIEnabled, LOW);
     }
     else
@@ -654,11 +654,11 @@ void wmiControl()
       {
         // Make sure water pump is on (100% duty)
         VVT1_PIN_HIGH();
-        vvtTimer->Disable();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else
       {
-        vvtTimer->Enable();
+        if (vvtTimer != nullptr) { vvtTimer->Enable(); }
       }
     }
   }
@@ -668,7 +668,7 @@ void boostDisable()
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
-  boostTimer->Disable(); //Turn off timer
+  if (boostTimer != nullptr) { boostTimer->Disable(); } //Turn off timer
   BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
 }
 
