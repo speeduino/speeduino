@@ -69,6 +69,8 @@ extern "C" char* sbrk(int incr);
   #endif
 #endif
 
+#define PWM_FAN_AVAILABLE
+
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
 #endif
@@ -122,14 +124,14 @@ extern "C" char* sbrk(int incr);
 * Schedules
 * Timers Table for STM32F1
 *   TIMER1    TIMER2    TIMER3    TIMER4
-* 1 - free  1 - INJ1  1 - IGN1  1 - oneMSInterval
+* 1 - FAN   1 - INJ1  1 - IGN1  1 - oneMSInterval
 * 2 - BOOST 2 - INJ2  2 - IGN2  2 -
 * 3 - VVT   3 - INJ3  3 - IGN3  3 -
 * 4 - IDLE  4 - INJ4  4 - IGN4  4 -
 *
 * Timers Table for STM32F4
 *   TIMER1  |  TIMER2  |  TIMER3  |  TIMER4  |  TIMER5  |  TIMER11
-* 1 - free  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
+* 1 - FAN  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
 * 2 - BOOST |2 - INJ2  |2 - IGN2  |2 - IGN6  |2 - INJ6  |
 * 3 - VVT   |3 - INJ3  |3 - IGN3  |3 - IGN7  |3 - INJ7  |
 * 4 - IDLE  |4 - INJ4  |4 - IGN4  |4 - IGN8  |4 - INJ8  | 
@@ -232,10 +234,15 @@ extern "C" char* sbrk(int incr);
 #define ENABLE_VVT_TIMER()    (TIM1)->SR = ~TIM_FLAG_CC3; (TIM1)->DIER |= TIM_DIER_CC3IE
 #define DISABLE_VVT_TIMER()   (TIM1)->DIER &= ~TIM_DIER_CC3IE
 
+#define ENABLE_FAN_TIMER()  (TIM1)->SR = ~TIM_FLAG_CC1; (TIM1)->DIER |= TIM_DIER_CC1IE
+#define DISABLE_FAN_TIMER() (TIM1)->DIER &= ~TIM_DIER_CC1IE
+
 #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
 #define BOOST_TIMER_COUNTER   (TIM1)->CNT
 #define VVT_TIMER_COMPARE     (TIM1)->CCR3
 #define VVT_TIMER_COUNTER     (TIM1)->CNT
+#define FAN_TIMER_COMPARE     (TIM1)->CCR1
+#define FAN_TIMER_COUNTER     (TIM1)->CNT
 
 /*
 ***********************************************************************************************************
@@ -286,6 +293,7 @@ void fuelSchedule8Interrupt(HardwareTimer*);
 #endif
 void idleInterrupt(HardwareTimer*);
 void vvtInterrupt(HardwareTimer*);
+void fanInterrupt(HardwareTimer*);
 void ignitionSchedule1Interrupt(HardwareTimer*);
 void ignitionSchedule2Interrupt(HardwareTimer*);
 void ignitionSchedule3Interrupt(HardwareTimer*);
