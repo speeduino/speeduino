@@ -159,6 +159,11 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
   return fileFound;
 }
 
+void readSDSectors(uint8_t* buffer, uint32_t sectorNumber, uint16_t sectorCount)
+{
+  sd.card()->readSectors(sectorNumber, buffer, sectorCount);
+}
+
 void beginSDLogging()
 {
   if(SD_status == SD_STATUS_READY)
