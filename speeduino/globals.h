@@ -25,9 +25,11 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
-#include "table.h"
+#include "table2d.h"
+#include "table3d.h"
 #include <assert.h>
 #include "logger.h"
+#include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
@@ -60,7 +62,6 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
     #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
@@ -430,26 +431,28 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
+extern FastCRC32 CRC32;
 
-extern struct table3D fuelTable; //16x16 fuel map
-extern struct table3D fuelTable2; //16x16 fuel map
-extern struct table3D ignitionTable; //16x16 ignition map
-extern struct table3D ignitionTable2; //16x16 ignition map
-extern struct table3D afrTable; //16x16 afr target map
-extern struct table3D stagingTable; //8x8 fuel staging table
-extern struct table3D boostTable; //8x8 boost map
-extern struct table3D vvtTable; //8x8 vvt map
-extern struct table3D vvt2Table; //8x8 vvt2 map
-extern struct table3D wmiTable; //8x8 wmi map
-extern struct table3D trim1Table; //6x6 Fuel trim 1 map
-extern struct table3D trim2Table; //6x6 Fuel trim 2 map
-extern struct table3D trim3Table; //6x6 Fuel trim 3 map
-extern struct table3D trim4Table; //6x6 Fuel trim 4 map
-extern struct table3D trim5Table; //6x6 Fuel trim 5 map
-extern struct table3D trim6Table; //6x6 Fuel trim 6 map
-extern struct table3D trim7Table; //6x6 Fuel trim 7 map
-extern struct table3D trim8Table; //6x6 Fuel trim 8 map
-extern struct table3D dwellTable; //4x4 Dwell map
+
+extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
+extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
+extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
+extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
+extern struct table3d16RpmLoad afrTable; //16x16 afr target map
+extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
+extern struct table3d8RpmTps boostTable; //8x8 boost map
+extern struct table3d8RpmTps vvtTable; //8x8 vvt map
+extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
+extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
+extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
+extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
+extern struct table3d6RpmLoad trim3Table; //6x6 Fuel trim 3 map
+extern struct table3d6RpmLoad trim4Table; //6x6 Fuel trim 4 map
+extern struct table3d6RpmLoad trim5Table; //6x6 Fuel trim 5 map
+extern struct table3d6RpmLoad trim6Table; //6x6 Fuel trim 6 map
+extern struct table3d6RpmLoad trim7Table; //6x6 Fuel trim 7 map
+extern struct table3d6RpmLoad trim8Table; //6x6 Fuel trim 8 map
+extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
@@ -475,6 +478,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -722,6 +726,7 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
   byte engineProtectStatus;
+  byte fanDuty;
   byte wmiPW;
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
@@ -841,7 +846,7 @@ struct config2 {
   byte fanWhenOff : 1;      ///< Allow running fan with engine off: 0 = Only run fan when engine is running, 1 = Allow even with engine off
   byte fanWhenCranking : 1; ///< Set whether the fan output will stay on when the engine is cranking (0=force off, 1=allow on)
   byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref configPage4.dwellRun, 1=Use @ref dwellTable)
-  byte fanUnused : 2;       // Unused ?
+  byte fanEnable : 2;       ///< Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
@@ -1091,7 +1096,7 @@ struct config6 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
 
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanUnused : 1;
   byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
@@ -1149,10 +1154,7 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_162;
-  byte unused10_163;
-  byte unused10_164;
-  byte unused10_165;
+  byte PWMFanDuty[4];
   byte unused10_166;
   byte unused10_167;
   byte unused10_168;

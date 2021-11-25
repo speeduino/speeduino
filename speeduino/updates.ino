@@ -14,19 +14,23 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    18
+  #define CURRENT_DATA_VERSION    19
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(readEEPROMVersion() == 2)
   {
-    for(int x=0; x<16; x++)
+    auto table_it = ignitionTable.values.begin();
+    while (!table_it.at_end())
     {
-      for(int y=0; y<16; y++)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
-      }
+        *row = *row + 40;
+        ++row;
+      }      
+      ++table_it;
     }
     writeAllConfig();
     storeEEPROMVersion(3);
@@ -464,13 +468,18 @@ void doUpdates()
   if(readEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
-    for(int x=0; x<8; x++)
+    auto table_it = vvtTable.values.begin();
+    while (!table_it.at_end())
     {
-      for(int y=0; y<8; y++)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
-      }
+        *row = *row << 1;
+        ++row;
+      }      
+      ++table_it;
     }
+
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
     configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
     configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;
@@ -507,6 +516,14 @@ void doUpdates()
 
     writeAllConfig();
     storeEEPROMVersion(18);
+  }
+
+  if(readEEPROMVersion() == 18)
+  {
+    configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
+
+    writeAllConfig();
+    storeEEPROMVersion(19);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
