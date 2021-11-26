@@ -5,6 +5,8 @@
 #include "tests_tables.h"
 #include "table3d.h"
 
+#define _countof(x) (sizeof(x) / sizeof (x[0]))
+
 #if defined(PROGMEM)
 const PROGMEM byte values[] = {
 #else
@@ -27,6 +29,13 @@ const byte values[] = {
   34,  35,  36,  37,  39,  41,  42,  43,  43,  44,  44,  44,  43,  43,  43,  43,
   34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  34,  34,  34,  34,  34,  34
   };
+static const table3d_axis_t tempXAxis[] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+static const table3d_axis_t xMin = tempXAxis[0];
+static const table3d_axis_t xMax = tempXAxis[_countof(tempXAxis)-1];
+static const table3d_axis_t tempYAxis[] = {100, 96, 90, 86, 76, 70, 66, 60, 56, 50, 46, 40, 36, 30, 26, 16};
+static const table3d_axis_t yMin = tempYAxis[_countof(tempYAxis)-1];
+static const table3d_axis_t yMax = tempYAxis[0];
+
 
 static table3d16RpmLoad testTable;
 
@@ -55,19 +64,14 @@ void setup_TestTable(void)
          500 |  700 |  900 | 1200 | 1600 | 2000 | 2500 | 3100 | 3500 | 4100 | 4700 | 5300 | 5900 | 6500 | 6750 | 7000
   */
   
-  table3d_axis_t tempXAxis[] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
   memcpy(testTable.axisX.axis, tempXAxis, sizeof(testTable.axisX));
-  table3d_axis_t tempYAxis[] = {100, 96, 90, 86, 76, 70, 66, 60, 56, 50, 46, 40, 36, 30, 26, 16};
   memcpy(testTable.axisY.axis, tempYAxis, sizeof(testTable.axisY));
-
 #if defined(PROGMEM)
-  for (int loop=0; loop<sizeof(testTable.values); ++loop) 
-  { 
-    testTable.values.values[loop] = pgm_read_byte_near(values + loop);
-  }
+  memcpy_P
 #else
-  memcpy(testTable.values.values, values, sizeof(testTable.values));
+  memcpy
 #endif
+        (testTable.values.values, values, sizeof(testTable.values));
 }
 
 void testTables()
@@ -102,7 +106,7 @@ void test_tableLookup_exact1Axis(void)
   //Tests a lookup that exactly matches on the X axis and 50% of the way between cells on the Y axis
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 48, 2500); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 65);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)6);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)5);
@@ -115,7 +119,7 @@ void test_tableLookup_exact2Axis(void)
   //Tests a lookup that exactly matches on both the X and Y axis
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 70, 2500); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5], testTable.axisX.axis[6]); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 86);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)6);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)5);
@@ -128,7 +132,7 @@ void test_tableLookup_overMaxX(void)
   //Tests a lookup where the RPM exceeds the highest value in the table. The Y value is a 50% match
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 73, 10000); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 73, xMax+100); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 86);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)15);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)15);
@@ -141,7 +145,7 @@ void test_tableLookup_overMaxY(void)
   //Tests a lookup where the load value exceeds the highest value in the table. The X value is a 50% match
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 110, 600); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, yMax+10, 600); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 110);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
@@ -154,7 +158,7 @@ void test_tableLookup_underMinX(void)
   //Tests a lookup where the RPM value is below the lowest value in the table. The Y value is a 50% match
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 38, 300); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 38, xMin-100); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 37);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)0);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
@@ -167,7 +171,7 @@ void test_tableLookup_underMinY(void)
   //Tests a lookup where the load value is below the lowest value in the table. The X value is a 50% match
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 8, 600); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, yMin-5, 600); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 34);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
@@ -198,13 +202,13 @@ void test_all_incrementing(void)
   uint16_t tempVE = 0;
   
   char buffer[64];
-  for(uint16_t rpm = 0; rpm<8000; rpm+=100)
+  for(uint16_t rpm = 0; rpm<xMax+1000; rpm+=100)
   {
     tempVE = 0;
-    for(uint8_t load = 0; load<120; load++)
+    for(uint8_t load = 0; load<yMax+10; load++)
     {
-      sprintf(buffer, "%d, %d", rpm, load);
-      TEST_MESSAGE(buffer);
+      // sprintf(buffer, "%d, %d", rpm, load);
+      // TEST_MESSAGE(buffer);
       uint16_t newVE = get3DTableValue(&testTable, load, rpm);
       TEST_ASSERT_GREATER_OR_EQUAL(tempVE, newVE);
       tempVE = newVE;
