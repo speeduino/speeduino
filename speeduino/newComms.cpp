@@ -32,6 +32,8 @@ bool serialReceivePending = false; /**< Whether or not a serial request has only
 uint16_t serialBytesReceived = 0;
 uint32_t serialCRC = 0; 
 uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
+bool serialWriteInProgress = false;
+uint16_t serialBytesTransmitted = 0;
 #ifdef RTC_ENABLED
   uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
   uint16_t SDcurrentDirChunk;
@@ -141,23 +143,69 @@ void sendSerialReturnCode(byte returnCode)
 
 void sendSerialPayload(void *payload, uint16_t payloadLength)
 {
-  //uint16_t totalPayloadLength = payloadLength + SERIAL_CRC_LENGTH;
+  //Start new transmission session
+  serialBytesTransmitted = 0; 
+  serialWriteInProgress = false;
+
   uint16_t totalPayloadLength = payloadLength;
   Serial.write(totalPayloadLength >> 8);
   Serial.write(totalPayloadLength);
 
   //Need to handle serial buffer being full. This is just for testing
+  serialPayloadLength = payloadLength; //Save the payload length incase we need to transmit in multiple steps
   for(int i = 0; i < payloadLength; i++)
   {
     Serial.write(((uint8_t*)payload)[i]);
+    serialBytesTransmitted++;
+
+    if(Serial.availableForWrite() == 0)
+    {
+      //Serial buffer is full. Need to wait for it to be free
+      serialWriteInProgress = true;
+      break;
+    }
   }
 
-  //Calculate and send CRC
-  uint32_t CRC32_val = CRC32.crc32((uint8_t*)payload, payloadLength);
-  Serial.write( ((CRC32_val >> 24) & 255) );
-  Serial.write( ((CRC32_val >> 16) & 255) );
-  Serial.write( ((CRC32_val >> 8) & 255) );
-  Serial.write( (CRC32_val & 255) );
+  if(serialWriteInProgress == false)
+  {
+    //All data transmitted. Send the CRC
+    uint32_t CRC32_val = CRC32.crc32((uint8_t*)payload, payloadLength);
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
+  }
+}
+
+void continueSerialTransmission()
+{
+  if(serialWriteInProgress == true)
+  {
+    serialWriteInProgress = false; //ASsume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
+    //Serial buffer is free. Continue sending the data
+    for(unsigned int i = serialBytesTransmitted; i < serialPayloadLength; i++)
+    {
+      Serial.write(serialPayload[i]);
+      serialBytesTransmitted++;
+
+      if(Serial.availableForWrite() == 0)
+      {
+        //Serial buffer is full. Need to wait for it to be free
+        serialWriteInProgress = true;
+        break;
+      }
+    }
+
+    if(serialWriteInProgress == false)
+    {
+      //All data transmitted. Send the CRC
+      uint32_t CRC32_val = CRC32.crc32(serialPayload, serialPayloadLength);
+      Serial.write( ((CRC32_val >> 24) & 255) );
+      Serial.write( ((CRC32_val >> 16) & 255) );
+      Serial.write( ((CRC32_val >> 8) & 255) );
+      Serial.write( (CRC32_val & 255) );
+    }
+  }
 }
 
 void processSerialCommand()
@@ -346,14 +394,12 @@ void processSerialCommand()
       length = word(length2, length1);
 
       //Setup the transmit buffer
-      //serialTransmitPayload = (byte*) malloc(length + 1);
       serialPayload[0] = SERIAL_RC_OK;
       for(int i = 0; i < length; i++)
       {
         serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
       }
       sendSerialPayload(&serialPayload, (length + 1));
-      //free(serialTransmitPayload);
       break;
     }
 
@@ -369,8 +415,10 @@ void processSerialCommand()
       uint8_t cmd = serialPayload[2];
       uint16_t offset = word(serialPayload[4], serialPayload[3]);
       uint16_t length = word(serialPayload[6], serialPayload[5]);
+#ifdef RTC_ENABLED      
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
+#endif
 
       if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {

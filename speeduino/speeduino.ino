@@ -125,6 +125,10 @@ void loop()
       {
         if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
       }
+      if(serialWriteInProgress == true)
+      {
+        if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
+      }
 
       //Check for any new requets from serial.
       //if ( (Serial.available()) > 0) { command(); }

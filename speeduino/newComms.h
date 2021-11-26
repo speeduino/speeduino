@@ -73,6 +73,7 @@ extern bool serialReceivePending; /**< Whether or not a serial request has only 
 extern uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
 extern uint16_t serialBytesReceived; /**< The number of bytes received in the serial buffer during the current command. */
 extern bool serialWriteInProgress;
+extern uint16_t serialBytesTransmitted;
 
 void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void processSerialCommand();
@@ -85,5 +86,6 @@ void receiveCalibrationNew(byte);
 void generateToothLog(uint8_t);
 void commandButtons(int16_t);
 void generateCompositeLog(uint8_t);
+void continueSerialTransmission();
 
 #endif // COMMS_H
