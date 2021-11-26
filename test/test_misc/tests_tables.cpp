@@ -3,6 +3,25 @@
 #include <unity.h>
 #include "tests_tables.h"
 
+const PROGMEM byte values[] = {
+  109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 113, 112, 111, 111,
+  104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 109, 108, 107, 107, 106,
+  98, 101, 103, 103, 104, 105, 105, 105, 105, 105, 105, 104, 104, 103, 102, 102,
+  93, 96, 98, 99, 99, 100, 100, 101, 101, 101, 100, 100, 99, 98, 98, 97,
+  81, 86, 88, 89, 90, 91, 91, 91, 91, 91, 91, 90, 90, 89, 89, 88,
+  74, 80, 83, 84, 85, 86, 86, 86, 87, 86, 86, 86, 85, 84, 84, 84,
+  68, 75, 78, 79, 81, 81, 81, 82, 82, 82, 82, 81, 81, 80, 79, 79,
+  61, 69, 72, 74, 76, 76, 77, 77, 77, 77, 77, 76, 76, 75, 75, 74,
+  54, 62, 66, 69, 71, 71, 72, 72, 72, 72, 72, 72, 71, 71, 70, 70,
+  48, 56, 60, 64, 66, 66, 68, 68, 68, 68, 67, 67, 67, 66, 66, 65,
+  42, 49, 54, 58, 61, 62, 62, 63, 63, 63, 63, 62, 62, 61, 61, 61,
+  38, 43, 48, 52, 55, 56, 57, 58, 58, 58, 58, 58, 57, 57, 57, 56,
+  36, 39, 42, 46, 50, 51, 52, 53, 53, 53, 53, 53, 53, 52, 52, 52,
+  35, 36, 38, 41, 44, 46, 47, 48, 48, 49, 48, 48, 48, 48, 47, 47,
+  34, 35, 36, 37, 39, 41, 42, 43, 43, 44, 44, 44, 43, 43, 43, 43,
+  34, 34, 34, 34, 34, 34, 34, 34, 34, 35, 34, 34, 34, 34, 34, 34
+  };
+
 void setup_FuelTable(void)
 {
   //Setup the fuel table with some sane values for testing
@@ -28,47 +47,15 @@ void setup_FuelTable(void)
          500 |  700 |  900 | 1200 | 1600 | 2000 | 2500 | 3100 | 3500 | 4100 | 4700 | 5300 | 5900 | 6500 | 6750 | 7000
   */
   
-  int tempXAxis[16] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.axisX[x] = tempXAxis[x]; }
-  int tempYAxis[16] = {100, 96, 90, 86, 76, 70, 66, 60, 56, 50, 46, 40, 36, 30, 26, 16};
-  for (byte x = 0; x< fuelTable.ySize; x++) { fuelTable.axisY[x] = tempYAxis[x]; }
+  table3d_axis_t tempXAxis[] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+  memcpy(fuelTable.axisX.axis, tempXAxis, sizeof(fuelTable.axisX));
+  table3d_axis_t tempYAxis[] = {100, 96, 90, 86, 76, 70, 66, 60, 56, 50, 46, 40, 36, 30, 26, 16};
+  memcpy(fuelTable.axisY.axis, tempYAxis, sizeof(fuelTable.axisY));
 
-
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[0][x] = pgm_read_byte_near(tempRow1 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[1][x] = pgm_read_byte_near(tempRow2 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[2][x] = pgm_read_byte_near(tempRow3 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[3][x] = pgm_read_byte_near(tempRow4 + x);}
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[4][x] = pgm_read_byte_near(tempRow5 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[5][x] = pgm_read_byte_near(tempRow6 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[6][x] = pgm_read_byte_near(tempRow7 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[7][x] = pgm_read_byte_near(tempRow8 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[8][x] = pgm_read_byte_near(tempRow9 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[9][x] = pgm_read_byte_near(tempRow10 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[10][x] = pgm_read_byte_near(tempRow11 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[11][x] = pgm_read_byte_near(tempRow12 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[12][x] = pgm_read_byte_near(tempRow13 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[13][x] = pgm_read_byte_near(tempRow14 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[14][x] = pgm_read_byte_near(tempRow15 + x); }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[15][x] = pgm_read_byte_near(tempRow16 + x); }
-  /*
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[0][x] = tempRow1[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[1][x] = tempRow2[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[2][x] = tempRow3[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[3][x] = tempRow4[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[4][x] = tempRow5[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[5][x] = tempRow6[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[6][x] = tempRow7[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[7][x] = tempRow8[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[8][x] = tempRow9[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[9][x] = tempRow10[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[10][x] = tempRow11[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[11][x] = tempRow12[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[12][x] = tempRow13[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[13][x] = tempRow14[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[14][x] = tempRow15[x]; }
-  for (byte x = 0; x< fuelTable.xSize; x++) { fuelTable.values[15][x] = tempRow16[x]; }
-  */
-  
+  for (int loop=0; loop<sizeof(fuelTable.values); ++loop) 
+  { 
+    fuelTable.values.values[loop] = pgm_read_byte_near(values + loop);
+  }
 }
 
 void testTables()
