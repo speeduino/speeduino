@@ -100,7 +100,7 @@ void initialiseTimers()
   #endif
 
   //TODO: Give warning about number of used/available timers in tunerstudio
-  //TODO: Change wmi/fan to use these timers too
+  //TODO: Change wmi to use these timers too
   //TODO: Update timers for other platforms / expand available_aux_timers
   //TODO: Give compile time warning if available aux timers is higher than code enables
   //TODO: Move pwn value and max value to AuxTimer
