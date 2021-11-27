@@ -203,6 +203,12 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    fanPWMTable.valueSize = SIZE_BYTE;
+    fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    fanPWMTable.xSize = 4;
+    fanPWMTable.values = configPage9.PWMFanDuty;
+    fanPWMTable.axisX = configPage6.fanPWMBins;
+
     wmiAdvTable.valueSize = SIZE_BYTE;
     wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     wmiAdvTable.xSize = 6;
