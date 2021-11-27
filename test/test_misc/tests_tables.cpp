@@ -67,6 +67,7 @@ void testTables()
   RUN_TEST(test_tableLookup_overMaxY);
   RUN_TEST(test_tableLookup_underMinX);
   RUN_TEST(test_tableLookup_underMinY);
+  RUN_TEST(test_tableLookup_roundUp);
   //RUN_TEST(test_all_incrementing);
   
 }
@@ -160,6 +161,21 @@ void test_tableLookup_underMinY(void)
 
   uint16_t tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 34);
+}
+
+void test_tableLookup_roundUp(void)
+{
+  // Tests a lookup where the inputs result in a value that is outside the table range
+  // due to fixed point rounding
+  // Issue #726
+  setup_TestTable();
+
+  uint16_t tempVE = get3DTableValue(&testTable, 17, 600);
+  // TEST_ASSERT_EQUAL(tempVE, 34);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)15);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)14);
 }
 
 void test_all_incrementing(void)

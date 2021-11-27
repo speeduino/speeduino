@@ -3,6 +3,7 @@
 //The shift amount used for the 3D table calculations
 #define TABLE_SHIFT_FACTOR  8
 #define TABLE_SHIFT_POWER   (1UL<<TABLE_SHIFT_FACTOR)
+#define TABLE_SHIFT_HALF    (1UL<<(TABLE_SHIFT_FACTOR-1))
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as descibred in: www.megamanual.com/v22manual/ve_tuner.pdf
@@ -209,11 +210,14 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *fromTable,
         q = TABLE_SHIFT_POWER - ( (q << TABLE_SHIFT_FACTOR) / (yMinValue - yMaxValue) );
       }
 
-      uint32_t m = ((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) >> TABLE_SHIFT_FACTOR;
-      uint32_t n = (p * (TABLE_SHIFT_POWER-q)) >> TABLE_SHIFT_FACTOR;
-      uint32_t o = ((TABLE_SHIFT_POWER-p) * q) >> TABLE_SHIFT_FACTOR;
-      uint32_t r = (p * q) >> TABLE_SHIFT_FACTOR;
-      tableResult = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> TABLE_SHIFT_FACTOR;
+      // Add the equivalent of 0.5 to the final calculation pre-rounding.
+      // This will have the effect of rounding to the nearest integer, rather
+      // than always rounding down.
+      uint32_t m = (((TABLE_SHIFT_POWER-p) * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      uint32_t n = ((p * (TABLE_SHIFT_POWER-q)) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      uint32_t o = (((TABLE_SHIFT_POWER-p) * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      uint32_t r = ((p * q) + TABLE_SHIFT_HALF) >> TABLE_SHIFT_FACTOR;
+      tableResult = ( (A * m) + (B * n) + (C * o) + (D * r)) >> TABLE_SHIFT_FACTOR;
     }
 
     //Update the tables cache data

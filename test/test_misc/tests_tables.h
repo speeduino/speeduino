@@ -7,4 +7,5 @@ void test_tableLookup_overMaxX(void);
 void test_tableLookup_overMaxY(void);
 void test_tableLookup_underMinX(void);
 void test_tableLookup_underMinY(void);
+void test_tableLookup_roundUp(void);
 void test_all_incrementing(void);
