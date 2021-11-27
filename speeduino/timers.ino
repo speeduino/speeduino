@@ -111,7 +111,7 @@ void initialiseTimers()
       boostTimer = &AuxTimers[i];
       boostTimer->Interrupt = boostInterrupt;
     }
-    else if (configPage6.vvtEnabled > 0 && vvtTimer == nullptr) {
+    else if ( (configPage6.vvtEnabled > 0 || configPage10.wmiEnabled > 0) && vvtTimer == nullptr) {
       vvtTimer = &AuxTimers[i];
       vvtTimer->Interrupt = vvtInterrupt;
     }
