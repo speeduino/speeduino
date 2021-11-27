@@ -65,22 +65,6 @@ void (*inj7EndFunction)();
 void (*inj8StartFunction)();
 void (*inj8EndFunction)();
 
-void (*ign1StartFunction)();
-void (*ign1EndFunction)();
-void (*ign2StartFunction)();
-void (*ign2EndFunction)();
-void (*ign3StartFunction)();
-void (*ign3EndFunction)();
-void (*ign4StartFunction)();
-void (*ign4EndFunction)();
-void (*ign5StartFunction)();
-void (*ign5EndFunction)();
-void (*ign6StartFunction)();
-void (*ign6EndFunction)();
-void (*ign7StartFunction)();
-void (*ign7EndFunction)();
-void (*ign8StartFunction)();
-void (*ign8EndFunction)();
 
 void initialiseSchedulers()
 {
@@ -151,23 +135,6 @@ void initialiseSchedulers()
     ignitionSchedule7.ignTimerEnable = ign7TimerEnable;
     ignitionSchedule8.ignTimerEnable = ign8TimerEnable;
 
-    ignitionSchedule1.StartCallback = ign1StartFunction; //Name the start callback function
-    ignitionSchedule2.StartCallback = ign2StartFunction; //Name the start callback function
-    ignitionSchedule3.StartCallback = ign3StartFunction; //Name the start callback function
-    ignitionSchedule4.StartCallback = ign4StartFunction; //Name the start callback function
-    ignitionSchedule5.StartCallback = ign5StartFunction; //Name the start callback function
-    ignitionSchedule6.StartCallback = ign6StartFunction; //Name the start callback function
-    ignitionSchedule7.StartCallback = ign7StartFunction; //Name the start callback function
-    ignitionSchedule8.StartCallback = ign8StartFunction; //Name the start callback function
-
-    ignitionSchedule1.EndCallback = ign1EndFunction; //Name the end callback function
-    ignitionSchedule2.EndCallback = ign2EndFunction; //Name the end callback function
-    ignitionSchedule3.EndCallback = ign3EndFunction; //Name the end callback function
-    ignitionSchedule4.EndCallback = ign4EndFunction; //Name the end callback function
-    ignitionSchedule5.EndCallback = ign5EndFunction; //Name the end callback function
-    ignitionSchedule6.EndCallback = ign6EndFunction; //Name the end callback function
-    ignitionSchedule7.EndCallback = ign7EndFunction; //Name the end callback function
-    ignitionSchedule8.EndCallback = ign8EndFunction; //Name the end callback function
 
     IGN1_TIMER_ENABLE();
     IGN2_TIMER_ENABLE();
@@ -613,7 +580,7 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule ,  int16_t crankAngle
 //overload function for starting schedule(dwell) immediately
 void setIgnitionSchedule(struct Schedule *ignitionSchedule)
 {            
-             ignitionSchedule->StartCallback(); //start coil charging
+             ignitionSchedule->StartFunction(); //start coil charging
              ignitionSchedule->endCompare=ignitionSchedule->getIgnCounter()+ uS_TO_TIMER_COMPARE(currentStatus.dwell);
              ignitionSchedule->setIgnitionCompare(ignitionSchedule->endCompare);
              ignitionSchedule->Status=RUNNING;
@@ -1034,14 +1001,14 @@ void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule) // common func
     }
     else if (ignitionSchedule->Status == STAGED) //Check to see if this schedule is ready to turn on
     {
-      ignitionSchedule->StartCallback();
+      ignitionSchedule->StartFunction();
       ignitionSchedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule->startTime = micros();
       ignitionSchedule->setIgnitionCompare(ignitionSchedule->endCompare); // Set end callback interrupt time
     }
     else if (ignitionSchedule->Status == RUNNING) //Check to see if its time for spark
     {
-      ignitionSchedule->EndCallback(); //Moment of spark      
+      ignitionSchedule->EndFunction(); //Moment of spark      
       ignitionSchedule->schedulesSet = 0;
       ignitionSchedule->endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the igintion counter

@@ -63,28 +63,6 @@ extern void (*inj7EndFunction)();
 extern void (*inj8StartFunction)();
 extern void (*inj8EndFunction)();
 
-/** @name IgnitionCallbacks
- * These are the (global) function pointers that get called to begin and end the ignition coil charging.
- * They are required for the various spark output modes.
- * @{
-*/
-extern void (*ign1StartFunction)();
-extern void (*ign1EndFunction)();
-extern void (*ign2StartFunction)();
-extern void (*ign2EndFunction)();
-extern void (*ign3StartFunction)();
-extern void (*ign3EndFunction)();
-extern void (*ign4StartFunction)();
-extern void (*ign4EndFunction)();
-extern void (*ign5StartFunction)();
-extern void (*ign5EndFunction)();
-extern void (*ign6StartFunction)();
-extern void (*ign6EndFunction)();
-extern void (*ign7StartFunction)();
-extern void (*ign7EndFunction)();
-extern void (*ign8StartFunction)();
-extern void (*ign8EndFunction)();
-/** @} */
 
 void initialiseSchedulers();
 void beginInjectorPriming();
@@ -192,8 +170,8 @@ struct Schedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   volatile byte schedulesSet;     ///< A counter of how many times the schedule has been set
-  void (*StartCallback)();        ///< Start Callback function for schedule
-  void (*EndCallback)();          ///< End Callback function for schedule
+  void (*StartFunction)();        ///< Start Callback function for schedule
+  void (*EndFunction)();          ///< End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
