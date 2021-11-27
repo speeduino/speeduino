@@ -1054,7 +1054,7 @@ void loop()
         if ( (ignition1StartAngle > crankAngle) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
         {
           
-          setIgnitionSchedule1(ign1StartFunction,
+          setIgnitionSchedule(&ignitionSchedule1, ign1StartFunction,
                     //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
                     angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV),
                     currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
@@ -1099,7 +1099,7 @@ void loop()
 
             if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
             {
-              setIgnitionSchedule2(ign2StartFunction,
+              setIgnitionSchedule(&ignitionSchedule2, ign2StartFunction,
                         ignition2StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign2EndFunction
@@ -1124,7 +1124,7 @@ void loop()
 
             if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
             {
-              setIgnitionSchedule3(ign3StartFunction,
+              setIgnitionSchedule(&ignitionSchedule3, ign3StartFunction,
                         ignition3StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign3EndFunction
@@ -1149,7 +1149,7 @@ void loop()
 
             if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
             {
-              setIgnitionSchedule4(ign4StartFunction,
+              setIgnitionSchedule(&ignitionSchedule4, ign4StartFunction,
                         ignition4StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign4EndFunction
@@ -1174,7 +1174,7 @@ void loop()
 
             if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
             {
-              setIgnitionSchedule5(ign5StartFunction,
+              setIgnitionSchedule(&ignitionSchedule5, ign5StartFunction,
                         ignition5StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign5EndFunction
@@ -1199,7 +1199,7 @@ void loop()
 
             if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
             {
-              setIgnitionSchedule6(ign6StartFunction,
+              setIgnitionSchedule(&ignitionSchedule6, ign6StartFunction,
                         ignition6StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign6EndFunction
@@ -1224,7 +1224,7 @@ void loop()
 
             if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
             {
-              setIgnitionSchedule7(ign7StartFunction,
+              setIgnitionSchedule(&ignitionSchedule7, ign7StartFunction,
                         ignition7StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign7EndFunction
@@ -1249,7 +1249,7 @@ void loop()
 
             if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
             {
-              setIgnitionSchedule8(ign8StartFunction,
+              setIgnitionSchedule(&ignitionSchedule8, ign8StartFunction,
                         ignition8StartTime,
                         currentStatus.dwell + fixedCrankingOverride,
                         ign8EndFunction

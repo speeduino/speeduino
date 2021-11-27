@@ -97,14 +97,7 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule(struct Schedule *ignitionSchedule, void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
@@ -175,6 +168,10 @@ struct Schedule {
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
+
+  COMPARE_TYPE (*getIgnCounter)(); //Function for getting counter value
+  void (*setIgnitionCompare)(COMPARE_TYPE); //Function for setting counter compare value
+  void (*ignTimerEnable)(); //Function to enable timer for specific channel
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
