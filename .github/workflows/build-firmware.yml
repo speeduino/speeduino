@@ -1,0 +1,74 @@
+name: Build Firmware
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+
+    - name: Run PlatformIO
+      run: platformio run -e teensy35 -e teensy36 -e teensy41 -e black_F407VE -e megaatmega2561 -e megaatmega2560
+
+    - name: Upload to Speeduino server
+      if: github.event_name != 'pull_request'
+      env:
+        WEB_PWD: ${{ secrets.WEB_PWD }}
+      run: |
+        curl -v https://speeduino.com:2078 || true
+        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://speeduino.com:2078/bin/master.hex"
+        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex" "https://speeduino.com:2078/teensy35/master-teensy35.hex"
+        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex" "https://speeduino.com:2078/teensy36/master-teensy36.hex"
+        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex" "https://speeduino.com:2078/teensy41/master-teensy41.hex"
+        curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini" "https://speeduino.com:2078/master.ini"
+          
+    - name: Slack Notification (Passed)
+      uses: rtCamp/action-slack-notify@v2
+      if: success() && github.event_name != 'pull_request'
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Firmware build was successful :white_check_mark:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
+    
+    - name: Slack Notification (Failed)
+      uses: rtCamp/action-slack-notify@v2
+      if: failure() && github.event_name != 'pull_request'
+      env:
+        SLACK_CHANNEL: git
+        SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_TITLE: 'Firmware build FAILED :warning:'
+        SLACK_USERNAME: Github
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        MSG_MINIMAL: actions url,commit
