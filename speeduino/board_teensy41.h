@@ -26,6 +26,8 @@
   #define RTC_LIB_H "TimeLib.h"
   #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
+  #define TIMER_RESOLUTION 2
+
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB

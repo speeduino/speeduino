@@ -35,6 +35,12 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
+// Converts frequency to number of ticks (at TIMER_RESOLUTION) it takes to complete 1 second.
+// Note that the incoming frequency is divided by 2 to allow for up to 512hz
+inline unsigned int timerTicksPerSecondForHalfFrequency(byte half_frequency) {
+  //return 1000000L / (TIMER_RESOLUTION * half_frequency * 2);
+  return 500000L / (TIMER_RESOLUTION * half_frequency); //Same as comment above
+}
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
