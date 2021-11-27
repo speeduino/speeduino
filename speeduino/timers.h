@@ -52,6 +52,7 @@ inline void auxTimer3Disable();
 AuxTimer * boostTimer;
 AuxTimer * vvtTimer;
 AuxTimer * idleTimer;
+AuxTimer * fanTimer;
 
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
