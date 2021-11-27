@@ -22,7 +22,7 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_targ
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle()
 {
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
     if (idleTimer != nullptr) { idleTimer->Enable(); }
   }
