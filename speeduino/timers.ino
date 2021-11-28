@@ -175,7 +175,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
-    if (configPage6.fanEnable == 1)
+    if (configPage2.fanEnable >= 1)
     {
        fanControl();            // Fucntion to turn the cooling fan on/off
     }

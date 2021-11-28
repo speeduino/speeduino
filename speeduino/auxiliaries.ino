@@ -21,18 +21,27 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
-  else { fanHIGH = HIGH; fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
-
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+  FAN_OFF();  //Initialise program with the fan in the off state
+  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+  currentStatus.fanDuty = 0;
+
+  #if defined(PWM_FAN_AVAILABLE)
+    DISABLE_FAN_TIMER(); //disable FAN timer if available
+    if ( configPage2.fanEnable == 2 ) // PWM Fan control
+    {
+      #if defined(CORE_TEENSY)
+        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
+      fan_pwm_value = 0;
+    }
+  #endif
 }
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 )
+  if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -48,19 +57,84 @@ void fanControl()
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
       {
-        FAN_ON(); 
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
-      currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       FAN_OFF();
-      currentStatus.fanOn = false;
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
+  }
+  else if( configPage2.fanEnable == 2 )// PWM Fan control
+  {
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+          DISABLE_FAN_TIMER();
+        #endif
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        #if defined(PWM_FAN_AVAILABLE)
+          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          if (currentStatus.fanDuty > 0)
+          {
+            ENABLE_FAN_TIMER();
+            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+          }
+        #endif
+      }
+    }
+    else if (!fanPermit)
+    {
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+    }
+
+    #if defined(PWM_FAN_AVAILABLE)
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+      else if (currentStatus.fanDuty == 200)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+      else if (currentStatus.fanDuty > 0)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+    #endif
   }
 }
 
@@ -714,3 +788,23 @@ void boostDisable()
     }
   }
 }
+
+#if defined(PWM_FAN_AVAILABLE)
+//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
+  void fanInterrupt()
+{
+  if (fan_pwm_state == true)
+  {
+    FAN_OFF();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    fan_pwm_state = false;
+  }
+  else
+  {
+    FAN_ON();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    fan_pwm_cur_value = fan_pwm_value;
+    fan_pwm_state = true;
+  }
+}
+#endif
