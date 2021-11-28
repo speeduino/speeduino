@@ -288,8 +288,8 @@
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
-#define EGO_ALGORITHM_SIMPLE  0
-#define EGO_ALGORITHM_PID     2
+#define EGO_ALGORITHM_SINGLEO2  0
+#define EGO_ALGORITHM_DUALO2    1
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
@@ -392,12 +392,15 @@
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
 
+#define INJ_BANK1 0
+#define INJ_BANK2 1
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
 #define CALIBRATION_TEMPERATURE_OFFSET 40 /**< All temperature measurements are stored offset by 40 degrees.
 This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215 */
-#define OFFSET_FUELTRIM 127 ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
+#define OFFSET_FUELTRIM 128 ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downards to allow for negative spark timing
+#define OFFSET_AFR_ERR 127 ///< AFR error Prop and Int control offset.
 
 #define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
@@ -479,6 +482,8 @@ extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D fanPWMTable;
+extern struct table2D ego_PropTable; // For ego Propotional Control (2D)
+extern struct table2D ego_IntegralTable; // For ego Integral Control (2D)
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -578,6 +583,7 @@ extern volatile byte toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
+extern bool O2_Readflag; /**< Flag to indicate O2 has been updated since the last main time based loop by O2 algo  */
 //The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
 #if defined(CORE_SAMD21)
   extern PinStatus primaryTriggerEdge;
@@ -654,6 +660,7 @@ struct statuses {
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount;    /**< The amount of accleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
+  byte ego2Correction; /**< The amount of closed loop AFR enrichment currently being applied on the 2nd bank */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
@@ -674,14 +681,15 @@ struct statuses {
   volatile byte spark;   ///< Spark status/control indicator bits (launch control, boost cut, spark errors, See BIT_SPARK_* defines)
   volatile byte spark2;  ///< Spark 2 ... (See also @ref config10 spark2* members and BIT_SPARK2_* defines)
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
-  unsigned int PW1; ///< In uS
-  unsigned int PW2; ///< In uS
-  unsigned int PW3; ///< In uS
-  unsigned int PW4; ///< In uS
-  unsigned int PW5; ///< In uS
-  unsigned int PW6; ///< In uS
-  unsigned int PW7; ///< In uS
-  unsigned int PW8; ///< In uS
+  uint16_t BaseFuel; ///< In uS. Intended fuel with global corrections but without injector open time adjustment. Injector specific trim after this.
+  uint16_t PW1; ///< In uS. Final Fuel per injector.
+  uint16_t PW2; ///< In uS. Final Fuel per injector.
+  uint16_t PW3; ///< In uS. Final Fuel per injector.
+  uint16_t PW4; ///< In uS. Final Fuel per injector.
+  uint16_t PW5; ///< In uS. Final Fuel per injector.
+  uint16_t PW6; ///< In uS. Final Fuel per injector.
+  uint16_t PW7; ///< In uS. Final Fuel per injector.
+  uint16_t PW8; ///< In uS. Final Fuel per injector.
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
@@ -898,7 +906,11 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte unused2_95[2];
+  byte unused2_126;
+  byte unused2_127a : 2;
+  byte egoResetwAFR : 1;  ///<ego freeze or reset output when AFR target less than min
+  byte egoResetwfuelLoad : 1;  ///<ego freeze or reset output when fuel load greater than max
+  byte unused2_127b : 4;
 
 #if defined(CORE_AVR)
   };
@@ -1011,17 +1023,17 @@ See the ini file for further reference.
 */
 struct config6 {
 
-  byte egoAlgorithm : 2; ///< EGO Algorithm - Simple, PID, No correction
+  byte egoAlgorithm : 2; ///< EGO Algorithm 0=SingleSensor, 1=DualBank, 3 =INVALID, 4= No correction
   byte egoType : 2;      ///< EGO Sensor Type 0=Disabled/None, 1=Narrowband, 2=Wideband
   byte boostEnabled : 1; ///< Boost control enabled 0 =off, 1 = on
   byte vvtEnabled : 1;   ///< 
   byte engineProtectType : 2;
 
-  byte egoKP;
-  byte egoKI;
-  byte egoKD;
+  byte egoFuelLoadMax;  /// value that represents maximum fuel load for setting ego ignition counts to run the algo. Fuel load above this will freeze O2 correction
+  byte egoSensorDelay; /// minimum update rate in secx10 that the algo can update to allow O2 sensor value to update.
+  byte egoCountH;    ///< The number of ignition cylces per step at full load
   byte egoTemp;     ///< The temperature above which closed loop is enabled
-  byte egoCount;    ///< The number of ignition cylces per (ego AFR ?) step
+  byte egoCountL;    ///< The number of ignition cylces per step at low load
   byte vvtMode : 2; ///< Valid VVT modes are 'on/off', 'open loop' and 'closed loop'
   byte vvtLoadSource : 2; ///< Load source for VVT (TPS or MAP)
   byte vvtPWMdir : 1; ///< VVT direction (normal or reverse)
@@ -1029,11 +1041,11 @@ struct config6 {
   byte vvtCLAlterFuelTiming : 1;
   byte boostCutEnabled : 1;
   byte egoLimit;    /// Maximum amount the closed loop EGO control will vary the fueling
-  byte ego_min;     /// AFR must be above this for closed loop to function
-  byte ego_max;     /// AFR must be below this for closed loop to function
-  byte ego_sdelay;  /// Time in seconds after engine starts that closed loop becomes available
+  byte egoMin;     /// AFR measured must be above this for closed loop to function
+  byte egoMax;     /// AFR measured must be below this for closed loop to function
+  byte egoStartdelay;  /// Time in seconds after engine starts that closed loop becomes available
   byte egoRPM;      /// RPM must be above this for closed loop to function
-  byte egoTPSMax;   /// TPS must be below this for closed loop to function
+  byte egoAFRTargetMin;  /// AFR target value below this will freeze closed loop control
   byte vvt1Pin : 6;
   byte useExtBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
@@ -1156,25 +1168,23 @@ struct config9 {
   byte PWMFanDuty[4];
   byte unused10_166;
   byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
-  byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
-  byte unused10_179;
-  byte unused10_180;
-  byte unused10_181;
-  byte unused10_182;
-  byte unused10_183;
-  byte unused10_184;
-  byte unused10_185;
-  byte unused10_186;
+  
+  byte egoIntDelay;       // ego integral delay x control loops
+  byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
+  byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
+  byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
+  byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
+  byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
+
+  byte injBank_Inj1: 1; // injector bank assignment.
+  byte injBank_Inj2: 1; // injector bank assignment.
+  byte injBank_Inj3: 1; // injector bank assignment.
+  byte injBank_Inj4: 1; // injector bank assignment.
+  byte injBank_Inj5: 1; // injector bank assignment.
+  byte injBank_Inj6: 1; // injector bank assignment.
+  byte injBank_Inj7: 1; // injector bank assignment.
+  byte injBank_Inj8: 1; // injector bank assignment.
+
   byte unused10_187;
   byte unused10_188;
   byte unused10_189;

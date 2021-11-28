@@ -15,7 +15,7 @@
 
 void setup();
 void loop();
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
+uint16_t Calc_BaseFuel(int REQ_FUEL, byte VE, long MAP, uint16_t corrections);
 byte getVE1();
 byte getAdvance1();
 

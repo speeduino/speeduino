@@ -39,6 +39,13 @@ int8_t correctionKnock(int8_t);
 
 uint16_t correctionsDwell(uint16_t dwell);
 
+void correctionsFuel_Individual(void);
+void correctionFuelStaging(void);
+void correctionEGOBank2(void);
+void correctionFuelTrim(void);
+void correctionFuelInjOpen(void);
+void correctionFuelPWLimit(void);
+
 extern int MAP_rateOfChange;
 extern int TPS_rateOfChange;
 extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 

@@ -29,21 +29,14 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
-#include "src/PID_v1/PID_v1.h"
 
-long PID_O2, PID_output, PID_AFRTarget;
-/** Instance of the PID object in case that algorithm is used (Always instantiated).
-* Needs to be global as it maintains state outside of each function call.
-* Comes from Arduino (?) PID library.
-*/
-PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
 int MAP_rateOfChange;
 int TPS_rateOfChange;
 byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
-uint16_t AFRnextCycle;
+uint16_t ego_NextCycleCount;
 unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
@@ -51,15 +44,38 @@ int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be
 uint16_t aseTaperStart;
 uint16_t dfcoStart;
 uint16_t idleAdvStart;
+bool O2_SensorIsRich;
+bool O2_SensorIsRichPrev;
+bool O2_2ndSensorIsRich;
+bool O2_2ndSensorIsRichPrev;
+int16_t ego_FuelLoadPrev;
+uint32_t ego_FreezeEndTime;
+int8_t ego_Integral;
+int8_t ego2_Integral;
+uint32_t ego_DelaySensorTime;
+uint8_t ego_IntDelayLoops;
+uint8_t ego2_IntDelayLoops;
+unsigned long pwLimit;
 
 /** Initialize instances and vars related to corrections (at ECU boot-up).
  */
 void initialiseCorrections()
 {
-  egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+  currentStatus.corrections = 100;
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
-  AFRnextCycle = 0;
+  currentStatus.ego2Correction = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  currentStatus.afrTarget = configPage2.stoich; // Init AFR Target at stoich.
+  ego_NextCycleCount = 0;
+  ego_FreezeEndTime = 0;
+  ego_DelaySensorTime = 0;
+  ego_Integral = 0;
+  ego2_Integral = 0;
+  O2_SensorIsRich = false;
+  O2_SensorIsRichPrev = O2_SensorIsRich;
+  O2_2ndSensorIsRich = false;
+  O2_2ndSensorIsRichPrev = O2_2ndSensorIsRich;
+  ego_FuelLoadPrev = currentStatus.fuelLoad;
   currentStatus.knockActive = false;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
 }
@@ -104,7 +120,7 @@ uint16_t correctionsFuel()
   currentStatus.batCorrection = correctionBatVoltage();
   if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
   {
-    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
+    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time. *100 is no correction so this also converts to us.
   }
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
   {
@@ -575,91 +591,223 @@ byte correctionFuelTemp()
   return fuelTempValue;
 }
 
-/** Lookup the AFR target table and perform either a simple or PID adjustment based on this.
 
-Simple (Best suited to narrowband sensors):
-If the O2 sensor reports that the mixture is lean/rich compared to the desired AFR target, it will make a 1% adjustment
-It then waits egoDelta number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
-
-This continues until either:
-- the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
-- the adjustment amount increases to egoLimit at which point it stays at this level until the O2 state (rich/lean) changes
-
-PID (Best suited to wideband sensors):
-
+/*
+* Closed loop using Oxygen Sensors. Lookup the AFR target table and perform a Proportional + Integral fueling adjustment based on this.
 */
 byte correctionAFRClosedLoop()
 {
-  byte AFRValue = 100;
+  byte ego_AdjustPct = 100;
+  byte ego2_AdjustPct = 100;
+  uint8_t O2_Error;
+  int8_t ego_Prop;
+  bool ego_EngineCycleCheck = false;
   
-  if( (configPage6.egoType > 0) || (configPage2.incorporateAFR == true) ) //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
+  /*Note that this should only run after the sensor warmup delay when using Include AFR option, but this is protected in the main loop where it's used so really don't need this.
+   * When using Incorporate AFR option it needs to be done at all times
+  */
+  // Start AFR Target Determination
+  if((configPage2.incorporateAFR == true) || 
+     ((configPage6.egoType > 0) &&
+      (currentStatus.runSecs > configPage6.egoStartdelay))) //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   {
-    currentStatus.afrTarget = currentStatus.O2; //Catch all incase the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
-
-    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
-    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
+    currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); 
   }
-  
-  if( configPage6.egoType > 0 ) //egoType of 0 means no O2 sensor
-  {
-    AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
+  else { currentStatus.afrTarget = configPage2.stoich; }
+  // END AFR Target Determination    
     
-    if(ignitionCount >= AFRnextCycle)
+  if ((currentStatus.startRevolutions >> 1) >= ego_NextCycleCount) // Crank revolutions divided by 2 is engine cycles. This check always needs to happen, to correctly align revolutions and the time delay
     {
-      AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
-        
-      //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS < configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
+      ego_EngineCycleCheck = true;
+      // Scale the revolution counts between the two values linearly based on load value used in VE table.
+      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
+    }
+  
+  //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
+  if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
+  {
+    //Requirements to NOT run Closed Loop (Freeze), check this rapidly so we don't miss freeze events.
+    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
+        (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for inhibiting O2 correction using AFR Target Table
+        (currentStatus.fuelLoad > configPage6.egoFuelLoadMax) || // Too much load
+        (currentStatus.launchCorrection != 100) || // Launch Control Active
+        (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) //Fuel Cut
+    { 
+      ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay; // Set ego freeze condition timer
+    }
+       
+    if ((ego_EngineCycleCheck == true) && (runSecsX10 >= ego_DelaySensorTime))
+    {
+      ego_DelaySensorTime = runSecsX10 + configPage6.egoSensorDelay; // Save the minimum sensor delay time for next loop
+      // Read the O2 sensors before the algo runs, may be faster than the main loop.
+      readO2();
+      readO2_2();
+      O2_Readflag = true; // Used for informing the time based O2 sensor read function that we read the O2 value here.
+      ego_FuelLoadPrev = currentStatus.fuelLoad; // save last value to check for load change
+
+      //Requirements to run Closed Loop else its reset to 100pct. These are effectively errors where closed loop cannot run.
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && 
+          (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) &&
+          (currentStatus.runSecs > configPage6.egoStartdelay) &&
+          (currentStatus.engineProtectStatus == 0) &&      // Engine protection , fuel or ignition cut is active.     
+          ((configPage2.egoResetwAFR == false) ||
+           (currentStatus.afrTarget >= configPage6.egoAFRTargetMin)) && // Ignore this criteria if cal set to freeze (false).
+          ((configPage2.egoResetwfuelLoad == false) ||
+           (currentStatus.fuelLoad <= configPage6.egoFuelLoadMax))) // Ignore this criteria if cal set to freeze (false).
       {
-
-        //Check which algorithm is used, simple or PID
-        if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
+        if(runSecsX10 >= ego_FreezeEndTime) // Check the algo freeze conditions are not active.
         {
-          //*************************************************************************************************************************************
-          //Simple algorithm
-          if(currentStatus.O2 > currentStatus.afrTarget)
-          {
-            //Running lean
-            if(currentStatus.egoCorrection < (100 + configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+          // Sensor check to check in range.
+          if ((currentStatus.O2 >= configPage6.egoMin) && // Not too rich
+              ((currentStatus.O2 <= configPage6.egoMax) ||
+              (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1))) // Not too lean but ignore egoMax (lean) if in DFCO.
+          {              
+            //Proportional Integral Control - Sensor 1
+            O2_Error = currentStatus.afrTarget - currentStatus.O2 + OFFSET_AFR_ERR; //+127 is 0 error value
+            
+            //Proportional
+            ego_Prop = (int8_t)(table2D_getValue(&ego_PropTable, O2_Error) - OFFSET_AFR_ERR);
+            
+            /* Tracking of rich and lean (compared to target). Used for an integrator delay which is intended to allow proportional switching control
+             * time to intentionally over-correct the fuel to generate a switch from rich to lean. If the proportional control alone is not enough to switch 
+             * only then will the integral will start to move to adjust the mean value.
+             * This is designed to generate the correct oscillation of rich and lean pulses required for 3 way catalyst control.
+             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel so best suited for Narrowband only control.           
+            */ 
+            if (configPage9.egoIntDelay > 0)
             {
-              AFRValue = (currentStatus.egoCorrection + 1); //Increase the fueling by 1%
+              O2_SensorIsRichPrev = O2_SensorIsRich;
+              if (O2_Error >= OFFSET_AFR_ERR) { O2_SensorIsRich = true; } //Positive error = rich.
+              else { O2_SensorIsRich = false; }
+              
+              if (O2_SensorIsRich == O2_SensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
+              {
+                if (ego_IntDelayLoops < configPage9.egoIntDelay) { ego_IntDelayLoops++; } // Limit to max value.
+              }              
+              else { ego_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
+            else { ego_IntDelayLoops = 0; }
+            
+            //If integrator delay is passed then update integrator
+            if (ego_IntDelayLoops >= configPage9.egoIntDelay) { ego_Integral = ego_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
+            
+            //Integrator Limits
+            if (ego_Integral < -configPage6.egoLimit) { ego_Integral = -configPage6.egoLimit; }
+            if (ego_Integral > configPage6.egoLimit) { ego_Integral = configPage6.egoLimit; }
+            
+            //2nd check to limit total value after update with prop and output the final correction
+            if ((ego_Integral + ego_Prop) < -configPage6.egoLimit) { ego_AdjustPct = 100 - configPage6.egoLimit; }
+            else if ((ego_Integral + ego_Prop) > configPage6.egoLimit) { ego_AdjustPct = 100 + configPage6.egoLimit; }
+            else { ego_AdjustPct = 100 + ego_Integral + ego_Prop; }
           }
-          else if(currentStatus.O2 < currentStatus.afrTarget)
+          else 
+          { // O2 sensor out of range
+            ego_AdjustPct = 100;
+            ego_Integral = 0;
+            ego_IntDelayLoops = 0; 
+          } 
+
+          // Sensor2 check to check in range and if Enabled
+          if ((configPage6.egoAlgorithm == EGO_ALGORITHM_DUALO2) && // 2nd Sensor Logic
+              (currentStatus.O2_2 >= configPage6.egoMin) && // Not too rich
+              ((currentStatus.O2_2 <= configPage6.egoMax) ||
+               (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1))) // Not too lean but ignore egoMax (lean) if in DFCO. 
           {
-            //Running Rich
-            if(currentStatus.egoCorrection > (100 - configPage6.egoLimit) ) //Fueling adjustment must be at most the egoLimit amount (up or down)
+            //Proportional Integral Control - Sensor 2 Re-using some variables to save RAM.
+            O2_Error = currentStatus.afrTarget - currentStatus.O2_2 + OFFSET_AFR_ERR; //+127 is 0 error value
+            
+            //Proportional
+            ego_Prop = (int8_t)(table2D_getValue(&ego_PropTable, O2_Error) - OFFSET_AFR_ERR);
+            
+            /* Tracking of rich and lean (compared to target). Used for an integrator delay which is intended to allow proportional switching control
+             * time to intentionally over-correct the fuel to generate a switch from rich to lean. If the proportional control alone is not enough to switch 
+             * only then will the integral will start to move to adjust the mean value.
+             * This is designed to generate the correct oscillation of rich and lean pulses required for 3 way catalyst control.
+             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel so best suited for Narrowband only control.           
+            */ 
+            if (configPage9.egoIntDelay > 0)
             {
-              AFRValue = (currentStatus.egoCorrection - 1); //Decrease the fueling by 1%
+              O2_2ndSensorIsRichPrev = O2_2ndSensorIsRich;
+              if (O2_Error >= OFFSET_AFR_ERR) { O2_2ndSensorIsRich = true; } //Positive error = rich.
+              else { O2_2ndSensorIsRich = false; }
+              
+              if (O2_2ndSensorIsRich == O2_2ndSensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
+              {
+                if (ego2_IntDelayLoops < configPage9.egoIntDelay) { ego2_IntDelayLoops++; } // Limit to max value.
+              }              
+              else { ego2_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
+            else { ego2_IntDelayLoops = 0; }
+            
+            //If integrator delay is passed then update integrator
+            if (ego2_IntDelayLoops >= configPage9.egoIntDelay) { ego2_Integral = ego2_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
+            
+            //Integrator Limits
+            if (ego2_Integral < -configPage6.egoLimit) { ego2_Integral = -configPage6.egoLimit; }
+            if (ego2_Integral > configPage6.egoLimit) { ego2_Integral = configPage6.egoLimit; }
+            
+            //2nd check to limit total value after update with prop and output the final correction
+            if ((ego2_Integral + ego_Prop) < -configPage6.egoLimit) { ego2_AdjustPct = 100 - configPage6.egoLimit; }
+            else if ((ego2_Integral + ego_Prop) > configPage6.egoLimit) { ego2_AdjustPct = 100 + configPage6.egoLimit; }
+            else { ego2_AdjustPct = 100 + ego2_Integral + ego_Prop; }
           }
-          else { AFRValue = currentStatus.egoCorrection; } //Means we're already right on target
+          else 
+          { // No 2nd O2 or O2 sensor out of range
+            ego2_AdjustPct = 100;
+            ego2_Integral = 0;
+            ego2_IntDelayLoops = 0; 
+          } 
+        } // End Conditions to not freeze ego correction
+        else { ego_AdjustPct = currentStatus.egoCorrection; ego2_AdjustPct = currentStatus.ego2Correction; } // ego frozen at last values
+  	  } // End Conditions not to reset ego
+  	  else 
+      { //Reset closed loop. Also activate freeze delay to for when we re-enable.
+        ego_AdjustPct = 100;
+        ego2_AdjustPct = 100;      
+        ego_Integral = 0;
+        ego2_Integral = 0;        
+        ego_IntDelayLoops = 0;
+        ego2_IntDelayLoops = 0;         
+        ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay;
+      }
+    } //End O2 Algorithm Run Loop check
+    else
+    {
+      if (currentStatus.RPM >= (unsigned int)(configPage6.egoRPM * 100)) 
+      { // hold last value
+        ego_AdjustPct = currentStatus.egoCorrection; 
+        ego2_AdjustPct = currentStatus.ego2Correction;
+      } 
+      else 
+      {// Engine speed probably stopped or recranking so don't apply EGO during crank.
+        ego_AdjustPct = 100;
+        ego2_AdjustPct = 100;  
+        ego_NextCycleCount = 0;
+        ego_DelaySensorTime = 0;
+        ego_Integral = 0;
+        ego2_Integral = 0;
+        ego_IntDelayLoops = 0;
+        ego2_IntDelayLoops = 0; 
+        ego_FreezeEndTime = 0;
+      } 
+    }
+  } //End egoType
+  else
+  { // No O2 sensors or incorrect config to run closed loop O2
+    ego_AdjustPct = 100;
+    ego2_AdjustPct = 100;  
+    ego_NextCycleCount = 0;
+    ego_DelaySensorTime = 0;
+    ego_Integral = 0;
+    ego2_Integral = 0;
+    ego_IntDelayLoops = 0;
+    ego2_IntDelayLoops = 0;
+    ego_FreezeEndTime = 0;
+  }
+   
+  currentStatus.ego2Correction = ego2_AdjustPct;  // This algo only returns a single byte for the bank1 correction. A 2nd output is needed for Bank2. This cludgy fix is what we have for now...
 
-        }
-        else if(configPage6.egoAlgorithm == EGO_ALGORITHM_PID)
-        {
-          //*************************************************************************************************************************************
-          //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage6.egoLimit), (long)(configPage6.egoLimit)); //Set the limits again, just incase the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
-          egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD); //Set the PID values again, just incase the user has changed them since the last loop
-          PID_O2 = (long)(currentStatus.O2);
-          PID_AFRTarget = (long)(currentStatus.afrTarget);
-
-          bool PID_compute = egoPID.Compute();
-          //currentStatus.egoCorrection = 100 + PID_output;
-          if(PID_compute == true) { AFRValue = 100 + PID_output; }
-          
-        }
-        else { AFRValue = 100; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-      } //Multi variable check 
-      else { AFRValue = 100; } // If multivariable check fails disable correction
-    } //Ignition count check
-  } //egoType
-
-  return AFRValue; //Catch all (Includes when AFR target = current AFR
+  return ego_AdjustPct;
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
@@ -913,3 +1061,247 @@ uint16_t correctionsDwell(uint16_t dwell)
   }
   return tempDwell;
 }
+
+/*********************************************************************************************/
+/* Below this line corrections are for individual injectors or injector banks. */
+
+/** Corrections are for individual injectors or injector banks. 
+* all these functions modify the injecton pulswidths PW1 to PW8. None of them can modify baseFuel since that is a global correction.
+*/
+void correctionsFuel_Individual(void)
+{  
+  //Initially all the pulse widths are set the same. Adjustments are made in the functions below
+  currentStatus.PW1 = currentStatus.BaseFuel;
+  currentStatus.PW2 = currentStatus.BaseFuel;
+  currentStatus.PW3 = currentStatus.BaseFuel;
+  currentStatus.PW4 = currentStatus.BaseFuel;
+  currentStatus.PW5 = currentStatus.BaseFuel;
+  currentStatus.PW6 = currentStatus.BaseFuel;
+  currentStatus.PW7 = currentStatus.BaseFuel;
+  currentStatus.PW8 = currentStatus.BaseFuel;
+  
+  // Globally used variable calculatons
+  //Check that the duty cycle of the chosen pulsewidth isn't too high.
+  pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 crank revolution
+  //Handle multiple squirts per rev
+  if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
+  else { pwLimit = pwLimit / currentStatus.nSquirts; }
+  
+  // Multiplications to fuel
+  correctionEGOBank2();
+  correctionFuelTrim();
+  correctionFuelStaging(); // Fuel staging after fuel trim to incorporate trim into stage amount and limits.
+  
+  // Additions and Subtractions to fuel
+  correctionFuelInjOpen();
+  
+  // Limits
+  correctionFuelPWLimit();
+}
+
+/** Staging Correction
+* This sets the opposing fuel injector as the "staging" injector. To turn on with the primary injector to inject into the same cylinder (or throttle body).
+* example: PW1 is the primary. PW3 is the secondary for cylinder 1.
+*          PW2 is the primary. PW4 is the secondary for cylinder 2.
+*/
+void correctionFuelStaging(void)
+{
+  //Calculate staging pulsewidths if used
+  //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+  if( (configPage10.stagingEnabled == true) && 
+      ((configPage2.nCylinders <= INJ_CHANNELS) || 
+       (configPage2.injType == INJ_TYPE_TBODY)) && 
+      (currentStatus.BaseFuel > 0) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+  {
+    unsigned long pwLimit_minusInjOpen = pwLimit - inj_opentime_uS; // Staging needs to calculate the limit minus open time since this is added later.
+    //Scale the 'full' pulsewidth by each of the injector capacities
+    uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
+
+    if(configPage10.stagingMode == STAGING_MODE_TABLE)
+    {
+      uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+
+      byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.MAP, currentStatus.RPM);
+      currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
+      if (currentStatus.PW1 > pwLimit_minusInjOpen) { currentStatus.PW1 = pwLimit_minusInjOpen; } // Check for injection limit
+
+      if(stagingSplit > 0) 
+      { 
+        currentStatus.PW3 = (stagingSplit * tempPW3) / 100;
+        if (currentStatus.PW3 > pwLimit_minusInjOpen) { currentStatus.PW3 = pwLimit_minusInjOpen; } // Also limit staging injector.        
+      }
+      else { currentStatus.PW3 = 0; }
+    }
+    else if(configPage10.stagingMode == STAGING_MODE_AUTO)
+    {
+      currentStatus.PW1 = tempPW1;
+      //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
+      //If they exceed their limit, the extra duty is passed to the secondaries
+      if(tempPW1 > pwLimit_minusInjOpen)
+      {
+        uint32_t extraPW = tempPW1 - pwLimit_minusInjOpen;
+        currentStatus.PW1 = pwLimit_minusInjOpen;
+        currentStatus.PW3 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        if (currentStatus.PW3 > pwLimit_minusInjOpen) { currentStatus.PW3 = pwLimit_minusInjOpen; }// Also limit staging injector.
+      }
+      else { currentStatus.PW3 = 0; } //If tempPW1 < pwLimit it means that the entire fuel load can be handled by the primaries. Simply set the secondaries to 0
+    }
+
+  //Set the 2nd channel of each stage with the same pulseWidth
+  currentStatus.PW2 = currentStatus.PW1;
+  currentStatus.PW4 = currentStatus.PW3;
+  }
+}
+
+/** Exhaust Gas Oxygen (EGO) Correction for Bank 2
+* The base fuel already includes the global correction for EGO. So EGO2 correction here is the difference between G_ego and G_ego2
+* Injectors assigned on bank 1 must only align with EGO, Bank 2 must only align with EGO2. 
+* Care must be taken if staging or paired injection is enabled that the ego corrections are as intended.
+*/
+void correctionEGOBank2(void)
+{
+  if( (configPage6.egoAlgorithm == EGO_ALGORITHM_DUALO2) && (configPage2.injType == INJ_TYPE_PORT) )
+  {
+    // need to apply the difference between the already applied global G_ego (bank1) and G_ego2 for bank 2 since, all pw already scaled with egoCorrection for bank 1.
+    unsigned long pwBank2percentDiff = (100 + currentStatus.ego2Correction) - currentStatus.egoCorrection;
+    
+    if (pwBank2percentDiff != 100)
+    {
+      if( (configPage9.injBank_Inj1 == INJ_BANK2) && (channel1InjEnabled == true) ) { currentStatus.PW1 = (pwBank2percentDiff * currentStatus.PW1) / 100; }
+      if( (configPage9.injBank_Inj2 == INJ_BANK2) && (channel2InjEnabled == true) ) { currentStatus.PW2 = (pwBank2percentDiff * currentStatus.PW2) / 100; }
+      if( (configPage9.injBank_Inj3 == INJ_BANK2) && (channel3InjEnabled == true) ) { currentStatus.PW3 = (pwBank2percentDiff * currentStatus.PW3) / 100; }
+      if( (configPage9.injBank_Inj4 == INJ_BANK2) && (channel4InjEnabled == true) ) { currentStatus.PW4 = (pwBank2percentDiff * currentStatus.PW4) / 100; }
+      #if INJ_CHANNELS >= 5
+      if( (configPage9.injBank_Inj5 == INJ_BANK2) && (channel5InjEnabled == true) ) { currentStatus.PW5 = (pwBank2percentDiff * currentStatus.PW5) / 100; }
+      #endif
+      #if INJ_CHANNELS >= 6
+      if( (configPage9.injBank_Inj6 == INJ_BANK2) && (channel6InjEnabled == true) ) { currentStatus.PW6 = (pwBank2percentDiff * currentStatus.PW6) / 100; }
+      #endif
+      #if INJ_CHANNELS >= 7
+      if( (configPage9.injBank_Inj7 == INJ_BANK2) && (channel7InjEnabled == true) ) { currentStatus.PW7 = (pwBank2percentDiff * currentStatus.PW7) / 100; }
+      #endif
+      #if INJ_CHANNELS >= 8
+      if( (configPage9.injBank_Inj8 == INJ_BANK2) && (channel8InjEnabled == true) ) { currentStatus.PW8 = (pwBank2percentDiff * currentStatus.PW8) / 100; }
+      #endif
+    }
+  }
+}
+
+/** Fuel Trim Correction
+* Scales the fuel injection ammount via a table indexed by fuel load and rpm for each injector. 
+* Care must be taken if staging or paired injection is enabled that the corrections are as intended.
+*/
+void correctionFuelTrim(void)
+{
+  if(configPage6.fuelTrimEnabled == true)
+  {
+    if (channel1InjEnabled == true)
+    {
+    unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+    if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
+    }
+    
+    if (channel2InjEnabled == true)
+    {
+      unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
+    }
+    if (channel3InjEnabled == true)
+    {
+      unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
+    }
+    if (channel4InjEnabled == true)
+    {
+      unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
+    }
+
+    #if INJ_CHANNELS >= 5
+    if (channel5InjEnabled == true)
+    {
+      unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw5percent != 100) { currentStatus.PW5 = (pw5percent * currentStatus.PW5) / 100; }
+    }
+    #endif
+    
+    #if INJ_CHANNELS >= 6
+    if (channel6InjEnabled == true)
+    {
+      unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw6percent != 100) { currentStatus.PW6 = (pw6percent * currentStatus.PW6) / 100; }
+    }
+    #endif
+    
+    #if INJ_CHANNELS >= 7
+    if (channel7InjEnabled == true)
+    {
+      unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw7percent != 100) { currentStatus.PW7 = (pw7percent * currentStatus.PW7) / 100; }
+    }
+    #endif
+    
+    #if INJ_CHANNELS >= 8
+    if (channel8InjEnabled == true)
+    {
+      unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
+      if (pw8percent != 100) { currentStatus.PW8 = (pw8percent * currentStatus.PW8) / 100; }
+    }
+    #endif
+  }
+}
+
+/** Injector open time correction.
+* This needs to be done at the last step because the injector pulsewidth up to this point represents fuel as a linear scale for multiplication. After this addition no further multiplication can occur.
+*/
+void correctionFuelInjOpen(void)
+{ 
+  // for (uint8_t injectorX = 0; injectorX < NumberOfInjectors; injectorX++)
+  // {
+    // uint16_t* addr_PW_X = &currentStatus.PW1 + (injectorX * 2); // index 2 bytes of memory address for each injector. PW1 address is the start reference.
+    // if(*addr_PW_X > 0) {*addr_PW_X = *addr_PW_X + inj_opentime_uS;} // Add on the injector open time to the PW variable at specified memory address.
+  // }
+    
+  //Check each cylinder for injector cutoff and then if running apply the injector open time compensation.  
+  if (currentStatus.PW1 > 0) { currentStatus.PW1 += inj_opentime_uS; }
+  if (currentStatus.PW2 > 0) { currentStatus.PW2 += inj_opentime_uS; }
+  if (currentStatus.PW3 > 0) { currentStatus.PW3 += inj_opentime_uS; }
+  if (currentStatus.PW4 > 0) { currentStatus.PW4 += inj_opentime_uS; }
+  #if INJ_CHANNELS >= 5
+  if (currentStatus.PW5 > 0) { currentStatus.PW5 += inj_opentime_uS; }
+  #endif
+  #if INJ_CHANNELS >= 6
+  if (currentStatus.PW6 > 0) { currentStatus.PW6 += inj_opentime_uS; }
+  #endif
+  #if INJ_CHANNELS >= 7
+  if (currentStatus.PW7 > 0) { currentStatus.PW7 += inj_opentime_uS; }
+  #endif
+  #if INJ_CHANNELS >= 8  
+  if (currentStatus.PW8 > 0) { currentStatus.PW8 += inj_opentime_uS; } 
+  #endif
+}
+
+void correctionFuelPWLimit(void)
+{
+  //Apply the pwLimit if staging is dsiabled and engine is not cranking. Staging takes care of it's own PW limit and Cranking is a special case.
+  if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) 
+  {
+    if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; }
+    if (currentStatus.PW2 > pwLimit) { currentStatus.PW2 = pwLimit; }
+    if (currentStatus.PW3 > pwLimit) { currentStatus.PW3 = pwLimit; }
+    if (currentStatus.PW4 > pwLimit) { currentStatus.PW4 = pwLimit; }
+    #if INJ_CHANNELS >= 5
+    if (currentStatus.PW5 > pwLimit) { currentStatus.PW5 = pwLimit; }
+    #endif
+    #if INJ_CHANNELS >= 6
+    if (currentStatus.PW6 > pwLimit) { currentStatus.PW6 = pwLimit; }
+    #endif
+    #if INJ_CHANNELS >= 7
+    if (currentStatus.PW7 > pwLimit) { currentStatus.PW7 = pwLimit; }  
+    #endif
+    #if INJ_CHANNELS >= 8
+    if (currentStatus.PW8 > pwLimit) { currentStatus.PW8 = pwLimit; }
+    #endif    
+  }
+}
+  

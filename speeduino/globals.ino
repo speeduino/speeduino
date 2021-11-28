@@ -53,6 +53,8 @@ struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 struct table2D fanPWMTable;
+struct table2D ego_PropTable; /// For ego Propotional Control (2D)
+struct table2D ego_IntegralTable; /// For ego Integral Control (2D)
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
 volatile PORT_TYPE *inj1_pin_port;
@@ -140,6 +142,7 @@ volatile byte toothHistorySerialIndex = 0;
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
+bool O2_Readflag; /**< Flag to indicate O2 has been updated since the last main time based loop by O2 algo  */
 #if defined(CORE_SAMD21)
   PinStatus primaryTriggerEdge;
   PinStatus secondaryTriggerEdge;
