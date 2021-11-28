@@ -13,22 +13,22 @@ const PROGMEM byte values[] = {
 const byte values[] = {
 #endif
  //0    1    2   3     4    5    6    7    8    9   10   11   12   13    14   15
-  109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 113, 112, 111, 111, // 0
-  104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 109, 108, 107, 107, 106, // 1
-  98,  101, 103, 103, 104, 105, 105, 105, 105, 105, 105, 104, 104, 103, 102, 102, // 2
-  93,  96,  98,  99,  99,  100, 100, 101, 101, 101, 100, 100, 99,  98,  98,  97,  // 3
-  81,  86,  88,  89,  90,  91,  91,  91,  91,  91,  91,  90,  90,  89,  89,  88,  // 4
-  74,  80,  83,  84,  85,  86,  86,  86,  87,  86,  86,  86,  85,  84,  84,  84,  // 5
-  68,  75,  78,  79,  81,  81,  81,  82,  82,  82,  82,  81,  81,  80,  79,  79,  // 6
-  61,  69,  72,  74,  76,  76,  77,  77,  77,  77,  77,  76,  76,  75,  75,  74,  // 7
-  54,  62,  66,  69,  71,  71,  72,  72,  72,  72,  72,  72,  71,  71,  70,  70,  // 8
-  48,  56,  60,  64,  66,  66,  68,  68,  68,  68,  67,  67,  67,  66,  66,  65,  // 9
-  42,  49,  54,  58,  61,  62,  62,  63,  63,  63,  63,  62,  62,  61,  61,  61,  // 10
-  38,  43,  48,  52,  55,  56,  57,  58,  58,  58,  58,  58,  57,  57,  57,  56,  // 11
-  36,  39,  42,  46,  50,  51,  52,  53,  53,  53,  53,  53,  53,  52,  52,  52,  // 12
-  35,  36,  38,  41,  44,  46,  47,  48,  48,  49,  48,  48,  48,  48,  47,  47,  // 13
-  34,  35,  36,  37,  39,  41,  42,  43,  43,  44,  44,  44,  43,  43,  43,  43,  // 14
-  34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  34,  34,  34,  34,  34,  34   // 15
+109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 114, 114, 114, 114, 
+104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 
+98,  101, 103, 103, 104, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 105, 
+93,  96,  98,  99,  99,  100, 100, 101, 101, 101, 101, 101, 101, 101, 101, 101, 
+81,  86,  88,  89,  90,  91,  91,  91,  91,  91,  91,  91,  91,  91,  91,  91, 
+74,  80,  83,  84,  85,  86,  86,  86,  87,  87,  87,  87,  87,  87,  87,  87, 
+68,  75,  78,  79,  81,  81,  81,  82,  82,  82,  82,  82,  82,  82,  82,  82, 
+61,  69,  72,  74,  76,  76,  77,  77,  77,  77,  77,  77,  77,  77,  77,  77, 
+54,  62,  66,  69,  71,  71,  72,  72,  72,  72,  72,  72,  72,  72,  72,  72, 
+48,  56,  60,  64,  66,  66,  68,  68,  68,  68,  68,  68,  68,  68,  68,  68, 
+42,  49,  54,  58,  61,  62,  62,  63,  63,  63,  63,  63,  63,  63,  63,  63, 
+38,  43,  48,  52,  55,  56,  57,  58,  58,  58,  58,  58,  58,  58,  58,  58, 
+36,  39,  42,  46,  50,  51,  52,  53,  53,  53,  53,  53,  53,  53,  53,  53, 
+35,  36,  38,  41,  44,  46,  47,  48,  48,  49,  49,  49,  49,  49,  49,  49, 
+34,  35,  36,  37,  39,  41,  42,  43,  43,  44,  44,  44,  44,  44,  44,  44, 
+34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  35,  35,  35,  35,  35,  35, 
   };
 static const table3d_axis_t tempXAxis[] = {500,700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
 static const table3d_axis_t xMin = tempXAxis[0];
@@ -134,7 +134,7 @@ void test_tableLookup_overMaxX(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 73, xMax+100); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 86);
+  TEST_ASSERT_EQUAL(tempVE, 89);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)15);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)15);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)5);
@@ -188,7 +188,7 @@ void test_tableLookup_roundUp(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 17, 600);
-  // TEST_ASSERT_EQUAL(tempVE, 34);
+  TEST_ASSERT_EQUAL(tempVE, 34);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)15);
@@ -208,7 +208,6 @@ void test_all_incrementing(void)
     for(uint8_t load = 0; load<yMax+10; load++)
     {
       uint16_t newVE = get3DTableValue(&testTable, load, rpm);
-      // sprintf(buffer, "%d, %d, %d, %d, %d, %d, %d", 
       // char buffer[256];
       // sprintf(buffer, "%d, %d"
       //                 ", %d, %d, %d, %d"
@@ -216,7 +215,11 @@ void test_all_incrementing(void)
       //                 ", %d", 
       //                 rpm, load, 
       //                 testTable.get_value_cache.lastXMin, testTable.get_value_cache.lastXMax,
+      //                 tempXAxis[testTable.get_value_cache.lastXMin], tempXAxis[testTable.get_value_cache.lastXMax],
+
       //                 testTable.get_value_cache.lastYMin, testTable.get_value_cache.lastYMax,
+      //                 tempYAxis[testTable.get_value_cache.lastYMin], tempYAxis[testTable.get_value_cache.lastYMax],
+
       //                 newVE);
       // TEST_MESSAGE(buffer);
       TEST_ASSERT_GREATER_OR_EQUAL(tempVE, newVE);
