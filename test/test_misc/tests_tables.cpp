@@ -96,10 +96,8 @@ void test_tableLookup_50pct(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, 53, 2250); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 69);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)6);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)5);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)9);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)8);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)6);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)8);
 }
 
 void test_tableLookup_exact1Axis(void)
@@ -109,10 +107,8 @@ void test_tableLookup_exact1Axis(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 65);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)6);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)5);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)10);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)9);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)6);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)9);
 }
 
 void test_tableLookup_exact2Axis(void)
@@ -122,10 +118,8 @@ void test_tableLookup_exact2Axis(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5], testTable.axisX.axis[6]); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 86);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)6);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)5);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)5);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)5);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)6);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)5);
 }
 
 void test_tableLookup_overMaxX(void)
@@ -135,10 +129,8 @@ void test_tableLookup_overMaxX(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, 73, xMax+100); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 89);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)15);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)15);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)5);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)4);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)15);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)4);
 }
 
 void test_tableLookup_overMaxY(void)
@@ -148,10 +140,8 @@ void test_tableLookup_overMaxY(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, yMax+10, 600); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 110);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)0);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)1);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)0);
 }
 
 void test_tableLookup_underMinX(void)
@@ -161,10 +151,8 @@ void test_tableLookup_underMinX(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, 38, xMin-100); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 37);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)12);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)11);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)1);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)11);
 }
 
 void test_tableLookup_underMinY(void)
@@ -174,10 +162,8 @@ void test_tableLookup_underMinY(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, yMin-5, 600); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 34);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)15);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)15);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)1);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)14);
 }
 
 void test_tableLookup_roundUp(void)
@@ -189,10 +175,8 @@ void test_tableLookup_roundUp(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, 17, 600);
   TEST_ASSERT_EQUAL(tempVE, 34);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMax, (table3d_dim_t)1);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXMin, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMax, (table3d_dim_t)15);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYMin, (table3d_dim_t)14);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)1);
+  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)14);
 }
 
 void test_all_incrementing(void)
@@ -214,11 +198,11 @@ void test_all_incrementing(void)
       //                 ", %d, %d, %d, %d"
       //                 ", %d", 
       //                 rpm, load, 
-      //                 testTable.get_value_cache.lastXMin, testTable.get_value_cache.lastXMax,
-      //                 tempXAxis[testTable.get_value_cache.lastXMin], tempXAxis[testTable.get_value_cache.lastXMax],
+      //                 testTable.get_value_cache.lastXMin, testTable.get_value_cache.lastXBinMax,
+      //                 tempXAxis[testTable.get_value_cache.lastXMin], tempXAxis[testTable.get_value_cache.lastXBinMax],
 
-      //                 testTable.get_value_cache.lastYMin, testTable.get_value_cache.lastYMax,
-      //                 tempYAxis[testTable.get_value_cache.lastYMin], tempYAxis[testTable.get_value_cache.lastYMax],
+      //                 testTable.get_value_cache.lastYMin, testTable.get_value_cache.lastYBinMax,
+      //                 tempYAxis[testTable.get_value_cache.lastYMin], tempYAxis[testTable.get_value_cache.lastYBinMax],
 
       //                 newVE);
       // TEST_MESSAGE(buffer);
