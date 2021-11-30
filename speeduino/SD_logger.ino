@@ -420,4 +420,9 @@ void dateTime(uint16_t* date, uint16_t* time, uint8_t* ms10) {
   *ms10 = rtc_getSecond() & 1 ? 100 : 0;
 }
 
+uint32_t sectorCount()
+{
+  return sd.card()->sectorCount();
+}
+
 #endif

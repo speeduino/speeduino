@@ -70,7 +70,7 @@ void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
 uint16_t getNextSDLogFileNumber();
 bool getSDLogFileDetails(uint8_t* , uint16_t);
 void readSDSectors(uint8_t*, uint32_t, uint16_t);
-
+uint32_t sectorCount();
 
 
 

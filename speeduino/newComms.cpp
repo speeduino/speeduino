@@ -153,7 +153,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
 
   //Need to handle serial buffer being full. This is just for testing
   serialPayloadLength = payloadLength; //Save the payload length incase we need to transmit in multiple steps
-  for(int i = 0; i < payloadLength; i++)
+  for(uint16_t i = 0; i < payloadLength; i++)
   {
     Serial.write(((uint8_t*)payload)[i]);
     serialBytesTransmitted++;
@@ -181,9 +181,9 @@ void continueSerialTransmission()
 {
   if(serialWriteInProgress == true)
   {
-    serialWriteInProgress = false; //ASsume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
+    serialWriteInProgress = false; //Assume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
     //Serial buffer is free. Continue sending the data
-    for(unsigned int i = serialBytesTransmitted; i < serialPayloadLength; i++)
+    for(uint16_t i = serialBytesTransmitted; i < serialPayloadLength; i++)
     {
       Serial.write(serialPayload[i]);
       serialBytesTransmitted++;
@@ -214,32 +214,11 @@ void processSerialCommand()
 
   switch (currentCommand)
   {
-    /*
-    Should not happen with the new mode
-    case 'a':
-      cmdPending = true;
-
-      if (Serial.available() >= 2)
-      {
-        Serial.read(); //Ignore the first value, it's always 0
-        Serial.read(); //Ignore the second value, it's always 6
-        sendValuesLegacy();
-        cmdPending = false;
-      }
-      break;
-    */
 
     case 'A': // send x bytes of realtime values
       //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
-
-    /*
-    Should not happen with the new mode
-    case 'B': // Burn current values to eeprom
-      writeAllConfig();
-      break;
-    */
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
@@ -252,14 +231,6 @@ void processSerialCommand()
       sendSerialPayload(&tempPayload, 2);
       break;
     }
-
-    /*
-    Should not happen with the new mode
-    case 'c': //Send the current loops/sec value
-      Serial.write(lowByte(currentStatus.loopsPerSecond));
-      Serial.write(highByte(currentStatus.loopsPerSecond));
-      break;
-    */
 
     case 'E': // receive command button commands
     {
@@ -450,19 +421,24 @@ void processSerialCommand()
           serialPayload[0] = SERIAL_RC_OK;
 
           serialPayload[1] = currentStatus.TS_SD_Status;
-          //serialPayload[1] = 5;
-          serialPayload[2] = 0;
-
-          //All other values are 2 bytes   
-          //Sector size     
+          serialPayload[2] = 0; //Error code
+ 
+          //Sector size = 512
           serialPayload[3] = 2;
           serialPayload[4] = 0;
 
           //Max blocks (4 bytes)
+          uint32_t sectors = sectorCount();
+          serialPayload[5] = ((sectors >> 24) & 255);
+          serialPayload[6] = ((sectors >> 16) & 255);
+          serialPayload[7] = ((sectors >> 8) & 255);
+          serialPayload[8] = (sectors & 255);
+          /*
           serialPayload[5] = 0;
           serialPayload[6] = 0x20; //1gb dummy card
           serialPayload[7] = 0;
           serialPayload[8] = 0;
+          */
 
           //Max roots (Number of files)
           serialPayload[9] = 0;
