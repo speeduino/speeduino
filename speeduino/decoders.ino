@@ -4443,7 +4443,7 @@ void triggerSetup_Renix()
 {
   if( configPage4.TrigPattern == DECODER_RENIX44)
   {
-    triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
+    triggerToothAngle = 90; //The number of degrees between the fake teeth invented by counting the real teeth
     configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
     configPage4.triggerMissingTeeth = 0;
     triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
@@ -4566,24 +4566,7 @@ void triggerSec_Renix()
     secondaryToothCount++;
     toothLastSecToothTime = curTime2;
   
-    if (configPage4.TrigPattern == DECODER_RENIX44)
-    {
-      if( toothCurrentCount == 4  && toothSystemCount == 9)
-      {
-        revolutionOne = 0;
-        currentStatus.startRevolutions++; //Counter
-        currentStatus.hasSync = true;
-      }
-      else
-      {
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;      
-        revolutionOne = 0;
-      }
-      toothCurrentCount= 4;
-      toothSystemCount = 9; 
-    }
-    else if (configPage4.TrigPattern == DECODER_RENIX66)
+    if (configPage4.TrigPattern == DECODER_RENIX66)
     {
       if( toothCurrentCount == 6 && toothSystemCount == 9)
       {
@@ -4611,7 +4594,8 @@ void triggerSec_Renix()
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
 
-    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);    
   }
+  
 }
 /** @} */
