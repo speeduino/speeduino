@@ -1166,8 +1166,8 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
-  byte unused10_166;
-  byte unused10_167;
+  
+  byte unused10_166[7];
   
   byte egoIntDelay;       // ego integral delay x control loops
   byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
@@ -1185,11 +1185,6 @@ struct config9 {
   byte injBank_Inj7: 1; // injector bank assignment.
   byte injBank_Inj8: 1; // injector bank assignment.
 
-  byte unused10_187;
-  byte unused10_188;
-  byte unused10_189;
-  byte unused10_190;
-  byte unused10_191;
   
 #if defined(CORE_AVR)
   };
