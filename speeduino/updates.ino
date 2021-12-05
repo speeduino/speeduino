@@ -520,11 +520,43 @@ void doUpdates()
 
   if(readEEPROMVersion() == 18)
   {
+
     configPage2.boostDCWhenDisabled = 0;
     configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
-    //TODO fill the boostTableLookupDuty with all 50% duty cycle for backward compatibilty.  
+    //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
+    //This makes the boostcontrol fully backwards compatible.  
+    auto table_it = boostTableLookupDuty.values.begin();
+    while (!table_it.at_end())
+    {
+      auto row = *table_it;
+      while (!row.at_end())
+      {
+        *row = 50*2;
+        ++row;
+      }      
+      ++table_it;
+    }
 
+    //Set some sensible values at the RPM axis
+    auto table_X = boostTableLookupDuty.axisX.begin();
+    uint16_t i = 0;
+    while (!table_X.at_end())
+    {
+      ++i;
+      *table_X = (800*i)/100;
+      ++table_X;
+    }
+
+    //Set some sensible values at the boosttarget axis
+    auto table_Y = boostTableLookupDuty.axisY.begin();
+    i = 0;
+    while (!table_Y.at_end())
+    {
+      ++i;
+      *table_Y = (120 + 10*i)/2;
+      ++table_Y;
+    }
     // writeAllConfig();
     // storeEEPROMVersion(19);
   }
