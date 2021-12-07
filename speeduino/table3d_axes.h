@@ -11,7 +11,7 @@
 
 #include "table3d_typedefs.h"
 #include "int16_ref.h"
-#include "src\libdivide\constant_fast_div.h"
+#include "src/libdivide/constant_fast_div.h"
 
 /**\enum axis_domain
  * @brief Encodes the real world measurement that a table axis captures
