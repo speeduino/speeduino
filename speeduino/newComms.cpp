@@ -114,7 +114,7 @@ void parseSerial()
       if(serialCRC != receivedCRC)
       {
         //CRC Error. Need to send an error message
-        sendSerialReturnCode(SERIAL_RC_CRC_ERROR);
+        sendSerialReturnCode(SERIAL_RC_CRC_ERR);
       }
       else
       {
@@ -558,17 +558,94 @@ void processSerialCommand()
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
-      byte tableID;
-      //byte canID;
+    {
+      uint8_t cmd = serialPayload[2];
+      uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
+      uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      //The first 2 bytes sent represent the canID and tableID
-      while (Serial.available() == 0) { }
-      tableID = Serial.read(); //Not currently used for anything
+      if(cmd == O2_CALIBRATION_PAGE)
+      {
+        //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
+        //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
+        void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
 
-      receiveCalibrationNew(tableID); //Receive new values and store in memory
+        //Read through the current chunk (Should be 256 bytes long)
+        for(uint16_t x = 0; x < calibrationLength; x++)
+        {
+          //Only apply every 32nd value
+          if( (x % 32) == 0 )
+          {
+            uint16_t totalOffset = valueOffset + x;
+            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
+            pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
+          }
+        }
+        sendSerialReturnCode(SERIAL_RC_OK);
+      }
+      else if(cmd == IAT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        
+      }
+      else if(cmd == CLT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+      }
+      else
+      {
+        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+      }
+
       writeCalibration(); //Store received values in EEPROM
-
       break;
+    }
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
       if (resetControl != RESET_CONTROL_DISABLED)
@@ -793,96 +870,6 @@ namespace
     }
   }
 
-}
-
-/** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
- * Result is store in EEPROM and memory.
- * 
- * @param tableID - calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
- */
-void receiveCalibrationNew(byte tableID)
-{
-  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
-  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR;
-
-  switch (tableID)
-  {
-    case 0:
-      //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      break;
-    case 1:
-      //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      break;
-    case 2:
-      //O2 table
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 10;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  int16_t tempValue;
-  byte tempBuffer[2];
-
-  if(tableID == 2)
-  {
-    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
-    for (int x = 0; x < 1024; x++)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-
-      if( (x % 32) == 0)
-      {
-        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
-        pnt_TargetTable_bins[(x/32)] = (x);
-      }
-      
-    }
-  }
-  else
-  {
-    //Temperature calibrations are sent as 32 16-bit values
-    for (uint16_t x = 0; x < 32; x++)
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-      
-      //Apply the temp offset and check that it results in all values being positive
-      tempValue = tempValue + OFFSET;
-      if (tempValue < 0) { tempValue = 0; }
-
-      
-      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-      pnt_TargetTable_bins[x] = (x * 32U);
-      writeCalibration();
-    }
-  }
-
-  writeCalibration();
 }
 
 /** Send 256 tooth log entries to serial.
