@@ -6,7 +6,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "libdivide.h"
+#include "src/libdivide/libdivide.h"
 
 /** @brief Byte type. This is not defined in any C or C++ standard header. */
 typedef uint8_t byte;
