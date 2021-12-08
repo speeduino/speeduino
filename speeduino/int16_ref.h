@@ -6,6 +6,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "src/libdivide/libdivide.h"
 
 /** @brief Byte type. This is not defined in any C or C++ standard header. */
 typedef uint8_t byte;
@@ -20,28 +21,35 @@ class int16_ref
 {
 public:
 
+#pragma pack(push, 1)
+    struct scalar {
+        uint8_t _factor;
+        libdivide::libdivide_s16_t divider;
+    };
+#pragma pack(pop)
+
     /**
      * @brief Construct
      * @param value The \c int16_t to encapsulate.
      * @param factor The factor to scale the \c int16_t value by when converting to/from a \c byte
      */
-    int16_ref(int16_t &value, uint8_t factor) 
-        : _value(value), _factor(factor)
+    int16_ref(int16_t &value, const scalar *pScalar) 
+        : _value(value), _pScalar(pScalar)
     {
     }
 
     /** @brief Convert to a \c byte */
-    inline byte operator*() const { return (byte)(_value/_factor); }
+    inline byte operator*() const { return (byte)libdivide::libdivide_s16_do(_value, &_pScalar->divider); }
 
     /** @brief Convert to a \c byte */
     inline explicit operator byte() const { return **this; }
 
     /** @brief Convert from a \c byte */
-    inline int16_ref &operator=( byte in )  { _value = (int16_t)in * (int16_t)_factor; return *this;  }
+    inline int16_ref &operator=( byte in )  { _value = (int16_t)in * (int16_t)(_pScalar->_factor); return *this;  }
 
 private:
     int16_t &_value;
-    uint8_t _factor;
+    const scalar *_pScalar;
 };
 
 /** @} */

@@ -11,6 +11,7 @@
 
 #include "table3d_typedefs.h"
 #include "int16_ref.h"
+#include "src/libdivide/constant_fast_div.h"
 
 /**\enum axis_domain
  * @brief Encodes the real world measurement that a table axis captures
@@ -30,8 +31,8 @@ class table_axis_iterator
 public:
 
     /** @brief Construct */
-    table_axis_iterator(const table3d_axis_t *pStart, const table3d_axis_t *pEnd, uint8_t io_factor, int8_t stride)
-     : _pAxis(pStart), _pAxisEnd(pEnd), _axisFactor(io_factor), _stride(stride)
+    table_axis_iterator(const table3d_axis_t *pStart, const table3d_axis_t *pEnd, const int16_ref::scalar *pScalar, int8_t stride)
+     : _pAxis(pStart), _pAxisEnd(pEnd), _stride(stride), _pScalar(pScalar)
     {
     }
 
@@ -59,12 +60,12 @@ public:
     /** @brief Dereference the iterator */
     inline int16_ref operator*()
     {
-        return int16_ref(*const_cast<table3d_axis_t*>(_pAxis), _axisFactor);
+        return int16_ref(*const_cast<table3d_axis_t*>(_pAxis), _pScalar);
     }
     /** @copydoc table_axis_iterator::operator*()  */
     inline const int16_ref operator*() const
     {
-        return int16_ref(*const_cast<table3d_axis_t*>(_pAxis), _axisFactor);
+        return int16_ref(*const_cast<table3d_axis_t*>(_pAxis), _pScalar);
     }    
     
     /** @brief Reverse the iterator direction
@@ -83,18 +84,22 @@ public:
 private:
     const table3d_axis_t *_pAxis;
     const table3d_axis_t *_pAxisEnd;
-    uint8_t _axisFactor;
     int8_t _stride;
+    const int16_ref::scalar *_pScalar;
 };
 
 /** @brief Shared code for the axis types */
 class table3d_axis_base {
 protected:
-    static constexpr uint8_t domain_to_iofactor(axis_domain domain) {
+    static constexpr const int16_ref::scalar* domain_to_scalar(axis_domain domain) {
         // This really, really needs to be done at compile time, hence the contexpr
-        return domain==axis_domain_Rpm ? 100 :
-                domain==axis_domain_Load ? 2 : 1;
+        return domain==axis_domain_Rpm ? &scalar_100 :
+                domain==axis_domain_Load ? &scalar_2 : &scalar_1;
     }
+private:
+    static constexpr const int16_ref::scalar scalar_100 = { 100, { S16_MAGIC(100), S16_MORE(100) } };
+    static constexpr const int16_ref::scalar scalar_2 = { 2, { S16_MAGIC(2), S16_MORE(2) } };
+    static constexpr const int16_ref::scalar scalar_1 = { 1, { S16_MAGIC(1), S16_MORE(1) } };
 };
 
 #define TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _xaxis)
@@ -115,7 +120,7 @@ protected:
         /** @brief Iterate over the axis elements */ \
         inline table_axis_iterator begin() \
         {  \
-            return table_axis_iterator(axis, axis+size, domain_to_iofactor(domain), 1); \
+            return table_axis_iterator(axis, axis+size, domain_to_scalar(domain), 1); \
         } \
     };
 TABLE3D_GENERATOR(TABLE3D_GEN_XAXIS)
@@ -138,7 +143,7 @@ TABLE3D_GENERATOR(TABLE3D_GEN_XAXIS)
         /** @brief Iterate over the axis elements */ \
         inline table_axis_iterator begin() \
         { \
-            return table_axis_iterator(axis+(size-1), axis-1, domain_to_iofactor(domain), -1); \
+            return table_axis_iterator(axis+(size-1), axis-1, domain_to_scalar(domain), -1); \
         } \
     };
 TABLE3D_GENERATOR(TABLE3D_GEN_YAXIS)
