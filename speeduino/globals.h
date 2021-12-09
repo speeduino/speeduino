@@ -224,7 +224,7 @@
 #define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
 #define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
-#define BIT_STATUS4_UNUSED4       3
+#define BIT_STATUS4_FAN           3 //Fan Status
 #define BIT_STATUS4_UNUSED5       4
 #define BIT_STATUS4_UNUSED6       5
 #define BIT_STATUS4_UNUSED7       6
@@ -482,6 +482,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -670,7 +671,6 @@ struct statuses {
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
   bool idleUpActive; /**< Whether the externally controlled idle up is currently active */
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
-  bool fanOn;        /**< Whether or not the fan is turned on */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
@@ -729,6 +729,7 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
   byte engineProtectStatus;
+  byte fanDuty;
   byte wmiPW;
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
@@ -848,7 +849,7 @@ struct config2 {
   byte fanWhenOff : 1;      ///< Allow running fan with engine off: 0 = Only run fan when engine is running, 1 = Allow even with engine off
   byte fanWhenCranking : 1; ///< Set whether the fan output will stay on when the engine is cranking (0=force off, 1=allow on)
   byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref configPage4.dwellRun, 1=Use @ref dwellTable)
-  byte fanUnused : 2;       // Unused ?
+  byte fanEnable : 2;       ///< Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
@@ -1099,7 +1100,7 @@ struct config6 {
   byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
 
   byte fanInv : 1;        // Fan output inversion bit
-  byte fanEnable : 1;     // Fan enable bit. 0=Off, 1=On/Off
+  byte fanUnused : 1;
   byte fanPin : 6;
   byte fanSP;             // Cooling fan start temperature
   byte fanHyster;         // Fan hysteresis
@@ -1157,10 +1158,7 @@ struct config9 {
   byte boostByGear5;
   byte boostByGear6;
 
-  byte unused10_162;
-  byte unused10_163;
-  byte unused10_164;
-  byte unused10_165;
+  byte PWMFanDuty[4];
   byte unused10_166;
   byte unused10_167;
   byte unused10_168;

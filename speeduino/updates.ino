@@ -14,7 +14,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    18
+  #define CURRENT_DATA_VERSION    19
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -520,6 +520,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 18)
   {
+
 
     configPage2.boostDCWhenDisabled = 0;
     configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;

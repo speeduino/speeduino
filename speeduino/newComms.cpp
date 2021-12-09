@@ -32,6 +32,15 @@ bool serialReceivePending = false; /**< Whether or not a serial request has only
 uint16_t serialBytesReceived = 0;
 uint32_t serialCRC = 0; 
 uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
+bool serialWriteInProgress = false;
+uint16_t serialBytesTransmitted = 0;
+#ifdef RTC_ENABLED
+  uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  uint16_t SDcurrentDirChunk;
+  uint32_t SDreadStartSector;
+  uint32_t SDreadNumSectors;
+  uint32_t SDreadCompletedSectors = 0;
+#endif
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -105,7 +114,7 @@ void parseSerial()
       if(serialCRC != receivedCRC)
       {
         //CRC Error. Need to send an error message
-        sendSerialReturnCode(SERIAL_RC_CRC_ERROR);
+        sendSerialReturnCode(SERIAL_RC_CRC_ERR);
       }
       else
       {
@@ -132,25 +141,71 @@ void sendSerialReturnCode(byte returnCode)
   Serial.write( (CRC32_val & 255) );
 }
 
-void sendSerialPayload(void *payload, byte payloadLength)
+void sendSerialPayload(void *payload, uint16_t payloadLength)
 {
-  //uint16_t totalPayloadLength = payloadLength + SERIAL_CRC_LENGTH;
+  //Start new transmission session
+  serialBytesTransmitted = 0; 
+  serialWriteInProgress = false;
+
   uint16_t totalPayloadLength = payloadLength;
   Serial.write(totalPayloadLength >> 8);
   Serial.write(totalPayloadLength);
 
   //Need to handle serial buffer being full. This is just for testing
-  for(int i = 0; i < payloadLength; i++)
+  serialPayloadLength = payloadLength; //Save the payload length incase we need to transmit in multiple steps
+  for(uint16_t i = 0; i < payloadLength; i++)
   {
     Serial.write(((uint8_t*)payload)[i]);
+    serialBytesTransmitted++;
+
+    if(Serial.availableForWrite() == 0)
+    {
+      //Serial buffer is full. Need to wait for it to be free
+      serialWriteInProgress = true;
+      break;
+    }
   }
 
-  //Calculate and send CRC
-  uint32_t CRC32_val = CRC32.crc32((uint8_t*)payload, payloadLength);
-  Serial.write( ((CRC32_val >> 24) & 255) );
-  Serial.write( ((CRC32_val >> 16) & 255) );
-  Serial.write( ((CRC32_val >> 8) & 255) );
-  Serial.write( (CRC32_val & 255) );
+  if(serialWriteInProgress == false)
+  {
+    //All data transmitted. Send the CRC
+    uint32_t CRC32_val = CRC32.crc32((uint8_t*)payload, payloadLength);
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
+  }
+}
+
+void continueSerialTransmission()
+{
+  if(serialWriteInProgress == true)
+  {
+    serialWriteInProgress = false; //Assume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
+    //Serial buffer is free. Continue sending the data
+    for(uint16_t i = serialBytesTransmitted; i < serialPayloadLength; i++)
+    {
+      Serial.write(serialPayload[i]);
+      serialBytesTransmitted++;
+
+      if(Serial.availableForWrite() == 0)
+      {
+        //Serial buffer is full. Need to wait for it to be free
+        serialWriteInProgress = true;
+        break;
+      }
+    }
+
+    if(serialWriteInProgress == false)
+    {
+      //All data transmitted. Send the CRC
+      uint32_t CRC32_val = CRC32.crc32(serialPayload, serialPayloadLength);
+      Serial.write( ((CRC32_val >> 24) & 255) );
+      Serial.write( ((CRC32_val >> 16) & 255) );
+      Serial.write( ((CRC32_val >> 8) & 255) );
+      Serial.write( (CRC32_val & 255) );
+    }
+  }
 }
 
 void processSerialCommand()
@@ -159,32 +214,11 @@ void processSerialCommand()
 
   switch (currentCommand)
   {
-    /*
-    Should not happen with the new mode
-    case 'a':
-      cmdPending = true;
-
-      if (Serial.available() >= 2)
-      {
-        Serial.read(); //Ignore the first value, it's always 0
-        Serial.read(); //Ignore the second value, it's always 6
-        sendValuesLegacy();
-        cmdPending = false;
-      }
-      break;
-    */
 
     case 'A': // send x bytes of realtime values
       //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
-
-    /*
-    Should not happen with the new mode
-    case 'B': // Burn current values to eeprom
-      writeAllConfig();
-      break;
-    */
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
@@ -197,14 +231,6 @@ void processSerialCommand()
       sendSerialPayload(&tempPayload, 2);
       break;
     }
-
-    /*
-    Should not happen with the new mode
-    case 'c': //Send the current loops/sec value
-      Serial.write(lowByte(currentStatus.loopsPerSecond));
-      Serial.write(highByte(currentStatus.loopsPerSecond));
-      break;
-    */
 
     case 'E': // receive command button commands
     {
@@ -339,14 +365,12 @@ void processSerialCommand()
       length = word(length2, length1);
 
       //Setup the transmit buffer
-      //serialTransmitPayload = (byte*) malloc(length + 1);
       serialPayload[0] = SERIAL_RC_OK;
       for(int i = 0; i < length; i++)
       {
         serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
       }
       sendSerialPayload(&serialPayload, (length + 1));
-      //free(serialTransmitPayload);
       break;
     }
 
@@ -359,14 +383,13 @@ void processSerialCommand()
 
     case 'r': //New format for the optimised OutputChannels
     {
-
       uint8_t cmd = serialPayload[2];
-      uint8_t offset1 = serialPayload[3];
-      uint8_t offset2 = serialPayload[4];
-      uint16_t offset = word(offset2, offset1);
-      uint8_t length1 = serialPayload[5];
-      uint8_t length2 = serialPayload[6];
-      uint16_t length = word(length2, length1);
+      uint16_t offset = word(serialPayload[4], serialPayload[3]);
+      uint16_t length = word(serialPayload[6], serialPayload[5]);
+#ifdef RTC_ENABLED      
+      uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
+      uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
+#endif
 
       if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {
@@ -391,27 +414,31 @@ void processSerialCommand()
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
       {
         //SD read commands use the offset and length fields to indicate the request type
-        if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
+        if((SD_arg1 == SD_READ_STAT_ARG1) && (SD_arg2 == SD_READ_STAT_ARG2))
         {
           //Read the status of the SD card
           
           serialPayload[0] = SERIAL_RC_OK;
 
-
-          //Serial.write(currentStatus.TS_SD_Status);
-          serialPayload[1] = 5;
-          serialPayload[2] = 0;
-
-          //All other values are 2 bytes   
-          //Sector size     
+          serialPayload[1] = currentStatus.TS_SD_Status;
+          serialPayload[2] = 0; //Error code
+ 
+          //Sector size = 512
           serialPayload[3] = 2;
           serialPayload[4] = 0;
 
           //Max blocks (4 bytes)
+          uint32_t sectors = sectorCount();
+          serialPayload[5] = ((sectors >> 24) & 255);
+          serialPayload[6] = ((sectors >> 16) & 255);
+          serialPayload[7] = ((sectors >> 8) & 255);
+          serialPayload[8] = (sectors & 255);
+          /*
           serialPayload[5] = 0;
           serialPayload[6] = 0x20; //1gb dummy card
           serialPayload[7] = 0;
           serialPayload[8] = 0;
+          */
 
           //Max roots (Number of files)
           serialPayload[9] = 0;
@@ -430,14 +457,60 @@ void processSerialCommand()
           sendSerialPayload(&serialPayload, 17);
 
         }
-        //else if(length == 0x202)
+        else if((SD_arg1 == SD_READ_DIR_ARG1) && (SD_arg2 == SD_READ_DIR_ARG2))
         {
-          //File info
+          //Send file details
+          serialPayload[0] = SERIAL_RC_OK;
+
+          uint16_t logFileNumber = (SDcurrentDirChunk * 16) + 1;
+          uint8_t filesInCurrentChunk = 0;
+          uint16_t payloadIndex = 1;
+          while((filesInCurrentChunk < 16) && (getSDLogFileDetails(&serialPayload[payloadIndex], logFileNumber) == true))
+          {
+            logFileNumber++;
+            filesInCurrentChunk++;
+            payloadIndex += 32;
+          }
+          serialPayload[payloadIndex] = lowByte(SDcurrentDirChunk);
+          serialPayload[payloadIndex + 1] = highByte(SDcurrentDirChunk);
+          //Serial.print("Index:");
+          //Serial.print(payloadIndex);
+
+          sendSerialPayload(&serialPayload, (payloadIndex + 2));
+
         }
+
       }
-      else if(cmd == 0x14)
+      else if(cmd == SD_READFILE_PAGE)
       {
         //Fetch data from file
+        if(SD_arg2 == SD_READ_COMP_ARG2)
+        {
+          //arg1 is the block number to return
+          serialSDTransmitPayload[0] = SERIAL_RC_OK;
+          serialSDTransmitPayload[1] = highByte(SD_arg1);
+          serialSDTransmitPayload[2] = lowByte(SD_arg1);
+
+          uint32_t currentSector = SDreadStartSector + (SD_arg1 * 4);
+          
+          int32_t numSectorsToSend = 0;
+          if(SDreadNumSectors > SDreadCompletedSectors)
+          {
+            numSectorsToSend = SDreadNumSectors - SDreadCompletedSectors;
+            if(numSectorsToSend > 4) //Maximum of 4 sectors at a time
+            {
+              numSectorsToSend = 4;
+            }
+          }
+          SDreadCompletedSectors += numSectorsToSend;
+          
+          if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
+          else
+          {
+            readSDSectors(&serialSDTransmitPayload[3], currentSector, numSectorsToSend); 
+            sendSerialPayload(&serialSDTransmitPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+          }
+        }
       }
 #endif
       else
@@ -485,17 +558,94 @@ void processSerialCommand()
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
-      byte tableID;
-      //byte canID;
+    {
+      uint8_t cmd = serialPayload[2];
+      uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
+      uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      //The first 2 bytes sent represent the canID and tableID
-      while (Serial.available() == 0) { }
-      tableID = Serial.read(); //Not currently used for anything
+      if(cmd == O2_CALIBRATION_PAGE)
+      {
+        //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
+        //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
+        void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
 
-      receiveCalibrationNew(tableID); //Receive new values and store in memory
+        //Read through the current chunk (Should be 256 bytes long)
+        for(uint16_t x = 0; x < calibrationLength; x++)
+        {
+          //Only apply every 32nd value
+          if( (x % 32) == 0 )
+          {
+            uint16_t totalOffset = valueOffset + x;
+            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
+            pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
+          }
+        }
+        sendSerialReturnCode(SERIAL_RC_OK);
+      }
+      else if(cmd == IAT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        
+      }
+      else if(cmd == CLT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+      }
+      else
+      {
+        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+      }
+
       writeCalibration(); //Store received values in EEPROM
-
       break;
+    }
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
       if (resetControl != RESET_CONTROL_DISABLED)
@@ -548,20 +698,14 @@ void processSerialCommand()
 
     case 'w':
     {
-      byte offset1, offset2, length1, length2;
-
       uint8_t cmd = serialPayload[2];
-      offset1 = serialPayload[3];
-      offset2 = serialPayload[4];
-      uint16_t valueOffset = word(offset2, offset1);
-      length1 = serialPayload[5];
-      length2 = serialPayload[6];
-      uint16_t chunkSize = word(length2, length1);
+      uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
+      uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 
 #ifdef RTC_ENABLED
       if(cmd == SD_READWRITE_PAGE)
         { 
-          if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
+          if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
           {
             /*
             SD DO command. Single byte of data where the commands are:
@@ -572,14 +716,26 @@ void processSerialCommand()
             4 Load status variable
             5 Init SD card
             */
-            setTS_SD_status(); //Set SD status values
+            uint8_t command = serialPayload[7];
+            if(command == 2) { endSDLogging(); manualLogActive = false; }
+            else if(command == 3) { beginSDLogging(); manualLogActive = true; }
+            else if(command == 4) { setTS_SD_status(); }
+            //else if(command == 5) { initSD(); }
+            
             sendSerialReturnCode(SERIAL_RC_OK);
           }
-          else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
+          else if((SD_arg1 == SD_WRITE_DIR_ARG1) && (SD_arg2 == SD_WRITE_DIR_ARG2))
+          {
+            //Begin SD directory read. Value in payload represents the directory chunk to read
+            //Directory chunks are each 16 files long
+            SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
+            sendSerialReturnCode(SERIAL_RC_OK);
+          }
+          else if((SD_arg1 == SD_WRITE_SEC_ARG1) && (SD_arg2 == SD_WRITE_SEC_ARG2))
           {
             //SD write sector command
           }
-          else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
+          else if((SD_arg1 == SD_ERASEFILE_ARG1) && (SD_arg2 == SD_ERASEFILE_ARG2))
           {
             //Erase file command
             //First 4 bytes are the log number in ASCII
@@ -594,7 +750,7 @@ void processSerialCommand()
             Serial.read();
             Serial.read();
           }
-          else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
+          else if((SD_arg1 == SD_SPD_TEST_ARG1) && (SD_arg2 == SD_SPD_TEST_ARG2))
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
@@ -617,12 +773,35 @@ void processSerialCommand()
             sendSerialReturnCode(SERIAL_RC_OK);
 
           }
+          else if((SD_arg1 == SD_WRITE_COMP_ARG1) && (SD_arg2 == SD_WRITE_COMP_ARG2))
+          {
+            //Prepare to read a 2024 byte chunk of data from the SD card
+            uint8_t sector1 = serialPayload[7];
+            uint8_t sector2 = serialPayload[8];
+            uint8_t sector3 = serialPayload[9];
+            uint8_t sector4 = serialPayload[10];
+            //SDreadStartSector = (sector1 << 24) | (sector2 << 16) | (sector3 << 8) | sector4;
+            SDreadStartSector = (sector4 << 24) | (sector3 << 16) | (sector2 << 8) | sector1;
+            //SDreadStartSector = sector4 | (sector3 << 8) | (sector2 << 16) | (sector1 << 24);
+
+            //Next 4 bytes are the number of sectors to write
+            uint8_t sectorCount1 = serialPayload[11];
+            uint8_t sectorCount2 = serialPayload[12];
+            uint8_t sectorCount3 = serialPayload[13];
+            uint8_t sectorCount4 = serialPayload[14];
+            SDreadNumSectors = (sectorCount1 << 24) | (sectorCount2 << 16) | (sectorCount3 << 8) | sectorCount4;
+
+            //Reset the sector counter
+            SDreadCompletedSectors = 0;
+
+            sendSerialReturnCode(SERIAL_RC_OK);
+          }
         }
         else if(cmd == SD_RTC_PAGE)
         {
           cmdPending = false;
           //Used for setting RTC settings
-          if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
+          if((SD_arg1 == SD_RTC_WRITE_ARG1) && (SD_arg2 == SD_RTC_WRITE_ARG2))
           {
             //Set the RTC date/time
             byte second = serialPayload[7];
@@ -691,96 +870,6 @@ namespace
     }
   }
 
-}
-
-/** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
- * Result is store in EEPROM and memory.
- * 
- * @param tableID - calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
- */
-void receiveCalibrationNew(byte tableID)
-{
-  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
-  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR;
-
-  switch (tableID)
-  {
-    case 0:
-      //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      break;
-    case 1:
-      //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      break;
-    case 2:
-      //O2 table
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 10;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  int16_t tempValue;
-  byte tempBuffer[2];
-
-  if(tableID == 2)
-  {
-    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
-    for (int x = 0; x < 1024; x++)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-
-      if( (x % 32) == 0)
-      {
-        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
-        pnt_TargetTable_bins[(x/32)] = (x);
-      }
-      
-    }
-  }
-  else
-  {
-    //Temperature calibrations are sent as 32 16-bit values
-    for (uint16_t x = 0; x < 32; x++)
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-      
-      //Apply the temp offset and check that it results in all values being positive
-      tempValue = tempValue + OFFSET;
-      if (tempValue < 0) { tempValue = 0; }
-
-      
-      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-      pnt_TargetTable_bins[x] = (x * 32U);
-      writeCalibration();
-    }
-  }
-
-  writeCalibration();
 }
 
 /** Send 256 tooth log entries to serial.
