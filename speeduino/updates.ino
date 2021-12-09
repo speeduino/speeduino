@@ -557,8 +557,10 @@ void doUpdates()
       *table_Y = (120 + 10*i)/2;
       ++table_Y;
     }
-    // writeAllConfig();
-    // storeEEPROMVersion(19);
+    configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
+
+    writeAllConfig();
+    storeEEPROMVersion(19);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
