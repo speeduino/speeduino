@@ -26,13 +26,11 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 unsigned int divu10(unsigned int n)
 {
 #ifdef USE_LIBDIVIDE
-  uint32_t returnVal = 0;
-
   //Check whether 16 or 32 bit divide is required
-  if( n <= UINT16_MAX ) { returnVal = FAST_DIV16U(n, 10); }
-  else { returnVal = libdivide::libdivide_u32_do(n, &libdiv_u32_10); }
+  //if( n <= UINT8_MAX) { return (uint8_t)n / 10; }
+  if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 10); }
+  else { return libdivide::libdivide_u32_do(n, &libdiv_u32_10); }
 
-  return returnVal;
 #else
   return (n / 10);
 #endif
@@ -52,13 +50,12 @@ int divs100(long n)
 unsigned long divu100(unsigned long n)
 {
 #ifdef USE_LIBDIVIDE
-  uint32_t returnVal = 0;
 
-  //Check whether 16 or 32 bit divide is required
-  if( n <= UINT16_MAX ) { returnVal = FAST_DIV16U(n, 100); }
-  else { returnVal = libdivide::libdivide_u32_do(n, &libdiv_u32_100); }
+  //Check whether 8, 16 or 32 bit divide is required
+  if( n <= UINT8_MAX) { return (uint8_t)n / 100; }
+  else if( n <= UINT16_MAX ) { return FAST_DIV16U(n, 100); }
+  else { return libdivide::libdivide_u32_do(n, &libdiv_u32_100); }
 
-  return returnVal;
 #else
   return (n / 100);
 #endif
@@ -80,7 +77,9 @@ unsigned long percentage(byte x, unsigned long y)
 unsigned long halfPercentage(byte x, unsigned long y)
 {
 #ifdef USE_LIBDIVIDE
-  return libdivide::libdivide_u32_do((y * x), &libdiv_u32_200); 
+  //if( x <= UINT8_MAX) { return (uint8_t)x / 200; }
+  if( x <= UINT16_MAX ) { return FAST_DIV16U(x, 200); }
+  else { return libdivide::libdivide_u32_do((y * x), &libdiv_u32_200); }
 #else
   return (y * x) / 200;
 #endif
