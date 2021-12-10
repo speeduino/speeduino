@@ -234,9 +234,7 @@ void processSerialCommand()
 
     case 'E': // receive command button commands
     {
-      byte cmdGroup = serialPayload[1];
-      byte cmdValue = serialPayload[2];
-      uint16_t cmdCombined = word(cmdGroup, cmdValue);
+      uint16_t cmdCombined = word(serialPayload[1], serialPayload[2]);
 
       if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
       {
@@ -533,27 +531,8 @@ void processSerialCommand()
       
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      //6 bytes required:
-      //2 - Page identifier
-      //2 - offset
-      //2 - Length
-      cmdPending = true;
-      if(Serial.available() >= 6)
-      {
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-
-        if(currentStatus.toothLogEnabled == true) { generateToothLog(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { generateCompositeLog(0); }
-
-        cmdPending = false;
-      }
-
-      
+      if(currentStatus.toothLogEnabled == true) { generateToothLog(0); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { generateCompositeLog(0); }
 
       break;
 
@@ -665,10 +644,6 @@ void processSerialCommand()
       }
       break;
 
-    case 'V': // send VE table and constants in binary
-      sendPage();
-      break;
-
 
     case 'M':
     {
@@ -738,17 +713,14 @@ void processSerialCommand()
           else if((SD_arg1 == SD_ERASEFILE_ARG1) && (SD_arg2 == SD_ERASEFILE_ARG2))
           {
             //Erase file command
-            //First 4 bytes are the log number in ASCII
-            /*
-            char log1 = Serial.read();
-            char log2 = Serial.read();
-            char log3 = Serial.read();
-            char log4 = Serial.read();
-            */
+            //We just need the 4 ASCII characters of the file name
+            char log1 = serialPayload[7];
+            char log2 = serialPayload[8];
+            char log3 = serialPayload[9];
+            char log4 = serialPayload[10];
 
-            //Next 2 bytes are the directory block no
-            Serial.read();
-            Serial.read();
+            deleteLogFile(log1, log2, log3, log4);
+            sendSerialReturnCode(SERIAL_RC_OK);
           }
           else if((SD_arg1 == SD_SPD_TEST_ARG1) && (SD_arg2 == SD_SPD_TEST_ARG2))
           {

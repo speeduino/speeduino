@@ -260,14 +260,6 @@ void writeSDLogHeader()
 //Sets the status variable for TunerStudio
 void setTS_SD_status()
 {
-  /*
-  indicator = { sd_status & 1}, "No SD", "SD in",             white, black, green, black
-   indicator = { sd_status & 4}, "SD ready", "SD ready",       white, black, green, black
-   indicator = { sd_status & 8}, "SD Log", "SD Log",           white, black, green, black
-   indicator = { sd_status & 16}, "SD Err", "SD Err",           white, black, red, black
-   */
-  //currentStatus.TS_SD_Status = SD_status;
-
   if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
   else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
 
@@ -380,14 +372,16 @@ void checkForSDStop()
 }
 
 /** 
- * Similar to the @getTSLogEntry function, however this returns a full, unadjusted (ie human readable) log entry value. 
- * See logger.h for the field names and order
- * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
- * @return Raw, unadjusted value of the log entry. No offset or multiply is applied like it is with the TS log
+ * Will perform a complete format of the SD card to ExFAT. 
+ * This will delete all files and create a new empty file system.
+ * The SD status will be set to busy when this happens to prevent any other operations
  */
 void formatExFat()
 {
   bool result = false;
+
+  //Set the SD status to busy
+  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
 
   if (sd.cardBegin(SD_CONFIG)) 
   {
@@ -400,9 +394,35 @@ void formatExFat()
     }
   }
 
-  if(result == false)
+  if(result == false) { SD_status = SD_STATUS_ERROR_FORMAT_FAIL; }
+  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); }
+}
+
+/**
+ * @brief Deletes a log file from the SD card
+ * 
+ * Log files all have hte same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
+ * 
+ * @param log1 
+ * @param log2 
+ * @param log3 
+ * @param log4 
+ */
+void deleteLogFile(char log1, char log2, char log3, char log4)
+{
+  char logFileName[13];
+  strcpy(logFileName, LOG_FILE_PREFIX);
+  logFileName[4] = log1;
+  logFileName[5] = log2;
+  logFileName[6] = log3;
+  logFileName[7] = log4;
+  logFileName[8] = '.';
+  strcpy(logFileName + 9, LOG_FILE_EXTENSION);
+  //logFileName[8] = '\0';
+
+  if(sd.exists(logFileName))
   {
-    SD_status = SD_STATUS_ERROR_FORMAT_FAIL;
+    sd.remove(logFileName);
   }
 }
 

@@ -65,6 +65,7 @@ void beginSDLogging();
 void endSDLogging();
 void setTS_SD_status();
 void formatExFat();
+void deleteLogFile(char, char, char, char);
 bool createLogFile();
 void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
 uint16_t getNextSDLogFileNumber();
