@@ -810,7 +810,7 @@ void processSerialCommand()
             //byte dow = serialPayload[10]; //Not used
             byte day = serialPayload[11];
             byte month = serialPayload[12];
-            uint16_t year = word(serialPayload[14], serialPayload[13]);
+            uint16_t year = word(serialPayload[13], serialPayload[14]);
             rtc_setTime(second, minute, hour, day, month, year);
             sendSerialReturnCode(SERIAL_RC_OK);
           }

@@ -13,11 +13,11 @@
 
 #ifndef UNIT_TEST // Scope guard for unit testing
   #define LOG_ENTRY_SIZE      122 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   122 /**< The size of the live data packet used by the SD car.*/
+  #define SD_LOG_ENTRY_SIZE   122 /**< The size of the live data packet used by the SD card.*/
   #define SD_LOG_NUM_FIELDS   89 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 #else
   #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD car.*/
+  #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
 byte getTSLogEntry(uint16_t);
