@@ -4601,7 +4601,7 @@ void triggerSec_Renix()
         }
         else
         {
-          Serial3.print("Rise TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
+//          Serial3.print("Rise TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
           currentStatus.hasSync = false;
           currentStatus.syncLossCounter++;   
           revolutionOne = 1;
@@ -4620,7 +4620,7 @@ void triggerSec_Renix()
         }
         else
         {
-          Serial3.print("Fall TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
+//          Serial3.print("Fall TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
           currentStatus.hasSync = false;
           currentStatus.syncLossCounter++;   
           revolutionOne = 0;
