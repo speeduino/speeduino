@@ -523,6 +523,17 @@ void doUpdates()
   {
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
+    //TPS resolution increased to 0.5%
+    configPage2.taeThresh *= 2;
+    configPage2.idleAdvTPS *= 2;
+    configPage2.iacTPSlimit *= 2;
+    configPage4.floodClear *= 2;
+    configPage4.dfcoTPSThresh *= 2;
+    configPage6.egoTPSMax *= 2;
+    configPage10.lnchCtrlTPS *= 2;
+    configPage10.wmiTPS *= 2;
+    // Each table Y axis need to be updated as well if TPS is the source
+
     writeAllConfig();
     storeEEPROMVersion(19);
   }
