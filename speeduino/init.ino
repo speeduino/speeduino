@@ -450,7 +450,8 @@ void initialiseAll()
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2;
-        if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
+        if      ((configPage2.strokes ==  TWO_STROKE) && (configPage2.engineType == EVEN_FIRE )) { channel2IgnDegrees = 180; }
+        else if ((configPage2.strokes == FOUR_STROKE) && (configPage2.engineType == EVEN_FIRE )) { channel2IgnDegrees = 360; }
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
