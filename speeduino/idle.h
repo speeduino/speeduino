@@ -2,7 +2,7 @@
 #define IDLE_H
 
 #include "globals.h"
-#include "table.h"
+#include "table2d.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 #define IAC_ALGORITHM_NONE    0
@@ -12,6 +12,7 @@
 #define IAC_ALGORITHM_STEP_OL 4
 #define IAC_ALGORITHM_STEP_CL 5
 #define IAC_ALGORITHM_PWM_OLCL  6 //Openloop plus closedloop IAC control
+#define IAC_ALGORITHM_STEP_OLCL  7 //Openloop plus closedloop IAC control
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -51,6 +52,7 @@ volatile PORT_TYPE *idleUpOutput_pin_port;
 volatile PINMASK_TYPE idleUpOutput_pin_mask;
 
 volatile bool idle_pwm_state;
+bool lastDFCOValue;
 unsigned int idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;

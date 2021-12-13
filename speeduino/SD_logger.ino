@@ -5,6 +5,13 @@
 #include "logger.h"
 #include "rtc_common.h"
 
+SdExFat sd;
+ExFile logFile;
+RingBuf<ExFile, RING_BUF_CAPACITY> rb;
+uint8_t SD_status = SD_STATUS_OFF;
+uint16_t currentLogFileNumber;
+bool manualLogActive = false;
+
 void initSD()
 {
   //Set default state to ready. If any stage of the init fails, this will be changed
@@ -27,9 +34,11 @@ void initSD()
 
 bool createLogFile()
 {
-  char filenameBuffer[24];
+  //TunerStudio only supports 8.3 filename format. 
+  char filenameBuffer[13]; //8 + 1 + 3 + 1
   bool returnValue = false;
 
+  /*
   //Filename format is: YYYY-MM-DD_HH.MM.SS.csv
   char intBuffer[5];
   itoa(rtc_getYear(), intBuffer, 10);
@@ -50,6 +59,14 @@ bool createLogFile()
   itoa(rtc_getSecond(), intBuffer, 10);
   strcat(filenameBuffer, intBuffer);
   strcat(filenameBuffer, ".csv");
+  */
+  if(currentLogFileNumber == 0)
+  {
+    //Lookup the next available file number
+    currentLogFileNumber = getNextSDLogFileNumber();
+  }
+  //Create the filename
+  sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
 
   //if (!logFile.open(LOG_FILENAME, O_RDWR | O_CREAT | O_TRUNC)) 
   if (logFile.open(filenameBuffer, O_RDWR | O_CREAT | O_TRUNC)) 
@@ -58,6 +75,93 @@ bool createLogFile()
   }
 
   return returnValue;
+}
+
+uint16_t getNextSDLogFileNumber()
+{
+  uint16_t nextFileNumber = 1;
+  char filenameBuffer[13]; //8 + 1 + 3 + 1
+  sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, nextFileNumber, LOG_FILE_EXTENSION);
+
+  //Lookup the next available file number
+  while( (nextFileNumber < MAX_LOG_FILES) && (sd.exists(filenameBuffer)) )
+  {
+    nextFileNumber++;
+    sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, nextFileNumber, LOG_FILE_EXTENSION);
+  }
+
+  return nextFileNumber;
+}
+
+bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
+{
+  bool fileFound = false;
+
+  if(logFile.isOpen()) { endSDLogging(); }
+
+  char filenameBuffer[13]; //8 + 1 + 3 + 1
+  sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, logNumber, LOG_FILE_EXTENSION);
+  
+  if(sd.exists(filenameBuffer))
+  {
+    fileFound = true;
+
+    logFile = sd.open(filenameBuffer, O_RDONLY);
+    //Copy the filename into the buffer. Note we do not copy the termination character or the fullstop
+    for(byte i=0; i<12; i++)
+    {
+      //We don't copy the fullstop to the buffer
+      //As TS requires 8.3 filenames, it's always in the same spot
+      if(i < 8) { buffer[i] = filenameBuffer[i]; } //Everything before the fullstop
+      else if(i > 8) { buffer[i-1] = filenameBuffer[i]; } //Everything after the fullstop
+    }
+
+    //Is File or ignore
+    buffer[11] = 1;
+
+    //No idea
+    buffer[12] = 0;
+
+    //5 bytes for FAT creation date/time
+    uint16_t pDate = 0;
+    uint16_t pTime = 0;
+    logFile.getCreateDateTime(&pDate, &pTime);
+    buffer[13] = 0; //Not sure what this byte is for yet
+    buffer[14] = lowByte(pTime);
+    buffer[15] = highByte(pTime);
+    buffer[16] = lowByte(pDate);
+    buffer[17] = highByte(pDate);
+
+    //Sector number (4 bytes) - This byte order might be backwards
+    uint32_t sector = logFile.firstSector();
+    buffer[18] = ((sector) & 255);
+    buffer[19] = ((sector >> 8) & 255);
+    buffer[20] = ((sector >> 16) & 255);
+    buffer[21] = ((sector >> 24) & 255);
+
+    //Unsure on the below 6 bytes, possibly last accessed or modified date/time?
+    buffer[22] = 0;
+    buffer[23] = 0;
+    buffer[24] = 0;
+    buffer[25] = 0;
+    buffer[26] = 0;
+    buffer[27] = 0;
+
+    //File size (4 bytes). Little endian
+    uint32_t size = logFile.fileSize();
+    buffer[28] = ((size) & 255);
+    buffer[29] = ((size >> 8) & 255);
+    buffer[30] = ((size >> 16) & 255);
+    buffer[31] = ((size >> 24) & 255);
+
+  }
+
+  return fileFound;
+}
+
+void readSDSectors(uint8_t* buffer, uint32_t sectorNumber, uint16_t sectorCount)
+{
+  sd.card()->readSectors(sectorNumber, buffer, sectorCount);
 }
 
 void beginSDLogging()
@@ -156,15 +260,21 @@ void writeSDLogHeader()
 //Sets the status variable for TunerStudio
 void setTS_SD_status()
 {
-  /*
-  indicator = { sd_status & 1}, "No SD", "SD in",             white, black, green, black
-   indicator = { sd_status & 4}, "SD ready", "SD ready",       white, black, green, black
-   indicator = { sd_status & 8}, "SD Log", "SD Log",           white, black, green, black
-   indicator = { sd_status & 16}, "SD Err", "SD Err",           white, black, red, black
-   */
-  currentStatus.TS_SD_Status = SD_status;
-  //if(SD_status != SD_STATUS_ERROR_NO_CARD) { BIT_SET(currentStatus.TS_SD_Status, 0); } //Set bit for SD card being present
-  //if(SD_status == SD_STATUS_READY) { BIT_SET(currentStatus.TS_SD_Status, 2); } //Set bit for SD card being ready
+  if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
+  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
+
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_TYPE); // CARD is SDHC
+  
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); // CARD is ready
+  
+  if( SD_status == SD_STATUS_ACTIVE ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is logging
+  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is not logging
+
+  if( (SD_status >= SD_STATUS_ERROR_NO_FS) ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has an error
+  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has no error
+
+  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_FS); // CARD has a FAT32 filesystem (Though this will be exFAT)
+  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_UNUSED); //Unused bit is always 0
 
 }
 
@@ -217,6 +327,12 @@ void checkForSDStart()
  */
 void checkForSDStop()
 {
+  //Check the various conditions to see if we should stop logging
+  bool log_boot = false;
+  bool log_RPM = false;
+  bool log_prot = false;
+  bool log_Vbat = false;
+
   //Logging only needs to be stopped if already active
   if(SD_status == SD_STATUS_ACTIVE)
   {
@@ -224,23 +340,48 @@ void checkForSDStop()
     if(configPage13.onboard_log_trigger_boot)
     {
       //Check if we're past the logging duration
-      if((millis() / 1000) > configPage13.onboard_log_tr1_duration)
+      if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
       {
-        endSDLogging(); //Setup the log file, prallocation, header row
+        log_boot = true;
       }
     }
+    if(configPage13.onboard_log_trigger_RPM)
+    {
+      if(currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off)
+      {
+        log_RPM = true;
+      }
+    }
+    if(configPage13.onboard_log_trigger_prot)
+    {
+
+    }
+    if(configPage13.onboard_log_trigger_Vbat)
+    {
+
+    }
+
+    //Check all conditions to see if we should stop logging
+    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (manualLogActive == false) )
+    {
+      endSDLogging(); //Setup the log file, prallocation, header row
+    }
   }
+
+  
 }
 
 /** 
- * Similar to the @getTSLogEntry function, however this returns a full, unadjusted (ie human readable) log entry value. 
- * See logger.h for the field names and order
- * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
- * @return Raw, unadjusted value of the log entry. No offset or multiply is applied like it is with the TS log
+ * Will perform a complete format of the SD card to ExFAT. 
+ * This will delete all files and create a new empty file system.
+ * The SD status will be set to busy when this happens to prevent any other operations
  */
 void formatExFat()
 {
   bool result = false;
+
+  //Set the SD status to busy
+  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
 
   if (sd.cardBegin(SD_CONFIG)) 
   {
@@ -253,9 +394,35 @@ void formatExFat()
     }
   }
 
-  if(result == false)
+  if(result == false) { SD_status = SD_STATUS_ERROR_FORMAT_FAIL; }
+  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); }
+}
+
+/**
+ * @brief Deletes a log file from the SD card
+ * 
+ * Log files all have hte same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
+ * 
+ * @param log1 
+ * @param log2 
+ * @param log3 
+ * @param log4 
+ */
+void deleteLogFile(char log1, char log2, char log3, char log4)
+{
+  char logFileName[13];
+  strcpy(logFileName, LOG_FILE_PREFIX);
+  logFileName[4] = log1;
+  logFileName[5] = log2;
+  logFileName[6] = log3;
+  logFileName[7] = log4;
+  logFileName[8] = '.';
+  strcpy(logFileName + 9, LOG_FILE_EXTENSION);
+  //logFileName[8] = '\0';
+
+  if(sd.exists(logFileName))
   {
-    SD_status = SD_STATUS_ERROR_FORMAT_FAIL;
+    sd.remove(logFileName);
   }
 }
 
@@ -271,6 +438,11 @@ void dateTime(uint16_t* date, uint16_t* time, uint8_t* ms10) {
   
   // Return low time bits in units of 10 ms.
   *ms10 = rtc_getSecond() & 1 ? 100 : 0;
+}
+
+uint32_t sectorCount()
+{
+  return sd.card()->sectorCount();
 }
 
 #endif

@@ -499,7 +499,7 @@ void readBaro(bool useFilter)
     {
       if(useFilter == true) { currentStatus.baroADC = filterADC(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }
       else { currentStatus.baroADC = tempReading; }
-      currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
+      currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current pressure value
     }
   }  
 }

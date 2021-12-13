@@ -148,11 +148,18 @@ void initBoard()
         //Enable channel compare interrupt (This is currently disabled as not in use)
         //FTM1_C1SC |= FTM_CSC_CHIE;
 
+        FTM2_C1SC &= ~FTM_CSC_MSB; //According to Pg 965 of the K64 datasheet, this should not be needed as MSB is reset to 0 upon reset, but the channel interrupt fails to fire without it
+        FTM2_C1SC |= FTM_CSC_MSA;  //Enable Compare mode
+        //Enable channel compare interrupt (This is currently disabled as not in use)
+        //FTM1_C2SC |= FTM_CSC_CHIE;
+
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM1);
 
         boost_pwm_max_count = 1000000L / (32 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
         vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+
 
     }
 
@@ -370,10 +377,10 @@ void ftm2_isr(void)
   //FTM2 only has 2 compare channels
   //Use separate variables for each test to ensure conversion to bool
   bool interrupt1 = (FTM2_C0SC & FTM_CSC_CHF);
-  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //Not currently used
+  bool interrupt2 = (FTM2_C1SC & FTM_CSC_CHF); //For PWM Fan
 
   if(interrupt1) { FTM2_C0SC &= ~FTM_CSC_CHF; idleInterrupt(); }
-  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; } //Add a callback function here if this is ever used
+  else if(interrupt2) { FTM2_C1SC &= ~FTM_CSC_CHF; fanInterrupt(); } //For PWM Fan
 }
 
 uint16_t freeRam()
