@@ -177,7 +177,7 @@ void loop()
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
-      currentStatus.RPMdiv100 = currentStatus.RPM / 100;
+      currentStatus.RPMdiv100 = divu100(currentStatus.RPM);
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
@@ -408,7 +408,12 @@ void loop()
 
     } //1Hz timer
 
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) )  { idleControl(); } //Run idlecontrol every loop for stepper idle.
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
+    || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL)
+    || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
+    {
+      idleControl(); //Run idlecontrol every loop for stepper idle.
+    }
 
     
     //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
@@ -561,7 +566,7 @@ void loop()
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
-      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
+      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
@@ -1302,6 +1307,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 1023) { bitShift = 5; }
   
   iVE = ((unsigned int)VE << 7) / 100;
+  //iVE = divu100(((unsigned int)VE << 7));
 
   //Check whether either of the multiply MAP modes is turned on
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
@@ -1314,6 +1320,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
     iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
   iCorrections = (corrections << bitShift) / 100;
+  //iCorrections = divu100((corrections << bitShift));
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
