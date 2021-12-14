@@ -43,6 +43,7 @@ int TPS_rateOfChange;
 byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
+bool idleAdvActive = false;
 uint16_t AFRnextCycle;
 unsigned long knockStartTime;
 byte lastKnockCount;
@@ -755,7 +756,7 @@ int8_t correctionIdleAdvance(int8_t advance)
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.idleAdvDelay * 5)) )
+  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.idleAdvDelay * 5)) && idleAdvActive)
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
@@ -774,6 +775,10 @@ int8_t correctionIdleAdvance(int8_t advance)
     }
     else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvStart = runSecsX10; } //Only copy time at runSecsX10 update rate
   }
+
+  if ( !idleAdvActive && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) && (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)200)) ) { idleAdvActive = true; } //Active only after the engine is 200 RPM below target on first time
+  else if (idleAdvActive && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
+
   return ignIdleValue;
 }
 /** Ignition soft revlimit correction.
