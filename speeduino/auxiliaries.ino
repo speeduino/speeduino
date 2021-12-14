@@ -8,6 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
+#include "timers.h"
 
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -20,18 +21,27 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
-  else { fanHIGH = HIGH; fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
-
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+  FAN_OFF();  //Initialise program with the fan in the off state
+  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+  currentStatus.fanDuty = 0;
+
+  #if defined(PWM_FAN_AVAILABLE)
+    DISABLE_FAN_TIMER(); //disable FAN timer if available
+    if ( configPage2.fanEnable == 2 ) // PWM Fan control
+    {
+      #if defined(CORE_TEENSY)
+        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
+      fan_pwm_value = 0;
+    }
+  #endif
 }
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 )
+  if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -47,19 +57,84 @@ void fanControl()
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
       {
-        FAN_ON(); 
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
-      currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       FAN_OFF();
-      currentStatus.fanOn = false;
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
+  }
+  else if( configPage2.fanEnable == 2 )// PWM Fan control
+  {
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+          DISABLE_FAN_TIMER();
+        #endif
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        #if defined(PWM_FAN_AVAILABLE)
+          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          if (currentStatus.fanDuty > 0)
+          {
+            ENABLE_FAN_TIMER();
+            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+          }
+        #endif
+      }
+    }
+    else if (!fanPermit)
+    {
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+    }
+
+    #if defined(PWM_FAN_AVAILABLE)
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+      else if (currentStatus.fanDuty == 200)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+      else if (currentStatus.fanDuty > 0)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+    #endif
   }
 }
 
@@ -607,13 +682,13 @@ void boostDisable()
   if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
   }
   else
   {
     BOOST_PIN_HIGH();  // Switch pin high
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
@@ -641,7 +716,7 @@ void boostDisable()
 
     if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt1_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
@@ -649,12 +724,12 @@ void boostDisable()
     }
     else if( vvt2_pwm_state == true )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt2_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       nextVVT = 1; //Next event is for PWM1
     }
-    else { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_max_count; } //Shouldn't ever get here
+    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
   }
   else
   {
@@ -668,10 +743,10 @@ void boostDisable()
       }
       else { vvt1_max_pwm = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvt2_pwm_state == true){ VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value); }
+      if(vvt2_pwm_state == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -685,10 +760,10 @@ void boostDisable()
       }
       else { vvt2_max_pwm = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvt1_pwm_state == true) { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value); }
+      if(vvt1_pwm_state == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -699,7 +774,7 @@ void boostDisable()
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
       }
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
@@ -707,9 +782,29 @@ void boostDisable()
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
       }
       else { vvt2_max_pwm = true; }
     }
   }
 }
+
+#if defined(PWM_FAN_AVAILABLE)
+//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
+  void fanInterrupt()
+{
+  if (fan_pwm_state == true)
+  {
+    FAN_OFF();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    fan_pwm_state = false;
+  }
+  else
+  {
+    FAN_ON();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    fan_pwm_cur_value = fan_pwm_value;
+    fan_pwm_state = true;
+  }
+}
+#endif
