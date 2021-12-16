@@ -44,6 +44,10 @@
 #define SD_RTC_WRITE_ARG2   0x0009
 
 
+#define O2_CALIBRATION_PAGE   2
+#define IAT_CALIBRATION_PAGE  1
+#define CLT_CALIBRATION_PAGE  0
+
 #define SERIAL_CRC_LENGTH   4
 #define SERIAL_LEN_SIZE     2
 #define SERIAL_OVERHEAD_SIZE (SERIAL_LEN_SIZE + SERIAL_CRC_LENGTH) //The overhead for each serial command is 6 bytes. 2 bytes for the length and 4 bytes for the CRC
@@ -64,7 +68,9 @@
 
 #define SERIAL_RC_BURN_OK   0x04
 
-#define SERIAL_RC_CRC_ERROR 0x82
+#define SERIAL_RC_CRC_ERR   0x82
+#define SERIAL_RC_UKWN_ERR  0x83 //Unkwnown command
+#define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
 
 extern uint16_t serialPayloadLength;
 extern uint32_t serialCRC;
@@ -82,7 +88,6 @@ void sendSerialPayload(void*, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t, uint16_t);
 void saveConfig();
-void receiveCalibrationNew(byte);
 void generateToothLog(uint8_t);
 void commandButtons(int16_t);
 void generateCompositeLog(uint8_t);
