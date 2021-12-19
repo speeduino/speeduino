@@ -821,7 +821,23 @@ int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
+  if (
+      (
+        configPage6.launchEnabled
+        && clutchTrigger
+        && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100))
+        && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100))
+        && (currentStatus.TPS >= configPage10.lnchCtrlTPS)
+      ) //Launch control
+      ||
+      (
+        configPage6.launchEnabled
+        && configPage4.antiLagEnable
+        && antiLagTrigger
+        && (currentStatus.RPM > currentStatus.antiLagEngagedRPM)
+      ) // Anti-lag
+   
+   )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);

@@ -131,6 +131,8 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
+bool previousAntiLagTrigger;
+bool antiLagTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_BUFFER]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
 volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
@@ -232,6 +234,7 @@ byte pinStepperDir; //Direction pin for the stepper motor driver
 byte pinStepperStep; //Step pin for the stepper motor driver
 byte pinStepperEnable; //Turning the DRV8825 driver on/off
 byte pinLaunch;
+byte pinAntiLag;
 byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinVSS;  // VSS (Vehicle speed sensor) Pin

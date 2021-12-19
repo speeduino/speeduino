@@ -243,15 +243,33 @@ void loop()
 
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
+      previousAntiLagTrigger = antiLagTrigger;
       //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
       if(configPage6.flatSEnable || configPage6.launchEnabled){
         if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
         else { clutchTrigger = !digitalRead(pinLaunch); }
       }
+      if (configPage4.antiLagEnable) { antiLagTrigger = !digitalRead(pinAntiLag); }
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
+      if(previousAntiLagTrigger != antiLagTrigger) { currentStatus.antiLagEngagedRPM = currentStatus.RPM; }
 
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+      if (
+        (
+          configPage6.launchEnabled
+          && clutchTrigger
+          && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100))
+          && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100))
+          && (currentStatus.TPS >= configPage10.lnchCtrlTPS)
+        )
+        ||
+        (
+          configPage6.launchEnabled
+          && configPage4.antiLagEnable
+          && antiLagTrigger
+          && (currentStatus.RPM > ((currentStatus.antiLagEngagedRPM) + ((unsigned int)configPage10.antiLagRPMWindow * 10)))
+        )
+        )
       { 
         //HardCut rev limit for 2-step launch control.
         currentStatus.launchingHard = true; 

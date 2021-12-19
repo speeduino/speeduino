@@ -2518,6 +2518,8 @@ void setPinMapping(byte boardID)
   //Currently there's no default pin for closed throttle position sensor
   pinCTPS = pinTranslate(configPage2.CTPSPin);
 
+  pinAntiLag = pinTranslate(configPage4.antiLagPin);
+
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -2682,6 +2684,12 @@ void setPinMapping(byte boardID)
     if (configPage6.lnchPullRes == true) { pinMode(pinLaunch, INPUT_PULLUP); }
     else { pinMode(pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   }
+
+  if( (configPage4.antiLagEnable > 0) && (!pinIsOutput(pinAntiLag)) )
+  {
+    pinMode(pinAntiLag, INPUT_PULLUP);
+  }
+
   if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinIdleUp)) )
   {
     if (configPage2.idleUpPolarity == 0) { pinMode(pinIdleUp, INPUT_PULLUP); } //Normal setting

@@ -569,6 +569,8 @@ extern volatile unsigned long ms_counter; //A counter that increments once per m
 extern uint16_t fixedCrankingOverride;
 extern bool clutchTrigger;
 extern bool previousClutchTrigger;
+extern bool previousAntiLagTrigger;
+extern bool antiLagTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
@@ -689,6 +691,7 @@ struct statuses {
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   uint16_t freeRAM;
   unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
+  unsigned int antiLagEngagedRPM;
   bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
@@ -994,7 +997,8 @@ struct config4 {
 
   int16_t vvt2CL0DutyAng;
   byte vvt2PWMdir : 1;
-  byte unusedBits4 : 7;
+  byte antiLagEnable : 1;
+  byte antiLagPin : 6;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
   byte vvtMinClt;
@@ -1358,8 +1362,8 @@ struct config10 {
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
-
-  byte unused11_187_191[2]; //Bytes 187-191
+  byte antiLagRPMWindow;
+  byte unused11_191; 
 
 #if defined(CORE_AVR)
   };
@@ -1490,6 +1494,7 @@ extern byte pinStepperDir; //Direction pin for the stepper motor driver
 extern byte pinStepperStep; //Step pin for the stepper motor driver
 extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
 extern byte pinLaunch;
+extern byte pinAntiLag;
 extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 extern byte pinFlex; //Pin with the flex sensor attached
 extern byte pinVSS; 
