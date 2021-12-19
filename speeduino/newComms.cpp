@@ -121,7 +121,6 @@ void parseSerial()
         //CRC is correct. Process the command
         processSerialCommand();
       }
-      //free(serialReceivePayload); //Finally free the memory from the payload buffer
     }
   }
 }
@@ -375,7 +374,7 @@ void processSerialCommand()
     case 'Q': // send code version
     {
       char productString[21] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      sendSerialPayload(&productString, 21);
+      sendSerialPayload(&productString, sizeof(productString));
       break;
     }
 
@@ -673,11 +672,10 @@ void processSerialCommand()
 
     case 'w':
     {
+#ifdef RTC_ENABLED
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
-
-#ifdef RTC_ENABLED
       if(cmd == SD_READWRITE_PAGE)
         { 
           if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
