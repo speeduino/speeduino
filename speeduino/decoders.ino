@@ -152,18 +152,8 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
     //If there has been a value logged above, update the indexes
     if(valueLogged == true)
     {
-      if(toothHistoryIndex == (TOOTH_LOG_BUFFER-1)) { toothHistoryIndex = 0; }
-      else { toothHistoryIndex++; }
-
-      uint16_t absoluteToothHistoryIndex = toothHistoryIndex;
-      if(toothHistoryIndex < toothHistorySerialIndex)
-      {
-        //If the main history index is lower than the serial index, it means that this has looped. To calculate the delta between the two indexes, add the buffer size back on 
-        absoluteToothHistoryIndex += TOOTH_LOG_BUFFER;
-      }
-      //Check whether the current index is ahead of the serial index by at least the size of the log
-      if( (absoluteToothHistoryIndex - toothHistorySerialIndex) >= TOOTH_LOG_SIZE ) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
-      else { BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); } //Tooth log is not yet ahead of the serial index by enough, so mark the log as not yet ready
+     if(toothHistoryIndex < TOOTH_LOG_SIZE) { toothHistoryIndex++; BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
+     else { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
     }
 
 

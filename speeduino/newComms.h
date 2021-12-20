@@ -71,6 +71,7 @@
 #define SERIAL_RC_CRC_ERR   0x82
 #define SERIAL_RC_UKWN_ERR  0x83 //Unkwnown command
 #define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
+#define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 
 extern uint16_t serialPayloadLength;
 extern uint32_t serialCRC;
@@ -88,9 +89,9 @@ void sendSerialPayload(void*, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t, uint16_t);
 void saveConfig();
-void generateToothLog(uint8_t);
+void sendToothLog(uint8_t);
 void commandButtons(int16_t);
-void generateCompositeLog(uint8_t);
+void sendCompositeLog(uint8_t);
 void continueSerialTransmission();
 
 #endif // COMMS_H

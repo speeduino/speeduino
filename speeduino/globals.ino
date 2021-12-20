@@ -136,7 +136,6 @@ volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
 volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
 volatile bool injPrimed = false; ///< Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
-volatile byte toothHistorySerialIndex = 0;
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
