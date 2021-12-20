@@ -6,6 +6,7 @@
 void initialiseAuxPWM();
 void boostControl();
 void boostDisable();
+void boostByGear();
 void idleControl();
 void vvtControl();
 void initialiseFan();
