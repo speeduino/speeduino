@@ -601,6 +601,7 @@ byte correctionAFRClosedLoop()
   byte ego2_AdjustPct = 100;
   uint8_t O2_Error;
   int8_t ego_Prop;
+  int8_t ego2_Prop;
   bool ego_EngineCycleCheck = false;
   
   /*Note that this should only run after the sensor warmup delay when using Include AFR option, but this is protected in the main loop where it's used so really don't need this.
@@ -657,36 +658,57 @@ byte correctionAFRClosedLoop()
       {
         if(runSecsX10 >= ego_FreezeEndTime) // Check the algo freeze conditions are not active.
         {
+          /* Build the lookup table for the integrator dynamically. This saves eeprom by using less variables. 
+           * The calibration values are expressed as a "% of max adjustment" where the max adjustment would theoretically correct the AFR to the target in one step." 
+           * The scaling in the .ini file applies the correct adjustment in g_ego % units depending on the fixed axis defined by. egoIntAFR_XBins.
+           * For example 3.0 afr error is 20% g_ego. So 100%/20% = 5 % per step. If egoIntAFR_XBins axis points are changed, the scaling in the .ini file also needs to be adjusted. 
+          */
+          egoIntAFR_Values[0] = configPage9.egoInt_Lean2; // Corresponds with -3.0 AFR Error
+          egoIntAFR_Values[1] = configPage9.egoInt_Lean1; // Corresponds with -0.6 AFR Error
+          egoIntAFR_Values[2] = OFFSET_AFR_ERR; //offset value is 0 adjustment
+          egoIntAFR_Values[3] = configPage9.egoInt_Rich1; // Corresponds with 0.6 AFR Error
+          egoIntAFR_Values[4] = configPage9.egoInt_Rich2; // Corresponds with 3.0 AFR Error
+          
+          
           // Sensor check to check in range.
           if ((currentStatus.O2 >= configPage6.egoMin) && // Not too rich
               ((currentStatus.O2 <= configPage6.egoMax) ||
               (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1))) // Not too lean but ignore egoMax (lean) if in DFCO.
           {              
-            //Proportional Integral Control - Sensor 1
-            O2_Error = currentStatus.afrTarget - currentStatus.O2 + OFFSET_AFR_ERR; //+127 is 0 error value
-            
-            //Proportional
-            ego_Prop = (int8_t)(table2D_getValue(&ego_PropTable, O2_Error) - OFFSET_AFR_ERR);
+            //Integral Control - Sensor 1
+            O2_Error = currentStatus.afrTarget - currentStatus.O2 + OFFSET_AFR_ERR; //+127 is 0 error value. Richer than target is positive.
             
             /* Tracking of rich and lean (compared to target). Used for an integrator delay which is intended to allow proportional switching control
              * time to intentionally over-correct the fuel to generate a switch from rich to lean. If the proportional control alone is not enough to switch 
-             * only then will the integral will start to move to adjust the mean value.
+             * only then will the integral will start to move to adjust the mean value after a certain amount of time.
              * This is designed to generate the correct oscillation of rich and lean pulses required for 3 way catalyst control.
-             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel so best suited for Narrowband only control.           
+             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel.           
             */ 
-            if (configPage9.egoIntDelay > 0)
+            if ((configPage9.egoIntDelay > 0) && (currentStatus.afrTarget == configPage2.stoich))
             {
               O2_SensorIsRichPrev = O2_SensorIsRich;
-              if (O2_Error >= OFFSET_AFR_ERR) { O2_SensorIsRich = true; } //Positive error = rich.
-              else { O2_SensorIsRich = false; }
-              
+              if (O2_Error > OFFSET_AFR_ERR) 
+              { 
+                 O2_SensorIsRich = true;  //Positive error = rich. 
+                 ego_Prop = -(int8_t)(configPage9.egoProp_Swing); // Negative swing on prop.
+              } 
+              else 
+              { 
+                O2_SensorIsRich = false; 
+                ego_Prop = (int8_t)(configPage9.egoProp_Swing);  //Positive swing on prop.
+              } 
+           
               if (O2_SensorIsRich == O2_SensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
               {
                 if (ego_IntDelayLoops < configPage9.egoIntDelay) { ego_IntDelayLoops++; } // Limit to max value.
               }              
               else { ego_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
-            else { ego_IntDelayLoops = 0; }
+            else 
+            { 
+              ego_IntDelayLoops = configPage9.egoIntDelay; 
+              ego_Prop = 0;
+            }
             
             //If integrator delay is passed then update integrator
             if (ego_IntDelayLoops >= configPage9.egoIntDelay) { ego_Integral = ego_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
@@ -714,31 +736,40 @@ byte correctionAFRClosedLoop()
                (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1))) // Not too lean but ignore egoMax (lean) if in DFCO. 
           {
             //Proportional Integral Control - Sensor 2 Re-using some variables to save RAM.
-            O2_Error = currentStatus.afrTarget - currentStatus.O2_2 + OFFSET_AFR_ERR; //+127 is 0 error value
-            
-            //Proportional
-            ego_Prop = (int8_t)(table2D_getValue(&ego_PropTable, O2_Error) - OFFSET_AFR_ERR);
+            O2_Error = currentStatus.afrTarget - currentStatus.O2_2 + OFFSET_AFR_ERR; //+127 is 0 error value. Richer than target is positive.
             
             /* Tracking of rich and lean (compared to target). Used for an integrator delay which is intended to allow proportional switching control
              * time to intentionally over-correct the fuel to generate a switch from rich to lean. If the proportional control alone is not enough to switch 
-             * only then will the integral will start to move to adjust the mean value.
+             * only then will the integral will start to move to adjust the mean value after a certain amount of time.
              * This is designed to generate the correct oscillation of rich and lean pulses required for 3 way catalyst control.
-             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel so best suited for Narrowband only control.           
+             * This logic only makes sense if the AFR target is at the stoich point for the chosen fuel.           
             */ 
-            if (configPage9.egoIntDelay > 0)
+            if ((configPage9.egoIntDelay > 0) && (currentStatus.afrTarget == configPage2.stoich))
             {
               O2_2ndSensorIsRichPrev = O2_2ndSensorIsRich;
-              if (O2_Error >= OFFSET_AFR_ERR) { O2_2ndSensorIsRich = true; } //Positive error = rich.
-              else { O2_2ndSensorIsRich = false; }
-              
+              if (O2_Error > OFFSET_AFR_ERR) 
+              { 
+                 O2_2ndSensorIsRich = true;  //Positive error = rich. 
+                 ego2_Prop = -(int8_t)(configPage9.egoProp_Swing); // Negative swing on prop.
+              } 
+              else 
+              { 
+                O2_2ndSensorIsRich = false; 
+                ego2_Prop = (int8_t)(configPage9.egoProp_Swing);  //Positive swing on prop.
+              } 
+           
               if (O2_2ndSensorIsRich == O2_2ndSensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
               {
                 if (ego2_IntDelayLoops < configPage9.egoIntDelay) { ego2_IntDelayLoops++; } // Limit to max value.
               }              
               else { ego2_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
-            else { ego2_IntDelayLoops = 0; }
-            
+            else 
+            { 
+              ego2_IntDelayLoops = configPage9.egoIntDelay; 
+              ego2_Prop = 0;
+            }
+                        
             //If integrator delay is passed then update integrator
             if (ego2_IntDelayLoops >= configPage9.egoIntDelay) { ego2_Integral = ego2_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
             
@@ -747,9 +778,9 @@ byte correctionAFRClosedLoop()
             if (ego2_Integral > configPage6.egoLimit) { ego2_Integral = configPage6.egoLimit; }
             
             //2nd check to limit total value after update with prop and output the final correction
-            if ((ego2_Integral + ego_Prop) < -configPage6.egoLimit) { ego2_AdjustPct = 100 - configPage6.egoLimit; }
-            else if ((ego2_Integral + ego_Prop) > configPage6.egoLimit) { ego2_AdjustPct = 100 + configPage6.egoLimit; }
-            else { ego2_AdjustPct = 100 + ego2_Integral + ego_Prop; }
+            if ((ego2_Integral + ego2_Prop) < -configPage6.egoLimit) { ego2_AdjustPct = 100 - configPage6.egoLimit; }
+            else if ((ego2_Integral + ego2_Prop) > configPage6.egoLimit) { ego2_AdjustPct = 100 + configPage6.egoLimit; }
+            else { ego2_AdjustPct = 100 + ego2_Integral + ego2_Prop; }
           }
           else 
           { // No 2nd O2 or O2 sensor out of range
@@ -804,8 +835,9 @@ byte correctionAFRClosedLoop()
     ego2_IntDelayLoops = 0;
     ego_FreezeEndTime = 0;
   }
-   
-  currentStatus.ego2Correction = ego2_AdjustPct;  // This algo only returns a single byte for the bank1 correction. A 2nd output is needed for Bank2. This cludgy fix is what we have for now...
+  
+  // This algo only returns a single byte for the bank1 correction. A 2nd ego output is needed for Bank2 which is used later in individual bank adjustments.
+  currentStatus.ego2Correction = ego2_AdjustPct;  
 
   return ego_AdjustPct;
 }
@@ -1256,12 +1288,6 @@ void correctionFuelTrim(void)
 */
 void correctionFuelInjOpen(void)
 { 
-  // for (uint8_t injectorX = 0; injectorX < NumberOfInjectors; injectorX++)
-  // {
-    // uint16_t* addr_PW_X = &currentStatus.PW1 + (injectorX * 2); // index 2 bytes of memory address for each injector. PW1 address is the start reference.
-    // if(*addr_PW_X > 0) {*addr_PW_X = *addr_PW_X + inj_opentime_uS;} // Add on the injector open time to the PW variable at specified memory address.
-  // }
-    
   //Check each cylinder for injector cutoff and then if running apply the injector open time compensation.  
   if (currentStatus.PW1 > 0) { currentStatus.PW1 += inj_opentime_uS; }
   if (currentStatus.PW2 > 0) { currentStatus.PW2 += inj_opentime_uS; }

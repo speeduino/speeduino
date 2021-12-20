@@ -482,8 +482,8 @@ extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D fanPWMTable;
-extern struct table2D ego_PropTable; // For ego Propotional Control (2D)
 extern struct table2D ego_IntegralTable; // For ego Integral Control (2D)
+
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -609,6 +609,8 @@ extern byte resetControl; ///< resetControl needs to be here (as global) because
 
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
+
+extern uint8_t egoIntAFR_Values[5];
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
@@ -1167,15 +1169,17 @@ struct config9 {
 
   byte PWMFanDuty[4];
   
-  byte unused10_166[7];
+  byte unused10_166[17];
   
   byte egoIntDelay;       // ego integral delay x control loops
   byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
   byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
-  byte egoPropIntAFR_XBins[5]; //X axis for ego control proportional and integral control AFR error (Target - Actual)
-  byte egoPropY[5];       //Y axis for ego control proportional step Output is +/- so offset by 127
-  byte egoIntegralY[5];   //Y axis for ego control proportional step Output is +/- so offset by 127
-
+  byte egoInt_Lean2; // ego integral step in % when AFR err is -2.0
+  byte egoInt_Lean1; // ego integral step in % when AFR err is -0.5
+  byte egoInt_Rich1; // ego integral step in % when AFR err is 0.5
+  byte egoInt_Rich2; // ego integral step in % when AFR err is 2.0
+  byte egoProp_Swing; // ego proportional swing when on target in %.
+  
   byte injBank_Inj1: 1; // injector bank assignment.
   byte injBank_Inj2: 1; // injector bank assignment.
   byte injBank_Inj3: 1; // injector bank assignment.

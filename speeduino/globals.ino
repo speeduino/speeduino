@@ -271,4 +271,7 @@ uint16_t iatCalibration_values[32];
 struct table2D iatCalibrationTable;
 uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
-struct table2D o2CalibrationTable; 
+struct table2D o2CalibrationTable;
+
+uint8_t egoIntAFR_XBins[] = {97, 121, 127, 133, 157}; // Fixed Axis for lookup Y = 10X +127. -3.0, -0.6, 0.0, 0.6, 3.0
+uint8_t egoIntAFR_Values[5]; // Dynamically populated
