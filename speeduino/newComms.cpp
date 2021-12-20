@@ -114,14 +114,13 @@ void parseSerial()
       if(serialCRC != receivedCRC)
       {
         //CRC Error. Need to send an error message
-        sendSerialReturnCode(SERIAL_RC_CRC_ERROR);
+        sendSerialReturnCode(SERIAL_RC_CRC_ERR);
       }
       else
       {
         //CRC is correct. Process the command
         processSerialCommand();
       }
-      //free(serialReceivePayload); //Finally free the memory from the payload buffer
     }
   }
 }
@@ -153,7 +152,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
 
   //Need to handle serial buffer being full. This is just for testing
   serialPayloadLength = payloadLength; //Save the payload length incase we need to transmit in multiple steps
-  for(int i = 0; i < payloadLength; i++)
+  for(uint16_t i = 0; i < payloadLength; i++)
   {
     Serial.write(((uint8_t*)payload)[i]);
     serialBytesTransmitted++;
@@ -181,9 +180,9 @@ void continueSerialTransmission()
 {
   if(serialWriteInProgress == true)
   {
-    serialWriteInProgress = false; //ASsume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
+    serialWriteInProgress = false; //Assume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
     //Serial buffer is free. Continue sending the data
-    for(unsigned int i = serialBytesTransmitted; i < serialPayloadLength; i++)
+    for(uint16_t i = serialBytesTransmitted; i < serialPayloadLength; i++)
     {
       Serial.write(serialPayload[i]);
       serialBytesTransmitted++;
@@ -214,32 +213,11 @@ void processSerialCommand()
 
   switch (currentCommand)
   {
-    /*
-    Should not happen with the new mode
-    case 'a':
-      cmdPending = true;
-
-      if (Serial.available() >= 2)
-      {
-        Serial.read(); //Ignore the first value, it's always 0
-        Serial.read(); //Ignore the second value, it's always 6
-        sendValuesLegacy();
-        cmdPending = false;
-      }
-      break;
-    */
 
     case 'A': // send x bytes of realtime values
       //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
-
-    /*
-    Should not happen with the new mode
-    case 'B': // Burn current values to eeprom
-      writeAllConfig();
-      break;
-    */
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
@@ -253,19 +231,9 @@ void processSerialCommand()
       break;
     }
 
-    /*
-    Should not happen with the new mode
-    case 'c': //Send the current loops/sec value
-      Serial.write(lowByte(currentStatus.loopsPerSecond));
-      Serial.write(highByte(currentStatus.loopsPerSecond));
-      break;
-    */
-
     case 'E': // receive command button commands
     {
-      byte cmdGroup = serialPayload[1];
-      byte cmdValue = serialPayload[2];
-      uint16_t cmdCombined = word(cmdGroup, cmdValue);
+      uint16_t cmdCombined = word(serialPayload[1], serialPayload[2]);
 
       if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
       {
@@ -298,7 +266,6 @@ void processSerialCommand()
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -327,7 +294,6 @@ void processSerialCommand()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
       compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
@@ -406,7 +372,7 @@ void processSerialCommand()
     case 'Q': // send code version
     {
       char productString[21] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      sendSerialPayload(&productString, 21);
+      sendSerialPayload(&productString, sizeof(productString));
       break;
     }
 
@@ -450,19 +416,24 @@ void processSerialCommand()
           serialPayload[0] = SERIAL_RC_OK;
 
           serialPayload[1] = currentStatus.TS_SD_Status;
-          //serialPayload[1] = 5;
-          serialPayload[2] = 0;
-
-          //All other values are 2 bytes   
-          //Sector size     
+          serialPayload[2] = 0; //Error code
+ 
+          //Sector size = 512
           serialPayload[3] = 2;
           serialPayload[4] = 0;
 
           //Max blocks (4 bytes)
+          uint32_t sectors = sectorCount();
+          serialPayload[5] = ((sectors >> 24) & 255);
+          serialPayload[6] = ((sectors >> 16) & 255);
+          serialPayload[7] = ((sectors >> 8) & 255);
+          serialPayload[8] = (sectors & 255);
+          /*
           serialPayload[5] = 0;
           serialPayload[6] = 0x20; //1gb dummy card
           serialPayload[7] = 0;
           serialPayload[8] = 0;
+          */
 
           //Max roots (Number of files)
           serialPayload[9] = 0;
@@ -557,42 +528,100 @@ void processSerialCommand()
       
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      //6 bytes required:
-      //2 - Page identifier
-      //2 - offset
-      //2 - Length
-      cmdPending = true;
-      if(Serial.available() >= 6)
-      {
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-
-        if(currentStatus.toothLogEnabled == true) { generateToothLog(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { generateCompositeLog(0); }
-
-        cmdPending = false;
-      }
-
-      
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
 
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
-      byte tableID;
-      //byte canID;
+    {
+      uint8_t cmd = serialPayload[2];
+      uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
+      uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      //The first 2 bytes sent represent the canID and tableID
-      while (Serial.available() == 0) { }
-      tableID = Serial.read(); //Not currently used for anything
+      if(cmd == O2_CALIBRATION_PAGE)
+      {
+        //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
+        //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
+        void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
 
-      receiveCalibrationNew(tableID); //Receive new values and store in memory
+        //Read through the current chunk (Should be 256 bytes long)
+        for(uint16_t x = 0; x < calibrationLength; x++)
+        {
+          //Only apply every 32nd value
+          if( (x % 32) == 0 )
+          {
+            uint16_t totalOffset = valueOffset + x;
+            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
+            pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
+          }
+        }
+        sendSerialReturnCode(SERIAL_RC_OK);
+      }
+      else if(cmd == IAT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        
+      }
+      else if(cmd == CLT_CALIBRATION_PAGE)
+      {
+        void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+        uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+
+        //Temperature calibrations are sent as 32 16-bit values
+        if(calibrationLength == 64)
+        {
+          for (uint16_t x = 0; x < 32; x++)
+          {
+            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+            
+            //Apply the temp offset and check that it results in all values being positive
+            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+            if (tempValue < 0) { tempValue = 0; }
+
+            
+            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+            pnt_TargetTable_bins[x] = (x * 32U);
+          }
+          writeCalibration();
+          sendSerialReturnCode(SERIAL_RC_OK);
+        }
+        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+      }
+      else
+      {
+        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+      }
+
       writeCalibration(); //Store received values in EEPROM
-
       break;
+    }
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
       if (resetControl != RESET_CONTROL_DISABLED)
@@ -610,10 +639,6 @@ void processSerialCommand()
         if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
       #endif
       }
-      break;
-
-    case 'V': // send VE table and constants in binary
-      sendPage();
       break;
 
 
@@ -645,11 +670,10 @@ void processSerialCommand()
 
     case 'w':
     {
+#ifdef RTC_ENABLED
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
-
-#ifdef RTC_ENABLED
       if(cmd == SD_READWRITE_PAGE)
         { 
           if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
@@ -685,17 +709,14 @@ void processSerialCommand()
           else if((SD_arg1 == SD_ERASEFILE_ARG1) && (SD_arg2 == SD_ERASEFILE_ARG2))
           {
             //Erase file command
-            //First 4 bytes are the log number in ASCII
-            /*
-            char log1 = Serial.read();
-            char log2 = Serial.read();
-            char log3 = Serial.read();
-            char log4 = Serial.read();
-            */
+            //We just need the 4 ASCII characters of the file name
+            char log1 = serialPayload[7];
+            char log2 = serialPayload[8];
+            char log3 = serialPayload[9];
+            char log4 = serialPayload[10];
 
-            //Next 2 bytes are the directory block no
-            Serial.read();
-            Serial.read();
+            deleteLogFile(log1, log2, log3, log4);
+            sendSerialReturnCode(SERIAL_RC_OK);
           }
           else if((SD_arg1 == SD_SPD_TEST_ARG1) && (SD_arg2 == SD_SPD_TEST_ARG2))
           {
@@ -757,7 +778,7 @@ void processSerialCommand()
             //byte dow = serialPayload[10]; //Not used
             byte day = serialPayload[11];
             byte month = serialPayload[12];
-            uint16_t year = word(serialPayload[14], serialPayload[13]);
+            uint16_t year = word(serialPayload[13], serialPayload[14]);
             rtc_setTime(second, minute, hour, day, month, year);
             sendSerialReturnCode(SERIAL_RC_OK);
           }
@@ -819,183 +840,159 @@ namespace
 
 }
 
-/** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
- * Result is store in EEPROM and memory.
+/** 
  * 
- * @param tableID - calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
- */
-void receiveCalibrationNew(byte tableID)
-{
-  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
-  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR;
-
-  switch (tableID)
-  {
-    case 0:
-      //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      break;
-    case 1:
-      //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      break;
-    case 2:
-      //O2 table
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 10;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  int16_t tempValue;
-  byte tempBuffer[2];
-
-  if(tableID == 2)
-  {
-    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
-    for (int x = 0; x < 1024; x++)
-    {
-      while ( Serial.available() < 1 ) {}
-      tempValue = Serial.read();
-
-      if( (x % 32) == 0)
-      {
-        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
-        pnt_TargetTable_bins[(x/32)] = (x);
-      }
-      
-    }
-  }
-  else
-  {
-    //Temperature calibrations are sent as 32 16-bit values
-    for (uint16_t x = 0; x < 32; x++)
-    {
-      while ( Serial.available() < 2 ) {}
-      tempBuffer[0] = Serial.read();
-      tempBuffer[1] = Serial.read();
-
-      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-      
-      //Apply the temp offset and check that it results in all values being positive
-      tempValue = tempValue + OFFSET;
-      if (tempValue < 0) { tempValue = 0; }
-
-      
-      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-      pnt_TargetTable_bins[x] = (x * 32U);
-      writeCalibration();
-    }
-  }
-
-  writeCalibration();
-}
-
-/** Send 256 tooth log entries to serial.
- * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
- * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void generateToothLog(byte startOffset)
+void sendToothLog(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
-      {
-        //Check whether the tx buffer still has space
-        if(Serial.availableForWrite() < 4) 
-        { 
-          //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
-          toothLogSendInProgress = true;
-          return;
-        }
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
-        Serial.write(toothHistory[toothHistorySerialIndex]);
+    uint32_t CRC32_val = 0;
+    if(startOffset == 0)
+    {
+      //Transmit the size of the packet
+      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 4) + 1; //Size of the tooth log (uint32_t values) plus the return code
+      Serial.write(totalPayloadLength >> 8);
+      Serial.write(totalPayloadLength);
 
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+      //Begin new CRC hash
+      const uint8_t returnCode = SERIAL_RC_OK;
+      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+
+      //Send the return code
+      Serial.write(SERIAL_RC_OK);
+    }
+    
+    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+    {
+      //Check whether the tx buffer still has space
+      if(Serial.availableForWrite() < 4) 
+      { 
+        //tx buffer is full. Store the current state so it can be resumed later
+        inProgressOffset = x;
+        toothLogSendInProgress = true;
+        return;
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      cmdPending = false;
-      toothLogSendInProgress = false;
+
+      //Transmit the tooth time
+      uint32_t tempToothHistory = toothHistory[x];
+      uint8_t toothHistory_1 = ((tempToothHistory >> 24) & 255);
+      uint8_t toothHistory_2 = ((tempToothHistory >> 16) & 255);
+      uint8_t toothHistory_3 = ((tempToothHistory >> 8) & 255);
+      uint8_t toothHistory_4 = ((tempToothHistory) & 255);
+      Serial.write(toothHistory_1);
+      Serial.write(toothHistory_2);
+      Serial.write(toothHistory_3);
+      Serial.write(toothHistory_4);
+
+      //Update the CRC
+      CRC32_val = CRC32.crc32_upd(&toothHistory_1, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_2, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_3, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_4, 1, false);
+    }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    cmdPending = false;
+    toothLogSendInProgress = false;
+    toothHistoryIndex = 0;
+
+    //Apply the CRC reflection
+    CRC32_val = ~CRC32_val;
+
+    //Send the CRC
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
   }
   else 
   { 
-    //TunerStudio has timed out, send a LOG of all 0s
-    for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
-    {
-      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
-    }
+    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
+    toothLogSendInProgress = false;
   } 
 }
 
-void generateCompositeLog(byte startOffset)
+void sendCompositeLog(byte startOffset)
 {
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
   {
-      if(startOffset == 0) { inProgressCompositeTime = 0; }
-      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
-      {
-        //Check whether the tx buffer still has space
-        if(Serial.availableForWrite() < 4) 
-        { 
-          //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
-          compositeLogSendInProgress = true;
-          return;
-        }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    uint32_t CRC32_val = 0;
+    if(startOffset == 0)
+    { 
+      inProgressCompositeTime = 0; 
 
-        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+      //Transmit the size of the packet
+      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 5) + 1; //Size of the tooth log (1x uint32_t + 1x uint8_t values) plus the return code
+      Serial.write(totalPayloadLength >> 8);
+      Serial.write(totalPayloadLength);
+
+      //Begin new CRC hash
+      const uint8_t returnCode = SERIAL_RC_OK;
+      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+
+      //Send the return code
+      Serial.write(SERIAL_RC_OK);
+    }
+    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+    {
+      //Check whether the tx buffer still has space
+      if(Serial.availableForWrite() < 5) 
+      { 
+        //tx buffer is full. Store the current state so it can be resumed later
+        inProgressOffset = x;
+        compositeLogSendInProgress = true;
         
-        Serial.write(inProgressCompositeTime >> 24);
-        Serial.write(inProgressCompositeTime >> 16);
-        Serial.write(inProgressCompositeTime >> 8);
-        Serial.write(inProgressCompositeTime);
-
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+        return;
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
-      cmdPending = false;
-      compositeLogSendInProgress = false;
-      inProgressCompositeTime = 0;
+
+      inProgressCompositeTime += toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
+      uint8_t inProgressCompositeTime_1 = (inProgressCompositeTime >> 24) & 255;
+      uint8_t inProgressCompositeTime_2 = (inProgressCompositeTime >> 16) & 255;
+      uint8_t inProgressCompositeTime_3 = (inProgressCompositeTime >> 8) & 255;
+      uint8_t inProgressCompositeTime_4 = (inProgressCompositeTime) & 255;
+
+      //Transmit the tooth time
+      Serial.write(inProgressCompositeTime_1);
+      Serial.write(inProgressCompositeTime_2);
+      Serial.write(inProgressCompositeTime_3);
+      Serial.write(inProgressCompositeTime_4);
+
+      //Update the CRC
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_1, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_2, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_3, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_4, 1, false);
+
+      //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
+      uint8_t statusByte = compositeLogHistory[x];
+      Serial.write(statusByte);
+
+      //Update the CRC with the status byte
+      CRC32_val = CRC32.crc32_upd(&statusByte, 1, false);
+    }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    toothHistoryIndex = 0;
+    compositeLastToothTime = 0;
+    cmdPending = false;
+    compositeLogSendInProgress = false;
+    inProgressCompositeTime = 0;
+
+    //Apply the CRC reflection
+    CRC32_val = ~CRC32_val;
+
+    //Send the CRC
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
   }
   else 
   { 
-    //TunerStudio has timed out, send a LOG of all 0s
-    for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
-    {
-      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
-    }
+    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
+    compositeLogSendInProgress = false;
   } 
 }
