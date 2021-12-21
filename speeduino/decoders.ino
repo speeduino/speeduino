@@ -152,7 +152,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
     //If there has been a value logged above, update the indexes
     if(valueLogged == true)
     {
-     if(toothHistoryIndex < TOOTH_LOG_SIZE) { toothHistoryIndex++; BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
+     if(toothHistoryIndex < (TOOTH_LOG_SIZE-1)) { toothHistoryIndex++; BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
      else { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
     }
 

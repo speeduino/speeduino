@@ -131,8 +131,8 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
-volatile uint32_t toothHistory[TOOTH_LOG_BUFFER]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
-volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
+volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
+volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
 volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
 volatile bool injPrimed = false; ///< Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array

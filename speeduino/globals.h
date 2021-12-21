@@ -235,10 +235,8 @@
 
 #ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127
-#define TOOTH_LOG_BUFFER    128 //256
 #else
 #define TOOTH_LOG_SIZE      1
-#define TOOTH_LOG_BUFFER    1 //256
 #endif
 
 #define COMPOSITE_LOG_PRI   0
@@ -569,8 +567,8 @@ extern volatile unsigned long ms_counter; //A counter that increments once per m
 extern uint16_t fixedCrankingOverride;
 extern bool clutchTrigger;
 extern bool previousClutchTrigger;
-extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
-extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
+extern volatile uint32_t toothHistory[TOOTH_LOG_SIZE];
+extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
 extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
