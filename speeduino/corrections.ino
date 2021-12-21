@@ -833,7 +833,7 @@ byte correctionAFRClosedLoop()
     ego2_Integral = 0;
     ego_IntDelayLoops = 0;
     ego2_IntDelayLoops = 0;
-    ego_FreezeEndTime = 0;
+    ego_FreezeEndTime = 0; 
   }
   
   // This algo only returns a single byte for the bank1 correction. A 2nd ego output is needed for Bank2 which is used later in individual bank adjustments.
