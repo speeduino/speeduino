@@ -29,11 +29,12 @@ A full copy of the license may be found in the projects root directory
 
 uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
-uint16_t serialBytesReceived = 0;
+uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
+uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
+uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 #ifdef RTC_ENABLED
   uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
   uint16_t SDcurrentDirChunk;
@@ -85,8 +86,7 @@ void parseSerial()
       serialPayloadLength = word(lowByte, highByte);
       serialBytesReceived = 2;
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
-
-      //serialReceivePayload = (uint8_t *)malloc(serialPayloadLength);
+      serialReceiveStartTime = millis();
     }
   }
 
@@ -120,9 +120,23 @@ void parseSerial()
       {
         //CRC is correct. Process the command
         processSerialCommand();
+      } //CRC match
+    } //CRC received in full
+
+    //Check for a timeout
+    if( (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT)
+    {
+      //Timeout occurred
+      serialReceivePending = false; //Reset the serial receive
+      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
+
+      //Flush the serial buffer
+      while(Serial.available() > 0)
+      {
+        Serial.read();
       }
-    }
-  }
+    } //Timeout
+  } //Data in serial buffer and serial receive in progress
 }
 
 void sendSerialReturnCode(byte returnCode)
@@ -264,6 +278,7 @@ void processSerialCommand()
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      toothLogSendInProgress = false;
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
 
