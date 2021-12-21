@@ -211,7 +211,6 @@ extern volatile unsigned long curTime3;
 extern volatile unsigned long curGap3;
 extern volatile unsigned long lastGap;
 extern volatile unsigned long targetGap;
-extern volatile unsigned long compositeLastToothTime;
 
 extern unsigned long MAX_STALL_TIME; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 extern volatile uint16_t toothCurrentCount; //The current number of teeth (Onec sync has been achieved, this can never actually be 0

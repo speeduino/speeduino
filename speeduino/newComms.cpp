@@ -309,7 +309,6 @@ void processSerialCommand()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -876,7 +875,7 @@ void sendToothLog(byte startOffset)
       CRC32_val = CRC32.crc32(&returnCode, 1, false);
 
       //Send the return code
-      Serial.write(SERIAL_RC_OK);
+      Serial.write(returnCode);
     }
     
     for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
@@ -949,7 +948,7 @@ void sendCompositeLog(byte startOffset)
       CRC32_val = CRC32.crc32(&returnCode, 1, false);
 
       //Send the return code
-      Serial.write(SERIAL_RC_OK);
+      Serial.write(returnCode);
     }
     for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
     {
@@ -963,7 +962,7 @@ void sendCompositeLog(byte startOffset)
         return;
       }
 
-      inProgressCompositeTime += toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
+      inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record
       uint8_t inProgressCompositeTime_1 = (inProgressCompositeTime >> 24) & 255;
       uint8_t inProgressCompositeTime_2 = (inProgressCompositeTime >> 16) & 255;
       uint8_t inProgressCompositeTime_3 = (inProgressCompositeTime >> 8) & 255;
@@ -990,7 +989,6 @@ void sendCompositeLog(byte startOffset)
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
-    compositeLastToothTime = 0;
     cmdPending = false;
     compositeLogSendInProgress = false;
     inProgressCompositeTime = 0;
