@@ -16,8 +16,10 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
+  #define SERIAL_BUFFER_SIZE 257 //Size of the serial buffer used by new comms protocol. Additional 1 byte is for flag
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     //SPIClass SPI_for_flash(1, 2, 3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
     SPIClass SPI_for_flash = SPI; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
@@ -29,6 +31,7 @@
   #else
     //#define EEPROM_LIB_H <EEPROM.h>
     #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #endif
   #define RTC_LIB_H "TimeLib.h"
   void initBoard();
