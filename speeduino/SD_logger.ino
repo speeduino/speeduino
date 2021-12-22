@@ -308,11 +308,10 @@ void checkForSDStart()
   //Check for engine protection based enable
   if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
   {
-    if(currentStatus.engineProtection > 0)
+    if(currentStatus.engineProtectStatus > 0)
     {
       beginSDLogging(); //Setup the log file, prallocation, header row
     }
-  }
   }
 
   if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
@@ -358,7 +357,7 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_prot)
     {
-      if(currentStatus.engineProtection > 0)
+      if(currentStatus.engineProtectStatus > 0)
       {
         log_prot = true;
       }
