@@ -27,6 +27,10 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
+#if defined(USER_BTN) 
+  #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
+#endif
+
 #ifdef SD_LOGGING
 #define RTC_ENABLED
 #endif
