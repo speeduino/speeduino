@@ -3235,17 +3235,23 @@ void initialiseTriggers()
       break;
 
     case DECODER_NGC:
-      //Chrysler NGC 4 cylinder
+      //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
       triggerHandler = triggerPri_NGC;
-      triggerSecondaryHandler = triggerSec_NGC4;
       decoderHasSecondary = true;
       getRPM = getRPM_NGC;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_NGC;
 
       primaryTriggerEdge = CHANGE;
-      secondaryTriggerEdge = CHANGE;
+      if (configPage2.nCylinders == 4) {
+        triggerSecondaryHandler = triggerSec_NGC4;
+        secondaryTriggerEdge = CHANGE;
+      }
+      else {
+        triggerSecondaryHandler = triggerSec_NGC68;
+        secondaryTriggerEdge = FALLING;
+      }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
