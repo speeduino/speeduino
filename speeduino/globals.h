@@ -280,9 +280,6 @@
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
 
-#define SIZE_BYTE           8
-#define SIZE_INT            16
-
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
