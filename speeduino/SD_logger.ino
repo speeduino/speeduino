@@ -215,6 +215,7 @@ void writeSDLogEntry()
 
   if(SD_status == SD_STATUS_ACTIVE)
   {
+    //Write the line to the ring buffer
     for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
     {
       rb.print(getReadableLogEntry(x));
@@ -236,6 +237,13 @@ void writeSDLogEntry()
 
     //Check whether we should stop logging
     checkForSDStop();
+
+    //Check whether the file is full (IE When there is not enough room to write 1 more sector)
+    if(logFile.available() < SD_SECTOR_SIZE)
+    {
+      //Provided the conditions for logging are still met, a new file will be created the next time writeSDLogEntry is called
+      endSDLogging();
+    }
   }
   setTS_SD_status();
 }
@@ -388,6 +396,8 @@ void formatExFat()
 
   //Set the SD status to busy
   BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
+
+  logFile.close();
 
   if (sd.cardBegin(SD_CONFIG)) 
   {

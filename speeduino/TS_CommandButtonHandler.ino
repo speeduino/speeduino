@@ -10,6 +10,7 @@
 #include "scheduledIO.h"
 #include "sensors.h"
 #include "storage.h"
+#include "SD_logger.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -353,6 +354,10 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 
     case TS_CMD_STM32_BOOTLOADER: //
       jumpToBootloader();
+      break;
+
+    case TS_CMD_SD_FORMAT: //Format SD card
+      formatExFat();
       break;
 
     default:

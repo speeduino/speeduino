@@ -264,6 +264,11 @@ void processSerialCommand()
         //STM32 DFU mode button
         TS_CommandButtonsHandler(cmdCombined);
       }
+      else if( (cmdCombined >= TS_CMD_SD_FORMAT) && (cmdCombined <= TS_CMD_SD_FORMAT) )
+      {
+        //SD Commands
+        TS_CommandButtonsHandler(cmdCombined);
+      }
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
     }
