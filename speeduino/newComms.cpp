@@ -455,8 +455,9 @@ void processSerialCommand()
           */
 
           //Max roots (Number of files)
-          serialPayload[9] = 0;
-          serialPayload[10] = 1;
+          uint16_t numLogFiles = getNextSDLogFileNumber() - 2; // -1 because this returns the NEXT file name not the current one and -1 because TS expects a 0 based index
+          serialPayload[9] = highByte(numLogFiles);
+          serialPayload[10] = lowByte(numLogFiles);
 
           //Dir Start (4 bytes)
           serialPayload[11] = 0;

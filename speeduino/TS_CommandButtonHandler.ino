@@ -356,9 +356,11 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
       jumpToBootloader();
       break;
 
+#ifdef SD_LOGGING
     case TS_CMD_SD_FORMAT: //Format SD card
       formatExFat();
       break;
+#endif
 
     default:
       break;
