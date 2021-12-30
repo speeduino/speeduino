@@ -53,7 +53,6 @@ struct table2D knockWindowDurationTable;
 struct table2D oilPressureProtectTable;
 struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 struct table2D fanPWMTable;
-struct table2D ego_PropTable; /// For ego Propotional Control (2D)
 struct table2D ego_IntegralTable; /// For ego Integral Control (2D)
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
