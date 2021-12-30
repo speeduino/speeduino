@@ -621,16 +621,16 @@ byte correctionAFRClosedLoop()
     {
       ego_EngineCycleCheck = true;
       // Scale the revolution counts between the two values linearly based on load value used in VE table.
-      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
+      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax*2, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
     }
   
   //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
   if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
   {
     //Requirements to NOT run Closed Loop (Freeze), check this rapidly so we don't miss freeze events.
-    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
+    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > (int16_t)configPage9.egoFuelLoadChngMax*2 ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
         (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for inhibiting O2 correction using AFR Target Table
-        (currentStatus.fuelLoad > configPage6.egoFuelLoadMax) || // Too much load
+        (currentStatus.fuelLoad > (int16_t)configPage6.egoFuelLoadMax*2) || // Too much load
         (currentStatus.launchCorrection != 100) || // Launch Control Active
         (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) //Fuel Cut
     { 
@@ -654,7 +654,7 @@ byte correctionAFRClosedLoop()
           ((configPage2.egoResetwAFR == false) ||
            (currentStatus.afrTarget >= configPage6.egoAFRTargetMin)) && // Ignore this criteria if cal set to freeze (false).
           ((configPage2.egoResetwfuelLoad == false) ||
-           (currentStatus.fuelLoad <= configPage6.egoFuelLoadMax))) // Ignore this criteria if cal set to freeze (false).
+           (currentStatus.fuelLoad <= (int16_t)configPage6.egoFuelLoadMax*2))) // Ignore this criteria if cal set to freeze (false).
       {
         if(runSecsX10 >= ego_FreezeEndTime) // Check the algo freeze conditions are not active.
         {
