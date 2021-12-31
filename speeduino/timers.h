@@ -26,6 +26,34 @@ volatile bool tachoAlt = false;
 #define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
 enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
 
+struct AuxTimer {
+  void (*Enable)();
+  void (*Disable)();
+  void (*Interrupt)();
+  volatile typeof(AUX_TIMER1_COUNTER) * counter;
+  volatile typeof(AUX_TIMER1_COMPARE) * compare;
+};
+
+#if AVAILABLE_AUX_TIMERS > 0
+inline void auxTimer1Enable();
+inline void auxTimer1Disable();
+#endif
+
+#if AVAILABLE_AUX_TIMERS > 1
+inline void auxTimer2Enable();
+inline void auxTimer2Disable();
+#endif
+
+#if AVAILABLE_AUX_TIMERS > 2
+inline void auxTimer3Enable();
+inline void auxTimer3Disable();
+#endif
+
+AuxTimer * boostTimer;
+AuxTimer * vvtTimer;
+AuxTimer * idleTimer;
+AuxTimer * fanTimer;
+
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 

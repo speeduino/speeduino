@@ -129,27 +129,25 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliary timers
 */
-  #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
-  #define DISABLE_BOOST_TIMER() TIMSK1 &= ~(1 << OCIE1A)
-  #define ENABLE_VVT_TIMER()    TIMSK1 |= (1 << OCIE1B)
-  #define DISABLE_VVT_TIMER()   TIMSK1 &= ~(1 << OCIE1B)
 
-  #define BOOST_TIMER_COMPARE   OCR1A
-  #define BOOST_TIMER_COUNTER   TCNT1
-  #define VVT_TIMER_COMPARE     OCR1B
-  #define VVT_TIMER_COUNTER     TCNT1
+  #define AVAILABLE_AUX_TIMERS  3
+  #define AUX_TIMER1_ENABLE() TIMSK1 |= (1 << OCIE1A)
+  #define AUX_TIMER2_ENABLE() TIMSK1 |= (1 << OCIE1B)
+  #define AUX_TIMER3_ENABLE() TIMSK1 |= (1 << OCIE1C)
 
-/*
-***********************************************************************************************************
-* Idle
-*/
-  #define IDLE_COUNTER TCNT1
-  #define IDLE_COMPARE OCR1C
+  #define AUX_TIMER1_DISABLE() TIMSK1 &= ~(1 << OCIE1A)
+  #define AUX_TIMER2_DISABLE() TIMSK1 &= ~(1 << OCIE1B)
+  #define AUX_TIMER3_DISABLE() TIMSK1 &= ~(1 << OCIE1C)
 
-  #define IDLE_TIMER_ENABLE() TIMSK1 |= (1 << OCIE1C)
-  #define IDLE_TIMER_DISABLE() TIMSK1 &= ~(1 << OCIE1C)
+  #define AUX_TIMER1_COMPARE OCR1A
+  #define AUX_TIMER2_COMPARE OCR1B
+  #define AUX_TIMER3_COMPARE OCR1C
+
+  #define AUX_TIMER1_COUNTER TCNT1
+  #define AUX_TIMER2_COUNTER TCNT1
+  #define AUX_TIMER3_COUNTER TCNT1
 
 /*
 ***********************************************************************************************************

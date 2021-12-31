@@ -65,13 +65,11 @@ long boost_pwm_target_value;
 long boost_cl_target_boost;
 byte boostCounter;
 byte vvtCounter;
-#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
 unsigned int fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
 void fanInterrupt();
-#endif
 uint32_t vvtWarmTime;
 bool vvtIsHot;
 bool vvtTimeHold;

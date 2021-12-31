@@ -26,17 +26,15 @@ void initialiseFan()
   FAN_OFF();  //Initialise program with the fan in the off state
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
   currentStatus.fanDuty = 0;
+  if (fanTimer != nullptr) { fanTimer->Disable(); } //disable FAN timer if available
+  if ( configPage2.fanEnable == 2 ) // PWM Fan control
+  {
+    #if defined(CORE_TEENSY)
+     fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+    #endif
+    fan_pwm_value = 0;
+  }
 
-  #if defined(PWM_FAN_AVAILABLE)
-    DISABLE_FAN_TIMER(); //disable FAN timer if available
-    if ( configPage2.fanEnable == 2 ) // PWM Fan control
-    {
-      #if defined(CORE_TEENSY)
-        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
-      fan_pwm_value = 0;
-    }
-  #endif
 }
 
 void fanControl()
@@ -83,21 +81,17 @@ void fanControl()
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
-        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-          DISABLE_FAN_TIMER();
-        #endif
+        if (fanTimer != nullptr) { fanTimer->Disable(); }
       }
       else
       {
         currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        #if defined(PWM_FAN_AVAILABLE)
-          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
-          if (currentStatus.fanDuty > 0)
-          {
-            ENABLE_FAN_TIMER();
-            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
-          }
-        #endif
+        fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+        if (currentStatus.fanDuty > 0)
+        {
+          if (fanTimer != nullptr) { fanTimer->Enable(); }
+          BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        }
       }
     }
     else if (!fanPermit)
@@ -106,35 +100,20 @@ void fanControl()
       BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
 
-    #if defined(PWM_FAN_AVAILABLE)
-      if(currentStatus.fanDuty == 0)
-      {
-        //Make sure fan has 0% duty)
-        FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
-        DISABLE_FAN_TIMER();
-      }
-      else if (currentStatus.fanDuty == 200)
-      {
-        //Make sure fan has 100% duty
-        FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
-        DISABLE_FAN_TIMER();
-      }
-    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
-      if(currentStatus.fanDuty == 0)
-      {
-        //Make sure fan has 0% duty)
-        FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
-      }
-      else if (currentStatus.fanDuty > 0)
-      {
-        //Make sure fan has 100% duty
-        FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
-      }
-    #endif
+    if(currentStatus.fanDuty == 0)
+    {
+      //Make sure fan has 0% duty
+      FAN_OFF();
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      if (fanTimer != nullptr) { fanTimer->Disable(); }
+    }
+    else if (currentStatus.fanDuty == 200)
+    {
+      //Make sure fan has 100% duty
+      FAN_ON();
+      BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      if (fanTimer != nullptr) { fanTimer->Disable(); }
+    }
   }
 }
 
@@ -198,7 +177,7 @@ void initialiseAuxPWM()
     vvt1_pwm_value = 0;
     currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
-    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
+    if (vvtTimer != nullptr) { vvtTimer->Enable(); } //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
     vvtTimeHold = false;
@@ -215,7 +194,7 @@ void initialiseAuxPWM()
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
-    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
+    if (vvtTimer != nullptr) { vvtTimer->Enable(); } //Turn on the B compare unit (ie turn on the interrupt)
   }
 
   currentStatus.boostDuty = 0;
@@ -380,11 +359,11 @@ void boostControl()
       else{ currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      if(currentStatus.boostDuty == 0) { if (boostTimer != nullptr) { boostTimer->Disable(); } BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+        if (boostTimer != nullptr) { boostTimer->Enable(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
@@ -418,13 +397,13 @@ void boostControl()
           }
 
           bool PIDcomputed = boostPID.Compute(); //Compute() returns false if the required interval has not yet passed.
-          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+          if(currentStatus.boostDuty == 0) { if (boostTimer != nullptr) { boostTimer->Disable(); } BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
           else
           {
             if(PIDcomputed == true)
             {
               boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-              ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+              if (boostTimer != nullptr) { boostTimer->Enable(); } //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
 
@@ -443,7 +422,7 @@ void boostControl()
     } //Open / Cloosed loop
   }
   else { // Disable timer channel and zero the flex boost correction status
-    DISABLE_BOOST_TIMER();
+    if (boostTimer != nullptr) { boostTimer->Disable(); }
     currentStatus.flexBoostCorrection = 0;
   }
 
@@ -579,7 +558,7 @@ void vvtControl()
         vvt1_max_pwm = false;
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        DISABLE_VVT_TIMER();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
       {
@@ -590,12 +569,12 @@ void vvtControl()
         vvt1_max_pwm = true;
         vvt2_pwm_state = true;
         vvt2_max_pwm = true;
-        DISABLE_VVT_TIMER();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else
       {
         //Duty cycle is between 0 and 100. Make sure the timer is enabled
-        ENABLE_VVT_TIMER();
+        if (vvtTimer != nullptr) { vvtTimer->Enable(); }
         if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
         if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
       }
@@ -605,7 +584,7 @@ void vvtControl()
   else 
   { 
     // Disable timer channel
-    DISABLE_VVT_TIMER(); 
+    if (vvtTimer != nullptr) { vvtTimer->Disable(); }
     currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
     currentStatus.vvt2Duty = 0;
@@ -721,7 +700,7 @@ void wmiControl()
     {
       // Make sure water pump is off
       VVT1_PIN_LOW();
-      DISABLE_VVT_TIMER();
+      if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       digitalWrite(pinWMIEnabled, LOW);
     }
     else
@@ -731,11 +710,11 @@ void wmiControl()
       {
         // Make sure water pump is on (100% duty)
         VVT1_PIN_HIGH();
-        DISABLE_VVT_TIMER();
+        if (vvtTimer != nullptr) { vvtTimer->Disable(); }
       }
       else
       {
-        ENABLE_VVT_TIMER();
+        if (vvtTimer != nullptr) { vvtTimer->Enable(); }
       }
     }
   }
@@ -745,38 +724,28 @@ void boostDisable()
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
-  DISABLE_BOOST_TIMER(); //Turn off timer
+  if (boostTimer != nullptr) { boostTimer->Disable(); } //Turn off timer
   BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
 }
 
-//The interrupt to control the Boost PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPA_vect)
-#else
-  void boostInterrupt() //Most ARM chips can simply call a function
-#endif
+void boostInterrupt()
 {
   if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
+    SET_COMPARE(*boostTimer->compare, *boostTimer->counter + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
   }
   else
   {
     BOOST_PIN_HIGH();  // Switch pin high
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
+    SET_COMPARE(*boostTimer->compare, *boostTimer->counter + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
 }
 
-//The interrupt to control the VVT PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPB_vect)
-#else
-  void vvtInterrupt() //Most ARM chips can simply call a function
-#endif
+void vvtInterrupt()
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
@@ -793,7 +762,7 @@ void boostDisable()
 
     if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt1_pwm_value);
+      SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + vvt1_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
@@ -801,12 +770,12 @@ void boostDisable()
     }
     else if( vvt2_pwm_state == true )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt2_pwm_value);
+      SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + vvt2_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       nextVVT = 1; //Next event is for PWM1
     }
-    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
+    else { SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + vvt_pwm_max_count); } //Shouldn't ever get here
   }
   else
   {
@@ -820,10 +789,10 @@ void boostDisable()
       }
       else { vvt1_max_pwm = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvt2_pwm_state == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
+      if(vvt2_pwm_state == true){ SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
+        SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -837,10 +806,10 @@ void boostDisable()
       }
       else { vvt2_max_pwm = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvt1_pwm_state == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
+      if(vvt1_pwm_state == true) { SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
+        SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -851,7 +820,7 @@ void boostDisable()
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
+        SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
       }
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
@@ -859,29 +828,27 @@ void boostDisable()
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
+        SET_COMPARE(*vvtTimer->compare, *vvtTimer->counter + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
       }
       else { vvt2_max_pwm = true; }
     }
   }
 }
 
-#if defined(PWM_FAN_AVAILABLE)
-//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
-  void fanInterrupt()
+//The interrupt to control the FAN PWM.
+void fanInterrupt()
 {
   if (fan_pwm_state == true)
   {
     FAN_OFF();
-    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    *fanTimer->compare = *fanTimer->counter + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
     FAN_ON();
-    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    *fanTimer->compare = *fanTimer->counter + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
   }
 }
-#endif
