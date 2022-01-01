@@ -523,6 +523,51 @@ void doUpdates()
   {
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
+    //TPS resolution increased to 0.5%
+    configPage2.taeThresh *= 2;
+    configPage2.idleAdvTPS *= 2;
+    configPage2.iacTPSlimit *= 2;
+    configPage4.floodClear *= 2;
+    configPage4.dfcoTPSThresh *= 2;
+    configPage6.egoTPSMax *= 2;
+    configPage10.lnchCtrlTPS *= 2;
+    configPage10.wmiTPS *= 2;
+    configPage10.n2o_minTPS *= 2;
+    if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS) { configPage10.fuel2SwitchValue *= 2; }
+    if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS) { configPage10.spark2SwitchVariable *= 2; }
+
+    // Each table Y axis need to be updated as well if TPS is the source
+    if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
+    {
+      updateTableY(&fuelTable, fuelTable.type_key);
+      updateTableY(&afrTable, afrTable.type_key);
+      updateTableY(&trim1Table, trim1Table.type_key);
+      updateTableY(&trim2Table, trim2Table.type_key);
+      updateTableY(&trim3Table, trim3Table.type_key);
+      updateTableY(&trim4Table, trim4Table.type_key);
+      updateTableY(&trim5Table, trim5Table.type_key);
+      updateTableY(&trim6Table, trim6Table.type_key);
+      updateTableY(&trim7Table, trim7Table.type_key);
+      updateTableY(&trim8Table, trim8Table.type_key);
+      if(configPage4.sparkMode == IGN_MODE_ROTARY)
+      { 
+        for(uint8_t x = 0; x < 8; x++)
+        {
+          configPage10.rotarySplitBins[x] *= 2;
+        }
+      }
+    }
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { updateTableY(&ignitionTable, ignitionTable.type_key); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { updateTableY(&fuelTable2, fuelTable2.type_key); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { updateTableY(&ignitionTable2, ignitionTable2.type_key); }
+    updateTableY(&boostTable, boostTable.type_key);
+
+    if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
+    {
+      updateTableY(&vvtTable, vvtTable.type_key);
+      updateTableY(&vvt2Table, vvt2Table.type_key);
+    }
+
     writeAllConfig();
     storeEEPROMVersion(19);
   }
@@ -549,4 +594,14 @@ void doUpdates()
 
   //Check to see if someone has downgraded versions:
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
+}
+
+void updateTableY(const void *pTable, table_type_t key)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = (byte)*y_it * 4; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    ++y_it;
+  }
 }
