@@ -179,7 +179,6 @@ void command()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -1159,7 +1158,7 @@ void sendCompositeLog_old(byte startOffset)
           return;
         }
 
-        inProgressCompositeTime += toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
+        inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
         
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
@@ -1170,7 +1169,6 @@ void sendCompositeLog_old(byte startOffset)
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      compositeLastToothTime = 0;
       cmdPending = false;
       compositeLogSendInProgress = false;
       inProgressCompositeTime = 0;
