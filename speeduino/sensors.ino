@@ -117,14 +117,14 @@ void initialiseADC()
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS > 240) { configPage4.ADCFILTER_TPS = 50; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_CLT > 240) { configPage4.ADCFILTER_CLT = 180; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_IAT > 240) { configPage4.ADCFILTER_IAT = 180; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_O2  > 240) { configPage4.ADCFILTER_O2 = 100; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
-  if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_TPS  > 240) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_CLT  > 240) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_IAT  > 240) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_O2   > 240) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BAT  > 240) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_MAP  > 240) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
+  if(configPage4.FILTER_FLEX    > 240) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
 
   flexStartTime = micros();
 
@@ -452,26 +452,26 @@ void readTPS(bool useFilter)
     /* Map ADC to TPS depending on the sensor type */   
     if (configPage2.tpsType == TPS_MODE_2POINT) // Traditional linear TPS, supports reversed connection.
     {     
-      if(configPage2.tpsMax > configPage2.tpsMin) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); } //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-      else { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 100, 0); } // Reversed connection support. 
+      if(configPage2.tpsMax > configPage2.tpsMin) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); } //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+      else { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 200, 0); } // Reversed connection support. 
     }
     
     if (configPage2.tpsType == TPS_MODE_3POINT) // Single sensor 3 point calibration for non-linear TPS and dual slope. Does not support backwards TPS wiring.
     {
       if ( currentStatus.tpsADC < configPage9.tps2Min ) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage9.tps2Min, 0, configPage9.tpsMidPoint); }
-      else {currentStatus.TPS = map(tempADC, configPage9.tps2Min, configPage2.tpsMax, configPage9.tpsMidPoint, 100); }
+      else {currentStatus.TPS = map(tempADC, configPage9.tps2Min, configPage2.tpsMax, configPage9.tpsMidPoint, 200); }
     }
     
     if (configPage2.tpsType == TPS_MODE_DUALSENSOR) // Two linear independent TPS sensors with an overlap in the range. Used on some BOSCH 4 wire TPS. Does not support backwards TPS wiring.
     { //TPS 1 is 0% -> midpoint), TPS2 is (midpoint -> 100%)
       if ( currentStatus.tpsADC < configPage2.tpsMax ) { currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, configPage9.tpsMidPoint); }
-      else {currentStatus.TPS = map(tempADC2, configPage9.tps2Min, configPage9.tps2Max, configPage9.tpsMidPoint, 100); }
+      else {currentStatus.TPS = map(tempADC2, configPage9.tps2Min, configPage9.tps2Max, configPage9.tpsMidPoint, 200); }
     }
   } // End TPS ADC enabled
   else 
   { 
     if (currentStatus.CTPSActive == true) { currentStatus.TPS = 0; } // Works to help DFCO run when there is only a CTPS and TPS is set to disabled
-    else { currentStatus.TPS = 25; } // Disable value is fixed at 25% should not trip DFCO etc.
+    else { currentStatus.TPS = 50; } // Disable value is fixed at 25.0% should not trip DFCO etc.
   }
 
   TPS_time = micros();
@@ -721,7 +721,7 @@ byte getFuelPressure()
     tempReading = analogRead(pinFuelPressure);
 
     tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
-    tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
+    tempFuelPressure = ADC_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
     //Sanity checks
     if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
     if(tempFuelPressure < 0 ) { tempFuelPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
@@ -743,7 +743,7 @@ byte getOilPressure()
 
 
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
-    tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
+    tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
     //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
     if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.

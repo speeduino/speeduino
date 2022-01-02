@@ -29,11 +29,12 @@ A full copy of the license may be found in the projects root directory
 
 uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
-uint16_t serialBytesReceived = 0;
+uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Pointer to the serial payload buffer. */
+uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
+uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 #ifdef RTC_ENABLED
   uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
   uint16_t SDcurrentDirChunk;
@@ -85,8 +86,7 @@ void parseSerial()
       serialPayloadLength = word(lowByte, highByte);
       serialBytesReceived = 2;
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
-
-      //serialReceivePayload = (uint8_t *)malloc(serialPayloadLength);
+      serialReceiveStartTime = millis();
     }
   }
 
@@ -120,10 +120,23 @@ void parseSerial()
       {
         //CRC is correct. Process the command
         processSerialCommand();
+      } //CRC match
+    } //CRC received in full
+
+    //Check for a timeout
+    if( (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT)
+    {
+      //Timeout occurred
+      serialReceivePending = false; //Reset the serial receive
+      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
+
+      //Flush the serial buffer
+      while(Serial.available() > 0)
+      {
+        Serial.read();
       }
-      //free(serialReceivePayload); //Finally free the memory from the payload buffer
-    }
-  }
+    } //Timeout
+  } //Data in serial buffer and serial receive in progress
 }
 
 void sendSerialReturnCode(byte returnCode)
@@ -251,6 +264,11 @@ void processSerialCommand()
         //STM32 DFU mode button
         TS_CommandButtonsHandler(cmdCombined);
       }
+      else if( (cmdCombined >= TS_CMD_SD_FORMAT) && (cmdCombined <= TS_CMD_SD_FORMAT) )
+      {
+        //SD Commands
+        TS_CommandButtonsHandler(cmdCombined);
+      }
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
     }
@@ -265,9 +283,9 @@ void processSerialCommand()
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+      toothLogSendInProgress = false;
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -296,8 +314,6 @@ void processSerialCommand()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -375,7 +391,7 @@ void processSerialCommand()
     case 'Q': // send code version
     {
       char productString[21] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      sendSerialPayload(&productString, 21);
+      sendSerialPayload(&productString, sizeof(productString));
       break;
     }
 
@@ -439,8 +455,9 @@ void processSerialCommand()
           */
 
           //Max roots (Number of files)
-          serialPayload[9] = 0;
-          serialPayload[10] = 1;
+          uint16_t numLogFiles = getNextSDLogFileNumber() - 2; // -1 because this returns the NEXT file name not the current one and -1 because TS expects a 0 based index
+          serialPayload[9] = highByte(numLogFiles);
+          serialPayload[10] = lowByte(numLogFiles);
 
           //Dir Start (4 bytes)
           serialPayload[11] = 0;
@@ -531,8 +548,8 @@ void processSerialCommand()
       
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
-      if(currentStatus.toothLogEnabled == true) { generateToothLog(0); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled == true) { generateCompositeLog(0); }
+      if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
+      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
 
       break;
 
@@ -673,11 +690,10 @@ void processSerialCommand()
 
     case 'w':
     {
+#ifdef RTC_ENABLED
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
-
-#ifdef RTC_ENABLED
       if(cmd == SD_READWRITE_PAGE)
         { 
           if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
@@ -844,93 +860,158 @@ namespace
 
 }
 
-/** Send 256 tooth log entries to serial.
- * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
- * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
+/** 
+ * 
 */
-void generateToothLog(byte startOffset)
+void sendToothLog(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
-      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
-      {
-        //Check whether the tx buffer still has space
-        if(Serial.availableForWrite() < 4) 
-        { 
-          //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
-          toothLogSendInProgress = true;
-          return;
-        }
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
-        Serial.write(toothHistory[toothHistorySerialIndex]);
+    uint32_t CRC32_val = 0;
+    if(startOffset == 0)
+    {
+      //Transmit the size of the packet
+      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 4) + 1; //Size of the tooth log (uint32_t values) plus the return code
+      Serial.write(totalPayloadLength >> 8);
+      Serial.write(totalPayloadLength);
 
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+      //Begin new CRC hash
+      const uint8_t returnCode = SERIAL_RC_OK;
+      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+
+      //Send the return code
+      Serial.write(returnCode);
+    }
+    
+    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+    {
+      //Check whether the tx buffer still has space
+      if(Serial.availableForWrite() < 4) 
+      { 
+        //tx buffer is full. Store the current state so it can be resumed later
+        inProgressOffset = x;
+        toothLogSendInProgress = true;
+        return;
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      cmdPending = false;
-      toothLogSendInProgress = false;
+
+      //Transmit the tooth time
+      uint32_t tempToothHistory = toothHistory[x];
+      uint8_t toothHistory_1 = ((tempToothHistory >> 24) & 255);
+      uint8_t toothHistory_2 = ((tempToothHistory >> 16) & 255);
+      uint8_t toothHistory_3 = ((tempToothHistory >> 8) & 255);
+      uint8_t toothHistory_4 = ((tempToothHistory) & 255);
+      Serial.write(toothHistory_1);
+      Serial.write(toothHistory_2);
+      Serial.write(toothHistory_3);
+      Serial.write(toothHistory_4);
+
+      //Update the CRC
+      CRC32_val = CRC32.crc32_upd(&toothHistory_1, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_2, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_3, 1, false);
+      CRC32_val = CRC32.crc32_upd(&toothHistory_4, 1, false);
+    }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    cmdPending = false;
+    toothLogSendInProgress = false;
+    toothHistoryIndex = 0;
+
+    //Apply the CRC reflection
+    CRC32_val = ~CRC32_val;
+
+    //Send the CRC
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
   }
   else 
   { 
-    //TunerStudio has timed out, send a LOG of all 0s
-    for(int x = 0; x < (4*TOOTH_LOG_SIZE); x++)
-    {
-      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
-    }
+    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
+    toothLogSendInProgress = false;
   } 
 }
 
-void generateCompositeLog(byte startOffset)
+void sendCompositeLog(byte startOffset)
 {
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
   {
-      if(startOffset == 0) { inProgressCompositeTime = 0; }
-      for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
-      {
-        //Check whether the tx buffer still has space
-        if(Serial.availableForWrite() < 4) 
-        { 
-          //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
-          compositeLogSendInProgress = true;
-          return;
-        }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    uint32_t CRC32_val = 0;
+    if(startOffset == 0)
+    { 
+      inProgressCompositeTime = 0; 
 
-        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+      //Transmit the size of the packet
+      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 5) + 1; //Size of the tooth log (1x uint32_t + 1x uint8_t values) plus the return code
+      Serial.write(totalPayloadLength >> 8);
+      Serial.write(totalPayloadLength);
+
+      //Begin new CRC hash
+      const uint8_t returnCode = SERIAL_RC_OK;
+      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+
+      //Send the return code
+      Serial.write(returnCode);
+    }
+    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+    {
+      //Check whether the tx buffer still has space
+      if(Serial.availableForWrite() < 5) 
+      { 
+        //tx buffer is full. Store the current state so it can be resumed later
+        inProgressOffset = x;
+        compositeLogSendInProgress = true;
         
-        Serial.write(inProgressCompositeTime >> 24);
-        Serial.write(inProgressCompositeTime >> 16);
-        Serial.write(inProgressCompositeTime >> 8);
-        Serial.write(inProgressCompositeTime);
-
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+        return;
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
-      cmdPending = false;
-      compositeLogSendInProgress = false;
-      inProgressCompositeTime = 0;
+
+      inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record
+      uint8_t inProgressCompositeTime_1 = (inProgressCompositeTime >> 24) & 255;
+      uint8_t inProgressCompositeTime_2 = (inProgressCompositeTime >> 16) & 255;
+      uint8_t inProgressCompositeTime_3 = (inProgressCompositeTime >> 8) & 255;
+      uint8_t inProgressCompositeTime_4 = (inProgressCompositeTime) & 255;
+
+      //Transmit the tooth time
+      Serial.write(inProgressCompositeTime_1);
+      Serial.write(inProgressCompositeTime_2);
+      Serial.write(inProgressCompositeTime_3);
+      Serial.write(inProgressCompositeTime_4);
+
+      //Update the CRC
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_1, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_2, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_3, 1, false);
+      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_4, 1, false);
+
+      //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
+      uint8_t statusByte = compositeLogHistory[x];
+      Serial.write(statusByte);
+
+      //Update the CRC with the status byte
+      CRC32_val = CRC32.crc32_upd(&statusByte, 1, false);
+    }
+    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+    toothHistoryIndex = 0;
+    cmdPending = false;
+    compositeLogSendInProgress = false;
+    inProgressCompositeTime = 0;
+
+    //Apply the CRC reflection
+    CRC32_val = ~CRC32_val;
+
+    //Send the CRC
+    Serial.write( ((CRC32_val >> 24) & 255) );
+    Serial.write( ((CRC32_val >> 16) & 255) );
+    Serial.write( ((CRC32_val >> 8) & 255) );
+    Serial.write( (CRC32_val & 255) );
   }
   else 
   { 
-    //TunerStudio has timed out, send a LOG of all 0s
-    for(int x = 0; x < (5*TOOTH_LOG_SIZE); x++)
-    {
-      Serial.write(static_cast<byte>(0x00)); //GCC9 fix
-    }
+    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
+    compositeLogSendInProgress = false;
   } 
 }
