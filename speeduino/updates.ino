@@ -524,6 +524,7 @@ void doUpdates()
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
     //TPS resolution increased to 0.5%
+    configPage9.tpsMidPoint *=2;
     configPage2.taeThresh *= 2;
     configPage2.idleAdvTPS *= 2;
     configPage2.iacTPSlimit *= 2;
