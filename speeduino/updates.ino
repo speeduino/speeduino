@@ -529,7 +529,6 @@ void doUpdates()
     configPage2.iacTPSlimit *= 2;
     configPage4.floodClear *= 2;
     configPage4.dfcoTPSThresh *= 2;
-    configPage6.egoTPSMax *= 2;
     configPage10.lnchCtrlTPS *= 2;
     configPage10.wmiTPS *= 2;
     configPage10.n2o_minTPS *= 2;
