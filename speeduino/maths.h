@@ -23,9 +23,15 @@ inline int16_t div100(int16_t n) {
 inline uint32_t div100(uint32_t n) {
     return libdivide::libdivide_u32_do(n, &libdiv_u32_100);
 }
+#if defined(__arm__)
+inline int div100(int n) {
+    return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
+}
+#else
 inline int32_t div100(int32_t n) {
     return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
 }
+#endif
 
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 
