@@ -1,6 +1,6 @@
 #pragma once
 #include <Arduino.h>
-#include "table3d.h"
+#include "table.h"
 
 /**
  * Page count, as defined in the INI file
@@ -34,16 +34,14 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
  * Gets a single value from a page, with data aligned as per the ini file
  */
 byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
-                    uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
-                    );
+                    uint16_t offset);   /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
 
 /**
  * Sets a single value from a page, with data aligned as per the ini file
  */
 void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
                     uint16_t offset,    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
-                    byte value          /**< [in] The new value */
-                    );
+                    byte value);        /**< [in] The new value */
 
 // ============================== Page Iteration ==========================
 
@@ -60,8 +58,10 @@ enum entity_type {
 
 // A entity on a logical page.
 struct page_iterator_t {
-    void *pData;
-    table_type_t table_key;
+    union {
+        table3D *pTable;
+        void *pData;
+    };
     uint8_t page;   // The page the entity belongs to
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
     uint16_t size;  // Size of the entity in bytes
@@ -78,18 +78,3 @@ page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate ove
  * Moves the iterator to the next sub-entity on the page
  */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);
-
-/**
- * Convert page iterator to table value iterator.
- */
-table_value_iterator rows_begin(const page_iterator_t &it);
-
-/**
- * Convert page iterator to table x axis iterator.
- */
-table_axis_iterator x_begin(const page_iterator_t &it);
-
-/**
- * Convert page iterator to table y axis iterator.
- */
-table_axis_iterator y_begin(const page_iterator_t &it);

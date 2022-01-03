@@ -1,8 +1,6 @@
 #ifndef MATH_H
 #define MATH_H
 
-#define USE_LIBDIVIDE
-
 int fastMap1023toX(int, int);
 unsigned long percentage(byte, unsigned long);
 unsigned long halfPercentage(byte, unsigned long);
@@ -17,7 +15,5 @@ unsigned long divu100(unsigned long);
 #define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 10)
 //This is a new version that allows for out_min
 #define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 10 ) + out_min)
-
-
 
 #endif

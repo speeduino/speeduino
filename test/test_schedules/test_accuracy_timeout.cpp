@@ -7,7 +7,7 @@
 
 #define TIMEOUT 1000
 #define DURATION 1000
-#define DELTA 24
+#define DELTA 20
 
 static uint32_t start_time, end_time;
 static void startCallback(void) { end_time = micros(); }

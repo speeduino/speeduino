@@ -48,8 +48,5 @@ struct packedError
 
 byte getNextError();
 byte setError(byte);
-void clearError(byte);
-
-extern byte errorCount;
 
 #endif
