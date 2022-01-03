@@ -181,22 +181,20 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+      vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        vvt2PID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+        vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
         vvt2PID.SetMode(AUTOMATIC); //Turn PID on
       }
     }
 
-    currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
-    currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
@@ -459,47 +457,30 @@ void vvtControl()
       vvtWarmTime = runSecsX10;
       vvtTimeHold = true;
     }
+
+    //Calculate the current cam angle for miata trigger
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
+
     if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
     {
       vvtIsHot = true;
 
-      //Calculate the current cam angle
-      if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
-
       if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
-        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.MAP / 2), currentStatus.RPM); }
 
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
 
-        vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-      }
-
-    } //Open loop
-    else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
-    {
-      //Lookup VVT duty based on either MAP or TPS
-      if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
-      else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
-
-      if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-      vvtPID.SetControllerDirection(configPage6.vvtPWMdir); }
-
-      // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
-      // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-      if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
-      {
-        currentStatus.vvt1Duty = 0;
         vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
           //Lookup VVT duty based on either MAP or TPS
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
-          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.MAP / 2), currentStatus.RPM); }
 
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
           if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
@@ -511,8 +492,8 @@ void vvtControl()
       else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
-        else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+        else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.MAP / 2), currentStatus.RPM); }
 
         if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
         vvtPID.SetControllerDirection(configPage6.vvtPWMdir); }
@@ -550,8 +531,8 @@ void vvtControl()
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
-          else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+          else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.MAP / 2), currentStatus.RPM); }
 
           if( vvtCounter == 30) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
           vvt2PID.SetControllerDirection(configPage4.vvt2PWMdir); }
@@ -583,7 +564,6 @@ void vvtControl()
             BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
           }
         }
-        //currentStatus.vvt1Duty = 0;
         vvtCounter++;
       }
 
