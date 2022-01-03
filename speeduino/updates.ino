@@ -568,6 +568,8 @@ void doUpdates()
       updateTableY(&vvt2Table, vvt2Table.type_key);
     }
 
+    configPage4.vvtDelay = 0;
+    configPage4.vvtMinClt = 0;
     writeAllConfig();
     storeEEPROMVersion(19);
   }
