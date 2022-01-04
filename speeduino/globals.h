@@ -436,8 +436,8 @@ extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
 extern struct table3d8RpmTps boostTable; //8x8 boost map
-extern struct table3d8RpmTps vvtTable; //8x8 vvt map
-extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
+extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
+extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
 extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
 extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
