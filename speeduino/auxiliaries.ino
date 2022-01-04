@@ -382,7 +382,6 @@ void boostControl()
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
@@ -422,10 +421,8 @@ void boostControl()
             if(PIDcomputed == true)
             {
               boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-              ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
-
         }
         else
         {
@@ -439,6 +436,18 @@ void boostControl()
         boostDisable();
       } //MAP above boost + hyster
     } //Open / Cloosed loop
+
+    //Check for 100% duty cycle
+    if(currentStatus.boostDuty >= 10000)
+    {
+      DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
+      BOOST_PIN_HIGH(); //Turn on boost pin if duty is 100%
+    }
+    else if(currentStatus.boostDuty > 0)
+    {
+      ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty is > 0
+    }
+    
   }
   else { // Disable timer channel and zero the flex boost correction status
     DISABLE_BOOST_TIMER();
