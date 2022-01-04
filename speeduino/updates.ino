@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "storage.h"
 #include "sensors.h"
+#include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
