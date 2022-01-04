@@ -181,22 +181,20 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+      vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        vvt2PID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+        vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
         vvt2PID.SetMode(AUTOMATIC); //Turn PID on
       }
     }
 
-    currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
-    currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
@@ -228,6 +226,146 @@ void initialiseAuxPWM()
 
 }
 
+void boostByGear()
+{
+  if(configPage4.boostType == OPEN_LOOP_BOOST)
+  {
+    if( configPage9.boostByGearEnabled == 1 )
+    {
+      uint16_t combinedBoost = 0;
+      switch (currentStatus.gear)
+      {
+        case 1:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 2:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 3:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 4:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 5:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 6:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        default:
+          break;
+      }
+    }
+    else if( configPage9.boostByGearEnabled == 2 ) 
+    {
+      switch (currentStatus.gear)
+      {
+        case 1:
+          currentStatus.boostDuty = configPage9.boostByGear1 * 2 * 100;
+          break;
+        case 2:
+          currentStatus.boostDuty = configPage9.boostByGear2 * 2 * 100;
+          break;
+        case 3:
+          currentStatus.boostDuty = configPage9.boostByGear3 * 2 * 100;
+          break;
+        case 4:
+          currentStatus.boostDuty = configPage9.boostByGear4 * 2 * 100;
+          break;
+        case 5:
+          currentStatus.boostDuty = configPage9.boostByGear5 * 2 * 100;
+          break;
+        case 6:
+          currentStatus.boostDuty = configPage9.boostByGear6 * 2 * 100;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+  {
+    if( configPage9.boostByGearEnabled == 1 )
+    {
+      uint16_t combinedBoost = 0;
+      switch (currentStatus.gear)
+      {
+        case 1:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 2:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 3:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 4:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 5:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 6:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        default:
+          break;
+      }
+    }
+    else if( configPage9.boostByGearEnabled == 2 ) 
+    {
+      switch (currentStatus.gear)
+      {
+        case 1:
+          currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
+          break;
+        case 2:
+          currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
+          break;
+        case 3:
+          currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
+          break;
+        case 4:
+          currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
+          break;
+        case 5:
+          currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
+          break;
+        case 6:
+          currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
 #define BOOST_HYSTER  40
 void boostControl()
 {
@@ -236,7 +374,8 @@ void boostControl()
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
       //Open loop
-      currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
+      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+      else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
@@ -250,72 +389,8 @@ void boostControl()
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if( (configPage9.boostByGearEnabled == 1) && (configPage2.vssMode > 1) )
-        {
-          uint16_t combinedBoost = 0;
-          switch (currentStatus.gear)
-          {
-            case 1:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 2:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 3:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 4:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 5:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 6:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            default:
-              break;
-          }
-        }
-        else if( (configPage9.boostByGearEnabled == 2) && (configPage2.vssMode > 1) ) 
-        {
-          switch (currentStatus.gear)
-          {
-            case 1:
-              currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
-              break;
-            case 2:
-              currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
-              break;
-            case 3:
-              currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
-              break;
-            case 4:
-              currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
-              break;
-            case 5:
-              currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
-              break;
-            case 6:
-              currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
-              break;
-            default:
-              break;
-          }
-        }
-        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
+        if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
       if(currentStatus.MAP >= currentStatus.baro ) //Only engage boost control above baro pressure
       {
@@ -382,18 +457,19 @@ void vvtControl()
       vvtWarmTime = runSecsX10;
       vvtTimeHold = true;
     }
+
+    //Calculate the current cam angle for miata trigger
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
+
     if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
     {
       vvtIsHot = true;
 
-      //Calculate the current cam angle
-      if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
-
       if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
-        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
+        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.MAP), currentStatus.RPM); }
 
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
@@ -403,8 +479,8 @@ void vvtControl()
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
           //Lookup VVT duty based on either MAP or TPS
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
-          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
+          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.MAP), currentStatus.RPM); }
 
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
           if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
@@ -416,7 +492,7 @@ void vvtControl()
       else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
         else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
         if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
@@ -455,7 +531,7 @@ void vvtControl()
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
           else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
           if( vvtCounter == 30) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
@@ -488,7 +564,6 @@ void vvtControl()
             BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
           }
         }
-        //currentStatus.vvt1Duty = 0;
         vvtCounter++;
       }
 
