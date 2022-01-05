@@ -23,7 +23,7 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 }
 
 //Unsigned divide by 10
-unsigned int divu10(unsigned int n)
+uint32_t divu10(uint32_t n)
 {
 #ifdef USE_LIBDIVIDE
   
@@ -39,7 +39,7 @@ unsigned int divu10(unsigned int n)
 }
 
 //Signed divide by 100
-int divs100(long n)
+int32_t divs100(int32_t n)
 {
 #ifdef USE_LIBDIVIDE
   return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
