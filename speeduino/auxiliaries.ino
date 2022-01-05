@@ -213,6 +213,7 @@ void initialiseAuxPWM()
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
+    vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
 
@@ -717,12 +718,13 @@ void wmiControl()
           wmiPW = 0;
           break;
         }
+        if (wmiPW > 100) { wmiPW = 100; } //without this the duty can get beyond 100%
       }
     }
     else { BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY); }
 
     currentStatus.wmiPW = wmiPW;
-    vvt1_pwm_value = wmiPW;
+    vvt1_pwm_value = percentage(currentStatus.wmiPW, vvt_pwm_max_count);
 
     if(wmiPW == 0)
     {
