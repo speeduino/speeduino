@@ -20,10 +20,7 @@ void testMaths()
   RUN_TEST(test_maths_div100_S8);
   RUN_TEST(test_maths_div100_S16);
   RUN_TEST(test_maths_div100_S32);
-  RUN_TEST(test_maths_div10_U8);
-  RUN_TEST(test_maths_div10_U16);
-  RUN_TEST(test_maths_div10_U32);
-  
+ 
 }
 
 void test_maths_percent_U8(void)
@@ -88,84 +85,57 @@ void test_maths_halfpercent_U32(void)
 
 void test_maths_div100_U8(void)
 {
-  TEST_ASSERT_EQUAL(divu100(100), 1);
-  TEST_ASSERT_EQUAL(divu100(200), 2);
-  TEST_ASSERT_EQUAL(divu100(0), 0);
-  TEST_ASSERT_EQUAL(divu100(50), 0);
-  TEST_ASSERT_EQUAL(divu100(250), 2);
+  TEST_ASSERT_EQUAL(div100(100), 1);
+  TEST_ASSERT_EQUAL(div100(200), 2);
+  TEST_ASSERT_EQUAL(div100(0), 0);
+  TEST_ASSERT_EQUAL(div100(50), 0);
+  TEST_ASSERT_EQUAL(div100(250), 2);
 }
 
 void test_maths_div100_U16(void)
 {
-  TEST_ASSERT_EQUAL(divu100(10000), 100);
-  TEST_ASSERT_EQUAL(divu100(40000), 400);
+  TEST_ASSERT_EQUAL(div100(10000), 100);
+  TEST_ASSERT_EQUAL(div100(40000), 400);
 }
 
 void test_maths_div100_U32(void)
 {
-  TEST_ASSERT_EQUAL(divu100(100000000UL), 1000000UL);
-  TEST_ASSERT_EQUAL(divu100(200000000UL), 2000000UL);
+  TEST_ASSERT_EQUAL(div100(100000000UL), 1000000UL);
+  TEST_ASSERT_EQUAL(div100(200000000UL), 2000000UL);
 }
 
 void test_maths_div100_S8(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(divs100(100), 1);
-  TEST_ASSERT_EQUAL(divs100(0), 0);
-  TEST_ASSERT_EQUAL(divs100(50), 0);
+  TEST_ASSERT_EQUAL(div100(100), 1);
+  TEST_ASSERT_EQUAL(div100(0), 0);
+  TEST_ASSERT_EQUAL(div100(50), 0);
 
-  TEST_ASSERT_EQUAL(divs100(-100), -1);
-  TEST_ASSERT_EQUAL(divs100(-50), 0);
-  TEST_ASSERT_EQUAL(divs100(-120), -1);
+  TEST_ASSERT_EQUAL(div100(-100), -1);
+  TEST_ASSERT_EQUAL(div100(-50), 0);
+  TEST_ASSERT_EQUAL(div100(-120), -1);
 }
 
 void test_maths_div100_S16(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(divs100(10000), 100);
-  TEST_ASSERT_EQUAL(divs100(0), 0);
-  TEST_ASSERT_EQUAL(divs100(50), 0);
+  TEST_ASSERT_EQUAL(div100(10000), 100);
+  TEST_ASSERT_EQUAL(div100(0), 0);
+  TEST_ASSERT_EQUAL(div100(50), 0);
 
-  TEST_ASSERT_EQUAL(divs100(-10000), -100);
-  TEST_ASSERT_EQUAL(divs100(-50), 0);
-  TEST_ASSERT_EQUAL(divs100(-120), -1);
+  TEST_ASSERT_EQUAL(div100(-10000), -100);
+  TEST_ASSERT_EQUAL(div100(-50), 0);
+  TEST_ASSERT_EQUAL(div100(-120), -1);
 }
 
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(divs100(100000000L), 1000000L);
-  TEST_ASSERT_EQUAL(divs100(0), 0);
-  TEST_ASSERT_EQUAL(divs100(50), 0);
+  TEST_ASSERT_EQUAL(div100(100000000L), 1000000L);
+  TEST_ASSERT_EQUAL(div100(0), 0);
+  TEST_ASSERT_EQUAL(div100(50), 0);
 
-  TEST_ASSERT_EQUAL(divs100(-100000000L), -1000000L);
-  TEST_ASSERT_EQUAL(divs100(-50), 0);
-  TEST_ASSERT_EQUAL(divs100(-120), -1);
-}
-
-void test_maths_div10_U8(void)
-{
-  TEST_ASSERT_EQUAL(divu10(100), 10);
-  TEST_ASSERT_EQUAL(divu10(200), 20);
-  TEST_ASSERT_EQUAL(divu10(0), 0);
-  TEST_ASSERT_EQUAL(divu10(50), 5);
-  TEST_ASSERT_EQUAL(divu10(250), 25);
-}
-
-void test_maths_div10_U16(void)
-{
-  TEST_ASSERT_EQUAL(divu10(10000), 1000);
-  TEST_ASSERT_EQUAL(divu10(40000), 4000);
-  TEST_ASSERT_EQUAL(divu10(0), 0);
-  TEST_ASSERT_EQUAL(divu10(50), 5);
-  TEST_ASSERT_EQUAL(divu10(250), 25);
-}
-
-void test_maths_div10_U32(void)
-{
-  TEST_ASSERT_EQUAL(divu10(100000000UL), 10000000UL);
-  TEST_ASSERT_EQUAL(divu10(400000000UL), 40000000UL);
-  TEST_ASSERT_EQUAL(divu10(0), 0);
-  TEST_ASSERT_EQUAL(divu10(50), 5);
-  TEST_ASSERT_EQUAL(divu10(250), 25);
+  TEST_ASSERT_EQUAL(div100(-100000000L), -1000000L);
+  TEST_ASSERT_EQUAL(div100(-50), 0);
+  TEST_ASSERT_EQUAL(div100(-120), -1);
 }

@@ -26,13 +26,13 @@ int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
 
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value.
-unsigned long percentage(byte x, unsigned long y)
+unsigned long percentage(uint8_t x, unsigned long y)
 {
   return div100(y * x);
 }
 
 //Same as above, but 0.5% accuracy
-unsigned long halfPercentage(byte x, unsigned long y)
+unsigned long halfPercentage(uint8_t x, unsigned long y)
 {
   return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
 }

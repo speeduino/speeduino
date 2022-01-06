@@ -4,8 +4,8 @@
 #include "src/libdivide/libdivide.h"
 
 int fastMap1023toX(int, int);
-unsigned long percentage(byte, unsigned long);
-unsigned long halfPercentage(byte, unsigned long);
+unsigned long percentage(uint8_t, unsigned long);
+unsigned long halfPercentage(uint8_t, unsigned long);
 inline long powint(int, unsigned int);
 
 extern struct libdivide::libdivide_u16_t libdiv_u16_100;
