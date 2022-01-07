@@ -17,82 +17,46 @@ General overview:
 #include "secondaryTables.h"
 
 #define CONSTRAINCAST_INT8(value) (int8_t)constrain(value, -127, 127)
+#define _countof(x) (sizeof(x) / sizeof (x[0]))
+#define OI OFFSET_IGNITION
 
-//Configuration data tables
-const byte fuelTableSize = 5;
+enum ignitionTableType {
+    TABLE_1,
+    TABLE_2,
+    TABLE_Multiplied
+};
 
-void setupAdvanceDCignitionTable1(table3D * ignTable)
+void setupAdvanceDCignitionTable(table3d16RpmLoad * ignTable, ignitionTableType tableType)
 {
+    const table3d_axis_t tempXAxis[] = {500, 1000, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 10000};
+    const byte tempXAxisSize = _countof(tempXAxis);
+    const table3d_axis_t tempYAxis[] = {510, 350, 250, 150, 100, 85, 75, 65, 50, 45, 37, 30, 23, 17, 9, 0};
+    
+    uint8_t const * valuesPerXAxis;
+    //X axis values we care about                                 510                              10                              50                              23                      0
+    const uint8_t valuesPerXAxisTable1[tempXAxisSize] =          { 70+OI,  70+OI,  70+OI,  30+OI,  30+OI,  30+OI,  30+OI,  0+OI,   0+OI,   0+OI,   0+OI,   -40+OI, -40+OI, -40+OI, -40+OI, -40+OI };
+    const uint8_t valuesPerXAxisTable2[tempXAxisSize] =          { 69+OI,  69+OI,  69+OI,  20+OI,  20+OI,  20+OI,  20+OI,  1+OI,   1+OI,   1+OI,   1+OI,   -39+OI, -39+OI, -39+OI, -39+OI, -39+OI };
+    const uint8_t valuesPerXAxisTableMultiplied[tempXAxisSize] = { 215+OI, 215+OI, 215+OI, 120+OI, 120+OI, 120+OI, 120+OI, 100+OI, 100+OI, 100+OI, 100+OI, 0+OI,   0+OI,   0+OI,   -40+OI, -40+OI };
+    switch (tableType) {
+        case TABLE_1:
+        valuesPerXAxis = valuesPerXAxisTable1;
+        break;
+        case TABLE_2:
+        valuesPerXAxis = valuesPerXAxisTable2;
+        break;
+        case TABLE_Multiplied:
+        valuesPerXAxis = valuesPerXAxisTableMultiplied;
+        break;
+    }
 
-  /*
-  510 |   70 |   70 |   70 |   70 |   70 |
-  100 |   30 |   30 |   30 |   30 |   30 |
-  50  |    0 |    0 |    0 |    0 |    0 |
-  23  |  -40 |  -40 |  -40 |  -40 |  -40 |
-  0   |  -40 |  -40 |  -40 |  -40 |  -40 |
-      ------------------------------------
-         500 | 2500 | 5000 | 7500 | 10000 |
-  */
+    memcpy(ignTable->axisX.axis, tempXAxis, sizeof(ignTable->axisX));
+    memcpy(ignTable->axisY.axis, tempYAxis, sizeof(ignTable->axisY));
 
-  int16_t tempXAxis[fuelTableSize] = {500, 2500, 5000, 7500, 10000};
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->axisX[x] = tempXAxis[x]; }
-  int16_t tempYAxis[fuelTableSize] = {510, 100, 50, 23, 0};
-  for (byte x = 0; x< ignTable->ySize; x++) { ignTable->axisY[x] = tempYAxis[x]; }
-
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[0][x] = 70+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[1][x] = 30+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[2][x] = 0+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[3][x] = -40+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[4][x] = -40+OFFSET_IGNITION; }
-}
-
-void setupAdvanceDCignitionTable2(table3D * ignTable)
-{
-
-  /*
-  510 |   69 |   69 |   69 |   69 |   69 |
-  100 |   20 |   20 |   20 |   20 |   20 |
-  50  |    1 |    1 |    1 |    1 |    1 |
-  23  |  -39 |  -39 |  -39 |  -39 |  -39 |
-  0   |  -39 |  -39 |  -39 |  -39 |  -39 |
-      ------------------------------------
-         500 | 2500 | 5000 | 7500 | 10000 |
-  */
-
-  int16_t tempXAxis[fuelTableSize] = {500, 2500, 5000, 7500, 10000};
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->axisX[x] = tempXAxis[x]; }
-  int16_t tempYAxis[fuelTableSize] = {510, 100, 50, 23, 0};
-  for (byte x = 0; x< ignTable->ySize; x++) { ignTable->axisY[x] = tempYAxis[x]; }
-
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[0][x] = 69+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[1][x] = 20+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[2][x] = 1+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[3][x] = -39+OFFSET_IGNITION;}
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[4][x] = -39+OFFSET_IGNITION;}
-}
-
-void setupAdvanceDCignitionTableMultiplied(table3D * ignTable) {
-
-  /*
-  510 |  215 |  215 |  215 |  215 |  215 |
-  100 |  120 |  120 |  120 |  120 |  120 |
-  50  |  100 |  100 |  100 |  100 |  100 |
-  23  |   80 |   80 |   80 |   80 |   80 |
-  0   |    0 |    0 |    0 |    0 |    0 |
-      ------------------------------------
-         500 | 2500 | 5000 | 7500 | 10000 |
-  */
-
-  int16_t tempXAxis[fuelTableSize] = {500, 2500, 5000, 7500, 10000};
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->axisX[x] = tempXAxis[x]; }
-  int16_t tempYAxis[fuelTableSize] = {510, 100, 50, 23, 0};
-  for (byte x = 0; x< ignTable->ySize; x++) { ignTable->axisY[x] = tempYAxis[x]; }
-
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[0][x] = 215+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[1][x] = 120+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[2][x] = 100+OFFSET_IGNITION; }
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[3][x] = 80+OFFSET_IGNITION;}
-  for (byte x = 0; x< ignTable->xSize; x++) { ignTable->values[4][x] = 0+OFFSET_IGNITION;}
+    byte valuesPos = 0;
+    for (byte x = 0; x < tempXAxisSize*3; x++) { ignTable->values.values[valuesPos] = valuesPerXAxis[valuesPos/tempXAxisSize]; valuesPos++; }
+    for (byte x = 0; x < tempXAxisSize*4; x++) { ignTable->values.values[valuesPos] = valuesPerXAxis[valuesPos/tempXAxisSize]; valuesPos++; }
+    for (byte x = 0; x < tempXAxisSize*4; x++) { ignTable->values.values[valuesPos] = valuesPerXAxis[valuesPos/tempXAxisSize]; valuesPos++; }
+    for (byte x = 0; x < tempXAxisSize*5; x++) { ignTable->values.values[valuesPos] = valuesPerXAxis[valuesPos/tempXAxisSize]; valuesPos++; }
 }
 
 byte iatRetBins[3] = {13, 82, 124};
@@ -140,9 +104,7 @@ const uint8_t engineParametersSize = 20;
 engineParams engineParameters[engineParametersSize];
 
 void setupAdvanceDC() { // One time table/test input setup
-    table3D_setSize(&ignitionTable, fuelTableSize);
-    table3D_setSize(&ignitionTable2, fuelTableSize);
-    setupAdvanceDCignitionTable1(&ignitionTable);
+    setupAdvanceDCignitionTable(&ignitionTable, TABLE_1);
 
     engineParameters[0].MAP = 510;
     engineParameters[0].TPS = 0;
@@ -212,10 +174,10 @@ void resetAdvanceDC() { //Resets configuration data
     configPage10.spark2SwitchVariable = SPARK2_CONDITION_TPS;
     configPage10.spark2SwitchValue = 96;
     if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
-        setupAdvanceDCignitionTableMultiplied(&ignitionTable2);
+        setupAdvanceDCignitionTable(&ignitionTable2, TABLE_Multiplied);
     }
     else {
-        setupAdvanceDCignitionTable2(&ignitionTable2);
+        setupAdvanceDCignitionTable(&ignitionTable2, TABLE_2);
     }
 
     //Flex fuel
