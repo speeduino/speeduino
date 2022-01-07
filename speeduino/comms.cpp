@@ -547,6 +547,8 @@ void command()
       break;
 
     default:
+      Serial.println(F("Err: Unknown cmd"));
+      cmdPending = false;
       break;
   }
 }
