@@ -234,6 +234,14 @@ void processSerialCommand()
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
+
+      if(isEepromWritePending())
+      {
+        //There is already a write pending, so we can't do anything
+        sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
+        break;
+      }
+
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
       sendSerialReturnCode(SERIAL_RC_BURN_OK);
       break;
@@ -242,6 +250,25 @@ void processSerialCommand()
     {
       uint8_t tempPayload[] = {SERIAL_RC_OK, currentStatus.secl};
       sendSerialPayload(&tempPayload, 2);
+      break;
+    }
+
+    case 'd': // Send a CRC32 hash of a given page
+    {
+      uint32_t CRC32_val = calculatePageCRC32( serialPayload[2] );
+      uint8_t payloadCRC32[5];
+      
+      //First byte is the flag
+      payloadCRC32[0] = SERIAL_RC_OK;
+
+      //Split the 4 bytes of the CRC32 value into individual bytes and send
+      payloadCRC32[1] =  ((CRC32_val >> 24) & 255);
+      payloadCRC32[2] = ((CRC32_val >> 16) & 255);
+      payloadCRC32[3] = ((CRC32_val >> 8) & 255);
+      payloadCRC32[4] = (CRC32_val & 255);
+      
+      sendSerialPayload( &payloadCRC32, 5);
+
       break;
     }
 
@@ -309,6 +336,13 @@ void processSerialCommand()
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
+    case 'I': // send CAN ID
+    {
+      byte serialVersion[] = {SERIAL_RC_OK, 0};
+      sendSerialPayload(&serialVersion, 2);
+      break;
+    }
+
     case 'J': //Start the composite logger
       currentStatus.compositeLogEnabled = true;
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
@@ -337,25 +371,54 @@ void processSerialCommand()
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
-    case 'd': // Send a CRC32 hash of a given page
+    case 'M':
     {
-      uint32_t CRC32_val = calculatePageCRC32( serialPayload[2] );
-      uint8_t payloadCRC32[5];
-      
-      //First byte is the flag
-      payloadCRC32[0] = SERIAL_RC_OK;
+      //New write command
+      //7 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      //1 - 1st New value
+      byte offset1, offset2, length1, length2;
 
-      //Split the 4 bytes of the CRC32 value into individual bytes and send
-      payloadCRC32[1] =  ((CRC32_val >> 24) & 255);
-      payloadCRC32[2] = ((CRC32_val >> 16) & 255);
-      payloadCRC32[3] = ((CRC32_val >> 8) & 255);
-      payloadCRC32[4] = (CRC32_val & 255);
-      
-      sendSerialPayload( &payloadCRC32, 5);
+      uint8_t currentPage = serialPayload[2]; //Page ID is 2 bytes, but as the first byte is always 0 it can be ignored
+      offset1 = serialPayload[3];
+      offset2 = serialPayload[4];
+      uint16_t valueOffset = word(offset2, offset1);
+      length1 = serialPayload[5];
+      length2 = serialPayload[6];
+      uint16_t chunkSize = word(length2, length1);
 
+      if( (valueOffset + chunkSize) > getPageSize(currentPage))
+      {
+        //This should never happen, but just incase
+        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+        break;
+      }
+
+      if(isEepromWritePending())
+      {
+        enableForceBurn();
+        writeConfig(currentPage);
+        disableForceBurn();
+      }
+
+      //page_iterator_t entity = map_page_offset_to_entity(currentPage, valueOffset); 
+      for(uint16_t i = 0; i < chunkSize; i++)
+      {
+        setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
+      }
+      
+      { 
+        //enableForceBurn();
+        writeConfig(currentPage);
+        //disableForceBurn();
+      }
+      
+      sendSerialReturnCode(SERIAL_RC_OK);
+      
       break;
-    }
-      
+    }  
 
     /*
     * New method for sending page values (MS command equivalent is 'r')
@@ -390,7 +453,8 @@ void processSerialCommand()
 
     case 'Q': // send code version
     {
-      char productString[21] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','1'} ; //Note no null terminator in array and statu variable at the start
       sendSerialPayload(&productString, sizeof(productString));
       break;
     }
@@ -539,8 +603,8 @@ void processSerialCommand()
 
     case 'S': // send code version
     {
-      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '1', '.', '0', '9', '-', 'd', 'e', 'v'};
-      //productString = F("Speeduino 2021.09-dev");
+      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '1', '.', '0', '9', '-', 'd', 'e', 'v'};
+      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '0', '1'};
       sendSerialPayload(&productString, sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
@@ -660,33 +724,6 @@ void processSerialCommand()
       #endif
       }
       break;
-
-
-    case 'M':
-    {
-      //New write command
-      //7 bytes required:
-      //2 - Page identifier
-      //2 - offset
-      //2 - Length
-      //1 - 1st New value
-      byte offset1, offset2, length1, length2;
-
-      uint8_t currentPage = serialPayload[2];
-      offset1 = serialPayload[3];
-      offset2 = serialPayload[4];
-      uint16_t valueOffset = word(offset2, offset1);
-      length1 = serialPayload[5];
-      length2 = serialPayload[6];
-      uint16_t chunkSize = word(length2, length1);
-
-      for(uint16_t i = 0; i < chunkSize; i++)
-      {
-        setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
-      }
-      sendSerialReturnCode(SERIAL_RC_OK);
-      break;
-    }
 
     case 'w':
     {
@@ -808,6 +845,8 @@ void processSerialCommand()
     }
 
     default:
+      //Unknown command
+      sendSerialReturnCode(SERIAL_RC_UKWN_ERR);
       break;
   }
 }

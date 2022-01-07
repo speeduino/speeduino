@@ -281,7 +281,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202109-dev"));
+      Serial.print(F("speeduino 202201"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -313,7 +313,7 @@ void command()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2021.09-dev"));
+      Serial.print(F("Speeduino 2022.01"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -547,6 +547,8 @@ void command()
       break;
 
     default:
+      Serial.println(F("Err: Unknown cmd"));
+      cmdPending = false;
       break;
   }
 }
