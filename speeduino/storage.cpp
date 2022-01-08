@@ -11,6 +11,7 @@ A full copy of the license may be found in the projects root directory
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "pages.h"
+#include "table3d_axis_io.h"
 
 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
@@ -120,9 +121,10 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
+  const int16_byte &converter = get_axis_io_converter(it.domain());
   while ((location.can_write() || forceBurn) && !it.at_end())
   {
-    location.update((byte)*it);
+    location.update(converter.to_byte(*it));
     ++location;
     ++it;
   }
@@ -346,9 +348,10 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 
 static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
+  const int16_byte &converter = get_axis_io_converter(it.domain());
   while (!it.at_end())
   {
-    *it = EEPROM.read(address);
+    *it = converter.from_byte(EEPROM.read(address));
     ++address;
     ++it;
   }
