@@ -33,10 +33,10 @@ void setupAdvanceDCignitionTable(table3d16RpmLoad * ignTable, ignitionTableType 
     const table3d_axis_t tempYAxis[] = {510, 350, 250, 150, 100, 85, 75, 65, 50, 45, 37, 30, 23, 17, 9, 0};
     
     uint8_t const * valuesPerXAxis;
-    //X axis values we care about                                 510                              10                              50                              23                      0
+    //X axis values we care about                                 510                              100                             50                              23                      0
     const uint8_t valuesPerXAxisTable1[tempXAxisSize] =          { 70+OI,  70+OI,  70+OI,  30+OI,  30+OI,  30+OI,  30+OI,  0+OI,   0+OI,   0+OI,   0+OI,   -40+OI, -40+OI, -40+OI, -40+OI, -40+OI };
     const uint8_t valuesPerXAxisTable2[tempXAxisSize] =          { 69+OI,  69+OI,  69+OI,  20+OI,  20+OI,  20+OI,  20+OI,  1+OI,   1+OI,   1+OI,   1+OI,   -39+OI, -39+OI, -39+OI, -39+OI, -39+OI };
-    const uint8_t valuesPerXAxisTableMultiplied[tempXAxisSize] = { 215+OI, 215+OI, 215+OI, 120+OI, 120+OI, 120+OI, 120+OI, 100+OI, 100+OI, 100+OI, 100+OI, 0+OI,   0+OI,   0+OI,   -40+OI, -40+OI };
+    const uint8_t valuesPerXAxisTableMultiplied[tempXAxisSize] = { 215+OI, 215+OI, 215+OI, 120+OI, 120+OI, 120+OI, 120+OI, 100+OI, 100+OI, 100+OI, 100+OI, 80+OI,  80+OI,  80+OI,  0+OI,   0+OI };
     switch (tableType) {
         case TABLE_1:
         valuesPerXAxis = valuesPerXAxisTable1;
@@ -153,7 +153,7 @@ void setupAdvanceDC() { // One time table/test input setup
 
     // 15-19 should use spark table 2, spark table 2 conditional is enabled and the conditions are met
     engineParameters[15].spark2Mode = engineParameters[16].spark2Mode = engineParameters[17].spark2Mode = engineParameters[18].spark2Mode = engineParameters[19].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
-    engineParameters[15].TPS = engineParameters[16].TPS = engineParameters[17].TPS = engineParameters[18].TPS = engineParameters[19].TPS = 97;
+    engineParameters[15].TPS = engineParameters[16].TPS = engineParameters[17].TPS = engineParameters[18].TPS = engineParameters[19].TPS = 97*2;
 }
 
 void resetAdvanceDC() { //Resets configuration data
@@ -166,13 +166,13 @@ void resetAdvanceDC() { //Resets configuration data
     currentStatus.RPMdiv100 = currentStatus.RPM/100;
     currentStatus.TPS = engineParameters[engineParametersPos].TPS;
     runSecsX10 = 0;
-    currentStatus.secl = 1; //Set this to other than 0 so tables don't try to use cached value when accessing table value 0 the first time
+    
 
     //Secondary tables
     configPage10.spark2Mode = engineParameters[engineParametersPos].spark2Mode;
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
     configPage10.spark2SwitchVariable = SPARK2_CONDITION_TPS;
-    configPage10.spark2SwitchValue = 96;
+    configPage10.spark2SwitchValue = 96*2;
     if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
         setupAdvanceDCignitionTable(&ignitionTable2, TABLE_Multiplied);
     }
@@ -187,12 +187,13 @@ void resetAdvanceDC() { //Resets configuration data
     flexAdvTable.xSize = 3;
     flexAdvTable.values = &flexAdvAdj;
     flexAdvTable.axisX = &flexAdvBins;
+    table2D_getValue(&flexAdvTable, 1); // This is to prevent use of incorrect cached value when first access is for value 0
 
     //WMI
     configPage10.wmiEnabled = 0;
     configPage10.wmiAdvEnabled = 1;
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
-    configPage10.wmiTPS = 40;
+    configPage10.wmiTPS = 40*2;
     configPage10.wmiRPM = 8;
     configPage10.wmiMAP = 0;
     configPage10.wmiIAT = 40;
@@ -201,6 +202,7 @@ void resetAdvanceDC() { //Resets configuration data
     wmiAdvTable.xSize = 4;
     wmiAdvTable.values = &wmiAdvAdj;
     wmiAdvTable.axisX = &wmiAdvBins;
+    table2D_getValue(&wmiAdvTable, 1); // This is to prevent use of incorrect cached value when first access is for value 0
 
     //IAT
     currentStatus.IAT = 13;
@@ -224,7 +226,7 @@ void resetAdvanceDC() { //Resets configuration data
     configPage2.idleAdvRPM = 3000/100;
     configPage2.vssMode = 0;
     configPage2.idleAdvAlgorithm = 0;
-    configPage2.idleAdvTPS = 98;
+    configPage2.idleAdvTPS = 98*2;
     idleAdvStart = 0;
     configPage9.idleAdvStartDelay = 0;
     idleTargetTable.valueSize = SIZE_BYTE;
@@ -237,10 +239,14 @@ void resetAdvanceDC() { //Resets configuration data
     idleAdvanceTable.xSize = 3;
     idleAdvanceTable.values = &idleAdvValues;
     idleAdvanceTable.axisX = &idleAdvBins;
+    table2D_getValue(&idleTargetTable, 1); // This is to prevent use of incorrect cached value when first access is for value 0
+    table2D_getValue(&idleAdvanceTable, 1); // This is to prevent use of incorrect cached value when first access is for value 0
 
     //Soft rev limit
     configPage6.engineProtectType = PROTECT_CUT_OFF;
     configPage4.SoftRevLim = 100/100;
+    softStartTime = 0;
+    configPage4.SoftLimMax = 10;
 
     //Nitrous
     configPage10.n2o_enable = 0;
@@ -251,7 +257,7 @@ void resetAdvanceDC() { //Resets configuration data
     //Soft Launch
     configPage6.launchEnabled = 0;
     configPage6.lnchSoftLim = 800/100;
-    configPage10.lnchCtrlTPS = 90;
+    configPage10.lnchCtrlTPS = 90*2;
     //Soft Flat Shift
     configPage6.flatSEnable = 0;
     configPage6.flatSSoftWin = 400/100;
@@ -510,7 +516,7 @@ void testAdvanceDC() {
         resetAdvanceDC();
         configPage6.launchEnabled = 1;
         currentStatus.clutchEngagedRPM = 400;
-        currentStatus.TPS = 95;
+        currentStatus.TPS = 95*2;
         configPage6.lnchRetard = -30;
         RUN_TEST(testAdvanceDCSoftLaunch);
         configPage6.lnchRetard = 0;
@@ -558,7 +564,7 @@ void testAdvanceDC() {
     engineParametersPos = 0;
     resetAdvanceDC();
     configPage10.wmiEnabled = 1;
-    currentStatus.TPS = 50;
+    currentStatus.TPS = 50*2;
     for (tablePosition1 = 0; tablePosition1 < wmiAdvTable.xSize; tablePosition1++) {
         RUN_TEST(testAdvanceDCWMI);
     }
