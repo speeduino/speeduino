@@ -82,7 +82,6 @@ struct write_location {
 
   bool can_write() const
   {
-    //return true;
     return (counter<=EEPROM_MAX_WRITE_BLOCK);
   }
 };
