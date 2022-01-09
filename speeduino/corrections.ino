@@ -304,7 +304,7 @@ uint16_t correctionAccel()
     TPS_change = (currentStatus.TPS - TPSlast);
     //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
     TPS_rateOfChange = TPS_READ_FREQUENCY * TPS_change; //This is the % per second that the TPS has moved
-    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
+    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 20; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
     else { currentStatus.tpsDOT = 0; } //Prevent overflow as tpsDOT is signed
   }
   
@@ -579,11 +579,11 @@ byte correctionFuelTemp()
 
 Simple (Best suited to narrowband sensors):
 If the O2 sensor reports that the mixture is lean/rich compared to the desired AFR target, it will make a 1% adjustment
-It then waits <egoDelta> number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
+It then waits egoDelta number of ignition events and compares O2 against the target table again. If it is still lean/rich then the adjustment is increased to 2%.
 
 This continues until either:
 - the O2 reading flips from lean to rich, at which point the adjustment cycle starts again at 1% or
-- the adjustment amount increases to <egoLimit> at which point it stays at this level until the O2 state (rich/lean) changes
+- the adjustment amount increases to egoLimit at which point it stays at this level until the O2 state (rich/lean) changes
 
 PID (Best suited to wideband sensors):
 
@@ -701,7 +701,7 @@ int8_t correctionFixedTiming(int8_t advance)
  */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  byte ignCrankFixValue = advance;
+  int8_t ignCrankFixValue = advance;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
   return ignCrankFixValue;
 }
@@ -720,9 +720,9 @@ int8_t correctionFlexTiming(int8_t advance)
 
 int8_t correctionWMITiming(int8_t advance)
 {
-  if( configPage10.wmiEnabled >= 1 && configPage10.wmiAdvEnabled == 1 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) == 0 ) //Check for wmi being enabled
+  if( (configPage10.wmiEnabled >= 1) && (configPage10.wmiAdvEnabled == 1) && !BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) ) //Check for wmi being enabled
   {
-    if(currentStatus.TPS >= configPage10.wmiTPS && currentStatus.RPM >= configPage10.wmiRPM && currentStatus.MAP/2 >= configPage10.wmiMAP && currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET >= configPage10.wmiIAT)
+    if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPM >= configPage10.wmiRPM) && (currentStatus.MAP/2 >= configPage10.wmiMAP) && ((currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
     {
       return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
     }
@@ -733,14 +733,9 @@ int8_t correctionWMITiming(int8_t advance)
  */
 int8_t correctionIATretard(int8_t advance)
 {
-  byte ignIATValue = advance;
-  //Adjust the advance based on IAT. If the adjustment amount is greater than the current advance, just set advance to 0
   int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-  int tempAdvance = (advance - advanceIATadjust);
-  if (tempAdvance >= -OFFSET_IGNITION) { ignIATValue = tempAdvance; }
-  else { ignIATValue = -OFFSET_IGNITION; }
 
-  return ignIATValue;
+  return advance - advanceIATadjust;
 }
 /** Ignition correction for coolant temperature (CLT).
  */
@@ -760,7 +755,7 @@ int8_t correctionIdleAdvance(int8_t advance)
 
   int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.IdleAdvDelay * 5)) )
+  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.idleAdvDelay * 5)) )
   {
     currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
     int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
@@ -787,12 +782,19 @@ int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
-  if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+
+  if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
   {
-    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
-    if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
-    else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
-    
+    if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+    {
+      if( (runSecsX10 - softStartTime) < configPage4.SoftLimMax )
+      {
+        BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+        if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
+        else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+      }
+    }  
+    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softStartTime = runSecsX10; } //Only copy time at runSecsX10 update rate
   }
 
   return ignSoftRevValue;
@@ -844,7 +846,7 @@ int8_t correctionSoftFlatShift(int8_t advance)
 {
   int8_t ignSoftFlatValue = advance;
 
-  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM-configPage6.flatSSoftWin) ) )
+  if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
     ignSoftFlatValue = configPage6.flatSRetard;

@@ -32,11 +32,9 @@ uint8_t Glow, Ghigh;
 bool canCmdPending = false;
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial3;
 #elif defined(CORE_STM32)
-  #define CANSerial_AVAILABLE
-  #ifndef Serial2
+  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
     #define Serial2 Serial1
   #endif
   #if defined(STM32GENERIC) // STM32GENERIC core
@@ -45,7 +43,6 @@ bool canCmdPending = false;
     HardwareSerial &CANSerial = Serial2;
   #endif
 #elif defined(CORE_TEENSY)
-  #define CANSerial_AVAILABLE
   HardwareSerial &CANSerial = Serial2;
 #endif
 
@@ -330,7 +327,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[103] = currentStatus.fuelPressure;
   fullStatus[104] = currentStatus.oilPressure;
   fullStatus[105] = currentStatus.wmiPW;
-  fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), UnusedBits(3:7)
+  fullStatus[106] = currentStatus.status4; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), fanStatus(3), UnusedBits(4:7)
   fullStatus[107] = (int8_t)currentStatus.vvt2Angle;
   fullStatus[108] = currentStatus.vvt2TargetAngle;
   fullStatus[109] = currentStatus.vvt2Duty;
@@ -343,6 +340,9 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[116] = currentStatus.advance2; //advance 2 
   fullStatus[117] = currentStatus.nitrous_status;
   fullStatus[118] = currentStatus.TS_SD_Status; //SD card status
+  fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
+  fullStatus[120] = highByte(currentStatus.EMAP);
+  fullStatus[121] = currentStatus.fanDuty;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -433,7 +433,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         //send to truecan send routine
         //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
         //This section is to be moved to the correct can output routine later
-        #if defined(CORE_TEENSY) || defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)  //Scope guarding this for now, but this needs a bit of a rethink for how it can be handled better across multiple archs
+        #if defined(NATIVE_CAN_AVAILABLE)
         outMsg.id = (canaddress);
         outMsg.len = 8;
         outMsg.buf[0] = 0x0B ;  //11;   
@@ -487,7 +487,7 @@ if (PIDmode == 0x01)
             outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
             outMsg.buf[2] =  0x00;    // PID code
             outMsg.buf[3] =  0x08;   //B0000 1000   1-8
-            outMsg.buf[4] =  B00111110;   //9-16
+            outMsg.buf[4] =  B01111110;   //9-16
             outMsg.buf[5] =  B10100000;   //17-24
             outMsg.buf[6] =  B00010001;   //17-32
             outMsg.buf[7] =  B00000000;   
@@ -503,14 +503,26 @@ if (PIDmode == 0x01)
             outMsg.buf[6] =  0x00; 
             outMsg.buf[7] =  0x00;
           break;
-         
+
+          case 10:        // PID-0x0A , Fuel Pressure (Gauge) , range is 0 to 765 kPa , formula == A / 3)
+            uint16_t temp_fuelpressure;
+            // Fuel pressure is in PSI. PSI to kPa is 6.89475729, but that needs to be divided by 3 for OBD2 formula. So 2.298.... 2.3 is close enough, so that in fraction.
+            temp_fuelpressure = (currentStatus.fuelPressure * 23) / 10;
+            outMsg.buf[0] =  0x03;    // sending 3 byte
+            outMsg.buf[1] =  0x41;    // 
+            outMsg.buf[2] =  0x0A;    // pid code
+            outMsg.buf[3] =  lowByte(temp_fuelpressure);
+            outMsg.buf[4] =  0x00;
+            outMsg.buf[5] =  0x00; 
+            outMsg.buf[6] =  0x00; 
+            outMsg.buf[7] =  0x00;
+          break;
+
           case 11:        // PID-0x0B , MAP , range is 0 to 255 kPa , Formula == A
-            uint16_t temp_engineMap;
-            temp_engineMap = (highByte(currentStatus.MAP - currentStatus.baro)<<8) | lowByte(currentStatus.MAP - currentStatus.baro);
             outMsg.buf[0] =  0x03;    // sending 3 byte
             outMsg.buf[1] =  0x41;    // 
             outMsg.buf[2] =  0x0B;    // pid code
-            outMsg.buf[3] =  temp_engineMap;    // absolute map is map gauge value - baro , baro is 100ish 
+            outMsg.buf[3] =  lowByte(currentStatus.MAP);    // absolute map
             outMsg.buf[4] =  0x00;
             outMsg.buf[5] =  0x00; 
             outMsg.buf[6] =  0x00; 
@@ -531,13 +543,11 @@ if (PIDmode == 0x01)
           break;
 
           case 13:        //PID-0x0D , Vehicle speed , range is 0 to 255 km/h , formula == A 
-            uint8_t temp_vehiclespeed;
-            temp_vehiclespeed = 120;               // TEST VALUE !!!!!   
-            outMsg.buf[0] =  0x03;                    // sending 3 bytes
-            outMsg.buf[1] =  0x41;                    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-            outMsg.buf[2] =  0x0D;                    // pid code
-            outMsg.buf[3] =  temp_vehiclespeed;       // A
-            outMsg.buf[4] =  0x00;                    // B
+            outMsg.buf[0] =  0x03;                       // sending 3 bytes
+            outMsg.buf[1] =  0x41;                       // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
+            outMsg.buf[2] =  0x0D;                       // pid code
+            outMsg.buf[3] =  lowByte(currentStatus.vss); // A
+            outMsg.buf[4] =  0x00;                       // B
             outMsg.buf[5] =  0x00; 
             outMsg.buf[6] =  0x00; 
             outMsg.buf[7] =  0x00;
@@ -614,27 +624,11 @@ if (PIDmode == 0x01)
           outMsg.buf[0] =  0x06;          // sending 4 bytes
           outMsg.buf[1] =  0x41;          // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
           outMsg.buf[2] =  0x20;          // pid code
-          outMsg.buf[3] =  B01011000;     // 33-40
+          outMsg.buf[3] =  B00011000;     // 33-40
           outMsg.buf[4] =  B00000000;     //41 - 48
           outMsg.buf[5] =  B00100000;     //49-56
           outMsg.buf[6] =  B00000001;     //57-64
           outMsg.buf[7] = 0x00;
-        break;
-
-        case 34:      // PID-0x22 Fuel /Pressure (Relative to manifold vacuum) , range is 0 to 5177.265 kPa , formula == 0.079(256A+B)
-          int16_t temp_fuelpressure;
-          temp_fuelpressure = 3165;                 // test value !!!!!! currentStatus.fuelPressure ;           
-          obdcalcG16 = temp_fuelpressure ;        //  this needs converting to kpa !
-          obdcalcA = highByte(obdcalcG16);
-          obdcalcB = lowByte(obdcalcG16);      
-          outMsg.buf[0] =  0x03;                 // sending 3 bytes
-          outMsg.buf[1] =  0x41;                 // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-          outMsg.buf[2] =  0x22;                 // pid code
-          outMsg.buf[3] =  obdcalcA;             // A
-          outMsg.buf[4] =  obdcalcB;             // B 
-          outMsg.buf[5] =  0x00; 
-          outMsg.buf[6] =  0x00; 
-          outMsg.buf[7] =  0x00;
         break;
    
         case 36:      // PID-0x24 O2 sensor2, AB: fuel/air equivalence ratio, CD: voltage ,  Formula == (2/65536)(256A +B) , 8/65536(256C+D) , Range is 0 to <2 and 0 to >8V 

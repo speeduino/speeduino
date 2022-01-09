@@ -10,6 +10,7 @@
 #include "scheduledIO.h"
 #include "sensors.h"
 #include "storage.h"
+#include "SD_logger.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -279,12 +280,12 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 
     //VSS Calibration routines
     case TS_CMD_VSS_60KMH:
-      //Calibrate the actual pulses per distance
-      if( (vssLastPulseTime > 0) && (vssLastMinusOnePulseTime > 0) )
       {
-        if(vssLastPulseTime > vssLastMinusOnePulseTime)
+        //Calibrate the actual pulses per distance
+        uint32_t calibrationGap = vssGetPulseGap(0);
+        if( calibrationGap > 0 )
         {
-          configPage2.vssPulsesPerKm = 60000000UL / (vssLastPulseTime - vssLastMinusOnePulseTime);
+          configPage2.vssPulsesPerKm = 60000000UL / calibrationGap;
           writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
           BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
         }
@@ -354,6 +355,12 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_STM32_BOOTLOADER: //
       jumpToBootloader();
       break;
+
+#ifdef SD_LOGGING
+    case TS_CMD_SD_FORMAT: //Format SD card
+      formatExFat();
+      break;
+#endif
 
     default:
       break;

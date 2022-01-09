@@ -13,12 +13,19 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
+  #define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
   #else
     #define EEPROM_LIB_H <EEPROM.h>
+    typedef int eeprom_address_t;
   #endif
-  #define RTC_LIB_H "TimeLib.h"
+  #ifdef PLATFORMIO
+    #define RTC_LIB_H <TimeLib.h>
+  #else
+    #define RTC_LIB_H <Time.h>
+  #endif
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
