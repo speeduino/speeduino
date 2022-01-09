@@ -237,8 +237,11 @@ void processSerialCommand()
 
       if(isEepromWritePending())
       {
-        //There is already a write pending, so we can't do anything
+        //There is already a write pending, force it through. 
         sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
+        enableForceBurn();
+        writeAllConfig();
+        disableForceBurn();
         break;
       }
 
@@ -642,13 +645,15 @@ void processSerialCommand()
           }
         }
         sendSerialReturnCode(SERIAL_RC_OK);
+        Serial.flush();
+        if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
         void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
         uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
 
-        //Temperature calibrations are sent as 32 16-bit values
+        //Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
         if(calibrationLength == 64)
         {
           for (uint16_t x = 0; x < 32; x++)
@@ -702,8 +707,6 @@ void processSerialCommand()
       {
         sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
       }
-
-      writeCalibration(); //Store received values in EEPROM
       break;
     }
 
