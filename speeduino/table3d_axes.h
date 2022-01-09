@@ -88,18 +88,17 @@ private:
     axis_domain _domain;
 };
 
-#define TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _xaxis)
+#define TABLE3D_TYPENAME_AXIS(size, domain) table3d ## size ## domain ## _axis
 
-#define TABLE3D_GEN_XAXIS(size, xDom, yDom) \
-    /** @brief The x-axis for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_XAXIS(size, xDom, yDom) { \
+#define TABLE3D_GEN_AXIS(size, dom) \
+    /** @brief The dxis for a 3D table with size x size dimensions and domain 'domain' */ \
+    struct TABLE3D_TYPENAME_AXIS(size, dom) { \
         /** @brief The length of the axis in elements */ \
         static constexpr table3d_dim_t length = size; \
         /** @brief The domain the axis represents */ \
-        static constexpr axis_domain domain = axis_domain_ ## xDom; \
+        static constexpr axis_domain domain = axis_domain_ ## dom; \
         /**
-          @brief The axis elements \
-          @details The x-axis is conventional: axis[0] is the minimum \
+          @brief The axis elements\
         */ \
         table3d_axis_t axis[size]; \
         \
@@ -109,29 +108,16 @@ private:
             return table_axis_iterator(axis+(size-1), axis-1, -1, domain); \
         } \
     };
-TABLE3D_GENERATOR(TABLE3D_GEN_XAXIS)
 
-#define TABLE3D_TYPENAME_YAXIS(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _yaxis)
-
-#define TABLE3D_GEN_YAXIS(size, xDom, yDom) \
-    /** @brief The y-axis for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _yaxis) { \
-        /** @brief The length of the axis in elements */ \
-        static constexpr table3d_dim_t length = size; \
-        /** @brief The domain the axis represents */ \
-        static constexpr axis_domain domain = axis_domain_ ## yDom; \
-        /**
-          @brief The axis elements \
-          @details The y-axis is reversed: axis[n-1] is the minimum \
-        */ \
-        table3d_axis_t axis[size]; \
-        \
-        /** @brief Iterate over the axis elements */ \
-        inline table_axis_iterator begin() \
-        { \
-            return table_axis_iterator(axis+(size-1), axis-1, -1, domain); \
-        } \
-    };
-TABLE3D_GENERATOR(TABLE3D_GEN_YAXIS)
+// This generates the axis types for the following sizes & domains:
+TABLE3D_GEN_AXIS(6, Rpm)
+TABLE3D_GEN_AXIS(6, Load)
+TABLE3D_GEN_AXIS(4, Rpm)
+TABLE3D_GEN_AXIS(4, Load)
+TABLE3D_GEN_AXIS(8, Rpm)
+TABLE3D_GEN_AXIS(8, Load)
+TABLE3D_GEN_AXIS(8, Tps)
+TABLE3D_GEN_AXIS(16, Rpm)
+TABLE3D_GEN_AXIS(16, Load)
 
 /** @} */
