@@ -921,10 +921,10 @@ namespace
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const int16_byte &converter = get_axis_io_converter(it.domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
     while (!it.at_end())
     {
-      Serial.write(converter.to_byte(*it));
+      Serial.write(pConverter->to_byte(*it));
       ++it;
     }
   }
