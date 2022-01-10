@@ -645,7 +645,7 @@ void processSerialCommand()
           }
         }
         sendSerialReturnCode(SERIAL_RC_OK);
-        Serial.flush();
+        Serial.flush(); //This is safe because engine is assumed to not be running during calibration
         if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
