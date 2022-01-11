@@ -646,7 +646,14 @@ void processSerialCommand()
         }
         sendSerialReturnCode(SERIAL_RC_OK);
         Serial.flush(); //This is safe because engine is assumed to not be running during calibration
-        if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+
+        //Check if this is the final chunk of calibration data
+        #ifdef CORE_STM32
+          //STM32 requires TS to send 8 x 128 bytes chunk rather than 4 x 256 bytes. 
+          if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+        #else
+          if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+        #endif
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
