@@ -649,7 +649,7 @@ void processSerialCommand()
 
         //Check if this is the final chunk of calibration data
         #ifdef CORE_STM32
-          //STM32 requires TS to send 8 x 128 bytes chunk rather than 4 x 256 bytes. 
+          //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
           if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
         #else
           if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
