@@ -656,8 +656,12 @@ byte correctionAFRClosedLoop()
           ((configPage2.egoResetwfuelLoad == false) ||
            (currentStatus.fuelLoad <= (int16_t)configPage6.egoFuelLoadMax*2))) // Ignore this criteria if cal set to freeze (false).
       {
+        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        
         if(runSecsX10 >= ego_FreezeEndTime) // Check the algo freeze conditions are not active.
         {
+          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
+          
           /* Build the lookup table for the integrator dynamically. This saves eeprom by using less variables. 
            * The calibration values are expressed as a "% of max adjustment" where the max adjustment would theoretically correct the AFR to the target in one step." 
            * The scaling in the .ini file applies the correct adjustment in g_ego % units depending on the fixed axis defined by. egoIntAFR_XBins.
@@ -711,11 +715,15 @@ byte correctionAFRClosedLoop()
             }
             
             //If integrator delay is passed then update integrator
-            if (ego_IntDelayLoops >= configPage9.egoIntDelay) { ego_Integral = ego_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
+            if (ego_IntDelayLoops >= configPage9.egoIntDelay) 
+            { 
+              BIT_SET(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
+              ego_Integral = ego_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); 
+            } //Integrate step value from table
             
             //Integrator Limits
-            if (ego_Integral < -configPage6.egoLimit) { ego_Integral = -configPage6.egoLimit; }
-            if (ego_Integral > configPage6.egoLimit) { ego_Integral = configPage6.egoLimit; }
+            if (ego_Integral < -configPage6.egoLimit) { ego_Integral = -configPage6.egoLimit; BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR); }
+            if (ego_Integral > configPage6.egoLimit) { ego_Integral = configPage6.egoLimit; BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR); }
             
             //2nd check to limit total value after update with prop and output the final correction
             if ((ego_Integral + ego_Prop) < -configPage6.egoLimit) { ego_AdjustPct = 100 - configPage6.egoLimit; }
@@ -724,6 +732,7 @@ byte correctionAFRClosedLoop()
           }
           else 
           { // O2 sensor out of range
+            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
             ego_AdjustPct = 100;
             ego_Integral = 0;
             ego_IntDelayLoops = 0; 
@@ -771,11 +780,15 @@ byte correctionAFRClosedLoop()
             }
                         
             //If integrator delay is passed then update integrator
-            if (ego2_IntDelayLoops >= configPage9.egoIntDelay) { ego2_Integral = ego2_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); } //Integrate step value from table
+            if (ego2_IntDelayLoops >= configPage9.egoIntDelay) 
+            { 
+               BIT_SET(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
+               ego2_Integral = ego2_Integral + (int8_t)(table2D_getValue(&ego_IntegralTable, O2_Error) - OFFSET_AFR_ERR); 
+            } //Integrate step value from table
             
             //Integrator Limits
-            if (ego2_Integral < -configPage6.egoLimit) { ego2_Integral = -configPage6.egoLimit; }
-            if (ego2_Integral > configPage6.egoLimit) { ego2_Integral = configPage6.egoLimit; }
+            if (ego2_Integral < -configPage6.egoLimit) { ego2_Integral = -configPage6.egoLimit; BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR); }
+            if (ego2_Integral > configPage6.egoLimit) { ego2_Integral = configPage6.egoLimit; BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR); }
             
             //2nd check to limit total value after update with prop and output the final correction
             if ((ego2_Integral + ego2_Prop) < -configPage6.egoLimit) { ego2_AdjustPct = 100 - configPage6.egoLimit; }
@@ -784,15 +797,19 @@ byte correctionAFRClosedLoop()
           }
           else 
           { // No 2nd O2 or O2 sensor out of range
+            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
             ego2_AdjustPct = 100;
             ego2_Integral = 0;
             ego2_IntDelayLoops = 0; 
           } 
         } // End Conditions to not freeze ego correction
-        else { ego_AdjustPct = currentStatus.egoCorrection; ego2_AdjustPct = currentStatus.ego2Correction; } // ego frozen at last values
+        else { ego_AdjustPct = currentStatus.egoCorrection; ego2_AdjustPct = currentStatus.ego2Correction; BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN); BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);} // ego frozen at last values
   	  } // End Conditions not to reset ego
   	  else 
       { //Reset closed loop. Also activate freeze delay to for when we re-enable.
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
         ego_AdjustPct = 100;
         ego2_AdjustPct = 100;      
         ego_Integral = 0;
@@ -811,6 +828,10 @@ byte correctionAFRClosedLoop()
       } 
       else 
       {// Engine speed probably stopped or recranking so don't apply EGO during crank.
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
         ego_AdjustPct = 100;
         ego2_AdjustPct = 100;  
         ego_NextCycleCount = 0;
@@ -825,6 +846,10 @@ byte correctionAFRClosedLoop()
   } //End egoType
   else
   { // No O2 sensors or incorrect config to run closed loop O2
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
     ego_AdjustPct = 100;
     ego2_AdjustPct = 100;  
     ego_NextCycleCount = 0;
