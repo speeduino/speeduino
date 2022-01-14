@@ -106,7 +106,7 @@ private:
         /** @brief Iterate over the axis elements */ \
         inline table_axis_iterator begin(void) \
         {  \
-            return table_axis_iterator(axis, axis+size, 1, domain); \
+            return table_axis_iterator(axis+(size-1), axis-1, -1, domain); \
         } \
     };
 TABLE3D_GENERATOR(TABLE3D_GEN_XAXIS)
