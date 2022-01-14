@@ -37,7 +37,7 @@
 #endif
 
 //Test values only
-#define SD_LOG_FILE_SIZE  10000000 //Defuault 10mb file size
+#define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
 #define MAX_LOG_FILES     10000
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
@@ -65,6 +65,7 @@ void beginSDLogging();
 void endSDLogging();
 void setTS_SD_status();
 void formatExFat();
+void deleteLogFile(char, char, char, char);
 bool createLogFile();
 void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
 uint16_t getNextSDLogFileNumber();
