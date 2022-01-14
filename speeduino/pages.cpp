@@ -467,6 +467,14 @@ table_axis_iterator x_begin(const page_iterator_t &it)
 }
 
 /**
+ * Convert page iterator to table x axis iterator.
+ */
+table_axis_iterator x_rbegin(const page_iterator_t &it)
+{
+  return x_rbegin(it.pData, it.table_key);
+}
+
+/**
  * Convert page iterator to table y axis iterator.
  */
 table_axis_iterator y_begin(const page_iterator_t &it)

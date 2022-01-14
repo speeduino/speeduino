@@ -118,6 +118,9 @@ table_value_iterator rows_begin(const void *pTable, table_type_t key);
 
 table_axis_iterator x_begin(const void *pTable, table_type_t key);
 
+table_axis_iterator x_rbegin(const void *pTable, table_type_t key);
+
 table_axis_iterator y_begin(const void *pTable, table_type_t key);
 
+table_axis_iterator y_rbegin(const void *pTable, table_type_t key);
 /** @} */
