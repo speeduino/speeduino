@@ -4619,7 +4619,7 @@ void triggerPri_Renix()
   if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
   {
     toothSystemCount++;
-//    Serial3.println(toothSystemCount);
+//    Serial3.print(toothSystemCount); Serial3.print(" ");
     validTrigger = true;
 
     if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0 ) // if not first passes (so no data)
@@ -4635,8 +4635,10 @@ void triggerPri_Renix()
     if( curGap >= targetGap )
     { 
       /* add one tooth to account for the larger gap / tooth we've just seen */
-      toothSystemCount++;toothSystemCount++;
-//      Serial3.print("GAP:");Serial3.println(toothSystemCount); Serial3.print(" cg/tg<");Serial3.print(curGap); Serial3.print("/"); Serial3.println(targetGap);
+      toothSystemCount++;
+//      Serial3.print(toothSystemCount); 
+      toothSystemCount++;
+//      Serial3.print(toothSystemCount);  Serial3.print(" GAP");
     }
     else
     { 
@@ -4717,7 +4719,7 @@ void triggerSec_Renix()
     {
       if( secondaryTriggerEdge == RISING)
       {
-        if( toothCurrentCount == 3 && toothSystemCount == 1)
+        if( toothCurrentCount == 3 && (toothSystemCount == 1 || toothSystemCount == 0) ) // should be toothSystemCount == 1 however in ardustim we're getting 0 despite the logic monitor showing the pattern is correct
         {
 //          Serial3.println("rise TCC:ok");
           revolutionOne = 1;
@@ -4732,12 +4734,13 @@ void triggerSec_Renix()
           revolutionOne = 1;
         }
         toothCurrentCount= 3;
-        toothSystemCount = 1; 
+        if(toothSystemCount > 1)
+        { toothSystemCount = 1;  }
 
       }
       else if ( secondaryTriggerEdge == FALLING)
       {
-//        Serial3.print("Fall TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
+//        Serial3.print("Fall BAD TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;   
         revolutionOne = 0;
@@ -4758,4 +4761,21 @@ void triggerSec_Renix()
   }
   
 }
+
+
+uint16_t getRPM_Renix()
+{
+  uint16_t tempRPM = 0;
+  if( currentStatus.RPM < currentStatus.crankRPM )
+  {
+    tempRPM = crankingGetRPM(configPage4.triggerTeeth, 360); 
+  }
+  else
+  {
+    tempRPM = stdGetRPM(360); 
+  }
+  return tempRPM;
+}
+
+
 /** @} */
