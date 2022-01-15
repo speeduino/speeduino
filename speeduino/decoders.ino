@@ -4449,6 +4449,7 @@ void triggerSetup_Renix()
     triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
     triggerToothAngleIsCorrect = true;
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 44)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+    triggerSecFilterTime = triggerFilterTime; // set any value to enable it to trigger
   }
   else if (configPage4.TrigPattern == DECODER_RENIX66)
   {
@@ -4458,6 +4459,7 @@ void triggerSetup_Renix()
     triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
     triggerToothAngleIsCorrect = true; 
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 66)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
+    triggerSecFilterTime = triggerFilterTime; // set any value to enable it to trigger
   }
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
@@ -4478,26 +4480,24 @@ void triggerPri_Renix()
   if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
   {
     toothSystemCount++;
+//    Serial3.println(toothSystemCount);
     validTrigger = true;
 
-    if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0)
-    { targetGap = (2 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
+    if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0 ) // if not first passes (so no data)
+    { 
+      if(toothSystemCount < 10) // only work out a target gap if we're not lookig at the larger teeth
+      { 
+          targetGap = (3 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime)) >> 1;  // 1.5 times last gap
+      }
+    }
     else 
     { targetGap = 100000000L; } // random large number to stop system thinking we have a gap for the first few teeth on start up
 
     if( curGap >= targetGap )
     { 
-      /* add two teeth to account for the gap we've just seen */
-      toothSystemCount++;
-      toothSystemCount++;
-
-      if( toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
-      {
-        // lost sync
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;            
-        toothSystemCount = 1; // first tooth after gap is always 1
-      }
+      /* add one tooth to account for the larger gap / tooth we've just seen */
+      toothSystemCount++;toothSystemCount++;
+//      Serial3.print("GAP:");Serial3.println(toothSystemCount); Serial3.print(" cg/tg<");Serial3.print(curGap); Serial3.print("/"); Serial3.println(targetGap);
     }
     else
     { 
@@ -4509,12 +4509,16 @@ void triggerPri_Renix()
     renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
     renixSystemLastToothTime = curTime;
 
-    if( toothSystemCount == 12) // every real 12th tooth on the crank increment the toothCurrentCount by one 
+    if( toothSystemCount >10 ) // every real 11th tooth on the crank increment the toothCurrentCount by one 
     {
       toothCurrentCount++;
+//      Serial3.print("     Tooth:");
+//      Serial3.println(toothCurrentCount);
+
       if( (configPage4.TrigPattern == DECODER_RENIX66 && toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
           (configPage4.TrigPattern == DECODER_RENIX44 && toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
       {
+//        Serial3.println("** Rotation **");
         toothOneMinusOneTime = toothOneTime;
         toothOneTime = curTime;
         currentStatus.hasSync = true;
@@ -4522,8 +4526,14 @@ void triggerPri_Renix()
         revolutionOne = !revolutionOne;
         toothCurrentCount = 1;  
       }
+      else if (toothSystemCount > 11)
+      {
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;   
+//        Serial3.println(" Lost Sync 2");
+      }
 
-      toothSystemCount = 1;
+      toothSystemCount = 0;
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime; 
 
@@ -4543,32 +4553,7 @@ void triggerPri_Renix()
   } 
 }
 
-/*
-44 tooth
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,1, 1,1, 0,0, 0,0, 
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,1, 1,1, 0,0, 0,0  
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 
 
-66 tooth
-     3,2, 3,2, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 0,0, 0,0, 
-
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 0,0, 0,0,
-
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 
-     1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 1,0, 0,0, 0,0,
-
-     1,0, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 
-     3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 2,2, 2,2,
-
-     3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 
-     3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 2,2, 2,2, 
-
-     3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 
-     3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 3,2, 2,2, 2,2, 
-*/
 void triggerSec_Renix()
 {
   curTime2 = micros();
@@ -4577,7 +4562,7 @@ void triggerSec_Renix()
   //Safety check for initial startup
   if( (toothLastSecToothTime == 0) )
   { 
-    curGap2 = 0; 
+    curGap2 = 0;
     toothLastSecToothTime = curTime2;
   }
 
@@ -4593,40 +4578,30 @@ void triggerSec_Renix()
     {
       if( secondaryTriggerEdge == RISING)
       {
-        if( toothCurrentCount == 3 && toothSystemCount == 2)
+        if( toothCurrentCount == 3 && toothSystemCount == 1)
         {
+//          Serial3.println("rise TCC:ok");
           revolutionOne = 1;
           currentStatus.startRevolutions++; //Counter
           currentStatus.hasSync = true;
         }
         else
         {
-//          Serial3.print("Rise TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
+//          Serial3.print("Rise BAD TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
           currentStatus.hasSync = false;
           currentStatus.syncLossCounter++;   
           revolutionOne = 1;
         }
         toothCurrentCount= 3;
-        toothSystemCount = 2; 
+        toothSystemCount = 1; 
 
       }
       else if ( secondaryTriggerEdge == FALLING)
       {
-        if( toothCurrentCount == 4 && toothSystemCount == 2)
-        {
-          revolutionOne = 0;
-          currentStatus.startRevolutions++; //Counter
-          currentStatus.hasSync = true;
-        }
-        else
-        {
-//          Serial3.print("Fall TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
-          currentStatus.hasSync = false;
-          currentStatus.syncLossCounter++;   
-          revolutionOne = 0;
-        }
-        toothCurrentCount= 4;
-        toothSystemCount = 2; 
+//        Serial3.print("Fall TCC:"); Serial3.print(toothCurrentCount); Serial3.print(" TSC:"); Serial3.print(toothSystemCount); Serial3.println("");
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;   
+        revolutionOne = 0;
       }
     }
   } //Trigger filter
