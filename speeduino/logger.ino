@@ -1,9 +1,6 @@
 #include "globals.h"
+#include "logger.h"
 #include "errors.h"
-
-// int (member) indexes in fullStatus array
-// This array MUST remain in ascending order
-const byte PROGMEM fsIntIndex[] = {4, 14, 17, 25, 27, 32, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 75, 77, 79, 81, 85, 87, 89, 93, 97, 102, 109, 119 };
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
@@ -166,12 +163,10 @@ byte getTSLogEntry(uint16_t byteNum)
     case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
+    case 121: statusValue = currentStatus.fanDuty; break;
   }
 
   return statusValue;
-
-  //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
-  //Every 2-byte integer added here should have it's lowByte index added to fsIntIndex array above
 }
 
 /** 
@@ -289,6 +284,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 85: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 86: statusValue = currentStatus.TS_SD_Status; break; //SD card status
     case 87: statusValue = currentStatus.EMAP; break;
+    case 88: statusValue = currentStatus.fanDuty; break;
   }
 
   return statusValue;
@@ -297,6 +293,8 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 /** 
  * Searches the log 2 byte array to determine whether a given index is a regular single byte or a 2 byte field
  * Uses a boundless binary search for improved performance, but requires the fsIntIndex to remain in order
+ * Refer: https://github.com/scandum/binary_search
+ * 
  * @param key - Index in the log array to check
  * @return True if the index is a 2 byte log field. False if it is a single byte
  */
@@ -313,14 +311,14 @@ bool is2ByteEntry(uint8_t key)
   
     while (mid > 1)
     {  
-      if (key >= fsIntIndex[bot + mid / 2])
+      if (key >= pgm_read_byte( &fsIntIndex[bot + mid / 2]) )
       {
         bot += mid++ / 2;
       }
       mid /= 2;
     }
   
-    if (key == fsIntIndex[bot])
+    if (key == pgm_read_byte(&fsIntIndex[bot]) )
     {
       isFound = true;
     }
