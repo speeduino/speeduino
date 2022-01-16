@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "storage.h"
 #include "sensors.h"
+#include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
@@ -524,7 +525,7 @@ void doUpdates()
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
     //TPS resolution increased to 0.5%
-    configPage2.taeThresh *= 2;
+    //configPage2.taeThresh *= 2;
     configPage2.idleAdvTPS *= 2;
     configPage2.iacTPSlimit *= 2;
     configPage4.floodClear *= 2;
@@ -539,16 +540,16 @@ void doUpdates()
     // Each table Y axis need to be updated as well if TPS is the source
     if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
     {
-      updateTableY(&fuelTable, fuelTable.type_key);
-      updateTableY(&afrTable, afrTable.type_key);
-      updateTableY(&trim1Table, trim1Table.type_key);
-      updateTableY(&trim2Table, trim2Table.type_key);
-      updateTableY(&trim3Table, trim3Table.type_key);
-      updateTableY(&trim4Table, trim4Table.type_key);
-      updateTableY(&trim5Table, trim5Table.type_key);
-      updateTableY(&trim6Table, trim6Table.type_key);
-      updateTableY(&trim7Table, trim7Table.type_key);
-      updateTableY(&trim8Table, trim8Table.type_key);
+      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
+      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
+      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
+      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
+      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
+      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
+      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
+      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
+      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
+      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)
@@ -557,17 +558,27 @@ void doUpdates()
         }
       }
     }
-    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { updateTableY(&ignitionTable, ignitionTable.type_key); }
-    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { updateTableY(&fuelTable2, fuelTable2.type_key); }
-    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { updateTableY(&ignitionTable2, ignitionTable2.type_key); }
-    updateTableY(&boostTable, boostTable.type_key);
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
+    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
 
     if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
     {
-      updateTableY(&vvtTable, vvtTable.type_key);
-      updateTableY(&vvt2Table, vvt2Table.type_key);
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
+      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
+      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+    }
+    else
+    {
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
+      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
+      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
     }
 
+
+    configPage4.vvtDelay = 0;
+    configPage4.vvtMinClt = 0;
     writeAllConfig();
     storeEEPROMVersion(19);
   }
@@ -596,12 +607,22 @@ void doUpdates()
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
-void updateTableY(const void *pTable, table_type_t key)
+void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it * 4; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    *y_it = (byte)*y_it * multiplier; 
+    ++y_it;
+  }
+}
+
+void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = (byte)*y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
     ++y_it;
   }
 }
