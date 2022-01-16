@@ -621,22 +621,24 @@ byte correctionAFRClosedLoop()
     {
       ego_EngineCycleCheck = true;
       // Scale the revolution counts between the two values linearly based on load value used in VE table.
-      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax*2, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
+      ego_NextCycleCount = (currentStatus.startRevolutions >> 1) + (uint16_t)map(currentStatus.fuelLoad, 0, (int16_t)configPage6.egoFuelLoadMax, (int16_t)configPage6.egoCountL, (int16_t)configPage6.egoCountH); 
     }
   
   //General Enable Condtions for closed loop ego. egoType of 0 means no O2 sensor and no point having O2 closed loop and cannot use include AFR from sensor since this would be 2x proportional controls.
   if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
   {
-    //Requirements to NOT run Closed Loop (Freeze), check this rapidly so we don't miss freeze events.
-    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > (int16_t)configPage9.egoFuelLoadChngMax*2 ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
+    //Requirements to inhibit O2 adjustment (Freeze) check this rapidly so we don't miss freeze events.
+    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > (int16_t)configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
         (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for inhibiting O2 correction using AFR Target Table
-        (currentStatus.fuelLoad > (int16_t)configPage6.egoFuelLoadMax*2) || // Too much load
+        (currentStatus.fuelLoad > (int16_t)configPage6.egoFuelLoadMax) || // Too much load
         (currentStatus.launchCorrection != 100) || // Launch Control Active
         (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1)) //Fuel Cut
     { 
+      BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
       ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay; // Set ego freeze condition timer
     }
        
+    // Ego corrections start after checking that both the transport delay based on engine cycles and load and the sensor time based delay are satisfied.
     if ((ego_EngineCycleCheck == true) && (runSecsX10 >= ego_DelaySensorTime))
     {
       ego_DelaySensorTime = runSecsX10 + configPage6.egoSensorDelay; // Save the minimum sensor delay time for next loop
@@ -654,7 +656,7 @@ byte correctionAFRClosedLoop()
           ((configPage2.egoResetwAFR == false) ||
            (currentStatus.afrTarget >= configPage6.egoAFRTargetMin)) && // Ignore this criteria if cal set to freeze (false).
           ((configPage2.egoResetwfuelLoad == false) ||
-           (currentStatus.fuelLoad <= (int16_t)configPage6.egoFuelLoadMax*2))) // Ignore this criteria if cal set to freeze (false).
+           (currentStatus.fuelLoad <= (int16_t)configPage6.egoFuelLoadMax))) // Ignore this criteria if cal set to freeze (false).
       {
         BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_READY);
         
@@ -662,15 +664,15 @@ byte correctionAFRClosedLoop()
         {
           BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
           
-          /* Build the lookup table for the integrator dynamically. This saves eeprom by using less variables. 
+          /* Build the lookup table for the integrator dynamically. This saves eeprom by using a fixed axis and less variables. 
            * The calibration values are expressed as a "% of max adjustment" where the max adjustment would theoretically correct the AFR to the target in one step." 
            * The scaling in the .ini file applies the correct adjustment in g_ego % units depending on the fixed axis defined by. egoIntAFR_XBins.
            * For example 3.0 afr error is 20% g_ego. So 100%/20% = 5 % per step. If egoIntAFR_XBins axis points are changed, the scaling in the .ini file also needs to be adjusted. 
           */
           egoIntAFR_Values[0] = configPage9.egoInt_Lean2; // Corresponds with -3.0 AFR Error
-          egoIntAFR_Values[1] = configPage9.egoInt_Lean1; // Corresponds with -0.6 AFR Error
+          egoIntAFR_Values[1] = configPage9.egoInt_Lean1; // Corresponds with -0.3 AFR Error
           egoIntAFR_Values[2] = OFFSET_AFR_ERR; //offset value is 0 adjustment
-          egoIntAFR_Values[3] = configPage9.egoInt_Rich1; // Corresponds with 0.6 AFR Error
+          egoIntAFR_Values[3] = configPage9.egoInt_Rich1; // Corresponds with 0.3 AFR Error
           egoIntAFR_Values[4] = configPage9.egoInt_Rich2; // Corresponds with 3.0 AFR Error
           
           
@@ -803,11 +805,12 @@ byte correctionAFRClosedLoop()
             ego2_IntDelayLoops = 0; 
           } 
         } // End Conditions to not freeze ego correction
-        else { ego_AdjustPct = currentStatus.egoCorrection; ego2_AdjustPct = currentStatus.ego2Correction; BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN); BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);} // ego frozen at last values
+        else { ego_AdjustPct = currentStatus.egoCorrection; ego2_AdjustPct = currentStatus.ego2Correction; BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR); BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);} // ego frozen at last values
   	  } // End Conditions not to reset ego
   	  else 
       { //Reset closed loop. Also activate freeze delay to for when we re-enable.
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
         ego_AdjustPct = 100;
@@ -815,7 +818,7 @@ byte correctionAFRClosedLoop()
         ego_Integral = 0;
         ego2_Integral = 0;        
         ego_IntDelayLoops = 0;
-        ego2_IntDelayLoops = 0;         
+        ego2_IntDelayLoops = 0;
         ego_FreezeEndTime = runSecsX10 + configPage9.egoFreezeDelay;
       }
     } //End O2 Algorithm Run Loop check

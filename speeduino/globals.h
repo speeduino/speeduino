@@ -226,7 +226,7 @@
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
 #define BIT_STATUS4_FAN           3 //Fan Status
 #define BIT_STATUS4_EGO_READY     4 //EGO Ready
-#define BIT_STATUS4_EGO_FREEZE    5 //EGO Frozen
+#define BIT_STATUS4_EGO_FROZEN    5 //EGO Frozen
 #define BIT_STATUS4_EGO1_INTCORR  6 //EGO Bank1 Integral Correcting
 #define BIT_STATUS4_EGO2_INTCORR  7 //EGO Bank2 Integral Correcting
 
@@ -1174,8 +1174,8 @@ struct config9 {
   byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
   byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
   byte egoInt_Lean2; // ego integral step in % when AFR err is -2.0
-  byte egoInt_Lean1; // ego integral step in % when AFR err is -0.5
-  byte egoInt_Rich1; // ego integral step in % when AFR err is 0.5
+  byte egoInt_Lean1; // ego integral step in % when AFR err is -0.3
+  byte egoInt_Rich1; // ego integral step in % when AFR err is 0.3
   byte egoInt_Rich2; // ego integral step in % when AFR err is 2.0
   byte egoProp_Swing; // ego proportional swing when on target in %.
   
