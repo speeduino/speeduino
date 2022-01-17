@@ -239,6 +239,10 @@
 #define TOOTH_LOG_SIZE      1
 #endif
 
+#define O2_CALIBRATION_PAGE   2
+#define IAT_CALIBRATION_PAGE  1
+#define CLT_CALIBRATION_PAGE  0
+
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
 #define COMPOSITE_LOG_TRIG 2
@@ -435,7 +439,7 @@ extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
 extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
-extern struct table3d8RpmTps boostTable; //8x8 boost map
+extern struct table3d8RpmLoad boostTable; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
