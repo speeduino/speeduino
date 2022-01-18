@@ -1420,7 +1420,7 @@ int8_t getAdvance() {
 
   if( shouldWeUseSparkTable2() == true ) //Spark table 2
   {
-    if (currentStatus.advance1 != 0) { currentStatus.advance1 = 0; } // Since this isn't valid anymore reset it
+    currentStatus.advance1 = 0; // Since this isn't valid anymore reset it
 
     BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
     int16_t tempAdvance2 = getAdvance2(); // Advance from table 2
@@ -1440,7 +1440,7 @@ int8_t getAdvance() {
     tempAdvance = currentStatus.advance2 = correctionsIgn(tempAdvance2); // Apply corrections
   }
   else { //Spark table 1
-    if (currentStatus.advance2 != 0) { currentStatus.advance2 = 0; } // Since this isn't valid anymore reset it
+    currentStatus.advance2 = 0; // Since this isn't valid anymore reset it
 
     BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
 
