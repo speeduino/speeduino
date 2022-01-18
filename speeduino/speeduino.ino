@@ -278,6 +278,8 @@ void loop()
       //updateFullStatus();
       checkProgrammableIO();
 
+      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (deferEEPROMWrites == false)) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
+
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
@@ -300,8 +302,6 @@ void loop()
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
-
-      if(isEepromWritePending() == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
@@ -387,6 +387,7 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
+      deferEEPROMWrites = false; //Reset the slow EEPROM writes flag so that EEPROM burns will return to normal speed. This is set true in NewComms whenever there is a large chunk write to prvent mega2560s halting due to excess EEPROM burn times. 
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {

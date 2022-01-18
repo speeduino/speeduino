@@ -128,13 +128,13 @@ void parseSerial()
     {
       //Timeout occurred
       serialReceivePending = false; //Reset the serial receive
-      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
 
       //Flush the serial buffer
       while(Serial.available() > 0)
       {
         Serial.read();
       }
+      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
 }
@@ -233,18 +233,7 @@ void processSerialCommand()
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
 
-    case 'b': // New EEPROM burn command to only burn a single page at a time
-
-      if(isEepromWritePending())
-      {
-        //There is already a write pending, force it through. 
-        sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
-        enableForceBurn();
-        writeAllConfig();
-        disableForceBurn();
-        break;
-      }
-
+    case 'b': // New EEPROM burn command to only burn a single page at a time 
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
       sendSerialReturnCode(SERIAL_RC_BURN_OK);
       break;
@@ -399,24 +388,12 @@ void processSerialCommand()
         break;
       }
 
-      if(isEepromWritePending())
-      {
-        enableForceBurn();
-        writeConfig(currentPage);
-        disableForceBurn();
-      }
-
-      //page_iterator_t entity = map_page_offset_to_entity(currentPage, valueOffset); 
       for(uint16_t i = 0; i < chunkSize; i++)
       {
         setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
       }
       
-      { 
-        //enableForceBurn();
-        writeConfig(currentPage);
-        //disableForceBurn();
-      }
+      deferEEPROMWrites = true;
       
       sendSerialReturnCode(SERIAL_RC_OK);
       
