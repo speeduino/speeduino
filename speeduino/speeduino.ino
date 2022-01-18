@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "engineProtection.h"
 #include "secondaryTables.h"
 #include "SD_logger.h"
+#include "advance.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -1378,76 +1379,6 @@ byte getVE1()
   tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
   return tempVE;
-}
-
-/** Lookup the ignition advance from 3D ignition table.
- * The values used to look this up will be RPM and whatever load source the user has configured.
- * 
- * @return byte The current target advance value in degrees
- */
-int16_t getAdvance1()
-{
-  int16_t tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
-  }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS * 2;
-
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
-  }
-
-  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-
-  return tempAdvance;
-}
-
-/** Gets the correct advance based on which table and corrections
- * 
- * @return byte The current target advance value in degrees
- */
-
-int8_t getAdvance() {
-  int16_t tempAdvance = 0; // Result
-
-  if( shouldWeUseSparkTable2() == true ) //Spark table 2
-  {
-    currentStatus.advance1 = 0; // Since this isn't valid anymore reset it
-
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
-    int16_t tempAdvance2 = getAdvance2(); // Advance from table 2
-
-    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
-    {
-      if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-      tempAdvance2 = (getAdvance1() * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
-    {
-      tempAdvance2 = getAdvance1() + tempAdvance2;
-    }
-
-    if (tempAdvance2 > 127) { tempAdvance2 = 127; } //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-
-    tempAdvance = currentStatus.advance2 = correctionsIgn(tempAdvance2); // Apply corrections
-  }
-  else { //Spark table 1
-    currentStatus.advance2 = 0; // Since this isn't valid anymore reset it
-
-    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
-
-    tempAdvance = currentStatus.advance1 = correctionsIgn(getAdvance1()); // Apply corrections
-  }
-
-  return tempAdvance;
 }
 
 uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)

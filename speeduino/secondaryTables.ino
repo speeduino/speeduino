@@ -75,33 +75,6 @@ void calculateSecondaryFuel()
   }
 }
 
-/** Checks if we should use spark table 2
- * 
- * @return bool Returns true if the settings and currentStatus says we should use spark table 2
- */
-
-bool shouldWeUseSparkTable2() {
-  if (configPage10.spark2Mode <= 0)
-  { return false; }
-
-  if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD )
-  { return true; }
-
-  if (configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH) {
-    if ( (configPage10.spark2SwitchVariable == SPARK2_CONDITION_RPM && currentStatus.RPM > configPage10.spark2SwitchValue       ) ||
-         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_MAP && currentStatus.MAP > configPage10.spark2SwitchValue       ) ||
-         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS && currentStatus.TPS > configPage10.spark2SwitchValue       ) ||
-         (configPage10.spark2SwitchVariable == SPARK2_CONDITION_ETH && currentStatus.ethanolPct > configPage10.spark2SwitchValue) )
-    { return true; }
-  }
-
-  else if ( configPage10.spark2Mode == SPARK2_MODE_INPUT_SWITCH && digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity)
-  { return true; }
-
-  //Default
-  return false;
-}
-
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
  * 
@@ -130,35 +103,4 @@ byte getVE2()
   tempVE = get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
   return tempVE;
-}
-
-/**
- * @brief Performs a lookup of the second ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
- * 
- * @return byte The current target advance value in degrees
- */
-int16_t getAdvance2()
-{
-  int16_t tempAdvance = 0;
-  if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad2 = currentStatus.MAP;
-  }
-  else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS * 2;
-
-  }
-  else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
-  }
-  else { currentStatus.ignLoad2 = currentStatus.MAP; }
-
-  tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-
-  return tempAdvance;
 }
