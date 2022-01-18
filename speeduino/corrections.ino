@@ -707,6 +707,7 @@ byte correctionAFRClosedLoop()
               if (O2_SensorIsRich == O2_SensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
               {
                 if (ego_IntDelayLoops < configPage9.egoIntDelay) { ego_IntDelayLoops++; } // Limit to max value.
+                BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR); // unset this to indicate the integrator isnt going to move.
               }              
               else { ego_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
@@ -772,6 +773,7 @@ byte correctionAFRClosedLoop()
               if (O2_2ndSensorIsRich == O2_2ndSensorIsRichPrev) // Increment delay loops for the integrator if switch not detected 
               {
                 if (ego2_IntDelayLoops < configPage9.egoIntDelay) { ego2_IntDelayLoops++; } // Limit to max value.
+                BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR); // unset this to indicate the integrator isnt going to move.
               }              
               else { ego2_IntDelayLoops = 0; } // Switch in fuelling has been detected, reset integrator delay counter. If the switch is not detected the integrator will keep updating every loop after this delay.
             }
