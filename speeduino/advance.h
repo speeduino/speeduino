@@ -9,6 +9,6 @@
 int8_t getAdvance();
 int16_t getAdvance1();
 int16_t getAdvance2();
-bool shouldWeUseSparkTable2();
+bool sparkTable2Enabled();
 
 #endif // ADVANCE_H

@@ -15,7 +15,7 @@
 int8_t getAdvance() {
   int16_t tempAdvance = 0; // Result
 
-  if( shouldWeUseSparkTable2() == true ) //Spark table 2
+  if( sparkTable2Enabled() == true ) //Spark table 2
   {
     currentStatus.advance1 = 0; // Since this isn't valid anymore reset it
 
@@ -112,7 +112,7 @@ int16_t getAdvance2()
  * @return bool Returns true if the settings and currentStatus says we should use spark table 2
  */
 
-bool shouldWeUseSparkTable2() {
+bool sparkTable2Enabled() {
   if (configPage10.spark2Mode <= 0)
   { return false; }
 
