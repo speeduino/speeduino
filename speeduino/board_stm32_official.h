@@ -5,6 +5,7 @@
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
+#include <SPI.h>
 
 #if defined(STM32F1)
 #include "stm32f1xx_ll_tim.h"
@@ -31,8 +32,13 @@
   #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
 #endif
 
-#ifdef SD_LOGGING
-#define RTC_ENABLED
+//Uncomment this to enable SD logging for STM32:
+#define SD_LOGGING //SD logging not enabled by default because it uses SPI and there is no boards with SPI SD-slot available currently.
+
+#if defined SD_LOGGING
+  #define RTC_ENABLED
+  extern SPIClass SD_SPI; //SPI3_MOSI, SPI3_MISO, SPI3_SCK
+  #define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(50), &SD_SPI)
 #endif
 #define USE_SERIAL3
 

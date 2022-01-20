@@ -1792,7 +1792,7 @@ void setPinMapping(byte boardID)
       pinCoil6 = 34; //Pin for coil 6
       pinCoil7 = 46; //Pin for coil 7 (placeholder)
       pinCoil8 = 53; //Pin for coil 8 (placeholder)
-      pinTrigger = 19; //The CAS pin
+      pinTrigger = 18; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 20; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
