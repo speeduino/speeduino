@@ -330,7 +330,7 @@ void doUpdates()
     configPage2.injAngRPM[3] = 65;
 
     //Introdced a DFCO delay option. Default it to 0
-    configPage2.dfcoDelay = 0;
+    configPage2.dfcoStartDelay = 0;
     //Introdced a minimum temperature for DFCO. Default it to 40C
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 

@@ -49,8 +49,10 @@ byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint16_t aseTaperStart;
-uint16_t dfcoStart;
+uint32_t dfcoStateStrtTm;
 uint16_t idleAdvStart;
+uint8_t DFCO_State;
+uint16_t dfcoFuelStartIgns;
 
 /** Initialize instances and vars related to corrections (at ECU boot-up).
  */
@@ -62,6 +64,7 @@ void initialiseCorrections()
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
+  DFCO_State = DFCO_OFF;  
 }
 
 /** Dispatch calculations for all fuel related corrections.
@@ -89,8 +92,8 @@ uint16_t correctionsFuel()
   currentStatus.AEamount = correctionAccel();
   if (configPage2.aeApplyMode == AE_MODE_MULTIPLIER)
   {
-  if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+    if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
+    if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
   }
 
   result = correctionFloodClear();
@@ -128,11 +131,12 @@ uint16_t correctionsFuel()
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.fuelTempCorrection); activeCorrections++; }
   if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
 
+  result = correctionDFCO();
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
-
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = sumCorrections / powint(100,activeCorrections);
 
@@ -522,28 +526,111 @@ byte correctionLaunch()
 }
 
 /*
- * Returns true if decelleration fuel cutoff should be on, false if its off
+ * Returns correction for DFCO. Mostly 0 or 100.
+ * DFCO_State is used by the spark side to ramp from and to DFCO Spark.
  */
-bool correctionDFCO()
+byte correctionDFCO()
 {
-  bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
+  byte DFCOValue = 100;
+  byte dfcoGearEnabled = false;
+  byte dfcoClutchEnabled = false;
+  byte dfcoGeneralEnable = false;
+  
+  if (configPage2.dfcoEnabled == true)
   {
-    if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    // Gear Check
+    switch (currentStatus.gear)
     {
-      DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
-      if ( DFCOValue == false) { dfcoStart = 0; }
+      case 1:
+        if (configPage9.dfcoEnblGear1 == true) { dfcoGearEnabled = true; }
+        break;
+      case 2:
+        if (configPage9.dfcoEnblGear2 == true) { dfcoGearEnabled = true; }
+        break;
+      case 3:
+        if (configPage9.dfcoEnblGear3 == true) { dfcoGearEnabled = true; }
+        break;
+      case 4:
+        if (configPage9.dfcoEnblGear4 == true) { dfcoGearEnabled = true; }
+        break;
+      case 5:
+        if (configPage9.dfcoEnblGear5 == true) { dfcoGearEnabled = true; }
+        break;
+      case 6:
+        if (configPage9.dfcoEnblGear6 == true) { dfcoGearEnabled = true; }
+        break;
+      default:
+        dfcoGearEnabled = true; // Set true here in the case the vehicle does not have VSS and/or no gear detection.
+        break;
     }
-    else 
-    {
-      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
+    
+    // Clutch Check
+    if ((configPage9.dfcoDsblwClutch == true) && (clutchTrigger == true)) { dfcoClutchEnabled = false; } 
+    else {  dfcoClutchEnabled = true; }
+    
+    if ((currentStatus.TPS < configPage4.dfcoTPSThresh ) && 
+        (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) &&
+        (currentStatus.vss >= configPage9.dfcoMinVss) &&
+        (dfcoGearEnabled == true ) &&
+        (dfcoClutchEnabled == true ))
       {
-        if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
-        if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
+        dfcoGeneralEnable = true; // all conditions to start or force an exit of DFCO except rpm which is handled differently because of hysteresis
       }
-      else { dfcoStart = 0; } //Prevent future activation right away if previous time wasn't activated
-    } // DFCO active check
-  } // DFCO enabled check
+    
+    // Begin DFCO state machine
+    if (DFCO_State == DFCO_OFF) //DFCO off, waiting for ramp in conditions
+    {
+      DFCOValue = 100;
+      if ((currentStatus.RPM > (unsigned int)((configPage4.dfcoRPM * 10) + configPage4.dfcoHyster)) &&
+          (dfcoGeneralEnable == true))
+      {
+        DFCO_State = DFCO_ENABLE_DELAY;
+        dfcoStateStrtTm = runSecsX10;
+      }        
+    }
+    
+    if (DFCO_State == DFCO_ENABLE_DELAY) // Delay before ramp-in starts
+    {
+      DFCOValue = 100;
+      if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false)) { DFCO_State = DFCO_OFF ; }
+      if ((runSecsX10 - dfcoStateStrtTm) > configPage2.dfcoStartDelay ) 
+      { 
+        dfcoStateStrtTm = runSecsX10;
+        DFCO_State = DFCO_RAMP_IN; 
+      } 
+    }
+    
+    if (DFCO_State == DFCO_RAMP_IN) // Ramp spark to the DFCO fuel off spark to reduce torque while keeping fuel on for the delay duration.
+    {
+      DFCOValue = 100;
+      if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false)) { DFCO_State = DFCO_OFF ; }
+      if ((runSecsX10 - dfcoStateStrtTm) > configPage9.dfcoRampInTime ) { DFCO_State = DFCO_ACTIVE; }
+    }
+    
+    if (DFCO_State == DFCO_ACTIVE) // No Fuel, Waiting for ramp out conditions
+    { 
+      DFCOValue = 0;
+      if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false))
+      { 
+        DFCO_State = DFCO_RAMP_OUT; 
+        dfcoStateStrtTm = runSecsX10;
+        dfcoFuelStartIgns = ignitionCount; // Save the cylinder we last fired.
+      }
+    }
+    
+    if (DFCO_State == DFCO_RAMP_OUT) //Spark blending happening here back to normal and enrichment applied to recover wall wetting and catalyst HC.
+    {
+      if ( (runSecsX10 - dfcoStateStrtTm) > configPage9.dfcoRampOutTime ) { DFCO_State = DFCO_OFF; DFCOValue = 100; }
+      else if (configPage9.dfcoExitFuelTime == 1) { DFCOValue = configPage9.dfcoExitFuel; } // DFCO exit fuel applied for the duration of the exit ramp if selected via cal.
+      else if ((ignitionCount - dfcoFuelStartIgns) < (2 * configPage2.nCylinders)) { DFCOValue = configPage9.dfcoExitFuel; } // Cannot be longer than dfcoRampOutTime, hardcoded to each cylinder firing twice
+      else { DFCOValue = 100; }
+    }      
+  }
+  else { DFCO_State = DFCO_OFF; } // Calibration disable
+  
+  if (DFCOValue == 0) { bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, 1); } //Set DFCO enabled bit
+  else { bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, 0); }
+    
   return DFCOValue;
 }
 
@@ -674,6 +761,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
+  advance = correctionDFCOEntryExit(advance);
   advance = correctionIdleAdvance(advance);
   advance = correctionSoftRevLimit(advance);
   advance = correctionNitrous(advance);
@@ -748,6 +836,26 @@ int8_t correctionCLTadvance(int8_t advance)
   
   return ignCLTValue;
 }
+
+/** Ignition adjustment for entry to and exit from DFCO.
+ */
+int8_t correctionDFCOEntryExit(int8_t advance)
+{
+  int8_t ignDFCOAdv = advance;
+  //Adjust the advance based on time into or out of DFCO. DFCO_State is controled by the fuel algorithm.
+  if (DFCO_State == DFCO_ACTIVE) { ignDFCOAdv = configPage9.dfcoAdv - 15; }
+  else if (DFCO_State == DFCO_RAMP_IN)
+  {
+    ignDFCOAdv = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampInTime), advance, (configPage9.dfcoAdv - 15)); // Ramp from advance to DFCO advance at rate of DFCO delay.
+  }
+  else if (DFCO_State == DFCO_RAMP_OUT)
+  {
+    ignDFCOAdv = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampOutTime), (configPage9.dfcoAdv - 15), advance); // Ramp from DFCO advance to regular advance at rate of DFCO delay.
+  }
+  //Other states of DFCO do not modify advance.
+  return ignDFCOAdv;
+}
+
 /** Ignition Idle advance correction.
  */
 int8_t correctionIdleAdvance(int8_t advance)
