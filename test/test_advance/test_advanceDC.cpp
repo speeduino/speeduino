@@ -15,6 +15,7 @@ General overview:
 #include <unity.h>
 #include <corrections.h>
 #include "secondaryTables.h"
+#include "advance.h"
 
 #define CONSTRAINCAST_INT8(value) (int8_t)constrain(value, -127, 127)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
@@ -98,9 +99,10 @@ struct engineParams {
     int16_t ignitionTable1Value;
     int16_t ignitionTable2Value;
     byte spark2Mode;
+    boolean spark2correctedMultiplyAddedAdvance;
 };
 uint8_t engineParametersPos = 0;
-const uint8_t engineParametersSize = 20;
+const uint8_t engineParametersSize = 21;
 engineParams engineParameters[engineParametersSize];
 
 void setupAdvanceDC() { // One time table/test input setup
@@ -110,32 +112,41 @@ void setupAdvanceDC() { // One time table/test input setup
     engineParameters[0].TPS = 0;
     engineParameters[0].ignitionTable1Value = 70;
     engineParameters[0].ignitionTable2Value = 69;
+    engineParameters[0].spark2correctedMultiplyAddedAdvance = true;
 
     engineParameters[1].MAP = 100;
     engineParameters[1].TPS = 0;
     engineParameters[1].ignitionTable1Value = 30;
     engineParameters[1].ignitionTable2Value = 20;
+    engineParameters[1].spark2correctedMultiplyAddedAdvance = true;
 
     engineParameters[2].MAP = 50;
     engineParameters[2].TPS = 0;
     engineParameters[2].ignitionTable1Value = 0;
     engineParameters[2].ignitionTable2Value = 1;
+    engineParameters[2].spark2correctedMultiplyAddedAdvance = true;
 
     engineParameters[3].MAP = 23;
     engineParameters[3].TPS = 0;
     engineParameters[3].ignitionTable1Value = -40;
     engineParameters[3].ignitionTable2Value = -39;
+    engineParameters[3].spark2correctedMultiplyAddedAdvance = true;
 
     engineParameters[4].MAP = 0;
     engineParameters[4].TPS = 0;
     engineParameters[4].ignitionTable1Value = -40;
     engineParameters[4].ignitionTable2Value = -39;
+    engineParameters[4].spark2correctedMultiplyAddedAdvance = true;
 
     engineParameters[15] = engineParameters[10] = engineParameters[5] = engineParameters[0];
     engineParameters[16] = engineParameters[11] = engineParameters[6] = engineParameters[1];
     engineParameters[17] = engineParameters[12] = engineParameters[7] = engineParameters[2];
     engineParameters[18] = engineParameters[13] = engineParameters[8] = engineParameters[3];
     engineParameters[19] = engineParameters[14] = engineParameters[9] = engineParameters[4];
+
+    // 20 should use spark table 2 added mode but with the old multiply added advance calculation
+    engineParameters[20] = engineParameters[1]; // Special
+    engineParameters[20].spark2correctedMultiplyAddedAdvance = false;
     
     // 0-4 should use spark table 1 but spark table 2 conditional is enabled but the conditions are not met
     engineParameters[0].spark2Mode = engineParameters[1].spark2Mode = engineParameters[2].spark2Mode = engineParameters[3].spark2Mode = engineParameters[4].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
@@ -166,13 +177,13 @@ void resetAdvanceDC() { //Resets configuration data
     currentStatus.RPMdiv100 = currentStatus.RPM/100;
     currentStatus.TPS = engineParameters[engineParametersPos].TPS;
     runSecsX10 = 0;
-    
 
     //Secondary tables
     configPage10.spark2Mode = engineParameters[engineParametersPos].spark2Mode;
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
     configPage10.spark2SwitchVariable = SPARK2_CONDITION_TPS;
     configPage10.spark2SwitchValue = 96*2;
+    configPage10.spark2correctedMultiplyAddedAdvance = engineParameters[engineParametersPos].spark2correctedMultiplyAddedAdvance;
     if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
         setupAdvanceDCignitionTable(&ignitionTable2, TABLE_Multiplied);
     }
@@ -272,15 +283,21 @@ void resetAdvanceDC() { //Resets configuration data
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
 }
 
-int16_t getAdvanceDCbaseAdvance() { //Returns correct base advance from ignition table(s)
+int16_t getAdvanceDCtestAdvance(int16_t advanceAdd) { //Returns correct base advance from ignition table(s)
     int16_t result;
     int16_t ignitionTable1Value = engineParameters[engineParametersPos].ignitionTable1Value;
     int16_t ignitionTable2Value = engineParameters[engineParametersPos].ignitionTable2Value;
-    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
-        result = ignitionTable1Value*ignitionTable2Value/(int16_t)100;
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_ADD) {
-        result = ignitionTable1Value+ignitionTable2Value;
+    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD) {
+        if (configPage10.spark2correctedMultiplyAddedAdvance == false) {
+            ignitionTable2Value += advanceAdd;
+        }
+
+        if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+            result = ignitionTable1Value*ignitionTable2Value/(int16_t)100;
+        }
+        else { // SPARK2_MODE_ADD
+            result = ignitionTable1Value+ignitionTable2Value;
+        }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH && currentStatus.TPS > configPage10.spark2SwitchValue) {
         result = ignitionTable2Value;
@@ -288,38 +305,40 @@ int16_t getAdvanceDCbaseAdvance() { //Returns correct base advance from ignition
     else {
         result = ignitionTable1Value;
     }
+
+    result += advanceAdd;
+
     return result;
 }
 
 void getAdvanceDCspeeduinoAdvance() { //Gets the actual advance calculated by Speeduino
-    currentStatus.advance = currentStatus.advance1 = getAdvance1();
-    calculateSecondarySpark();
+    currentStatus.advance = getAdvance();
 }
 
 void testAdvanceDCNone() {
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance();
+    int16_t result = getAdvanceDCtestAdvance(0);
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
 void testAdvanceDCIAT() {
     currentStatus.IAT = iatRetBins[tablePosition1];
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance()-iatRetValues[tablePosition1];
+    int16_t result = getAdvanceDCtestAdvance(-iatRetValues[tablePosition1]);
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
 void testAdvanceDCCLT() {
     currentStatus.coolant = cltAdvBins[tablePosition1]-CALIBRATION_TEMPERATURE_OFFSET;
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance()+cltAdvValues[tablePosition1]-CLT_VAL_OFFSET;
+    int16_t result = getAdvanceDCtestAdvance(cltAdvValues[tablePosition1]-CLT_VAL_OFFSET);
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
 void testAdvanceDCFlex() {
     currentStatus.ethanolPct = flexAdvBins[tablePosition1];
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance()+flexAdvAdj[tablePosition1]-OFFSET_IGNITION;
+    int16_t result = getAdvanceDCtestAdvance(flexAdvAdj[tablePosition1]-OFFSET_IGNITION);
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
@@ -348,14 +367,15 @@ void testAdvanceIdleDelta() {
     getAdvanceDCspeeduinoAdvance();
     
     int16_t result = 0;
-    if (configPage2.idleAdvEnabled == 1) { result = getAdvanceDCbaseAdvance(); }
-
     if (zeroRPMzeroDelta) {
-        result += idleAdvValues[idleAdvZeroRpmBin]-IDLE_ADV_OFFSET;
+        result = idleAdvValues[idleAdvZeroRpmBin]-IDLE_ADV_OFFSET;
     }
     else {
-        result += idleAdvValues[tablePosition1]-IDLE_ADV_OFFSET;
+        result = idleAdvValues[tablePosition1]-IDLE_ADV_OFFSET;
     }
+
+    if (configPage2.idleAdvEnabled == 1) { result = getAdvanceDCtestAdvance(result); } // TODO: check this
+
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
@@ -371,9 +391,9 @@ void testAdvanceDCIdleTargets(byte tablePosition2) {
 
 void testAdvanceDCSoftRevLimit() {
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance();
+    int16_t result;
     if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) {
-        result -= configPage4.SoftLimRetard;
+        result = getAdvanceDCtestAdvance(-configPage4.SoftLimRetard);
     }
     else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) {
         result = configPage4.SoftLimRetard;
@@ -383,16 +403,17 @@ void testAdvanceDCSoftRevLimit() {
 
 void testAdvanceDCNitrous() {
     getAdvanceDCspeeduinoAdvance();
-    int16_t result = getAdvanceDCbaseAdvance();
+    int16_t add = 0;
     if (currentStatus.nitrous_status == NITROUS_STAGE1) {
-        result -= configPage10.n2o_stage1_retard;
+        add -= configPage10.n2o_stage1_retard;
     }
     else if (currentStatus.nitrous_status == NITROUS_STAGE2) {
-        result -= configPage10.n2o_stage2_retard;
+        add -= configPage10.n2o_stage2_retard;
     }
     else if (currentStatus.nitrous_status == NITROUS_BOTH) {
-        result -= configPage10.n2o_stage1_retard+configPage10.n2o_stage2_retard;
+        add -= configPage10.n2o_stage1_retard+configPage10.n2o_stage2_retard;
     }
+    int16_t result = getAdvanceDCtestAdvance(add);
     TEST_ASSERT_EQUAL(CONSTRAINCAST_INT8(result), currentStatus.advance);
 }
 
@@ -451,13 +472,15 @@ void testAdvanceDC() {
 
         //Idle
         resetAdvanceDC();
-        configPage2.idleAdvEnabled = 1;
         //Disable coolant adjustments as idle tests will change coolant temperature
         CLTAdvanceTable.values = &cltAdvValuesZero;
         CLTAdvanceTable.axisX = &cltAdvBinsZero;
+        
+        configPage2.idleAdvEnabled = 1;
         for (tablePosition2 = 0; tablePosition2 < idleTargetTable.xSize; tablePosition2++) {
             testAdvanceDCIdleTargets(tablePosition2);
         }
+
         configPage2.idleAdvEnabled = 2;
         for (tablePosition2 = 0; tablePosition2 < idleTargetTable.xSize; tablePosition2++) {
             testAdvanceDCIdleTargets(tablePosition2);
