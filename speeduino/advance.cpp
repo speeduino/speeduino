@@ -102,7 +102,7 @@ int16_t getAdvance2()
   else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS * 2;
   }
   else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
