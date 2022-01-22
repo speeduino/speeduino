@@ -192,7 +192,7 @@ byte getVE2()
  */
 byte getAdvance2()
 {
-  byte tempAdvance = 0;
+  int16_t tempAdvance = 0;
   if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density

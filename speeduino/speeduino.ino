@@ -1389,7 +1389,7 @@ byte getVE1()
  */
 byte getAdvance1()
 {
-  byte tempAdvance = 0;
+  int16_t tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
