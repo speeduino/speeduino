@@ -4,24 +4,29 @@
 #include "Arduino.h"
 
 // The following are alpha values for the ADC filters.
-// Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
-/*
-#define ADCFILTER_TPS  128
-#define ADCFILTER_CLT  180
-#define ADCFILTER_IAT  180
-#define ADCFILTER_O2   128
-#define ADCFILTER_BAT  128
-#define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
-#define ADCFILTER_BARO  64
-*/
+// Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
+#define ADCFILTER_TPS_DEFAULT   50
+#define ADCFILTER_CLT_DEFAULT  180
+#define ADCFILTER_IAT_DEFAULT  180
+#define ADCFILTER_O2_DEFAULT   128
+#define ADCFILTER_BAT_DEFAULT  128
+#define ADCFILTER_MAP_DEFAULT   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+#define ADCFILTER_BARO_DEFAULT  64
 
-#define BARO_MIN      87
+#define ADCFILTER_PSI_DEFAULT  150 //not currently configurable at runtime, used for misc pressure sensors, oil, fuel, etc.
+
+#define FILTER_FLEX_DEFAULT     75
+
+#define BARO_MIN      65
 #define BARO_MAX      108
 
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
 #define VSS_GEAR_HYSTERESIS 10
+#define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
+
+#define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
 /*
 #if defined(CORE_AVR)
@@ -30,6 +35,15 @@
 */
 
 volatile byte flexCounter = 0;
+volatile unsigned long flexStartTime;
+volatile unsigned long flexPulseWidth;
+
+#if defined(CORE_AVR)
+  #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
+#else
+  #define READ_FLEX() digitalRead(pinFlex)
+#endif
+
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
 
@@ -44,8 +58,9 @@ unsigned long TPSlast_time; //The time the previous TPS sample was taken
 byte MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
-volatile unsigned long vssLastPulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
-volatile unsigned long vssLastMinusOnePulseTime; /**< The times of the last VSS_NUM_SAMPLES pulses of the VSS are stored in this array */
+volatile unsigned long vssTimes[VSS_SAMPLES] = {0};
+volatile byte vssIndex;
+
 
 //These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
 byte mapErrorCount = 0;
@@ -66,6 +81,7 @@ void initialiseADC();
 void readTPS(bool=true); //Allows the option to override the use of the filter
 void readO2_2();
 void flexPulse();
+uint32_t vssGetPulseGap(byte);
 void vssPulse();
 uint16_t getSpeed();
 byte getGear();

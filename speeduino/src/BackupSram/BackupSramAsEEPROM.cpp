@@ -1,6 +1,6 @@
-//#if defined(ARDUINO_BLACK_F407VE) 
-#if defined(CORE_STM32_OFFICIAL) && defined(SRAM_AS_EEPROM)
+#if defined(STM32F407xx)
 #include "BackupSramAsEEPROM.h"
+
 
     BackupSramAsEEPROM::BackupSramAsEEPROM(){
           //Enable the power interface clock
@@ -26,6 +26,7 @@
           //Wait until the backup power regulator is ready
           while ((PWR->CSR & PWR_CSR_BRR) == 0);
     }
+    uint16_t BackupSramAsEEPROM::length(){ return 4096; }
     int8_t BackupSramAsEEPROM::write_byte( uint8_t *data, uint16_t bytes, uint16_t offset ) {
         uint8_t* base_addr = (uint8_t *) BKPSRAM_BASE;
         uint16_t i;
@@ -77,6 +78,8 @@
         return 0;
     }
 
-BackupSramAsEEPROM EEPROM;
+
+
 
 #endif
+
