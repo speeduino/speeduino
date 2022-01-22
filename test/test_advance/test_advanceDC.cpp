@@ -292,7 +292,7 @@ int16_t getAdvanceDCbaseAdvance() { //Returns correct base advance from ignition
 }
 
 void getAdvanceDCspeeduinoAdvance() { //Gets the actual advance calculated by Speeduino
-    currentStatus.advance = getAdvance1();
+    currentStatus.advance = currentStatus.advance1 = getAdvance1();
     calculateSecondarySpark();
 }
 
