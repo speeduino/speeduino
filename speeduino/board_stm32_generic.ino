@@ -6,6 +6,14 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
+  #if defined(FRAM_AS_EEPROM)
+    #if defined(STM32F407xx)
+    FramClass EEPROM(PB5, PB4, PB3, PB0); /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
+    #else
+    FramClass EEPROM(PB15, PB14, PB13, PB12); //Blue/Black Pills
+    #endif
+  #endif
+
 void initBoard()
 {
     /*
@@ -22,7 +30,7 @@ void initBoard()
     */
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
     {
-        idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
+        idle_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
 
     //This must happen at the end of the idle init
@@ -52,12 +60,15 @@ void initBoard()
     * Auxilliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
-    vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    fan_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
+    Timer1.attachInterrupt(1, fanInterrupt);
     Timer1.attachInterrupt(2, boostInterrupt);
     Timer1.attachInterrupt(3, vvtInterrupt);
 
@@ -68,17 +79,17 @@ void initBoard()
     #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
         //(CYCLES_PER_MICROSECOND == 72, APB2 at 72MHz, APB1 at 36MHz).
         //Timer2 to 4 is on APB1, Timer1 on APB2.   www.st.com/resource/en/datasheet/stm32f103cb.pdf sheet 12
-        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1); //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
     #else
         //(CYCLES_PER_MICROSECOND == 168, APB2 at 84MHz, APB1 at 42MHz).
         //Timer2 to 14 is on APB1, Timers 1, 8, 9 and 10 on APB2.   www.st.com/resource/en/datasheet/stm32f407vg.pdf sheet 120
-        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * 2)-1); //2us resolution
-        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer4.setPrescaleFactor(((Timer4.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
-        Timer5.setPrescaleFactor(((Timer5.getBaseFrequency()/1000000) * 2)-1);  //2us resolution
+        Timer1.setPrescaleFactor(((Timer1.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1); //2us resolution
+        Timer2.setPrescaleFactor(((Timer2.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer3.setPrescaleFactor(((Timer3.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer4.setPrescaleFactor(((Timer4.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
+        Timer5.setPrescaleFactor(((Timer5.getBaseFrequency()/1000000) * TIMER_RESOLUTION)-1);  //2us resolution
     #endif
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE);
@@ -89,7 +100,6 @@ void initBoard()
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
 
     //Attach interupt functions
     //Injection
@@ -156,6 +166,40 @@ uint16_t freeRam()
 {
     char top = 't';
     return &top - reinterpret_cast<char*>(sbrk(0));
+}
+
+void doSystemReset( void )
+{
+    __disable_irq();
+    NVIC_SystemReset();
+}
+
+void jumpToBootloader( void ) // https://github.com/3devo/Arduino_Core_STM32/blob/jumpSysBL/libraries/SrcWrapper/src/stm32/bootloader.c
+{ // https://github.com/markusgritsch/SilF4ware/blob/master/SilF4ware/drv_reset.c
+    HAL_RCC_DeInit();
+    HAL_DeInit();
+    SysTick->VAL = SysTick->LOAD = SysTick->CTRL = 0;
+    SYSCFG->MEMRMP = 0x01;
+
+    #if defined(STM32F7xx) || defined(STM32H7xx)
+    const uint32_t DFU_addr = 0x1FF00000; // From AN2606
+    #else
+    const uint32_t DFU_addr = 0x1FFF0000; // Default for STM32F10xxx and STM32F40xxx/STM32F41xxx from AN2606
+    #endif
+    // This is assembly to prevent modifying the stack pointer after
+    // loading it, and to ensure a jump (not call) to the bootloader.
+    // Not sure if the barriers are really needed, they were taken from
+    // https://github.com/GrumpyOldPizza/arduino-STM32L4/blob/ac659033eadd50cfe001ba1590a1362b2d87bb76/system/STM32L4xx/Source/boot_stm32l4xx.c#L159-L165
+    asm volatile (
+        "ldr r0, [%[DFU_addr], #0]   \n\t"  // get address of stack pointer
+        "msr msp, r0            \n\t"  // set stack pointer
+        "ldr r0, [%[DFU_addr], #4]   \n\t"  // get address of reset handler
+        "dsb                    \n\t"  // data sync barrier
+        "isb                    \n\t"  // instruction sync barrier
+        "bx r0                  \n\t"  // branch to bootloader
+        : : [DFU_addr] "l" (DFU_addr) : "r0"
+    );
+    __builtin_unreachable();
 }
 
 #endif

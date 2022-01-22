@@ -43,7 +43,7 @@
    #define BEGIN_SPI SPI.begin();
 
  // Defines and variables specific to SAMD architecture
- #elif defined (ARDUINO_ARCH_SAMD) || defined(ARCH_STM32)
+ #elif defined (ARDUINO_ARCH_SAMD) || defined(ARDUINO_ARCH_STM32)
    #define CHIP_SELECT   digitalWrite(csPin, LOW);
    #define CHIP_DESELECT digitalWrite(csPin, HIGH);
    #define xfer(n)   _spi->transfer(n)

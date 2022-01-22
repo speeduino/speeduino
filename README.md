@@ -4,9 +4,10 @@
 
 [![Release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/latest)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/noisymime/speeduino/blob/master/LICENSE)
-[![Build Status](https://img.shields.io/travis/noisymime/speeduino.svg)](https://travis-ci.org/noisymime/speeduino/)
+[![Build Status](https://img.shields.io/github/workflow/status/noisymime/speeduino/Build%20Firmware)](https://github.com/noisymime/speeduino/actions/workflows/build-firmware.yml)
+[![Unit Tests](https://img.shields.io/github/workflow/status/noisymime/speeduino/Unit%20Tests?label=Unit%20Tests)](https://github.com/noisymime/speeduino/actions/workflows/unit-tests.yml)
 [![Open Bounties](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
-[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202005.svg)](https://github.com/noisymime/speeduino/compare/202005...master)
+[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202108.svg)](https://github.com/noisymime/speeduino/compare/202108...master)
 ![MISRA](https://img.shields.io/azure-devops/tests/speeduino/Speeduino/1?label=MISRA&passed_label=warnings&failed_label=violations)
 [![Chat on Slack](https://img.shields.io/badge/slack-speeduino-CC2B5E.svg?style=flat&logo=slack)](https://speeduino.com/home/community/slack)
 
@@ -15,7 +16,7 @@
 
 
 ## Speeduino
-The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides the hardware, firmware and software components that make up an engine management system, all provided under open licenses. With over 1000 installations, Speeduino has matured into a product that meets the needs of the hobbyist and enthusiast community without driving prices to the levels of traditional aftermarket ECUs
+The Speeduino project is a flexible, fully featured Engine Management Systems (EMS aka ECU) based on the low cost and open source Arduino platform. It provides the hardware, firmware and software components that make up an engine management system, all provided under open licenses. With over 1000 installations, Speeduino has matured into a product that meets the needs of the hobbyist and enthusiast community without driving prices to the levels of traditional aftermarket ECUs.
 
 ## Documentation
 The Speeduino online manual can be found at: https://wiki.speeduino.com
