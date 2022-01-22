@@ -22,14 +22,23 @@ int8_t getAdvance() {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
     int16_t tempAdvance2 = getAdvance2(); // Advance from table 2
 
-    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
+    if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
-      if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-      tempAdvance2 = (getAdvance1() * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
-    }
-    else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
-    {
-      tempAdvance2 = getAdvance1() + tempAdvance2;
+      if(configPage10.spark2correctedMultiplyAddedAdvance == true) { //The new code applies the advance corrections only after after adding or multiplying
+        tempAdvance = getAdvance1();
+      }
+      else { //The old code applies the advance corrections before and after adding or multiplying
+        tempAdvance = correctionsIgn(getAdvance1());
+      }
+
+      if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+        if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
+        tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
+      }
+      else {
+        tempAdvance2 = tempAdvance + tempAdvance2;
+      }
+
     }
 
     if (tempAdvance2 > 127) { tempAdvance2 = 127; } //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
