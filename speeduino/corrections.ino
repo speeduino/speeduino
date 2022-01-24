@@ -694,7 +694,6 @@ bool correctionsIgn(int16_t &advance)
   }
   else {
     advance += advanceCorrection;
-    advance = constrain(advance, -128, 127);
     return false;
   }
 

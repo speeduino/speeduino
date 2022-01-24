@@ -18,48 +18,53 @@ int8_t getAdvance() {
   if( sparkTable2Enabled() == true ) //Spark table 2
   {
     currentStatus.advance1 = 0; // Since this isn't valid anymore reset it
-
     BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
+
     int16_t tempAdvance2 = getAdvance2(); // Advance from table 2
 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
       tempAdvance = getAdvance1(); // Add and multiply modes apply on top of table 1
 
-      if(configPage10.spark2correctedMultiplyAddedAdvance == false) { //The old code applies the advance corrections on both tables before adding or multiplying
+      if(configPage10.spark2correctedMultiplyAddedAdvance == true) { //The new code applies the advance corrections once after after adding or multiplying
+        if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+          if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
+          tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
+        }
+        else { // SPARK_MODE_ADD
+          tempAdvance2 = tempAdvance + tempAdvance2;
+        }
+        
+        correctionsIgn(tempAdvance2);
+      }
+      else { //The old code applies the advance corrections on both tables before adding or multiplying
         correctionsIgn(tempAdvance);
         correctionsIgn(tempAdvance2);
+
+        if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+          if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
+          tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
+        }
+        else { // SPARK_MODE_ADD
+          tempAdvance2 = tempAdvance + tempAdvance2;
+        }
+
       }
 
-      if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
-        if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-        tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-      }
-      else { // SPARK_MODE_ADD
-        tempAdvance2 = tempAdvance + tempAdvance2;
-      }
-      
-      if(configPage10.spark2correctedMultiplyAddedAdvance == false) {
-        tempAdvance2 = constrain(tempAdvance2, -128, 127);
-      }
-      else { //The new code applies the advance corrections once after after adding or multiplying
-        correctionsIgn(tempAdvance2);
-      }
     }
     else { // All spark table 2 modes except MULTIPLY and ADD
       correctionsIgn(tempAdvance2);
     }
 
-    tempAdvance = currentStatus.advance2 = tempAdvance2;
+    currentStatus.advance2 = tempAdvance = constrain(tempAdvance2, -128, 127);
   }
   else { //Spark table 1
     currentStatus.advance2 = 0; // Since this isn't valid anymore reset it
-
     BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
 
     tempAdvance = getAdvance1();
     correctionsIgn(tempAdvance);
-    currentStatus.advance1 = tempAdvance;
+    currentStatus.advance1 = tempAdvance = constrain(tempAdvance, -128, 127);
   }
 
   return tempAdvance;
