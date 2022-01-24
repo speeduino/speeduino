@@ -23,7 +23,7 @@ byte correctionLaunch(); //Launch control correction
 bool correctionDFCO(); //Decelleration fuel cutoff
 
 
-int8_t correctionsIgn(int16_t);
+bool correctionsIgn(int16_t&);
 void correctionFixedTiming(int8_t*);
 void correctionCrankingFixedTiming(int8_t*);
 int8_t correctionFlexTiming();

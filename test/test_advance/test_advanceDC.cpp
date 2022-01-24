@@ -17,7 +17,7 @@ General overview:
 #include "secondaryTables.h"
 #include "advance.h"
 
-#define CONSTRAINCAST_INT8(value) (int8_t)constrain(value, -127, 127)
+#define CONSTRAINCAST_INT8(value) (int8_t)constrain(value, -128, 127)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 #define OI OFFSET_IGNITION
 

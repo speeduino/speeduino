@@ -664,10 +664,10 @@ byte correctionAFRClosedLoop()
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
 /** Dispatch calculations for all ignition related corrections.
- * @param base_advance - Base ignition advance (deg. ?)
- * @return Advance considering all (~12) individual corrections
+ * @param advance Ignition advance before applying corrections and is updated with advance after applying corrections
+ * @return If the advance parameter is return with fixed advance
  */
-int8_t correctionsIgn(int16_t advance)
+bool correctionsIgn(int16_t &advance)
 {
   int8_t fixedAdvance = -128;
   int16_t advanceCorrection =
@@ -687,11 +687,17 @@ int8_t correctionsIgn(int16_t advance)
   correctionFixedTiming(&fixedAdvance);
   correctionCrankingFixedTiming(&fixedAdvance); //This overrides the regular fixed timing, must come last
 
-  // If any fixed advance is set the ignition table and relative advance will not be used
-  if (fixedAdvance > -128) { advance = fixedAdvance; }
-  else { advance += advanceCorrection; }
+  // If any fixed advance is set, the ignition table and relative advance will not be used
+  if (fixedAdvance > -128) {
+    advance = fixedAdvance;
+    return true;
+  }
+  else {
+    advance += advanceCorrection;
+    advance = constrain(advance, -128, 127);
+    return false;
+  }
 
-  return constrain(advance, -128, 127);
 }
 /** Correct ignition timing to configured fixed value.
  * Must be called near end to override all other corrections.

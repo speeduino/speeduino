@@ -27,8 +27,8 @@ int8_t getAdvance() {
       tempAdvance = getAdvance1(); // Add and multiply modes apply on top of table 1
 
       if(configPage10.spark2correctedMultiplyAddedAdvance == false) { //The old code applies the advance corrections on both tables before adding or multiplying
-        tempAdvance = correctionsIgn(tempAdvance);
-        tempAdvance2 = correctionsIgn(tempAdvance2);
+        correctionsIgn(tempAdvance);
+        correctionsIgn(tempAdvance2);
       }
 
       if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
@@ -43,11 +43,11 @@ int8_t getAdvance() {
         tempAdvance2 = constrain(tempAdvance2, -128, 127);
       }
       else { //The new code applies the advance corrections once after after adding or multiplying
-        tempAdvance2 = correctionsIgn(tempAdvance2);
+        correctionsIgn(tempAdvance2);
       }
     }
     else { // All spark table 2 modes except MULTIPLY and ADD
-      tempAdvance2 = correctionsIgn(tempAdvance2);
+      correctionsIgn(tempAdvance2);
     }
 
     tempAdvance = currentStatus.advance2 = tempAdvance2;
@@ -57,7 +57,9 @@ int8_t getAdvance() {
 
     BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
 
-    tempAdvance = currentStatus.advance1 = correctionsIgn(getAdvance1()); // Apply corrections
+    tempAdvance = getAdvance1();
+    correctionsIgn(tempAdvance);
+    currentStatus.advance1 = tempAdvance;
   }
 
   return tempAdvance;
