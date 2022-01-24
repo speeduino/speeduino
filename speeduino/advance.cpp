@@ -13,8 +13,15 @@
  */
 
 int8_t getAdvance() {
-  int16_t tempAdvance = 0; // Result
+  
+  int16_t correction = 0;
+  if (correctionsIgn(correction) == true) { // If there is a fixed correction we are done
+    currentStatus.advance1 = 0;
+    currentStatus.advance2 = 0;
+    return correction;
+  }
 
+  int16_t tempAdvance = 0; // Result
   if( sparkTable2Enabled() == true ) //Spark table 2
   {
     currentStatus.advance1 = 0; // Since this isn't valid anymore reset it
@@ -35,11 +42,11 @@ int8_t getAdvance() {
           tempAdvance2 = tempAdvance + tempAdvance2;
         }
         
-        correctionsIgn(tempAdvance2);
+        tempAdvance2 += correction;
       }
       else { //The old code applies the advance corrections on both tables before adding or multiplying
-        correctionsIgn(tempAdvance);
-        correctionsIgn(tempAdvance2);
+        tempAdvance += correction;
+        tempAdvance2 += correction;
 
         if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
           if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
@@ -53,7 +60,7 @@ int8_t getAdvance() {
 
     }
     else { // All spark table 2 modes except MULTIPLY and ADD
-      correctionsIgn(tempAdvance2);
+      tempAdvance2 += correction;
     }
 
     currentStatus.advance2 = tempAdvance = constrain(tempAdvance2, -128, 127);
@@ -62,8 +69,7 @@ int8_t getAdvance() {
     currentStatus.advance2 = 0; // Since this isn't valid anymore reset it
     BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use.
 
-    tempAdvance = getAdvance1();
-    correctionsIgn(tempAdvance);
+    tempAdvance = getAdvance1() + correction;
     currentStatus.advance1 = tempAdvance = constrain(tempAdvance, -128, 127);
   }
 
