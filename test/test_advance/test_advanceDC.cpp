@@ -102,7 +102,7 @@ struct engineParams {
     boolean spark2correctedMultiplyAddedAdvance;
 };
 uint8_t engineParametersPos = 0;
-const uint8_t engineParametersSize = 21;
+const uint8_t engineParametersSize = 22;
 engineParams engineParameters[engineParametersSize];
 
 void setupAdvanceDC() { // One time table/test input setup
@@ -144,10 +144,6 @@ void setupAdvanceDC() { // One time table/test input setup
     engineParameters[18] = engineParameters[13] = engineParameters[8] = engineParameters[3];
     engineParameters[19] = engineParameters[14] = engineParameters[9] = engineParameters[4];
 
-    // 20 should use spark table 2 added mode but with the old multiply added advance calculation
-    engineParameters[20] = engineParameters[1]; // Special
-    engineParameters[20].spark2correctedMultiplyAddedAdvance = false;
-    
     // 0-4 should use spark table 1 but spark table 2 conditional is enabled but the conditions are not met
     engineParameters[0].spark2Mode = engineParameters[1].spark2Mode = engineParameters[2].spark2Mode = engineParameters[3].spark2Mode = engineParameters[4].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
     
@@ -165,6 +161,14 @@ void setupAdvanceDC() { // One time table/test input setup
     // 15-19 should use spark table 2, spark table 2 conditional is enabled and the conditions are met
     engineParameters[15].spark2Mode = engineParameters[16].spark2Mode = engineParameters[17].spark2Mode = engineParameters[18].spark2Mode = engineParameters[19].spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH;
     engineParameters[15].TPS = engineParameters[16].TPS = engineParameters[17].TPS = engineParameters[18].TPS = engineParameters[19].TPS = 97*2;
+
+    // 20 should use spark table 2 added mode but with the old multiply added advance calculation
+    engineParameters[20] = engineParameters[11];
+    engineParameters[20].spark2correctedMultiplyAddedAdvance = false;
+
+    // 21 should use spark table 2 multiplied mode but with the old multiply added advance calculation
+    engineParameters[21] = engineParameters[6];
+    engineParameters[21].spark2correctedMultiplyAddedAdvance = false;
 }
 
 void resetAdvanceDC() { //Resets configuration data
@@ -190,6 +194,7 @@ void resetAdvanceDC() { //Resets configuration data
     else {
         setupAdvanceDCignitionTable(&ignitionTable2, TABLE_2);
     }
+    invalidate_cache(&ignitionTable2.get_value_cache);
 
     //Flex fuel
     configPage2.flexEnabled = 0;
@@ -287,26 +292,31 @@ int16_t getAdvanceDCtestAdvance(int16_t advanceAdd) { //Returns correct base adv
     int16_t result;
     int16_t ignitionTable1Value = engineParameters[engineParametersPos].ignitionTable1Value;
     int16_t ignitionTable2Value = engineParameters[engineParametersPos].ignitionTable2Value;
+
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD) {
         if (configPage10.spark2correctedMultiplyAddedAdvance == false) {
             ignitionTable1Value += advanceAdd;
+            ignitionTable2Value += advanceAdd;
         }
 
         if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+            if (ignitionTable2Value < 0) { ignitionTable2Value = 0; }
             result = ignitionTable1Value*ignitionTable2Value/(int16_t)100;
         }
         else { // SPARK2_MODE_ADD
             result = ignitionTable1Value+ignitionTable2Value;
         }
+
+        if (configPage10.spark2correctedMultiplyAddedAdvance == true) {
+            result += advanceAdd;
+        }
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH && currentStatus.TPS > configPage10.spark2SwitchValue) {
-        result = ignitionTable2Value;
+        result = ignitionTable2Value + advanceAdd;
     }
     else {
-        result = ignitionTable1Value;
+        result = ignitionTable1Value + advanceAdd;
     }
-
-    result += advanceAdd;
 
     return result;
 }
