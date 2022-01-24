@@ -24,26 +24,33 @@ int8_t getAdvance() {
 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
-      if(configPage10.spark2correctedMultiplyAddedAdvance == true) { //The new code applies the advance corrections only after after adding or multiplying
-        tempAdvance = getAdvance1();
-      }
-      else { //The old code applies the advance corrections before and after adding or multiplying
-        tempAdvance = correctionsIgn(getAdvance1());
+      tempAdvance = getAdvance1(); // Add and multiply modes apply on top of table 1
+
+      if(configPage10.spark2correctedMultiplyAddedAdvance == false) { //The old code applies the advance corrections on both tables before adding or multiplying
+        tempAdvance = correctionsIgn(tempAdvance);
+        tempAdvance2 = correctionsIgn(tempAdvance2);
       }
 
       if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
         if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
         tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       }
-      else {
+      else { // SPARK_MODE_ADD
         tempAdvance2 = tempAdvance + tempAdvance2;
       }
-
+      
+      if(configPage10.spark2correctedMultiplyAddedAdvance == false) {
+        tempAdvance2 = constrain(tempAdvance2, -128, 127);
+      }
+      else { //The new code applies the advance corrections once after after adding or multiplying
+        tempAdvance2 = correctionsIgn(tempAdvance2);
+      }
+    }
+    else { // All spark table 2 modes except MULTIPLY and ADD
+      tempAdvance2 = correctionsIgn(tempAdvance2);
     }
 
-    if (tempAdvance2 > 127) { tempAdvance2 = 127; } //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
-
-    tempAdvance = currentStatus.advance2 = correctionsIgn(tempAdvance2); // Apply corrections
+    tempAdvance = currentStatus.advance2 = tempAdvance2;
   }
   else { //Spark table 1
     currentStatus.advance2 = 0; // Since this isn't valid anymore reset it

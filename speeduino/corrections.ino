@@ -669,7 +669,7 @@ byte correctionAFRClosedLoop()
  */
 int8_t correctionsIgn(int16_t advance)
 {
-  int8_t fixedAdvance = -127;
+  int8_t fixedAdvance = -128;
   int16_t advanceCorrection =
     correctionFlexTiming()
     + correctionWMITiming()
@@ -688,10 +688,10 @@ int8_t correctionsIgn(int16_t advance)
   correctionCrankingFixedTiming(&fixedAdvance); //This overrides the regular fixed timing, must come last
 
   // If any fixed advance is set the ignition table and relative advance will not be used
-  if (fixedAdvance > -127) { advance = fixedAdvance; }
+  if (fixedAdvance > -128) { advance = fixedAdvance; }
   else { advance += advanceCorrection; }
 
-  return constrain(advance, -127, 127);
+  return constrain(advance, -128, 127);
 }
 /** Correct ignition timing to configured fixed value.
  * Must be called near end to override all other corrections.

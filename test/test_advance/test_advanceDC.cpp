@@ -289,7 +289,7 @@ int16_t getAdvanceDCtestAdvance(int16_t advanceAdd) { //Returns correct base adv
     int16_t ignitionTable2Value = engineParameters[engineParametersPos].ignitionTable2Value;
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD) {
         if (configPage10.spark2correctedMultiplyAddedAdvance == false) {
-            ignitionTable2Value += advanceAdd;
+            ignitionTable1Value += advanceAdd;
         }
 
         if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
