@@ -31,31 +31,17 @@ int8_t getAdvance() {
 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
-      tempAdvance = getAdvance1(); // Add and multiply modes apply on top of table 1
-
-      if(configPage10.spark2correctedMultiplyAddedAdvance == true) { //The new code applies the advance corrections once after after adding or multiplying
-        if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
-          if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-          tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-        }
-        else { // SPARK_MODE_ADD
-          tempAdvance2 = tempAdvance + tempAdvance2;
-        }
-        
+      tempAdvance = getAdvance1() + correction; // Add and multiply modes apply on top of table 1
+      if(configPage10.spark2correctedMultiplyAddedAdvance == false) { //The old code applies the advance corrections to both tables before adding or multiplying
         tempAdvance2 += correction;
       }
-      else { //The old code applies the advance corrections on both tables before adding or multiplying
-        tempAdvance += correction;
-        tempAdvance2 += correction;
 
-        if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
-          if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
-          tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-        }
-        else { // SPARK_MODE_ADD
-          tempAdvance2 = tempAdvance + tempAdvance2;
-        }
-
+      if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY) {
+        if(tempAdvance2 < 0) { tempAdvance2 = 0; } //Negative values not supported
+        tempAdvance2 = (tempAdvance * tempAdvance2) / 100; //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
+      }
+      else { // SPARK_MODE_ADD
+        tempAdvance2 = tempAdvance + tempAdvance2;
       }
 
     }

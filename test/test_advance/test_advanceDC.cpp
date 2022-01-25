@@ -294,8 +294,8 @@ int16_t getAdvanceDCtestAdvance(int16_t advanceAdd) { //Returns correct base adv
     int16_t ignitionTable2Value = engineParameters[engineParametersPos].ignitionTable2Value;
 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD) {
+        ignitionTable1Value += advanceAdd;
         if (configPage10.spark2correctedMultiplyAddedAdvance == false) {
-            ignitionTable1Value += advanceAdd;
             ignitionTable2Value += advanceAdd;
         }
 
@@ -306,10 +306,7 @@ int16_t getAdvanceDCtestAdvance(int16_t advanceAdd) { //Returns correct base adv
         else { // SPARK2_MODE_ADD
             result = ignitionTable1Value+ignitionTable2Value;
         }
-
-        if (configPage10.spark2correctedMultiplyAddedAdvance == true) {
-            result += advanceAdd;
-        }
+        
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_CONDITIONAL_SWITCH && currentStatus.TPS > configPage10.spark2SwitchValue) {
         result = ignitionTable2Value + advanceAdd;
