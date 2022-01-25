@@ -7,9 +7,12 @@
 #include "advance.h"
 #include "corrections.h"
 
-/** Gets the correct advance based on which table and corrections
+/** 
+ * @brief Returns the calculated advance
  * 
- * @return byte The current target advance value in degrees
+ * @details Calculates the advance based on configuration and current state. Determines how the output from the primary and secondary spark table is used.
+ * 
+ * @return The current target advance value in degrees
  */
 
 int8_t getAdvance() {
@@ -62,10 +65,10 @@ int8_t getAdvance() {
   return tempAdvance;
 }
 
-/** Lookup the ignition advance from 3D ignition table.
- * The values used to look this up will be RPM and whatever load source the user has configured.
+/**
+ * @brief Queries the Primary spark table based on RPM and the user configured load source
  * 
- * @return byte The current target advance value in degrees
+ * @return Primary spark table result in degrees
  */
 int16_t getAdvance1()
 {
@@ -93,9 +96,9 @@ int16_t getAdvance1()
 }
 
 /**
- * @brief Performs a lookup of the second ignition advance table. The values used to look this up will be RPM and whatever load source the user has configured
+ * @brief Queries the secondary spark table based on RPM and the user configured load source
  * 
- * @return byte The current target advance value in degrees
+ * @return Secondary spark table result in degrees
  */
 int16_t getAdvance2()
 {
@@ -122,11 +125,15 @@ int16_t getAdvance2()
   return tempAdvance;
 }
 
-/** Checks if we should use spark table 2
+/**
+ * @brief Checks if we should use spark table 2
  * 
- * @return bool Returns true if the settings and currentStatus says we should use spark table 2
+ * @details Uses the secondary spark table configuration to check wether the secondary spark table is enabled. Any conditional switches are also checked.
+ * 
+ * @retval true The configuration and current state enables spark table 2
+ * 
+ * @retval false The configuration and current state enables spark table 2
  */
-
 bool sparkTable2Enabled() {
   if (configPage10.spark2Mode <= 0)
   { return false; }

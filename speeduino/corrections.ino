@@ -663,9 +663,16 @@ byte correctionAFRClosedLoop()
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
-/** Dispatch calculations for all ignition related corrections.
- * @param advance Ignition advance before applying corrections and is updated with advance after applying corrections
- * @return If the advance parameter is return with fixed advance
+/** 
+ * @brief Dispatch calculations for all ignition related corrections.
+ * 
+ * @details Combines the results of all separate ignition corrections. Takes into account wether any ignition correction sets a fixed advance.
+ * 
+ * @param[in,out] advance Ignition advance in degrees before applying corrections and is updated with advance after applying corrections
+ * 
+ * @retval true The advance parameter is set to fixed advance in degrees
+ * 
+ * @retval false The advance parameter is set to its input value plus the calculated ignition advance correction
  */
 bool correctionsIgn(int16_t &advance)
 {
