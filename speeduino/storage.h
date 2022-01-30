@@ -110,10 +110,15 @@
 
 void writeAllConfig();
 void writeConfig(uint8_t pageNum);
+void EEPROMWriteRaw(uint16_t address, uint8_t data);
+uint8_t EEPROMReadRaw(uint16_t address);
 void loadConfig();
 void loadCalibration();
 void writeCalibration();
+void writeCalibrationPage(uint8_t pageNum);
 void resetConfigPages();
+void enableForceBurn();
+void disableForceBurn();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
@@ -122,8 +127,10 @@ uint8_t readEEPROMVersion();
 void storeEEPROMVersion(uint8_t);
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
 uint32_t readPageCRC32(uint8_t pageNum);
-
+uint16_t getEEPROMSize();
 bool isEepromWritePending();
+
+extern bool deferEEPROMWrites;
 
 #define EEPROM_CONFIG1_MAP    3
 #define EEPROM_CONFIG2_START  291
