@@ -765,7 +765,7 @@ void loop()
       {
         if ( configPage2.useDwellMap == true )
         {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.MAP, currentStatus.RPM) * 100); //use running dwell from map
+          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100); //use running dwell from map
         }
         else
         {
@@ -1543,8 +1543,7 @@ void calculateIgnitionAngles(int dwellAngle)
       else if(configPage4.sparkMode == IGN_MODE_ROTARY)
       {
         byte splitDegrees = 0;
-        if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
-        else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS); }
+        splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.ignLoad);
 
         //The trailing angles are set relative to the leading ones
         calculateIgnitionAngle3(dwellAngle, splitDegrees);
