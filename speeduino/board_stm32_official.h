@@ -1,6 +1,5 @@
 #ifndef STM32OFFICIAL_H
 #define STM32OFFICIAL_H
-#include <Arduino.h>
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
@@ -44,6 +43,10 @@ HardwareSerial Serial1(PA10, PA9);
 extern STM32RTC& rtc;
 
 void initBoard();
+void ADCinit_STM32();
+bool ADC_start_STM32(uint32_t ulPin); //returns 1 when ADC succesfully started
+bool ADC_CheckForConversionComplete_STM32();
+uint16_t ADC_get_value_STM32();
 uint16_t freeRam();
 void doSystemReset();
 void jumpToBootloader();

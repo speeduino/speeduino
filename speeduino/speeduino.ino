@@ -41,8 +41,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "engineProtection.h"
 #include "secondaryTables.h"
 #include "SD_logger.h"
-#include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include RTC_LIB_H //Defined in each boards .h file
 
 int ignition1StartAngle = 0;
 int ignition2StartAngle = 0;
@@ -197,8 +197,6 @@ void loop()
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
       secondaryToothCount = 0;
-      MAPcurRev = 0;
-      MAPcount = 0;
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;
@@ -225,14 +223,11 @@ void loop()
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();
+    ADC_sequencer();//All ADC reads are now combined into sequencer to ensure optimal loop speed without any blocking
     
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) 
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
-      #if TPS_READ_FREQUENCY == 15
-        readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-      #endif
       #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -299,9 +294,6 @@ void loop()
       //FOR TEST PURPOSES ONLY!!!
       //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
       //else { vvt2_pwm_value = 1; }
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
@@ -310,12 +302,7 @@ void loop()
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
-      //The IAT and CLT readings can be done less frequently (4 times per second)
-      readCLT();
-      readIAT();
-      readO2();
-      readO2_2();
-      readBat();
+
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
 
@@ -323,8 +310,6 @@ void loop()
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
       
-      currentStatus.fuelPressure = getFuelPressure();
-      currentStatus.oilPressure = getOilPressure();
 
       if(auxIsEnabled == true)
       {
@@ -386,7 +371,6 @@ void loop()
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
-      readBaro(); //Infrequent baro readings are not an issue.
       deferEEPROMWrites = false; //Reset the slow EEPROM writes flag so that EEPROM burns will return to normal speed. This is set true in NewComms whenever there is a large chunk write to prvent mega2560s halting due to excess EEPROM burn times. 
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
