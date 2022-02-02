@@ -28,7 +28,8 @@
 
 #define TPS_INTERVAL 39  //[ms]TPS reading interval , (this is to be exactly 39 for TPSdot calculation to be super simple)
 #define TPS_READ_FREQUENCY 26 //Hz calculated from interval above and rounded to the nearest integer
-#define CLT_INTERVAL 250 //[ms] infrequent CLT readings are not an issue.
+#define IAT_INTERVAL 33  //[ms] currently used for IAT,O2,O2_2,BAT
+#define CLT_INTERVAL 250 //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
 #define BARO_INTERVAL 1000 //[ms] infrequent BARO readings are not an issue.
 
 

@@ -121,9 +121,10 @@ void initializeAux()         //The following checks the aux inputs and initialis
  */
 void ADC_sequencer(){
 
-static enum ADCoperations:uint8_t {MAPadc,EMAPadc,TPSadc,CLTadc,IATadc,O2adc,O2_2adc,BATadc,FuelpressureAdc,OilpressureAdc,BaroAdc} adcOperation =MAPadc; //current state of ADCsequence,initial state is MAPadc
+static enum ADCoperations:uint8_t {MAPadc,EMAPadc,TPSadc,IATadc,O2adc,O2_2adc,BATadc,CLTadc,FuelpressureAdc,OilpressureAdc,BaroAdc} adcOperation =MAPadc; //current state of ADCsequence,initial state is MAPadc
 static ADCstates adcState = ADCidle; //current state of ADC,initial state is idle
 static unsigned long lastmillisTPS=0;
+static unsigned long lastmillisIAT=0;
 static unsigned long lastmillisCLT=4;
 static unsigned long lastmillisBARO=0;
 
@@ -155,16 +156,52 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
         adcState = readTPS(true, adcState); //read TPS
         if (adcState == ADCidle)
         {                         //when this channel done
-          adcOperation = CLTadc; //specify next operation
+          adcOperation = IATadc; //specify next operation
           lastmillisTPS = millis();
         }
       }
       else      
       {
-        adcOperation = CLTadc; //skip to next operation
+        adcOperation = IATadc; //skip to next operation
       }      
       break;
-    case CLTadc:                                    //_4Hz The IAT and CLT readings can be done less frequently (4 times per second)
+    case IATadc: //30HZ
+      if (millis() - lastmillisIAT >= IAT_INTERVAL)
+      {
+        adcState = readIAT(adcState);
+        if (adcState == ADCidle)
+        {                          //when this channel done
+          adcOperation = O2adc; //specify next operation
+          lastmillisIAT=millis();
+        }
+      }
+      else      
+      {
+        adcOperation = CLTadc; //skip right to CLT. IAT,O2,O2_2,Bat all have the same rates
+      } 
+      break;
+    case O2adc: //30HZ
+      adcState = readO2(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = O2_2adc; //specify next operation
+      }
+      break;
+    case O2_2adc: //30HZ
+      adcState = readO2_2(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = BATadc; //specify next operation
+      }
+      break;
+    case BATadc: //30HZ
+      adcState = readBat(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = FuelpressureAdc; //specify next operation
+      }
+      break;
+    case CLTadc:                                    //_4Hz The CLT readings can be done less frequently (4 times per second)
       if (millis() - lastmillisCLT >= CLT_INTERVAL) //Infrequent readings are not an issue.
       {
         adcState = readCLT(true, adcState);
@@ -176,36 +213,8 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
       }
       else
       {
-        adcOperation = BaroAdc; //jump right to Baro! IAT, O2, O2_2, Batt, Fuelpressure, OilPressure also have same interval
+        adcOperation = BaroAdc; //jump right to Baro! Fuelpressure, OilPressure also have same interval
       }      
-      break;
-    case IATadc: //_4HZ
-      adcState = readIAT(adcState);
-      if (adcState == ADCidle)
-      {                          //when this channel done
-        adcOperation = O2adc; //specify next operation
-      }
-      break;
-    case O2adc: //_4HZ
-      adcState = readO2(adcState);
-      if (adcState == ADCidle)
-      {                          //when this channel done
-        adcOperation = O2_2adc; //specify next operation
-      }
-      break;
-    case O2_2adc: //_4HZ
-      adcState = readO2_2(adcState);
-      if (adcState == ADCidle)
-      {                          //when this channel done
-        adcOperation = BATadc; //specify next operation
-      }
-      break;
-    case BATadc: //_4HZ
-      adcState = readBat(adcState);
-      if (adcState == ADCidle)
-      {                          //when this channel done
-        adcOperation = FuelpressureAdc; //specify next operation
-      }
       break;
     case FuelpressureAdc: //_4HZ
       adcState = readFuelpressure(adcState);
