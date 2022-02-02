@@ -127,6 +127,7 @@ static unsigned long lastmillisTPS=0;
 static unsigned long lastmillisIAT=0;
 static unsigned long lastmillisCLT=4;
 static unsigned long lastmillisBARO=0;
+static uint8_t TPSinterleave=1;  //interleave counter for TPS, needed for tpsDot that is calculated only on every 4th reading
 
 if (ADC_CheckForConversionComplete() == true)
 {
@@ -150,14 +151,19 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
         adcOperation = TPSadc; //specify next operation
       }
       break;
-    case TPSadc:                                    //_26Hz
-      if (millis() - lastmillisTPS >= TPS_INTERVAL) //(any faster and it can upset the TPSdot sampling time)
+    case TPSadc:                                    //100Hz
+      if (millis() - lastmillisTPS >= (TPS_INTERVAL * TPSinterleave)) //(any faster and it can upset the TPSdot sampling time)
       {
         adcState = readTPS(true, adcState); //read TPS
         if (adcState == ADCidle)
         {                         //when this channel done
           adcOperation = IATadc; //specify next operation
-          lastmillisTPS = millis();
+          TPSinterleave++;
+          if (TPSinterleave > 4){     //at every 4-th reading tpsDOT calculation is done
+            TPSinterleave=1;
+            readTPSdot();
+            lastmillisTPS = millis();
+          }
         }
       }
       else      
@@ -642,8 +648,6 @@ ADCstates readEMAP(ADCstates adcState)
 ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called repeatedly
 {
   uint16_t tempReading;
-  int TPSrateOfChange;
-  static uint8_t TPSlastADC; //The previous TPS reading
   
   if(adcState == ADCidle ){
     if(ADC_start(pinTPS)==1){adcState=ADCrunning;}   //start ADC at required channel    
@@ -671,6 +675,7 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
     //else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
     tempADC=constrain(currentStatus.tpsADC,configPage2.tpsMin,configPage2.tpsMax);
     currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.tpsADC=tempADC;
   }
   else
   {
@@ -685,6 +690,7 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
     else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
     currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
+    currentStatus.tpsADC=tempADC;
   }
 
   //Check whether the closed throttle position sensor is active
@@ -695,13 +701,17 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
   }
   else { currentStatus.CTPSActive = 0; }
 
-  //Get the TPS change rate 
-  //note here that TPS read frequency is specially chosen to get optimally fast and simple tpsDOT calculation
-  TPSrateOfChange= (tempADC-TPSlastADC); //this is about accurate for 8bit ADC(range 1024/4=256) and 39ms reading interval(25,6Hz), produces TPS change in %/s /10
-  currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
-  TPSlastADC = tempADC; //use tempADC here so that reversed pot also works
   
   return adcState;
+}
+//Get the TPS change rate 
+void readTPSdot(){
+  int TPSrateOfChange;
+  static uint8_t TPSlastADC; //The previous TPS reading  
+  //note here that TPS read frequency is specially chosen to get optimally fast tpsDOT calculation
+  TPSrateOfChange= (currentStatus.tpsADC-TPSlastADC); //this is about accurate for 8bit ADC(range 1024/4=256) and 39ms reading interval(25,6Hz), produces TPS change in %/s /10
+  currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
+  TPSlastADC = currentStatus.tpsADC; //use tempADC here so that reversed pot also works
 }
 
 ADCstates readCLT(bool useFilter,ADCstates adcState)
