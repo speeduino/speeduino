@@ -670,7 +670,6 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
     //else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
     tempADC=constrain(currentStatus.tpsADC,configPage2.tpsMin,configPage2.tpsMax);
     currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-    currentStatus.tpsADC=tempADC;
   }
   else
   {
@@ -685,7 +684,6 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
     else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
     currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
-    currentStatus.tpsADC=tempADC;
   }
 
   //Check whether the closed throttle position sensor is active
