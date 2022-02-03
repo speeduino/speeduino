@@ -707,11 +707,11 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
 //Get the TPS change rate 
 void readTPSdot(){
   int TPSrateOfChange;
-  static uint8_t TPSlastADC; //The previous TPS reading  
+  static uint8_t TPSlast; //The previous TPS reading  
   //note here that TPS read frequency is specially chosen to get optimally fast tpsDOT calculation
-  TPSrateOfChange= (currentStatus.tpsADC-TPSlastADC); //this is about accurate for 8bit ADC(range 1024/4=256) and 39ms reading interval(25,6Hz), produces TPS change in %/s /10
+  TPSrateOfChange= (currentStatus.TPS-TPSlast)*(4*TPS_INTERVAL/10); //this is optimal for 10ms TPS_INTERVAL 40ms reading interval(25Hz), produces TPS change in %/s /10
   currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
-  TPSlastADC = currentStatus.tpsADC; //use tempADC here so that reversed pot also works
+  TPSlast = currentStatus.TPS; //use tempADC here so that reversed pot also works
 }
 
 ADCstates readCLT(bool useFilter,ADCstates adcState)
