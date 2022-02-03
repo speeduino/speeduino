@@ -127,7 +127,6 @@ static unsigned long lastmillisTPS=0;
 static unsigned long lastmillisIAT=0;
 static unsigned long lastmillisCLT=4;
 static unsigned long lastmillisBARO=0;
-static uint8_t TPSinterleave=1;  //interleave counter for TPS, needed for tpsDot that is calculated only on every 4th reading
 
 if (ADC_CheckForConversionComplete() == true)
 {
@@ -151,19 +150,15 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
         adcOperation = TPSadc; //specify next operation
       }
       break;
-    case TPSadc:                                    //100Hz
-      if (millis() - lastmillisTPS >= (TPS_INTERVAL * TPSinterleave)) //(any faster and it can upset the TPSdot sampling time)
+    case TPSadc:                                    //40Hz
+      if (millis() - lastmillisTPS >= (TPS_INTERVAL)) //(any faster and it can upset the TPSdot sampling time)
       {
         adcState = readTPS(true, adcState); //read TPS
+        readTPSdot();
         if (adcState == ADCidle)
         {                         //when this channel done
-          adcOperation = IATadc; //specify next operation
-          TPSinterleave++;
-          if (TPSinterleave > 4){     //at every 4-th reading tpsDOT calculation is done
-            TPSinterleave=1;
-            readTPSdot();
-            lastmillisTPS = millis();
-          }
+          adcOperation = IATadc;  //specify next operation
+          lastmillisTPS = millis();
         }
       }
       else      
@@ -708,8 +703,9 @@ ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called rep
 void readTPSdot(){
   int TPSrateOfChange;
   static uint8_t TPSlast; //The previous TPS reading  
-  //note here that TPS read frequency is specially chosen to get optimally fast tpsDOT calculation
-  TPSrateOfChange= (currentStatus.TPS-TPSlast)*(4*TPS_INTERVAL/10); //this is optimal for 10ms TPS_INTERVAL 40ms reading interval(25Hz), produces TPS change in %/s /10
+  //note here that TPS read frequency is specially chosen 40Hz to get optimally fast and accurate tpsDOT calculation(to have whole numbers in integer multiplication)
+  TPSrateOfChange = (TPS_READ_FREQUENCY/20) * (currentStatus.TPS-TPSlast); //This is the % per second that the TPS has moved
+  //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
   currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
   TPSlast = currentStatus.TPS; //use tempADC here so that reversed pot also works
 }
