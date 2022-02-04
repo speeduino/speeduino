@@ -31,16 +31,17 @@ uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
 uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 #ifdef RTC_ENABLED
-  uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
   uint16_t SDcurrentDirChunk;
   uint32_t SDreadStartSector;
   uint32_t SDreadNumSectors;
   uint32_t SDreadCompletedSectors = 0;
+#else
+  uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -546,9 +547,9 @@ void processSerialCommand()
         if(SD_arg2 == SD_READ_COMP_ARG2)
         {
           //arg1 is the block number to return
-          serialSDTransmitPayload[0] = SERIAL_RC_OK;
-          serialSDTransmitPayload[1] = highByte(SD_arg1);
-          serialSDTransmitPayload[2] = lowByte(SD_arg1);
+          serialPayload[0] = SERIAL_RC_OK;
+          serialPayload[1] = highByte(SD_arg1);
+          serialPayload[2] = lowByte(SD_arg1);
 
           uint32_t currentSector = SDreadStartSector + (SD_arg1 * 4);
           
@@ -566,8 +567,8 @@ void processSerialCommand()
           if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
           else
           {
-            readSDSectors(&serialSDTransmitPayload[3], currentSector, numSectorsToSend); 
-            sendSerialPayload(&serialSDTransmitPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+            readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
+            sendSerialPayload(&serialPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
           }
         }
       }
