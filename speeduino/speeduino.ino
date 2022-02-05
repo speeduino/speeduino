@@ -277,7 +277,6 @@ void loop()
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
-      readO2();
 
       if( (isEepromWritePending() == true) && (serialReceivePending == false) && (deferEEPROMWrites == false)) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
@@ -314,7 +313,7 @@ void loop()
       //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
-      //readO2();
+      readO2();
       readO2_2();
       readBat();
       nitrousControl();
