@@ -1938,7 +1938,7 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
       pinTachOut = 22; //Tacho output pin
       pinIdle1 = 9; //Single wire idle control
-      pinIdle2 = 10; //2 wire idle control
+      pinIdle2 = 13; //2 wire idle control
       pinFuelPump = 23; //Fuel pump output
       pinVVT_1 = 11; //Default VVT output
       pinVVT_2 = 48; //Default VVT2 output
