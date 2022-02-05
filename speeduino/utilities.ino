@@ -12,6 +12,7 @@
 #include "utilities.h"
 #include "decoders.h"
 #include "comms.h"
+#include "logger.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
@@ -142,7 +143,7 @@ void initialiseProgrammableIO()
   }
 }
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
- * Compare 2 (16 bit) vars in a way configured by @ref config13.cmpOperation.
+ * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
@@ -257,17 +258,19 @@ void checkProgrammableIO()
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
-  uint8_t x;
   if ( index < LOG_ENTRY_SIZE )
   {
-    
-    for(x = 0; x<sizeof(fsIntIndex); x++)
+    /*
+    for(uint8_t x = 0; x<sizeof(fsIntIndex); x++)
     {
       // Stop at desired field
       if (pgm_read_byte(&(fsIntIndex[x])) == index) { break; }
     }
-    if (x >= sizeof(fsIntIndex)) { result = getStatusEntry(index); } // 8-bit, coerce to 16 bit result
-    else { result = word(getStatusEntry(index+1), getStatusEntry(index)); } // Assemble 2 bytes to word of 16 bit result
+    if (x >= sizeof(fsIntIndex)) { result = getTSLogEntry(index); } // 8-bit, coerce to 16 bit result
+    else { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); } // Assemble 2 bytes to word of 16 bit result
+    */
+    if(is2ByteEntry(index)) { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); }
+    else { result = getTSLogEntry(index); }
     
 
     //Special cases for temperatures

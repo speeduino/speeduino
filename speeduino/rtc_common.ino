@@ -1,11 +1,17 @@
-#ifdef RTC_ENABLED
-#include "rtc_common.h"
 #include "globals.h"
 #include RTC_LIB_H //Defined in each boards .h file
+#ifdef RTC_ENABLED
+#include "rtc_common.h"
+
 
 void initRTC()
 {
 
+  #if defined(CORE_TEENSY35) || defined(CORE_TEENSY36)
+    setSyncProvider(getTeensy3Time);
+  #elif defined(CORE_STM32)
+  
+  #endif
 
 }
 
@@ -94,7 +100,8 @@ uint16_t rtc_getYear()
   #if defined(CORE_TEENSY)
     tempYear = year();
   #elif defined(CORE_STM32)
-    tempYear = rtc.getYear();
+    //year in stm32 rtc is a byte. So add year 2000 to make it correct
+    tempYear = (2000+rtc.getYear());
   #endif
 #endif
   return tempYear;
@@ -104,10 +111,11 @@ void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint
 {
 #ifdef RTC_ENABLED
   #if defined(CORE_TEENSY)
-    setTime(second, minute, hour, day, month, year);
+    setTime(hour, minute, second, day, month, year);
   #elif defined(CORE_STM32)
     rtc.setTime(hour, minute, second);
-    rtc.setDate(day, month, year);
+    //year in stm32 rtc is a byte. so substract year 2000 to fit
+    rtc.setDate(day, month, (year-2000));
   #endif
 #endif
 }

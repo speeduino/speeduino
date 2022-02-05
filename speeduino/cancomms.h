@@ -1,7 +1,7 @@
 #ifndef CANCOMMS_H
 #define CANCOMMS_H
 
-#define NEW_CAN_PACKET_SIZE   119
+#define NEW_CAN_PACKET_SIZE   122
 #define CAN_PACKET_SIZE   75
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
@@ -9,7 +9,7 @@
   extern HardwareSerial &CANSerial;
 #elif defined(CORE_STM32)
   #define CANSerial_AVAILABLE
-  #ifndef Serial2
+  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
     #define Serial2 Serial1
   #endif
   #if defined(STM32GENERIC) // STM32GENERIC core

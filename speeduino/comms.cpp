@@ -17,7 +17,7 @@ A full copy of the license may be found in the projects root directory
 #include "errors.h"
 #include "pages.h"
 #include "page_crc.h"
-#include "table_iterator.h"
+#include "logger.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -38,6 +38,7 @@ uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool toothLogSendInProgress = false;
 bool compositeLogSendInProgress = false;
+bool legacySerial = false;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -48,7 +49,7 @@ Comands are single byte (letter symbol) commands.
 */
 void command()
 {
-  if (cmdPending == false) { currentCommand = Serial.read(); }
+  if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
@@ -100,7 +101,7 @@ void command()
       if (Serial.available() >= 2)
       {
         Serial.read(); //Ignore the first byte value, it's always 0
-        uint32_t CRC32_val = calculateCRC32( Serial.read() );
+        uint32_t CRC32_val = calculatePageCRC32( Serial.read() );
         
         //Split the 4 bytes of the CRC32 value into individual bytes and send
         Serial.write( ((CRC32_val >> 24) & 255) );
@@ -146,12 +147,49 @@ void command()
       Serial.print(F("001"));
       break;
 
+    //The G/g commands are used for bulk reading and writing to the EEPROM directly. This is typically a non-user feature but will be incorporated into SpeedyLoader for anyone programming many boards at once
+    case 'G': // Dumps the EEPROM values to serial
+    
+      //The format is 2 bytes for the overall EEPROM size, a comma and then a raw dump of the EEPROM values
+      Serial.write(lowByte(getEEPROMSize()));
+      Serial.write(highByte(getEEPROMSize()));
+      Serial.print(',');
+
+      for(uint16_t x = 0; x < getEEPROMSize(); x++)
+      {
+        Serial.write(EEPROMReadRaw(x));
+      }
+      cmdPending = false;
+      break;
+
+    case 'g': // Receive a dump of raw EEPROM values from the user
+    {
+      //Format is simlar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
+      while(Serial.available() < 3) { delay(1); }
+      uint16_t eepromSize = word(Serial.read(), Serial.read());
+      if(eepromSize != getEEPROMSize())
+      {
+        //Client is trying to send the wrong EEPROM size. Don't let it 
+        Serial.println(F("ERR; Incorrect EEPROM size"));
+        break;
+      }
+      else
+      {
+        for(uint16_t x = 0; x < eepromSize; x++)
+        {
+          while(Serial.available() < 3) { delay(1); }
+          EEPROMWriteRaw(x, Serial.read());
+        }
+      }
+      cmdPending = false;
+      break;
+    }
+
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
       currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -179,8 +217,6 @@ void command()
       currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
 
       //Disconnect the standard interrupt and add the logger version
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -283,7 +319,7 @@ void command()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202108"));
+      Serial.print(F("speeduino 202204-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -306,144 +342,16 @@ void command()
         {
           sendValues(offset, length, cmd, 0);
         }
-#ifdef RTC_ENABLED
-        else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
-        {
-          /*
-          uint16_t packetSize = 2 + 1 + length + 4;
-          packetSize = 15;
-          Serial.write(highByte(packetSize));
-          Serial.write(lowByte(packetSize));
-          byte packet[length+1];
-
-          packet[0] = 0;
-          packet[1] = length;
-          packet[2] = 0;
-          packet[3] = 0;
-          packet[4] = 0;
-          packet[5] = 0;
-          packet[6] = 0;
-          packet[7] = 0;
-          packet[8] = 0;
-          Serial.write(packet, 9);
-
-          FastCRC32 CRC32;
-          uint32_t CRC32_val = CRC32.crc32((byte *)packet, sizeof(packet) );;
-      
-          //Split the 4 bytes of the CRC32 value into individual bytes and send
-          Serial.write( ((CRC32_val >> 24) & 255) );
-          Serial.write( ((CRC32_val >> 16) & 255) );
-          Serial.write( ((CRC32_val >> 8) & 255) );
-          Serial.write( (CRC32_val & 255) );
-          */
-          Serial.write(rtc_getSecond()); //Seconds
-          Serial.write(rtc_getMinute()); //Minutes
-          Serial.write(rtc_getHour()); //Hours
-          Serial.write(rtc_getDOW()); //Day of Week
-          Serial.write(rtc_getDay()); //Date
-          Serial.write(rtc_getMonth()); //Month
-          Serial.write(lowByte(rtc_getYear())); //Year - NOTE 2 bytes
-          Serial.write(highByte(rtc_getYear())); //Year
-
-        }
-        else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
-        {
-          //SD read commands use the offset and length fields to indicate the request type
-          if((offset == SD_READ_STAT_OFFSET) && (length == SD_READ_STAT_LENGTH))
-          {
-            //Read the status of the SD card
-            
-            //Serial.write(0);
-
-
-            //Serial.write(currentStatus.TS_SD_Status);
-            Serial.write((uint8_t)5);
-            Serial.write((uint8_t)0);
-
-            //All other values are 2 bytes          
-            Serial.write((uint8_t)2); //Sector size
-            Serial.write((uint8_t)0); //Sector size
-
-            //Max blocks (4 bytes)
-            Serial.write((uint8_t)0);
-            Serial.write((uint8_t)0x20); //1gb dummy card
-            Serial.write((uint8_t)0);
-            Serial.write((uint8_t)0);
-
-            //Max roots (Number of files)
-            Serial.write((uint8_t)0);
-            Serial.write((uint8_t)1);
-
-            //Dir Start (4 bytes)
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-
-            //Unkown purpose for last 2 bytes
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-            Serial.write((uint8_t)0); //Dir start lower 2 bytes
-            
-            /*
-            Serial.write(lowByte(23));
-            Serial.write(highByte(23));
-
-            byte packet[17];
-            packet[0] = 0;
-            packet[1] = 5;
-            packet[2] = 0;
-
-            packet[3] = 2;
-            packet[4] = 0;
-
-            packet[5] = 0;
-            packet[6] = 0x20;
-            packet[7] = 0;
-            packet[8] = 0;
-
-            packet[9] = 0;
-            packet[10] = 1;
-
-            packet[11] = 0;
-            packet[12] = 0;
-            packet[13] = 0;
-            packet[14] = 0;
-
-            packet[15] = 0;
-            packet[16] = 0;
-
-            Serial.write(packet, 17);
-            FastCRC32 CRC32;
-            uint32_t CRC32_val = CRC32.crc32((byte *)packet, sizeof(packet) );;
-        
-            //Split the 4 bytes of the CRC32 value into individual bytes and send
-            Serial.write( ((CRC32_val >> 24) & 255) );
-            Serial.write( ((CRC32_val >> 16) & 255) );
-            Serial.write( ((CRC32_val >> 8) & 255) );
-            Serial.write( (CRC32_val & 255) );
-            */
-
-          }
-          //else if(length == 0x202)
-          {
-            //File info
-          }
-        }
-        else if(cmd == 0x14)
-        {
-          //Fetch data from file
-        }
-#endif
         else
         {
-          //No other r/ commands should be called
+          //No other r/ commands are supported in legacy mode
         }
         cmdPending = false;
       }
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2021.08"));
+      Serial.print(F("Speeduino 2022.04-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -462,8 +370,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog_old(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog_old(0); }
 
         cmdPending = false;
       }
@@ -577,98 +485,21 @@ void command()
       break;
 
     case 'w':
+      //No w commands are supported in legacy mode. This should never be called
       if(Serial.available() >= 7)
-        {
-          byte offset1, offset2, length1, length2;
+      {
+        byte offset1, offset2, length1, length2;
 
-          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-          currentPage = Serial.read();
-          //currentPage = 1;
-          offset1 = Serial.read();
-          offset2 = Serial.read();
-          valueOffset = word(offset2, offset1);
-          length1 = Serial.read();
-          length2 = Serial.read();
-          chunkSize = word(length2, length1);
-        }
-#ifdef RTC_ENABLED
-      if(currentPage == SD_READWRITE_PAGE)
-        { 
-          cmdPending = false;
-
-          //Reserved for the SD card settings. Appears to be hardcoded into TS. Flush the final byte in the buffer as its not used for now
-          Serial.read(); 
-          if((valueOffset == SD_WRITE_DO_OFFSET) && (chunkSize == SD_WRITE_DO_LENGTH))
-          {
-            /*
-            SD DO command. Single byte of data where the commands are:
-            0 Reset
-            1 Reset
-            2 Stop logging
-            3 Start logging
-            4 Load status variable
-            5 Init SD card
-            */
-            Serial.read();
-          }
-          else if((valueOffset == SD_WRITE_SEC_OFFSET) && (chunkSize == SD_WRITE_SEC_LENGTH))
-          {
-            //SD write sector command
-          }
-          else if((valueOffset == SD_ERASEFILE_OFFSET) && (chunkSize == SD_ERASEFILE_LENGTH))
-          {
-            //Erase file command
-            //First 4 bytes are the log number in ASCII
-            /*
-            char log1 = Serial.read();
-            char log2 = Serial.read();
-            char log3 = Serial.read();
-            char log4 = Serial.read();
-            */
-
-            //Next 2 bytes are the directory block no
-            Serial.read();
-            Serial.read();
-          }
-          else if((valueOffset == SD_SPD_TEST_OFFSET) && (chunkSize == SD_SPD_TEST_LENGTH))
-          {
-            //Perform a speed test on the SD card
-            //First 4 bytes are the sector number to write to
-            Serial.read();
-            Serial.read();
-            Serial.read();
-            Serial.read();
-
-            //Last 4 bytes are the number of sectors to test
-            Serial.read();
-            Serial.read();
-            Serial.read();
-            Serial.read();
-          }
-        }
-        else if(currentPage == SD_RTC_PAGE)
-        {
-          cmdPending = false;
-          //Used for setting RTC settings
-          if((valueOffset == SD_RTC_WRITE_OFFSET) && (chunkSize == SD_RTC_WRITE_LENGTH))
-          {
-            //Set the RTC date/time
-            //Need to ensure there are 9 more bytes with the new values
-            while(Serial.available() < 9) {} //Terrible hack, but RTC values should not be set with the engine running anyway
-            byte second = Serial.read();
-            byte minute = Serial.read();
-            byte hour = Serial.read();
-            //byte dow = Serial.read();
-            Serial.read(); // This is the day of week value, which is currently unused
-            byte day = Serial.read();
-            byte month = Serial.read();
-            uint16_t year = Serial.read();
-            year = word(Serial.read(), year);
-            Serial.read(); //Final byte is unused (Always has value 0x5a)
-            rtc_setTime(second, minute, hour, day, month, year);
-          }
-        }
-#endif
+        Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+        currentPage = Serial.read();
+        //currentPage = 1;
+        offset1 = Serial.read();
+        offset2 = Serial.read();
+        valueOffset = word(offset2, offset1);
+        length1 = Serial.read();
+        length2 = Serial.read();
+        chunkSize = word(length2, length1);
+      }
       break;
 
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
@@ -706,7 +537,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog(0); //Sends tooth log values as chars
+      sendToothLog_old(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -754,174 +585,10 @@ void command()
       break;
 
     default:
+      Serial.println(F("Err: Unknown cmd"));
+      cmdPending = false;
       break;
   }
-}
-/** Send a numbered byte-field (partial field in case of mul;ti-byte fields) from "current status" structure.
- * Notes on fields:
- * - Numbered field will be fields from @ref currentStatus, but not at all in the internal order of strct (e.g. field RPM value, number 14 will be
- *   2nd field in struct)
- * - The fields stored in multi-byte types will be accessed lowbyte and highbyte separately (e.g. PW1 will be broken into numbered byte-fields 75,76)
- * @param byteNum - byte-Field number
- * @return Field value in 1 byte size struct fields or 1 byte partial value (chunk) on multibyte fields.
- */
-byte getStatusEntry(uint16_t byteNum)
-{
-  byte statusValue = 0;
-
-  switch(byteNum)
-  {
-    case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-    case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
-    case 3: statusValue = currentStatus.syncLossCounter; break;
-    case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
-    case 5: statusValue = highByte(currentStatus.MAP); break;
-    case 6: statusValue = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); break; //mat
-    case 7: statusValue = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); break; //Coolant ADC
-    case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
-    case 9: statusValue = currentStatus.battery10; break; //battery voltage
-    case 10: statusValue = currentStatus.O2; break; //O2
-    case 11: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
-    case 12: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
-    case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
-    case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
-    case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
-    case 16: statusValue = (byte)(currentStatus.AEamount >> 1); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
-    case 17: statusValue = lowByte(currentStatus.corrections); break; //Total GammaE (%)
-    case 18: statusValue = highByte(currentStatus.corrections); break; //Total GammaE (%)
-    case 19: statusValue = currentStatus.VE1; break; //VE 1 (%)
-    case 20: statusValue = currentStatus.VE2; break; //VE 2 (%)
-    case 21: statusValue = currentStatus.afrTarget; break;
-    case 22: statusValue = currentStatus.tpsDOT; break; //TPS DOT
-    case 23: statusValue = currentStatus.advance; break;
-    case 24: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
-    
-    case 25: 
-      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
-      statusValue = lowByte(currentStatus.loopsPerSecond); 
-      break;
-    case 26: 
-      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
-      statusValue = highByte(currentStatus.loopsPerSecond); 
-      break;
-    
-    case 27: 
-      currentStatus.freeRAM = freeRam();
-      statusValue = lowByte(currentStatus.freeRAM); //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF);
-      break; 
-    case 28: 
-      currentStatus.freeRAM = freeRam();
-      statusValue = highByte(currentStatus.freeRAM); 
-      break;
-
-    case 29: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
-    case 30: statusValue = (byte)(currentStatus.boostDuty / 100); break;
-    case 31: statusValue = currentStatus.spark; break; //Spark related bitfield
-
-    //rpmDOT must be sent as a signed integer
-    case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
-    case 33: statusValue = highByte(currentStatus.rpmDOT); break;
-
-    case 34: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
-    case 35: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
-    case 36: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
-
-    case 37: statusValue = currentStatus.idleLoad; break;
-    case 38: statusValue = currentStatus.testOutputs; break;
-
-    case 39: statusValue = currentStatus.O2_2; break; //O2
-    case 40: statusValue = currentStatus.baro; break; //Barometer value
-
-    case 41: statusValue = lowByte(currentStatus.canin[0]); break;
-    case 42: statusValue = highByte(currentStatus.canin[0]); break;
-    case 43: statusValue = lowByte(currentStatus.canin[1]); break;
-    case 44: statusValue = highByte(currentStatus.canin[1]); break;
-    case 45: statusValue = lowByte(currentStatus.canin[2]); break;
-    case 46: statusValue = highByte(currentStatus.canin[2]); break;
-    case 47: statusValue = lowByte(currentStatus.canin[3]); break;
-    case 48: statusValue = highByte(currentStatus.canin[3]); break;
-    case 49: statusValue = lowByte(currentStatus.canin[4]); break;
-    case 50: statusValue = highByte(currentStatus.canin[4]); break;
-    case 51: statusValue = lowByte(currentStatus.canin[5]); break;
-    case 52: statusValue = highByte(currentStatus.canin[5]); break;
-    case 53: statusValue = lowByte(currentStatus.canin[6]); break;
-    case 54: statusValue = highByte(currentStatus.canin[6]); break;
-    case 55: statusValue = lowByte(currentStatus.canin[7]); break;
-    case 56: statusValue = highByte(currentStatus.canin[7]); break;
-    case 57: statusValue = lowByte(currentStatus.canin[8]); break;
-    case 58: statusValue = highByte(currentStatus.canin[8]); break;
-    case 59: statusValue = lowByte(currentStatus.canin[9]); break;
-    case 60: statusValue = highByte(currentStatus.canin[9]); break;
-    case 61: statusValue = lowByte(currentStatus.canin[10]); break;
-    case 62: statusValue = highByte(currentStatus.canin[10]); break;
-    case 63: statusValue = lowByte(currentStatus.canin[11]); break;
-    case 64: statusValue = highByte(currentStatus.canin[11]); break;
-    case 65: statusValue = lowByte(currentStatus.canin[12]); break;
-    case 66: statusValue = highByte(currentStatus.canin[12]); break;
-    case 67: statusValue = lowByte(currentStatus.canin[13]); break;
-    case 68: statusValue = highByte(currentStatus.canin[13]); break;
-    case 69: statusValue = lowByte(currentStatus.canin[14]); break;
-    case 70: statusValue = highByte(currentStatus.canin[14]); break;
-    case 71: statusValue = lowByte(currentStatus.canin[15]); break;
-    case 72: statusValue = highByte(currentStatus.canin[15]); break;
-
-    case 73: statusValue = currentStatus.tpsADC; break;
-    case 74: statusValue = getNextError(); break;
-
-    case 75: statusValue = lowByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 76: statusValue = highByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 77: statusValue = lowByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 78: statusValue = highByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 79: statusValue = lowByte(currentStatus.PW3); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 80: statusValue = highByte(currentStatus.PW3); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 81: statusValue = lowByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 82: statusValue = highByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-
-    case 83: statusValue = currentStatus.status3; break;
-    case 84: statusValue = currentStatus.engineProtectStatus; break;
-    case 85: statusValue = lowByte(currentStatus.fuelLoad); break;
-    case 86: statusValue = highByte(currentStatus.fuelLoad); break;
-    case 87: statusValue = lowByte(currentStatus.ignLoad); break;
-    case 88: statusValue = highByte(currentStatus.ignLoad); break;
-    case 89: statusValue = lowByte(currentStatus.dwell); break;
-    case 90: statusValue = highByte(currentStatus.dwell); break;
-    case 91: statusValue = currentStatus.CLIdleTarget; break;
-    case 92: statusValue = currentStatus.mapDOT; break;
-    case 93: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
-    case 94: statusValue = highByte(currentStatus.vvt1Angle); break;
-    case 95: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 96: statusValue = (byte)(currentStatus.vvt1Duty); break;
-    case 97: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
-    case 98: statusValue = highByte(currentStatus.flexBoostCorrection); break;
-    case 99: statusValue = currentStatus.baroCorrection; break;
-    case 100: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 101: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
-    case 102: statusValue = lowByte(currentStatus.vss); break;
-    case 103: statusValue = highByte(currentStatus.vss); break;
-    case 104: statusValue = currentStatus.gear; break;
-    case 105: statusValue = currentStatus.fuelPressure; break;
-    case 106: statusValue = currentStatus.oilPressure; break;
-    case 107: statusValue = currentStatus.wmiPW; break;
-    case 108: statusValue = currentStatus.status4; break;
-    case 109: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
-    case 110: statusValue = highByte(currentStatus.vvt2Angle); break;
-    case 111: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 112: statusValue = (byte)(currentStatus.vvt2Duty); break;
-    case 113: statusValue = currentStatus.outputsStatus; break;
-    case 114: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
-    case 115: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
-    case 116: statusValue = currentStatus.advance1; break; //advance 1 (%)
-    case 117: statusValue = currentStatus.advance2; break; //advance 2 (%)
-    case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
-    case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
-    case 120: statusValue = highByte(currentStatus.EMAP); break;
-  }
-
-  return statusValue;
-
-  //Each new inclusion here need to be added on speeduino.ini@L78, only list first byte of an integer and second byte as "INVALID"
-  //Every 2-byte integer added here should have it's lowByte index added to fsIntIndex array on globals.ino@L116
 }
 
 /** Send a status record back to tuning/logging SW.
@@ -960,9 +627,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
   for(byte x=0; x<packetLength; x++)
   {
-    if (portNum == 0) { Serial.write(getStatusEntry(offset+x)); }
+    if (portNum == 0) { Serial.write(getTSLogEntry(offset+x)); }
     #if defined(CANSerial_AVAILABLE)
-      else if (portNum == 3){ CANSerial.write(getStatusEntry(offset+x)); }
+      else if (portNum == 3){ CANSerial.write(getTSLogEntry(offset+x)); }
     #endif
 
     //Check whether the tx buffer still has space
@@ -1114,30 +781,30 @@ namespace {
     Serial.write((byte *)entity.pData, entity.size);
   }
 
-  inline void send_table_values(table_row_iterator_t it)
+  inline void send_table_values(table_value_iterator it)
   {
-    while (!at_end(it))
+    while (!it.at_end())
     {
-      auto row = get_row(it);
-      Serial.write(row.pValue, row.pEnd-row.pValue);
-      advance_row(it);
+      auto row = *it;
+      Serial.write(&*row, row.size());
+      ++it;
     }
   }
 
-  inline void send_table_axis(table_axis_iterator_t it)
+  inline void send_table_axis(table_axis_iterator it)
   {
-    while (!at_end(it))
+    while (!it.at_end())
     {
-      Serial.write(get_value(it));
-      it = advance_axis(it);
+      Serial.write((byte)*it);
+      ++it;
     }
   }
 
-  void send_table_entity(table3D *pTable)
+  void send_table_entity(const page_iterator_t &entity)
   {
-    send_table_values(rows_begin(pTable));
-    send_table_axis(x_begin(pTable));
-    send_table_axis(y_begin(pTable));
+    send_table_values(rows_begin(entity));
+    send_table_axis(x_begin(entity));
+    send_table_axis(y_begin(entity));
   }
 
   void send_entity(const page_iterator_t &entity)
@@ -1149,7 +816,7 @@ namespace {
       break;
 
     case Table:
-      return send_table_entity(entity.pTable);
+      return send_table_entity(entity);
       break;
     
     case NoEntity:
@@ -1232,42 +899,43 @@ namespace {
       Serial.print(F(" "));
   }
 
-  void print_row(const table_axis_iterator_t &y_it, table_row_t row)
+  void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(get_value(y_it));
+    serial_print_prepadded_value((byte)*y_it);
 
-    while (!at_end(row))
+    while (!row.at_end())
     {
-      serial_print_prepadded_value(*row.pValue++);
+      serial_print_prepadded_value(*row);
+      ++row;
     }
     Serial.println();
   }
 
-  void print_x_axis(const table3D &currentTable)
+  void print_x_axis(const void *pTable, table_type_t key)
   {
     Serial.print(F("    "));
 
-    auto x_it = x_begin(&currentTable);
-    while(!at_end(x_it))
+    auto x_it = x_begin(pTable, key);
+    while(!x_it.at_end())
     {
-      serial_print_prepadded_value(get_value(x_it));
-      advance_axis(x_it);
+      serial_print_prepadded_value((byte)*x_it);
+      ++x_it;
     }
   }
 
-  void serial_print_3dtable(const table3D &currentTable)
+  void serial_print_3dtable(const void *pTable, table_type_t key)
   {
-    auto y_it = y_begin(&currentTable);
-    auto row_it = rows_begin(&currentTable);
+    auto y_it = y_begin(pTable, key);
+    auto row_it = rows_begin(pTable, key);
 
-    while (!at_end(row_it))
+    while (!row_it.at_end())
     {
-      print_row(y_it, get_row(row_it));
-      advance_axis(y_it);
-      advance_row(row_it);
+      print_row(y_it, *row_it);
+      ++y_it;
+      ++row_it;
     }
 
-    print_x_axis(currentTable);
+    print_x_axis(pTable, key);
     Serial.println();
   }
 }
@@ -1283,7 +951,7 @@ void sendPageASCII()
   {
     case veMapPage:
       Serial.println(F("\nVE Map"));
-      serial_print_3dtable(fuelTable);
+      serial_print_3dtable(&fuelTable, fuelTable.type_key);
       break;
 
     case veSetPage:
@@ -1304,7 +972,7 @@ void sendPageASCII()
 
     case ignMapPage:
       Serial.println(F("\nIgnition Map"));
-      serial_print_3dtable(ignitionTable);
+      serial_print_3dtable(&ignitionTable, ignitionTable.type_key);
       break;
 
     case ignSetPage:
@@ -1322,7 +990,7 @@ void sendPageASCII()
 
     case afrMapPage:
       Serial.println(F("\nAFR Map"));
-      serial_print_3dtable(afrTable);
+      serial_print_3dtable(&afrTable, afrTable.type_key);
       break;
 
     case afrSetPage:
@@ -1346,14 +1014,14 @@ void sendPageASCII()
 
     case boostvvtPage:
       Serial.println(F("\nBoost Map"));
-      serial_print_3dtable(boostTable);
+      serial_print_3dtable(&boostTable, boostTable.type_key);
       Serial.println(F("\nVVT Map"));
-      serial_print_3dtable(vvtTable);
+      serial_print_3dtable(&vvtTable, vvtTable.type_key);
       break;
 
     case seqFuelPage:
       Serial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(trim1Table);
+      serial_print_3dtable(&trim1Table, trim1Table.type_key);
       break;
 
     case canbusPage:
@@ -1363,12 +1031,12 @@ void sendPageASCII()
 
     case fuelMap2Page:
       Serial.println(F("\n2nd Fuel Map"));
-      serial_print_3dtable(fuelTable2);
+      serial_print_3dtable(&fuelTable2, fuelTable2.type_key);
       break;
    
     case ignMap2Page:
       Serial.println(F("\n2nd Ignition Map"));
-      serial_print_3dtable(ignitionTable2);
+      serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
       break;
 
     case warmupPage:
@@ -1476,7 +1144,7 @@ void receiveCalibration(byte tableID)
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog(byte startOffset)
+void sendToothLog_old(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1491,19 +1159,17 @@ void sendToothLog(byte startOffset)
           toothLogSendInProgress = true;
           return;
         }
-        //Serial.write(highByte(toothHistory[toothHistorySerialIndex]));
-        //Serial.write(lowByte(toothHistory[toothHistorySerialIndex]));
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 24);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 16);
-        Serial.write(toothHistory[toothHistorySerialIndex] >> 8);
-        Serial.write(toothHistory[toothHistorySerialIndex]);
 
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+
+        Serial.write(toothHistory[x] >> 24);
+        Serial.write(toothHistory[x] >> 16);
+        Serial.write(toothHistory[x] >> 8);
+        Serial.write(toothHistory[x]);
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
       toothLogSendInProgress = false;
+      toothHistoryIndex = 0;
   }
   else 
   { 
@@ -1516,7 +1182,7 @@ void sendToothLog(byte startOffset)
   } 
 }
 
-void sendCompositeLog(byte startOffset)
+void sendCompositeLog_old(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
@@ -1532,22 +1198,17 @@ void sendCompositeLog(byte startOffset)
           return;
         }
 
-        inProgressCompositeTime += toothHistory[toothHistorySerialIndex]; //This combined runtime (in us) that the log was going for by this record)
+        inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
         
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
         Serial.write(inProgressCompositeTime >> 8);
         Serial.write(inProgressCompositeTime);
 
-        Serial.write(compositeLogHistory[toothHistorySerialIndex]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-
-        if(toothHistorySerialIndex == (TOOTH_LOG_BUFFER-1)) { toothHistorySerialIndex = 0; }
-        else { toothHistorySerialIndex++; }
+        Serial.write(compositeLogHistory[x]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      toothHistorySerialIndex = 0;
-      compositeLastToothTime = 0;
       cmdPending = false;
       compositeLogSendInProgress = false;
       inProgressCompositeTime = 0;

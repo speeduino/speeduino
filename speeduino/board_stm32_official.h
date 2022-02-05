@@ -5,6 +5,7 @@
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
+#include <SPI.h>
 
 #if defined(STM32F1)
 #include "stm32f1xx_ll_tim.h"
@@ -23,11 +24,26 @@
 #define PINMASK_TYPE uint32_t
 #define COMPARE_TYPE uint16_t
 #define COUNTER_TYPE uint16_t
+#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
-#ifdef SD_LOGGING
-#define RTC_ENABLED
+#if defined(USER_BTN) 
+  #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
+#endif
+
+#if defined(STM32F407xx)
+  //Comment out this to disable SD logging for STM32 if needed. Currently SD logging for STM32 is experimental feature for F407.
+  #define SD_LOGGING
+#endif
+
+#if defined SD_LOGGING
+  #define RTC_ENABLED
+  //SD logging with STM32 uses SD card in SPI mode, because used SD library doesn't support SDIO implementation. By default SPI3 is used that uses same pins as SDIO also, but in different order.
+  extern SPIClass SD_SPI; //SPI3_MOSI, SPI3_MISO, SPI3_SCK
+  #define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(50), &SD_SPI)
+  //Alternatively same SPI bus can be used as there is for SPI flash. But this is not recommended due to slower speed and other possible problems.
+  //#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &SPI_for_flash)
 #endif
 #define USE_SERIAL3
 
@@ -68,6 +84,8 @@ extern "C" char* sbrk(int incr);
   #endif
 #endif
 
+#define PWM_FAN_AVAILABLE
+
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
 #endif
@@ -78,11 +96,13 @@ extern "C" char* sbrk(int incr);
 */
 #if defined(SRAM_AS_EEPROM)
     #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern BackupSramAsEEPROM EEPROM;
 
 #elif defined(USE_SPI_EEPROM)
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
  
@@ -93,6 +113,7 @@ extern "C" char* sbrk(int incr);
 
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #define EEPROM_LIB_H "src/FRAM/Fram.h"
+    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
     #if defined(STM32F407xx)
       extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
@@ -100,37 +121,16 @@ extern "C" char* sbrk(int incr);
       extern FramClass EEPROM; //Blue/Black Pills
     #endif
 
-#elif defined(STM32F7xx)
+#else //default case, internal flash as EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
-  #if defined(DUAL_BANK)
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-  #else
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
+    extern InternalSTM32F4_EEPROM_Class EEPROM;
+  #if defined(STM32F401xC)
+    #define SMALL_FLASH_MODE
   #endif
-    extern InternalSTM32F7_EEPROM_Class EEPROM;
-
-#elif defined(STM32F411xE)
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  #include EEPROM_LIB_H
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
-
-#elif defined(STM32F401xC)
-  //when using with internal falsh not enough rom is available so small flash mode is enabled
-  //be carefull that the only 50% of flash is can be used, the other 50% is used for eeprom emulation
-  #define SMALL_FLASH_MODE
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  #include EEPROM_LIB_H
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-
-#else //default case, internal flash as EEPROM for STM32F407
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  #include EEPROM_LIB_H
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
 #endif
+
 
 #define RTC_LIB_H "STM32RTC.h"
 
@@ -139,14 +139,14 @@ extern "C" char* sbrk(int incr);
 * Schedules
 * Timers Table for STM32F1
 *   TIMER1    TIMER2    TIMER3    TIMER4
-* 1 - free  1 - INJ1  1 - IGN1  1 - oneMSInterval
+* 1 - FAN   1 - INJ1  1 - IGN1  1 - oneMSInterval
 * 2 - BOOST 2 - INJ2  2 - IGN2  2 -
 * 3 - VVT   3 - INJ3  3 - IGN3  3 -
 * 4 - IDLE  4 - INJ4  4 - IGN4  4 -
 *
 * Timers Table for STM32F4
 *   TIMER1  |  TIMER2  |  TIMER3  |  TIMER4  |  TIMER5  |  TIMER11
-* 1 - free  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
+* 1 - FAN  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
 * 2 - BOOST |2 - INJ2  |2 - IGN2  |2 - IGN6  |2 - INJ6  |
 * 3 - VVT   |3 - INJ3  |3 - IGN3  |3 - IGN7  |3 - INJ7  |
 * 4 - IDLE  |4 - INJ4  |4 - IGN4  |4 - IGN8  |4 - INJ8  | 
@@ -249,10 +249,15 @@ extern "C" char* sbrk(int incr);
 #define ENABLE_VVT_TIMER()    (TIM1)->SR = ~TIM_FLAG_CC3; (TIM1)->DIER |= TIM_DIER_CC3IE
 #define DISABLE_VVT_TIMER()   (TIM1)->DIER &= ~TIM_DIER_CC3IE
 
+#define ENABLE_FAN_TIMER()  (TIM1)->SR = ~TIM_FLAG_CC1; (TIM1)->DIER |= TIM_DIER_CC1IE
+#define DISABLE_FAN_TIMER() (TIM1)->DIER &= ~TIM_DIER_CC1IE
+
 #define BOOST_TIMER_COMPARE   (TIM1)->CCR2
 #define BOOST_TIMER_COUNTER   (TIM1)->CNT
 #define VVT_TIMER_COMPARE     (TIM1)->CCR3
 #define VVT_TIMER_COUNTER     (TIM1)->CNT
+#define FAN_TIMER_COMPARE     (TIM1)->CCR1
+#define FAN_TIMER_COUNTER     (TIM1)->CNT
 
 /*
 ***********************************************************************************************************
@@ -303,6 +308,7 @@ void fuelSchedule8Interrupt(HardwareTimer*);
 #endif
 void idleInterrupt(HardwareTimer*);
 void vvtInterrupt(HardwareTimer*);
+void fanInterrupt(HardwareTimer*);
 void ignitionSchedule1Interrupt(HardwareTimer*);
 void ignitionSchedule2Interrupt(HardwareTimer*);
 void ignitionSchedule3Interrupt(HardwareTimer*);
@@ -325,20 +331,12 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#if HAL_CAN_MODULE_ENABLED
 #define NATIVE_CAN_AVAILABLE
 //HardwareSerial CANSerial(PD6, PD5);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
 extern STM32_CAN Can0;
-/*
-Second CAN interface is also available if needed or it can be used also as primary CAN interface.
-for STM32F4 the default CAN1 pins are PD0 & PD1. Alternative (ALT) pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
-for STM32F4 the default CAN2 pins are PB5 & PB6. Alternative (ALT) pins are PB12 & PB13.
-for STM32F1 the default CAN1 pins are PA11 & PA12. Alternative (ALT) pins are PB8 & PB9.
-Example of using CAN2 as secondary CAN bus with alternative pins:
-STM32_CAN Can1 (_CAN2,ALT);
-*/
 
 static CAN_message_t outMsg;
 static CAN_message_t inMsg;
