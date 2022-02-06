@@ -343,7 +343,8 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
   fullStatus[120] = highByte(currentStatus.EMAP);
   fullStatus[121] = currentStatus.fanDuty;
-
+  fullStatus[122] = currentStatus.oilTemperature; // Hella OPS+T Oil Temperature
+  
   for(byte x=0; x<packetLength; x++)
   {
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }

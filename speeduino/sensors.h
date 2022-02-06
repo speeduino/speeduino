@@ -27,6 +27,7 @@
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
 #define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
+#define OILSENSOR_REFRESHRATE 10 // Oil sensor refresh rate, number of samples taken per second
 
 /*
 #if defined(CORE_AVR)
@@ -87,6 +88,7 @@ uint16_t getSpeed();
 byte getGear();
 byte getFuelPressure();
 byte getOilPressure();
+byte getOilTemperature();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 void readCLT(bool=true); //Allows the option to override the use of the filter
@@ -160,4 +162,28 @@ ISR(ADC_vect)
 }
 #endif
 
+#if defined(CORE_AVR)
+  #define READ_OPST_TRIGGER() ((*oilSensorOPSt_pin_port & oilSensorOPSt_pin_mask) ? true : false)
+#else
+  #define READ_OPST_TRIGGER() digitalRead(pinOilSensorOPSt)
+#endif
+
+static inline void oilSensorOPStISR();
+
+volatile struct oilSensorOPStPulse {
+  uint8_t index = 0; // Index of the pulse we are on, frame is composed by three pulses
+  unsigned long onTime; // Time duration of the HIGH level 
+  unsigned long offTime; // Time duration of the LOW level
+  unsigned long totalTime; // Time duration of the whole symbol
+  unsigned long curEvent; // micros() time of current ISR call
+  unsigned long lastEvent; // micros() time of the last ISR call
+  uint8_t lastLevel; // last level
+  uint8_t gotSync; // Have we synced to the pulse sequence ?
+} oilSensorOPStPulse;
+
+volatile struct oilSensorOPStData {
+  int16_t temperature; // Celsius temperature + 40 C to avoid problems with negative values 
+  int16_t pressure; // Pressure in PSI
+  uint8_t status; // Diagnostic pulse, containing its (error corrected) value
+} oilSensorOPStData;
 #endif // SENSORS_H

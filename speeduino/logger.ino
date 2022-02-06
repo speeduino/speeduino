@@ -164,6 +164,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
     case 121: statusValue = currentStatus.fanDuty; break;
+    case 122: statusValue = currentStatus.oilTemperature;
   }
 
   return statusValue;
