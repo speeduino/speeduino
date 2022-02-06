@@ -31,16 +31,17 @@ uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
 uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 #ifdef RTC_ENABLED
-  uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
   uint16_t SDcurrentDirChunk;
   uint32_t SDreadStartSector;
   uint32_t SDreadNumSectors;
   uint32_t SDreadCompletedSectors = 0;
+#else
+  uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -128,13 +129,13 @@ void parseSerial()
     {
       //Timeout occurred
       serialReceivePending = false; //Reset the serial receive
-      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
 
       //Flush the serial buffer
       while(Serial.available() > 0)
       {
         Serial.read();
       }
+      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
 }
@@ -233,18 +234,7 @@ void processSerialCommand()
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
 
-    case 'b': // New EEPROM burn command to only burn a single page at a time
-
-      if(isEepromWritePending())
-      {
-        //There is already a write pending, force it through. 
-        sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
-        enableForceBurn();
-        writeAllConfig();
-        disableForceBurn();
-        break;
-      }
-
+    case 'b': // New EEPROM burn command to only burn a single page at a time 
       writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
       sendSerialReturnCode(SERIAL_RC_BURN_OK);
       break;
@@ -399,24 +389,12 @@ void processSerialCommand()
         break;
       }
 
-      if(isEepromWritePending())
-      {
-        enableForceBurn();
-        writeConfig(currentPage);
-        disableForceBurn();
-      }
-
-      //page_iterator_t entity = map_page_offset_to_entity(currentPage, valueOffset); 
       for(uint16_t i = 0; i < chunkSize; i++)
       {
         setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
       }
       
-      { 
-        //enableForceBurn();
-        writeConfig(currentPage);
-        //disableForceBurn();
-      }
+      deferEEPROMWrites = true;
       
       sendSerialReturnCode(SERIAL_RC_OK);
       
@@ -456,8 +434,8 @@ void processSerialCommand()
 
     case 'Q': // send code version
     {
-      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','1','0','9','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','2'} ; //Note no null terminator in array and statu variable at the start
+      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','4','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','4'} ; //Note no null terminator in array and statu variable at the start
       sendSerialPayload(&productString, sizeof(productString));
       break;
     }
@@ -569,9 +547,9 @@ void processSerialCommand()
         if(SD_arg2 == SD_READ_COMP_ARG2)
         {
           //arg1 is the block number to return
-          serialSDTransmitPayload[0] = SERIAL_RC_OK;
-          serialSDTransmitPayload[1] = highByte(SD_arg1);
-          serialSDTransmitPayload[2] = lowByte(SD_arg1);
+          serialPayload[0] = SERIAL_RC_OK;
+          serialPayload[1] = highByte(SD_arg1);
+          serialPayload[2] = lowByte(SD_arg1);
 
           uint32_t currentSector = SDreadStartSector + (SD_arg1 * 4);
           
@@ -589,8 +567,8 @@ void processSerialCommand()
           if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
           else
           {
-            readSDSectors(&serialSDTransmitPayload[3], currentSector, numSectorsToSend); 
-            sendSerialPayload(&serialSDTransmitPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+            readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
+            sendSerialPayload(&serialPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
           }
         }
       }
@@ -606,8 +584,8 @@ void processSerialCommand()
 
     case 'S': // send code version
     {
-      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '1', '.', '0', '9', '-', 'd', 'e', 'v'};
-      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '2'};
+      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '0', '4', '-', 'd', 'e', 'v'};
+      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '2'};
       sendSerialPayload(&productString, sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
