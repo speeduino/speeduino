@@ -20,7 +20,7 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
-#include <EEPROM.h>
+#include EEPROM_LIB_H //This is defined in the board .h files
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
