@@ -1,6 +1,10 @@
 #ifdef SD_LOGGING
 #include <SPI.h>
-#include <SD.h>
+#ifdef __SD_H__
+  #include <SD.h>
+#else
+  #include "SdFat.h"
+#endif
 #include "SD_logger.h"
 #include "logger.h"
 #include "rtc_common.h"
@@ -38,33 +42,9 @@ bool createLogFile()
   char filenameBuffer[13]; //8 + 1 + 3 + 1
   bool returnValue = false;
 
-  /*
-  //Filename format is: YYYY-MM-DD_HH.MM.SS.csv
-  char intBuffer[5];
-  itoa(rtc_getYear(), intBuffer, 10);
-  strcpy(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, "-");
-  itoa(rtc_getMonth(), intBuffer, 10);
-  strcat(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, "-");
-  itoa(rtc_getDay(), intBuffer, 10);
-  strcat(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, "_");
-  itoa(rtc_getHour(), intBuffer, 10);
-  strcat(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, ".");
-  itoa(rtc_getMinute(), intBuffer, 10);
-  strcat(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, ".");
-  itoa(rtc_getSecond(), intBuffer, 10);
-  strcat(filenameBuffer, intBuffer);
-  strcat(filenameBuffer, ".csv");
-  */
-  if(currentLogFileNumber == 0)
-  {
-    //Lookup the next available file number
-    currentLogFileNumber = getNextSDLogFileNumber();
-  }
+  //Lookup the next available file number
+  currentLogFileNumber = getNextSDLogFileNumber();
+
   //Create the filename
   sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
 
@@ -115,6 +95,10 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
       if(i < 8) { buffer[i] = filenameBuffer[i]; } //Everything before the fullstop
       else if(i > 8) { buffer[i-1] = filenameBuffer[i]; } //Everything after the fullstop
     }
+
+    //Maintenance check, truncate the file. This will usually do nothing, but in the case where a prior log was interrupted, this will truncate the file
+    //Due to overhead, only bother doing this if the engine isn't running
+    if(currentStatus.RPM == 0) { logFile.truncate(); }
 
     //Is File or ignore
     buffer[11] = 1;
@@ -199,6 +183,7 @@ void endSDLogging()
     logFile.truncate();
     logFile.rewind();
     logFile.close();
+    logFile.sync(); //This is required to update the sd object. Without this any subsequent logfiles will overwrite this one
 
     SD_status = SD_STATUS_READY;
   }
@@ -215,6 +200,7 @@ void writeSDLogEntry()
 
   if(SD_status == SD_STATUS_ACTIVE)
   {
+    //Write the line to the ring buffer
     for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
     {
       rb.print(getReadableLogEntry(x));
@@ -236,6 +222,14 @@ void writeSDLogEntry()
 
     //Check whether we should stop logging
     checkForSDStop();
+
+    //Check whether the file is full (IE When there is not enough room to write 1 more sector)
+    if( (logFile.dataLength() - logFile.curPosition()) < SD_SECTOR_SIZE)
+    {
+      //Provided the conditions for logging are still met, a new file will be created the next time writeSDLogEntry is called
+      endSDLogging();
+      beginSDLogging();
+    }
   }
   setTS_SD_status();
 }
@@ -260,14 +254,6 @@ void writeSDLogHeader()
 //Sets the status variable for TunerStudio
 void setTS_SD_status()
 {
-  /*
-  indicator = { sd_status & 1}, "No SD", "SD in",             white, black, green, black
-   indicator = { sd_status & 4}, "SD ready", "SD ready",       white, black, green, black
-   indicator = { sd_status & 8}, "SD Log", "SD Log",           white, black, green, black
-   indicator = { sd_status & 16}, "SD Err", "SD Err",           white, black, red, black
-   */
-  //currentStatus.TS_SD_Status = SD_status;
-
   if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
   else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
 
@@ -298,7 +284,7 @@ void checkForSDStart()
   if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
   {
     //Check that we're not already finished the logging
-    if((millis() / 1000) < configPage13.onboard_log_tr1_duration)
+    if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
     {
       beginSDLogging(); //Setup the log file, prallocation, header row
     }    
@@ -307,7 +293,7 @@ void checkForSDStart()
   //Check for RPM based Enable
   if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
   {
-    if(currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on)
+    if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
     {
       beginSDLogging(); //Setup the log file, prallocation, header row
     }
@@ -316,7 +302,10 @@ void checkForSDStart()
   //Check for engine protection based enable
   if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
   {
-
+    if(currentStatus.engineProtectStatus > 0)
+    {
+      beginSDLogging(); //Setup the log file, prallocation, header row
+    }
   }
 
   if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
@@ -355,14 +344,17 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_RPM)
     {
-      if(currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off)
+      if(currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off)
       {
         log_RPM = true;
       }
     }
     if(configPage13.onboard_log_trigger_prot)
     {
-
+      if(currentStatus.engineProtectStatus > 0)
+      {
+        log_prot = true;
+      }
     }
     if(configPage13.onboard_log_trigger_Vbat)
     {
@@ -380,14 +372,18 @@ void checkForSDStop()
 }
 
 /** 
- * Similar to the @getTSLogEntry function, however this returns a full, unadjusted (ie human readable) log entry value. 
- * See logger.h for the field names and order
- * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
- * @return Raw, unadjusted value of the log entry. No offset or multiply is applied like it is with the TS log
+ * Will perform a complete format of the SD card to ExFAT. 
+ * This will delete all files and create a new empty file system.
+ * The SD status will be set to busy when this happens to prevent any other operations
  */
 void formatExFat()
 {
   bool result = false;
+
+  //Set the SD status to busy
+  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
+
+  logFile.close();
 
   if (sd.cardBegin(SD_CONFIG)) 
   {
@@ -400,9 +396,35 @@ void formatExFat()
     }
   }
 
-  if(result == false)
+  if(result == false) { SD_status = SD_STATUS_ERROR_FORMAT_FAIL; }
+  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); }
+}
+
+/**
+ * @brief Deletes a log file from the SD card
+ * 
+ * Log files all have hte same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
+ * 
+ * @param log1 
+ * @param log2 
+ * @param log3 
+ * @param log4 
+ */
+void deleteLogFile(char log1, char log2, char log3, char log4)
+{
+  char logFileName[13];
+  strcpy(logFileName, LOG_FILE_PREFIX);
+  logFileName[4] = log1;
+  logFileName[5] = log2;
+  logFileName[6] = log3;
+  logFileName[7] = log4;
+  logFileName[8] = '.';
+  strcpy(logFileName + 9, LOG_FILE_EXTENSION);
+  //logFileName[8] = '\0';
+
+  if(sd.exists(logFileName))
   {
-    SD_status = SD_STATUS_ERROR_FORMAT_FAIL;
+    sd.remove(logFileName);
   }
 }
 
