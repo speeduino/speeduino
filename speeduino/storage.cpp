@@ -8,17 +8,16 @@ A full copy of the license may be found in the projects root directory
  */
 
 #include "globals.h"
-#include "table.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
-#include "table_iterator.h"
 #include "pages.h"
 
 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64
 #else
-#define EEPROM_MAX_WRITE_BLOCK 30
+#define EEPROM_MAX_WRITE_BLOCK 12
+//#define EEPROM_MAX_WRITE_BLOCK 8
 #endif
 
 #define EEPROM_DATA_VERSION   0
@@ -34,6 +33,8 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 static bool eepromWritesPending = false;
+static bool forceBurn = false;
+bool deferEEPROMWrites = false;
 
 bool isEepromWritePending()
 {
@@ -47,76 +48,94 @@ void writeAllConfig()
   uint8_t pageCount = getPageCount();
   uint8_t page = 1U;
   writeConfig(page++);
-  while (page<pageCount && !eepromWritesPending)
+  while (page<pageCount && ( !eepromWritesPending || forceBurn ) )
   {
     writeConfig(page++);
   }
 }
 
+void enableForceBurn() { forceBurn = true; }
+void disableForceBurn() { forceBurn = false; }
+
 
 //  ================================= Internal write support ===============================
-
-typedef struct write_location {
+struct write_location {
   eeprom_address_t address;
-  uint8_t counter;
-} write_location;
+  uint16_t counter;
 
-/** Update byte to EEPROM by first comparing content and the need to write it.
-We only ever write to the EEPROM where the new value is different from the currently stored byte
-This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-*/
-static inline write_location update(uint8_t value, write_location location)
-{
-  if (EEPROM.read(location.address)!=value)
+  /** Update byte to EEPROM by first comparing content and the need to write it.
+  We only ever write to the EEPROM where the new value is different from the currently stored byte
+  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
+  */
+  void update(uint8_t value)
   {
-    EEPROM.write(location.address, value);
-    ++location.counter;
+    if (EEPROM.read(address)!=value)
+    {
+      EEPROM.write(address, value);
+      ++counter;
+    }
   }
-  return location;
-}
+
+  write_location& operator++()
+  {
+    ++address;
+    return *this;
+  }
+
+  bool can_write() const
+  {
+    return (counter<=EEPROM_MAX_WRITE_BLOCK);
+  }
+};
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while (location.counter<=EEPROM_MAX_WRITE_BLOCK && pStart!=pEnd)
+  while ( (location.can_write() || forceBurn) && pStart!=pEnd)
   {
-    location = update(*pStart, location);
-    ++pStart; ++location.address;
+    location.update(*pStart);
+    ++pStart; 
+    ++location;
   }
   return location;
 }
 
-static inline write_location write(const table_row_t &row, write_location location)
+static inline write_location write(const table_row_iterator &row, write_location location)
 {
-  return write_range(row.pValue, row.pEnd, location);
+  return write_range(&*row, row.end(), location);
 }
 
-static inline write_location write(table_row_iterator_t it, write_location location)
+static inline write_location write(table_value_iterator it, write_location location)
 {
-  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
-    location = write(get_row(it), location);
-    it = advance_row(it);
+    location = write(*it, location);
+    ++it;
   }
   return location;
 }
 
-static inline write_location write(table_axis_iterator_t it, write_location location)
+static inline write_location write(table_axis_iterator it, write_location location)
 {
-  while ((location.counter<=EEPROM_MAX_WRITE_BLOCK) && !at_end(it))
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
-    location = update(get_value(it), location);
-    ++location.address;
-    it = advance_axis(it);
+    location.update((byte)*it);
+    ++location;
+    ++it;
   }
   return location;
 }
 
-static inline write_location writeTable(const table3D *pTable, write_location location)
+
+static inline write_location writeTable(const void *pTable, table_type_t key, write_location location)
 {
-  return write(y_rbegin(pTable), 
-                write(x_begin(pTable), 
-                  write(rows_begin(pTable), location)));
+  return write(y_begin(pTable, key).reverse(), 
+                write(x_begin(pTable, key), 
+                  write(rows_begin(pTable, key), location)));
 }
+
+//Simply an alias for EEPROM.update()
+void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
+uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
 
 //  ================================= End write support ===============================
 
@@ -128,6 +147,8 @@ void writeConfig(uint8_t pageNum)
 {
   write_location result = { 0, 0 };
 
+  if(deferEEPROMWrites == true) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
+
   switch(pageNum)
   {
     case veMapPage:
@@ -135,7 +156,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable, { EEPROM_CONFIG1_MAP, 0 } );
+      result = writeTable(&fuelTable, fuelTable.type_key, { EEPROM_CONFIG1_MAP, 0 });
       break;
 
     case veSetPage:
@@ -151,7 +172,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable, { EEPROM_CONFIG3_MAP, 0 });
+      result = writeTable(&ignitionTable, ignitionTable.type_key, { EEPROM_CONFIG3_MAP, 0 });
       break;
 
     case ignSetPage:
@@ -167,7 +188,7 @@ void writeConfig(uint8_t pageNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&afrTable, {EEPROM_CONFIG5_MAP, 0} );
+      result = writeTable(&afrTable, afrTable.type_key, {  EEPROM_CONFIG5_MAP, 0 });
       break;
 
     case afrSetPage:
@@ -183,9 +204,9 @@ void writeConfig(uint8_t pageNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&boostTable, { EEPROM_CONFIG7_MAP1, 0 });
-      result = writeTable(&vvtTable, { EEPROM_CONFIG7_MAP2, result.counter });
-      result = writeTable(&stagingTable, { EEPROM_CONFIG7_MAP3, result.counter });
+      result = writeTable(&boostTable, boostTable.type_key, { EEPROM_CONFIG7_MAP1, 0 });
+      result = writeTable(&vvtTable, vvtTable.type_key, { EEPROM_CONFIG7_MAP2, result.counter });
+      result = writeTable(&stagingTable, stagingTable.type_key, { EEPROM_CONFIG7_MAP3, result.counter });
       break;
 
     case seqFuelPage:
@@ -193,14 +214,14 @@ void writeConfig(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&trim1Table, { EEPROM_CONFIG8_MAP1, 0} );
-      result = writeTable(&trim2Table, { EEPROM_CONFIG8_MAP2, result.counter});
-      result = writeTable(&trim3Table, { EEPROM_CONFIG8_MAP3, result.counter});
-      result = writeTable(&trim4Table, { EEPROM_CONFIG8_MAP4, result.counter});
-      result = writeTable(&trim5Table, { EEPROM_CONFIG8_MAP5, result.counter});
-      result = writeTable(&trim6Table, { EEPROM_CONFIG8_MAP6, result.counter});
-      result = writeTable(&trim7Table, { EEPROM_CONFIG8_MAP7, result.counter});
-      result = writeTable(&trim8Table, { EEPROM_CONFIG8_MAP8, result.counter});
+      result = writeTable(&trim1Table, trim1Table.type_key, { EEPROM_CONFIG8_MAP1, 0 });
+      result = writeTable(&trim2Table, trim2Table.type_key, { EEPROM_CONFIG8_MAP2, result.counter });
+      result = writeTable(&trim3Table, trim3Table.type_key, { EEPROM_CONFIG8_MAP3, result.counter });
+      result = writeTable(&trim4Table, trim4Table.type_key, { EEPROM_CONFIG8_MAP4, result.counter });
+      result = writeTable(&trim5Table, trim5Table.type_key, { EEPROM_CONFIG8_MAP5, result.counter });
+      result = writeTable(&trim6Table, trim6Table.type_key, { EEPROM_CONFIG8_MAP6, result.counter });
+      result = writeTable(&trim7Table, trim7Table.type_key, { EEPROM_CONFIG8_MAP7, result.counter });
+      result = writeTable(&trim8Table, trim8Table.type_key, { EEPROM_CONFIG8_MAP8, result.counter });
       break;
 
     case canbusPage:
@@ -224,7 +245,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable2, { EEPROM_CONFIG11_MAP, 0 });
+      result = writeTable(&fuelTable2, fuelTable2.type_key, { EEPROM_CONFIG11_MAP, 0 });
       break;
 
     case wmiMapPage:
@@ -234,9 +255,9 @@ void writeConfig(uint8_t pageNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&wmiTable, { EEPROM_CONFIG12_MAP, 0 });
-      result = writeTable(&vvt2Table, { EEPROM_CONFIG12_MAP2, result.counter});
-      result = writeTable(&dwellTable, { EEPROM_CONFIG12_MAP3, result.counter});
+      result = writeTable(&wmiTable, wmiTable.type_key, { EEPROM_CONFIG12_MAP, 0 });
+      result = writeTable(&vvt2Table, vvt2Table.type_key, { EEPROM_CONFIG12_MAP2, result.counter });
+      result = writeTable(&dwellTable, dwellTable.type_key, { EEPROM_CONFIG12_MAP3, result.counter });
       break;
       
   case progOutsPage:
@@ -251,14 +272,14 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable2, { EEPROM_CONFIG14_MAP, 0});
+      result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
       break;
 
     default:
       break;
   }
 
-  eepromWritesPending = result.counter > EEPROM_MAX_WRITE_BLOCK;
+  eepromWritesPending = !result.can_write();
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
@@ -288,46 +309,53 @@ void resetConfigPages()
  */
 static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, const byte *pLast)
 {
+#if defined(CORE_AVR)
+  // The generic code in the #else branch works but this provides a 45% speed up on AVR
+  size_t size = pLast-pFirst;
+  eeprom_read_block(pFirst, (void*)address, size);
+  return address+size;
+#else
   for (; pFirst != pLast; ++address, (void)++pFirst)
   {
     *pFirst = EEPROM.read(address);
   }
   return address;
+#endif
 }
 
-static inline eeprom_address_t load(table_row_t row, eeprom_address_t address)
+static inline eeprom_address_t load(table_row_iterator row, eeprom_address_t address)
 {
-  return load_range(address, row.pValue, row.pEnd);
+  return load_range(address, &*row, row.end());
 }
 
-static inline eeprom_address_t load(table_row_iterator_t it, eeprom_address_t address)
+static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t address)
 {
-  while (!at_end(it))
+  while (!it.at_end())
   {
-    address = load(get_row(it), address);
-    it = advance_row(it);
+    address = load(*it, address);
+    ++it;
   }
   return address; 
 }
 
-static inline eeprom_address_t load(table_axis_iterator_t it, eeprom_address_t address)
+static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
-  while (!at_end(it))
+  while (!it.at_end())
   {
-    set_value(it, EEPROM.read(address));
+    *it = EEPROM.read(address);
     ++address;
-    it = advance_axis(it);
+    ++it;
   }
   return address;    
 }
 
-static inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t address)
-{
-  return load(y_rbegin(pTable),
-                load(x_begin(pTable), 
-                  load(rows_begin(pTable), address)));
-}
 
+static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_address_t address)
+{
+  return load(y_begin(pTable, key).reverse(),
+                load(x_begin(pTable, key), 
+                  load(rows_begin(pTable, key), address)));
+}
 
 //  ================================= End internal read support ===============================
 
@@ -336,37 +364,37 @@ static inline eeprom_address_t loadTable(table3D *pTable, eeprom_address_t addre
  */
 void loadConfig()
 {
-  loadTable(&fuelTable, EEPROM_CONFIG1_MAP);
+  loadTable(&fuelTable, fuelTable.type_key, EEPROM_CONFIG1_MAP);
   load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
   
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
-  loadTable(&ignitionTable, EEPROM_CONFIG3_MAP);
+  loadTable(&ignitionTable, ignitionTable.type_key, EEPROM_CONFIG3_MAP);
   load_range(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
-  loadTable(&afrTable, EEPROM_CONFIG5_MAP);
+  loadTable(&afrTable, afrTable.type_key, EEPROM_CONFIG5_MAP);
   load_range(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  loadTable(&boostTable, EEPROM_CONFIG7_MAP1);
-  loadTable(&vvtTable, EEPROM_CONFIG7_MAP2);
-  loadTable(&stagingTable, EEPROM_CONFIG7_MAP3);
+  loadTable(&boostTable, boostTable.type_key, EEPROM_CONFIG7_MAP1);
+  loadTable(&vvtTable, vvtTable.type_key,  EEPROM_CONFIG7_MAP2);
+  loadTable(&stagingTable, stagingTable.type_key, EEPROM_CONFIG7_MAP3);
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
-  loadTable(&trim1Table, EEPROM_CONFIG8_MAP1);
-  loadTable(&trim2Table, EEPROM_CONFIG8_MAP2);
-  loadTable(&trim3Table, EEPROM_CONFIG8_MAP3);
-  loadTable(&trim4Table, EEPROM_CONFIG8_MAP4);
-  loadTable(&trim5Table, EEPROM_CONFIG8_MAP5);
-  loadTable(&trim6Table, EEPROM_CONFIG8_MAP6);
-  loadTable(&trim7Table, EEPROM_CONFIG8_MAP7);
-  loadTable(&trim8Table, EEPROM_CONFIG8_MAP8);
+  loadTable(&trim1Table, trim1Table.type_key, EEPROM_CONFIG8_MAP1);
+  loadTable(&trim2Table, trim2Table.type_key, EEPROM_CONFIG8_MAP2);
+  loadTable(&trim3Table, trim3Table.type_key, EEPROM_CONFIG8_MAP3);
+  loadTable(&trim4Table, trim4Table.type_key, EEPROM_CONFIG8_MAP4);
+  loadTable(&trim5Table, trim5Table.type_key, EEPROM_CONFIG8_MAP5);
+  loadTable(&trim6Table, trim6Table.type_key, EEPROM_CONFIG8_MAP6);
+  loadTable(&trim7Table, trim7Table.type_key, EEPROM_CONFIG8_MAP7);
+  loadTable(&trim8Table, trim8Table.type_key, EEPROM_CONFIG8_MAP8);
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load
@@ -379,13 +407,13 @@ void loadConfig()
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
-  loadTable(&fuelTable2, EEPROM_CONFIG11_MAP);
+  loadTable(&fuelTable2, fuelTable2.type_key, EEPROM_CONFIG11_MAP);
 
   //*********************************************************************************************************************************************************************************
   // WMI, VVT2 and Dwell table load
-  loadTable(&wmiTable, EEPROM_CONFIG12_MAP);
-  loadTable(&vvt2Table, EEPROM_CONFIG12_MAP2);
-  loadTable(&dwellTable, EEPROM_CONFIG12_MAP3);
+  loadTable(&wmiTable, wmiTable.type_key, EEPROM_CONFIG12_MAP);
+  loadTable(&vvt2Table, vvt2Table.type_key, EEPROM_CONFIG12_MAP2);
+  loadTable(&dwellTable, dwellTable.type_key, EEPROM_CONFIG12_MAP3);
 
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
@@ -394,7 +422,7 @@ void loadConfig()
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
 
-  loadTable(&ignitionTable2, EEPROM_CONFIG14_MAP);
+  loadTable(&ignitionTable2, ignitionTable2.type_key, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
 }
@@ -436,6 +464,25 @@ void writeCalibration()
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
+void writeCalibrationPage(uint8_t pageNum)
+{
+  if(pageNum == O2_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  }
+  else if(pageNum == IAT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  }
+  else if(pageNum == CLT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  }
+}
+
 static eeprom_address_t compute_crc_address(uint8_t pageNum)
 {
   return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
@@ -458,6 +505,11 @@ uint32_t readPageCRC32(uint8_t pageNum)
 {
   uint32_t crc32_val;
   return EEPROM.get(compute_crc_address(pageNum), crc32_val);
+}
+
+uint16_t getEEPROMSize()
+{
+  return EEPROM.length();
 }
 
 // Utility functions.
