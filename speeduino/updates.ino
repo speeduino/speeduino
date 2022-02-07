@@ -519,15 +519,6 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(18);
   }
-  
-  if(readEEPROMVersion() == 17)
-  {
-    configPage2.canBMWCluster = 0;
-    configPage2.canVAGCluster = 0;
-
-    writeAllConfig();
-    storeEEPROMVersion(19);
-  }
 
   if(readEEPROMVersion() == 18)
   {
@@ -590,6 +581,15 @@ void doUpdates()
     configPage4.vvtMinClt = 0;
     writeAllConfig();
     storeEEPROMVersion(19);
+  }
+
+  if(readEEPROMVersion() == 19)
+  {
+    configPage2.canBMWCluster = 0;
+    configPage2.canVAGCluster = 0;
+
+    writeAllConfig();
+    storeEEPROMVersion(20);
   }
 
   //Final check is always for 255 and 0 (Brand new arduino)
