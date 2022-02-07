@@ -3,7 +3,11 @@
 
 #ifdef SD_LOGGING
 
-#include <SD.h>
+#ifdef __SD_H__
+  #include <SD.h>
+#else
+  #include "SdFat.h"
+#endif
 //#include <SdSpiCard.h>
 #include "RingBuf.h"
 
@@ -30,14 +34,16 @@
 
 #define SD_SECTOR_SIZE              512 // Standard SD sector size
 
-#ifdef CORE_TEENSY
+#if defined CORE_TEENSY
     #define SD_CS_PIN BUILTIN_SDCARD
+#elif defined CORE_STM32
+    #define SD_CS_PIN PD2  //CS pin can be pretty much anything, but PD2 is one of the ones left unused from SDIO pins.
 #else
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
 //Test values only
-#define SD_LOG_FILE_SIZE  10000000 //Defuault 10mb file size
+#define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
 #define MAX_LOG_FILES     10000
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
@@ -65,12 +71,13 @@ void beginSDLogging();
 void endSDLogging();
 void setTS_SD_status();
 void formatExFat();
+void deleteLogFile(char, char, char, char);
 bool createLogFile();
 void dateTime(uint16_t*, uint16_t*, uint8_t*); //Used for timestamping with RTC
 uint16_t getNextSDLogFileNumber();
 bool getSDLogFileDetails(uint8_t* , uint16_t);
 void readSDSectors(uint8_t*, uint32_t, uint16_t);
-
+uint32_t sectorCount();
 
 
 

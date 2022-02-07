@@ -5,6 +5,7 @@
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
+#include <SPI.h>
 
 #if defined(STM32F1)
 #include "stm32f1xx_ll_tim.h"
@@ -27,8 +28,22 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
-#ifdef SD_LOGGING
-#define RTC_ENABLED
+#if defined(USER_BTN) 
+  #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
+#endif
+
+#if defined(STM32F407xx)
+  //Comment out this to disable SD logging for STM32 if needed. Currently SD logging for STM32 is experimental feature for F407.
+  #define SD_LOGGING
+#endif
+
+#if defined SD_LOGGING
+  #define RTC_ENABLED
+  //SD logging with STM32 uses SD card in SPI mode, because used SD library doesn't support SDIO implementation. By default SPI3 is used that uses same pins as SDIO also, but in different order.
+  extern SPIClass SD_SPI; //SPI3_MOSI, SPI3_MISO, SPI3_SCK
+  #define SD_CONFIG SdSpiConfig(SD_CS_PIN, DEDICATED_SPI, SD_SCK_MHZ(50), &SD_SPI)
+  //Alternatively same SPI bus can be used as there is for SPI flash. But this is not recommended due to slower speed and other possible problems.
+  //#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &SPI_for_flash)
 #endif
 #define USE_SERIAL3
 
@@ -316,20 +331,12 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
+#if HAL_CAN_MODULE_ENABLED
 #define NATIVE_CAN_AVAILABLE
 //HardwareSerial CANSerial(PD6, PD5);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
 extern STM32_CAN Can0;
-/*
-Second CAN interface is also available if needed or it can be used also as primary CAN interface.
-for STM32F4 the default CAN1 pins are PD0 & PD1. Alternative (ALT) pins are PB8 & PB9 and ALT2 pins are PA11 and PA12:
-for STM32F4 the default CAN2 pins are PB5 & PB6. Alternative (ALT) pins are PB12 & PB13.
-for STM32F1 the default CAN1 pins are PA11 & PA12. Alternative (ALT) pins are PB8 & PB9.
-Example of using CAN2 as secondary CAN bus with alternative pins:
-STM32_CAN Can1 (_CAN2,ALT);
-*/
 
 static CAN_message_t outMsg;
 static CAN_message_t inMsg;
