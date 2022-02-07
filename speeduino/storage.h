@@ -95,7 +95,10 @@
  * | 3151       |36          | Trim8 table (6x6)                    | @ref EEPROM_CONFIG8_MAP8           |
  * | 3187       |6           | Trim8 table (X axis) (RPM)           |                                    |
  * | 3193       |6           | Trim8 table (Y axis) (MAP)           |                                    |
- * | 3199       |487         | EMPTY                                |                                    |
+ * | 3199       |475         | EMPTY                                |                                    |
+ * | 3674       |4           | CLT Calibration CRC32                |                                    |
+ * | 3678       |4           | IAT Calibration CRC32                |                                    |
+ * | 3682       |4           | O2 Calibration CRC32                 |                                    |
  * | 3686       |56          | Page CRC32 sums (4x14)               | Last first, 14 -> 1                |
  * | 3742       |1           | Baro value saved at init             | @ref EEPROM_LAST_BARO              |
  * | 3743       |64          | O2 Calibration Bins                  | @ref EEPROM_CALIBRATION_O2_BINS    |
@@ -168,6 +171,10 @@ extern bool deferEEPROMWrites;
 #define EEPROM_CONFIG8_MAP6   3051
 #define EEPROM_CONFIG8_MAP7   3101
 #define EEPROM_CONFIG8_MAP8   3151
+
+#define EEPROM_CALIBRATION_CLT_CRC  3674
+#define EEPROM_CALIBRATION_IAT_CRC  3678
+#define EEPROM_CALIBRATION_O2_CRC   3682
 
 //These were the values used previously when all calibration tables were 512 long. They need to be retained so the update process (202005 -> 202008) can work
 #define EEPROM_CALIBRATION_O2_OLD   2559
