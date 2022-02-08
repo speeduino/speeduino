@@ -42,7 +42,7 @@ unsigned long angleToTime(int16_t angle, byte method)
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
           interrupts();
           
-          returnTime = ( (toothTime / triggerToothAngle) * angle );
+          returnTime = ( (toothTime * angle) / triggerToothAngle );
         }
         else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }
