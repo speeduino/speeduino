@@ -172,7 +172,7 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
         if (adcState == ADCidle)
         {                          //when this channel done
           adcOperation = O2adc; //specify next operation
-          BIT_CLEAR(adcLoopTimer, BIT_TIMER_10HZ);
+          BIT_CLEAR(adcLoopTimer, BIT_TIMER_30HZ);
         }
       }
       else      
