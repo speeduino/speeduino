@@ -20,7 +20,6 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
-#include <EEPROM.h>
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -368,33 +367,13 @@ void processSerialCommand()
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = 0;
-      switch(serialPayload[2]) //Get the page being requested
-      {
-        case O2_CALIBRATION_PAGE: //Calibration page for O2
-          serialPayload[1] = EEPROM.read(EEPROM_CALIBRATION_O2_CRC);
-          serialPayload[2] = EEPROM.read(EEPROM_CALIBRATION_O2_CRC + 1);
-          serialPayload[3] = EEPROM.read(EEPROM_CALIBRATION_O2_CRC + 2);
-          serialPayload[4] = EEPROM.read(EEPROM_CALIBRATION_O2_CRC + 3);
-          break;
-        case CLT_CALIBRATION_PAGE: //Calibration page 1
-          serialPayload[1] = EEPROM.read(EEPROM_CALIBRATION_CLT_CRC);
-          serialPayload[2] = EEPROM.read(EEPROM_CALIBRATION_CLT_CRC + 1);
-          serialPayload[3] = EEPROM.read(EEPROM_CALIBRATION_CLT_CRC + 2);
-          serialPayload[4] = EEPROM.read(EEPROM_CALIBRATION_CLT_CRC + 3);
-            
-          break;
-        case IAT_CALIBRATION_PAGE: //Calibration page 2
-          serialPayload[1] = EEPROM.read(EEPROM_CALIBRATION_IAT_CRC);
-          serialPayload[2] = EEPROM.read(EEPROM_CALIBRATION_IAT_CRC + 1);
-          serialPayload[3] = EEPROM.read(EEPROM_CALIBRATION_IAT_CRC + 2);
-          serialPayload[4] = EEPROM.read(EEPROM_CALIBRATION_IAT_CRC + 3);
-          break;
-        default:
-          sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
-          break;
-      }
+      uint32_t CRC32_val = readCalibrationCRC32(serialPayload[2]); //Get the CRC for the requested page
+
       serialPayload[0] = SERIAL_RC_OK;
+      serialPayload[1] = ((CRC32_val >> 24) & 255);
+      serialPayload[2] = ((CRC32_val >> 16) & 255);
+      serialPayload[3] = ((CRC32_val >> 8) & 255);
+      serialPayload[4] = (CRC32_val & 255);
       sendSerialPayload( &serialPayload, 5);
 
       break;
@@ -674,10 +653,7 @@ void processSerialCommand()
           {
             //apply CRC reflection
             calibrationCRC = ~calibrationCRC;
-            EEPROM.update(EEPROM_CALIBRATION_O2_CRC, (calibrationCRC >> 24));
-            EEPROM.update(EEPROM_CALIBRATION_O2_CRC + 1, (calibrationCRC >> 16));
-            EEPROM.update(EEPROM_CALIBRATION_O2_CRC + 2, (calibrationCRC >> 8));
-            EEPROM.update(EEPROM_CALIBRATION_O2_CRC + 3, (calibrationCRC));
+            storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
           }
         }
         sendSerialReturnCode(SERIAL_RC_OK);
@@ -715,10 +691,7 @@ void processSerialCommand()
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          EEPROM.update(EEPROM_CALIBRATION_IAT_CRC, (calibrationCRC >> 24));
-          EEPROM.update(EEPROM_CALIBRATION_IAT_CRC + 1, (calibrationCRC >> 16));
-          EEPROM.update(EEPROM_CALIBRATION_IAT_CRC + 2, (calibrationCRC >> 8));
-          EEPROM.update(EEPROM_CALIBRATION_IAT_CRC + 3, (calibrationCRC));
+          storeCalibrationCRC32(IAT_CALIBRATION_PAGE, calibrationCRC);
 
           writeCalibration();
           sendSerialReturnCode(SERIAL_RC_OK);
@@ -750,10 +723,7 @@ void processSerialCommand()
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          EEPROM.update(EEPROM_CALIBRATION_CLT_CRC, (calibrationCRC >> 24));
-          EEPROM.update(EEPROM_CALIBRATION_CLT_CRC + 1, (calibrationCRC >> 16));
-          EEPROM.update(EEPROM_CALIBRATION_CLT_CRC + 2, (calibrationCRC >> 8));
-          EEPROM.update(EEPROM_CALIBRATION_CLT_CRC + 3, (calibrationCRC));
+          storeCalibrationCRC32(CLT_CALIBRATION_PAGE, calibrationCRC);
 
           writeCalibration();
           sendSerialReturnCode(SERIAL_RC_OK);
