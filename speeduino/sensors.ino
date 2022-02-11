@@ -152,10 +152,10 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
     case TPSadc:                                    //40Hz
       if(BIT_CHECK(adcLoopTimer, BIT_TIMER_40HZ)) //(any faster and it can upset the TPSdot sampling time)
       {
-        adcState = readTPS(true, adcState); //read TPS
-        readTPSdot();
+        adcState = readTPS(true, adcState); //read TPS        
         if (adcState == ADCidle)
         {                         //when this channel done
+          readTPSdot();
           adcOperation = IATadc;  //specify next operation
           BIT_CLEAR(adcLoopTimer, BIT_TIMER_40HZ);
         }
@@ -704,7 +704,7 @@ void readTPSdot(){
   TPSrateOfChange = (TPS_READ_FREQUENCY/20) * (currentStatus.TPS-TPSlast); //This is the % per second that the TPS has moved
   //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
   currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
-  TPSlast = currentStatus.TPS; //use tempADC here so that reversed pot also works
+  TPSlast = currentStatus.TPS;
 }
 
 ADCstates readCLT(bool useFilter,ADCstates adcState)

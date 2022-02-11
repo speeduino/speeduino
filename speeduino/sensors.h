@@ -26,13 +26,7 @@
 #define VSS_GEAR_HYSTERESIS 10
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
-//using const instead of #define helps to speed things up a bit. Also saves some 3bytes of flash :D.
-const uint8_t TPS_INTERVAL=25;  //[ms]TPS reading interval , (when this is 25 TPSdot calculation is super fast)
-#define TPS_READ_FREQUENCY 1000/TPS_INTERVAL //Hz calculated from interval above and rounded to the nearest integer
-const uint8_t IAT_INTERVAL=33;  //[ms] currently used for IAT,O2,O2_2,BAT
-const uint8_t CLT_INTERVAL=250; //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
-const uint16_t BARO_INTERVAL=1000; //[ms] infrequent BARO readings are not an issue.
-
+#define TPS_READ_FREQUENCY 40 //Hz calculated from interval above and rounded to the nearest integer
 
 //enum ADCstates:uint8_t {ADCidle,ADCrunning,ADCcomplete};//ADC converter states {ADCidle,ADCrunning,ADCcomplete}
 enum ADCstates {ADCidle,ADCrunning,ADCcomplete};//ADC converter states {ADCidle,ADCrunning,ADCcomplete}
