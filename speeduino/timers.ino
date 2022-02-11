@@ -42,10 +42,12 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off 
 #else
 void oneMSInterval() //Most ARM chips can simply call a function
 #endif
-{
-  ms_counter++;
+{ 
+  static byte loop24ms=0;
+  ms_counter++;  
 
   //Increment Loop Counters
+  loop24ms++;
   loop33ms++;
   loop66ms++;
   loop100ms++;
@@ -98,7 +100,12 @@ void oneMSInterval() //Most ARM chips can simply call a function
   }
   // Tacho sweep
   
-
+  //40Hz loop
+  if(loop24ms== 24)
+  {
+    loop24ms=0;
+    BIT_SET(TIMER_mask, BIT_TIMER_40HZ);
+  }
 
   //30Hz loop
   if (loop33ms == 33)
