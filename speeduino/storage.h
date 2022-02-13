@@ -130,6 +130,8 @@ uint8_t readEEPROMVersion();
 void storeEEPROMVersion(uint8_t);
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
 uint32_t readPageCRC32(uint8_t pageNum);
+void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);
+uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
 uint16_t getEEPROMSize();
 bool isEepromWritePending();
 
