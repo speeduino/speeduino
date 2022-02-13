@@ -390,6 +390,7 @@
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
+#define ENGINE_PROTECT_BIT_COOLANT 4
 
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
@@ -476,6 +477,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
@@ -1152,19 +1154,9 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
-  byte unused10_166;
-  byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
-  byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
+  byte coolantProtEnbl : 1;
+  byte coolantProtRPM[6];
+  byte coolantProtTemp[6];
   byte unused10_179;
   byte unused10_180;
   byte unused10_181;
