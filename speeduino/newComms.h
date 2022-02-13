@@ -49,8 +49,7 @@
 #define SERIAL_TIMEOUT      3000 //ms
 
 #ifdef RTC_ENABLED
-  #define SD_FILE_TRANSMIT_BUFFER_SIZE 2048 + 3
-  extern uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  #define SD_FILE_TRANSMIT_BUFFER_SIZE (2048 + 3)
   extern uint16_t SDcurrentDirChunk;
   extern uint32_t SDreadStartSector;
   extern uint32_t SDreadNumSectors; //Number of sectors to read
