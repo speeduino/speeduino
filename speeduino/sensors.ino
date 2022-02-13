@@ -415,7 +415,7 @@ void readTPS(bool useFilter)
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
     if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
     else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
   {
@@ -429,7 +429,7 @@ void readTPS(bool useFilter)
     //All checks below are reversed from the standard case above
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
     else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
+    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
   }
 
   //Check whether the closed throttle position sensor is active
@@ -645,8 +645,12 @@ uint16_t getSpeed()
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    if ( (micros() - vssTimes[0]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop
+    else 
+      {
+        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+      }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
 
   }

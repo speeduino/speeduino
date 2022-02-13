@@ -43,19 +43,13 @@
 #define SD_RTC_WRITE_ARG1   0x027E
 #define SD_RTC_WRITE_ARG2   0x0009
 
-
-#define O2_CALIBRATION_PAGE   2
-#define IAT_CALIBRATION_PAGE  1
-#define CLT_CALIBRATION_PAGE  0
-
 #define SERIAL_CRC_LENGTH   4
 #define SERIAL_LEN_SIZE     2
 #define SERIAL_OVERHEAD_SIZE (SERIAL_LEN_SIZE + SERIAL_CRC_LENGTH) //The overhead for each serial command is 6 bytes. 2 bytes for the length and 4 bytes for the CRC
 #define SERIAL_TIMEOUT      3000 //ms
 
 #ifdef RTC_ENABLED
-  #define SD_FILE_TRANSMIT_BUFFER_SIZE 2048 + 3
-  extern uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  #define SD_FILE_TRANSMIT_BUFFER_SIZE (2048 + 3)
   extern uint16_t SDcurrentDirChunk;
   extern uint32_t SDreadStartSector;
   extern uint32_t SDreadNumSectors; //Number of sectors to read
@@ -76,6 +70,8 @@
 #define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 
 extern bool serialWriteInProgress;
+extern bool serialReceivePending; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
+
 
 void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
 void processSerialCommand();

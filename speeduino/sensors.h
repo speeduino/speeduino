@@ -26,7 +26,7 @@
 #define VSS_GEAR_HYSTERESIS 10
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
-#define TPS_READ_FREQUENCY  15 //ONLY VALID VALUES ARE 15 or 30!!!
+#define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
 /*
 #if defined(CORE_AVR)

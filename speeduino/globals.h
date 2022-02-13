@@ -239,6 +239,10 @@
 #define TOOTH_LOG_SIZE      1
 #endif
 
+#define O2_CALIBRATION_PAGE   2
+#define IAT_CALIBRATION_PAGE  1
+#define CLT_CALIBRATION_PAGE  0
+
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
 #define COMPOSITE_LOG_TRIG 2
@@ -426,8 +430,7 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
-extern FastCRC32 CRC32;
-
+extern FastCRC32 CRC32; //Generic CRC32 instance for general use in pages etc. Note that the serial comms has its own CRC32 instance
 
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
@@ -435,9 +438,9 @@ extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
 extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
-extern struct table3d8RpmTps boostTable; //8x8 boost map
-extern struct table3d8RpmTps vvtTable; //8x8 vvt map
-extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
+extern struct table3d8RpmLoad boostTable; //8x8 boost map
+extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
+extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
 extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
 extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
