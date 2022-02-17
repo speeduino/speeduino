@@ -14,6 +14,12 @@ extern struct libdivide::libdivide_u32_t libdiv_u32_100;
 extern struct libdivide::libdivide_s32_t libdiv_s32_100;
 extern struct libdivide::libdivide_u32_t libdiv_u32_360;
 
+inline uint8_t div100(uint8_t n) {
+    return n / (uint8_t)100U;
+}
+inline int8_t div100(int8_t n) {
+    return n / (int8_t)100U;
+}
 inline uint16_t div100(uint16_t n) {
     return libdivide::libdivide_u16_do(n, &libdiv_u16_100);
 }
