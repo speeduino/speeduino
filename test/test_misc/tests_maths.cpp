@@ -26,116 +26,116 @@ void testMaths()
 void test_maths_percent_U8(void)
 {
   uint8_t percentOf = 200;
-  TEST_ASSERT_EQUAL(percentage(50,  percentOf), 100);
-  TEST_ASSERT_EQUAL(percentage(75,  percentOf), 150);
-  TEST_ASSERT_EQUAL(percentage(0,   percentOf), 0);
-  TEST_ASSERT_EQUAL(percentage(100, percentOf), 200);
-  TEST_ASSERT_EQUAL(percentage(125, percentOf), 250);
+  TEST_ASSERT_EQUAL(100, percentage(50,  percentOf));
+  TEST_ASSERT_EQUAL(150, percentage(75,  percentOf));
+  TEST_ASSERT_EQUAL(0, percentage(0,   percentOf));
+  TEST_ASSERT_EQUAL(200, percentage(100, percentOf));
+  TEST_ASSERT_EQUAL(250, percentage(125, percentOf));
 }
 
 void test_maths_percent_U16(void)
 {
   uint16_t percentOf = 20000;
-  TEST_ASSERT_EQUAL(percentage(50,  percentOf), 10000);
-  TEST_ASSERT_EQUAL(percentage(75,  percentOf), 15000);
-  TEST_ASSERT_EQUAL(percentage(0,   percentOf), 0);
-  TEST_ASSERT_EQUAL(percentage(100, percentOf), 20000);
-  TEST_ASSERT_EQUAL(percentage(125, percentOf), 25000);
+  TEST_ASSERT_EQUAL(10000, percentage(50,  percentOf));
+  TEST_ASSERT_EQUAL(15000, percentage(75,  percentOf));
+  TEST_ASSERT_EQUAL(0, percentage(0,   percentOf));
+  TEST_ASSERT_EQUAL(20000, percentage(100, percentOf));
+  TEST_ASSERT_EQUAL(25000, percentage(125, percentOf));
 }
 
 void test_maths_percent_U32(void)
 {
   uint32_t percentOf = 20000000UL;
-  TEST_ASSERT_EQUAL(percentage(50, percentOf), 10000000UL);
-  TEST_ASSERT_EQUAL(percentage(75, percentOf), 15000000UL);
-  TEST_ASSERT_EQUAL(percentage(0, percentOf), 0);
-  TEST_ASSERT_EQUAL(percentage(100, percentOf), 20000000UL);
-  TEST_ASSERT_EQUAL(percentage(125, percentOf), 25000000UL);
+  TEST_ASSERT_EQUAL(10000000UL, percentage(50, percentOf));
+  TEST_ASSERT_EQUAL(15000000UL, percentage(75, percentOf));
+  TEST_ASSERT_EQUAL(0, percentage(0, percentOf));
+  TEST_ASSERT_EQUAL(20000000UL, percentage(100, percentOf));
+  TEST_ASSERT_EQUAL(25000000UL, percentage(125, percentOf));
 }
 
 void test_maths_halfpercent_U8(void)
 {
   uint8_t percentOf = 200;
-  TEST_ASSERT_EQUAL(halfPercentage(50, percentOf), 50);
-  TEST_ASSERT_EQUAL(halfPercentage(75, percentOf), 75);
-  TEST_ASSERT_EQUAL(halfPercentage(0, percentOf), 0);
-  TEST_ASSERT_EQUAL(halfPercentage(100, percentOf), 100);
-  TEST_ASSERT_EQUAL(halfPercentage(125, percentOf), 125);
+  TEST_ASSERT_EQUAL(50, halfPercentage(50, percentOf));
+  TEST_ASSERT_EQUAL(75, halfPercentage(75, percentOf));
+  TEST_ASSERT_EQUAL(0, halfPercentage(0, percentOf));
+  TEST_ASSERT_EQUAL(100, halfPercentage(100, percentOf));
+  TEST_ASSERT_EQUAL(125, halfPercentage(125, percentOf));
 }
 
 void test_maths_halfpercent_U16(void)
 {
   uint16_t percentOf = 20000;
-  TEST_ASSERT_EQUAL(halfPercentage(50, percentOf), 5000);
-  TEST_ASSERT_EQUAL(halfPercentage(75, percentOf), 7500);
-  TEST_ASSERT_EQUAL(halfPercentage(0, percentOf), 0);
-  TEST_ASSERT_EQUAL(halfPercentage(100, percentOf), 10000);
-  TEST_ASSERT_EQUAL(halfPercentage(125, percentOf), 12500);
+  TEST_ASSERT_EQUAL(5000, halfPercentage(50, percentOf));
+  TEST_ASSERT_EQUAL(7500, halfPercentage(75, percentOf));
+  TEST_ASSERT_EQUAL(0, halfPercentage(0, percentOf));
+  TEST_ASSERT_EQUAL(10000, halfPercentage(100, percentOf));
+  TEST_ASSERT_EQUAL(12500, halfPercentage(125, percentOf));
 }
 
 void test_maths_halfpercent_U32(void)
 {
   uint32_t percentOf = 20000000UL;
-  TEST_ASSERT_EQUAL(halfPercentage(50, percentOf), 5000000UL);
-  TEST_ASSERT_EQUAL(halfPercentage(75, percentOf), 7500000UL);
-  TEST_ASSERT_EQUAL(halfPercentage(0, percentOf), 0);
-  TEST_ASSERT_EQUAL(halfPercentage(100, percentOf), 10000000UL);
-  TEST_ASSERT_EQUAL(halfPercentage(125, percentOf), 12500000UL);
+  TEST_ASSERT_EQUAL(5000000UL, halfPercentage(50, percentOf));
+  TEST_ASSERT_EQUAL(7500000UL, halfPercentage(75, percentOf));
+  TEST_ASSERT_EQUAL(0, halfPercentage(0, percentOf));
+  TEST_ASSERT_EQUAL(10000000UL, halfPercentage(100, percentOf));
+  TEST_ASSERT_EQUAL(12500000UL, halfPercentage(125, percentOf));
 }
 
 void test_maths_div100_U8(void)
 {
-  TEST_ASSERT_EQUAL(div100(100), 1);
-  TEST_ASSERT_EQUAL(div100(200), 2);
-  TEST_ASSERT_EQUAL(div100(0), 0);
-  TEST_ASSERT_EQUAL(div100(50), 0);
-  TEST_ASSERT_EQUAL(div100(250), 2);
+  TEST_ASSERT_EQUAL(1, div100(100));
+  TEST_ASSERT_EQUAL(2, div100(200));
+  TEST_ASSERT_EQUAL(0, div100(0));
+  TEST_ASSERT_EQUAL(0, div100(50));
+  TEST_ASSERT_EQUAL(2, div100(250));
 }
 
 void test_maths_div100_U16(void)
 {
-  TEST_ASSERT_EQUAL(div100(10000), 100);
-  TEST_ASSERT_EQUAL(div100(40000), 400);
+  TEST_ASSERT_EQUAL(100, div100(10000));
+  TEST_ASSERT_EQUAL(400, div100(40000));
 }
 
 void test_maths_div100_U32(void)
 {
-  TEST_ASSERT_EQUAL(div100(100000000UL), 1000000UL);
-  TEST_ASSERT_EQUAL(div100(200000000UL), 2000000UL);
+  TEST_ASSERT_EQUAL(1000000UL, div100(100000000UL));
+  TEST_ASSERT_EQUAL(2000000UL, div100(200000000UL));
 }
 
 void test_maths_div100_S8(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(div100(100), 1);
-  TEST_ASSERT_EQUAL(div100(0), 0);
-  TEST_ASSERT_EQUAL(div100(50), 0);
+  TEST_ASSERT_EQUAL(1, div100(100));
+  TEST_ASSERT_EQUAL(0, div100(0));
+  TEST_ASSERT_EQUAL(0, div100(50));
 
-  TEST_ASSERT_EQUAL(div100(-100), -1);
-  TEST_ASSERT_EQUAL(div100(-50), 0);
-  TEST_ASSERT_EQUAL(div100(-120), -1);
+  TEST_ASSERT_EQUAL(-1, div100(-100));
+  TEST_ASSERT_EQUAL(0, div100(-50));
+  TEST_ASSERT_EQUAL(-1, div100(-120));
 }
 
 void test_maths_div100_S16(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(div100(10000), 100);
-  TEST_ASSERT_EQUAL(div100(0), 0);
-  TEST_ASSERT_EQUAL(div100(50), 0);
+  TEST_ASSERT_EQUAL(100, div100(10000));
+  TEST_ASSERT_EQUAL(0, div100(0));
+  TEST_ASSERT_EQUAL(0, div100(50));
 
-  TEST_ASSERT_EQUAL(div100(-10000), -100);
-  TEST_ASSERT_EQUAL(div100(-50), 0);
-  TEST_ASSERT_EQUAL(div100(-120), -1);
+  TEST_ASSERT_EQUAL(-100, div100(-10000));
+  TEST_ASSERT_EQUAL(0, div100(-50));
+  TEST_ASSERT_EQUAL(-1, div100(-120));
 }
 
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-  TEST_ASSERT_EQUAL(div100(100000000L), 1000000L);
-  TEST_ASSERT_EQUAL(div100(0), 0);
-  TEST_ASSERT_EQUAL(div100(50), 0);
+  TEST_ASSERT_EQUAL(1000000L, div100(100000000L));
+  TEST_ASSERT_EQUAL(0, div100(0));
+  TEST_ASSERT_EQUAL(0, div100(50));
 
-  TEST_ASSERT_EQUAL(div100(-100000000L), -1000000L);
-  TEST_ASSERT_EQUAL(div100(-50), 0);
-  TEST_ASSERT_EQUAL(div100(-120), -1);
+  TEST_ASSERT_EQUAL(-1000000L, div100(-100000000L));
+  TEST_ASSERT_EQUAL(0, div100(-50));
+  TEST_ASSERT_EQUAL(-1, div100(-120));
 }
