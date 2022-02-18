@@ -1,5 +1,7 @@
 #include "maths.h"
 #include <stdlib.h>
+
+#ifdef USE_LIBDIVIDE
 #include "src/libdivide/constant_fast_div.h"
 
 // Constants used for libdivide. Using predefined constants saves flash and RAM (.bss)
@@ -11,6 +13,7 @@ libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
 libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
 libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
 libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
+#endif
 
 //Replace the standard arduino map() function to use the div function instead
 int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
@@ -34,7 +37,11 @@ unsigned long percentage(uint8_t x, unsigned long y)
 //Same as above, but 0.5% accuracy
 unsigned long halfPercentage(uint8_t x, unsigned long y)
 {
-  return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
+#ifdef USE_LIBDIVIDE    
+    return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
+#else
+    return (y * x) / 100;
+#endif  
 }
 
 /*
