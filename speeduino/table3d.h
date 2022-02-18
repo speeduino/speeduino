@@ -20,8 +20,11 @@
  * </pre>
  *
  * In memory, we store rows in reverse:
- *      - The X axis is conventional: <c>x[0]</c> stores \c X-Min
- *      - The Y-axis is inverted: <c>y[0]</c> stores \c Y-Max
+ *      - Both axes are inverted:
+ *        - <c>x[0]</c> stores \c X-Max
+ *        - <c>x[2]</c> stores \c X-Min
+ *        - <c>y[0]</c> stores \c Y-Max
+ *        - <c>y[2]</c> stores \c Y-Min
  *      - The value locations match the axes.
  *          - <c>value[0][0]</c> stores \c V6.
  *          - <c>value[2][0]</c> stores \c V0.
