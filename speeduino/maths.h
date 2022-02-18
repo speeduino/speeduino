@@ -62,6 +62,14 @@ inline int32_t div100(int32_t n) {
 }
 #endif
 
+inline uint32_t div360(uint32_t n) {
+#ifdef USE_LIBDIVIDE
+    return libdivide::libdivide_u32_do(n, &libdiv_u32_360);
+#else
+    return n / 360U;
+#endif
+}
+
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range

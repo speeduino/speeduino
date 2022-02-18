@@ -31,11 +31,7 @@ unsigned long angleToTime(int16_t angle, byte method)
 
     if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
     {
-      #ifdef USE_LIBDIVIDE
-        returnTime = libdivide::libdivide_u32_do(angle * revolutionTime, &libdiv_u32_360);
-      #else
-        returnTime = ((angle * revolutionTime) / 360);
-      #endif
+        returnTime = div360(angle * revolutionTime);
         //returnTime = angle * (unsigned long)timePerDegree;
     }
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
