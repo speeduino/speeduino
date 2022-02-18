@@ -40,7 +40,7 @@ unsigned long halfPercentage(uint8_t x, unsigned long y)
 #ifdef USE_LIBDIVIDE    
     return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
 #else
-    return (y * x) / 100;
+    return (y * x) / 200;
 #endif  
 }
 
