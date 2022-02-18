@@ -899,7 +899,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t tempDwell = dwell;
   //Pull battery voltage based dwell correction and apply if needed
   currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
-  if (currentStatus.dwellCorrection != 100) { tempDwell = divs100(dwell) * currentStatus.dwellCorrection; }
+  if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
 
   //Dwell limiter
   uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
