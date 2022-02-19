@@ -41,7 +41,6 @@ volatile byte loop100ms;
 volatile byte loop250ms;
 volatile int loopSec;
 
-volatile unsigned int dwellLimit_uS;
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
 

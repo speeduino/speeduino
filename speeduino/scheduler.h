@@ -1,42 +1,29 @@
 /** @file
 Injector and Ignition (on/off) scheduling (structs).
-
 This scheduler is designed to maintain 2 schedules for use by the fuel and ignition systems.
 It functions by waiting for the overflow vectors from each of the timers in use to overflow, which triggers an interrupt.
-
 ## Technical
-
-Currently I am prescaling the 16-bit timers to 256 for injection and 64 for ignition.
-This means that the counter increments every 16us (injection) / 4uS (ignition) and will overflow every 1048576uS.
-
+Currently prescaling the 16-bit timers to 64 for injection and 64 for ignition.
+This means that the counter increments every 4us (injection) / 4uS (ignition) and will overflow every 262140uS.
     Max Period = (Prescale)*(1/Frequency)*(2^17)
-
 For more details see https://playground.arduino.cc/Code/Timer1/ (OLD: http://playground.arduino.cc/code/timer1 ).
 This means that the precision of the scheduler is:
-
-- 16uS (+/- 8uS of target) for fuel
+- 4uS for fuel
 - 4uS (+/- 2uS) for ignition
-
 ## Features
-
 This differs from most other schedulers in that its calls are non-recurring (ie when you schedule an event at a certain time and once it has occurred,
 it will not reoccur unless you explicitly ask/re-register for it).
 Each timer can have only 1 callback associated with it at any given time. If you call the setCallback function a 2nd time,
 the original schedule will be overwritten and not occur.
-
 ## Timer identification
-
 Arduino timers usage for injection and ignition schedules:
 - timer3 is used for schedule 1(?) (fuel 1,2,3,4 ign 7,8)
 - timer4 is used for schedule 2(?) (fuel 5,6 ign 4,5,6)
 - timer5 is used ... (fuel 7,8, ign 1,2,3)
-
 Timers 3,4 and 5 are 16-bit timers (ie count to 65536).
 See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pdf .
-
-256 prescale gives tick every 16uS.
-256 prescale gives overflow every 1048576uS (This means maximum wait time is 1.0485 seconds).
-
+64 prescale gives tick every 4uS.
+64 prescale gives overflow every 262140uS (This means maximum wait time is 0.26214 seconds).
 */
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
@@ -44,247 +31,247 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #include "globals.h"
 
 #define USE_IGN_REFRESH
-#define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
+#define IGNITION_REFRESH_THRESHOLD  230U //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
+#define INJECTION_REFRESH_TRESHOLD  230U //Time in us that the refresh functions will check to ensure there is enough time before changing the start or end compare
+#define INJECTION_OVERLAP_TRESHOLD  96U //Time in us, basically minimum injector off time that is allowed.
 
-extern void (*inj1StartFunction)(void);
-extern void (*inj1EndFunction)(void);
-extern void (*inj2StartFunction)(void);
-extern void (*inj2EndFunction)(void);
-extern void (*inj3StartFunction)(void);
-extern void (*inj3EndFunction)(void);
-extern void (*inj4StartFunction)(void);
-extern void (*inj4EndFunction)(void);
-extern void (*inj5StartFunction)(void);
-extern void (*inj5EndFunction)(void);
-extern void (*inj6StartFunction)(void);
-extern void (*inj6EndFunction)(void);
-extern void (*inj7StartFunction)(void);
-extern void (*inj7EndFunction)(void);
-extern void (*inj8StartFunction)(void);
-extern void (*inj8EndFunction)(void);
+void initialiseSchedulers();
+void beginInjectorPriming();
 
-/** @name IgnitionCallbacks
- * These are the (global) function pointers that get called to begin and end the ignition coil charging.
- * They are required for the various spark output modes.
- * @{
-*/
-extern void (*ign1StartFunction)(void);
-extern void (*ign1EndFunction)(void);
-extern void (*ign2StartFunction)(void);
-extern void (*ign2EndFunction)(void);
-extern void (*ign3StartFunction)(void);
-extern void (*ign3EndFunction)(void);
-extern void (*ign4StartFunction)(void);
-extern void (*ign4EndFunction)(void);
-extern void (*ign5StartFunction)(void);
-extern void (*ign5EndFunction)(void);
-extern void (*ign6StartFunction)(void);
-extern void (*ign6EndFunction)(void);
-extern void (*ign7StartFunction)(void);
-extern void (*ign7EndFunction)(void);
-extern void (*ign8StartFunction)(void);
-extern void (*ign8EndFunction)(void);
-/** @} */
+void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int ignitionEndAngle, unsigned long duration);
+void setIgnitionSchedule(struct Schedule *ignitionSchedule); //overload function for starting schedule(dwell) immediately, this is used in the fixed cranking ignition
 
-void initialiseSchedulers(void);
-void beginInjectorPriming(void);
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
-void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+void setFuelSchedule (struct FuelSchedule *targetSchedule, unsigned long duration);
+void setFuelSchedule (struct FuelSchedule *targetSchedule, int16_t crankAngle, int16_t injectorEndAngle, unsigned long duration);
 
-//The ARM cores use separate functions for their ISRs
+
+//The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  static inline void fuelSchedule1Interrupt(void);
-  static inline void fuelSchedule2Interrupt(void);
-  static inline void fuelSchedule3Interrupt(void);
-  static inline void fuelSchedule4Interrupt(void);
+  static inline void fuelSchedule1Interrupt();
+  static inline void fuelSchedule2Interrupt();
+  static inline void fuelSchedule3Interrupt();
+  static inline void fuelSchedule4Interrupt();
 #if (INJ_CHANNELS >= 5)
-  static inline void fuelSchedule5Interrupt(void);
+  static inline void fuelSchedule5Interrupt();
 #endif
 #if (INJ_CHANNELS >= 6)
-  static inline void fuelSchedule6Interrupt(void);
+  static inline void fuelSchedule6Interrupt();
 #endif
 #if (INJ_CHANNELS >= 7)
-  static inline void fuelSchedule7Interrupt(void);
+  static inline void fuelSchedule7Interrupt();
 #endif
 #if (INJ_CHANNELS >= 8)
-  static inline void fuelSchedule8Interrupt(void);
+  static inline void fuelSchedule8Interrupt();
 #endif
 #if (IGN_CHANNELS >= 1)
-  static inline void ignitionSchedule1Interrupt(void);
+  static inline void ignitionSchedule1Interrupt();
 #endif
 #if (IGN_CHANNELS >= 2)
-  static inline void ignitionSchedule2Interrupt(void);
+  static inline void ignitionSchedule2Interrupt();
 #endif
 #if (IGN_CHANNELS >= 3)
-  static inline void ignitionSchedule3Interrupt(void);
+  static inline void ignitionSchedule3Interrupt();
 #endif
 #if (IGN_CHANNELS >= 4)
-  static inline void ignitionSchedule4Interrupt(void);
+  static inline void ignitionSchedule4Interrupt();
 #endif
 #if (IGN_CHANNELS >= 5)
-  static inline void ignitionSchedule5Interrupt(void);
+  static inline void ignitionSchedule5Interrupt();
 #endif
 #if (IGN_CHANNELS >= 6)
-  static inline void ignitionSchedule6Interrupt(void);
+  static inline void ignitionSchedule6Interrupt();
 #endif
 #if (IGN_CHANNELS >= 7)
-  static inline void ignitionSchedule7Interrupt(void);
+  static inline void ignitionSchedule7Interrupt();
 #endif
 #if (IGN_CHANNELS >= 8)
-  static inline void ignitionSchedule8Interrupt(void);
+  static inline void ignitionSchedule8Interrupt();
 #endif
 #endif
 /** Schedule statuses.
  * - OFF - Schedule turned off and there is no scheduled plan
  * - PENDING - There's a scheduled plan, but is has not started to run yet
- * - STAGED - (???, Not used)
  * - RUNNING - Schedule is currently running
  */
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+enum ScheduleStatus : uint8_t {OFF, PENDING, RUNNING}; //The statuses that a schedule can have
 
-/** Ignition schedule.
+/** Ignition schedule and Fuel Schedule, both use the same struct now.
  */
-struct Schedule {
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
+struct Schedule {  
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile byte schedulesSet;     ///< A counter of how many times the schedule has been set
-  void (*StartCallback)();        ///< Start Callback function for schedule
-  void (*EndCallback)();          ///< End Callback function for schedule
-  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
+ 
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
-  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
-  volatile bool endScheduleSetByDecoder = false;
-};
-/** Fuel injection schedule.
-* Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
-* They are removed in this struct to save RAM.
-*/
-struct FuelSchedule {
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile byte schedulesSet; ///< A counter of how many times the schedule has been set
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
+  volatile COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  volatile COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)  
+  int channelDegrees=0; // The number of crank degrees until corresponding cylinder is at TDC (cylinder1 is obviously 0 for virtually ALL engines, but there's some weird ones)
 
-  COMPARE_TYPE nextStartCompare;
-  COMPARE_TYPE nextEndCompare;
-  volatile bool hasNextSchedule = false;
+  void (*StartFunction)();        ///< Start Callback function for schedule
+  void (*EndFunction)();          ///< End Callback function for schedule
+
+  //pure virtual functions, these are really defined in sub-classes
+  virtual COMPARE_TYPE getCounter()=0; //Function for getting counter value
+  virtual void setCompare(COMPARE_TYPE compareValue)=0; //Function for setting counter compare value
+  virtual void timerDisable()=0; //Function to disable timer for specific channel
+  virtual void timerEnable()=0; //Function to enable timer for specific channel  
 };
 
-//volatile Schedule *timer3Aqueue[4];
-//Schedule *timer3Bqueue[4];
-//Schedule *timer3Cqueue[4];
-
-extern FuelSchedule fuelSchedule1;
-extern FuelSchedule fuelSchedule2;
-extern FuelSchedule fuelSchedule3;
-extern FuelSchedule fuelSchedule4;
-extern FuelSchedule fuelSchedule5;
-extern FuelSchedule fuelSchedule6;
-extern FuelSchedule fuelSchedule7;
-extern FuelSchedule fuelSchedule8;
-
-extern Schedule ignitionSchedule1;
-extern Schedule ignitionSchedule2;
-extern Schedule ignitionSchedule3;
-extern Schedule ignitionSchedule4;
-extern Schedule ignitionSchedule5;
-extern Schedule ignitionSchedule6;
-extern Schedule ignitionSchedule7;
-extern Schedule ignitionSchedule8;
-
-//IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
-
-static inline COMPARE_TYPE setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+struct Ign1: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  //Create an array of all the upcoming targets, relative to the current count on the timer
-  unsigned int tmpQueue[4];
+  COMPARE_TYPE getCounter(){return IGN1_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
+  void timerDisable(){IGN1_TIMER_DISABLE();}
+  void timerEnable(){IGN1_TIMER_ENABLE();}
+};
 
-  //Set the initial queue state. This order matches the tmpQueue order
-  if(schedule1->Status == OFF)
-  {
-    queue[0] = schedule2;
-    queue[1] = schedule2;
-    tmpQueue[0] = schedule2->startCompare - CNT;
-    tmpQueue[1] = schedule2->endCompare - CNT;
-  }
-  else
-  {
-    queue[0] = schedule1;
-    queue[1] = schedule1;
-    tmpQueue[0] = schedule1->startCompare - CNT;
-    tmpQueue[1] = schedule1->endCompare - CNT;
-  }
-
-  if(schedule2->Status == OFF)
-  {
-    queue[2] = schedule1;
-    queue[3] = schedule1;
-    tmpQueue[2] = schedule1->startCompare - CNT;
-    tmpQueue[3] = schedule1->endCompare - CNT;
-  }
-  else
-  {
-    queue[2] = schedule2;
-    queue[3] = schedule2;
-    tmpQueue[2] = schedule2->startCompare - CNT;
-    tmpQueue[3] = schedule2->endCompare - CNT;
-  }
-
-
-  //Sort the queues. Both queues are kept in sync.
-  //This implements a sorting networking based on the Bose-Nelson sorting network
-  //See: pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
-  /*SWAP(0, 1); */ //Likely not needed
-  /*SWAP(2, 3); */ //Likely not needed
-  SWAP(0, 2);
-  SWAP(1, 3);
-  SWAP(1, 2);
-
-  //Return the next compare time in the queue
-  return tmpQueue[0] + CNT; //Return the
-}
-
-/*
- * Moves all the Schedules in a queue forward one position.
- * The current item (0) is discarded
- * The final queue slot is set to nullSchedule to indicate that no action should be taken
- */
-static inline unsigned int popQueue(volatile Schedule *queue[])
+struct Ign2: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  queue[0] = queue[1];
-  queue[1] = queue[2];
-  queue[2] = queue[3];
-  //queue[3] = &nullSchedule;
+  COMPARE_TYPE getCounter(){return IGN2_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
+  void timerDisable(){IGN2_TIMER_DISABLE();}
+  void timerEnable(){IGN2_TIMER_ENABLE();}
+};
 
-  unsigned int returnCompare;
-  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
-  else { returnCompare = queue[0]->endCompare; }
+struct Ign3: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN3_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN3_COMPARE =compareValue;}
+  void timerDisable(){IGN3_TIMER_DISABLE();}
+  void timerEnable(){IGN3_TIMER_ENABLE();}
+};
 
-  return returnCompare;
-}
+struct Ign4: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN4_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN4_COMPARE =compareValue;}
+  void timerDisable(){IGN4_TIMER_DISABLE();}
+  void timerEnable(){IGN4_TIMER_ENABLE();}
+};
+
+struct Ign5: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN5_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN5_COMPARE =compareValue;}
+  void timerDisable(){IGN5_TIMER_DISABLE();}
+  void timerEnable(){IGN5_TIMER_ENABLE();}
+};
+
+struct Ign6: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN6_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN6_COMPARE =compareValue;}
+  void timerDisable(){IGN6_TIMER_DISABLE();}
+  void timerEnable(){IGN6_TIMER_ENABLE();}
+};
+
+struct Ign7: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN7_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN7_COMPARE =compareValue;}
+  void timerDisable(){IGN7_TIMER_DISABLE();}
+  void timerEnable(){IGN7_TIMER_ENABLE();}
+};
+
+struct Ign8: Schedule //Derived ignitionSchedule structs with  channel specific override functions
+{
+  COMPARE_TYPE getCounter(){return IGN8_COUNTER;}
+  void setCompare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
+  void timerDisable(){IGN8_TIMER_DISABLE();}
+  void timerEnable(){IGN8_TIMER_ENABLE();}
+};
+
+struct Fuel1: Schedule //derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL1_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL1_COMPARE =compareValue;};
+  void timerDisable(){FUEL1_TIMER_DISABLE();};
+  void timerEnable(){FUEL1_TIMER_ENABLE();};
+};
+struct Fuel2: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL2_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL2_COMPARE =compareValue;};
+  void timerDisable(){FUEL2_TIMER_DISABLE();};
+  void timerEnable(){FUEL2_TIMER_ENABLE();};
+};
+struct Fuel3: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL3_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL3_COMPARE =compareValue;};
+  void timerDisable(){FUEL3_TIMER_DISABLE();};
+  void timerEnable(){FUEL3_TIMER_ENABLE();};
+};
+struct Fuel4: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL4_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL4_COMPARE =compareValue;};
+  void timerDisable(){FUEL4_TIMER_DISABLE();};
+  void timerEnable(){FUEL4_TIMER_ENABLE();};
+};
+struct Fuel5: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL5_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL5_COMPARE =compareValue;};
+  void timerDisable(){FUEL5_TIMER_DISABLE();};
+  void timerEnable(){FUEL5_TIMER_ENABLE();};
+};
+struct Fuel6: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL6_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL6_COMPARE =compareValue;};
+  void timerDisable(){FUEL6_TIMER_DISABLE();};
+  void timerEnable(){FUEL6_TIMER_ENABLE();};
+};
+struct Fuel7: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL7_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL7_COMPARE =compareValue;};
+  void timerDisable(){FUEL7_TIMER_DISABLE();};
+  void timerEnable(){FUEL7_TIMER_ENABLE();};
+};
+struct Fuel8: Schedule//derived FuelShedule with channel specific functions
+{
+  COMPARE_TYPE getCounter() {return FUEL8_COUNTER;};
+  void setCompare(COMPARE_TYPE compareValue){FUEL8_COMPARE =compareValue;};
+  void timerDisable(){FUEL8_TIMER_DISABLE();};
+  void timerEnable(){FUEL8_TIMER_ENABLE();};
+};
+
+
+extern Fuel1 fuelSchedule1;
+extern Fuel2 fuelSchedule2;
+extern Fuel3 fuelSchedule3;
+extern Fuel4 fuelSchedule4;
+#if (INJ_CHANNELS >= 5)
+extern Fuel5 fuelSchedule5;
+#endif
+#if (INJ_CHANNELS >= 6)
+extern Fuel6 fuelSchedule6;
+#endif
+#if (INJ_CHANNELS >= 7)
+extern Fuel7 fuelSchedule7;
+#endif
+#if (INJ_CHANNELS >= 8)
+extern Fuel8 fuelSchedule8;
+#endif
+
+extern Ign1 ignitionSchedule1;
+extern Ign2 ignitionSchedule2;
+extern Ign3 ignitionSchedule3;
+extern Ign4 ignitionSchedule4;
+extern Ign5 ignitionSchedule5;
+#if IGN_CHANNELS >= 6
+extern Ign6 ignitionSchedule6;
+#endif
+#if IGN_CHANNELS >= 7
+extern Ign7 ignitionSchedule7;
+#endif
+#if IGN_CHANNELS >= 8
+extern Ign8 ignitionSchedule8;
+#endif
 
 
 #endif // SCHEDULER_H
