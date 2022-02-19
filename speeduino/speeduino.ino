@@ -224,7 +224,6 @@ void loop()
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     ADC_sequencer();//All ADC reads are now combined into sequencer to ensure optimal loop speed without any blocking
-    BIT_CLEAR(TIMER_mask, BIT_TIMER_40HZ); //only ADC uses this at the moment
 
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) 
     {

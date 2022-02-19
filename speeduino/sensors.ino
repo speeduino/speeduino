@@ -123,9 +123,20 @@ void ADC_sequencer(){
 
 static enum ADCoperations:uint8_t {MAPadc,EMAPadc,TPSadc,IATadc,O2adc,O2_2adc,BATadc,CLTadc,FuelpressureAdc,OilpressureAdc,BaroAdc} adcOperation =MAPadc; //current state of ADCsequence,initial state is MAPadc
 static ADCstates adcState = ADCidle;  //current state of ADC,initial state is idle
-static byte adcLoopTimer=0;           //holds timer flags
+static uint8_t lastmillisTPS=0;
+static uint8_t lastmillisIAT=0;
+static uint8_t lastmillisCLT=4;
+static uint16_t lastmillisBARO=0;
+uint8_t interval;
 
-adcLoopTimer |= LOOP_TIMER; //pick up timer bits as they are set, this can only set bits, not clear
+uint16_t currentMillis =(uint16_t)millis();
+
+//using const instead of #define helps to speed things up a bit(forcing correct type to the constants, default is 16bit!)
+//also correct types for interval is needed to make millis() checking overflow proof!
+const uint8_t TPS_INTERVAL=25;  //[ms]TPS reading interval , (when this is 25 TPSdot calculation is super fast)
+const uint8_t IAT_INTERVAL=33;  //[ms] currently used for IAT,O2,O2_2,BAT
+const uint8_t CLT_INTERVAL=250; //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
+const uint16_t BARO_INTERVAL=1000; //[ms] infrequent BARO readings are not an issue.
 
 if (ADC_CheckForConversionComplete() == true)
 {
@@ -150,14 +161,15 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
       }
       break;
     case TPSadc:                                    //40Hz
-      if(BIT_CHECK(adcLoopTimer, BIT_TIMER_40HZ)) //(any faster and it can upset the TPSdot sampling time)
+      interval=lowByte(currentMillis) - lastmillisTPS;
+      if(interval >= TPS_INTERVAL ) //(any faster and it can upset the TPSdot sampling time)
       {
         adcState = readTPS(true, adcState); //read TPS        
         if (adcState == ADCidle)
         {                         //when this channel done
           readTPSdot();
           adcOperation = IATadc;  //specify next operation
-          BIT_CLEAR(adcLoopTimer, BIT_TIMER_40HZ);
+          lastmillisTPS+=TPS_INTERVAL; 
         }
       }
       else      
@@ -166,13 +178,14 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
       }      
       break;
     case IATadc: //30HZ
-      if(BIT_CHECK(adcLoopTimer, BIT_TIMER_30HZ)) //30 hertz
+      interval=lowByte(currentMillis) - lastmillisIAT;
+      if(interval >= IAT_INTERVAL)
       {
         adcState = readIAT(adcState);
         if (adcState == ADCidle)
         {                          //when this channel done
           adcOperation = O2adc; //specify next operation
-          BIT_CLEAR(adcLoopTimer, BIT_TIMER_30HZ);
+          lastmillisIAT+=IAT_INTERVAL;
         }
       }
       else      
@@ -201,14 +214,15 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
         adcOperation = CLTadc; //specify next operation
       }
       break;
-    case CLTadc:                                    //_4Hz The CLT readings can be done less frequently (4 times per second)
-      if(BIT_CHECK(adcLoopTimer, BIT_TIMER_4HZ)) //Infrequent readings are not an issue.
+    case CLTadc:               //_4Hz The CLT readings can be done less frequently (4 times per second)
+      interval=lowByte(currentMillis) - lastmillisCLT;
+      if(interval >= CLT_INTERVAL) //Infrequent readings are not an issue.
       {
         adcState = readCLT(true, adcState);
         if (adcState == ADCidle)
         {                         //when this channel done
           adcOperation = FuelpressureAdc; //specify next operation
-          BIT_CLEAR(adcLoopTimer, BIT_TIMER_4HZ);
+          lastmillisCLT=lowByte(currentMillis);
         }
       }
       else
@@ -231,13 +245,13 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
       }
       break;
     case BaroAdc:
-      if(BIT_CHECK(adcLoopTimer, BIT_TIMER_1HZ)) //Infrequent baro readings are not an issue.
+      if((currentMillis - lastmillisBARO) >= BARO_INTERVAL) //Infrequent baro readings are not an issue.
       {
         adcState = readBaro(adcState);        
         if (adcState == ADCidle)
         {                         //when this channel done
           adcOperation = MAPadc; //specify next operation
-          BIT_CLEAR(adcLoopTimer, BIT_TIMER_1HZ);
+          lastmillisBARO+=BARO_INTERVAL;
         }
       }
       else
