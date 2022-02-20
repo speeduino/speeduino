@@ -1262,58 +1262,28 @@ void correctionFuelTrim(void)
 {
   if(configPage6.fuelTrimEnabled == true)
   {
-    if (channel1InjEnabled == true)
-    {
-    unsigned long pw1percent = 100 + (byte)get3DTableValue(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-    if (pw1percent != 100) { currentStatus.PW1 = (pw1percent * currentStatus.PW1) / 100; }
-    }
+    if (channel1InjEnabled == true) { currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1); }
     
-    if (channel2InjEnabled == true)
-    {
-      unsigned long pw2percent = 100 + (byte)get3DTableValue(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw2percent != 100) { currentStatus.PW2 = (pw2percent * currentStatus.PW2) / 100; }
-    }
-    if (channel3InjEnabled == true)
-    {
-      unsigned long pw3percent = 100 + (byte)get3DTableValue(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw3percent != 100) { currentStatus.PW3 = (pw3percent * currentStatus.PW3) / 100; }
-    }
-    if (channel4InjEnabled == true)
-    {
-      unsigned long pw4percent = 100 + (byte)get3DTableValue(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw4percent != 100) { currentStatus.PW4 = (pw4percent * currentStatus.PW4) / 100; }
-    }
+    if (channel2InjEnabled == true) { currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2); }
+
+    if (channel3InjEnabled == true) { currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3); }
+
+    if (channel4InjEnabled == true) { currentStatus.PW4 = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW4); }
 
     #if INJ_CHANNELS >= 5
-    if (channel5InjEnabled == true)
-    {
-      unsigned long pw5percent = 100 + (byte)get3DTableValue(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw5percent != 100) { currentStatus.PW5 = (pw5percent * currentStatus.PW5) / 100; }
-    }
+    if (channel5InjEnabled == true) { currentStatus.PW5 = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW5); }
     #endif
     
     #if INJ_CHANNELS >= 6
-    if (channel6InjEnabled == true)
-    {
-      unsigned long pw6percent = 100 + (byte)get3DTableValue(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw6percent != 100) { currentStatus.PW6 = (pw6percent * currentStatus.PW6) / 100; }
-    }
+    if (channel6InjEnabled == true) { currentStatus.PW6 = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW6); }
     #endif
     
     #if INJ_CHANNELS >= 7
-    if (channel7InjEnabled == true)
-    {
-      unsigned long pw7percent = 100 + (byte)get3DTableValue(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw7percent != 100) { currentStatus.PW7 = (pw7percent * currentStatus.PW7) / 100; }
-    }
+    if (channel7InjEnabled == true) { currentStatus.PW7 = applyFuelTrimToPW(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW7); }
     #endif
     
     #if INJ_CHANNELS >= 8
-    if (channel8InjEnabled == true)
-    {
-      unsigned long pw8percent = 100 + (byte)get3DTableValue(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM) - OFFSET_FUELTRIM;
-      if (pw8percent != 100) { currentStatus.PW8 = (pw8percent * currentStatus.PW8) / 100; }
-    }
+    if (channel8InjEnabled == true) { currentStatus.PW8 = applyFuelTrimToPW(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW8); }
     #endif
   }
 }
