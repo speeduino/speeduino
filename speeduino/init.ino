@@ -57,6 +57,42 @@ void initialiseAll()
     configPage9.intcan_available = 1;   // device has internal canbus
     //STM32 can not currently enabled
     #endif
+
+    /*
+    ***********************************************************************************************************
+    * EEPROM reset
+    */
+    #if defined(EEPROM_RESET_PIN)
+    uint32_t start_time = millis();
+    byte exit_erase_loop = false; 
+    pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
+
+    //only start routine when this pin is low because it is pulled low
+    while (digitalRead(EEPROM_RESET_PIN) != HIGH && (millis() - start_time)<1050)
+    {
+      //make sure the key is pressed for atleast 0.5 second 
+      if ((millis() - start_time)>500) {
+        //if key is pressed afterboot for 0.5 second make led turn off
+        digitalWrite(LED_BUILTIN, HIGH);
+
+        //see if the user reacts to the led turned off with removing the keypress within 1 second
+        while (((millis() - start_time)<1000) && (exit_erase_loop!=true)){
+
+          //if user let go of key within 1 second erase eeprom
+          if(digitalRead(EEPROM_RESET_PIN) != LOW){
+            #if defined(FLASH_AS_EEPROM_h)
+              EEPROM.read(0); //needed for SPI eeprom emulation.
+              EEPROM.clear(); 
+            #else 
+              for (int i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write(i, 255);}
+            #endif
+            //if erase done exit while loop.
+            exit_erase_loop = true;
+          }
+        }
+      } 
+    }
+    #endif
     
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
@@ -202,6 +238,13 @@ void initialiseAll()
     oilPressureProtectTable.xSize = 4;
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
+
+    coolantProtectTable.valueSize = SIZE_BYTE;
+    coolantProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    coolantProtectTable.xSize = 6;
+    coolantProtectTable.values = configPage9.coolantProtRPM;
+    coolantProtectTable.axisX = configPage9.coolantProtTemp;
+
 
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
@@ -409,7 +452,6 @@ void initialiseAll()
     fixedCrankingOverride = 0;
     timer5_overflow_count = 0;
     toothHistoryIndex = 0;
-    toothHistorySerialIndex = 0;
     toothLastToothTime = 0;
 
     //Lookup the current MAP reading for barometric pressure
@@ -3243,17 +3285,23 @@ void initialiseTriggers()
       break;
 
     case DECODER_NGC:
-      //Chrysler NGC 4 cylinder
+      //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
       triggerHandler = triggerPri_NGC;
-      triggerSecondaryHandler = triggerSec_NGC4;
       decoderHasSecondary = true;
       getRPM = getRPM_NGC;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_NGC;
 
       primaryTriggerEdge = CHANGE;
-      secondaryTriggerEdge = CHANGE;
+      if (configPage2.nCylinders == 4) {
+        triggerSecondaryHandler = triggerSec_NGC4;
+        secondaryTriggerEdge = CHANGE;
+      }
+      else {
+        triggerSecondaryHandler = triggerSec_NGC68;
+        secondaryTriggerEdge = FALLING;
+      }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);

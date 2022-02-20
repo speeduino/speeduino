@@ -235,11 +235,13 @@
 
 #ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127
-#define TOOTH_LOG_BUFFER    128 //256
 #else
 #define TOOTH_LOG_SIZE      1
-#define TOOTH_LOG_BUFFER    1 //256
 #endif
+
+#define O2_CALIBRATION_PAGE   2
+#define IAT_CALIBRATION_PAGE  1
+#define CLT_CALIBRATION_PAGE  0
 
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
@@ -281,9 +283,6 @@
 
 #define HARD_CUT_FULL       0
 #define HARD_CUT_ROLLING    1
-
-#define SIZE_BYTE           8
-#define SIZE_INT            16
 
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
@@ -391,6 +390,7 @@
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
+#define ENGINE_PROTECT_BIT_COOLANT 4
 
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
@@ -431,8 +431,7 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
-extern FastCRC32 CRC32;
-
+extern FastCRC32 CRC32; //Generic CRC32 instance for general use in pages etc. Note that the serial comms has its own CRC32 instance
 
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
@@ -440,18 +439,22 @@ extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
 extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
-extern struct table3d8RpmTps boostTable; //8x8 boost map
-extern struct table3d8RpmTps vvtTable; //8x8 vvt map
-extern struct table3d8RpmTps vvt2Table; //8x8 vvt map
+extern struct table3d8RpmLoad boostTable; //8x8 boost map
+extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
+extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
-extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
-extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
-extern struct table3d6RpmLoad trim3Table; //6x6 Fuel trim 3 map
-extern struct table3d6RpmLoad trim4Table; //6x6 Fuel trim 4 map
-extern struct table3d6RpmLoad trim5Table; //6x6 Fuel trim 5 map
-extern struct table3d6RpmLoad trim6Table; //6x6 Fuel trim 6 map
-extern struct table3d6RpmLoad trim7Table; //6x6 Fuel trim 7 map
-extern struct table3d6RpmLoad trim8Table; //6x6 Fuel trim 8 map
+
+typedef table3d6RpmLoad trimTable3d; 
+
+extern trimTable3d trim1Table; //6x6 Fuel trim 1 map
+extern trimTable3d trim2Table; //6x6 Fuel trim 2 map
+extern trimTable3d trim3Table; //6x6 Fuel trim 3 map
+extern trimTable3d trim4Table; //6x6 Fuel trim 4 map
+extern trimTable3d trim5Table; //6x6 Fuel trim 5 map
+extern trimTable3d trim6Table; //6x6 Fuel trim 6 map
+extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
+extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
+
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
@@ -478,6 +481,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
@@ -562,6 +566,7 @@ extern int ignition8StartAngle;
 
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
+extern uint16_t softStartTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
 extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -569,12 +574,11 @@ extern volatile unsigned long ms_counter; //A counter that increments once per m
 extern uint16_t fixedCrankingOverride;
 extern bool clutchTrigger;
 extern bool previousClutchTrigger;
-extern volatile uint32_t toothHistory[TOOTH_LOG_BUFFER];
-extern volatile uint8_t compositeLogHistory[TOOTH_LOG_BUFFER];
+extern volatile uint32_t toothHistory[TOOTH_LOG_SIZE];
+extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
 extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
-extern volatile byte toothHistorySerialIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
@@ -951,7 +955,7 @@ struct config4 {
   byte floodClear;    ///< TPS (raw adc count? % ?) value that triggers flood clear mode (No fuel whilst cranking, See @ref correctionFloodClear())
   byte SoftRevLim;    ///< Soft rev limit (RPM/100)
   byte SoftLimRetard; ///< Amount soft limit (ignition) retard (degrees)
-  byte SoftLimMax;    ///< Time the soft limit can run (units ?)
+  byte SoftLimMax;    ///< Time the soft limit can run (units 0.1S)
   byte HardRevLim;    ///< Hard rev limit (RPM/100)
   byte taeBins[4];    ///< TPS based acceleration enrichment bins (Unit: %/s)
   byte taeValues[4];  ///< TPS based acceleration enrichment rates (Unit: % to add), values matched to thresholds of taeBins
@@ -1154,19 +1158,9 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
-  byte unused10_166;
-  byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
-  byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
+  byte coolantProtEnbl : 1;
+  byte coolantProtRPM[6];
+  byte coolantProtTemp[6];
   byte unused10_179;
   byte unused10_180;
   byte unused10_181;
