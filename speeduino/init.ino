@@ -81,6 +81,7 @@ void initialiseAll()
           //if user let go of key within 1 second erase eeprom
           if(digitalRead(EEPROM_RESET_PIN) != LOW){
             #if defined(FLASH_AS_EEPROM_h)
+              EEPROM.read(0); //needed for SPI eeprom emulation.
               EEPROM.clear(); 
             #else 
               for (int i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write(i, 255);}
@@ -237,6 +238,13 @@ void initialiseAll()
     oilPressureProtectTable.xSize = 4;
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
+
+    coolantProtectTable.valueSize = SIZE_BYTE;
+    coolantProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    coolantProtectTable.xSize = 6;
+    coolantProtectTable.values = configPage9.coolantProtRPM;
+    coolantProtectTable.axisX = configPage9.coolantProtTemp;
+
 
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
