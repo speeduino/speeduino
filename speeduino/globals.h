@@ -390,6 +390,7 @@
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
+#define ENGINE_PROTECT_BIT_COOLANT 4
 
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
@@ -442,14 +443,18 @@ extern struct table3d8RpmLoad boostTable; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
-extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
-extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
-extern struct table3d6RpmLoad trim3Table; //6x6 Fuel trim 3 map
-extern struct table3d6RpmLoad trim4Table; //6x6 Fuel trim 4 map
-extern struct table3d6RpmLoad trim5Table; //6x6 Fuel trim 5 map
-extern struct table3d6RpmLoad trim6Table; //6x6 Fuel trim 6 map
-extern struct table3d6RpmLoad trim7Table; //6x6 Fuel trim 7 map
-extern struct table3d6RpmLoad trim8Table; //6x6 Fuel trim 8 map
+
+typedef table3d6RpmLoad trimTable3d; 
+
+extern trimTable3d trim1Table; //6x6 Fuel trim 1 map
+extern trimTable3d trim2Table; //6x6 Fuel trim 2 map
+extern trimTable3d trim3Table; //6x6 Fuel trim 3 map
+extern trimTable3d trim4Table; //6x6 Fuel trim 4 map
+extern trimTable3d trim5Table; //6x6 Fuel trim 5 map
+extern trimTable3d trim6Table; //6x6 Fuel trim 6 map
+extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
+extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
+
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
@@ -476,6 +481,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
@@ -1152,6 +1158,7 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
+
   byte unused10_166;
   byte unused10_167;
   byte unused10_168;
@@ -1170,13 +1177,11 @@ struct config9 {
   byte dfcoExitFuelTime: 1; // Selects if short (two engine cycles) or long (dfcoRampInTime) for dfcoExitFuel;
 
   byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
-  byte unused10_179;
-  byte unused10_180;
-  byte unused10_181;
-  byte unused10_182;
+
+  byte coolantProtEnbl : 1;
+  byte coolantProtRPM[3];
+  byte coolantProtTemp[3];
+
   byte unused10_183;
   byte unused10_184;
   byte unused10_185;
