@@ -387,9 +387,11 @@ void command()
       //The first 2 bytes sent represent the canID and tableID
       while (Serial.available() == 0) { }
       tableID = Serial.read(); //Not currently used for anything
-
-      receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
+      if(configPage6.cal_lock == true) // Only read and apply new calibrations from TS if calibrations are unlocked. This should always be true.
+      {
+        receiveCalibration(tableID); //Receive new values and store in memory
+        writeCalibration(); //Store received values in EEPROM
+      }
 
       break;
 

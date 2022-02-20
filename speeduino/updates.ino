@@ -492,7 +492,7 @@ void doUpdates()
     configPage10.TrigEdgeThrd = 0;
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    if(configPage6.cal_lock == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -588,6 +588,7 @@ void doUpdates()
   {
     //202204
     configPage9.coolantProtEnbl = false;
+    configPage6.cal_lock = 0;
     
     writeAllConfig();
     storeEEPROMVersion(20);
