@@ -135,7 +135,7 @@ uint16_t currentMillis =(uint16_t)millis();
 //also correct types for interval is needed to make millis() checking overflow proof!
 const uint8_t TPS_INTERVAL=25;  //[ms]TPS reading interval , (when this is 25 TPSdot calculation is super fast)
 const uint8_t IAT_INTERVAL=33;  //[ms] currently used for IAT,O2,O2_2,BAT
-const uint8_t CLT_INTERVAL=250; //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
+const uint8_t CLT_INTERVAL=240; //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
 const uint16_t BARO_INTERVAL=1000; //[ms] infrequent BARO readings are not an issue.
 
 if (ADC_CheckForConversionComplete() == true)
