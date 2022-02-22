@@ -16,7 +16,7 @@ A full copy of the license may be found in the projects root directory
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64
 #else
-#define EEPROM_MAX_WRITE_BLOCK 12
+#define EEPROM_MAX_WRITE_BLOCK 24
 //#define EEPROM_MAX_WRITE_BLOCK 8
 #endif
 
@@ -34,7 +34,7 @@ A full copy of the license may be found in the projects root directory
 
 static bool eepromWritesPending = false;
 static bool forceBurn = false;
-bool deferEEPROMWrites = false;
+uint32_t deferEEPROMWritesUntil = 0;
 
 bool isEepromWritePending()
 {
@@ -147,7 +147,7 @@ void writeConfig(uint8_t pageNum)
 {
   write_location result = { 0, 0 };
 
-  if(deferEEPROMWrites == true) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
+  //if(micros() < deferEEPROMWritesUntil) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
 
   switch(pageNum)
   {

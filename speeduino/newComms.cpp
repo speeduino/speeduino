@@ -409,7 +409,7 @@ void processSerialCommand()
         setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
       }
       
-      deferEEPROMWrites = true;
+      deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
       
       sendSerialReturnCode(SERIAL_RC_OK);
       
