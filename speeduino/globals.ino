@@ -18,14 +18,14 @@ struct table3d8RpmLoad boostTable; ///< 8x8 boost map
 struct table3d8RpmLoad vvtTable; ///< 8x8 vvt map
 struct table3d8RpmLoad vvt2Table; ///< 8x8 vvt2 map
 struct table3d8RpmLoad wmiTable; ///< 8x8 wmi map
-struct table3d6RpmLoad trim1Table; ///< 6x6 Fuel trim 1 map
-struct table3d6RpmLoad trim2Table; ///< 6x6 Fuel trim 2 map
-struct table3d6RpmLoad trim3Table; ///< 6x6 Fuel trim 3 map
-struct table3d6RpmLoad trim4Table; ///< 6x6 Fuel trim 4 map
-struct table3d6RpmLoad trim5Table; ///< 6x6 Fuel trim 5 map
-struct table3d6RpmLoad trim6Table; ///< 6x6 Fuel trim 6 map
-struct table3d6RpmLoad trim7Table; ///< 6x6 Fuel trim 7 map
-struct table3d6RpmLoad trim8Table; ///< 6x6 Fuel trim 8 map
+trimTable3d trim1Table; ///< 6x6 Fuel trim 1 map
+trimTable3d trim2Table; ///< 6x6 Fuel trim 2 map
+trimTable3d trim3Table; ///< 6x6 Fuel trim 3 map
+trimTable3d trim4Table; ///< 6x6 Fuel trim 4 map
+trimTable3d trim5Table; ///< 6x6 Fuel trim 5 map
+trimTable3d trim6Table; ///< 6x6 Fuel trim 6 map
+trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
+trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 struct table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
 struct table2D maeTable;
