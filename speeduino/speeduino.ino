@@ -319,6 +319,12 @@ void loop()
 
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      //if no EEPROM writes to do anymore, send return code to TS.
+      if( (isEepromWritePending() == false) && serialReturnCodePending == true)
+      {
+        sendSerialReturnCode(SERIAL_RC_OK);
+        serialReturnCodePending = false;
+      }
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {

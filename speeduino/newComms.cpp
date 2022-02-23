@@ -32,6 +32,7 @@ bool serialReceivePending = false; /**< Whether or not a serial request has only
 uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
 bool serialWriteInProgress = false;
+bool serialReturnCodePending = false;
 uint16_t serialBytesTransmitted = 0;
 uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
@@ -410,8 +411,8 @@ void processSerialCommand()
       }
       
       deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
-      
-      sendSerialReturnCode(SERIAL_RC_OK);
+      //We don't send return code yet. It will be done in main loop when page write has been actually done to EEPROM.
+      serialReturnCodePending = true;
       
       break;
     }  
