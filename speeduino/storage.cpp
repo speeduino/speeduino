@@ -280,6 +280,8 @@ void writeConfig(uint8_t pageNum)
   }
 
   eepromWritesPending = !result.can_write();
+  if(eepromWritesPending == true) { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+  else { BIT_CLEAR(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
