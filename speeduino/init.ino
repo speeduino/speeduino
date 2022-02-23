@@ -275,6 +275,13 @@ void initialiseAll()
     o2CalibrationTable.xSize = 32;
     o2CalibrationTable.values = o2Calibration_values;
     o2CalibrationTable.axisX = o2Calibration_bins;
+     
+    ego_IntegralTable.valueSize = SIZE_BYTE;
+    ego_IntegralTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    ego_IntegralTable.xSize = 5;
+    ego_IntegralTable.values = egoIntAFR_Values;
+    ego_IntegralTable.axisX = egoIntAFR_XBins;
+
 
     //Setup the calibration tables
     loadCalibration();
