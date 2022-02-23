@@ -84,7 +84,11 @@ struct write_location {
 
   bool can_write() const
   {
-    return (counter<=EEPROM_MAX_WRITE_BLOCK);
+    bool canWrite = false;
+    if(currentStatus.RPM > 0) { canWrite = (counter <= EEPROM_MAX_WRITE_BLOCK); }
+    else { canWrite = (counter <= (EEPROM_MAX_WRITE_BLOCK * 8)); } //Write to EEPROM more aggresively if the engine is not running
+
+    return canWrite;
   }
 };
 
