@@ -1,6 +1,7 @@
 #include "pages.h"
 #include "globals.h"
 #include "utilities.h"
+#include "table3d_axis_io.h"
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -79,10 +80,10 @@ public:
       case table_location_values:
         return get_value_value();
       case table_location_xaxis:
-        return *get_xaxis_value();
+        return table3d_axis_io::to_byte(table_t::xaxis_t::domain, get_xaxis_value());
       case table_location_yaxis:
       default:
-        return *get_yaxis_value();
+        return table3d_axis_io::to_byte(table_t::yaxis_t::domain, get_yaxis_value());
     }
   }
 
@@ -96,12 +97,12 @@ public:
         break;
 
       case table_location_xaxis:
-        get_xaxis_value() = new_value;
+        get_xaxis_value() = table3d_axis_io::from_byte(table_t::xaxis_t::domain, new_value);
         break;
 
       case table_location_yaxis:
       default:
-        get_yaxis_value() = new_value;
+        get_yaxis_value() = table3d_axis_io::from_byte(table_t::yaxis_t::domain, new_value);
     }
     invalidate_cache(&_pTable->get_value_cache);
     return *this;
@@ -114,14 +115,14 @@ private:
     return _pTable->values.value_at((uint8_t)_table_offset);
   }
 
-  inline int16_ref get_xaxis_value() const
+  inline table3d_axis_t& get_xaxis_value() const
   {
-    return *_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>());
+    return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
   }
 
-  inline int16_ref get_yaxis_value() const
+  inline table3d_axis_t& get_yaxis_value() const
   {
-    return *_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>());
+    return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
   }
 
   enum table_location {
