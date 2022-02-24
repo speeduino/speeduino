@@ -210,7 +210,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = (byte)div100(currentStatus.dwell); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
