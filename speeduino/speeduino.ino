@@ -306,12 +306,11 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
-      //FOR TEST PURPOSES ONLY!!!
-      //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
-      //else { vvt2_pwm_value = 1; }
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
+      readO2();
+      readO2_2();
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
@@ -326,8 +325,6 @@ void loop()
       //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
-      readO2();
-      readO2_2();
       readBat();
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
