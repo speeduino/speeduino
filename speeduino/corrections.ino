@@ -388,8 +388,8 @@ uint16_t correctionAccel()
     {
     
       //Check for deceleration (Deceleration adjustment not yet supported)
-      //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-      if (configPage2.taeThresh <= 2)
+      //Also check for only very small movement (Movement less than or equal to 1% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+      if (configPage2.taeThresh <= 1)
       {
         accelValue = 100;
         currentStatus.tpsDOT = 0;
