@@ -245,7 +245,7 @@ while(adcState !=ADCrunning) //do not leave the scene until we have gotten the A
       }
       break;
     case BaroAdc:
-      if((currentMillis - lastmillisBARO) >= BARO_INTERVAL) //Infrequent baro readings are not an issue.
+      if((uint16_t)(currentMillis - lastmillisBARO) >= BARO_INTERVAL) //Infrequent baro readings are not an issue.
       {
         adcState = readBaro(adcState);        
         if (adcState == ADCidle)
