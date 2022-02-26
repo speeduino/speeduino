@@ -1179,6 +1179,8 @@ struct config9 {
   byte coolantProtRPM[3];
   byte coolantProtTemp[3];
   
+  byte unused10_182;
+  
   byte egoIntDelay;       // ego integral delay x control loops
   byte egoFuelLoadChngMax;    /// Change in fuelload since last O2 loop must be less than this otherwise output will freeze for a set delay.
   byte egoFreezeDelay; /// Delay in sec after Freeze event occured to re-start closed loop.
