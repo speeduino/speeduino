@@ -18,6 +18,7 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
+#include "table3d_axis_io.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -146,6 +147,44 @@ void command()
     case 'F': // send serial protocol version
       Serial.print(F("001"));
       break;
+
+    //The G/g commands are used for bulk reading and writing to the EEPROM directly. This is typically a non-user feature but will be incorporated into SpeedyLoader for anyone programming many boards at once
+    case 'G': // Dumps the EEPROM values to serial
+    
+      //The format is 2 bytes for the overall EEPROM size, a comma and then a raw dump of the EEPROM values
+      Serial.write(lowByte(getEEPROMSize()));
+      Serial.write(highByte(getEEPROMSize()));
+      Serial.print(',');
+
+      for(uint16_t x = 0; x < getEEPROMSize(); x++)
+      {
+        Serial.write(EEPROMReadRaw(x));
+      }
+      cmdPending = false;
+      break;
+
+    case 'g': // Receive a dump of raw EEPROM values from the user
+    {
+      //Format is simlar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
+      while(Serial.available() < 3) { delay(1); }
+      uint16_t eepromSize = word(Serial.read(), Serial.read());
+      if(eepromSize != getEEPROMSize())
+      {
+        //Client is trying to send the wrong EEPROM size. Don't let it 
+        Serial.println(F("ERR; Incorrect EEPROM size"));
+        break;
+      }
+      else
+      {
+        for(uint16_t x = 0; x < eepromSize; x++)
+        {
+          while(Serial.available() < 3) { delay(1); }
+          EEPROMWriteRaw(x, Serial.read());
+        }
+      }
+      cmdPending = false;
+      break;
+    }
 
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
@@ -755,9 +794,10 @@ namespace {
 
   inline void send_table_axis(table_axis_iterator it)
   {
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
     while (!it.at_end())
     {
-      Serial.write((byte)*it);
+      Serial.write(pConverter->to_byte(*it));
       ++it;
     }
   }
@@ -863,7 +903,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value((byte)*y_it);
+    serial_print_prepadded_value(table3d_axis_io::to_byte(y_it.domain(), *y_it));
 
     while (!row.at_end())
     {
@@ -878,9 +918,11 @@ namespace {
     Serial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
+    const int16_byte *pConverter = table3d_axis_io::get_converter(x_it.domain());
+
     while(!x_it.at_end())
     {
-      serial_print_prepadded_value((byte)*x_it);
+      serial_print_prepadded_value(pConverter->to_byte(*x_it));
       ++x_it;
     }
   }

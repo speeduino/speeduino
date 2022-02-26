@@ -20,6 +20,7 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
+#include "table3d_axis_io.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -31,16 +32,18 @@ uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 uint32_t serialCRC = 0; 
-uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
 uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
+FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
 #ifdef RTC_ENABLED
-  uint8_t serialSDTransmitPayload[SD_FILE_TRANSMIT_BUFFER_SIZE];
+  uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
   uint16_t SDcurrentDirChunk;
   uint32_t SDreadStartSector;
   uint32_t SDreadNumSectors;
   uint32_t SDreadCompletedSectors = 0;
+#else
+  uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -109,7 +112,7 @@ void parseSerial()
       serialReceivePending = false; //The serial receive is now complete
 
       //Test the CRC
-      uint32_t receivedCRC = CRC32.crc32(serialPayload, serialPayloadLength);
+      uint32_t receivedCRC = CRC32_serial.crc32(serialPayload, serialPayloadLength);
       //receivedCRC++;
       if(serialCRC != receivedCRC)
       {
@@ -147,7 +150,7 @@ void sendSerialReturnCode(byte returnCode)
   Serial.write(returnCode);
 
   //Calculate and send CRC
-  uint32_t CRC32_val = CRC32.crc32(&returnCode, 1);
+  uint32_t CRC32_val = CRC32_serial.crc32(&returnCode, 1);
   Serial.write( ((CRC32_val >> 24) & 255) );
   Serial.write( ((CRC32_val >> 16) & 255) );
   Serial.write( ((CRC32_val >> 8) & 255) );
@@ -182,7 +185,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   if(serialWriteInProgress == false)
   {
     //All data transmitted. Send the CRC
-    uint32_t CRC32_val = CRC32.crc32((uint8_t*)payload, payloadLength);
+    uint32_t CRC32_val = CRC32_serial.crc32((uint8_t*)payload, payloadLength);
     Serial.write( ((CRC32_val >> 24) & 255) );
     Serial.write( ((CRC32_val >> 16) & 255) );
     Serial.write( ((CRC32_val >> 8) & 255) );
@@ -212,7 +215,7 @@ void continueSerialTransmission()
     if(serialWriteInProgress == false)
     {
       //All data transmitted. Send the CRC
-      uint32_t CRC32_val = CRC32.crc32(serialPayload, serialPayloadLength);
+      uint32_t CRC32_val = CRC32_serial.crc32(serialPayload, serialPayloadLength);
       Serial.write( ((CRC32_val >> 24) & 255) );
       Serial.write( ((CRC32_val >> 16) & 255) );
       Serial.write( ((CRC32_val >> 8) & 255) );
@@ -363,6 +366,20 @@ void processSerialCommand()
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
+    case 'k': //Send CRC values for the calibration pages
+    {
+      uint32_t CRC32_val = readCalibrationCRC32(serialPayload[2]); //Get the CRC for the requested page
+
+      serialPayload[0] = SERIAL_RC_OK;
+      serialPayload[1] = ((CRC32_val >> 24) & 255);
+      serialPayload[2] = ((CRC32_val >> 16) & 255);
+      serialPayload[3] = ((CRC32_val >> 8) & 255);
+      serialPayload[4] = (CRC32_val & 255);
+      sendSerialPayload( &serialPayload, 5);
+
+      break;
+    }
+
     case 'M':
     {
       //New write command
@@ -393,7 +410,7 @@ void processSerialCommand()
         setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
       }
       
-      deferEEPROMWrites = true;
+      deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
       
       sendSerialReturnCode(SERIAL_RC_OK);
       
@@ -546,9 +563,9 @@ void processSerialCommand()
         if(SD_arg2 == SD_READ_COMP_ARG2)
         {
           //arg1 is the block number to return
-          serialSDTransmitPayload[0] = SERIAL_RC_OK;
-          serialSDTransmitPayload[1] = highByte(SD_arg1);
-          serialSDTransmitPayload[2] = lowByte(SD_arg1);
+          serialPayload[0] = SERIAL_RC_OK;
+          serialPayload[1] = highByte(SD_arg1);
+          serialPayload[2] = lowByte(SD_arg1);
 
           uint32_t currentSector = SDreadStartSector + (SD_arg1 * 4);
           
@@ -566,8 +583,8 @@ void processSerialCommand()
           if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
           else
           {
-            readSDSectors(&serialSDTransmitPayload[3], currentSector, numSectorsToSend); 
-            sendSerialPayload(&serialSDTransmitPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+            readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
+            sendSerialPayload(&serialPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
           }
         }
       }
@@ -602,6 +619,7 @@ void processSerialCommand()
       uint8_t cmd = serialPayload[2];
       uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
+      uint32_t calibrationCRC = 0;
 
       if(cmd == O2_CALIBRATION_PAGE)
       {
@@ -613,12 +631,30 @@ void processSerialCommand()
         //Read through the current chunk (Should be 256 bytes long)
         for(uint16_t x = 0; x < calibrationLength; x++)
         {
+          uint16_t totalOffset = valueOffset + x;
           //Only apply every 32nd value
           if( (x % 32) == 0 )
           {
-            uint16_t totalOffset = valueOffset + x;
             ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
             pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
+
+          }
+
+          //Update the CRC
+          if(totalOffset == 0)
+          {
+            calibrationCRC = CRC32.crc32(&serialPayload[7], 1, false);
+          }
+          else
+          {
+            calibrationCRC = CRC32.crc32_upd(&serialPayload[x+7], 1, false);
+          }
+          //Check if CRC is finished
+          if(totalOffset == 1023) 
+          {
+            //apply CRC reflection
+            calibrationCRC = ~calibrationCRC;
+            storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
           }
         }
         sendSerialReturnCode(SERIAL_RC_OK);
@@ -654,6 +690,10 @@ void processSerialCommand()
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
             pnt_TargetTable_bins[x] = (x * 32U);
           }
+          //Update the CRC
+          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
+          storeCalibrationCRC32(IAT_CALIBRATION_PAGE, calibrationCRC);
+
           writeCalibration();
           sendSerialReturnCode(SERIAL_RC_OK);
         }
@@ -682,6 +722,10 @@ void processSerialCommand()
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
             pnt_TargetTable_bins[x] = (x * 32U);
           }
+          //Update the CRC
+          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
+          storeCalibrationCRC32(CLT_CALIBRATION_PAGE, calibrationCRC);
+
           writeCalibration();
           sendSerialReturnCode(SERIAL_RC_OK);
         }
@@ -877,9 +921,10 @@ namespace
 
   inline void send_table_axis(table_axis_iterator it)
   {
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
     while (!it.at_end())
     {
-      Serial.write((byte)*it);
+      Serial.write(pConverter->to_byte(*it));
       ++it;
     }
   }
@@ -904,7 +949,7 @@ void sendToothLog(byte startOffset)
 
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
-      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+      CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
 
       //Send the return code
       Serial.write(returnCode);
@@ -933,10 +978,10 @@ void sendToothLog(byte startOffset)
       Serial.write(toothHistory_4);
 
       //Update the CRC
-      CRC32_val = CRC32.crc32_upd(&toothHistory_1, 1, false);
-      CRC32_val = CRC32.crc32_upd(&toothHistory_2, 1, false);
-      CRC32_val = CRC32.crc32_upd(&toothHistory_3, 1, false);
-      CRC32_val = CRC32.crc32_upd(&toothHistory_4, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_1, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_2, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_3, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_4, 1, false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     cmdPending = false;
@@ -977,7 +1022,7 @@ void sendCompositeLog(byte startOffset)
 
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
-      CRC32_val = CRC32.crc32(&returnCode, 1, false);
+      CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
 
       //Send the return code
       Serial.write(returnCode);
@@ -1007,17 +1052,17 @@ void sendCompositeLog(byte startOffset)
       Serial.write(inProgressCompositeTime_4);
 
       //Update the CRC
-      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_1, 1, false);
-      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_2, 1, false);
-      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_3, 1, false);
-      CRC32_val = CRC32.crc32_upd(&inProgressCompositeTime_4, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_1, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_2, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_3, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_4, 1, false);
 
       //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       uint8_t statusByte = compositeLogHistory[x];
       Serial.write(statusByte);
 
       //Update the CRC with the status byte
-      CRC32_val = CRC32.crc32_upd(&statusByte, 1, false);
+      CRC32_val = CRC32_serial.crc32_upd(&statusByte, 1, false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
