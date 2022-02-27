@@ -75,6 +75,8 @@ void initialiseCorrections()
   O2_SensorIsRichPrev = O2_SensorIsRich;
   O2_2ndSensorIsRich = false;
   O2_2ndSensorIsRichPrev = O2_2ndSensorIsRich;
+  BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_RESET);
+  BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
   ego_FuelLoadPrev = currentStatus.fuelLoad;
   currentStatus.knockActive = false;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets suprious pulses after boot)  
@@ -628,7 +630,7 @@ byte correctionAFRClosedLoop()
   if( (configPage6.egoType > 0) && (configPage6.egoAlgorithm <= EGO_ALGORITHM_DUALO2) && (configPage2.includeAFR == false) ) 
   {
     //Requirements to inhibit O2 adjustment (Freeze) check this rapidly so we don't miss freeze events.
-    if ((abs((currentStatus.fuelLoad - ego_FuelLoadPrev)) > (int16_t)configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
+    if ((abs(currentStatus.fuelLoad - ego_FuelLoadPrev) > (int16_t)configPage9.egoFuelLoadChngMax ) || //Change in fuel load (MAP or TPS) since last time algo ran to see if we need to freeze algo due to load change.
         (currentStatus.afrTarget < configPage6.egoAFRTargetMin) || // Target too rich - good for inhibiting O2 correction using AFR Target Table
         (currentStatus.fuelLoad > (int16_t)configPage6.egoFuelLoadMax) || // Too much load
         (currentStatus.launchCorrection != 100) || // Launch Control Active
@@ -658,7 +660,7 @@ byte correctionAFRClosedLoop()
           ((configPage2.egoResetwfuelLoad == false) ||
            (currentStatus.fuelLoad <= (int16_t)configPage6.egoFuelLoadMax))) // Ignore this criteria if cal set to freeze (false).
       {
-        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_RESET);
         
         if(runSecsX10 >= ego_FreezeEndTime) // Check the algo freeze conditions are not active.
         {
@@ -736,8 +738,7 @@ byte correctionAFRClosedLoop()
           else 
           { // O2 sensor out of range
             BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
-            ego_AdjustPct = 100;
-            ego_Integral = 0;
+            // Technically we are frozen here but don't have seperate bits to indicate ego2 frozen compared to ego1 so no indication given. 
             ego_IntDelayLoops = 0; 
           } 
 
@@ -802,8 +803,7 @@ byte correctionAFRClosedLoop()
           else 
           { // No 2nd O2 or O2 sensor out of range
             BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
-            ego2_AdjustPct = 100;
-            ego2_Integral = 0;
+            // Technically we are frozen here but don't have seperate bits to indicate ego2 frozen compared to ego1 so no indication given. 
             ego2_IntDelayLoops = 0; 
           } 
         } // End Conditions to not freeze ego correction
@@ -811,7 +811,7 @@ byte correctionAFRClosedLoop()
   	  } // End Conditions not to reset ego
   	  else 
       { //Reset closed loop. Also activate freeze delay to for when we re-enable.
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
+        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_RESET);
         BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
@@ -833,8 +833,8 @@ byte correctionAFRClosedLoop()
       } 
       else 
       {// Engine speed probably stopped or recranking so don't apply EGO during crank.
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
+        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_RESET);
+        BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
         ego_AdjustPct = 100;
@@ -851,8 +851,8 @@ byte correctionAFRClosedLoop()
   } //End egoType
   else
   { // No O2 sensors or incorrect config to run closed loop O2
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_READY);
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
+    BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_RESET);
+    BIT_SET(currentStatus.status4, BIT_STATUS4_EGO_FROZEN);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO1_INTCORR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_EGO2_INTCORR);
     ego_AdjustPct = 100;

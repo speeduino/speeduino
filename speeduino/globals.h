@@ -225,7 +225,7 @@
 #define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
 #define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_EGO_READY     4 //EGO Ready
+#define BIT_STATUS4_EGO_RESET     4 //EGO Ready
 #define BIT_STATUS4_EGO_FROZEN    5 //EGO Frozen
 #define BIT_STATUS4_EGO1_INTCORR  6 //EGO Bank1 Integral Correcting
 #define BIT_STATUS4_EGO2_INTCORR  7 //EGO Bank2 Integral Correcting
