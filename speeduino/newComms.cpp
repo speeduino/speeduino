@@ -20,6 +20,7 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms.h"
 #include "src/FastCRC/FastCRC.h"
+#include "table3d_axis_io.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -409,7 +410,7 @@ void processSerialCommand()
         setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
       }
       
-      deferEEPROMWrites = true;
+      deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
       
       sendSerialReturnCode(SERIAL_RC_OK);
       
@@ -920,9 +921,10 @@ namespace
 
   inline void send_table_axis(table_axis_iterator it)
   {
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
     while (!it.at_end())
     {
-      Serial.write((byte)*it);
+      Serial.write(pConverter->to_byte(*it));
       ++it;
     }
   }
