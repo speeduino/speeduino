@@ -22,8 +22,10 @@ Arduino timers usage for injection and ignition schedules:
 - timer5 is used ... (fuel 7,8, ign 1,2,3)
 Timers 3,4 and 5 are 16-bit timers (ie count to 65536).
 See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pdf .
+
 64 prescale gives tick every 4uS.
 64 prescale gives overflow every 262140uS (This means maximum wait time is 0.26214 seconds).
+
 */
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
