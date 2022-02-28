@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "speeduino.h"
 #include "scheduler.h"
 #include "comms.h"
-#include "newComms.h"
+#include "comms_legacy.h"
 #include "cancomms.h"
 #include "maths.h"
 #include "corrections.h"
