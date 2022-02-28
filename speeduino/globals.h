@@ -225,7 +225,7 @@
 #define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
 #define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_UNUSED5       4
+#define BIT_STATUS4_BURNPENDING   4
 #define BIT_STATUS4_UNUSED6       5
 #define BIT_STATUS4_UNUSED7       6
 #define BIT_STATUS4_UNUSED8       7

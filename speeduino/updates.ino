@@ -623,7 +623,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it * multiplier; 
+    *y_it = *y_it * multiplier; 
     ++y_it;
   }
 }
@@ -633,7 +633,7 @@ void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
     ++y_it;
   }
 }
