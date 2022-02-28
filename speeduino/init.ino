@@ -1,6 +1,9 @@
 /** @file
  * Speeduino Initialization (called at Arduino setup()).
  */
+
+#include <src/STM32_CAN/STM32_CAN.h>
+#include <Arduino.h>
 #include "globals.h"
 #include "init.h"
 #include "storage.h"
@@ -2197,81 +2200,8 @@ void setPinMapping(byte boardID)
     
  
     case 60:
-
-      //******************************************
-      //******** Trigger CONNECTIONS ***************
-      //******************************************
-
-      pinTrigger = PE_2; //106
-      pinTrigger2 = PE_4;  //107
-      //pinTrigger3 = PE4;  //104
-      //pinVSS = PE5;       //105
-      pinVSS = PC_13;       //105
-
-      //******************************************
-      //******** ANALOG CONNECTIONS ***************
-      //******************************************
-      //ADC1 = STM_PIN_DATA_EXT(STM_MODE_ANALOG, GPIO_NOPULL, 0, 6, 0)
-
-      pinBat = PA_0;  //A12
-      pinCLT = PA_3;  //A7
-      pinTPS = PA_1;  //A9
-      pinIAT = PA_4;  //A8
-      pinO2 = PC_1;   //A13
-      pinO2_2 = PC_2; //A14
-      pinBaro = PC_5; //A1
-      pinMAP = PA_6;   //A5
-      // pinOilPressure = PB1;  //A0
-      pinFuelPressure = PB_0; //A2
-
-      //******************************************
-      //******** INJECTOR CONNECTIONS ***************
-      //******************************************
-
-      /*
-        pinInjector8 = PD13; //9
-        pinInjector7 = PD12; //8
-        pinInjector6 = PD11; //7
-        pinInjector5 = PD10; //6
-        pinInjector4 = PD9;  //5
-        pinInjector3 = PD8;  //4
-      */
-      pinInjector2 = PF_14; //71
-      pinInjector1 = PF_13; //70
-
-      //******************************************
-      //******** COIL CONNECTIONS ***************
-      //******************************************
-
-      pinCoil1 = PE_14; //59
-      pinCoil2 = PE_15; //58
-      pinCoil3 = A0;
-    /*
-        pinCoil3 = PE13; //61
-        pinCoil4 = PE12; //60
-        pinCoil5 = PE11; //63
-        pinCoil6 = PF15; //68
-        pinCoil7 = PG0;  //69
-        pinCoil8 = PG1;  //66
-    */
-
-      //******************************************
-      //******** OTHER CONNECTIONS ***************
-      //******************************************
-
-      pinTachOut = PD_14;    //10
-      /*
-        pinIdle1 = PD15;      //11
-        pinIdle2 = PG2;       //12
-        pinBoost = PG3;       //13
-      */
-      pinStepperDir = PF_7;  //93
-      pinStepperStep = PF_8; //91
-      pinStepperEnable = PF_9; //94
-      pinFuelPump = PG_6;    //16
-      pinFan = PG_7;         //17
-
-      pinOilSensorOPSt = PF_3;
+      resetPins();
+      setPins();
       break;
   }
 

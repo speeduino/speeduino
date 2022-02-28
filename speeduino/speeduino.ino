@@ -87,7 +87,8 @@ uint16_t staged_req_fuel_mult_sec = 0;
 void setup()
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
-  initialiseAll();
+  setupBoard();  
+  //initialiseAll();
 }
 /** Speeduino main loop.
  * 
@@ -110,6 +111,8 @@ void loop()
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
 
+      runLoop();
+      
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
       if (serialInProgress == true) 
@@ -319,6 +322,15 @@ void loop()
       nitrousControl();
       idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
 
+      //digitalToggle(PG_11);
+
+/*
+      if (configPage10.oilPressureEnable == 2) { // Hella OPS+T Sensor is enabled
+        currentStatus.oilTemperature = getOilTemperature(); // Get oil temp previous reading
+        readOPSt(); // Activate the sensor PPM reading interrupt
+        //The sensor provider pressure too, but pressure reading could be coming from analog inputs, nothing to do here about it
+      }  
+*/
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  

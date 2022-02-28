@@ -103,7 +103,7 @@
     #endif
   #elif defined(STM32F407xx)
     #ifndef NUM_DIGITAL_PINS
-      #define NUM_DIGITAL_PINS 75
+      #define NUM_DIGITAL_PINS 110
     #endif
   #endif
 

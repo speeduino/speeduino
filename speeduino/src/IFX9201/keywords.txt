@@ -1,0 +1,46 @@
+#######################################
+# Syntax Coloring Map For IFX9201 Library
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin	KEYWORD2
+setPWMFreqency	KEYWORD2
+forwards	KEYWORD2
+backwards	KEYWORD2
+stop	KEYWORD2
+end	KEYWORD2
+getDIAReg	KEYWORD2
+getREVReg	KEYWORD2
+getCTRLReg	KEYWORD2
+setCTRLReg	KEYWORD2
+resetDIAReg	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+IFX9201	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+IFX9201__NO_ERROR	LITERAL1
+IFX9201__MODE_ERROR	LITERAL1
+IFX9201__SPI_WRITE_ERROR	LITERAL1
+IFX9201__ILLEGAL_OPERATION_ERROR	LITERAL1
+IFX9201__ILLEGAL_FREQUENCY	LITERAL1
+IFX9201__ILLEGAL_PWM_PIN	LITERAL1
+IFX9201__ILLEGAL_DUTY_CYCLE	LITERAL1
+IFX9201__ILLEGAL_DUTY_VALUE	LITERAL1
+
+IFX9201__RD_DIA	LITERAL1
+IFX9201__RES_DIA	LITERAL1
+IFX9201__RD_REV	LITERAL1
+IFX9201__RD_CTRL	LITERAL1
+IFX9201__WR_CTRL_RD_DIA	LITERAL1
+IFX9201__WR_CTRL	LITERAL1
