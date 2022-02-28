@@ -183,6 +183,6 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CALIBRATION_IAT_OLD  3071
 #define EEPROM_CALIBRATION_CLT_OLD  3583
 
-#define EEPROM_DEFER_DELAY          1000000UL //1.5 second pause after large comms before writing to EEPROM
+#define EEPROM_DEFER_DELAY          1000000UL //1.0 second pause after large comms before writing to EEPROM
 
 #endif // STORAGE_H
