@@ -454,12 +454,14 @@ void idleControl()
         digitalWrite(pinIdle1, HIGH);
         idleOn = true;
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
+		currentStatus.idleLoad = 100;
       }
       else if (idleOn)
       {
         digitalWrite(pinIdle1, LOW); 
         idleOn = false; 
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
+		currentStatus.idleLoad = 0;
       }
       break;
 
@@ -468,14 +470,14 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
       }
       else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
       {
         if( configPage6.iacPWMrun == true)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
-          currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         }
       }
       else
@@ -484,28 +486,27 @@ void idleControl()
         if ( runSecsX10 < configPage2.idleTaperTime )
         {
           //Tapering between cranking IAC value and running
-          currentStatus.idleDuty = map(runSecsX10, 0, configPage2.idleTaperTime,\
+          currentStatus.idleLoad = map(runSecsX10, 0, configPage2.idleTaperTime,\
           table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET),\
           table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
         }
         else
         {
           //Standard running
-          currentStatus.idleDuty = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         }
       }
 
-      if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
-      if( currentStatus.idleDuty > 100 ) { currentStatus.idleDuty = 100; } //Safety Check
-      if( currentStatus.idleDuty == 0 ) 
+      if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
+      if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Safety Check
+      if( currentStatus.idleLoad == 0 ) 
       { 
         disableIdle();
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
         break; 
       }
       BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-      idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
-      currentStatus.idleLoad = currentStatus.idleDuty;
+      idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
       idleOn = true;
       
       break;
@@ -515,9 +516,8 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        currentStatus.idleLoad = currentStatus.idleDuty;
-        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
@@ -526,9 +526,8 @@ void idleControl()
         if( configPage6.iacPWMrun == true)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
-          currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-          currentStatus.idleLoad = currentStatus.idleDuty;
-          idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         }
       }
       else
@@ -549,7 +548,7 @@ void idleControl()
           }
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
-          if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
         }
         idleCounter++;
@@ -562,9 +561,8 @@ void idleControl()
       if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleDuty = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
-        currentStatus.idleLoad = currentStatus.idleDuty;
-        idle_pwm_target_value = percentage(currentStatus.idleDuty, idle_pwm_max_count);
+        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
@@ -592,7 +590,7 @@ void idleControl()
           }
           BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
-          if(currentStatus.idleUpActive == true) { currentStatus.idleDuty += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
         }
         idleCounter++;
@@ -749,13 +747,40 @@ void idleControl()
   }
   lastDFCOValue = BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO);
 
-  //Check for 100% DC on PWM idle
+  //Check for 100% and 0% DC on PWM idle
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
     if(currentStatus.idleLoad == 100)
     {
       IDLE_TIMER_DISABLE();
-      IDLE_PIN_HIGH();
+      if (configPage6.iacPWMdir == 0)
+      {
+        //Normal direction
+        IDLE_PIN_HIGH();  // Switch pin high
+        if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      }
+      else
+      {
+        //Reversed direction
+        IDLE_PIN_LOW();  // Switch pin to low
+        if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      }
+    }
+    else if (currentStatus.idleLoad == 0)
+    {
+      IDLE_TIMER_DISABLE();
+      if (configPage6.iacPWMdir == 0)
+      {
+        //Normal direction
+        IDLE_PIN_LOW();  // Switch pin to low
+        if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      }
+      else
+      {
+        //Reversed direction
+        IDLE_PIN_HIGH();  // Switch pin high
+        if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      }
     }
     else if(currentStatus.idleLoad > 0) { IDLE_TIMER_ENABLE(); }
   }
@@ -805,14 +830,14 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
-      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
-      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage6.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      IDLE_PIN_HIGH();  // Switch pin high
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value) );
     idle_pwm_state = false;
@@ -822,14 +847,14 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
-      *idle_pin_port |= (idle_pin_mask);  // Switch pin high
-      if(configPage6.iacChannels == 1) { *idle2_pin_port &= ~(idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      IDLE_PIN_HIGH();  // Switch pin high
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
-      *idle_pin_port &= ~(idle_pin_mask);  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { *idle2_pin_port |= (idle2_pin_mask); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + idle_pwm_target_value);
     idle_pwm_cur_value = idle_pwm_target_value;
