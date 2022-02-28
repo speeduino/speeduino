@@ -225,7 +225,7 @@
 #define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
 #define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
 #define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_UNUSED5       4
+#define BIT_STATUS4_BURNPENDING   4
 #define BIT_STATUS4_UNUSED6       5
 #define BIT_STATUS4_UNUSED7       6
 #define BIT_STATUS4_UNUSED8       7
@@ -390,6 +390,7 @@
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
 #define ENGINE_PROTECT_BIT_AFR  3
+#define ENGINE_PROTECT_BIT_COOLANT 4
 
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
@@ -430,8 +431,7 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
-extern FastCRC32 CRC32;
-
+extern FastCRC32 CRC32; //Generic CRC32 instance for general use in pages etc. Note that the serial comms has its own CRC32 instance
 
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
@@ -443,14 +443,18 @@ extern struct table3d8RpmLoad boostTable; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
-extern struct table3d6RpmLoad trim1Table; //6x6 Fuel trim 1 map
-extern struct table3d6RpmLoad trim2Table; //6x6 Fuel trim 2 map
-extern struct table3d6RpmLoad trim3Table; //6x6 Fuel trim 3 map
-extern struct table3d6RpmLoad trim4Table; //6x6 Fuel trim 4 map
-extern struct table3d6RpmLoad trim5Table; //6x6 Fuel trim 5 map
-extern struct table3d6RpmLoad trim6Table; //6x6 Fuel trim 6 map
-extern struct table3d6RpmLoad trim7Table; //6x6 Fuel trim 7 map
-extern struct table3d6RpmLoad trim8Table; //6x6 Fuel trim 8 map
+
+typedef table3d6RpmLoad trimTable3d; 
+
+extern trimTable3d trim1Table; //6x6 Fuel trim 1 map
+extern trimTable3d trim2Table; //6x6 Fuel trim 2 map
+extern trimTable3d trim3Table; //6x6 Fuel trim 3 map
+extern trimTable3d trim4Table; //6x6 Fuel trim 4 map
+extern trimTable3d trim5Table; //6x6 Fuel trim 5 map
+extern trimTable3d trim6Table; //6x6 Fuel trim 6 map
+extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
+extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
+
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
@@ -477,6 +481,7 @@ extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
@@ -631,10 +636,10 @@ struct statuses {
   int16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   int16_t EMAPADC;
   byte baro;   ///< Barometric pressure is simply the inital MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
-  byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
-  byte tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
-  byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte */
+  uint8_t TPS;    /**< The current TPS reading (0% - 100%).Stored x2 (100%TPS=200). Is the tpsADC value after the calibration is applied */
+  uint8_t tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  uint8_t tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Value is divided by 10 to be stored in a byte */
+  byte mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Value is divided by 10 to be stored in a byte. Only positive values stored*/
   volatile int rpmDOT; /**< RPM delta over time (RPM increase / s ?) */
   byte VE;     /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both. */
   byte VE1;    /**< The VE value from fuel table 1 */
@@ -672,7 +677,7 @@ struct statuses {
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
-  unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
+  unsigned long AEStartTime; /**< The stored time whenever AE (acceleration enrichment) was turned on */
   volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
   volatile byte spark;   ///< Spark status/control indicator bits (launch control, boost cut, spark errors, See BIT_SPARK_* defines)
   volatile byte spark2;  ///< Spark 2 ... (See also @ref config10 spark2* members and BIT_SPARK2_* defines)
@@ -1161,21 +1166,11 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
+  byte coolantProtEnbl : 1;
+  byte coolantProtRPM[6];
+  byte coolantProtTemp[6];
   byte oilSensorOPStPin : 7;
-  byte unused10_166 : 1;
-  byte unused10_167;
-  byte unused10_168;
-  byte unused10_169;
-  byte unused10_170;
-  byte unused10_171;
-  byte unused10_172;
-  byte unused10_173;
-  byte unused10_174;
-  byte unused10_175;
-  byte unused10_176;
-  byte unused10_177;
-  byte unused10_178;
-  byte unused10_179;
+  byte unused10_179 : 1;
   byte unused10_180;
   byte unused10_181;
   byte unused10_182;

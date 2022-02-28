@@ -1,7 +1,8 @@
-
-#if defined(CORE_AVR)
 #include "globals.h"
+#if defined(CORE_AVR)
 #include "auxiliaries.h"
+#include "board_avr2560.h"
+#include "wiring_private.h" //(needed for sbi() definition)
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -88,6 +89,64 @@ void initBoard()
     TIFR4 = (1 << OCF4A) | (1<<OCF4B) | (1<<OCF4C) | (1<<TOV4) | (1<<ICF4); //Clear the compare flags, overflow flag and external input flag bits
 
 }
+
+  void ADCinit_AVR2560()
+  {
+        // Set ADC clock to 125KHz (Prescaler = 128)
+    BIT_SET(ADCSRA,ADPS2);
+    BIT_SET(ADCSRA,ADPS1);
+    BIT_SET(ADCSRA,ADPS0);
+    return;
+  }
+
+bool ADC_start_AVR2560(uint32_t pin) //returns 1 when ADC succesfully started
+  {
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+	if (pin >= 54) pin -= 54; // allow for channel or pin numbers
+#endif
+
+#if defined(ADCSRB) && defined(MUX5)
+	// the MUX5 bit of ADCSRB selects whether we're reading from channels
+	// 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
+	ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
+#endif
+  
+	// set the analog reference (high two bits of ADMUX) and select the
+	// channel (low 4 bits).  this also sets ADLAR (left-adjust result)
+	// to 0 (the default).
+#if defined(ADMUX)
+  uint8_t analog_reference=1;
+	ADMUX = (analog_reference << 6) | (pin & 0x07);
+#endif
+
+#if defined(ADCSRA) && defined(ADCL)
+	// start the conversion
+	sbi(ADCSRA, ADSC);
+  return 1;
+#endif
+  return 0;  
+}
+
+//returns 1 when conversion is completed
+bool ADC_CheckForConversionComplete_AVR2560()
+  {
+  if(bit_is_clear(ADCSRA, ADSC)){return 1;} 
+  return 0;
+  }
+
+uint16_t ADC_get_value_AVR2560()
+{
+  uint8_t low, high;
+	// we have to read ADCL first; doing so locks both ADCL
+	// and ADCH until ADCH is read.  reading ADCL second would
+	// cause the results of each conversion to be discarded,
+	// as ADCL and ADCH would be locked when it completed.
+	low  = ADCL;
+	high = ADCH;
+
+  	// combine the two bytes
+	return (high << 8) | low;
+} 
 
 /*
   Returns how much free dynamic memory exists (between heap and stack)

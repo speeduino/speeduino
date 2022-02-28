@@ -18,53 +18,52 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "decoders.h"
 
+
 /** Init all ADC conversions by setting resolutions, etc.
  */
 void initialiseADC()
 {
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-
-  #if defined(ANALOG_ISR)
-    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
-    //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
-    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
-    noInterrupts(); //Interrupts should be turned off when playing with any of these registers
-
-    ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
-    ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
-
-    //All of the below is the longhand version of: ADCSRA = 0xEE;
-    #define ADFR 5 //Why the HELL isn't this defined in the same place as everything else (wiring.h)?!?!
-    BIT_SET(ADCSRA,ADFR); //Set free running mode
-    BIT_SET(ADCSRA,ADIE); //Set ADC interrupt enabled
-    BIT_CLEAR(ADCSRA,ADIF); //Clear interrupt flag
-
-    // Set ADC clock to 125KHz (Prescaler = 128)
-    BIT_SET(ADCSRA,ADPS2);
-    BIT_SET(ADCSRA,ADPS1);
-    BIT_SET(ADCSRA,ADPS0);
-
-    BIT_SET(ADCSRA,ADEN); //Enable ADC
-
-    interrupts();
-    BIT_SET(ADCSRA,ADSC); //Start conversion
-
-  #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+  //board specific initialization
+  ADCinit_AVR2560();
+  
+    //this sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
     //Please see chapter 11 of 'Practical Arduino' (books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more detail
-     BIT_SET(ADCSRA,ADPS2);
-     BIT_CLEAR(ADCSRA,ADPS1);
-     BIT_CLEAR(ADCSRA,ADPS0);
-  #endif
+     //BIT_SET(ADCSRA,ADPS2);
+    // BIT_CLEAR(ADCSRA,ADPS1);
+    // BIT_CLEAR(ADCSRA,ADPS0);
+    
 #elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
-  analogReadResolution(10); //use 10bits for analog reading on STM32 boards
+//  analogReadResolution(10); //use 10bits for analog reading on STM32 boards
+  ADCinit_STM32(); // from board_stm32_official.ino file 
 #endif
-  MAPcurRev = 0;
-  MAPcount = 0;
-  MAPrunningValue = 0;
 
-  //The following checks the aux inputs and initialises pins if required
+  //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
+  //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
+  //Each sensor has it's own default value
+  if(configPage4.ADCFILTER_TPS > 240) { configPage4.ADCFILTER_TPS = 50; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_CLT > 240) { configPage4.ADCFILTER_CLT = 180; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_IAT > 240) { configPage4.ADCFILTER_IAT = 180; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_O2  > 240) { configPage4.ADCFILTER_O2 = 100; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
+      
+} //initialiseADC
+
+void initializeFlex(){
+  flexStartTime = micros();
+  if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
+}
+
+void initializeVSS()            /*Vehicle speed sensor initialization */
+{ 
+  vssIndex = 0;
+}
+
+void initializeAux()         //The following checks the aux inputs and initialises pins if required
+{    
   auxIsEnabled = false;
   for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
   {
@@ -97,7 +96,7 @@ void initialiseADC()
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
     {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) wih &12 and caninput_selxa(bits 0:1) with &3
-       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&63) + 1;
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
@@ -113,22 +112,157 @@ void initialiseADC()
 
     }
   } //For loop iterating through aux in lines
+}
 
-  //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
-  //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
-  //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS  > 240) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_CLT  > 240) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_IAT  > 240) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_O2   > 240) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BAT  > 240) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_MAP  > 240) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
-  if(configPage4.FILTER_FLEX    > 240) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
+/** ADC sequencer.
+ *  Should be called repeatedly.
+ *  Starts ADC coversions in sequence, 
+ *  deals with checking completed conversions and reads the results.
+ */
+void ADC_sequencer(){
 
-  flexStartTime = micros();
+static enum ADCoperations:uint8_t {MAPadc,EMAPadc,TPSadc,IATadc,O2adc,O2_2adc,BATadc,CLTadc,FuelpressureAdc,OilpressureAdc,BaroAdc} adcOperation =MAPadc; //current state of ADCsequence,initial state is MAPadc
+static ADCstates adcState = ADCidle;  //current state of ADC,initial state is idle
+static uint8_t lastmillisTPS=0;
+static uint8_t lastmillisIAT=0;
+static uint8_t lastmillisCLT=4;
+static uint16_t lastmillisBARO=0;
+uint8_t interval;
 
-  vssIndex = 0;
+uint16_t currentMillis =(uint16_t)millis();
+
+//using const instead of #define helps to speed things up a bit(forcing correct type to the constants, default is 16bit!)
+//also correct types for interval is needed to make millis() checking overflow proof!
+const uint8_t TPS_INTERVAL=25;  //[ms]TPS reading interval , (when this is 25 TPSdot calculation is super fast)
+const uint8_t IAT_INTERVAL=33;  //[ms] currently used for IAT,O2,O2_2,BAT
+const uint8_t CLT_INTERVAL=240; //[ms] infrequent CLT readings are not an issue.Also Fuelpressure and Oilpressure use this.
+const uint16_t BARO_INTERVAL=1000; //[ms] infrequent BARO readings are not an issue.
+
+if (ADC_CheckForConversionComplete() == true)
+{
+  adcState=ADCcomplete;
+}
+while(adcState !=ADCrunning) //do not leave the scene until we have gotten the ADC to run, also do nothing when ADC is still in progress
+  {
+    switch (adcOperation)
+    {
+    case MAPadc:
+      adcState = readMAP(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = EMAPadc; //specify next operation
+      }
+      break;
+    case EMAPadc:
+      adcState = readEMAP(adcState);
+      if (adcState == ADCidle)
+      {                         //when this channel done
+        adcOperation = TPSadc; //specify next operation
+      }
+      break;
+    case TPSadc:                                    //40Hz
+      interval=lowByte(currentMillis) - lastmillisTPS;
+      if(interval >= TPS_INTERVAL ) //(any faster and it can upset the TPSdot sampling time)
+      {
+        adcState = readTPS(true, adcState); //read TPS        
+        if (adcState == ADCidle)
+        {                         //when this channel done
+          readTPSdot();
+          adcOperation = IATadc;  //specify next operation
+          lastmillisTPS+=TPS_INTERVAL; 
+        }
+      }
+      else      
+      {
+        adcOperation = IATadc; //skip to next operation
+      }      
+      break;
+    case IATadc: //30HZ
+      interval=lowByte(currentMillis) - lastmillisIAT;
+      if(interval >= IAT_INTERVAL)
+      {
+        adcState = readIAT(adcState);
+        if (adcState == ADCidle)
+        {                          //when this channel done
+          adcOperation = O2adc; //specify next operation
+          lastmillisIAT+=IAT_INTERVAL;
+        }
+      }
+      else      
+      {
+        adcOperation = CLTadc; //skip right to CLT. IAT,O2,O2_2,Bat all have the same rates
+      } 
+      break;
+    case O2adc: //30HZ
+      adcState = readO2(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = O2_2adc; //specify next operation
+      }
+      break;
+    case O2_2adc: //30HZ
+      adcState = readO2_2(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = BATadc; //specify next operation
+      }
+      break;
+    case BATadc: //30HZ
+      adcState = readBat(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = CLTadc; //specify next operation
+      }
+      break;
+    case CLTadc:               //_4Hz The CLT readings can be done less frequently (4 times per second)
+      interval=lowByte(currentMillis) - lastmillisCLT;
+      if(interval >= CLT_INTERVAL) //Infrequent readings are not an issue.
+      {
+        adcState = readCLT(true, adcState);
+        if (adcState == ADCidle)
+        {                         //when this channel done
+          adcOperation = FuelpressureAdc; //specify next operation
+          lastmillisCLT=lowByte(currentMillis);
+        }
+      }
+      else
+      {
+        adcOperation = BaroAdc; //jump right to Baro! Fuelpressure, OilPressure also have same interval
+      }      
+      break;
+    case FuelpressureAdc: //_4HZ
+      adcState = readFuelpressure(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = OilpressureAdc; //specify next operation
+      }
+      break;
+    case OilpressureAdc: //_4HZ
+      adcState = readOilpressure(adcState);
+      if (adcState == ADCidle)
+      {                          //when this channel done
+        adcOperation = BaroAdc; //specify next operation
+      }
+      break;
+    case BaroAdc:
+      if((uint16_t)(currentMillis - lastmillisBARO) >= BARO_INTERVAL) //Infrequent baro readings are not an issue.
+      {
+        adcState = readBaro(adcState);        
+        if (adcState == ADCidle)
+        {                         //when this channel done
+          adcOperation = MAPadc; //specify next operation
+          lastmillisBARO+=BARO_INTERVAL;
+        }
+      }
+      else
+      {
+        adcOperation = MAPadc; //just specify next operation
+      }
+      break;
+    default:
+      adcOperation = MAPadc;
+    }
+  }
 }
 
 static inline void validateMAP()
@@ -157,8 +291,9 @@ static inline void validateMAP()
   }
 }
 
-static inline void instanteneousMAPReading()
+void instanteneousMAPReading(uint16_t adcReading)
 {
+  
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
   MAPlast = currentStatus.MAP;
   MAPlast_time = MAP_time;
@@ -166,12 +301,7 @@ static inline void instanteneousMAPReading()
 
   unsigned int tempReading;
   //Instantaneous MAP readings
-  #if defined(ANALOG_ISR_MAP)
-    tempReading = AnChannel[pinMAP-A0];
-  #else
-    tempReading = analogRead(pinMAP);
-    tempReading = analogRead(pinMAP);
-  #endif
+  tempReading=adcReading;
   //Error checking
   if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
   else { mapErrorCount = 0; }
@@ -181,35 +311,38 @@ static inline void instanteneousMAPReading()
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check
-  
-  //Repeat for EMAP if it's enabled
-  if(configPage6.useEMAP == true)
-  {
-    tempReading = analogRead(pinEMAP);
-    tempReading = analogRead(pinEMAP);
-
-    //Error check
-    if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
-      {
-        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
-      }
-    else { mapErrorCount += 1; }
-    currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
-    if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
-  }
-
+  if(currentStatus.MAP < 0) { currentStatus.MAP = 0; } //Sanity check  
 }
 
-static inline void readMAP()
+ADCstates readMAP(ADCstates adcState)
 {
+
   unsigned int tempReading;
+  static unsigned long MAPrunningValue = 0;  //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+  static uint32_t MAPcurRev = 0;             //Tracks which revolution we're sampling on
+  static unsigned int MAPcount =0;           //Number of samples taken in the current MAP cycle  
+
+  if(adcState == ADCidle ){
+    if(ADC_start(pinMAP) == 1){adcState=ADCrunning;}   //start ADC at required channel
+    return adcState;    //indicate that adc is busy now, and come back later...
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+
   //MAP Sampling system
+  if(currentStatus.RPM==0){
+    MAPcurRev = 0;
+    MAPcount =0;
+    MAPrunningValue=0;
+  }
   switch(configPage2.mapSample)
   {
     case 0:
       //Instantaneous MAP readings
-      instanteneousMAPReading();
+      instanteneousMAPReading(tempReading);
       break;
 
     case 1:
@@ -219,13 +352,6 @@ static inline void readMAP()
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          #if defined(ANALOG_ISR_MAP)
-            tempReading = AnChannel[pinMAP-A0];
-          #else
-            tempReading = analogRead(pinMAP);
-            tempReading = analogRead(pinMAP);
-          #endif
-
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
@@ -234,21 +360,6 @@ static inline void readMAP()
             MAPcount++;
           }
           else { mapErrorCount += 1; }
-
-          //Repeat for EMAP if it's enabled
-          if(configPage6.useEMAP == true)
-          {
-            tempReading = analogRead(pinEMAP);
-            tempReading = analogRead(pinEMAP);
-
-            //Error check
-            if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
-            {
-              currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
-              EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
-            }
-            else { mapErrorCount += 1; }
-          }
         }
         else
         {
@@ -264,31 +375,18 @@ static inline void readMAP()
             currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
-
-            //If EMAP is enabled, the process is identical to the above
-            if(configPage6.useEMAP == true)
-            {
-              currentStatus.EMAPADC = ldiv(EMAPrunningValue, MAPcount).quot; //Note that the MAP count can be reused here as it will always be the same count.
-              currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
-              if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
-            }
           }
-          else { instanteneousMAPReading(); }
+          else { instanteneousMAPReading(tempReading); }
 
           MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
           MAPrunningValue = 0;
-          EMAPrunningValue = 0; //Can reset this even if EMAP not used
           MAPcount = 0;
         }
       }
       else 
       {
-        instanteneousMAPReading();
+        instanteneousMAPReading(tempReading);
         MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
-        if(configPage6.useEMAP == true)
-        {
-          EMAPrunningValue = currentStatus.EMAPADC;
-        }
         MAPcount = 1;
       }
       break;
@@ -299,12 +397,6 @@ static inline void readMAP()
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
-          #if defined(ANALOG_ISR_MAP)
-            tempReading = AnChannel[pinMAP-A0];
-          #else
-            tempReading = analogRead(pinMAP);
-            tempReading = analogRead(pinMAP);
-          #endif
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
@@ -331,7 +423,7 @@ static inline void readMAP()
       }
       else 
       {
-        instanteneousMAPReading();
+        instanteneousMAPReading(tempReading);
         MAPrunningValue = currentStatus.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
       }
       break;
@@ -342,12 +434,6 @@ static inline void readMAP()
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
-          #if defined(ANALOG_ISR_MAP)
-            tempReading = AnChannel[pinMAP-A0];
-          #else
-            tempReading = analogRead(pinMAP);
-            tempReading = analogRead(pinMAP);
-          #endif
 
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
@@ -373,7 +459,7 @@ static inline void readMAP()
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
           }
-          else { instanteneousMAPReading(); }
+          else { instanteneousMAPReading(tempReading); }
 
           MAPcurRev = ignitionCount; //Reset the current event count
           MAPrunningValue = 0;
@@ -382,7 +468,7 @@ static inline void readMAP()
       }
       else 
       {
-        instanteneousMAPReading();
+        instanteneousMAPReading(tempReading);
         MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
         MAPcount = 1;
       }
@@ -390,31 +476,212 @@ static inline void readMAP()
 
     default:
     //Instantaneous MAP readings (Just in case)
-    instanteneousMAPReading();
+    instanteneousMAPReading(tempReading);
     break;
   }
+  return adcState;
 }
 
-void readTPS(bool useFilter)
+void instanteneousEMAPReading(uint16_t adcReading)
 {
-  TPSlast = currentStatus.TPS;
-  TPSlast_time = TPS_time;
-  #if defined(ANALOG_ISR)
-    byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
-  #else
-    analogRead(pinTPS);
-    byte tempTPS = fastMap1023toX(analogRead(pinTPS), 255); //Get the current raw TPS ADC value and map it into a byte
-  #endif
+  unsigned int tempReading;
+  //Instantaneous MAP readings
+  tempReading=adcReading;
+    //Error check
+    if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+      {
+        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+      }
+    else { mapErrorCount += 1; }
+    currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
+    if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
+}
+
+ADCstates readEMAP(ADCstates adcState)
+{
+  unsigned int tempReading;
+  static unsigned long EMAPrunningValue = 0;  //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+  static uint32_t EMAPcurRev = 0;             //Tracks which revolution we're sampling on
+  static unsigned int EMAPcount =0;           //Number of samples taken in the current MAP cycle  
+
+  if(configPage6.useEMAP != true){return adcState;} //skip all if disabled  
+
+  if(adcState == ADCidle ){
+    ADC_start(pinEMAP);   //start ADC at required channel
+    adcState=ADCrunning;
+    return adcState;    //indicate that adc is busy now, and come back later...
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else
+  {
+    return adcState;//when ADC is still busy or something, do nothing
+  }
+
+  //MAP Sampling system
+  if(currentStatus.RPM==0){
+    EMAPcurRev = 0;
+    EMAPcount =0;
+    EMAPrunningValue=0;
+  }
+  switch(configPage2.mapSample)
+  {
+    case 0:
+      //Instantaneous MAP readings
+      instanteneousEMAPReading(tempReading);
+      break;
+
+    case 1:
+      //Average of a cycle
+
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      {
+        if( (EMAPcurRev == currentStatus.startRevolutions) || ( (EMAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+        {
+            //Error check
+            if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+            {
+              currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+              EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
+            }
+            else { mapErrorCount += 1; }          
+        }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Sanity check
+          if( (EMAPrunningValue != 0) && (EMAPcount != 0) )
+          {
+            {
+              currentStatus.EMAPADC = ldiv(EMAPrunningValue, EMAPcount).quot; //Note that the MAP count can be reused here as it will always be the same count.
+              currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
+              if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
+            }
+          }
+          EMAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+          EMAPrunningValue = 0;
+          EMAPcount = 0;
+        }
+      }
+      else 
+      {
+        EMAPrunningValue = currentStatus.EMAPADC;
+        EMAPcount = 1;
+      }
+      break;
+
+    case 2:
+      //Minimum reading in a cycle
+      if (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      {
+        if( (EMAPcurRev == currentStatus.startRevolutions) || ((EMAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+        {
+          //Error check
+          if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+          {
+            if( (unsigned long)tempReading < EMAPrunningValue ) { EMAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
+          }
+          else { mapErrorCount += 1; }
+        }
+        else
+        {
+          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+
+          currentStatus.EMAPADC = EMAPrunningValue;
+          currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+          EMAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+          EMAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+
+          //validateMAP();
+        }
+      }
+      else 
+      {
+        instanteneousEMAPReading(tempReading);
+        EMAPrunningValue = currentStatus.EMAPADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
+      }
+      break;
+
+    case 3:
+      //Average of an ignition event
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
+      {
+        if( (EMAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
+        {
+
+          //Error check
+          if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+          {
+            currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+            EMAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
+            EMAPcount++;
+          }
+          else { mapErrorCount += 1; }
+        }
+        else
+        {
+          //Reaching here means that the  next ignition event has occured and the MAP value should be calculated
+          //Sanity check
+          if( (EMAPrunningValue != 0) && (EMAPcount != 0) && (EMAPcurRev < ignitionCount) )
+          {
+            currentStatus.EMAPADC = ldiv(EMAPrunningValue, EMAPcount).quot;
+            currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+            //validateMAP();
+          }
+          else { instanteneousEMAPReading(tempReading); }
+
+          EMAPcurRev = ignitionCount; //Reset the current event count
+          EMAPrunningValue = 0;
+          EMAPcount = 0;
+        }
+      }
+      else 
+      {
+        instanteneousEMAPReading(tempReading);
+        EMAPrunningValue = currentStatus.EMAPADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
+        EMAPcount = 1;
+      }
+      break; 
+
+    default:
+    //Instantaneous MAP readings (Just in case)
+    instanteneousEMAPReading(tempReading);
+    break;
+  }
+  return adcState;
+}
+
+ADCstates readTPS(bool useFilter, ADCstates adcState) //this is to be called repeatedly
+{
+  uint16_t tempReading;
+  
+  if(adcState == ADCidle ){
+    if(ADC_start(pinTPS)==1){adcState=ADCrunning;}   //start ADC at required channel    
+    return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else
+  {
+    return adcState;//when ADC is still busy or something, do nothing
+  } 
+
+  tempReading = tempReading >> 2; //Get the current raw TPS ADC value and map it into a byte
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
-  else { currentStatus.tpsADC = tempTPS; }
-  byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+  if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
+  else { currentStatus.tpsADC = tempReading; }
+  uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
-    else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
+    //if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
+    //else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
+    tempADC=constrain(currentStatus.tpsADC,configPage2.tpsMin,configPage2.tpsMax);
     currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
@@ -439,52 +706,77 @@ void readTPS(bool useFilter)
     else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = 0; }
-  TPS_time = micros();
+
+  
+  return adcState;
+}
+//Get the TPS change rate 
+void readTPSdot(){
+  int TPSrateOfChange;
+  static uint8_t TPSlast; //The previous TPS reading  
+  //note here that TPS read frequency is specially chosen 40Hz to get optimally fast and accurate tpsDOT calculation(to have whole numbers in integer multiplication)
+  TPSrateOfChange = (TPS_READ_FREQUENCY/20) * (currentStatus.TPS-TPSlast); //This is the % per second that the TPS has moved
+  //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
+  currentStatus.tpsDOT=constrain(TPSrateOfChange, 0, 255); // cap the range to 8bit unsigned and store. Can it be any more simpler!?
+  TPSlast = currentStatus.TPS;
 }
 
-void readCLT(bool useFilter)
+ADCstates readCLT(bool useFilter,ADCstates adcState)
 {
   unsigned int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
-  #else
-    tempReading = analogRead(pinCLT);
-    tempReading = analogRead(pinCLT);
-    //tempReading = fastMap1023toX(analogRead(pinCLT), 511); //Get the current raw CLT value
-  #endif
+
+  if(adcState == ADCidle ){
+    if(ADC_start(pinCLT) == 1){adcState=ADCrunning;};   //start ADC at required channel    
+  return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+
   //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
   if(useFilter == true) { currentStatus.cltADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
   currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  return adcState;
 }
 
-void readIAT()
+ADCstates readIAT(ADCstates adcState)
 {
-  unsigned int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
-  #else
-    tempReading = analogRead(pinIAT);
-    tempReading = analogRead(pinIAT);
-    //tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
-  #endif
+  uint16_t tempReading;
+  if(adcState == ADCidle ){
+    ADC_start(pinIAT);   //start ADC at required channel
+    adcState=ADCrunning;
+    return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  return adcState;
 }
 
-void readBaro()
+ADCstates readBaro(ADCstates adcState)
 {
+  uint16_t tempReading;
   if ( configPage6.useExtBaro != 0 )
-  {
-    int tempReading;
-    // readings
-    #if defined(ANALOG_ISR_MAP)
-      tempReading = AnChannel[pinBaro-A0];
-    #else
-      tempReading = analogRead(pinBaro);
-      tempReading = analogRead(pinBaro);
-    #endif
+  {      
+    if(adcState == ADCidle ){
+      ADC_start(pinBaro);   //start ADC at required channel
+      adcState=ADCrunning;
+      return adcState;    //indicate that adc is busy now
+    }
+    else if (adcState == ADCcomplete){
+      tempReading=ADC_get_value();  //grab the ADC result
+      adcState=ADCidle; // free the ADC
+    }
+    else{return adcState;}//when ADC is still busy or something, do nothing
 
     if(initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
     else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
@@ -498,18 +790,10 @@ void readBaro()
     * 1. Verify that the engine is not running
     * 2. Verify that the reading from the MAP sensor is within the possible physical limits
     */
-
-    //Attempt to use the last known good baro reading from EEPROM as a starting point
-    byte lastBaro = readLastBaro();
-    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
-    { currentStatus.baro = lastBaro; } //last baro correction
-    else { currentStatus.baro = 100; } //Fall back position.
-
     //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
     unsigned long timeToLastTooth = (micros() - toothLastToothTime);
-    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
-    {
-      instanteneousMAPReading(); //Get the current MAP value
+    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL) && (timeToLastTooth < 3000000UL) )
+    {      
       /* 
       * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
       * with record highs close to 108.5 kPa.
@@ -522,21 +806,35 @@ void readBaro()
       }
     }
   }
+  return adcState;
 }
 
-void readO2()
+void initBaro(){
+    //Attempt to use the last known good baro reading from EEPROM as a starting point
+    byte lastBaro = readLastBaro();
+    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = lastBaro; } //last baro correction
+    else { currentStatus.baro = 100; } //Fall back position.
+}
+
+ADCstates readO2(ADCstates adcState)
 {
+  unsigned int tempReading;
+
+   if(adcState == ADCidle ){
+    ADC_start(pinO2);   //start ADC at required channel
+    adcState=ADCrunning;
+    return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0)
   {
-    unsigned int tempReading;
-    #if defined(ANALOG_ISR)
-      tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
-    #else
-      tempReading = analogRead(pinO2);
-      tempReading = analogRead(pinO2);
-      //tempReading = fastMap1023toX(analogRead(pinO2), 511); //Get the current O2 value.
-    #endif
     currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
     //currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
@@ -546,35 +844,47 @@ void readO2()
     currentStatus.O2ADC = 0;
     currentStatus.O2 = 0;
   }
-  
+  return adcState;
 }
 
-void readO2_2()
+ADCstates readO2_2(ADCstates adcState)
 {
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
   unsigned int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinO2_2-A0], 511); //Get the current O2 value.
-  #else
-    tempReading = analogRead(pinO2_2);
-    tempReading = analogRead(pinO2_2);
-    //tempReading = fastMap1023toX(analogRead(pinO2_2), 511); //Get the current O2 value.
-  #endif
+
+  if(adcState == ADCidle ){
+    ADC_start(pinO2_2);   //start ADC at required channel
+    adcState=ADCrunning;
+    return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+
   currentStatus.O2_2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
   currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  return adcState;
 }
 
-void readBat()
+ADCstates readBat(ADCstates adcState)
 {
   int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinBat-A0], 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
-  #else
-    tempReading = analogRead(pinBat);
-    tempReading = fastMap1023toX(analogRead(pinBat), 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
-  #endif
 
+  if(adcState == ADCidle ){
+    ADC_start(pinBat);   //start ADC at required channel
+    adcState=ADCrunning;
+    return adcState;    //indicate that adc is busy now
+  }
+  else if (adcState == ADCcomplete){
+    tempReading=ADC_get_value();  //grab the ADC result
+    adcState=ADCidle; // free the ADC
+  }
+  else{return adcState;}//when ADC is still busy or something, do nothing
+  
+  tempReading=fastMap1023toX(tempReading, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
   //Apply the offset calibration value to the reading
   tempReading += configPage4.batVoltCorrect;
   if(tempReading < 0){
@@ -600,6 +910,7 @@ void readBat()
   }
 
   currentStatus.battery10 = ADC_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
+  return adcState;
 }
 
 /**
@@ -678,25 +989,33 @@ byte getGear()
   return tempGear;
 }
 
-byte getFuelPressure()
+ADCstates readFuelpressure(ADCstates adcState)
 {
   int16_t tempFuelPressure = 0;
   uint16_t tempReading;
 
   if(configPage10.fuelPressureEnable > 0)
-  {
+  { 
     //Perform ADC read
-    tempReading = analogRead(pinFuelPressure);
-    tempReading = analogRead(pinFuelPressure);
+    if(adcState == ADCidle ){
+      ADC_start(pinFuelPressure);   //start ADC at required channel
+      adcState=ADCrunning;
+      return adcState;    //indicate that adc is busy now
+    }
+    else if (adcState == ADCcomplete){
+      tempReading=ADC_get_value();  //grab the ADC result
+      adcState=ADCidle; // free the ADC
+    }
+    else{return adcState;}//when ADC is still busy or something, do nothing
 
     tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
-    tempFuelPressure = ADC_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
+    tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
     //Sanity checks
     if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
     if(tempFuelPressure < 0 ) { tempFuelPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
   }
-
-  return (byte)tempFuelPressure;
+  currentStatus.fuelPressure=(byte)tempFuelPressure;
+  return adcState;
 }
 
 byte getOilTemperature()
@@ -714,7 +1033,7 @@ byte getOilTemperature()
   return (byte)tempOilTemperature;
 }
 
-byte getOilPressure()
+ADCstates readOilpressure(ADCstates adcState)
 {
   int16_t tempOilPressure = 0;
   uint16_t tempReading;
@@ -722,16 +1041,23 @@ byte getOilPressure()
   if(configPage10.oilPressureEnable == 1)
   {
     //Perform ADC read
-    tempReading = analogRead(pinOilPressure);
-    tempReading = analogRead(pinOilPressure);
-
+    if(adcState == ADCidle ){
+      ADC_start(pinOilPressure);   //start ADC at required channel
+      adcState=ADCrunning;
+      return adcState;    //indicate that adc is busy now
+    }
+    else if (adcState == ADCcomplete){
+      tempReading=ADC_get_value();  //grab the ADC result
+      adcState=ADCidle; // free the ADC
+    }
+    else{return adcState;}//when ADC is still busy or something, do nothing
 
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
     tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
   }
   else if (configPage10.oilPressureEnable == 2)
   {
-    tempOilPressure = oilSensorOPStData.pressure;
+  currentStatus.oilPressure = oilSensorOPStData.pressure;
   }    
   
   //Sanity check
@@ -739,7 +1065,8 @@ byte getOilPressure()
     if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
   
 
-  return (byte)tempOilPressure;
+  currentStatus.oilPressure=(byte)tempOilPressure;
+  return adcState;
 }
 
 /*
@@ -790,17 +1117,10 @@ void vssPulse()
   vssTimes[vssIndex] = micros();
 }
 
-uint16_t readAuxanalog(uint8_t analogPin)
+uint16_t readAuxanalog(uint8_t analogPin)   //currently inoperational
 {
   //read the Aux analog value for pin set by analogPin 
-  unsigned int tempReading;
-  #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 1023); //Get the current raw Auxanalog value
-  #else
-    tempReading = analogRead(analogPin);
-    tempReading = analogRead(analogPin);
-    //tempReading = fastMap1023toX(analogRead(analogPin), 511); Get the current raw Auxanalog value
-  #endif
+  unsigned int tempReading=0;
   return tempReading;
 } 
 
@@ -867,4 +1187,4 @@ void readOPSt () {
       oilSensorOPStPulse.lastLevel = 0;
       oilSensorOPStPulse.lastEvent = oilSensorOPStPulse.curEvent;
   }
-}  
+}

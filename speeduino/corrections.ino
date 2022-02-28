@@ -38,10 +38,6 @@ long PID_O2, PID_output, PID_AFRTarget;
 */
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
-int MAP_rateOfChange;
-int TPS_rateOfChange;
-byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
-byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
 uint16_t AFRnextCycle;
 unsigned long knockStartTime;
@@ -287,7 +283,9 @@ uint16_t correctionAccel()
 {
   int16_t accelValue = 100;
   int16_t MAP_change = 0;
-  int8_t TPS_change = 0;
+  int MAP_rateOfChange;
+  static byte activateMAPDOT; //The mapDOT value seen when the MAE was activated.
+  static byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 
   if(configPage2.aeMode == AE_MODE_MAP)
   {
@@ -298,22 +296,12 @@ uint16_t correctionAccel()
     if(MAP_rateOfChange >= 0) { currentStatus.mapDOT = MAP_rateOfChange / 10; } //The MAE bins are divided by 10 in order to allow them to be stored in a byte. Faster as this than divu10
     else { currentStatus.mapDOT = 0; } //Prevent overflow as mapDOT is signed
   }
-  else if(configPage2.aeMode == AE_MODE_TPS)
-  {
-    //Get the TPS rate change
-    TPS_change = (currentStatus.TPS - TPSlast);
-    //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
-    TPS_rateOfChange = TPS_READ_FREQUENCY * TPS_change; //This is the % per second that the TPS has moved
-    if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 20; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte and then by 2 due to TPS being 0.5% resolution (0-200)
-    else { currentStatus.tpsDOT = 0; } //Prevent overflow as tpsDOT is signed
-  }
-  
 
   //First, check whether the accel. enrichment is already running
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros_safe() >= currentStatus.AEEndTime )
+    if( (micros_safe()- currentStatus.AEStartTime) >= ((unsigned long)configPage2.aeTime * 10000)) // taeTime is stored as mS / 10, so multiply it by 100 to get it in uS )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
@@ -354,7 +342,7 @@ uint16_t correctionAccel()
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateMAPDOT = currentStatus.mapDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEStartTime = micros_safe(); 
           accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT);
 
           //Apply the RPM taper to the above
@@ -400,8 +388,8 @@ uint16_t correctionAccel()
     {
     
       //Check for deceleration (Deceleration adjustment not yet supported)
-      //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-      if (TPS_change <= 2)
+      //Also check for only very small movement (Movement less than or equal to 1% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+      if (configPage2.taeThresh <= 1)
       {
         accelValue = 100;
         currentStatus.tpsDOT = 0;
@@ -409,11 +397,11 @@ uint16_t correctionAccel()
       else
       {
         //If TAE isn't currently turned on, need to check whether it needs to be turned on
-        if (TPS_rateOfChange > configPage2.taeThresh)
+        if ((uint16_t)(currentStatus.tpsDOT * 10) > configPage2.taeThresh)
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark accleration enrichment as active.
           activateTPSDOT = currentStatus.tpsDOT;
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEStartTime = micros_safe();
           accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT);
 
           //Apply the RPM taper to the above
@@ -899,7 +887,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t tempDwell = dwell;
   //Pull battery voltage based dwell correction and apply if needed
   currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
-  if (currentStatus.dwellCorrection != 100) { tempDwell = divs100(dwell) * currentStatus.dwellCorrection; }
+  if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
 
   //Dwell limiter
   uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS

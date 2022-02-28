@@ -31,6 +31,13 @@
   void doSystemReset();
   void jumpToBootloader();
 
+  void ADCinit_AVR2560();
+  bool ADC_start_AVR2560(uint32_t pin); //returns 1 when ADC succesfully started
+  bool ADC_CheckForConversionComplete_AVR2560();
+  uint16_t ADC_get_value_AVR2560();
+  
+  typedef uint32_t PinName;   // this really is not used in avr2560 portion, but required here for compatibility reasons
+
   #if defined(TIMER5_MICROS)
     /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
     #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.

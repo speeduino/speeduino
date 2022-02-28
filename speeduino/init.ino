@@ -27,6 +27,7 @@
   #include "SD_logger.h"
   #include "rtc_common.h"
 #endif
+#include "sensors.h"
 
 /** Initialize Speeduino for the main loop.
  * Top level init entrypoint for all initializations:
@@ -242,6 +243,13 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    coolantProtectTable.valueSize = SIZE_BYTE;
+    coolantProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    coolantProtectTable.xSize = 6;
+    coolantProtectTable.values = configPage9.coolantProtRPM;
+    coolantProtectTable.axisX = configPage9.coolantProtTemp;
+
+
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     fanPWMTable.xSize = 4;
@@ -344,6 +352,9 @@ void initialiseAll()
     initialiseCorrections();
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
+    initializeAux();
+    initializeFlex();
+    initializeVSS();
     initialiseProgrammableIO();
 
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
@@ -411,8 +422,7 @@ void initialiseAll()
     toothLastToothTime = 0;
 
     //Lookup the current MAP reading for barometric pressure
-    instanteneousMAPReading();
-    readBaro();
+    initBaro();
     
     noInterrupts();
     initialiseTriggers();
@@ -1195,8 +1205,15 @@ void initialiseAll()
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
-    readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
-    readTPS(false); // Need to read tps to detect flood clear state
+
+    if(readCLT(false,ADCidle) == ADCrunning){; // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    while(ADC_CheckForConversionComplete() != true){} //poll for conversion
+    readCLT(false,ADCcomplete);//finish read
+    }    
+    if(readTPS(false,ADCidle) == ADCrunning){; // Need to read tps to detect flood clear state
+    while(ADC_CheckForConversionComplete() != true){} //poll for conversion
+    readTPS(false,ADCcomplete);//finish read
+    }
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
