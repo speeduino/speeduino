@@ -59,7 +59,7 @@ void parseSerial()
   //Check for an existing legacy command in progress
   if(cmdPending == true)
   {
-    command();
+    legacySerialCommand();
     return;
   }
 
@@ -70,23 +70,24 @@ void parseSerial()
     //New command received
     //Need at least 2 bytes to read the length of the command
     serialReceivePending = true; //Flag the serial receive as being in progress
-    byte lowByte = Serial.read();
+    byte highByte = Serial.read();
 
     //Check if the command is legacy using the call/response mechanism
-    if((lowByte >= 'A') && (lowByte <= 'z') )
+    if((highByte >= 'A') && (highByte <= 'z') )
     {
       //Handle legacy cases here
       serialReceivePending = false; //Make sure new serial handling does not interfere with legacy handling
       legacySerial = true;
-      currentCommand = lowByte;
-      command();
+      currentCommand = highByte;
+      legacySerialCommand();
+      return;
     }
     else
     {
       while(Serial.available() == 0) { } //Wait for the 2nd byte to be received (This will almost never happen)
 
-      byte highByte = Serial.read();
-      serialPayloadLength = word(lowByte, highByte);
+      byte lowByte = Serial.read();
+      serialPayloadLength = word(highByte, lowByte);
       serialBytesReceived = 2;
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
