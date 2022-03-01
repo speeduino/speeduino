@@ -127,7 +127,11 @@ void loop()
       //Perform the same check for the tooth and composite logs
       if( toothLogSendInProgress == true)
       {
-        if(Serial.availableForWrite() > 16) { sendToothLog(inProgressOffset); }
+        if(Serial.availableForWrite() > 16) 
+        { 
+          if(legacySerial == true) { sendToothLog_legacy(inProgressOffset); }
+          else { sendToothLog(inProgressOffset); }
+        }
       }
       if( compositeLogSendInProgress == true)
       {
@@ -145,7 +149,7 @@ void loop()
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
-        if (currentCommand == 'T') { command(); }
+        if (currentCommand == 'T') { legacySerialCommand(); }
       }
 
       //Check for any CAN comms requiring action 

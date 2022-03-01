@@ -48,7 +48,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Comands are single byte (letter symbol) commands.
 */
-void command()
+void legacySerialCommand()
 {
   if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
 
@@ -240,25 +240,6 @@ void command()
       attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
       break;
 
-    case 'k': //Send CRC values for the calibration pages
-    {
-      uint32_t CRC32_val = readCalibrationCRC32(Serial.read()); //Get the CRC for the requested page
-
-      /*
-      serialPayload[0] = ((CRC32_val >> 24) & 255);
-      serialPayload[1] = ((CRC32_val >> 16) & 255);
-      serialPayload[2] = ((CRC32_val >> 8) & 255);
-      serialPayload[3] = (CRC32_val & 255);
-      sendLegacySerialPayload( &serialPayload, 4);
-      */
-      Serial.write((CRC32_val >> 24) & 255);
-      Serial.write((CRC32_val >> 16) & 255);
-      Serial.write((CRC32_val >> 8) & 255);
-      Serial.write(CRC32_val & 255);
-
-      break;
-    }
-
     case 'L': // List the contents of current page in human readable form
       #ifndef SMALL_FLASH_MODE
       sendPageASCII();
@@ -390,8 +371,8 @@ void command()
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog_old(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog_old(0); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog_legacy(0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog_legacy(0); }
 
         cmdPending = false;
       }
@@ -557,7 +538,7 @@ void command()
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog_old(0); //Sends tooth log values as chars
+      sendToothLog_legacy(0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -1167,7 +1148,7 @@ void receiveCalibration(byte tableID)
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog_old(byte startOffset)
+void sendToothLog_legacy(byte startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1175,6 +1156,7 @@ void sendToothLog_old(byte startOffset)
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
         //Check whether the tx buffer still has space
+        /*
         if(Serial.availableForWrite() < 4) 
         { 
           //tx buffer is full. Store the current state so it can be resumed later
@@ -1182,6 +1164,7 @@ void sendToothLog_old(byte startOffset)
           toothLogSendInProgress = true;
           return;
         }
+        */
 
 
         Serial.write(toothHistory[x] >> 24);
@@ -1205,7 +1188,7 @@ void sendToothLog_old(byte startOffset)
   } 
 }
 
-void sendCompositeLog_old(byte startOffset)
+void sendCompositeLog_legacy(byte startOffset)
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
