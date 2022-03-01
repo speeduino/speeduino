@@ -54,7 +54,7 @@ void initialiseIdle()
       //Case 1 is on/off idle control
       if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage6.iacFastTemp)
       {
-        digitalWrite(pinIdle1, HIGH);
+        IDLE_PIN_HIGH();
         idleOn = true;
       }
       break;
@@ -451,14 +451,14 @@ void idleControl()
     case IAC_ALGORITHM_ONOFF:      //Case 1 is on/off idle control
       if ( (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) < configPage6.iacFastTemp) //All temps are offset by 40 degrees
       {
-        digitalWrite(pinIdle1, HIGH);
+        IDLE_PIN_HIGH();
         idleOn = true;
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
 		currentStatus.idleLoad = 100;
       }
       else if (idleOn)
       {
-        digitalWrite(pinIdle1, LOW); 
+        IDLE_PIN_LOW();
         idleOn = false; 
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
 		currentStatus.idleLoad = 0;
@@ -499,15 +499,7 @@ void idleControl()
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
       if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Safety Check
-      if( currentStatus.idleLoad == 0 ) 
-      { 
-        disableIdle();
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-        break; 
-      }
-      BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
       idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
-      idleOn = true;
       
       break;
 
@@ -540,13 +532,6 @@ void idleControl()
         if(PID_computed == true)
         {
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
-          if( idle_pwm_target_value == 0 )
-          { 
-            disableIdle(); 
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-            break; 
-          }
-          BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
@@ -566,6 +551,15 @@ void idleControl()
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
+      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      {
+        if( configPage6.iacPWMrun == true)
+        {
+          //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
+          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
+        }
+      }
       else
       {
         //Read the OL table as feedforward term
@@ -582,13 +576,6 @@ void idleControl()
         if(PID_computed == true)
         {
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
-          if( idle_pwm_target_value == 0 )
-          { 
-            disableIdle(); 
-            BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-            break; 
-          }
-          BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
 
@@ -750,8 +737,9 @@ void idleControl()
   //Check for 100% and 0% DC on PWM idle
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
-    if(currentStatus.idleLoad == 100)
+    if(currentStatus.idleLoad >= 100)
     {
+      BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
       IDLE_TIMER_DISABLE();
       if (configPage6.iacPWMdir == 0)
       {
@@ -768,21 +756,13 @@ void idleControl()
     }
     else if (currentStatus.idleLoad == 0)
     {
-      IDLE_TIMER_DISABLE();
-      if (configPage6.iacPWMdir == 0)
-      {
-        //Normal direction
-        IDLE_PIN_LOW();  // Switch pin to low
-        if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      }
-      else
-      {
-        //Reversed direction
-        IDLE_PIN_HIGH();  // Switch pin high
-        if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      }
+      disableIdle();
     }
-    else if(currentStatus.idleLoad > 0) { IDLE_TIMER_ENABLE(); }
+    else
+    {
+      BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
+      IDLE_TIMER_ENABLE();
+    }
   }
 }
 
@@ -793,7 +773,18 @@ void disableIdle()
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
     IDLE_TIMER_DISABLE();
-    digitalWrite(pinIdle1, LOW);
+    if (configPage6.iacPWMdir == 0)
+    {
+      //Normal direction
+      IDLE_PIN_LOW();  // Switch pin to low
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+    else
+    {
+      //Reversed direction
+      IDLE_PIN_HIGH();  // Switch pin high
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
   }
   else if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
   {
