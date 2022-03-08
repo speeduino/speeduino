@@ -527,7 +527,9 @@ void loop(void)
       doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      unsigned long pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+      unsigned long pwLimit;
+      if(configPage2.dutyLim!=100){pwLimit = percentage(configPage2.dutyLim, revolutionTime);} //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+      else{pwLimit=revolutionTime;}
       //Handle multiple squirts per rev
       if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
       else { pwLimit = pwLimit / currentStatus.nSquirts; }
