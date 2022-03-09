@@ -210,7 +210,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = (byte)div100(currentStatus.dwell); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
@@ -789,7 +789,21 @@ if (PIDmode == 0x01)
                  outMsg.buf[6] =  0x00;                                               // C
                  outMsg.buf[7] =  0x00;                                               // D
             }
-       }     
+       }
+     // this allows to get any value out of current status array.
+     else if (requestedPIDhigh == 0x78)
+       {
+          int16_t tempValue;
+          tempValue = ProgrammableIOGetData(requestedPIDlow);
+          outMsg.buf[0] =  0x06;                 // sending 6 bytes
+          outMsg.buf[1] =  0x62;                 // Same as query, except that 40h is added to the mode value. So:62h = custom mode
+          outMsg.buf[2] =  requestedPIDlow;      // PID code
+          outMsg.buf[3] =  0x78;                 // PID code
+          outMsg.buf[4] =  lowByte(tempValue);   // A
+          outMsg.buf[5] =  highByte(tempValue);  // B
+          outMsg.buf[6] =  0x00; 
+          outMsg.buf[7] =  0x00;
+      }
     }
 }
 #endif

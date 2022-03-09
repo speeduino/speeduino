@@ -16,7 +16,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    19
+  #define CURRENT_DATA_VERSION    20
   //Only the latest updat for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -403,7 +403,7 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
-
+    
     //wmi
     configPage10.wmiEnabled = 0;
     configPage10.wmiMode = 0;
@@ -522,6 +522,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 18)
   {
+    //202202
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
 
     //TPS resolution increased to 0.5%
@@ -582,6 +583,15 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(19);
   }
+  
+  if(readEEPROMVersion() == 19)
+  {
+    //202204
+    configPage9.coolantProtEnbl = false;
+    
+    writeAllConfig();
+    storeEEPROMVersion(20);
+  }
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
@@ -612,7 +622,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it * multiplier; 
+    *y_it = *y_it * multiplier; 
     ++y_it;
   }
 }
@@ -622,7 +632,7 @@ void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
   {
-    *y_it = (byte)*y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
     ++y_it;
   }
 }
