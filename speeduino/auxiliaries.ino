@@ -8,6 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
+#include "timers.h"
 
 //Old PID method. Retained incase the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -20,18 +21,27 @@ Fan control
 */
 void initialiseFan()
 {
-  if( configPage6.fanInv == 1 ) { fanHIGH = LOW; fanLOW = HIGH; }
-  else { fanHIGH = HIGH; fanLOW = LOW; }
-  digitalWrite(pinFan, fanLOW);         //Initiallise program with the fan in the off state
-  currentStatus.fanOn = false;
-
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
+  FAN_OFF();  //Initialise program with the fan in the off state
+  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+  currentStatus.fanDuty = 0;
+
+  #if defined(PWM_FAN_AVAILABLE)
+    DISABLE_FAN_TIMER(); //disable FAN timer if available
+    if ( configPage2.fanEnable == 2 ) // PWM Fan control
+    {
+      #if defined(CORE_TEENSY)
+        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+      #endif
+      fan_pwm_value = 0;
+    }
+  #endif
 }
 
 void fanControl()
 {
-  if( configPage6.fanEnable == 1 )
+  if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
     int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
     int offTemp = onTemp - configPage6.fanHyster;
@@ -47,19 +57,84 @@ void fanControl()
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
       {
-        FAN_ON(); 
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
-      currentStatus.fanOn = true;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       FAN_OFF();
-      currentStatus.fanOn = false;
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
+  }
+  else if( configPage2.fanEnable == 2 )// PWM Fan control
+  {
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+          DISABLE_FAN_TIMER();
+        #endif
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        #if defined(PWM_FAN_AVAILABLE)
+          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          if (currentStatus.fanDuty > 0)
+          {
+            ENABLE_FAN_TIMER();
+            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+          }
+        #endif
+      }
+    }
+    else if (!fanPermit)
+    {
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+    }
+
+    #if defined(PWM_FAN_AVAILABLE)
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+      else if (currentStatus.fanDuty == 200)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+      else if (currentStatus.fanDuty > 0)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+    #endif
   }
 }
 
@@ -106,22 +181,20 @@ void initialiseAuxPWM()
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+      vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
       vvtPID.SetMode(AUTOMATIC); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        vvt2PID.SetOutputLimits( (configPage10.vvtCLminDuty), (configPage10.vvtCLmaxDuty) );
+        vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
         vvt2PID.SetMode(AUTOMATIC); //Turn PID on
       }
     }
 
-    currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
-    currentStatus.vvt2Duty = 0;
     vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
@@ -140,6 +213,7 @@ void initialiseAuxPWM()
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
+    vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
 
@@ -153,6 +227,146 @@ void initialiseAuxPWM()
 
 }
 
+void boostByGear()
+{
+  if(configPage4.boostType == OPEN_LOOP_BOOST)
+  {
+    if( configPage9.boostByGearEnabled == 1 )
+    {
+      uint16_t combinedBoost = 0;
+      switch (currentStatus.gear)
+      {
+        case 1:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 2:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 3:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 4:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 5:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        case 6:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM))  ) << 2;
+          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
+          else{ currentStatus.boostDuty = 10000; }
+          break;
+        default:
+          break;
+      }
+    }
+    else if( configPage9.boostByGearEnabled == 2 ) 
+    {
+      switch (currentStatus.gear)
+      {
+        case 1:
+          currentStatus.boostDuty = configPage9.boostByGear1 * 2 * 100;
+          break;
+        case 2:
+          currentStatus.boostDuty = configPage9.boostByGear2 * 2 * 100;
+          break;
+        case 3:
+          currentStatus.boostDuty = configPage9.boostByGear3 * 2 * 100;
+          break;
+        case 4:
+          currentStatus.boostDuty = configPage9.boostByGear4 * 2 * 100;
+          break;
+        case 5:
+          currentStatus.boostDuty = configPage9.boostByGear5 * 2 * 100;
+          break;
+        case 6:
+          currentStatus.boostDuty = configPage9.boostByGear6 * 2 * 100;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+  {
+    if( configPage9.boostByGearEnabled == 1 )
+    {
+      uint16_t combinedBoost = 0;
+      switch (currentStatus.gear)
+      {
+        case 1:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 2:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 3:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 4:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 5:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        case 6:
+          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM)) / 100 ) << 2;
+          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
+          else{ currentStatus.boostTarget = 511; }
+          break;
+        default:
+          break;
+      }
+    }
+    else if( configPage9.boostByGearEnabled == 2 ) 
+    {
+      switch (currentStatus.gear)
+      {
+        case 1:
+          currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
+          break;
+        case 2:
+          currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
+          break;
+        case 3:
+          currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
+          break;
+        case 4:
+          currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
+          break;
+        case 5:
+          currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
+          break;
+        case 6:
+          currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
 #define BOOST_HYSTER  40
 void boostControl()
 {
@@ -161,86 +375,22 @@ void boostControl()
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
       //Open loop
-      currentStatus.boostDuty = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) * 2 * 100;
+      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+      else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
       }
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if( (configPage9.boostByGearEnabled == 1) && (configPage2.vssMode > 1) )
-        {
-          uint16_t combinedBoost = 0;
-          switch (currentStatus.gear)
-          {
-            case 1:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 2:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 3:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 4:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 5:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            case 6:
-              combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM)) / 100 ) << 2;
-              if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-              else{ currentStatus.boostTarget = 511; }
-              break;
-            default:
-              break;
-          }
-        }
-        else if( (configPage9.boostByGearEnabled == 2) && (configPage2.vssMode > 1) ) 
-        {
-          switch (currentStatus.gear)
-          {
-            case 1:
-              currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
-              break;
-            case 2:
-              currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
-              break;
-            case 3:
-              currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
-              break;
-            case 4:
-              currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
-              break;
-            case 5:
-              currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
-              break;
-            case 6:
-              currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
-              break;
-            default:
-              break;
-          }
-        }
-        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, currentStatus.TPS, currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
+        if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
       if(currentStatus.MAP >= currentStatus.baro ) //Only engage boost control above baro pressure
       {
@@ -272,10 +422,8 @@ void boostControl()
             if(PIDcomputed == true)
             {
               boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
-              ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
             }
           }
-
         }
         else
         {
@@ -289,6 +437,18 @@ void boostControl()
         boostDisable();
       } //MAP above boost + hyster
     } //Open / Cloosed loop
+
+    //Check for 100% duty cycle
+    if(currentStatus.boostDuty >= 10000)
+    {
+      DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
+      BOOST_PIN_HIGH(); //Turn on boost pin if duty is 100%
+    }
+    else if(currentStatus.boostDuty > 0)
+    {
+      ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty is > 0
+    }
+    
   }
   else { // Disable timer channel and zero the flex boost correction status
     DISABLE_BOOST_TIMER();
@@ -307,18 +467,19 @@ void vvtControl()
       vvtWarmTime = runSecsX10;
       vvtTimeHold = true;
     }
+
+    //Calculate the current cam angle for miata trigger
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
+
     if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
     {
       vvtIsHot = true;
 
-      //Calculate the current cam angle
-      if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
-
       if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
-        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
+        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.MAP), currentStatus.RPM); }
 
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
@@ -328,8 +489,8 @@ void vvtControl()
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
           //Lookup VVT duty based on either MAP or TPS
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
-          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
+          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.MAP), currentStatus.RPM); }
 
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
           if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
@@ -341,7 +502,7 @@ void vvtControl()
       else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.TPS, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2), currentStatus.RPM); }
         else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
         if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
@@ -380,7 +541,7 @@ void vvtControl()
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.TPS, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2), currentStatus.RPM); }
           else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
           if( vvtCounter == 30) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
@@ -413,7 +574,6 @@ void vvtControl()
             BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
           }
         }
-        //currentStatus.vvt1Duty = 0;
         vvtCounter++;
       }
 
@@ -558,12 +718,13 @@ void wmiControl()
           wmiPW = 0;
           break;
         }
+        if (wmiPW > 100) { wmiPW = 100; } //without this the duty can get beyond 100%
       }
     }
     else { BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY); }
 
     currentStatus.wmiPW = wmiPW;
-    vvt1_pwm_value = wmiPW;
+    vvt1_pwm_value = percentage(currentStatus.wmiPW, vvt_pwm_max_count);
 
     if(wmiPW == 0)
     {
@@ -607,13 +768,13 @@ void boostDisable()
   if (boost_pwm_state == true)
   {
     BOOST_PIN_LOW();  // Switch pin to low
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value);
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
   }
   else
   {
     BOOST_PIN_HIGH();  // Switch pin high
-    BOOST_TIMER_COMPARE = BOOST_TIMER_COUNTER + boost_pwm_target_value;
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;
     boost_pwm_state = true;
   }
@@ -641,7 +802,7 @@ void boostDisable()
 
     if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt1_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt1_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
@@ -649,12 +810,12 @@ void boostDisable()
     }
     else if( vvt2_pwm_state == true )
     {
-      VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt2_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt2_pwm_value);
       vvt1_pwm_cur_value = vvt1_pwm_value;
       vvt2_pwm_cur_value = vvt2_pwm_value;
       nextVVT = 1; //Next event is for PWM1
     }
-    else { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + vvt_pwm_max_count; } //Shouldn't ever get here
+    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
   }
   else
   {
@@ -668,10 +829,10 @@ void boostDisable()
       }
       else { vvt1_max_pwm = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvt2_pwm_state == true){ VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value); }
+      if(vvt2_pwm_state == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -685,10 +846,10 @@ void boostDisable()
       }
       else { vvt2_max_pwm = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvt1_pwm_state == true) { VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value); }
+      if(vvt1_pwm_state == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
       else
       { 
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
@@ -699,7 +860,7 @@ void boostDisable()
         VVT1_PIN_OFF();
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
       }
       else { vvt1_max_pwm = true; }
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
@@ -707,9 +868,29 @@ void boostDisable()
         VVT2_PIN_OFF();
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
-        VVT_TIMER_COMPARE = VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value);
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
       }
       else { vvt2_max_pwm = true; }
     }
   }
 }
+
+#if defined(PWM_FAN_AVAILABLE)
+//The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
+  void fanInterrupt()
+{
+  if (fan_pwm_state == true)
+  {
+    FAN_OFF();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
+    fan_pwm_state = false;
+  }
+  else
+  {
+    FAN_ON();
+    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
+    fan_pwm_cur_value = fan_pwm_value;
+    fan_pwm_state = true;
+  }
+}
+#endif
