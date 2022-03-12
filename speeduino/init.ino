@@ -3290,7 +3290,7 @@ void initialiseTriggers()
       triggerHandler = triggerPri_Renix;
       triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = true;
-      getRPM = getRPM_Renix;
+      getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 

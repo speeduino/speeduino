@@ -4574,6 +4574,9 @@ void triggerSetEndTeeth_NGC()
 /** Renix 44-2-2  and 66-2-2-2 decoder.  
 * Renix trigger wheel doesn't decode into 360 degrees nicely (360/44 = 8.18 degrees or 360/66 = 5.454545). Speeduino can't handle any teeth that have a decimal point.
 * Solution is to count teeth, every 11 teeth = a proper angle. For 66 tooth decoder its 60 degrees per 11 teeth, for 44 tooth decoder its 90 degrees per 11 teeth.
+* This means the system sees 4 teeth on the 44 tooth wheel and 6 teeth on the 66 tooth wheel.
+* Double missing tooth in the pattern is actually a large tooth and a large gap. If the trigger is set to rising you'll see the start of the large tooth
+* then the gap. If its not set to rising the code won't work due to seeing two gaps
 *
 * @defgroup dec_renix Renix decoder 
 * @{
@@ -4582,13 +4585,12 @@ void triggerSetup_Renix()
 {
   if( configPage4.TrigPattern == DECODER_RENIX44)
   {
-    triggerToothAngle = 90; //The number of degrees between the fake teeth invented by counting the real teeth
+    triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
     configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
     configPage4.triggerMissingTeeth = 0;
     triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
     triggerToothAngleIsCorrect = true;
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 44)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
-    triggerSecFilterTime = triggerFilterTime; // set any value to enable it to trigger
   }
   else if (configPage4.TrigPattern == DECODER_RENIX66)
   {
@@ -4598,7 +4600,6 @@ void triggerSetup_Renix()
     triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
     triggerToothAngleIsCorrect = true; 
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 66)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
-    triggerSecFilterTime = triggerFilterTime; // set any value to enable it to trigger
   }
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
@@ -4619,8 +4620,9 @@ void triggerPri_Renix()
   if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
   {
     toothSystemCount++;
-//    Serial3.print(toothSystemCount); Serial3.print(" ");
     validTrigger = true;
+
+// Serial3.print(" S:"); // Serial3.print(toothSystemCount);
 
     if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0)
     { targetGap = (2 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
@@ -4629,13 +4631,16 @@ void triggerPri_Renix()
 
     if( curGap >= targetGap )
     { 
-      /* add two teeth to account for the gap we've just seen */
+      /* add two teeth to account for the gap we've just seen */      
       toothSystemCount++;
+// Serial3.print(" GAP:"); // Serial3.print(toothSystemCount);      
       toothSystemCount++;
+// Serial3.print(" GAP:"); // Serial3.print(toothSystemCount);      
 
       if( toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
       {
         // lost sync
+// Serial3.print(" LOST SYNC 1");  // Serial3.println("");
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;            
         toothSystemCount = 1; // first tooth after gap is always 1
@@ -4651,30 +4656,31 @@ void triggerPri_Renix()
     renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
     renixSystemLastToothTime = curTime;
 
-    if( toothSystemCount >10 ) // every real 11th tooth on the crank increment the toothCurrentCount by one 
+    if( toothSystemCount == 12)
     {
       toothCurrentCount++;
+// Serial3.println("");
+// Serial3.print(" Tooth"); // Serial3.print(toothCurrentCount);
+// Serial3.println("");
+
       if( (configPage4.TrigPattern == DECODER_RENIX66 && toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
           (configPage4.TrigPattern == DECODER_RENIX44 && toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
       {
-//        Serial3.println("** Rotation **");
         toothOneMinusOneTime = toothOneTime;
         toothOneTime = curTime;
         currentStatus.hasSync = true;
         currentStatus.startRevolutions++; //Counter               
         revolutionOne = !revolutionOne;
         toothCurrentCount = 1;  
-      }
-      else if (toothSystemCount > 11)
-      {
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;   
-//        Serial3.println(" Lost Sync 2");
+// Serial3.println("");
+// Serial3.print("** ROTATE **");
+// Serial3.println("");        
       }
 
-      toothSystemCount = 0;
+      toothSystemCount = 1;
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime; 
+
 
       //NEW IGNITION MODE
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
@@ -4693,6 +4699,7 @@ void triggerPri_Renix()
 }
 
 
+
 void triggerSec_Renix()
 {
   curTime2 = micros();
@@ -4701,7 +4708,7 @@ void triggerSec_Renix()
   //Safety check for initial startup
   if( (toothLastSecToothTime == 0) )
   { 
-    curGap2 = 0;
+    curGap2 = 0; 
     toothLastSecToothTime = curTime2;
   }
 
@@ -4713,39 +4720,58 @@ void triggerSec_Renix()
     secondaryToothCount++;
     toothLastSecToothTime = curTime2;
   
+// for debug only
+currentStatus.vvt1Angle = 2 * toothCurrentCount;
+currentStatus.vvt2Angle = 2 * toothSystemCount;
+currentStatus.canin[0] = toothCurrentCount;
+currentStatus.canin[1] = toothSystemCount;
+
     if (configPage4.TrigPattern == DECODER_RENIX44)
     {
-      if( toothCurrentCount == 4  && toothSystemCount == 9)
+      if( toothCurrentCount == 4  && toothSystemCount == 2)
       {
         revolutionOne = 0;
         currentStatus.startRevolutions++; //Counter
         currentStatus.hasSync = true;
+// Serial3.println("");
+// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
+// Serial3.println("");
       }
-      else if ( secondaryTriggerEdge == FALLING)
+      else
       {
+// Serial3.println(" CAM FAIL");
+// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
+// Serial3.println(" CAM FAIL");
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;      
         revolutionOne = 0;
       }
       toothCurrentCount= 4;
-      toothSystemCount = 9; 
+      toothSystemCount = 2; 
     }
     else if (configPage4.TrigPattern == DECODER_RENIX66)
     {
-      if( toothCurrentCount == 6 && toothSystemCount == 9)
+      if( toothCurrentCount == 6 && toothSystemCount == 2)
       {
+// Serial3.println("");
+// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
+// Serial3.println("");        
         revolutionOne = 0;
         currentStatus.startRevolutions++; //Counter
         currentStatus.hasSync = true;
       }
       else
       {
+// Serial3.println(" CAM FAIL");
+// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
+// Serial3.println(" CAM FAIL");
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;   
         revolutionOne = 0;
+
       }
       toothCurrentCount= 6;
-      toothSystemCount = 9; 
+      toothSystemCount = 2; 
     }
   } //Trigger filter
 
@@ -4758,25 +4784,7 @@ void triggerSec_Renix()
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
 
-    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);    
+    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
   }
-  
 }
-
-
-uint16_t getRPM_Renix()
-{
-  uint16_t tempRPM = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM )
-  {
-    tempRPM = crankingGetRPM(configPage4.triggerTeeth, 360); 
-  }
-  else
-  {
-    tempRPM = stdGetRPM(360); 
-  }
-  return tempRPM;
-}
-
-
 /** @} */
