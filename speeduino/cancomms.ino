@@ -789,7 +789,21 @@ if (PIDmode == 0x01)
                  outMsg.buf[6] =  0x00;                                               // C
                  outMsg.buf[7] =  0x00;                                               // D
             }
-       }     
+       }
+     // this allows to get any value out of current status array.
+     else if (requestedPIDhigh == 0x78)
+       {
+          int16_t tempValue;
+          tempValue = ProgrammableIOGetData(requestedPIDlow);
+          outMsg.buf[0] =  0x06;                 // sending 6 bytes
+          outMsg.buf[1] =  0x62;                 // Same as query, except that 40h is added to the mode value. So:62h = custom mode
+          outMsg.buf[2] =  requestedPIDlow;      // PID code
+          outMsg.buf[3] =  0x78;                 // PID code
+          outMsg.buf[4] =  lowByte(tempValue);   // A
+          outMsg.buf[5] =  highByte(tempValue);  // B
+          outMsg.buf[6] =  0x00; 
+          outMsg.buf[7] =  0x00;
+      }
     }
 }
 #endif
