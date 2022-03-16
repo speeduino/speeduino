@@ -24,7 +24,7 @@ void initSD()
   //Set the RTC callback. This is used to set the correct timestamp on file creation and sync operations
   FsDateTime::setCallback(dateTime);
 
-  // Initialize the SD.
+  // Initialise the SD.
   if (!sd.begin(SD_CONFIG)) 
   {
     //sd.initErrorHalt(&Serial);
@@ -32,7 +32,7 @@ void initSD()
     SD_status = SD_STATUS_ERROR_NO_CARD;
   }
   
-  //Set the TunerStudio status varable
+  //Set the TunerStudio status variable
   setTS_SD_status();
 }
 
@@ -152,7 +152,7 @@ void beginSDLogging()
 {
   if(SD_status == SD_STATUS_READY)
   {
-    SD_status = SD_STATUS_ACTIVE; //Set the status as being active so that entries will beging to be written. This will be updated below if there is an error
+    SD_status = SD_STATUS_ACTIVE; //Set the status as being active so that entries will begin to be written. This will be updated below if there is an error
 
     // Open or create file - truncate existing file.
     if (!createLogFile()) 
@@ -160,13 +160,13 @@ void beginSDLogging()
       SD_status = SD_STATUS_ERROR_NO_WRITE;
     }
 
-    //Perform pre-allocation on card. This dramatically inproves write speed
+    //Perform pre-allocation on card. This dramatically improves write speed
     if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
     {
       SD_status = SD_STATUS_ERROR_NO_SPACE;
     }
 
-    //initialize the RingBuf.
+    //initialise the RingBuf.
     rb.begin(&logFile);
 
     //Write a header row
@@ -286,7 +286,7 @@ void checkForSDStart()
     //Check that we're not already finished the logging
     if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
     {
-      beginSDLogging(); //Setup the log file, prallocation, header row
+      beginSDLogging(); //Setup the log file, preallocation, header row
     }    
   }
 
@@ -295,7 +295,7 @@ void checkForSDStart()
   {
     if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
     {
-      beginSDLogging(); //Setup the log file, prallocation, header row
+      beginSDLogging(); //Setup the log file, preallocation, header row
     }
   }
 
@@ -304,7 +304,7 @@ void checkForSDStart()
   {
     if(currentStatus.engineProtectStatus > 0)
     {
-      beginSDLogging(); //Setup the log file, prallocation, header row
+      beginSDLogging(); //Setup the log file, preallocation, header row
     }
   }
 
@@ -364,7 +364,7 @@ void checkForSDStop()
     //Check all conditions to see if we should stop logging
     if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (manualLogActive == false) )
     {
-      endSDLogging(); //Setup the log file, prallocation, header row
+      endSDLogging(); //Setup the log file, preallocation, header row
     }
   }
 
@@ -403,7 +403,7 @@ void formatExFat()
 /**
  * @brief Deletes a log file from the SD card
  * 
- * Log files all have hte same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
+ * Log files all have the same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
  * 
  * @param log1 
  * @param log2 
