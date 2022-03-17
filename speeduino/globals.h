@@ -256,6 +256,9 @@
 #define INJ_BANKED          2
 #define INJ_SEQUENTIAL      3
 
+#define INJ_PAIR_13_24      0
+#define INJ_PAIR_14_23      1
+
 #define OUTPUT_CONTROL_DIRECT   0
 #define OUTPUT_CONTROL_MC33810  10
 
@@ -998,7 +1001,8 @@ struct config4 {
 
   int16_t vvt2CL0DutyAng;
   byte vvt2PWMdir : 1;
-  byte unusedBits4 : 7;
+  byte inj4cylPairing : 2;
+  byte unusedBits4 : 5;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
   byte vvtMinClt;
