@@ -1692,7 +1692,7 @@ void setPinMapping(byte boardID)
       pinDisplayReset = 48; // OLED reset pin
       pinSpareTemp1 = A6;
       pinSpareTemp2 = A5;
-      pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v 
+      pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
       pinFuelPump = 42; //Fuel pump output 2n2222
       pinFan = 47; //Pin for the fan output
       pinTachOut = 49; //Tacho output pin
