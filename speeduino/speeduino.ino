@@ -640,7 +640,7 @@ void loop()
 
           if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
           {
-            changeHalfToFullSync();
+            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
             injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
             injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
@@ -662,7 +662,10 @@ void loop()
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
-          else { changeFullToHalfSync(); }
+          else
+          {
+            if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+          }
           break;
         //5 cylinders
         case 5:
@@ -684,7 +687,7 @@ void loop()
           #if INJ_CHANNELS >= 6
             if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
             {
-              changeHalfToFullSync();
+            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
               injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
               injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
@@ -700,7 +703,10 @@ void loop()
                 currentStatus.PW6 = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW6);
               }
             }
-          else { changeFullToHalfSync(); }
+            else
+            {
+              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+            }
           #endif
           break;
         //8 cylinders
@@ -718,7 +724,7 @@ void loop()
           #if INJ_CHANNELS >= 8
             if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
             {
-              changeHalfToFullSync();
+              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
               injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
@@ -737,7 +743,10 @@ void loop()
                 currentStatus.PW8 = applyFuelTrimToPW(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW8);
               }
             }
-          else { changeFullToHalfSync(); }
+            else
+            {
+              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+            }
 
           #endif
           break;
@@ -1531,7 +1540,7 @@ void calculateIgnitionAngles(int dwellAngle)
       #if IGN_CHANNELS >= 4
       if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
-        changeHalfToFullSync();
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
         calculateIgnitionAngle3(dwellAngle);
         calculateIgnitionAngle4(dwellAngle);
@@ -1545,7 +1554,10 @@ void calculateIgnitionAngles(int dwellAngle)
         calculateIgnitionAngle3(dwellAngle, splitDegrees);
         calculateIgnitionAngle4(dwellAngle, splitDegrees);
       }
-      else { changeFullToHalfSync(); }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+      }
       #endif
       break;
     //5 cylinders
@@ -1565,13 +1577,16 @@ void calculateIgnitionAngles(int dwellAngle)
       #if IGN_CHANNELS >= 6
       if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
-        changeHalfToFullSync();
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
         calculateIgnitionAngle4(dwellAngle);
         calculateIgnitionAngle5(dwellAngle);
         calculateIgnitionAngle6(dwellAngle);
       }
-      else { changeFullToHalfSync(); }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+      }
       #endif
       break;
     //8 cylinders
@@ -1584,14 +1599,17 @@ void calculateIgnitionAngles(int dwellAngle)
       #if IGN_CHANNELS >= 8
       if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
-        changeHalfToFullSync();
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
         calculateIgnitionAngle5(dwellAngle);
         calculateIgnitionAngle6(dwellAngle);
         calculateIgnitionAngle7(dwellAngle);
         calculateIgnitionAngle8(dwellAngle);
       }
-      else { changeFullToHalfSync(); }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+      }
       #endif
       break;
 
