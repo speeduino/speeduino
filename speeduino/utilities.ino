@@ -120,10 +120,10 @@ void setResetControlPinState()
 
 void changeHalfToFullSync(void)
 {
-  if((configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720))
+  if( CRANK_ANGLE_MAX_INJ != 720 )
   {
     CRANK_ANGLE_MAX_INJ = 720;
-    maxIgnOutputs *= 2;
+    maxIgnOutputs = configPage2.nCylinders;
     req_fuel_uS *= 2;
     switch (configPage2.nCylinders)
     {
@@ -165,7 +165,8 @@ void changeHalfToFullSync(void)
 
     }
   }
-  if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720))
+
+  if( CRANK_ANGLE_MAX_IGN != 720 )
   {
     CRANK_ANGLE_MAX_IGN = 720;
     maxIgnOutputs = configPage2.nCylinders;
@@ -203,95 +204,93 @@ void changeHalfToFullSync(void)
 
 void changeFullToHalfSync(void)
 {
-  if(BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360))
+  if(configPage2.injLayout == INJ_SEQUENTIAL)
   {
-    if(configPage2.injLayout == INJ_SEQUENTIAL)
+    CRANK_ANGLE_MAX_INJ = 360;
+    maxIgnOutputs = configPage2.nCylinders / 2;
+    req_fuel_uS /= 2;
+    switch (configPage2.nCylinders)
     {
-      CRANK_ANGLE_MAX_INJ = 360;
-      maxIgnOutputs = configPage2.nCylinders/2;
-      req_fuel_uS /= 2;
-      switch (configPage2.nCylinders)
-      {
-        case 4:
-          if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
-          {
-            inj1StartFunction = openInjector1and3;
-            inj1EndFunction = closeInjector1and3;
-            inj2StartFunction = openInjector2and4;
-            inj2EndFunction = closeInjector2and4;
-          }
-          else
-          {
-            inj1StartFunction = openInjector1and4;
-            inj1EndFunction = closeInjector1and4;
-            inj2StartFunction = openInjector2and3;
-            inj2EndFunction = closeInjector2and3;
-          }
-          channel3InjEnabled = false;
-          channel4InjEnabled = false;
-          break;
-              
-        case 6:
+      case 4:
+        if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
+        {
+          inj1StartFunction = openInjector1and3;
+          inj1EndFunction = closeInjector1and3;
+          inj2StartFunction = openInjector2and4;
+          inj2EndFunction = closeInjector2and4;
+        }
+        else
+        {
           inj1StartFunction = openInjector1and4;
           inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and5;
-          inj2EndFunction = closeInjector2and5;
-          inj3StartFunction = openInjector3and6;
-          inj3EndFunction = closeInjector3and6;
-          channel4InjEnabled = false;
-          channel5InjEnabled = false;
-          channel6InjEnabled = false;
-          break;
+          inj2StartFunction = openInjector2and3;
+          inj2EndFunction = closeInjector2and3;
+        }
+        channel3InjEnabled = false;
+        channel4InjEnabled = false;
+        break;
+            
+      case 6:
+        inj1StartFunction = openInjector1and4;
+        inj1EndFunction = closeInjector1and4;
+        inj2StartFunction = openInjector2and5;
+        inj2EndFunction = closeInjector2and5;
+        inj3StartFunction = openInjector3and6;
+        inj3EndFunction = closeInjector3and6;
+        channel4InjEnabled = false;
+        channel5InjEnabled = false;
+        channel6InjEnabled = false;
+        break;
 
-        case 8:
-          inj1StartFunction = openInjector1and5;
-          inj1EndFunction = closeInjector1and5;
-          inj2StartFunction = openInjector2and6;
-          inj2EndFunction = closeInjector2and6;
-          inj3StartFunction = openInjector3and7;
-          inj3EndFunction = closeInjector3and7;
-          inj4StartFunction = openInjector4and8;
-          inj4EndFunction = closeInjector4and8;
-          channel5InjEnabled = false;
-          channel6InjEnabled = false;
-          channel7InjEnabled = false;
-          channel8InjEnabled = false;
-          break;
-      }
+      case 8:
+        inj1StartFunction = openInjector1and5;
+        inj1EndFunction = closeInjector1and5;
+        inj2StartFunction = openInjector2and6;
+        inj2EndFunction = closeInjector2and6;
+        inj3StartFunction = openInjector3and7;
+        inj3EndFunction = closeInjector3and7;
+        inj4StartFunction = openInjector4and8;
+        inj4EndFunction = closeInjector4and8;
+        channel5InjEnabled = false;
+        channel6InjEnabled = false;
+        channel7InjEnabled = false;
+        channel8InjEnabled = false;
+        break;
     }
-    if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
-    {
-      CRANK_ANGLE_MAX_IGN = 360;
-      maxIgnOutputs = configPage2.nCylinders/2;
-      switch (configPage2.nCylinders)
-      {
-        case 4:
-          ign1StartFunction = beginCoil1and3Charge;
-          ign1EndFunction = endCoil1and3Charge;
-          ign2StartFunction = beginCoil2and4Charge;
-          ign2EndFunction = endCoil2and4Charge;
-          break;
-              
-        case 6:
-          ign1StartFunction = beginCoil1and4Charge;
-          ign1EndFunction = endCoil1and4Charge;
-          ign2StartFunction = beginCoil2and5Charge;
-          ign2EndFunction = endCoil2and5Charge;
-          ign3StartFunction = beginCoil3and6Charge;
-          ign3EndFunction = endCoil3and6Charge;
-          break;
+  }
 
-        case 8:
-          ign1StartFunction = beginCoil1and5Charge;
-          ign1EndFunction = endCoil1and5Charge;
-          ign2StartFunction = beginCoil2and6Charge;
-          ign2EndFunction = endCoil2and6Charge;
-          ign3StartFunction = beginCoil3and7Charge;
-          ign3EndFunction = endCoil3and7Charge;
-          ign4StartFunction = beginCoil4and8Charge;
-          ign4EndFunction = endCoil4and8Charge;
-          break;
-      }
+  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    CRANK_ANGLE_MAX_IGN = 360;
+    maxIgnOutputs = configPage2.nCylinders / 2;
+    switch (configPage2.nCylinders)
+    {
+      case 4:
+        ign1StartFunction = beginCoil1and3Charge;
+        ign1EndFunction = endCoil1and3Charge;
+        ign2StartFunction = beginCoil2and4Charge;
+        ign2EndFunction = endCoil2and4Charge;
+        break;
+            
+      case 6:
+        ign1StartFunction = beginCoil1and4Charge;
+        ign1EndFunction = endCoil1and4Charge;
+        ign2StartFunction = beginCoil2and5Charge;
+        ign2EndFunction = endCoil2and5Charge;
+        ign3StartFunction = beginCoil3and6Charge;
+        ign3EndFunction = endCoil3and6Charge;
+        break;
+
+      case 8:
+        ign1StartFunction = beginCoil1and5Charge;
+        ign1EndFunction = endCoil1and5Charge;
+        ign2StartFunction = beginCoil2and6Charge;
+        ign2EndFunction = endCoil2and6Charge;
+        ign3StartFunction = beginCoil3and7Charge;
+        ign3EndFunction = endCoil3and7Charge;
+        ign4StartFunction = beginCoil4and8Charge;
+        ign4EndFunction = endCoil4and8Charge;
+        break;
     }
   }
 }
