@@ -588,6 +588,10 @@ void doUpdates()
   {
     //202204
     configPage9.coolantProtEnbl = false;
+
+    if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
+    //Half/Full sequential mode
+    if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.nCylinders == 4) ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Most of inline 4 uses 1-3-4-2 firing order
     
     writeAllConfig();
     storeEEPROMVersion(20);
