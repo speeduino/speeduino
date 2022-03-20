@@ -15,6 +15,7 @@ RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 uint8_t SD_status = SD_STATUS_OFF;
 uint16_t currentLogFileNumber;
 bool manualLogActive = false;
+uint32_t logStartTime = 0; //In ms
 
 void initSD()
 {
@@ -41,6 +42,30 @@ bool createLogFile()
   //TunerStudio only supports 8.3 filename format. 
   char filenameBuffer[13]; //8 + 1 + 3 + 1
   bool returnValue = false;
+
+  //Saving this in case we ever go back to the datestamped filename
+  /*
+  //Filename format is: YYYY-MM-DD_HH.MM.SS.csv
+  char intBuffer[5];
+  itoa(rtc_getYear(), intBuffer, 10);
+  strcpy(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "-");
+  itoa(rtc_getMonth(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "-");
+  itoa(rtc_getDay(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "_");
+  itoa(rtc_getHour(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".");
+  itoa(rtc_getMinute(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".");
+  itoa(rtc_getSecond(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".csv");
+  */
 
   //Lookup the next available file number
   currentLogFileNumber = getNextSDLogFileNumber();
@@ -171,6 +196,9 @@ void beginSDLogging()
 
     //Write a header row
     writeSDLogHeader();
+
+    //Note the start time
+    logStartTime = millis();
   }
 }
 
@@ -200,6 +228,17 @@ void writeSDLogEntry()
 
   if(SD_status == SD_STATUS_ACTIVE)
   {
+    //Write the timestamp (x.yyy seconds format)
+    uint32_t duration = millis() - logStartTime;
+    uint32_t seconds = duration / 1000;
+    uint32_t milliseconds = duration % 1000;
+    rb.print(seconds);
+    rb.print('.');
+    if (milliseconds < 100) { rb.print("0"); }
+    if (milliseconds < 10) { rb.print("0"); }
+    rb.print(milliseconds);
+    rb.print(',');
+
     //Write the line to the ring buffer
     for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
     {
@@ -236,6 +275,10 @@ void writeSDLogEntry()
 
 void writeSDLogHeader()
 {
+  //Write header for Time field
+  rb.print("Time,");
+
+  //WRite remaining fields based on log definitions
   for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
   {
     #ifdef CORE_AVR

@@ -239,6 +239,13 @@ void initialiseAll()
     oilPressureProtectTable.values = configPage10.oilPressureProtMins;
     oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
 
+    coolantProtectTable.valueSize = SIZE_BYTE;
+    coolantProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    coolantProtectTable.xSize = 6;
+    coolantProtectTable.values = configPage9.coolantProtRPM;
+    coolantProtectTable.axisX = configPage9.coolantProtTemp;
+
+
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     fanPWMTable.xSize = 4;
@@ -905,10 +912,20 @@ void initialiseAll()
         //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
         if( configPage2.nCylinders == 4 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and3;
-          inj2EndFunction = closeInjector2and3;
+          if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
+          {
+            inj1StartFunction = openInjector1and3;
+            inj1EndFunction = closeInjector1and3;
+            inj2StartFunction = openInjector2and4;
+            inj2EndFunction = closeInjector2and4;
+          }
+          else
+          {
+            inj1StartFunction = openInjector1and4;
+            inj1EndFunction = closeInjector1and4;
+            inj2StartFunction = openInjector2and3;
+            inj2EndFunction = closeInjector2and3;
+          }
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
