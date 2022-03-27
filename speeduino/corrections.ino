@@ -785,7 +785,7 @@ int8_t correctionSoftRevLimit(int8_t advance)
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
   {
-    if (currentStatus.RPM > ((unsigned int)(configPage4.SoftRevLim) * 100) ) //Softcut RPM limit
+    if (currentStatus.RPMdiv100 >= configPage4.SoftRevLim) //Softcut RPM limit
     {
       if( (runSecsX10 - softStartTime) < configPage4.SoftLimMax )
       {
