@@ -663,97 +663,102 @@ byte correctionAFRClosedLoop()
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
-/** Dispatch calculations for all ignition related corrections.
- * @param base_advance - Base ignition advance (deg. ?)
- * @return Advance considering all (~12) individual corrections
+/** 
+ * @brief Dispatch calculations for all ignition related corrections.
+ * 
+ * @details Combines the results of all separate ignition corrections. Takes into account wether any ignition correction sets a fixed advance.
+ * 
+ * @param[in,out] advance Ignition advance in degrees before applying corrections and is updated with advance after applying corrections
+ * 
+ * @retval true The advance parameter is set to fixed advance in degrees
+ * 
+ * @retval false The advance parameter is set to its input value plus the calculated ignition advance correction
  */
-int8_t correctionsIgn(int8_t base_advance)
+bool correctionsIgn(int16_t &advance)
 {
-  int8_t advance;
-  advance = correctionFlexTiming(base_advance);
-  advance = correctionWMITiming(advance);
-  advance = correctionIATretard(advance);
-  advance = correctionCLTadvance(advance);
-  advance = correctionIdleAdvance(advance);
-  advance = correctionSoftRevLimit(advance);
-  advance = correctionNitrous(advance);
-  advance = correctionSoftLaunch(advance);
-  advance = correctionSoftFlatShift(advance);
-  advance = correctionKnock(advance);
+  int8_t fixedAdvance = -128;
+  int16_t advanceCorrection =
+    correctionFlexTiming()
+    + correctionWMITiming()
+    - correctionIATretard()
+    + correctionCLTadvance()
+    + correctionIdleAdvance(&fixedAdvance)
+    - correctionSoftRevLimit(&fixedAdvance)
+    + correctionNitrous()
+    + correctionKnock();
 
+  //All corrections below only set fixed advance
+  correctionSoftLaunch(&fixedAdvance);
+  correctionSoftFlatShift(&fixedAdvance);
   //Fixed timing check must go last
-  advance = correctionFixedTiming(advance);
-  advance = correctionCrankingFixedTiming(advance); //This overrides the regular fixed timing, must come last
+  correctionFixedTiming(&fixedAdvance);
+  correctionCrankingFixedTiming(&fixedAdvance); //This overrides the regular fixed timing, must come last
 
-  return advance;
+  // If any fixed advance is set, the ignition table and relative advance will not be used
+  if (fixedAdvance > -128) {
+    advance = fixedAdvance;
+    return true;
+  }
+  else {
+    advance += advanceCorrection;
+    return false;
+  }
+
 }
 /** Correct ignition timing to configured fixed value.
  * Must be called near end to override all other corrections.
  */
-int8_t correctionFixedTiming(int8_t advance)
+void correctionFixedTiming(int8_t * fixedAdvance)
 {
-  int8_t ignFixValue = advance;
-  if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
-  return ignFixValue;
+  if (configPage2.fixAngEnable == 1) { *fixedAdvance = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
 }
 /** Correct ignition timing to configured fixed value to use during craning.
  * Must be called near end to override all other corrections.
  */
-int8_t correctionCrankingFixedTiming(int8_t advance)
+void correctionCrankingFixedTiming(int8_t * fixedAdvance)
 {
-  int8_t ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
-  return ignCrankFixValue;
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { *fixedAdvance = configPage4.CrankAng; } //Use the fixed cranking ignition angle
 }
 
-int8_t correctionFlexTiming(int8_t advance)
+int8_t correctionFlexTiming()
 {
-  int16_t ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    ignFlexValue = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
-    currentStatus.flexIgnCorrection = (int8_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
-    ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
+    currentStatus.flexIgnCorrection = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
+    return currentStatus.flexIgnCorrection;
   }
-  return (int8_t) ignFlexValue;
+  return 0;
 }
 
-int8_t correctionWMITiming(int8_t advance)
+int8_t correctionWMITiming()
 {
   if( (configPage10.wmiEnabled >= 1) && (configPage10.wmiAdvEnabled == 1) && !BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) ) //Check for wmi being enabled
   {
     if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPM >= configPage10.wmiRPM) && (currentStatus.MAP/2 >= configPage10.wmiMAP) && ((currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
     {
-      return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
+      return table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
     }
   }
-  return advance;
+  return 0;
 }
 /** Ignition correction for inlet air temperature (IAT).
  */
-int8_t correctionIATretard(int8_t advance)
+int8_t correctionIATretard()
 {
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
-
-  return advance - advanceIATadjust;
+  return table2D_getValue(&IATRetardTable, currentStatus.IAT);
 }
 /** Ignition correction for coolant temperature (CLT).
  */
-int8_t correctionCLTadvance(int8_t advance)
+int8_t correctionCLTadvance()
 {
-  int8_t ignCLTValue = advance;
-  //Adjust the advance based on CLT.
-  int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
-  ignCLTValue = (advance + advanceCLTadjust);
-  
-  return ignCLTValue;
+  return (table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
 }
 /** Ignition Idle advance correction.
  */
-int8_t correctionIdleAdvance(int8_t advance)
+int8_t correctionIdleAdvance(int8_t * fixedAdvance)
 {
 
-  int8_t ignIdleValue = advance;
+  int8_t ignIdleValue = 0;
   //Adjust the advance based on idle target rpm.
   if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.idleAdvDelay * 5)) )
   {
@@ -767,9 +772,9 @@ int8_t correctionIdleAdvance(int8_t advance)
     {
       if( (runSecsX10 - idleAdvStart) >= configPage9.idleAdvStartDelay )
       {
-        int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
-        if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-        else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+        int8_t advanceIdleAdjust = (table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+        if(configPage2.idleAdvEnabled == 1) { ignIdleValue = advanceIdleAdjust; }
+        else if(configPage2.idleAdvEnabled == 2) { *fixedAdvance = advanceIdleAdjust; }
       }
     }
     else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvStart = runSecsX10; } //Only copy time at runSecsX10 update rate
@@ -778,9 +783,9 @@ int8_t correctionIdleAdvance(int8_t advance)
 }
 /** Ignition soft revlimit correction.
  */
-int8_t correctionSoftRevLimit(int8_t advance)
+int8_t correctionSoftRevLimit(int8_t * fixedAdvance)
 {
-  byte ignSoftRevValue = advance;
+  int8_t ignSoftRevValue = 0;
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
@@ -790,8 +795,8 @@ int8_t correctionSoftRevLimit(int8_t advance)
       if( (runSecsX10 - softStartTime) < configPage4.SoftLimMax )
       {
         BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
-        if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
-        else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+        if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
+        else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { *fixedAdvance = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
       }
     }  
     else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softStartTime = runSecsX10; } //Only copy time at runSecsX10 update rate
@@ -801,9 +806,9 @@ int8_t correctionSoftRevLimit(int8_t advance)
 }
 /** Ignition Nitrous oxide correction.
  */
-int8_t correctionNitrous(int8_t advance)
+int8_t correctionNitrous()
 {
-  byte ignNitrous = advance;
+  int8_t ignNitrous = 0;
   //Check if nitrous is currently active
   if(configPage10.n2o_enable > 0)
   {
@@ -822,44 +827,37 @@ int8_t correctionNitrous(int8_t advance)
 }
 /** Ignition soft launch correction.
  */
-int8_t correctionSoftLaunch(int8_t advance)
+void correctionSoftLaunch(int8_t * fixedAdvance)
 {
-  byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
   if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
-    ignSoftLaunchValue = configPage6.lnchRetard;
+    *fixedAdvance = configPage6.lnchRetard;
   }
   else
   {
     currentStatus.launchingSoft = false;
     BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
   }
-
-  return ignSoftLaunchValue;
 }
 /** Ignition correction for soft flat shift.
  */
-int8_t correctionSoftFlatShift(int8_t advance)
+void correctionSoftFlatShift(int8_t * fixedAdvance)
 {
-  int8_t ignSoftFlatValue = advance;
-
   if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
     BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
-    ignSoftFlatValue = configPage6.flatSRetard;
+    *fixedAdvance = configPage6.flatSRetard;
   }
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
-
-  return ignSoftFlatValue;
 }
 /** Ignition knock (retard) correction.
  */
-int8_t correctionKnock(int8_t advance)
+int8_t correctionKnock()
 {
-  byte knockRetard = 0;
+  int8_t knockRetard = 0;
 
   //First check is to do the window calculations (ASsuming knock is enabled)
   if( configPage10.knock_mode != KNOCK_MODE_OFF )
@@ -889,7 +887,7 @@ int8_t correctionKnock(int8_t advance)
 
   }
 
-  return advance - knockRetard;
+  return knockRetard;
 }
 
 /** Ignition Dwell Correction.

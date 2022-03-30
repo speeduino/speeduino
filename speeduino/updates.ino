@@ -593,6 +593,20 @@ void doUpdates()
     storeEEPROMVersion(20);
   }
 
+  if(readEEPROMVersion() == 19)
+  {
+    // Set spark2correctedMultiplyAddedAdvance appropriately
+    if (configPage10.spark2Mode == SPARK2_MODE_MULTIPLY || configPage10.spark2Mode == SPARK2_MODE_ADD) {
+      configPage10.spark2correctedMultiplyAddedAdvance = false; // Use the old calculation for existing tunes that are affected
+    }
+    else {
+      configPage10.spark2correctedMultiplyAddedAdvance = true; // Use the new calculation for tunes that aren't affected. Prevents old calculation from being used if the spark2mode is changed.
+    }
+
+    writeAllConfig();
+    storeEEPROMVersion(20);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
