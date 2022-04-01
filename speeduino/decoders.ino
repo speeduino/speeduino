@@ -58,6 +58,8 @@ volatile unsigned long targetGap;
 
 unsigned long MAX_STALL_TIME = 500000UL; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
+volatile uint16_t decoderTachoOutSkipTeeth; //Number of teeth to skip until the tacho output is flipped.
+volatile uint16_t decoderTachoLastTooth; //Last tooth that the tach output was flipped on;
 volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
 volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
@@ -369,6 +371,14 @@ void triggerSetup_missingTooth()
   secondDerivEnabled = false;
   decoderIsSequential = false;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
+  
+  if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) 
+  { 
+    decoderTachoOutSkipTeeth = (configPage4.triggerTeeth >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
+    if (decoderTachoOutSkipTeeth < (configPage4.triggerMissingTeeth * 2)){ decoderTachoOutSkipTeeth = (configPage4.triggerMissingTeeth * 2); } // limit to missing teeth * 2
+  }
+  else{	decoderTachoOutSkipTeeth = 0; }
+  
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
@@ -459,6 +469,22 @@ void triggerPri_missingTooth()
                 triggerToothAngleIsCorrect = false; //The tooth angle is double at this point
             }
           }
+        }
+		
+        /* Tachometer output wheel pulse method */
+        if (( decoderTachoOutSkipTeeth > 0) && (currentStatus.hasSync == true))
+        {
+          if (toothCurrentCount == 1)
+          { // Turn low pulse at tooth 1 (Most boards invert the output so this is 12V out on the tach)
+            TACHO_PULSE_LOW(); 
+            decoderTachoLastTooth = toothCurrentCount;
+          }   
+          else if (toothCurrentCount >= (decoderTachoLastTooth + decoderTachoOutSkipTeeth)) 
+          {
+            TACHO_PULSE_TOGGLE();
+            decoderTachoLastTooth = toothCurrentCount;
+          }
+          // Else maintain last value of tacho output;		  
         }
         
         if(isMissingTooth == false)
@@ -702,6 +728,13 @@ void triggerSetup_DualWheel()
   toothCurrentCount = 255; //Default value
   triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   triggerSecFilterTime = (1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) 
+  { 
+    decoderTachoOutSkipTeeth = (configPage4.triggerTeeth >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
+    if (decoderTachoOutSkipTeeth < 1){ decoderTachoOutSkipTeeth = 1; } // limit to 1 tooth to skip
+  }
+  else{	decoderTachoOutSkipTeeth = 0; }
+  
   secondDerivEnabled = false;
   decoderIsSequential = true;
   triggerToothAngleIsCorrect = true; //This is always true for this pattern
@@ -732,12 +765,24 @@ void triggerPri_DualWheel()
           toothOneMinusOneTime = toothOneTime;
           toothOneTime = curTime;
           currentStatus.startRevolutions++; //Counter
-          if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
+		  
+          /* Tachometer output wheel pulse method */
+          if (decoderTachoOutSkipTeeth > 0)
+          {
+            TACHO_PULSE_LOW(); 
+            decoderTachoLastTooth = toothCurrentCount; 
+          }
         }
-
+        else if ((decoderTachoOutSkipTeeth > 0) && toothCurrentCount >= (decoderTachoLastTooth + decoderTachoOutSkipTeeth))
+        {
+          TACHO_PULSE_TOGGLE();
+          decoderTachoLastTooth = toothCurrentCount;
+        }
+        // Else maintain last value of tacho output;
+        if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
         setFilter(curGap); //Recalc the new filter value
       }
-
+	  
       //NEW IGNITION MODE
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
       {
@@ -927,6 +972,14 @@ void triggerSetup_BasicDistributor()
   toothCurrentCount = 0; //Default value
   decoderHasFixedCrankingTiming = true;
   triggerToothAngleIsCorrect = true;
+  
+  if ((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) // Tacho config
+  { 
+    decoderTachoOutSkipTeeth = (triggerActualTeeth >> 1) / configPage2.tachoPulsesPerRev; //takes 2 teeth to generate a pulse.
+    if (decoderTachoOutSkipTeeth < 1){ decoderTachoOutSkipTeeth = 1; } // limit to 1 tooth to skip
+  }
+  else{	decoderTachoOutSkipTeeth = 0; }
+  
   if(configPage2.nCylinders <= 4) { MAX_STALL_TIME = (1851UL * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = (3200UL * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
@@ -967,6 +1020,18 @@ void triggerPri_BasicDistributor()
 
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
+  
+  /* Tachometer output wheel pulse method - Basic distributor doesn't really care about tooth one so toggle every skip tooth */
+  if (( decoderTachoOutSkipTeeth > 0) && (currentStatus.hasSync == true))
+  {
+    if (toothCurrentCount >= (decoderTachoLastTooth + decoderTachoOutSkipTeeth)) 
+    {
+      TACHO_PULSE_TOGGLE();
+      decoderTachoLastTooth = toothCurrentCount;
+    }
+    // Else maintain last value of tacho output;		  
+  }
+	
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
     {
       endCoil1Charge();
@@ -1103,6 +1168,12 @@ void triggerPri_GM7X()
         }
       }
     }
+	
+	// Tacho output for GM7x alternates with the number of pulses = No of teeth / 2 and ignores the notch tooth;
+	if((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) 
+	{
+	  if((currentStatus.hasSync == true) && (toothCurrentCount != 3)) { TACHO_PULSE_TOGGLE(); }
+	}
 
     //New ignition mode!
     if(configPage2.perToothIgn == true)
@@ -1707,6 +1778,10 @@ void triggerSec_24X()
 {
   toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
   revolutionOne = 1; //Sequential revolution reset
+  
+  // Tacho output for 24x follows the CAM sync so 0.5 pulses per crank rev.
+  if((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) { TACHO_PULSE_TOGGLE(); }
+  
 }
 
 uint16_t getRPM_24X()
@@ -1819,6 +1894,9 @@ void triggerPri_Jeep2000()
 void triggerSec_Jeep2000()
 {
   toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  
+  // Tacho output for Jeep2000 follows the CAM sync so 0.5 pulses per crank rev.
+  if((configPage2.TachoOutput == 1) && (configPage2.tachoMode == TACHOUT_MODE_WHLTOOTHSYNC)) { TACHO_PULSE_TOGGLE(); }
   return;
 }
 
@@ -4136,8 +4214,6 @@ void triggerSetEndTeeth_FordST170()
 
   lastToothCalcAdvance = currentStatus.advance;
 }
-/** @} */
-
 
 void triggerSetup_DRZ400()
 {

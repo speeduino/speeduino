@@ -69,36 +69,38 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
   //Tacho output check
-  //Tacho is flagged as being ready for a pulse by the ignition outputs. 
-  if(tachoOutputFlag == READY)
-  {
+  //Tacho output here is one pulse of a defined duration either every ignition event (IGNPULSE) or every other event (IGNSKIPPULSE).
+
+  if((configPage2.TachoOutput == 1) && (configPage2.tachoMode < TACHOUT_MODE_WHLTOOTHSYNC))
+  { 
+    //Tacho is flagged as being ready for a pulse by the ignition outputs. 
     //Check for half speed tacho
-    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    if((tachoOutputFlag == READY) &&
+	   ((configPage2.tachoMode == TACHOUT_MODE_IGNPULSE) ||
+	    (configPage2.tachoMode == TACHOUT_MODE_IGNSKIPPULSE) && (tachoAlt == true))) 
     { 
-      TACHO_PULSE_LOW();
-      //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
-      tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
-      tachoOutputFlag = ACTIVE;
+	  TACHO_PULSE_LOW();
+	  tacho_ms_counter = 0;
+	  tachoOutputFlag = ACTIVE;
     }
     else
     {
-      //Don't run on this pulse (Half speed tacho)
-      tachoOutputFlag = DEACTIVE;
+	  tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use.
+	  tachoOutputFlag = DEACTIVE;		
     }
-    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use. 
-  }
-  else if(tachoOutputFlag == ACTIVE)
-  {
-    //If the tacho output is already active, check whether it's reached it's end time
-    if((uint8_t)ms_counter == tachoEndTime)
+    
+    if(tachoOutputFlag == ACTIVE)
     {
-      TACHO_PULSE_HIGH();
-      tachoOutputFlag = DEACTIVE;
+	  tacho_ms_counter++;
+	  //If the tacho output is already active, check whether it's reached it's end time
+	  if(tacho_ms_counter >= configPage2.tachoDuration)
+	  {
+	    TACHO_PULSE_HIGH();
+	    tachoOutputFlag = DEACTIVE;
+	    tacho_ms_counter = 0;
+	  }
     }
   }
-  // Tacho sweep
-  
-
 
   //30Hz loop
   if (loop33ms == 33)
@@ -270,4 +272,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
 #endif
 }
-

@@ -360,6 +360,10 @@
 #define MULTIPLY_MAP_MODE_BARO  1
 #define MULTIPLY_MAP_MODE_100   2
 
+#define TACHOUT_MODE_IGNPULSE       0
+#define TACHOUT_MODE_IGNSKIPPULSE   1
+#define TACHOUT_MODE_WHLTOOTHSYNC   2
+
 #define FOUR_STROKE         0
 #define TWO_STROKE          1
 
@@ -757,14 +761,14 @@ struct config2 {
   byte aeMode : 2;      /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
   byte battVCorMode : 1;
   byte SoftLimitMode : 1;
-  byte useTachoSweep : 1;
+  byte TachoOutput : 1; /// Enable tachometer output signal
   byte aeApplyMode : 1; ///< Acceleration enrichment calc mode: 0 = Multiply | 1 = Add (AE_MODE_ADDER)
   byte multiplyMAP : 2; ///< MAP value processing: 0 = off, 1 = div by currentStatus.baro, 2 = div by 100 (to gain usable value)
   byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
   byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
-  byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
+  byte tachoMode : 2;    ///< Tacho output mode 0 = IGNPulse, 1 = IGNSkipPulse 2 = WhlToothSync,
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
   byte taeThresh;       /**< The TPSdot threshold that must be exceeded before AE is engaged */
@@ -895,7 +899,7 @@ struct config2 {
   byte idleUpOutputInv : 1;
   byte idleUpOutputPin  : 6;
 
-  byte tachoSweepMaxRPM;
+  byte tachoPulsesPerRev;
   byte primingDelay;
 
   byte iacTPSlimit;
