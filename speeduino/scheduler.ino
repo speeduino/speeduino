@@ -29,6 +29,9 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO.h"
 #include "timers.h"
 
+/* We only need this one extern from speeduino.h for injector open time accumulation, just grab it */
+extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
+
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
 FuelSchedule fuelSchedule3;
