@@ -440,7 +440,7 @@ page_iterator_t page_begin(byte pageNum)
 
 page_iterator_t advance(const page_iterator_t &it)
 {
-    return map_page_offset_to_entity(it.page, it.start+it.size);
+  return map_page_offset_to_entity(it.page, it.start+it.size);
 }
 
 /**
