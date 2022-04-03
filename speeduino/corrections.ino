@@ -905,7 +905,8 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t dwellPerRevolution = tempDwell + (uint16_t)(configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
   int8_t pulsesPerRevolution = 1;
   //Single channel spark mode is the only time there will be more than 1 pulse per revolution on any given output
-  if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || (configPage4.sparkMode == IGN_MODE_ROTARY) ) && (configPage2.nCylinders > 1) ) //No point in running this for 1 cylinder engines
+  //For rotary ignition this also holds true in wasted spark configuration (FC/FD) resulting in 2 pulses. RX-8 however is fully sequential resulting in 1 pulse
+  if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || ((configPage4.sparkMode == IGN_MODE_ROTARY) && (configPage10.rotaryType != ROTARY_IGN_RX8)) ) && (configPage2.nCylinders > 1) ) //No point in running this for 1 cylinder engines
   {
     pulsesPerRevolution = (configPage2.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
