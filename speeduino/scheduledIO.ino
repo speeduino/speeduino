@@ -45,6 +45,12 @@ inline void coil7Toggle()     { if(ignitionOutputControl != OUTPUT_CONTROL_MC338
 inline void coil8Toggle()     { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { coil8Toggle_DIRECT(); } else { coil8Toggle_MC33810(); } }
 
 // These are for Semi-Sequential and 5 Cylinder injection
+//Standard 4 cylinder pairings
+void openInjector1and3() { openInjector1(); openInjector3(); }
+void closeInjector1and3() { closeInjector1(); closeInjector3(); }
+void openInjector2and4() { openInjector2(); openInjector4(); }
+void closeInjector2and4() { closeInjector2(); closeInjector4(); }
+//Alternative output pairings
 void openInjector1and4() { openInjector1(); openInjector4(); }
 void closeInjector1and4() { closeInjector1(); closeInjector4(); }
 void openInjector2and3() { openInjector2(); openInjector3(); }
