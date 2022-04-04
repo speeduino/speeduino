@@ -48,9 +48,10 @@ unsigned long knockStartTime;
 byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-uint16_t aseTaperStart;
-uint16_t dfcoStart;
-uint16_t idleAdvStart;
+uint8_t aseTaper;
+uint8_t dfcoTaper;
+uint8_t idleAdvTaper;
+uint8_t crankingEnrichTaper;
 
 /** Initialize instances and vars related to corrections (at ECU boot-up).
  */
@@ -214,17 +215,19 @@ uint16_t correctionCranking()
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingEnrichTaper = 0;
   }
   
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
-  else if ( (uint32_t) runSecsX10 <= configPage10.crankingEnrichTaper)
+  else if ( crankingEnrichTaper < configPage10.crankingEnrichTaper )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
-    crankingValue = (uint16_t) map(runSecsX10, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
+    crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
+    if( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
   }
   return crankingValue;
 }
@@ -247,15 +250,15 @@ byte correctionASE()
     {
       BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
       ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-      aseTaperStart = runSecsX10;
+      aseTaper = 0;
     }
     else
     {
-      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && ((runSecsX10 - aseTaperStart) < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
+      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (aseTaper < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + map((runSecsX10 - aseTaperStart), 0, configPage2.aseTaperTime,\
-          table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+        ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+        aseTaper++;
       }
       else
       {
@@ -532,16 +535,19 @@ bool correctionDFCO()
     if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
-      if ( DFCOValue == false) { dfcoStart = 0; }
+      if ( DFCOValue == false) { dfcoTaper = 0; }
     }
     else 
     {
-      if ( ( currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) ) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) )
+      if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) && (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + configPage4.dfcoHyster) ) )
       {
-        if ( dfcoStart == 0 ) { dfcoStart = runSecsX10; }
-        if( (runSecsX10 - dfcoStart) > configPage2.dfcoDelay ) { DFCOValue = true; }
+        if( dfcoTaper < configPage2.dfcoDelay )
+        {
+          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper++; }
+        }
+        else { DFCOValue = true; }
       }
-      else { dfcoStart = 0; } //Prevent future activation right away if previous time wasn't activated
+      else { dfcoTaper = 0; } //Prevent future activation right away if previous time wasn't activated
     } // DFCO active check
   } // DFCO enabled check
   return DFCOValue;
@@ -762,17 +768,21 @@ int8_t correctionIdleAdvance(int8_t advance)
     // Limit idle rpm delta between -500rpm - 500rpm
     if(idleRPMdelta > 100) { idleRPMdelta = 100; }
     if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if( (currentStatus.RPMdiv100 < configPage2.idleAdvRPM) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
+    if( (currentStatus.RPM < (configPage2.idleAdvRPM * 100)) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
     && (((configPage2.idleAdvAlgorithm == 0) && (currentStatus.TPS < configPage2.idleAdvTPS)) || ((configPage2.idleAdvAlgorithm == 1) && (currentStatus.CTPSActive == 1))) ) // closed throttle position sensor (CTPS) based idle state
     {
-      if( (runSecsX10 - idleAdvStart) >= configPage9.idleAdvStartDelay )
+      if( idleAdvTaper < configPage9.idleAdvStartDelay )
+      {
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvTaper++; }
+      }
+      else
       {
         int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
         if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
         else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
       }
     }
-    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvStart = runSecsX10; } //Only copy time at runSecsX10 update rate
+    else { idleAdvTaper = 0; }
   }
   return ignIdleValue;
 }
@@ -787,14 +797,16 @@ int8_t correctionSoftRevLimit(int8_t advance)
   {
     if (currentStatus.RPMdiv100 >= configPage4.SoftRevLim) //Softcut RPM limit
     {
-      if( (runSecsX10 - softStartTime) < configPage4.SoftLimMax )
+      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+      if( softLimitTime < configPage4.SoftLimMax )
       {
-        BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
         if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
         else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
+
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softLimitTime++; }
       }
-    }  
-    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softStartTime = runSecsX10; } //Only copy time at runSecsX10 update rate
+    }
+    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softLimitTime = 0; } //Only reset time at runSecsX10 update rate
   }
 
   return ignSoftRevValue;
