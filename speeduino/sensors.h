@@ -64,7 +64,8 @@ volatile uint16_t knockAngle;
 
 
 bool auxIsEnabled;
-byte MAPlast; /**< The previous MAP reading */
+
+uint16_t MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssTimes[VSS_SAMPLES] = {0};

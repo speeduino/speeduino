@@ -22,7 +22,7 @@ byte checkRevLimit()
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
   {
-    if ( (currentStatus.RPMdiv100 > configPage4.HardRevLim) || ((runSecsX10 - softStartTime) >= configPage4.SoftLimMax) )
+    if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
     { 
       BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
