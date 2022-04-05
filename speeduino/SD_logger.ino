@@ -336,7 +336,7 @@ void checkForSDStart()
   //Check for RPM based Enable
   if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
   {
-    if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
+    if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
     {
       beginSDLogging(); //Setup the log file, prallocation, header row
     }
@@ -387,7 +387,7 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_RPM)
     {
-      if(currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off)
+      if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) )
       {
         log_RPM = true;
       }
