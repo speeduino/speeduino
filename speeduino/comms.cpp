@@ -617,124 +617,131 @@ void processSerialCommand()
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
     {
-      uint8_t cmd = serialPayload[2];
-      uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
-      uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
-      uint32_t calibrationCRC = 0;
-
-      if(cmd == O2_CALIBRATION_PAGE)
+      if(configPage6.cal_lock == true) // Only read and apply new calibrations from TS if calibrations are unlocked. This should always be true.
       {
-        //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
-        //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
-        void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
-
-        //Read through the current chunk (Should be 256 bytes long)
-        for(uint16_t x = 0; x < calibrationLength; x++)
+        uint8_t cmd = serialPayload[2];
+        uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
+        uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
+        uint32_t calibrationCRC = 0;
+  
+        if(cmd == O2_CALIBRATION_PAGE)
         {
-          uint16_t totalOffset = valueOffset + x;
-          //Only apply every 32nd value
-          if( (x % 32) == 0 )
+          //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
+          //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
+          void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
+          uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
+  
+          //Read through the current chunk (Should be 256 bytes long)
+          for(uint16_t x = 0; x < calibrationLength; x++)
           {
-            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
-            pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
-
+            uint16_t totalOffset = valueOffset + x;
+            //Only apply every 32nd value
+            if( (x % 32) == 0 )
+            {
+              ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
+              pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
+  
+            }
+  
+            //Update the CRC
+            if(totalOffset == 0)
+            {
+              calibrationCRC = CRC32.crc32(&serialPayload[7], 1, false);
+            }
+            else
+            {
+              calibrationCRC = CRC32.crc32_upd(&serialPayload[x+7], 1, false);
+            }
+            //Check if CRC is finished
+            if(totalOffset == 1023) 
+            {
+              //apply CRC reflection
+              calibrationCRC = ~calibrationCRC;
+              storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
+            }
           }
-
-          //Update the CRC
-          if(totalOffset == 0)
-          {
-            calibrationCRC = CRC32.crc32(&serialPayload[7], 1, false);
-          }
-          else
-          {
-            calibrationCRC = CRC32.crc32_upd(&serialPayload[x+7], 1, false);
-          }
-          //Check if CRC is finished
-          if(totalOffset == 1023) 
-          {
-            //apply CRC reflection
-            calibrationCRC = ~calibrationCRC;
-            storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
-          }
-        }
-        sendSerialReturnCode(SERIAL_RC_OK);
-        Serial.flush(); //This is safe because engine is assumed to not be running during calibration
-
-        //Check if this is the final chunk of calibration data
-        #ifdef CORE_STM32
-          //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
-          if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
-        #else
-          if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
-        #endif
-      }
-      else if(cmd == IAT_CALIBRATION_PAGE)
-      {
-        void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-
-        //Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
-        if(calibrationLength == 64)
-        {
-          for (uint16_t x = 0; x < 32; x++)
-          {
-            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
-            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-            
-            //Apply the temp offset and check that it results in all values being positive
-            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
-            if (tempValue < 0) { tempValue = 0; }
-
-            
-            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
-          }
-          //Update the CRC
-          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          storeCalibrationCRC32(IAT_CALIBRATION_PAGE, calibrationCRC);
-
-          writeCalibration();
           sendSerialReturnCode(SERIAL_RC_OK);
+          Serial.flush(); //This is safe because engine is assumed to not be running during calibration
+  
+          //Check if this is the final chunk of calibration data
+          #ifdef CORE_STM32
+            //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
+            if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+          #else
+            if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
+          #endif
         }
-        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
-        
-      }
-      else if(cmd == CLT_CALIBRATION_PAGE)
-      {
-        void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-
-        //Temperature calibrations are sent as 32 16-bit values
-        if(calibrationLength == 64)
+        else if(cmd == IAT_CALIBRATION_PAGE)
         {
-          for (uint16_t x = 0; x < 32; x++)
+          void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
+          uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+  
+          //Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
+          if(calibrationLength == 64)
           {
-            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
-            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-            
-            //Apply the temp offset and check that it results in all values being positive
-            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
-            if (tempValue < 0) { tempValue = 0; }
-
-            
-            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
+            for (uint16_t x = 0; x < 32; x++)
+            {
+              int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+              tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+              tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+              
+              //Apply the temp offset and check that it results in all values being positive
+              tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+              if (tempValue < 0) { tempValue = 0; }
+  
+              
+              ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+              pnt_TargetTable_bins[x] = (x * 32U);
+            }
+            //Update the CRC
+            calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
+            storeCalibrationCRC32(IAT_CALIBRATION_PAGE, calibrationCRC);
+  
+            writeCalibration();
+            sendSerialReturnCode(SERIAL_RC_OK);
           }
-          //Update the CRC
-          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          storeCalibrationCRC32(CLT_CALIBRATION_PAGE, calibrationCRC);
-
-          writeCalibration();
-          sendSerialReturnCode(SERIAL_RC_OK);
+          else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+          
         }
-        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        else if(cmd == CLT_CALIBRATION_PAGE)
+        {
+          void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
+          uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+  
+          //Temperature calibrations are sent as 32 16-bit values
+          if(calibrationLength == 64)
+          {
+            for (uint16_t x = 0; x < 32; x++)
+            {
+              int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
+              tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+              tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+              
+              //Apply the temp offset and check that it results in all values being positive
+              tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
+              if (tempValue < 0) { tempValue = 0; }
+  
+              
+              ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
+              pnt_TargetTable_bins[x] = (x * 32U);
+            }
+            //Update the CRC
+            calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
+            storeCalibrationCRC32(CLT_CALIBRATION_PAGE, calibrationCRC);
+  
+            writeCalibration();
+            sendSerialReturnCode(SERIAL_RC_OK);
+          }
+          else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        }
+        else
+        {
+          sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+        }
       }
       else
       {
-        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+        sendSerialReturnCode(SERIAL_RC_UKWN_ERR); // If for some reason the calibration write manages to happen when calibrations are locked, we send error to TS. (calibration dialog is disabled if calibrations are locked)
       }
       break;
     }
