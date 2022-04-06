@@ -469,7 +469,7 @@ void initialiseAll()
         maxIgnOutputs = 1;
 
         //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
+        if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
@@ -496,7 +496,7 @@ void initialiseAll()
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
+        if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
 
         if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
         {
@@ -676,7 +676,7 @@ void initialiseAll()
         channel5IgnDegrees = 288;
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
-        if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+        if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE))
         {
           channel2IgnDegrees = 144;
           channel3IgnDegrees = 288;
