@@ -1279,21 +1279,23 @@ void boostDisable(void)
 void setTacho()
 {
   static bool tachoAlt=false; //tacho divider
-
-  if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
-  { 
-    TACHO_PULSE_LOW(); //start tacho pulse
+  
+  if(tachoOutputFlag=DEACTIVE){
+    tachoOutputFlag=ACTIVE;    
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) )
+    { 
+      TACHO_PULSE_LOW(); //start tacho pulse
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use.    
     #if defined(CORE_AVR) //avr chips use Timer2 for this
-      tachoInterval =tachoDwell;
+      tachoInterval =tachoDwell;//
       TACHO_COMPARE =(uint8_t)(TACHO_COUNTER + lowByte(tachoInterval));
-      TACHO_TIMER_ENABLE();            //Timer2 Output Compare Match A Interrupt Enable
+      TACHO_TIMER_ENABLE();            //Timer2 Output Compare Match A Interrupt Enable        
     #else  //other chips use simply micros() for this      
-      tachoOutputFlag = ACTIVE;
       lastTachoStartTime=tachoStartTime;
       tachoStartTime=micros();       
-    #endif   
-  }
-  tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use. 
+    #endif     
+  } 
 }
 
 //Tacho output check
@@ -1307,6 +1309,7 @@ ISR(TIMER2_COMPA_vect)
   }
   else
   {
+  tachoOutputFlag = DEACTIVE;
   TACHO_PULSE_HIGH(); //end tacho pulse
   TACHO_TIMER_DISABLE();
   }
