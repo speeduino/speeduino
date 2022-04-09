@@ -256,6 +256,9 @@
 #define INJ_BANKED          2
 #define INJ_SEQUENTIAL      3
 
+#define INJ_PAIR_13_24      0
+#define INJ_PAIR_14_23      1
+
 #define OUTPUT_CONTROL_DIRECT   0
 #define OUTPUT_CONTROL_MC33810  10
 
@@ -566,7 +569,7 @@ extern int ignition8StartAngle;
 
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
-extern uint16_t softStartTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
+extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
 extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -998,7 +1001,8 @@ struct config4 {
 
   int16_t vvt2CL0DutyAng;
   byte vvt2PWMdir : 1;
-  byte unusedBits4 : 7;
+  byte inj4cylPairing : 2;
+  byte unusedBits4 : 5;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
   byte vvtMinClt;
