@@ -68,22 +68,6 @@ extern void (*inj8EndFunction)();
  * They are required for the various spark output modes.
  * @{
 */
-extern void (*ign1StartFunction)();
-extern void (*ign1EndFunction)();
-extern void (*ign2StartFunction)();
-extern void (*ign2EndFunction)();
-extern void (*ign3StartFunction)();
-extern void (*ign3EndFunction)();
-extern void (*ign4StartFunction)();
-extern void (*ign4EndFunction)();
-extern void (*ign5StartFunction)();
-extern void (*ign5EndFunction)();
-extern void (*ign6StartFunction)();
-extern void (*ign6EndFunction)();
-extern void (*ign7StartFunction)();
-extern void (*ign7EndFunction)();
-extern void (*ign8StartFunction)();
-extern void (*ign8EndFunction)();
 /** @} */
 
 void initialiseSchedulers();
@@ -97,16 +81,6 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -175,6 +149,16 @@ struct Schedule {
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
+
+  void (*timerEnable)();
+  void (*timerDisable)();
+  volatile typeof(IGN1_COUNTER) * counter;
+  volatile typeof(IGN1_COMPARE) * compare;
+
+  int startAngle = 0; // Dwell start
+  int endAngle = 0; // Dwell end / ignition
+  int degreesAfterTDC1; // How many degrees after TDC for ignition channel 1 that this ignition channel reaches TDC
+  uint8_t channel; // To keep track of this cylinder, used for comparison against IGNx_CMD_BIT
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
@@ -205,14 +189,10 @@ extern FuelSchedule fuelSchedule6;
 extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 
-extern Schedule ignitionSchedule1;
-extern Schedule ignitionSchedule2;
-extern Schedule ignitionSchedule3;
-extern Schedule ignitionSchedule4;
-extern Schedule ignitionSchedule5;
-extern Schedule ignitionSchedule6;
-extern Schedule ignitionSchedule7;
-extern Schedule ignitionSchedule8;
+extern Schedule ignitionSchedule[IGN_CHANNELS];
+
+extern void setIgnitionSchedule(Schedule * schedule, unsigned long timeout, unsigned long duration);
+inline void refreshIgnitionSchedule1(Schedule * schedule, unsigned long timeToEnd) __attribute__((always_inline));
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 

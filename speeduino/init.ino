@@ -450,21 +450,12 @@ void initialiseAll()
     channel7InjEnabled = false;
     channel8InjEnabled = false;
 
-    ignition1EndAngle = 0;
-    ignition2EndAngle = 0;
-    ignition3EndAngle = 0;
-    ignition4EndAngle = 0;
-    ignition5EndAngle = 0;
-    ignition6EndAngle = 0;
-    ignition7EndAngle = 0;
-    ignition8EndAngle = 0;
-
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     switch (configPage2.nCylinders) {
     case 1:
-        channel1IgnDegrees = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 1;
 
@@ -489,11 +480,11 @@ void initialiseAll()
         break;
 
     case 2:
-        channel1IgnDegrees = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2;
-        if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
-        else { channel2IgnDegrees = configPage2.oddfire2; }
+        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule[1].degreesAfterTDC1 = 180; }
+        else { ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder). 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -530,28 +521,28 @@ void initialiseAll()
         break;
 
     case 3:
-        channel1IgnDegrees = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
         //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines. 
         if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
-          channel2IgnDegrees = 240;
-          channel3IgnDegrees = 480;
+          ignitionSchedule[1].degreesAfterTDC1 = 240;
+          ignitionSchedule[2].degreesAfterTDC1 = 480;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
         else
         {
-          channel2IgnDegrees = 120;
-          channel3IgnDegrees = 240;
+          ignitionSchedule[1].degreesAfterTDC1 = 120;
+          ignitionSchedule[2].degreesAfterTDC1 = 240;
         }
         }
         else
         {
-        channel2IgnDegrees = configPage2.oddfire2;
-        channel3IgnDegrees = configPage2.oddfire3;
+        ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2;
+        ignitionSchedule[2].degreesAfterTDC1 = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -591,17 +582,17 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 4:
-        channel1IgnDegrees = 0;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
         if (configPage2.engineType == EVEN_FIRE )
         {
-          channel2IgnDegrees = 180;
+          ignitionSchedule[1].degreesAfterTDC1 = 180;
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
-            channel3IgnDegrees = 360;
-            channel4IgnDegrees = 540;
+            ignitionSchedule[2].degreesAfterTDC1 = 360;
+            ignitionSchedule[3].degreesAfterTDC1 = 540;
 
             CRANK_ANGLE_MAX_IGN = 720;
             maxIgnOutputs = 4;
@@ -609,8 +600,8 @@ void initialiseAll()
           else if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-            channel3IgnDegrees = 0;
-            channel4IgnDegrees = 180;
+            ignitionSchedule[2].degreesAfterTDC1 = 0;
+            ignitionSchedule[3].degreesAfterTDC1 = 180;
             maxIgnOutputs = 4;
 
             configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
@@ -618,9 +609,9 @@ void initialiseAll()
         }
         else
         {
-          channel2IgnDegrees = configPage2.oddfire2;
-          channel3IgnDegrees = configPage2.oddfire3;
-          channel4IgnDegrees = configPage2.oddfire4;
+          ignitionSchedule[1].degreesAfterTDC1 = configPage2.oddfire2;
+          ignitionSchedule[2].degreesAfterTDC1 = configPage2.oddfire3;
+          ignitionSchedule[3].degreesAfterTDC1 = configPage2.oddfire4;
           maxIgnOutputs = 4;
         }
 
@@ -669,19 +660,19 @@ void initialiseAll()
         channel2InjEnabled = true;
         break;
     case 5:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 72;
-        channel3IgnDegrees = 144;
-        channel4IgnDegrees = 216;
-        channel5IgnDegrees = 288;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 72;
+        ignitionSchedule[2].degreesAfterTDC1 = 144;
+        ignitionSchedule[3].degreesAfterTDC1 = 216;
+        ignitionSchedule[4].degreesAfterTDC1 = 288;
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
-          channel2IgnDegrees = 144;
-          channel3IgnDegrees = 288;
-          channel4IgnDegrees = 432;
-          channel5IgnDegrees = 576;
+          ignitionSchedule[1].degreesAfterTDC1 = 144;
+          ignitionSchedule[2].degreesAfterTDC1 = 288;
+          ignitionSchedule[3].degreesAfterTDC1 = 432;
+          ignitionSchedule[4].degreesAfterTDC1 = 576;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -732,17 +723,17 @@ void initialiseAll()
         channel4InjEnabled = true;
         break;
     case 6:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 120;
-        channel3IgnDegrees = 240;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 120;
+        ignitionSchedule[2].degreesAfterTDC1 = 240;
         maxIgnOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        channel4IgnDegrees = 360;
-        channel5IgnDegrees = 480;
-        channel6IgnDegrees = 600;
+        ignitionSchedule[3].degreesAfterTDC1 = 360;
+        ignitionSchedule[4].degreesAfterTDC1 = 480;
+        ignitionSchedule[5].degreesAfterTDC1 = 600;
         CRANK_ANGLE_MAX_IGN = 720;
         maxIgnOutputs = 6;
         }
@@ -794,10 +785,10 @@ void initialiseAll()
         channel3InjEnabled = true;
         break;
     case 8:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 90;
-        channel3IgnDegrees = 180;
-        channel4IgnDegrees = 270;
+        ignitionSchedule[0].degreesAfterTDC1 = 0;
+        ignitionSchedule[1].degreesAfterTDC1 = 90;
+        ignitionSchedule[2].degreesAfterTDC1 = 180;
+        ignitionSchedule[3].degreesAfterTDC1 = 270;
         maxIgnOutputs = 4;
 
     #if IGN_CHANNELS >= 1
@@ -811,10 +802,10 @@ void initialiseAll()
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        channel5IgnDegrees = 360;
-        channel6IgnDegrees = 450;
-        channel7IgnDegrees = 540;
-        channel8IgnDegrees = 630;
+        ignitionSchedule[4].degreesAfterTDC1 = 360;
+        ignitionSchedule[5].degreesAfterTDC1 = 450;
+        ignitionSchedule[6].degreesAfterTDC1 = 540;
+        ignitionSchedule[7].degreesAfterTDC1 = 630;
         maxIgnOutputs = 8;
         CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -1009,40 +1000,43 @@ void initialiseAll()
         break;
     }
 
+    void (*ignStartFunction[8])();
+    void (*ignEndFunction[8])();
+
     switch(configPage4.sparkMode)
     {
     case IGN_MODE_WASTED:
         //Wasted Spark (Normal mode)
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
         break;
 
     case IGN_MODE_SINGLE:
         //Single channel mode. All ignition pulses are on channel 1
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil1Charge;
-        ign2EndFunction = endCoil1Charge;
-        ign3StartFunction = beginCoil1Charge;
-        ign3EndFunction = endCoil1Charge;
-        ign4StartFunction = beginCoil1Charge;
-        ign4EndFunction = endCoil1Charge;
-        ign5StartFunction = beginCoil1Charge;
-        ign5EndFunction = endCoil1Charge;
-        ign6StartFunction = beginCoil1Charge;
-        ign6EndFunction = endCoil1Charge;
-        ign7StartFunction = beginCoil1Charge;
-        ign7EndFunction = endCoil1Charge;
-        ign8StartFunction = beginCoil1Charge;
-        ign8EndFunction = endCoil1Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil1Charge;
+        ignEndFunction[1] = endCoil1Charge;
+        ignStartFunction[2] = beginCoil1Charge;
+        ignEndFunction[2] = endCoil1Charge;
+        ignStartFunction[3] = beginCoil1Charge;
+        ignEndFunction[3] = endCoil1Charge;
+        ignStartFunction[4] = beginCoil1Charge;
+        ignEndFunction[4] = endCoil1Charge;
+        ignStartFunction[5] = beginCoil1Charge;
+        ignEndFunction[5] = endCoil1Charge;
+        ignStartFunction[6] = beginCoil1Charge;
+        ignEndFunction[6] = endCoil1Charge;
+        ignStartFunction[7] = beginCoil1Charge;
+        ignEndFunction[7] = endCoil1Charge;
         break;
 
     case IGN_MODE_WASTEDCOP:
@@ -1050,118 +1044,118 @@ void initialiseAll()
         //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
-          ign1StartFunction = beginCoil1and3Charge;
-          ign1EndFunction = endCoil1and3Charge;
-          ign2StartFunction = beginCoil2and4Charge;
-          ign2EndFunction = endCoil2and4Charge;
+          ignStartFunction[0] = beginCoil1and3Charge;
+          ignEndFunction[0] = endCoil1and3Charge;
+          ignStartFunction[1] = beginCoil2and4Charge;
+          ignEndFunction[1] = endCoil2and4Charge;
 
-          ign3StartFunction = nullCallback;
-          ign3EndFunction = nullCallback;
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
+          ignStartFunction[2] = nullCallback;
+          ignEndFunction[2] = nullCallback;
+          ignStartFunction[3] = nullCallback;
+          ignEndFunction[3] = nullCallback;
         }
         //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
         else if( configPage2.nCylinders == 6 )
           {
-          ign1StartFunction = beginCoil1and4Charge;
-          ign1EndFunction = endCoil1and4Charge;
-          ign2StartFunction = beginCoil2and5Charge;
-          ign2EndFunction = endCoil2and5Charge;
-          ign3StartFunction = beginCoil3and6Charge;
-          ign3EndFunction = endCoil3and6Charge;
+          ignStartFunction[0] = beginCoil1and4Charge;
+          ignEndFunction[0] = endCoil1and4Charge;
+          ignStartFunction[1] = beginCoil2and5Charge;
+          ignEndFunction[1] = endCoil2and5Charge;
+          ignStartFunction[2] = beginCoil3and6Charge;
+          ignEndFunction[2] = endCoil3and6Charge;
 
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
-          ign5StartFunction = nullCallback;
-          ign5EndFunction = nullCallback;
-          ign6StartFunction = nullCallback;
-          ign6EndFunction = nullCallback;
+          ignStartFunction[3] = nullCallback;
+          ignEndFunction[3] = nullCallback;
+          ignStartFunction[4] = nullCallback;
+          ignEndFunction[4] = nullCallback;
+          ignStartFunction[5] = nullCallback;
+          ignEndFunction[5] = nullCallback;
         }
         //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
           {
-          ign1StartFunction = beginCoil1and5Charge;
-          ign1EndFunction = endCoil1and5Charge;
-          ign2StartFunction = beginCoil2and6Charge;
-          ign2EndFunction = endCoil2and6Charge;
-          ign3StartFunction = beginCoil3and7Charge;
-          ign3EndFunction = endCoil3and7Charge;
-          ign4StartFunction = beginCoil4and8Charge;
-          ign4EndFunction = endCoil4and8Charge;
+          ignStartFunction[0] = beginCoil1and5Charge;
+          ignEndFunction[0] = endCoil1and5Charge;
+          ignStartFunction[1] = beginCoil2and6Charge;
+          ignEndFunction[1] = endCoil2and6Charge;
+          ignStartFunction[2] = beginCoil3and7Charge;
+          ignEndFunction[2] = endCoil3and7Charge;
+          ignStartFunction[3] = beginCoil4and8Charge;
+          ignEndFunction[3] = endCoil4and8Charge;
 
-          ign5StartFunction = nullCallback;
-          ign5EndFunction = nullCallback;
-          ign6StartFunction = nullCallback;
-          ign6EndFunction = nullCallback;
-          ign7StartFunction = nullCallback;
-          ign7EndFunction = nullCallback;
-          ign8StartFunction = nullCallback;
-          ign8EndFunction = nullCallback;
+          ignStartFunction[4] = nullCallback;
+          ignEndFunction[4] = nullCallback;
+          ignStartFunction[5] = nullCallback;
+          ignEndFunction[5] = nullCallback;
+          ignStartFunction[6] = nullCallback;
+          ignEndFunction[6] = nullCallback;
+          ignStartFunction[7] = nullCallback;
+          ignEndFunction[7] = nullCallback;
         }
         else
         {
           //If the person has inadvertantly selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil2Charge;
-          ign2EndFunction = endCoil2Charge;
-          ign3StartFunction = beginCoil3Charge;
-          ign3EndFunction = endCoil3Charge;
-          ign4StartFunction = beginCoil4Charge;
-          ign4EndFunction = endCoil4Charge;
-          ign5StartFunction = beginCoil5Charge;
-          ign5EndFunction = endCoil5Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil2Charge;
+          ignEndFunction[1] = endCoil2Charge;
+          ignStartFunction[2] = beginCoil3Charge;
+          ignEndFunction[2] = endCoil3Charge;
+          ignStartFunction[3] = beginCoil4Charge;
+          ignEndFunction[3] = endCoil4Charge;
+          ignStartFunction[4] = beginCoil5Charge;
+          ignEndFunction[4] = endCoil5Charge;
         }
         break;
 
     case IGN_MODE_SEQUENTIAL:
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
-        ign6StartFunction = beginCoil6Charge;
-        ign6EndFunction = endCoil6Charge;
-        ign7StartFunction = beginCoil7Charge;
-        ign7EndFunction = endCoil7Charge;
-        ign8StartFunction = beginCoil8Charge;
-        ign8EndFunction = endCoil8Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
+        ignStartFunction[5] = beginCoil6Charge;
+        ignEndFunction[5] = endCoil6Charge;
+        ignStartFunction[6] = beginCoil7Charge;
+        ignEndFunction[6] = endCoil7Charge;
+        ignStartFunction[7] = beginCoil8Charge;
+        ignEndFunction[7] = endCoil8Charge;
         break;
 
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil1Charge;
-          ign2EndFunction = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil1Charge;
+          ignEndFunction[1] = endCoil1Charge;
 
-          ign3StartFunction = beginTrailingCoilCharge;
-          ign3EndFunction = endTrailingCoilCharge1;
-          ign4StartFunction = beginTrailingCoilCharge;
-          ign4EndFunction = endTrailingCoilCharge2;
+          ignStartFunction[2] = beginTrailingCoilCharge;
+          ignEndFunction[2] = endTrailingCoilCharge1;
+          ignStartFunction[3] = beginTrailingCoilCharge;
+          ignEndFunction[3] = endTrailingCoilCharge2;
         }
         else if(configPage10.rotaryType == ROTARY_IGN_FD)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil1Charge;
-          ign2EndFunction = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
+          ignStartFunction[1] = beginCoil1Charge;
+          ignEndFunction[1] = endCoil1Charge;
 
           //Trailing coils have their own channel each
           //IGN2 = front rotor trailing spark
-          ign3StartFunction = beginCoil2Charge;
-          ign3EndFunction = endCoil2Charge;
+          ignStartFunction[2] = beginCoil2Charge;
+          ignEndFunction[2] = endCoil2Charge;
           //IGN3 = rear rotor trailing spark
-          ign4StartFunction = beginCoil3Charge;
-          ign4EndFunction = endCoil3Charge;
+          ignStartFunction[3] = beginCoil3Charge;
+          ignEndFunction[3] = endCoil3Charge;
 
           //IGN4 not used
         }
@@ -1170,33 +1164,39 @@ void initialiseAll()
           //RX8 outputs are simply 1 coil and 1 output per plug
 
           //IGN1 is front rotor, leading spark
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
+          ignStartFunction[0] = beginCoil1Charge;
+          ignEndFunction[0] = endCoil1Charge;
           //IGN2 is rear rotor, leading spark
-          ign2StartFunction = beginCoil2Charge;
-          ign2EndFunction = endCoil2Charge;
+          ignStartFunction[1] = beginCoil2Charge;
+          ignEndFunction[1] = endCoil2Charge;
           //IGN3 = front rotor trailing spark
-          ign3StartFunction = beginCoil3Charge;
-          ign3EndFunction = endCoil3Charge;
+          ignStartFunction[2] = beginCoil3Charge;
+          ignEndFunction[2] = endCoil3Charge;
           //IGN4 = rear rotor trailing spark
-          ign4StartFunction = beginCoil4Charge;
-          ign4EndFunction = endCoil4Charge;
+          ignStartFunction[3] = beginCoil4Charge;
+          ignEndFunction[3] = endCoil4Charge;
         }
         break;
 
     default:
         //Wasted spark (Shouldn't ever happen anyway)
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
+        ignStartFunction[0] = beginCoil1Charge;
+        ignEndFunction[0] = endCoil1Charge;
+        ignStartFunction[1] = beginCoil2Charge;
+        ignEndFunction[1] = endCoil2Charge;
+        ignStartFunction[2] = beginCoil3Charge;
+        ignEndFunction[2] = endCoil3Charge;
+        ignStartFunction[3] = beginCoil4Charge;
+        ignEndFunction[3] = endCoil4Charge;
+        ignStartFunction[4] = beginCoil5Charge;
+        ignEndFunction[4] = endCoil5Charge;
         break;
+    }
+
+    //Assign the callbacks to the ignition schedules
+    for (int i = 0; i < IGN_CHANNELS; i++) {
+      ignitionSchedule[i].StartCallback = ignStartFunction[i];
+      ignitionSchedule[i].EndCallback = ignEndFunction[i];
     }
 
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino

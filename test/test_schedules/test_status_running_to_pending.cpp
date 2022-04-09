@@ -97,93 +97,16 @@ void test_status_running_to_pending_inj8(void)
 #endif
 }
 
-
-void test_status_running_to_pending_ign1(void)
+void test_status_running_to_pending_ign(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule1.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule1(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule1.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule1.Status);
-}
-
-void test_status_running_to_pending_ign2(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule2.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule2(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule2.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule2.Status);
-}
-
-void test_status_running_to_pending_ign3(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule3.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule3(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule3.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule3.Status);
-}
-
-void test_status_running_to_pending_ign4(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule4.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule4(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule4.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule4.Status);
-}
-
-void test_status_running_to_pending_ign5(void)
-{
-#if IGN_CHANNELS >= 5
-    initialiseSchedulers();
-    setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule5.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule5(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule5.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule5.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign6(void)
-{
-#if INJ_CHANNELS >= 6
-    initialiseSchedulers();
-    setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule6.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule6(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule6.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule6.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign7(void)
-{
-#if INJ_CHANNELS >= 7
-    initialiseSchedulers();
-    setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule7.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule7(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule7.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule7.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign8(void)
-{
-#if INJ_CHANNELS >= 8
-    initialiseSchedulers();
-    setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule8.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule8(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule8.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule8.Status);
-#endif
+    ignitionSchedule[0].StartCallback = emptyCallback;
+    ignitionSchedule[0].EndCallback = emptyCallback;
+    setIgnitionSchedule(&ignitionSchedule[0], TIMEOUT, DURATION);
+    while(ignitionSchedule[0].Status == PENDING) /*Wait*/ ;
+    setIgnitionSchedule(&ignitionSchedule[0], 2*TIMEOUT, DURATION);
+    while(ignitionSchedule[0].Status == RUNNING) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule[0].Status);
 }
 
 void test_status_running_to_pending(void)
@@ -197,12 +120,5 @@ void test_status_running_to_pending(void)
     RUN_TEST(test_status_running_to_pending_inj7);
     RUN_TEST(test_status_running_to_pending_inj8);
 
-    RUN_TEST(test_status_running_to_pending_ign1);
-    RUN_TEST(test_status_running_to_pending_ign2);
-    RUN_TEST(test_status_running_to_pending_ign3);
-    RUN_TEST(test_status_running_to_pending_ign4);
-    RUN_TEST(test_status_running_to_pending_ign5);
-    RUN_TEST(test_status_running_to_pending_ign6);
-    RUN_TEST(test_status_running_to_pending_ign7);
-    RUN_TEST(test_status_running_to_pending_ign8);
+    RUN_TEST(test_status_running_to_pending_ign);
 }

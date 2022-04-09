@@ -81,77 +81,14 @@ void test_status_pending_to_running_inj8(void)
 #endif
 }
 
-
-void test_status_pending_to_running_ign1(void)
+void test_status_pending_to_running_ign(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule1.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule1.Status);
-}
-
-void test_status_pending_to_running_ign2(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule2.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule2.Status);
-}
-
-void test_status_pending_to_running_ign3(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule3.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule3.Status);
-}
-
-void test_status_pending_to_running_ign4(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule4.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule4.Status);
-}
-
-void test_status_pending_to_running_ign5(void)
-{
-#if IGN_CHANNELS >= 5
-    initialiseSchedulers();
-    setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule5.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule5.Status);
-#endif
-}
-
-void test_status_pending_to_running_ign6(void)
-{
-#if INJ_CHANNELS >= 6
-    initialiseSchedulers();
-    setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule6.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule6.Status);
-#endif
-}
-
-void test_status_pending_to_running_ign7(void)
-{
-#if INJ_CHANNELS >= 7
-    initialiseSchedulers();
-    setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule7.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule7.Status);
-#endif
-}
-
-void test_status_pending_to_running_ign8(void)
-{
-#if INJ_CHANNELS >= 8
-    initialiseSchedulers();
-    setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule8.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule8.Status);
-#endif
+    ignitionSchedule[0].StartCallback = emptyCallback;
+    ignitionSchedule[0].EndCallback = emptyCallback;
+    setIgnitionSchedule(&ignitionSchedule[0], TIMEOUT, DURATION);
+    while(ignitionSchedule[0].Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(RUNNING, ignitionSchedule[0].Status);
 }
 
 void test_status_pending_to_running(void)
@@ -164,13 +101,6 @@ void test_status_pending_to_running(void)
     RUN_TEST(test_status_pending_to_running_inj6);
     RUN_TEST(test_status_pending_to_running_inj7);
     RUN_TEST(test_status_pending_to_running_inj8);
-
-    RUN_TEST(test_status_pending_to_running_ign1);
-    RUN_TEST(test_status_pending_to_running_ign2);
-    RUN_TEST(test_status_pending_to_running_ign3);
-    RUN_TEST(test_status_pending_to_running_ign4);
-    RUN_TEST(test_status_pending_to_running_ign5);
-    RUN_TEST(test_status_pending_to_running_ign6);
-    RUN_TEST(test_status_pending_to_running_ign7);
-    RUN_TEST(test_status_pending_to_running_ign8);
+    
+    RUN_TEST(test_status_pending_to_running_ign);
 }
