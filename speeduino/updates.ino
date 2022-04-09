@@ -587,7 +587,7 @@ void doUpdates()
   if(readEEPROMVersion() == 19)
   {
     //202204
-    configPage9.coolantProtEnbl = false;
+    configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
     
     writeAllConfig();
     storeEEPROMVersion(20);
