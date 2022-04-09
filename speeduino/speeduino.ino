@@ -197,6 +197,7 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0;
+      currentStatus.RPMdiv100 = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;

@@ -1162,7 +1162,7 @@ struct config9 {
   byte boostByGear6;
 
   byte PWMFanDuty[4];
-  byte coolantProtEnbl : 1;
+  byte hardRevMode : 2;
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
   byte unused10_179;
