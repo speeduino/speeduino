@@ -28,6 +28,8 @@
   #define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
 
+  typedef uint32_t PinName;   // this really is not used, but required here for compatibility reasons
+
 /*
 ***********************************************************************************************************
 * Schedules
