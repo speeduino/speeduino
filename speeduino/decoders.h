@@ -34,6 +34,7 @@
 #define DECODER_ST170             20
 #define DECODER_DRZ400            21
 #define DECODER_NGC               22
+#define DECODER_VMAX              23
 #define DECODER_RENIX44           23
 #define DECODER_RENIX66           24
 
