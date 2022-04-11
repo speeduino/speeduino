@@ -9,7 +9,7 @@ can_comms was originally contributed by Darren Siepka
 secondserial_command is called when a command is received from the secondary serial port
 It parses the command and calls the relevant function.
 
-can_command is called when a command is recieved by the onboard/attached canbus module
+can_command is called when a command is received by the onboard/attached canbus module
 It parses the command and calls the relevant function.
 
 sendcancommand is called when a command is to be sent either to serial3 
@@ -26,7 +26,7 @@ uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
 uint8_t cancmdfail = 0;     //command fail yes/no
 uint8_t canlisten = 0;
-uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
+uint8_t Lbuffer[8];         //8 byte buffer to store incoming can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
 bool canCmdPending = false;
