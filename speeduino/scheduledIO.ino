@@ -6,7 +6,7 @@
 /** @file
  * Injector and Coil (toggle/open/close) control (under various situations, eg with particular cylinder count, rotary engine type or wasted spark ign, etc.).
  * Also accounts for presence of MC33810 injector/ignition (dwell, etc.) control circuit.
- * Functions here are typically assigned (at initialization) to callback function variables (e.g. inj1StartFunction or inj1EndFunction) 
+ * Functions here are typically assigned (at initialisation) to callback function variables (e.g. inj1StartFunction or inj1EndFunction) 
  * form where they are called (by scheduler.ino).
  */
 inline void openInjector1()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector1_DIRECT(); }   else { openInjector1_MC33810(); } }
