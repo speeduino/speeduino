@@ -73,7 +73,7 @@ void parseSerial()
     byte highByte = Serial.read();
 
     //Check if the command is legacy using the call/response mechanism
-    if((highByte >= 'A') && (highByte <= 'z') )
+    if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
     {
       //Handle legacy cases here
       serialReceivePending = false; //Make sure new serial handling does not interfere with legacy handling
