@@ -43,10 +43,10 @@ bool legacySerial = false;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
-- cmdPending = If a command has started but is wairing on further data to complete
+- cmdPending = If a command has started but is waiting on further data to complete
 - chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 
-Comands are single byte (letter symbol) commands.
+Commands are single byte (letter symbol) commands.
 */
 void legacySerialCommand()
 {
@@ -165,7 +165,7 @@ void legacySerialCommand()
 
     case 'g': // Receive a dump of raw EEPROM values from the user
     {
-      //Format is simlar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
+      //Format is similar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
       while(Serial.available() < 3) { delay(1); }
       uint16_t eepromSize = word(Serial.read(), Serial.read());
       if(eepromSize != getEEPROMSize())
@@ -264,7 +264,7 @@ void legacySerialCommand()
       if (Serial.available() > 0)
       {
         currentPage = Serial.read();
-        //This converts the ascii number char into binary. Note that this will break everyything if there are ever more than 48 pages (48 = asci code for '0')
+        //This converts the ASCII number char into binary. Note that this will break everything if there are ever more than 48 pages (48 = asci code for '0')
         if ((currentPage >= '0') && (currentPage <= '9')) // 0 - 9
         {
           currentPage -= 48;
@@ -836,7 +836,7 @@ namespace {
  * 
  * Creates a page iterator by @ref page_begin() (See: pages.cpp). Sends page given in @ref currentPage.
  * 
- * Note that some translation of the data is required to lay it out in the way Megasqurit / TunerStudio expect it.
+ * Note that some translation of the data is required to lay it out in the way Megasquirt / TunerStudio expect it.
  * Data is sent in binary format, as defined by in each page in the speeduino.ini.
  */
 void sendPage()
@@ -874,7 +874,7 @@ namespace {
   {
     while (first!=last)
     {
-      Serial.print(*first);// This displays the values horizantially on the screen
+      Serial.print(*first);// This displays the values horizontally on the screen
       Serial.print(F(" "));
       ++first;
     }
@@ -1127,7 +1127,7 @@ void receiveCalibration(byte tableID)
       tempBuffer[1] = Serial.read();
 
       tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
       
       //Apply the temp offset and check that it results in all values being positive
