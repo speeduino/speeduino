@@ -7,7 +7,7 @@
 //
 // For TunerStudio:
 // 1. Each page has a numeric identifier (0 to N-1)
-// 2. A single page is a continguous block of data.
+// 2. A single page is a contiguous block of data.
 // So individual bytes are identified by a (page number, offset)
 //
 // The TS layout is not what is in memory. E.g.
@@ -63,7 +63,7 @@ public:
   // We take the offset & map it to a single value, x-axis or y-axis element
   //
   // Using a template here is a performance boost - we can call functions that
-  // are specialized per table type, which allows the compiler more optimization
+  // are specialised per table type, which allows the compiler more optimisation
   // opportunities. See get_table_value().
 
   offset_to_table(table_t *pTable, uint16_t table_offset)
@@ -399,7 +399,7 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
     }
 
     default:
-      abort(); // Unkown page number. Not a lot we can do.
+      abort(); // Unknown page number. Not a lot we can do.
       break;
   }
 }

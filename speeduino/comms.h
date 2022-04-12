@@ -65,7 +65,7 @@
 
 #define SERIAL_RC_TIMEOUT   0x80 //Timeout error
 #define SERIAL_RC_CRC_ERR   0x82
-#define SERIAL_RC_UKWN_ERR  0x83 //Unkwnown command
+#define SERIAL_RC_UKWN_ERR  0x83 //Unknown command
 #define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
 #define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 

@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 /** @file
- * Speeduino initialization and main loop.
+ * Speeduino initialisation and main loop.
  */
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
@@ -100,7 +100,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in  order they are preformed):
- * - Check if serial comms or tooth logging are in progress (send or reveive, prioritize communication)
+ * - Check if serial comms or tooth logging are in progress (send or receive, prioritise communication)
  * - Record loop timing vars
  * - Check tooth time, update @ref statuses (currentStatus) variables
  * - Read sensors
@@ -142,7 +142,7 @@ void loop()
         if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
       }
 
-      //Check for any new requets from serial.
+      //Check for any new requests from serial.
       //if ( (Serial.available()) > 0) { command(); }
       if ( (Serial.available()) > 0) { parseSerial(); }
       
@@ -182,10 +182,9 @@ void loop()
     //Displays currently disabled
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
-    previousLoopTime = currentLoopTime;
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
+    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
@@ -197,6 +196,7 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0;
+      currentStatus.RPMdiv100 = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
@@ -343,7 +343,7 @@ void loop()
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
-        //check through the Aux input channels if enabed for Can or local use
+        //check through the Aux input channels if enabled for Can or local use
         for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
           currentStatus.current_caninchannel = AuxinChan;          
@@ -407,7 +407,7 @@ void loop()
         // water tank empty
         if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) > 0)
         {
-          // flash with 1sec inverval
+          // flash with 1sec interval
           digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
         }
         else
@@ -521,7 +521,7 @@ void loop()
       //Handle multiple squirts per rev
       if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
       else { pwLimit = pwLimit / currentStatus.nSquirts; }
-      //Apply the pwLimit if staging is dsiabled and engine is not cranking
+      //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
@@ -869,7 +869,7 @@ void loop()
         | A Note on tempCrankAngle and tempStartAngle:
         |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4+ on both injectors and ignition
         |   Essentially, these 2 variables are used to realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
-        |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
+        |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylinder engine), then tempCrankAngle is 180* less than the current crank angle and
         |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
         |
         |   This is done to avoid problems with very short of very long times until tempStartAngle.
@@ -1017,7 +1017,7 @@ void loop()
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
       {
         fixedCrankingOverride = currentStatus.dwell * 3;
-        //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
+        //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
         if(currentStatus.RPM < 250)
         {
           ignition1StartAngle -= 5;
@@ -1323,7 +1323,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
-    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
     //AE Adds % of req_fuel
     if ( configPage2.aeApplyMode == AE_MODE_ADDER )
