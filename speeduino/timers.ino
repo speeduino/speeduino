@@ -32,6 +32,7 @@ void initialiseTimers()
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
+  tachoOutputFlag = DEACTIVE;
 }
 
 
@@ -68,35 +69,32 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
-  //Tacho output check
-  if ( !configPage6.dwellTacho )
+  //Tacho output check. This code will not do anything if tacho pulse duration is fixed to coil dwell.
+  //Tacho is flagged as being ready for a pulse by the ignition outputs.
+  if(tachoOutputFlag == READY)
   {
-    //Tacho is flagged as being ready for a pulse by the ignition outputs. 
-    if(tachoOutputFlag == READY)
-    {
-      //Check for half speed tacho
-      if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
-      {
-        TACHO_PULSE_LOW();
-        //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
-        tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
-        tachoOutputFlag = ACTIVE;
-      }
-      else
-      {
-        //Don't run on this pulse (Half speed tacho)
-        tachoOutputFlag = DEACTIVE;
-      }
-      tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
+    //Check for half speed tacho
+    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    { 
+      TACHO_PULSE_LOW();
+      //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
+      tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
+      tachoOutputFlag = ACTIVE;
     }
-    else if(tachoOutputFlag == ACTIVE)
+    else
     {
-      //If the tacho output is already active, check whether it's reached it's end time
-      if((uint8_t)ms_counter == tachoEndTime)
-      {
-        TACHO_PULSE_HIGH();
-        tachoOutputFlag = DEACTIVE;
-      }
+      //Don't run on this pulse (Half speed tacho)
+      tachoOutputFlag = DEACTIVE;
+    }
+    tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
+  }
+  else if(tachoOutputFlag == ACTIVE)
+  {
+    //If the tacho output is already active, check whether it's reached it's end time
+    if((uint8_t)ms_counter == tachoEndTime)
+    {
+      TACHO_PULSE_HIGH();
+      tachoOutputFlag = DEACTIVE;
     }
   }
   // Tacho sweep
