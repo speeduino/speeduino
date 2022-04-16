@@ -118,9 +118,13 @@ void setResetControlPinState()
 }
 
 
+/** Change injectors or/and ignition angles to 720deg.
+ * Roll back req_fuel size and set number of outputs equal to cylinder count.
+* */
 void changeHalfToFullSync(void)
 {
-  if( CRANK_ANGLE_MAX_INJ != 720 )
+  //Need to do another check for injLayout as this function can be called from ignition
+  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) )
   {
     CRANK_ANGLE_MAX_INJ = 720;
     maxIgnOutputs = configPage2.nCylinders;
@@ -166,7 +170,8 @@ void changeHalfToFullSync(void)
     }
   }
 
-  if( CRANK_ANGLE_MAX_IGN != 720 )
+  //Need to do another check for sparkMode as this function can be called from injection
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) )
   {
     CRANK_ANGLE_MAX_IGN = 720;
     maxIgnOutputs = configPage2.nCylinders;
@@ -202,6 +207,10 @@ void changeHalfToFullSync(void)
   }
 }
 
+/** Change injectors or/and ignition angles to 360deg.
+ * In semi sequentiol mode req_fuel size is half.
+ * Set number of outputs equal to half cylinder count.
+* */
 void changeFullToHalfSync(void)
 {
   if(configPage2.injLayout == INJ_SEQUENTIAL)
