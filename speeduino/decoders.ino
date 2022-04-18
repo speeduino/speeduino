@@ -4800,6 +4800,10 @@ void triggerSetup_Renix()
   toothLastToothTime = micros();
   toothSystemCount = 1;
   toothCurrentCount = 1;
+
+// for debug
+  currentStatus.vvt1Angle = 0;
+  currentStatus.vvt2Angle = 0;
 }
 
 
@@ -4825,14 +4829,16 @@ void triggerPri_Renix()
     { 
       /* add two teeth to account for the gap we've just seen */      
       toothSystemCount++;
-// Serial3.print(" GAP:"); // Serial3.print(toothSystemCount);      
       toothSystemCount++;
-// Serial3.print(" GAP:"); // Serial3.print(toothSystemCount);      
 
       if( toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
       {
         // lost sync
-// Serial3.print(" LOST SYNC 1");  // Serial3.println("");
+// for debug only
+//Serial3.print(" LOST SYNC 1 ");  Serial3.print(" tcc:"); Serial3.print(toothCurrentCount); Serial3.print(" tsc:"); Serial3.print(toothSystemCount); Serial3.println("");
+currentStatus.vvt1Angle++;
+
+
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;            
         toothSystemCount = 1; // first tooth after gap is always 1
@@ -4851,9 +4857,6 @@ void triggerPri_Renix()
     if( toothSystemCount == 12)
     {
       toothCurrentCount++;
-// Serial3.println("");
-// Serial3.print(" Tooth"); // Serial3.print(toothCurrentCount);
-// Serial3.println("");
 
       if( (configPage4.TrigPattern == DECODER_RENIX66 && toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
           (configPage4.TrigPattern == DECODER_RENIX44 && toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
@@ -4864,9 +4867,6 @@ void triggerPri_Renix()
         currentStatus.startRevolutions++; //Counter               
         revolutionOne = !revolutionOne;
         toothCurrentCount = 1;  
-// Serial3.println("");
-// Serial3.print("** ROTATE **");
-// Serial3.println("");        
       }
 
       toothSystemCount = 1;
@@ -4911,12 +4911,6 @@ void triggerSec_Renix()
     triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
     secondaryToothCount++;
     toothLastSecToothTime = curTime2;
-  
-// for debug only
-currentStatus.vvt1Angle = 2 * toothCurrentCount;
-currentStatus.vvt2Angle = 2 * toothSystemCount;
-currentStatus.canin[0] = toothCurrentCount;
-currentStatus.canin[1] = toothSystemCount;
 
     if (configPage4.TrigPattern == DECODER_RENIX44)
     {
@@ -4925,15 +4919,14 @@ currentStatus.canin[1] = toothSystemCount;
         revolutionOne = 0;
         currentStatus.startRevolutions++; //Counter
         currentStatus.hasSync = true;
-// Serial3.println("");
-// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
-// Serial3.println("");
       }
       else
       {
-// Serial3.println(" CAM FAIL");
-// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
-// Serial3.println(" CAM FAIL");
+
+// for debug only
+currentStatus.vvt2Angle++;
+//Serial3.print(" LOST SYNC CAM ");  Serial3.print(" tcc:"); Serial3.print(toothCurrentCount); Serial3.print(" tsc:"); Serial3.print(toothSystemCount); Serial3.println("");
+
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;      
         revolutionOne = 0;
@@ -4945,18 +4938,12 @@ currentStatus.canin[1] = toothSystemCount;
     {
       if( toothCurrentCount == 6 && toothSystemCount == 2)
       {
-// Serial3.println("");
-// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
-// Serial3.println("");        
         revolutionOne = 0;
         currentStatus.startRevolutions++; //Counter
         currentStatus.hasSync = true;
       }
       else
       {
-// Serial3.println(" CAM FAIL");
-// Serial3.print(" -- CAM -- Cur:"); // Serial3.print(toothCurrentCount); // Serial3.print(" Sys:"); // Serial3.print(toothSystemCount);
-// Serial3.println(" CAM FAIL");
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;   
         revolutionOne = 0;
