@@ -35,8 +35,8 @@
 #define DECODER_DRZ400            21
 #define DECODER_NGC               22
 #define DECODER_VMAX              23
-#define DECODER_RENIX44           23
-#define DECODER_RENIX66           24
+#define DECODER_RENIX44           24
+#define DECODER_RENIX66           25
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
