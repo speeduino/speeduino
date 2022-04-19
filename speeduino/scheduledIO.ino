@@ -6,7 +6,7 @@
 /** @file
  * Injector and Coil (toggle/open/close) control (under various situations, eg with particular cylinder count, rotary engine type or wasted spark ign, etc.).
  * Also accounts for presence of MC33810 injector/ignition (dwell, etc.) control circuit.
- * Functions here are typically assigned (at initialization) to callback function variables (e.g. inj1StartFunction or inj1EndFunction) 
+ * Functions here are typically assigned (at initialisation) to callback function variables (e.g. inj1StartFunction or inj1EndFunction) 
  * form where they are called (by scheduler.ino).
  */
 inline void openInjector1()   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector1_DIRECT(); }   else { openInjector1_MC33810(); } }
@@ -103,27 +103,27 @@ inline void endTrailingCoilCharge1() { endCoil2Charge(); beginCoil3Charge(); } /
 inline void endTrailingCoilCharge2() { endCoil2Charge(); endCoil3Charge(); } //sets ign3 (Trailing select) low
 
 //As above but for ignition (Wasted COP mode)
-void beginCoil1and3Charge() { beginCoil1Charge(); beginCoil3Charge(); tachoOutputFlag = READY; }
-void endCoil1and3Charge()   { endCoil1Charge();  endCoil3Charge();  }
-void beginCoil2and4Charge() { beginCoil2Charge(); beginCoil4Charge(); tachoOutputFlag = READY; }
+void beginCoil1and3Charge() { beginCoil1Charge(); beginCoil3Charge(); }
+void endCoil1and3Charge()   { endCoil1Charge();  endCoil3Charge(); }
+void beginCoil2and4Charge() { beginCoil2Charge(); beginCoil4Charge(); }
 void endCoil2and4Charge()   { endCoil2Charge();  endCoil4Charge(); }
 
 //For 6cyl wasted COP mode)
-void beginCoil1and4Charge() { beginCoil1Charge(); beginCoil4Charge(); tachoOutputFlag = READY; }
+void beginCoil1and4Charge() { beginCoil1Charge(); beginCoil4Charge(); }
 void endCoil1and4Charge()   { endCoil1Charge();  endCoil4Charge(); }
-void beginCoil2and5Charge() { beginCoil2Charge(); beginCoil5Charge(); tachoOutputFlag = READY; }
+void beginCoil2and5Charge() { beginCoil2Charge(); beginCoil5Charge(); }
 void endCoil2and5Charge()   { endCoil2Charge();  endCoil5Charge(); }
-void beginCoil3and6Charge() { beginCoil3Charge(); beginCoil6Charge(); tachoOutputFlag = READY; }
-void endCoil3and6Charge()   { endCoil3Charge(); endCoil6Charge();  }
+void beginCoil3and6Charge() { beginCoil3Charge(); beginCoil6Charge(); }
+void endCoil3and6Charge()   { endCoil3Charge(); endCoil6Charge(); }
 
 //For 8cyl wasted COP mode)
-void beginCoil1and5Charge() { beginCoil1Charge(); beginCoil5Charge(); tachoOutputFlag = READY; }
+void beginCoil1and5Charge() { beginCoil1Charge(); beginCoil5Charge(); }
 void endCoil1and5Charge()   { endCoil1Charge();  endCoil5Charge(); }
-void beginCoil2and6Charge() { beginCoil2Charge(); beginCoil6Charge(); tachoOutputFlag = READY; }
+void beginCoil2and6Charge() { beginCoil2Charge(); beginCoil6Charge(); }
 void endCoil2and6Charge()   { endCoil2Charge();  endCoil6Charge(); }
-void beginCoil3and7Charge() { beginCoil3Charge(); beginCoil7Charge(); tachoOutputFlag = READY; }
+void beginCoil3and7Charge() { beginCoil3Charge(); beginCoil7Charge();  }
 void endCoil3and7Charge()   { endCoil3Charge(); endCoil7Charge(); }
-void beginCoil4and8Charge() { beginCoil4Charge(); beginCoil8Charge(); tachoOutputFlag = READY; }
-void endCoil4and8Charge()   { endCoil4Charge();  endCoil8Charge();  }
+void beginCoil4and8Charge() { beginCoil4Charge(); beginCoil8Charge(); }
+void endCoil4and8Charge()   { endCoil4Charge();  endCoil8Charge(); }
 
 void nullCallback() { return; }

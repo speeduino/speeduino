@@ -48,7 +48,7 @@ FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comm
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
-- cmdPending = If a command has started but is wairing on further data to complete
+- cmdPending = If a command has started but is waiting on further data to complete
 - chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 
 Comands are single byte (letter symbol) commands.
@@ -73,7 +73,7 @@ void parseSerial()
     byte highByte = Serial.read();
 
     //Check if the command is legacy using the call/response mechanism
-    if((highByte >= 'A') && (highByte <= 'z') )
+    if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
     {
       //Handle legacy cases here
       serialReceivePending = false; //Make sure new serial handling does not interfere with legacy handling
@@ -169,7 +169,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   Serial.write(totalPayloadLength);
 
   //Need to handle serial buffer being full. This is just for testing
-  serialPayloadLength = payloadLength; //Save the payload length incase we need to transmit in multiple steps
+  serialPayloadLength = payloadLength; //Save the payload length in case we need to transmit in multiple steps
   for(uint16_t i = 0; i < payloadLength; i++)
   {
     Serial.write(((uint8_t*)payload)[i]);
@@ -401,7 +401,7 @@ void processSerialCommand()
 
       if( (valueOffset + chunkSize) > getPageSize(currentPage))
       {
-        //This should never happen, but just incase
+        //This should never happen, but just in case
         sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
         break;
       }
@@ -680,7 +680,7 @@ void processSerialCommand()
           for (uint16_t x = 0; x < 32; x++)
           {
             int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
             tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
             
             //Apply the temp offset and check that it results in all values being positive
@@ -712,7 +712,7 @@ void processSerialCommand()
           for (uint16_t x = 0; x < 32; x++)
           {
             int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multipled by 10 so divide back to whole degrees. 
+            tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
             tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
             
             //Apply the temp offset and check that it results in all values being positive
