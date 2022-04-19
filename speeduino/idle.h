@@ -16,6 +16,8 @@
 
 #define IDLE_PIN_LOW()  *idle_pin_port &= ~(idle_pin_mask)
 #define IDLE_PIN_HIGH() *idle_pin_port |= (idle_pin_mask)
+#define IDLE2_PIN_LOW()  *idle2_pin_port &= ~(idle2_pin_mask)
+#define IDLE2_PIN_HIGH() *idle2_pin_port |= (idle2_pin_mask)
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -33,7 +35,6 @@ struct StepperIdle
   byte moreAirDirection;
 };
 
-struct table2D iacClosedLoopTable;
 struct table2D iacPWMTable;
 struct table2D iacStepTable;
 //Open loop tables specifically for cranking
