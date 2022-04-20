@@ -460,13 +460,13 @@ void idleControl()
       }
       else
       {
-        if ( idleTaper < configPage2.idleTaperTime )
+        if ( idleTaper*10U < configPage2.idleTaperTime*4U )
         {
           //Tapering between cranking IAC value and running
-          currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime,\
+          currentStatus.idleLoad = map(idleTaper*10U, 0, configPage2.idleTaperTime*4U,\
           table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET),\
           table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
+          idleTaper++; //whole thing runs at 4Hz anyway
         }
         else
         {
