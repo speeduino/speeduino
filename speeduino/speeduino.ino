@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "engineProtection.h"
 #include "scheduledIO.h"
 #include "secondaryTables.h"
+#include "canBroadcast.h"
 #include "SD_logger.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
@@ -312,6 +313,10 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
+      #if defined(NATIVE_CAN_AVAILABLE)
+      if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
+      if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
+      #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
