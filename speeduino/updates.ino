@@ -592,16 +592,10 @@ void doUpdates()
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
 
-    
-    writeAllConfig();
-    storeEEPROMVersion(20);
-  }
-
-  if(readEEPROMVersion() == 19)
-  {
+    //CAN broadcast introduced
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
-
+    
     writeAllConfig();
     storeEEPROMVersion(20);
   }
