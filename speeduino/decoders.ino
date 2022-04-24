@@ -4817,12 +4817,10 @@ void triggerPri_Renix()
   curTime = micros();
   curGap = curTime - renixSystemLastToothTime;
   VVT1_PIN_OFF() 
-  if ( curGap >= triggerFilterTime  || (currentStatus.startRevolutions == 0) )
+  if ( curGap >= triggerFilterTime )   //  || (currentStatus.startRevolutions == 0) )
   {
     toothSystemCount++;
     validTrigger = true;
-
-    // Serial3.print(" S:"); // Serial3.print(toothSystemCount);
 
     if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0)
     { targetGap = (2 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
@@ -4838,9 +4836,9 @@ void triggerPri_Renix()
       if( toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
       {
         // lost sync
-        // for debug only
+// **********************************  for debug only
         currentStatus.vvt1Angle++;
-
+//***************************************
 
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;            
@@ -4851,9 +4849,7 @@ void triggerPri_Renix()
     else
     { 
       //Recalc the new filter value, only do this on the single gap tooth 
-      setFilter(curGap);
-      //Regular (non-missing) tooth
-      triggerToothAngleIsCorrect = true;   
+      setFilter(curGap);  
     }
     renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
     renixSystemLastToothTime = curTime;
