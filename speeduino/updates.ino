@@ -586,7 +586,15 @@ void doUpdates()
   if(readEEPROMVersion() == 19)
   {
     //202204
+    if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
+    //Half/Full sequential mode
+    if( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage2.nCylinders == 4) ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Most of inline 4 uses 1-3-4-2 firing order
+
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+
+    //CAN broadcast introduced
+    configPage2.canBMWCluster = 0;
+    configPage2.canVAGCluster = 0;
     
     writeAllConfig();
     storeEEPROMVersion(20);
