@@ -353,6 +353,70 @@ void fanControl()
       }
     #endif
   }
+  else if( configPage2.fanEnable == 2 )// PWM Fan control
+  {
+    bool fanPermit = false;
+    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
+    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    if (fanPermit == true)
+      {
+      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      {
+        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+          DISABLE_FAN_TIMER();
+        #endif
+      }
+      else
+      {
+        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        #if defined(PWM_FAN_AVAILABLE)
+          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+          if (currentStatus.fanDuty > 0)
+          {
+            ENABLE_FAN_TIMER();
+            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+          }
+        #endif
+      }
+    }
+    else if (!fanPermit)
+    {
+      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+    }
+
+    #if defined(PWM_FAN_AVAILABLE)
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+      else if (currentStatus.fanDuty == 200)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        DISABLE_FAN_TIMER();
+      }
+    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+      if(currentStatus.fanDuty == 0)
+      {
+        //Make sure fan has 0% duty)
+        FAN_OFF();
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+      else if (currentStatus.fanDuty > 0)
+      {
+        //Make sure fan has 100% duty
+        FAN_ON();
+        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+      }
+    #endif
+  }
 }
 
 void initialiseAuxPWM()
