@@ -247,6 +247,9 @@ byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
+byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
+byte pinAirConFan;    // Stand-alone air conditioning fan output (See: auxiliaries.ino)
+byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
@@ -255,6 +258,7 @@ struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
 struct config13 configPage13;
+struct config15 configPage15;
 
 //byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */

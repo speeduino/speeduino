@@ -230,6 +230,15 @@
 #define BIT_STATUS4_UNUSED7       6
 #define BIT_STATUS4_UNUSED8       7
 
+#define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
+#define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
+#define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+#define BIT_AIRCON_TPS_LOCKOUT    3 //Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+#define BIT_AIRCON_TURNING_ON     4 //Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+#define BIT_AIRCON_CLT_LOCKOUT    5 //Indicates the A/C is locked out either due to high coolant temp.
+#define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
+#define BIT_AIRCON_UNUSED8        7
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -613,7 +622,7 @@ extern volatile byte LOOP_TIMER;
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )
 #define pinIsIgnition(pin)  ( ((pin) == pinCoil1) || ((pin) == pinCoil2) || ((pin) == pinCoil3) || ((pin) == pinCoil4) || ((pin) == pinCoil5) || ((pin) == pinCoil6) || ((pin) == pinCoil7) || ((pin) == pinCoil8) )
-#define pinIsOutput(pin)    ( pinIsInjector((pin)) || pinIsIgnition((pin)) || ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ( ((pin) == pinBoost) && configPage6.boostEnabled) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) || ((pin) == pinStepperEnable) || ((pin) == pinStepperStep) )
+#define pinIsOutput(pin)    ( pinIsInjector((pin)) || pinIsIgnition((pin)) || ((pin) == pinFuelPump) || ((pin) == pinFan) || ((pin) == pinAirConComp) || ((pin) == pinAirConFan) || ((pin) == pinVVT_1) || ((pin) == pinVVT_2) || ( ((pin) == pinBoost) && configPage6.boostEnabled) || ((pin) == pinIdle1) || ((pin) == pinIdle2) || ((pin) == pinTachOut) || ((pin) == pinStepperEnable) || ((pin) == pinStepperStep) )
 #define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) )
 #define pinIsUsed(pin)      ( pinIsSensor((pin)) || pinIsOutput((pin)) || pinIsReserved((pin)) )
 
@@ -738,6 +747,7 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
+  byte airConStatus;
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1429,6 +1439,42 @@ struct config13 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/** Page 15 of the config - this page is for extra feature.
+See ini file for further info (Config Page 10 in the ini).
+*/
+struct config15 {
+
+  //Byte 0 - Air conditioning binary points
+  byte airConEnable : 1;
+  byte airConCompPol : 1;
+  byte airConReqPol : 1;
+  byte airConTurnsFanOn : 1;
+  byte airConFanEnabled : 1;
+  byte airConFanPol : 3;
+
+  //Bytes 1-12 - Air conditioning analog points
+  byte airConCompPin;
+  byte airConReqPin;
+  byte airConTPSCut;
+  byte airConMinRPMdiv100;
+  byte airConMaxRPMdiv100;
+  byte airConClTempCut;
+  byte airConIdleSteps;
+  byte airConTPSCutTime;
+  byte airConCompOnDelay;
+  byte airConAfterStartDelay;
+  byte airConRPMCutTime;
+  byte airConFanPin;
+
+  //Bytes 13-128
+  byte Unused15_13_128[115];
+
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
 extern byte pinInjector3; //Output pin injector 3
@@ -1507,7 +1553,9 @@ extern byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif
-
+extern byte pinAirConComp;    // Air conditioning compressor output
+extern byte pinAirConFan;    // Stand-alone air conditioning fan output
+extern byte pinAirConRequest; // Air conditioning request input
 
 /* global variables */ // from speeduino.ino
 //#ifndef UNIT_TEST
@@ -1521,6 +1569,7 @@ extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
+extern struct config15 configPage15;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */

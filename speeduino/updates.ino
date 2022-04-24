@@ -596,6 +596,27 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
+    //Added configPage15 AC Control
+    //Set A/C default values - these line up with the ini file defaults
+    configPage15.airConEnable = 0;
+    configPage15.airConAfterStartDelay = 5;
+    configPage15.airConFanEnabled = 0;
+    configPage15.airConClTempCut = 120;
+    configPage15.airConCompOnDelay = 0.5;
+    configPage15.airConCompPol = 0;
+    configPage15.airConReqPol = 0;
+    configPage15.airConTurnsFanOn = 1;
+    configPage15.airConCompPin = 0;
+    configPage15.airConReqPin = 0;
+    configPage15.airConFanPin = 0;
+    configPage15.airConFanPol = 0;
+    configPage15.airConTPSCut = 65;
+    configPage15.airConMinRPMdiv100 = 6;
+    configPage15.airConMaxRPMdiv100 = 47;
+    configPage15.airConIdleSteps = 0;
+    configPage15.airConTPSCutTime = 5.00;
+    configPage15.airConRPMCutTime = 5.00;
+    
     writeAllConfig();
     storeEEPROMVersion(20);
   }

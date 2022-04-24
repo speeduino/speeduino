@@ -164,6 +164,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
     case 121: statusValue = currentStatus.fanDuty; break;
+    case 122: statusValue = currentStatus.airConStatus; break;
   }
 
   return statusValue;
@@ -285,6 +286,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 86: statusValue = currentStatus.TS_SD_Status; break; //SD card status
     case 87: statusValue = currentStatus.EMAP; break;
     case 88: statusValue = currentStatus.fanDuty; break;
+    case 89: statusValue = currentStatus.airConStatus; break;
   }
 
   return statusValue;

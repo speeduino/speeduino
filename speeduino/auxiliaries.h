@@ -10,8 +10,11 @@ void boostByGear();
 void idleControl();
 void vvtControl();
 void initialiseFan();
+void initialiseAirCon();
 void nitrousControl();
 void fanControl();
+void airConControl();
+bool READ_AIRCON_REQUEST();
 void wmiControl();
 
 #define SIMPLE_BOOST_P  1
@@ -35,6 +38,14 @@ void wmiControl();
 #define N2O_STAGE2_PIN_LOW()  *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask)
 #define N2O_STAGE2_PIN_HIGH() *n2o_stage2_pin_port |= (n2o_stage2_pin_mask)
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
+#define AIRCON_ON()          {((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_OFF()         {((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_FAN_ON()      {((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN);}
+#define AIRCON_FAN_OFF()     {((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);}
+#define AIRCON_PIN_LOW()    *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
+#define AIRCON_PIN_HIGH()   *aircon_comp_pin_port |= (aircon_comp_pin_mask)
+#define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
+#define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
 
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
@@ -57,6 +68,12 @@ volatile PORT_TYPE *n2o_stage2_pin_port;
 volatile PINMASK_TYPE n2o_stage2_pin_mask;
 volatile PORT_TYPE *n2o_arming_pin_port;
 volatile PINMASK_TYPE n2o_arming_pin_mask;
+volatile PORT_TYPE *aircon_comp_pin_port;
+volatile PINMASK_TYPE aircon_comp_pin_mask;
+volatile PORT_TYPE *aircon_fan_pin_port;
+volatile PINMASK_TYPE aircon_fan_pin_mask;
+volatile PORT_TYPE *aircon_req_pin_port;
+volatile PINMASK_TYPE aircon_req_pin_mask;
 
 volatile bool boost_pwm_state;
 unsigned int boost_pwm_max_count; //Used for variable PWM frequency
@@ -94,5 +111,12 @@ long vvt2_pid_current_angle;
 void boostInterrupt();
 void vvtInterrupt();
 
+bool acIsEnabled;
+bool acStandAloneFanIsEnabled;
+uint8_t acStartDelay;
+uint8_t acTPSLockoutDelay;
+uint8_t acRPMLockoutDelay;
+uint8_t acAfterEngineStartDelay;
+bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
 #endif

@@ -266,7 +266,7 @@ void writeConfig(uint8_t pageNum)
       result = writeTable(&dwellTable, dwellTable.type_key, { EEPROM_CONFIG12_MAP3, result.counter });
       break;
       
-  case progOutsPage:
+    case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
@@ -279,6 +279,14 @@ void writeConfig(uint8_t pageNum)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
       result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
+      break;
+      
+    case EFPage:
+      /*---------------------------------------------------
+      | Config page 15 (See storage.h for data layout)
+      | 128 byte long config table
+      -----------------------------------------------------*/
+      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0 });
       break;
 
     default:
@@ -434,6 +442,13 @@ void loadConfig()
   loadTable(&ignitionTable2, ignitionTable2.type_key, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
+  
+  //*********************************************************************************************************************************************************************************
+  //Extra feature PAGE (15)
+  load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));
+
+  //*********************************************************************************************************************************************************************************
+  
 }
 
 /** Read the calibration information from EEPROM.

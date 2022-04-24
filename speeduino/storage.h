@@ -95,7 +95,9 @@
  * | 3151       |36          | Trim8 table (6x6)                    | @ref EEPROM_CONFIG8_MAP8           |
  * | 3187       |6           | Trim8 table (X axis) (RPM)           |                                    |
  * | 3193       |6           | Trim8 table (Y axis) (MAP)           |                                    |
- * | 3199       |475         | EMPTY                                |                                    |
+ * | 3199       |2           | HOLE ??                              |                                    |
+ * | 3201       |128         | Page 15 settings                     | @ref EEPROM_CONFIG15_START         |
+ * | 3329       |345         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |
  * | 3682       |4           | O2 Calibration CRC32                 |                                    |
@@ -173,6 +175,9 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CONFIG8_MAP6   3051
 #define EEPROM_CONFIG8_MAP7   3101
 #define EEPROM_CONFIG8_MAP8   3151
+//This is test for the new pages-15-
+#define EEPROM_CONFIG15_START   3201
+#define EEPROM_CONFIG15_END     3329
 
 #define EEPROM_CALIBRATION_CLT_CRC  3674
 #define EEPROM_CALIBRATION_IAT_CRC  3678
