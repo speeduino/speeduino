@@ -1,3 +1,5 @@
+#define MJR 1
+
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -1046,19 +1048,7 @@ currentStatus.canin[2] = currentStatus.advance;
 #endif
       }
 
-      #ifdef MJR
-        if( debugPinFan == true)
-        { 
-          //digitalWrite(pinFan, LOW); 
-          FAN_PIN_LOW();
-          debugPinFan = false; 
-        }
-        if (debugPinVVT == true)
-        {
-          VVT2_PIN_LOW();
-          debugPinVVT = false; 
-        }
-      #endif
+
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition

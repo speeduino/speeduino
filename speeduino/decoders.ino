@@ -177,11 +177,33 @@ void loggerPrimaryISR()
   {
     triggerHandler();
     validEdge = true;
+
+    
+    currentStatus.vvt1Angle++;
+    if (currentStatus.vvt1Angle > 15000)
+    {
+      currentStatus.vvt1Angle = 0;
+      currentStatus.vvt2Angle = 0;
+    }
+    
+
   }
   if( (currentStatus.toothLogEnabled == true) && (validTrigger == true) )
   {
     //Tooth logger only logs when the edge was correct
-    if(validEdge == true) { addToothLogEntry(curGap, TOOTH_CRANK); }
+    if(validEdge == true) 
+    { 
+      addToothLogEntry(curGap, TOOTH_CRANK);
+ 
+      currentStatus.vvt2Angle++;
+      if (currentStatus.vvt2Angle > 15000)
+      {
+        currentStatus.vvt1Angle = 0;
+        currentStatus.vvt2Angle = 0;
+      }
+ 
+    
+    }
   }
   //else if( (currentStatus.compositeLogEnabled == true) && (validTrigger == true) )
   else if( (currentStatus.compositeLogEnabled == true) )
@@ -4802,12 +4824,6 @@ void triggerSetup_Renix()
   toothSystemCount = 1;
   toothCurrentCount = 1;
 
-// for debug
-  currentStatus.vvt1Angle = 0;
-  currentStatus.vvt2Angle = 0;
-  currentStatus.canin[0] = 0;
-  currentStatus.canin[1] = 0;
-  currentStatus.canin[2] = 0;
 }
 
 
@@ -4816,9 +4832,10 @@ void triggerPri_Renix()
 {
   curTime = micros();
   curGap = curTime - renixSystemLastToothTime;
-  VVT1_PIN_OFF() 
-  if ( curGap >= triggerFilterTime )   //  || (currentStatus.startRevolutions == 0) )
+
+  if ( curGap >= triggerFilterTime )   
   {
+       
     toothSystemCount++;
     validTrigger = true;
 
@@ -4832,14 +4849,10 @@ void triggerPri_Renix()
       /* add two teeth to account for the gap we've just seen */      
       toothSystemCount++;
       toothSystemCount++;
-
+   
       if( toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
       {
         // lost sync
-// **********************************  for debug only
-        currentStatus.vvt1Angle++;
-//***************************************
-
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;            
         toothSystemCount = 1; // first tooth after gap is always 1
@@ -4867,7 +4880,6 @@ void triggerPri_Renix()
         currentStatus.startRevolutions++; //Counter               
         revolutionOne = !revolutionOne;
         toothCurrentCount = 1;  
-        VVT1_PIN_ON() 
       }
 
       toothSystemCount = 1;
@@ -4923,9 +4935,6 @@ void triggerSec_Renix()
       }
       else
       {
-        // for debug only
-        currentStatus.vvt2Angle++;
-
         currentStatus.hasSync = false;
         currentStatus.syncLossCounter++;      
         revolutionOne = 0;
