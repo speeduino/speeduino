@@ -132,6 +132,11 @@ volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
+
+bool ATFS_previousShiftState = false;
+bool ATFS_shiftState = false;
+uint16_t ATFS_shift_engaged_RPM = 0;
+
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
 volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
 volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming has been completed yet
