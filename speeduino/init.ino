@@ -1741,8 +1741,8 @@ void setPinMapping(byte boardID)
         pinBoost = PB9; //Boost control
         pinFuelPump = PB10; //Fuel pump output
         pinFan = PB1; //Pin for the fan output
-        pinVVT_1 = PA13; //Default VVT output
-        pinSpareLOut1 = PA14; //low current output spare1
+        pinVVT_1 = PA13; //Default VVT output -ON/OFF ONLY
+        pinSpareLOut1 = PA14; //low current output spare1 -ON/OFF ONLY
         //external interrupt enabled pins
         pinLaunch = PC13; //Clutch switch input
         pinFlex = PB12; // Flex sensor (Must be external interrupt enabled)
