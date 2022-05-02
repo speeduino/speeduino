@@ -76,8 +76,7 @@ void airConControl()
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
-    //if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
-    if(true)
+    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     {
       if(acAfterEngineStartDelay >= configPage15.airConAfterStartDelay)
       {
