@@ -97,7 +97,6 @@ void airConControl()
     // ---------------------------
     // Coolant Temperature Lockout
     // ---------------------------
-    currentStatus.coolant = 60;
     int offTemp = (int)configPage15.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
     if (currentStatus.coolant > offTemp)
     {
@@ -118,7 +117,6 @@ void airConControl()
     // --------------------
     // High/Low RPM Lockout
     // --------------------
-    currentStatus.RPMdiv100 = 40;
     if ( (currentStatus.RPMdiv100 < configPage15.airConMinRPMdiv100) ||
          (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
     {
@@ -147,7 +145,6 @@ void airConControl()
     // ------------------------------
     // High Throttle Position Lockout
     // ------------------------------
-    currentStatus.TPS = 50;
     if (currentStatus.TPS > configPage15.airConTPSCut)
     {
       // A/C is cut off due to high TPS
