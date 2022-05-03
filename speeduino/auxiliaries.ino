@@ -261,7 +261,6 @@ void fanControl()
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
     else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
 
-    if ( (currentStatus.coolant >= onTemp) && (fanPermit == true) )
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
            ((configPage15.airConTurnsFanOn&1) == 1 &&
