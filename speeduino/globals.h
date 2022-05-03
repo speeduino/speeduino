@@ -902,8 +902,13 @@ struct config2 {
   int8_t rtc_trim;
   byte idleAdvVss;
   byte mapSwitchPoint;
-  byte idleUpRPMAdder; //byte 126
-  byte unused2_95;
+
+  byte canBMWCluster : 1;
+  byte canVAGCluster : 1;
+  byte enableCluster1 : 1;
+  byte enableCluster2 : 1;
+  byte unusedClusterBits : 4;
+  byte idleUpRPMAdder; //Byte 127
 
 #if defined(CORE_AVR)
   };
