@@ -1454,10 +1454,10 @@ struct config15 {
   byte airConUnused1 : 2;
 
   //Bytes 1-12 - Air conditioning analog points
-  byte airConCompPin : 5;
-  byte airConUnused2 : 3;
-  byte airConReqPin : 5;
-  byte airConUnused3 : 3;
+  byte airConCompPin : 6;
+  byte airConUnused2 : 2;
+  byte airConReqPin : 6;
+  byte airConUnused3 : 2;
   byte airConTPSCut;
   byte airConMinRPMdiv100;
   byte airConMaxRPMdiv100;
@@ -1467,8 +1467,8 @@ struct config15 {
   byte airConCompOnDelay;
   byte airConAfterStartDelay;
   byte airConRPMCutTime;
-  byte airConFanPin : 5;
-  byte airConUnused4 : 3;
+  byte airConFanPin : 6;
+  byte airConUnused4 : 2;
   byte idleUpRPMAdder;
   //Bytes 14-128
   byte Unused15_14_127[114];
