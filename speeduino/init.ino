@@ -1739,10 +1739,10 @@ void setPinMapping(byte boardID)
         pinIdle1 = PB7; //Single wire idle control
         pinIdle2 = PB8; //2 wire idle control
         pinBoost = PB9; //Boost control
-        pinFuelPump = PB10; //Fuel pump output
-        pinFan = PB1; //Pin for the fan output
-        pinVVT_1 = PA13; //Default VVT output -ON/OFF ONLY
-        pinSpareLOut1 = PA14; //low current output spare1 -ON/OFF ONLY
+        pinFuelPump = PA13; //Fuel pump output
+        pinFan = PA14; //Pin for the fan output
+        pinVVT_1 = PB1; //Default VVT output
+        pinSpareLOut1 = PB10; //low current output spare1
         //external interrupt enabled pins
         pinLaunch = PC13; //Clutch switch input
         pinFlex = PB12; // Flex sensor (Must be external interrupt enabled)
