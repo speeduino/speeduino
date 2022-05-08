@@ -116,14 +116,15 @@ void airConControl()
     // --------------------
     // High/Low RPM Lockout
     // --------------------
-    if ( (currentStatus.RPMdiv100 < configPage15.airConMinRPMdiv100) ||
+    byte rpmBy16 = currentStatus.RPM >> 4;
+    if ( (rpmBy16 < configPage15.airConMinRPMdiv16) ||
          (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
     {
       // A/C is cut off due to high/low RPM
       BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
       acRPMLockoutDelay = 0;
     }
-    else if ( (currentStatus.RPMdiv100 >= configPage15.airConMinRPMdiv100) &&
+    else if ( (rpmBy16 >= configPage15.airConMinRPMdiv16) &&
               (currentStatus.RPMdiv100 <= configPage15.airConMaxRPMdiv100) )
     {
       // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
