@@ -1459,7 +1459,7 @@ struct config15 {
   byte airConReqPin : 6;
   byte airConUnused3 : 2;
   byte airConTPSCut;
-  byte airConMinRPMdiv16;
+  byte airConMinRPMdiv10;
   byte airConMaxRPMdiv100;
   byte airConClTempCut;
   byte airConIdleSteps;

@@ -92,83 +92,15 @@ void airConControl()
       acAfterEngineStartDelay = 0;
       waitedAfterCranking = false;
     }
-
-    // ---------------------------
-    // Coolant Temperature Lockout
-    // ---------------------------
-    int offTemp = (int)configPage15.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
-    if (currentStatus.coolant > offTemp)
-    {
-      // A/C is cut off due to high coolant
-      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
-    }
-    else if (currentStatus.coolant < (offTemp - 1))
-    {
-      // Adds a bit of hysteresis (2 degrees) to removing the lockout
-      // Yes, it is 2 degrees (not 1 degree or 3 degrees) because we go "> offTemp" to enable and "< (offtemp-1)" to disable,
-      // e.g. if offTemp is 100, it needs to go GREATER than 100 to enable, i.e. 101, and then 98 to disable,
-      // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
-      // depending on sensor calibration and table interpolation.
-      // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
-    }
-
-    // --------------------
-    // High/Low RPM Lockout
-    // --------------------
-    byte rpmBy16 = currentStatus.RPM >> 4;
-    if ( (rpmBy16 < configPage15.airConMinRPMdiv16) ||
-         (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
-    {
-      // A/C is cut off due to high/low RPM
-      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
-      acRPMLockoutDelay = 0;
-    }
-    else if ( (rpmBy16 >= configPage15.airConMinRPMdiv16) &&
-              (currentStatus.RPMdiv100 <= configPage15.airConMaxRPMdiv100) )
-    {
-      // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
-      if (acRPMLockoutDelay >= configPage15.airConRPMCutTime)
-      {
-        BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
-      }
-      else
-      {
-        acRPMLockoutDelay++;
-      }
-    }
-    else
-    {
-      acRPMLockoutDelay = 0;
-    }
-
-    // ------------------------------
-    // High Throttle Position Lockout
-    // ------------------------------
-    if (currentStatus.TPS > configPage15.airConTPSCut)
-    {
-      // A/C is cut off due to high TPS
-      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
-      acTPSLockoutDelay = 0;
-    }
-    else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
-              (currentStatus.TPS <= configPage15.airConTPSCut) )
-    {
-      // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
-      if (acTPSLockoutDelay >= configPage15.airConTPSCutTime)
-      {
-        BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
-      }
-      else
-      {
-        acTPSLockoutDelay++;
-      }
-    }
-    else
-    {
-      acTPSLockoutDelay = 0;
-    }
-
+    
+    // --------------------------------------------------------------------
+    // Determine the A/C lockouts based on the noted parameters
+    // These functions set/clear the globl currentStatus.airConStatus bits.
+    // --------------------------------------------------------------------
+    checkAirConCoolantLockout();
+    checkAirConTPSLockout();
+    checkAirConRPMLockout();
+    
     // -----------------------------------------
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
@@ -226,6 +158,91 @@ bool READ_AIRCON_REQUEST()
   BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
   return acReqPinStatus;
 }
+
+static inline void checkAirConCoolantLockout()
+{
+  // ---------------------------
+  // Coolant Temperature Lockout
+  // ---------------------------
+  int offTemp = (int)configPage15.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
+  if (currentStatus.coolant > offTemp)
+  {
+    // A/C is cut off due to high coolant
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+  }
+  else if (currentStatus.coolant < (offTemp - 1))
+  {
+    // Adds a bit of hysteresis (2 degrees) to removing the lockout
+    // Yes, it is 2 degrees (not 1 degree or 3 degrees) because we go "> offTemp" to enable and "< (offtemp-1)" to disable,
+    // e.g. if offTemp is 100, it needs to go GREATER than 100 to enable, i.e. 101, and then 98 to disable,
+    // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
+    // depending on sensor calibration and table interpolation.
+    // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
+    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+  }
+}
+
+static inline void checkAirConTPSLockout()
+{
+  // ------------------------------
+  // High Throttle Position Lockout
+  // ------------------------------
+  if (currentStatus.TPS > configPage15.airConTPSCut)
+  {
+    // A/C is cut off due to high TPS
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    acTPSLockoutDelay = 0;
+  }
+  else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
+            (currentStatus.TPS <= configPage15.airConTPSCut) )
+  {
+    // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
+    if (acTPSLockoutDelay >= configPage15.airConTPSCutTime)
+    {
+      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    }
+    else
+    {
+      acTPSLockoutDelay++;
+    }
+  }
+  else
+  {
+    acTPSLockoutDelay = 0;
+  }
+}
+
+static inline void checkAirConRPMLockout()
+{
+  // --------------------
+  // High/Low RPM Lockout
+  // --------------------
+  if ( (currentStatus.RPM < (configPage15.airConMinRPMdiv10 * 10)) ||
+       (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
+  {
+    // A/C is cut off due to high/low RPM
+    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    acRPMLockoutDelay = 0;
+  }
+  else if ( (currentStatus.RPM >= (configPage15.airConMinRPMdiv10 * 10)) &&
+            (currentStatus.RPMdiv100 <= configPage15.airConMaxRPMdiv100) )
+  {
+    // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
+    if (acRPMLockoutDelay >= configPage15.airConRPMCutTime)
+    {
+      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    }
+    else
+    {
+      acRPMLockoutDelay++;
+    }
+  }
+  else
+  {
+    acRPMLockoutDelay = 0;
+  }
+}
+
 
 /*
 Fan control
