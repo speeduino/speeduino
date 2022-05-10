@@ -243,7 +243,7 @@ void loop()
 
       if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
 
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) && (currentStatus.vss <= configPage10.lnchCtrlVss) ) 
+      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) &&  ( (configPage2.vssMode > 0) && (currentStatus.vss <= configPage10.lnchCtrlVss) ) ) 
       { 
         //HardCut rev limit for 2-step launch control.
         currentStatus.launchingHard = true; 
