@@ -12,6 +12,7 @@
 #include "storage.h"
 #include "sensors.h"
 #include "updates.h"
+#include "pages.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates(void)
@@ -703,6 +704,15 @@ void doUpdates(void)
     storeEEPROMVersion(21);
   }
   
+  if(readEEPROMVersion() == 21)
+  {
+    //Unreleased
+    if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) { multiplyTableValue(wmiMapPage, 2); } //Increased PWM resolution from 0-100 to 0-200 to match VVT
+    
+    //writeAllConfig();
+    //storeEEPROMVersion(21);
+  }
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
@@ -744,5 +754,23 @@ void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
   {
     *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
     ++y_it;
+  }
+}
+
+void multiplyTableValue(uint8_t pageNum, uint8_t multiplier)
+{
+  uint16_t count = getPageSize(pageNum);
+  for (uint16_t i = 0; i < count; i++)
+  {
+    setPageValue(pageNum, i, (uint8_t)(getPageValue(pageNum, i) * multiplier));
+  }
+}
+
+void divideTableValue(uint8_t pageNum, uint8_t divisor)
+{
+  uint16_t count = getPageSize(pageNum);
+  for (uint16_t i = 0; i < count; i++)
+  {
+    setPageValue(pageNum, i, (uint8_t)(getPageValue(pageNum, i) / divisor));
   }
 }
