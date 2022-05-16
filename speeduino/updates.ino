@@ -597,12 +597,7 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
-    writeAllConfig();
-    storeEEPROMVersion(20);
-  }
 
-  if(readEEPROMVersion() == 19)
-  {
     configPage9.boostDCWhenDisabled = 0;
     configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;
     

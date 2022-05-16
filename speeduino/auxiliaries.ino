@@ -391,10 +391,10 @@ void boostControl()
         if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
-      if(((configPage6.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage6.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage9.boostControlEnableThreshold))) //Only engage boost control above baro pressure
+      if(((configPage6.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage6.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage9.boostControlEnableThreshold))) //Only engage boost control above baro pressure or above user htreshold (enable kpa set to boost with wastegate spring only boost level)
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-      if( configPage2.flexEnabled == 1 )
+    if( configPage2.flexEnabled == 1 )
         {
           currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
         }
