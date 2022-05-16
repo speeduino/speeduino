@@ -621,7 +621,7 @@ void doUpdates()
     while (!table_X.at_end())
     {
       ++i;
-      *table_X = (800*i)/100;
+      *table_X = 1000+(500*i);
       ++table_X;
     }
 
@@ -631,7 +631,7 @@ void doUpdates()
     while (!table_Y.at_end())
     {
       ++i;
-      *table_Y = (120 + 10*i)/2;
+      *table_Y = (120 + 10*i);
       ++table_Y;
     }
 

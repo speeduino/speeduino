@@ -437,7 +437,7 @@ void boostControl()
         currentStatus.boostDuty = configPage9.boostDCWhenDisabled*100;
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
         ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
-        if(boost_pwm_target_value==0){
+        if(currentStatus.boostDuty==0){
           //If boost control does nothing disable PWM completely
           boostDisable();
         }     
