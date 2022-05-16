@@ -394,7 +394,7 @@ void boostControl()
       if(((configPage6.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage6.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage9.boostControlEnableThreshold))) //Only engage boost control above baro pressure
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-        if(configPage2.flexEnabled == 1)
+      if( configPage2.flexEnabled == 1 )
         {
           currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
         }
@@ -420,9 +420,7 @@ void boostControl()
           {
             if(PIDcomputed == true)
             {
-              // int16_t boostDutyTemp = (int16_t)currentStatus.boostDuty  + (int16_t)(get3DTableValue(&boostTableLookupDuty, currentStatus.MAP, currentStatus.RPM) * 50) + (int16_t)-5000;
-              // currentStatus.boostDuty = (int16_t(get3DTableValue(&boostTableLookupDuty, currentStatus.MAP, currentStatus.RPM)) * 50); 
-              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
             }
           }
         }

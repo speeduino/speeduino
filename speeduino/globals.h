@@ -445,7 +445,6 @@ extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
 extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
-
 extern struct table3d8RpmLoad boostTable; //8x8 boost map
 extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
@@ -909,7 +908,6 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-
   byte canBMWCluster : 1;
   byte canVAGCluster : 1;
   byte enableCluster1 : 1;
@@ -917,7 +915,6 @@ struct config2 {
   byte unusedClusterBits : 4;
 
   byte unused2_95;
-
 
 #if defined(CORE_AVR)
   };
