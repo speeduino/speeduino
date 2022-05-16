@@ -13,6 +13,9 @@
 #include "decoders.h"
 #include "comms.h"
 #include "logger.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
+#include "speeduino.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
@@ -113,7 +116,6 @@ void setResetControlPinState()
       break;
   }
 }
-
 
 //*********************************************************************************************************************************************************************************
 void initialiseProgrammableIO()
