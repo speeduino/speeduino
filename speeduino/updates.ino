@@ -603,7 +603,7 @@ void doUpdates()
 
   if(readEEPROMVersion() == 19)
   {
-    configPage2.boostDCWhenDisabled = 0;
+    configPage9.boostDCWhenDisabled = 0;
     configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
