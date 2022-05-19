@@ -274,9 +274,11 @@ uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable; 
 
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
-bool pinIsUsed(byte pin)
+inline bool pinIsOutput(byte pin)
 {
   bool used = false;
+  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
+  bool isIdleSteper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
   //Injector?
   if ((pin == pinInjector1)
   || ((pin == pinInjector2) && (configPage2.nInjectors > 1))
@@ -301,24 +303,42 @@ bool pinIsUsed(byte pin)
   {
     used = true;
   }
+  //Functions?
+  if ((pin == pinFuelPump)
+  || ((pin == pinFan) && (configPage2.fanEnable == 1))
+  || ((pin == pinVVT_1) && (configPage6.vvtEnabled > 0))
+  || ((pin == pinVVT_1) && (configPage10.wmiEnabled > 0))
+  || ((pin == pinVVT_2) && (configPage10.vvt2Enabled > 0))
+  || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
+  || ((pin == pinIdle1) && isIdlePWM)
+  || ((pin == pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
+  || ((pin == pinStepperEnable) && isIdleSteper)
+  || ((pin == pinStepperStep) && isIdleSteper)
+  || ((pin == pinStepperDir) && isIdleSteper)
+  || (pin == pinTachOut) )
+  {
+    used = true;
+  }
+  //Forbiden or hardware reserved? (Defined at board_xyz.h file)
+  if ( pinIsReserved(pin) ) { used = true; }
+
+  return used;
+}
+
+inline bool pinIsUsed(byte pin)
+{
+  bool used = false;
+
   //Analog input?
   if ( pinIsSensor(pin) )
   {
     used = true;
   }
   //Functions?
-  if ((pin == pinFuelPump)
-  || ((pin == pinFan) && (configPage2.fanEnable == 1))
-  || ((pin == pinVVT_1) && (configPage6.vvtEnabled > 0))
-  || ((pin == pinVVT_2) && (configPage6.vvtEnabled > 0))
-  || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
-  || ((pin == pinIdle1) && ((configPage6.iacAlgorithm > 0) && (configPage6.iacAlgorithm <= 3)))
-  || ((pin == pinIdle2) && (configPage6.iacChannels == 1)) || (pin == pinTachOut) )
+  if ( pinIsOutput(pin) )
   {
     used = true;
   }
-  //Forbiden or hardware reserved? (Defined at board_xyz.h file)
-  if ( pinIsReserved(pin) ) { used = true; }
 
   return used;
 }
