@@ -1886,7 +1886,7 @@ void setPinMapping(byte boardID)
       pinWMIEmpty = PD15; //(placeholder)
       pinWMIIndicator = PD13; //(placeholder)
       pinWMIEnabled = PE15; //(placeholder)
-      pinIdleUp = PE14 //(placeholder)
+      pinIdleUp = PE14; //(placeholder)
       pinCTPS = PA6; //(placeholder)
      #endif
       break;
