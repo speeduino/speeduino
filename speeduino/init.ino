@@ -2210,6 +2210,52 @@ void setPinMapping(byte boardID)
 
       #endif
       break;
+
+    case 56:
+      #if defined(CORE_TEENSY)
+      //Pin mappings for the Bear Cub (Teensy 4.1)
+      pinInjector1 = 6;
+      pinInjector2 = 7;
+      pinInjector3 = 9;
+      pinInjector4 = 8;
+      pinInjector5 = 0; //Not used
+      pinCoil1 = 2;
+      pinCoil2 = 3;
+      pinCoil3 = 4;
+      pinCoil4 = 5;
+
+      pinTrigger = 20; //The CAS pin
+      pinTrigger2 = 21; //The Cam Sensor pin
+      pinFlex = 37; // Flex sensor
+      pinMAP = A5; //MAP sensor pin
+      pinBaro = A4; //Baro sensor pin
+      pinBat = A15; //Battery reference voltage pin
+      pinTPS = A3; //TPS input pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A2; //O2 Sensor pin
+      pinLaunch = 36;
+
+      pinSpareTemp1 = A16; //spare Analog input 1
+      pinSpareTemp2 = A17; //spare Analog input 2
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 27; //Single wire idle control
+      pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
+      pinFuelPump = 10; //Fuel pump output
+      pinVVT_1 = 28; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 24; //Boost control
+      pinSpareLOut1 = 29; //low current output spare1
+      pinSpareLOut2 = 26; //low current output spare2
+      pinSpareLOut3 = 28; //low current output spare3
+      pinSpareLOut4 = 29; //low current output spare4
+      pinFan = 25; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+
+      #endif
+      break;
     
  
     case 60:
