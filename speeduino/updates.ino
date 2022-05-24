@@ -491,7 +491,7 @@ void doUpdates()
     configPage10.TrigEdgeThrd = 0;
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    if(configPage6.tachoMode == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -615,6 +615,7 @@ void doUpdates()
     if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+    configPage6.tachoMode = 0;
 
     //CAN broadcast introduced
     configPage2.canBMWCluster = 0;
