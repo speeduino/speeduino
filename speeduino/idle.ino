@@ -92,12 +92,6 @@ void initialiseIdle()
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
 
-      iacClosedLoopTable.xSize = 10;
-      iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.axisSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage6.iacCLValues;
-      iacClosedLoopTable.axisX = configPage6.iacBins;
-
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
       iacCrankDutyTable.axisSize = SIZE_BYTE;
@@ -122,12 +116,6 @@ void initialiseIdle()
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
-      iacClosedLoopTable.xSize = 10;
-      iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.axisSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage6.iacCLValues;
-      iacClosedLoopTable.axisX = configPage6.iacBins;
-
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
       iacCrankDutyTable.axisSize = SIZE_BYTE;
@@ -189,12 +177,6 @@ void initialiseIdle()
 
     case IAC_ALGORITHM_STEP_CL:
       //Case 5 is Stepper closed loop
-      iacClosedLoopTable.xSize = 10;
-      iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.axisSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage6.iacCLValues;
-      iacClosedLoopTable.axisX = configPage6.iacBins;
-
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
       iacCrankStepsTable.axisSize = SIZE_BYTE;
@@ -227,7 +209,7 @@ void initialiseIdle()
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
-      idle_pid_target_value = table2D_getValue(&iacClosedLoopTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3;
+      idle_pid_target_value = currentStatus.CLIdleTarget * 3;
       idlePID.Initialize();
       break;
 
@@ -238,12 +220,6 @@ void initialiseIdle()
       iacStepTable.axisSize = SIZE_BYTE;
       iacStepTable.values = configPage6.iacOLStepVal;
       iacStepTable.axisX = configPage6.iacBins;
-
-      iacClosedLoopTable.xSize = 10;
-      iacClosedLoopTable.valueSize = SIZE_BYTE;
-      iacClosedLoopTable.axisSize = SIZE_BYTE;
-      iacClosedLoopTable.values = configPage6.iacCLValues;
-      iacClosedLoopTable.axisX = configPage6.iacBins;
 
       iacCrankStepsTable.xSize = 4;
       iacCrankStepsTable.valueSize = SIZE_BYTE;
@@ -454,14 +430,14 @@ void idleControl()
         IDLE_PIN_HIGH();
         idleOn = true;
         BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-		currentStatus.idleLoad = 100;
+		    currentStatus.idleLoad = 100;
       }
       else if (idleOn)
       {
         IDLE_PIN_LOW();
         idleOn = false; 
         BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag on
-		currentStatus.idleLoad = 0;
+		    currentStatus.idleLoad = 0;
       }
       break;
 
@@ -526,9 +502,8 @@ void idleControl()
       }
       else
       {
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-        if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per second
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
 
         PID_computed = idlePID.Compute(true);
         if(PID_computed == true)
@@ -567,9 +542,8 @@ void idleControl()
         //Read the OL table as feedforward term
         FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
     
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-        if( (idleCounter & 31) == 1) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //This only needs to be run very infrequently, once every 32 calls to idleControl(). This is approx. once per 9 seconds
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
         if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (comming back from high rpm with throttle closed) 
           idlePID.ResetIntegeral();
         }
@@ -580,7 +554,6 @@ void idleControl()
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
-
         }
         idleCounter++;
       }
@@ -672,7 +645,6 @@ void idleControl()
         {
           if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) )
           {
-            currentStatus.CLIdleTarget = (byte)table2D_getValue(&iacClosedLoopTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
             idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
             if( idleTaper < configPage2.idleTaperTime )
             {

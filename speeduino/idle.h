@@ -35,7 +35,6 @@ struct StepperIdle
   byte moreAirDirection;
 };
 
-struct table2D iacClosedLoopTable;
 struct table2D iacPWMTable;
 struct table2D iacStepTable;
 //Open loop tables specifically for cranking

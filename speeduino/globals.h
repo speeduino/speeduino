@@ -903,7 +903,13 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte unused2_95[2];
+  byte canBMWCluster : 1;
+  byte canVAGCluster : 1;
+  byte enableCluster1 : 1;
+  byte enableCluster2 : 1;
+  byte unusedClusterBits : 4;
+
+  byte unused2_95;
 
 #if defined(CORE_AVR)
   };

@@ -225,7 +225,7 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
 
-  if( currentStatus.hasSync == true )
+  if( currentStatus.hasSync || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) )
   {
     if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.startRevolutions == 0) ) { tempRPM = 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
     else if( (toothOneTime == 0) || (toothOneMinusOneTime == 0) ) { tempRPM = 0; }
@@ -267,7 +267,7 @@ For a missing tooth wheel, this is the number if the tooth had NOT been missing 
 static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (currentStatus.hasSync == true) )
+  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) )
   {
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
@@ -422,7 +422,7 @@ void triggerPri_missingTooth()
             //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; }
             else
             {
-                if(currentStatus.hasSync == true)
+                if((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC))
                 {
                   currentStatus.startRevolutions++; //Counter
                   if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
@@ -4687,7 +4687,7 @@ void triggerPri_Vmax()
     return;
   }
   else if (validTrigger == false){ 
-    validTrigger == true;//We reset this every time to ensure we only filter when needed.
+    validTrigger = true;//We reset this every time to ensure we only filter when needed.
   }
 }
 
