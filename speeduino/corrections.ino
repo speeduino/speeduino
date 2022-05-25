@@ -365,7 +365,7 @@ uint16_t correctionAccel()
   else if(configPage2.aeMode == AE_MODE_TPS)
   {
     //Get the TPS rate change
-    TPS_change = (currentStatus.TPS - TPSlast);
+    TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
     //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
     TPS_rateOfChange = (TPS_READ_FREQUENCY * TPS_change) / 2; //This is the % per second that the TPS has moved, adjusted for the 0.5% resolution of the TPS
     if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte
