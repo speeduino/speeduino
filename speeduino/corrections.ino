@@ -431,7 +431,7 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
               accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
@@ -490,7 +490,7 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
               accelValue = percentage( (100 - taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
