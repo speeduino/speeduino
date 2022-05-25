@@ -13,7 +13,7 @@
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
-  #define SERIAL_BUFFER_SIZE 257 //Size of the serial buffer used by new comms protocol. Additional 1 byte is for flag
+  #define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     typedef uint16_t eeprom_address_t;
@@ -38,7 +38,7 @@
   #else
     #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
   #endif
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB on other boards
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
   //Mega 2561 MCU does not have a serial3 available. 
   #if not defined(__AVR_ATmega2561__)
@@ -129,7 +129,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   #define ENABLE_BOOST_TIMER()  TIMSK1 |= (1 << OCIE1A)
   #define DISABLE_BOOST_TIMER() TIMSK1 &= ~(1 << OCIE1A)

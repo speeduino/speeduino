@@ -11,12 +11,14 @@ A full copy of the license may be found in the projects root directory
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "pages.h"
+#include "table3d_axis_io.h"
 
 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
 #define EEPROM_MAX_WRITE_BLOCK 64
 #else
-#define EEPROM_MAX_WRITE_BLOCK 30
+#define EEPROM_MAX_WRITE_BLOCK 24
+//#define EEPROM_MAX_WRITE_BLOCK 8
 #endif
 
 #define EEPROM_DATA_VERSION   0
@@ -32,6 +34,8 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 static bool eepromWritesPending = false;
+static bool forceBurn = false;
+uint32_t deferEEPROMWritesUntil = 0;
 
 bool isEepromWritePending()
 {
@@ -45,18 +49,20 @@ void writeAllConfig()
   uint8_t pageCount = getPageCount();
   uint8_t page = 1U;
   writeConfig(page++);
-  while (page<pageCount && !eepromWritesPending)
+  while (page<pageCount && ( !eepromWritesPending || forceBurn ) )
   {
     writeConfig(page++);
   }
 }
 
+void enableForceBurn() { forceBurn = true; }
+void disableForceBurn() { forceBurn = false; }
+
 
 //  ================================= Internal write support ===============================
-
 struct write_location {
   eeprom_address_t address;
-  uint8_t counter;
+  uint16_t counter;
 
   /** Update byte to EEPROM by first comparing content and the need to write it.
   We only ever write to the EEPROM where the new value is different from the currently stored byte
@@ -79,13 +85,17 @@ struct write_location {
 
   bool can_write() const
   {
-    return counter<=EEPROM_MAX_WRITE_BLOCK;
+    bool canWrite = false;
+    if(currentStatus.RPM > 0) { canWrite = (counter <= EEPROM_MAX_WRITE_BLOCK); }
+    else { canWrite = (counter <= (EEPROM_MAX_WRITE_BLOCK * 8)); } //Write to EEPROM more aggressively if the engine is not running
+
+    return canWrite;
   }
 };
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while (location.can_write() && pStart!=pEnd)
+  while ( (location.can_write() || forceBurn) && pStart!=pEnd)
   {
     location.update(*pStart);
     ++pStart; 
@@ -101,7 +111,7 @@ static inline write_location write(const table_row_iterator &row, write_location
 
 static inline write_location write(table_value_iterator it, write_location location)
 {
-  while (location.can_write() && !it.at_end())
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
     location = write(*it, location);
     ++it;
@@ -111,9 +121,10 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  while (location.can_write() && !it.at_end())
+  const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
+  while ((location.can_write() || forceBurn) && !it.at_end())
   {
-    location.update((byte)*it);
+    location.update(pConverter->to_byte(*it));
     ++location;
     ++it;
   }
@@ -128,6 +139,10 @@ static inline write_location writeTable(const void *pTable, table_type_t key, wr
                   write(rows_begin(pTable, key), location)));
 }
 
+//Simply an alias for EEPROM.update()
+void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
+uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
+
 //  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
@@ -137,6 +152,8 @@ and writes them to EEPROM as per the layout defined in storage.h.
 void writeConfig(uint8_t pageNum)
 {
   write_location result = { 0, 0 };
+
+  //if(micros() < deferEEPROMWritesUntil) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
 
   switch(pageNum)
   {
@@ -269,6 +286,8 @@ void writeConfig(uint8_t pageNum)
   }
 
   eepromWritesPending = !result.can_write();
+  if(eepromWritesPending == true) { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+  else { BIT_CLEAR(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
@@ -329,9 +348,10 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 
 static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
+  const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
   while (!it.at_end())
   {
-    *it = EEPROM.read(address);
+    *it = pConverter->from_byte(EEPROM.read(address));
     ++address;
     ++it;
   }
@@ -453,6 +473,25 @@ void writeCalibration()
   EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
+void writeCalibrationPage(uint8_t pageNum)
+{
+  if(pageNum == O2_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  }
+  else if(pageNum == IAT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  }
+  else if(pageNum == CLT_CALIBRATION_PAGE)
+  {
+    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  }
+}
+
 static eeprom_address_t compute_crc_address(uint8_t pageNum)
 {
   return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
@@ -475,6 +514,64 @@ uint32_t readPageCRC32(uint8_t pageNum)
 {
   uint32_t crc32_val;
   return EEPROM.get(compute_crc_address(pageNum), crc32_val);
+}
+
+/** Same as above, but writes the CRC32 for the calibration page rather than tune data
+@param pageNum - Calibration page number
+@param crcValue - CRC32 checksum
+*/
+void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC)
+{
+  uint16_t targetAddress;
+  switch(calibrationPageNum)
+  {
+    case O2_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_O2_CRC;
+      break;
+    case IAT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
+      break;
+    case CLT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
+      break;
+    default:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
+      break;
+  }
+
+  EEPROM.put(targetAddress, calibrationCRC);
+}
+
+/** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM.
+@param pageNum - Config page number
+*/
+uint32_t readCalibrationCRC32(uint8_t calibrationPageNum)
+{
+  uint32_t crc32_val;
+  uint16_t targetAddress;
+  switch(calibrationPageNum)
+  {
+    case O2_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_O2_CRC;
+      break;
+    case IAT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
+      break;
+    case CLT_CALIBRATION_PAGE:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
+      break;
+    default:
+      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
+      break;
+  }
+
+  EEPROM.get(targetAddress, crc32_val);
+  return crc32_val;
+}
+
+uint16_t getEEPROMSize()
+{
+  return EEPROM.length();
 }
 
 // Utility functions.
