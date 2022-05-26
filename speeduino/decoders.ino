@@ -4819,7 +4819,6 @@ void triggerSetup_Renix()
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
   secondDerivEnabled = false;
-  decoderIsSequential = true;
   toothLastToothTime = micros();
   toothSystemCount = 1;
   toothCurrentCount = 1;
@@ -4827,7 +4826,11 @@ void triggerSetup_Renix()
 }
 
 
-long renixSystemLastToothTime = 0, renixSystemLastMinusOneToothTime = 0; // variables used to help calculate gap on the physical 44 teeth we're pretending don't exist in most of the speeduino code
+// variables used to help calculate gap on the physical 44 or 66 teeth we're pretending don't exist in most of the speeduino code
+// reusing existing variables to save storage space as these aren't used in the code for their original purpose.
+#define renixSystemLastToothTime         toothLastToothRisingTime
+#define renixSystemLastMinusOneToothTime toothLastSecToothRisingTime
+
 void triggerPri_Renix()
 {
   curTime = micros();
@@ -4905,75 +4908,6 @@ void triggerPri_Renix()
 
 
 
-void triggerSec_Renix()
-{
-  curTime2 = micros();
-  curGap2 = curTime2 - toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (toothLastSecToothTime == 0) )
-  { 
-    curGap2 = 0; 
-    toothLastSecToothTime = curTime2;
-  }
-
-  if ( curGap2 >= triggerSecFilterTime )
-  {
-    currentStatus.hasSync = true;
-    //Standard single tooth cam trigger
-    triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
-    secondaryToothCount++;
-    toothLastSecToothTime = curTime2;
-
-    if (configPage4.TrigPattern == DECODER_RENIX44)
-    {
-      if( toothCurrentCount == 4  && toothSystemCount == 2)
-      {
-        revolutionOne = 0;
-        currentStatus.startRevolutions++; //Counter
-        currentStatus.hasSync = true;
-      }
-      else
-      {
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;      
-        revolutionOne = 0;
-      }
-      toothCurrentCount= 4;
-      toothSystemCount = 2; 
-    }
-    else if (configPage4.TrigPattern == DECODER_RENIX66)
-    {
-      if( toothCurrentCount == 6 && toothSystemCount == 2)
-      {
-        revolutionOne = 0;
-        currentStatus.startRevolutions++; //Counter
-        currentStatus.hasSync = true;
-      }
-      else
-      {
-        currentStatus.hasSync = false;
-        currentStatus.syncLossCounter++;   
-        revolutionOne = 0;
-
-      }
-      toothCurrentCount= 6;
-      toothSystemCount = 2; 
-    }
-  } //Trigger filter
-
-  //Record the VVT Angle
-  if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
-  {
-    int16_t curAngle;
-    curAngle = getCrankAngle();
-    while(curAngle > 360) { curAngle -= 360; }
-    curAngle -= configPage4.triggerAngle; //Value at TDC
-    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
-
-    currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
-  }
-}
 
 void triggerSetEndTeeth_Renix()
 {
@@ -4984,26 +4918,11 @@ void triggerSetEndTeeth_Renix()
 
   int16_t tempIgnition1EndTooth;
   tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  currentStatus.canin[8] = tempIgnition1EndTooth;
   if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  currentStatus.canin[9] = tempIgnition1EndTooth;
   if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  currentStatus.canin[10] = tempIgnition1EndTooth;
   if((uint16_t)tempIgnition1EndTooth > triggerActualTeeth && tempIgnition1EndTooth <= configPage4.triggerTeeth) { tempIgnition1EndTooth = triggerActualTeeth; }
-  currentStatus.canin[11] = tempIgnition1EndTooth;
   if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
   ignition1EndTooth = tempIgnition1EndTooth;
-  currentStatus.canin[12] = tempIgnition1EndTooth;
-  currentStatus.canin[0] = ignition1EndAngle;
-  currentStatus.canin[3] = configPage4.triggerAngle;
-  currentStatus.canin[4] = triggerToothAngle;
-  currentStatus.canin[5] = configPage4.triggerTeeth;
-  currentStatus.canin[6] = toothAdder;
-  currentStatus.canin[7] = triggerActualTeeth;
-  
-
-
-
 
 
   int16_t tempIgnition2EndTooth;

@@ -3291,7 +3291,6 @@ void initialiseTriggers()
       //Renault 44 tooth decoder
       triggerSetup_Renix();
       triggerHandler = triggerPri_Renix;
-      //triggerSecondaryHandler = triggerSec_Renix;
       decoderHasSecondary = false;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
@@ -3303,15 +3302,13 @@ void initialiseTriggers()
       else { secondaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-//      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_RENIX66:
       //Renault 66 tooth decoder
       triggerSetup_Renix();
       triggerHandler = triggerPri_Renix;
-      triggerSecondaryHandler = triggerSec_Renix;
-      decoderHasSecondary = true;
+      decoderHasSecondary = false;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_Renix;
@@ -3322,7 +3319,6 @@ void initialiseTriggers()
       else { secondaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
 

@@ -456,7 +456,7 @@ void loop()
 
     currentStatus.advance1 = getAdvance1();
     currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
-currentStatus.canin[2] = currentStatus.advance;
+
     calculateSecondaryFuel();
     calculateSecondarySpark();
 
