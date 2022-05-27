@@ -667,7 +667,7 @@ byte correctionAFRClosedLoop()
     //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
     if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) 
     { 
-      if (configPage6.afrLoad == 0) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.MAP, currentStatus.RPM); }
+      if (configPage9.afrLoad == 0) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.MAP, currentStatus.RPM); }
       else { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.TPS * 2, currentStatus.RPM); }
     } //Perform the target lookup
   }
