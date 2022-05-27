@@ -5,6 +5,7 @@
 
 #include "missing_tooth/missing_tooth.h"
 #include "dual_wheel/dual_wheel.h"
+#include "renix/renix.h"
 
 void setup()
 {
@@ -18,6 +19,7 @@ void setup()
 
     testMissingTooth();
     testDualWheel();
+    testRenix();
 
     UNITY_END(); // stop unit testing
 }
