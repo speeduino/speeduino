@@ -114,6 +114,57 @@ byte checkAFRLimit()
 {
   byte checkAFRLimitActive = 0;
 
+  /*
+    To use this function, a wideband sensor is required.
+
+    First of all, check wether wideband sensor is used.
+    After confirmation, the following conditions has to be met:
+    - MAP above x kPa (Note: MAP is divided by 10 to be stored in byte, increments of 10 kPa)
+    - RPM above x
+    - TPS above x %
+    - AFR threshold (AFR target + defined maximum deviation)
+    - Time before cut
+
+    When all of the conditions above are true, the engine protection
+    function is activated using selected protection cut method.
+
+    For reactivation, the following condition has to be met:
+    - TPS below x %
+  */
+  
+  /* Check if engine protection is enabled */
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF) {
+    /* Check if wideband sensor is used */
+    if(configPage6.egoType == 2) {
+      /* Conditions */
+      byte mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * 10)) ? 1 : 0;
+      byte rpmCondition = (currentStatus.RPM >= (configPage9.afrProtectMinRPM)) ? 1 : 0;
+      byte tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? 1 : 0;
+      byte afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? 1 : 0;
+
+      /* Check if conditions above are fulfilled */
+      if(mapCondition && rpmCondition && tpsCondition && afrCondition) {
+        /* All conditions fulfilled - start countdown before protection cut */
+        if(!afrProtectCountEnabled) {
+          afrProtectCountEnabled = true;
+          afrProtectCount = millis();
+        }
+
+        /* Check if countdown has reached its target, if so then instruct to cut */
+        if(millis() >= (afrProtectCount + configPage9.afrProtectCutTime * 10)) {
+          checkAFRLimitActive = 1;
+          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+        }
+      }
+
+      /* Check if condition for reactivation is fulfilled */
+      if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) {
+        checkAFRLimitActive = 0;
+        BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+      }
+    }
+  }
+
   return checkAFRLimitActive;
 }
 

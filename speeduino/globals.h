@@ -1176,13 +1176,12 @@ struct config9 {
   byte unused10_182;
   byte unused10_183;
   byte unused10_184;
-  byte unused10_185;
-  byte unused10_186;
-  byte unused10_187;
-  byte unused10_188;
-  byte unused10_189;
-  byte unused10_190;
-  byte unused10_191;
+  byte afrProtectMinMAP; /* < Minimum MAP. Value is divided by 10 to be stored in a byte. Increments of 10 kPa */
+  uint16_t afrProtectMinRPM; /* < Minimum RPM. Using uint16 to preserve resolution. */
+  byte afrProtectMinTPS; /* < Minimum TPS. */
+  byte afrProtectDeviation; /* < Maximum deviation from AFR target table. Value is multiplied by 10 to be stored in a byte */
+  byte afrProtectCutTime; /* < Time before engine protection cut is enabled */
+  byte afrProtectReactivationTPS; /* Disable engine protection cut once below this TPS percentage */
   
 #if defined(CORE_AVR)
   };
