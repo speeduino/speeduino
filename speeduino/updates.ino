@@ -490,9 +490,6 @@ void doUpdates()
     configPage4.vvt2PWMdir = 0;
     configPage10.TrigEdgeThrd = 0;
 
-    //Old use as On/Off selection is removed, bit is now reused for boost, so change VVT mode to On/Off based on that
-    if(configPage6.boostControlEnable == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
-
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
     configPage10.vvtCLMaxAng = 200;
@@ -598,8 +595,8 @@ void doUpdates()
     configPage2.canVAGCluster = 0;
     
 
-    configPage9.boostDCWhenDisabled = 0;
-    configPage6.boostControlEnable = EN_BOOST_CONTROL_BARO;
+    configPage15.boostDCWhenDisabled = 0;
+    configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
     //This makes the boostcontrol fully backwards compatible.  

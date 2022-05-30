@@ -1043,6 +1043,11 @@ void sendPageASCII()
       serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
       break;
 
+    case boostvvtPage2:
+      Serial.println(F("\nBoost lookup table"));
+      serial_print_3dtable(&boostTableLookupDuty, boostTableLookupDuty.type_key);
+      break;
+
     case warmupPage:
     case progOutsPage:
     default:
