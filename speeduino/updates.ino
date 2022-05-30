@@ -662,6 +662,7 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(20);
   }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {

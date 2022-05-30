@@ -545,6 +545,7 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     lastTime = millis()- *mySampleTime;
     lastError = 0;
 }
+
 /* Compute() **********************************************************************
  *     This, as they say, is where the magic happens.  this function should be called
  *   every time "void loop()" executes.  the function will decide for itself whether a new

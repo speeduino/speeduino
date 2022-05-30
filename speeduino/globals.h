@@ -449,7 +449,6 @@ extern struct table3d8RpmLoad boostTable; //8x8 boost map
 extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
-
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
 
 typedef table3d6RpmLoad trimTable3d; 
@@ -1434,7 +1433,6 @@ struct config13 {
 #else
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
-
 
 /**
 Page 15 - second page for VVT and boost control.
