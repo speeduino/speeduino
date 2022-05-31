@@ -1175,7 +1175,7 @@ struct config9 {
   byte unused10_181;
   byte unused10_182;
   byte unused10_183;
-  byte afrProtectEnabled; /* < AFR protection enabled */
+  byte afrProtectEnabled : 1; /* < AFR protection enabled status. 0 = disabled, 1 = enabled */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 510 kPa */
   uint16_t afrProtectMinRPM; /* < Minimum RPM. Using uint16 to preserve resolution. */
   byte afrProtectMinTPS; /* < Minimum TPS. */
