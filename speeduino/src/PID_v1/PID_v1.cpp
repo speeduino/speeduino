@@ -243,50 +243,38 @@ bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
    if(timeChange >= SampleTime)
    {
       /*Compute all the working error variables*/
-	   long input = *myInput;
-      if(input > 0) //Fail safe, should never be 0
-      {
-         long error = *mySetpoint - input;
-         long dInput = (input - lastInput);
-         FeedForwardTerm <<= PID_SHIFTS;
-
-         if (ki != 0)
-         {
-            outputSum += (ki * error); //integral += error × dt
-            if(outputSum > outMax-FeedForwardTerm) { outputSum = outMax-FeedForwardTerm; }
-            else if(outputSum < outMin-FeedForwardTerm) { outputSum = outMin-FeedForwardTerm; }
-         }
-
-         /*Compute PID Output*/
-         long output;
-         
-         if(pOnE)
-         {
-            output = (kp * error);
-            if (ki != 0) { output += outputSum; }
-         }
-         else
-         {
-            outputSum -= (kp * dInput);
-            if(outputSum > outMax) { outputSum = outMax; }
-            else if(outputSum < outMin) { outputSum = outMin; }
-
-            output = outputSum;
-         }
-         if (kd != 0) { output -= (kd * dInput)>>2; }
-         output += FeedForwardTerm;
-
-         if(output > outMax) output = outMax;
-         else if(output < outMin) output = outMin;
-
-         *myOutput = output >> PID_SHIFTS;
-
-         /*Remember some variables for next time*/
-         lastInput = input;
-         lastTime = now;
-
-         return true;
-      }
+		long input = *myInput;
+		long error = *mySetpoint - input;
+		long dInput = (input - lastInput);
+		FeedForwardTerm <<= PID_SHIFTS;
+	
+		/*Compute PID Output*/
+		long output;
+		
+		output = (kp * error);	//Add te P to the output
+		
+		output += FeedForwardTerm; //Add te feed forward to the output
+		
+		if (ki != 0)	//Is the integral turned on?
+		{
+		outputSum += (ki * error); //integral += error × ki
+		if(outputSum > outMax-output) { outputSum = outMax-output; }	//Anti-windup
+		else if(outputSum < outMin-output) { outputSum = outMin-output; }	//Anti-windup
+		output += outputSum; //Add te I to the output
+		}
+		
+		if (kd != 0) { output -= (kd * dInput)>>2; } //Add te D to the output
+		
+		if(output > outMax) output = outMax;	//Limit the output
+		else if(output < outMin) output = outMin;	//Limit the output
+	
+		*myOutput = output >> PID_SHIFTS;	
+	
+		/*Remember some variables for next time*/
+		lastInput = input;
+		lastTime = now;
+	
+		return true;
    }
    return false;
 }
