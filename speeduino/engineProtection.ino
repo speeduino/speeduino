@@ -116,7 +116,7 @@ byte checkAFRLimit()
   static bool afrProtectCountEnabled = false;
   static unsigned long afrProtectCount = 0;
   static constexpr char X2_MULTIPLIER = 2;
-  static constexpr char X10_MULTIPLIER = 10;
+  static constexpr char X100_MULTIPLIER = 100;
 
   /*
     To use this function, a wideband sensor is required.
@@ -131,6 +131,8 @@ byte checkAFRLimit()
     - TPS above x %
     - AFR threshold (AFR target + defined maximum deviation)
     - Time before cut
+
+    See afrProtect variables in globals.h for more information.
 
     If all conditions above are true, a specified time delay is starting
     to count down in which leads to the engine protection function
@@ -150,7 +152,7 @@ byte checkAFRLimit()
   if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == 2) {
     /* Conditions */
     bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
-    bool rpmCondition = (currentStatus.RPM >= (configPage9.afrProtectMinRPM)) ? true : false;
+    bool rpmCondition = (currentStatus.RPM >= (configPage9.afrProtectMinRPM * X100_MULTIPLIER)) ? true : false;
     bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
     bool afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false;
 
@@ -163,7 +165,7 @@ byte checkAFRLimit()
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X10_MULTIPLIER))) {
+      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) {
         checkAFRLimitActive = true;
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
       }
