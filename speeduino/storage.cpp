@@ -13,11 +13,14 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "table3d_axis_io.h"
 
+
+
 //The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
 #if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
-#define EEPROM_MAX_WRITE_BLOCK 64
+//#define EEPROM_MAX_WRITE_BLOCK 64
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
 #else
-#define EEPROM_MAX_WRITE_BLOCK 24
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 24;
 //#define EEPROM_MAX_WRITE_BLOCK 8
 #endif
 
@@ -153,7 +156,15 @@ void writeConfig(uint8_t pageNum)
 {
   write_location result = { 0, 0 };
 
-  //if(micros() < deferEEPROMWritesUntil) { result.counter = (EEPROM_MAX_WRITE_BLOCK + 1); } //If we are deferring writes then we don't want to write anything. This will force can_write() to return false and the write will be skipped.
+  #ifdef CORE_AVR
+    //In order to prevent missed pulses during EEPROM writes on AVR, scale the maximum write block size based on the RPM
+    //This calculation is based on EEPROM writes taking approximately 4ms per byte (Actual value is 3.8ms, so 4ms has some safety margin) 
+    if(currentStatus.RPM > 65) { EEPROM_MAX_WRITE_BLOCK = (15000 / currentStatus.RPM); } //Min RPM of 65 prevents overflow of uint8_t. 
+    else { EEPROM_MAX_WRITE_BLOCK = 24; }
+
+    if(EEPROM_MAX_WRITE_BLOCK < 1) { EEPROM_MAX_WRITE_BLOCK = 1; }
+    if(EEPROM_MAX_WRITE_BLOCK > 24) { EEPROM_MAX_WRITE_BLOCK = 24; } //Any higher than this will cause comms timeouts on AVR
+  #endif
 
   switch(pageNum)
   {
