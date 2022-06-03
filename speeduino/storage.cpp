@@ -281,6 +281,19 @@ void writeConfig(uint8_t pageNum)
       result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
       break;
 
+    case boostvvtPage2:
+      /*---------------------------------------------------
+      | Boost duty cycle lookuptable (See storage.h for data layout) - Page 15
+      | 8x8 table itself + the 8 values along each of the axis
+      -----------------------------------------------------*/
+      result = writeTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, { EEPROM_CONFIG15_MAP, result.counter });
+
+      /*---------------------------------------------------
+      | Config page 15 (See storage.h for data layout)
+      -----------------------------------------------------*/
+      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0});
+      break;
+
     default:
       break;
   }
@@ -432,6 +445,11 @@ void loadConfig()
   //SECOND IGNITION CONFIG PAGE (14)
 
   loadTable(&ignitionTable2, ignitionTable2.type_key, EEPROM_CONFIG14_MAP);
+
+  //*********************************************************************************************************************************************************************************
+  //CONFIG PAGE (15) + boost duty lookup table (LUT)
+  loadTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, EEPROM_CONFIG15_MAP);
+  load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));  
 
   //*********************************************************************************************************************************************************************************
 }
