@@ -621,10 +621,48 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
+
+    configPage15.boostDCWhenDisabled = 0;
+    configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
+    
+    //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
+    //This makes the boostcontrol fully backwards compatible.  
+    auto table_it = boostTableLookupDuty.values.begin();
+    while (!table_it.at_end())
+    {
+      auto row = *table_it;
+      while (!row.at_end())
+      {
+        *row = 50*2;
+        ++row;
+      }      
+      ++table_it;
+    }
+
+    //Set some sensible values at the RPM axis
+    auto table_X = boostTableLookupDuty.axisX.begin();
+    uint16_t i = 0;
+    while (!table_X.at_end())
+    {
+      ++i;
+      *table_X = 1000+(500*i);
+      ++table_X;
+    }
+
+    //Set some sensible values at the boosttarget axis
+    auto table_Y = boostTableLookupDuty.axisY.begin();
+    i = 0;
+    while (!table_Y.at_end())
+    {
+      ++i;
+      *table_Y = (120 + 10*i);
+      ++table_Y;
+    }
+
     writeAllConfig();
     storeEEPROMVersion(20);
   }
-
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
