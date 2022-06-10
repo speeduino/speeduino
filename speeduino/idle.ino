@@ -273,7 +273,7 @@ void initialiseIdleUpOutput()
   if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
   else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
 
-  digitalWrite(pinIdleUpOutput, idleUpOutputLOW); //Initialise program with the idle up output in the off state
+  if(configPage2.idleUpEnabled > 0) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
   currentStatus.idleUpOutputActive = false;
 
   idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));

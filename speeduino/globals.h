@@ -279,6 +279,9 @@
 #define BOOST_MODE_SIMPLE   0
 #define BOOST_MODE_FULL     1
 
+#define EN_BOOST_CONTROL_BARO   0
+#define EN_BOOST_CONTROL_FIXED  1
+
 #define WMI_MODE_SIMPLE       0
 #define WMI_MODE_PROPORTIONAL 1
 #define WMI_MODE_OPENLOOP     2
@@ -443,6 +446,7 @@ extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
 extern struct table3d8RpmLoad boostTable; //8x8 boost map
+extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
 extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
@@ -1430,6 +1434,24 @@ struct config13 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+/**
+Page 15 - second page for VVT and boost control.
+256 bytes long. 
+*/
+struct config15 {
+  byte boostControlEnable : 1; 
+  byte unused15_1 : 7; //7bits unused
+  byte boostDCWhenDisabled;
+  byte boostControlEnableThreshold; //if fixed value enable set threshold here.
+  byte unused15_3_176[173];
+
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
+
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
 extern byte pinInjector3; //Output pin injector 3
@@ -1522,6 +1544,7 @@ extern struct config6 configPage6;
 extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
+extern struct config15 configPage15;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
