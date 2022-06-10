@@ -288,7 +288,7 @@ uint16_t correctionCranking()
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
-    if( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
+    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
   }
   return crankingValue;
 }
@@ -769,7 +769,11 @@ int8_t correctionFixedTiming(int8_t advance)
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   int8_t ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  { 
+    if ( configPage2.crkngAddCLTAdv == 0 ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
+    else { ignCrankFixValue = correctionCLTadvance(configPage4.CrankAng); } //Use the CLT compensated cranking ignition angle
+  }
   return ignCrankFixValue;
 }
 

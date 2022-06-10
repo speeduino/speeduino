@@ -788,7 +788,7 @@ struct config2 {
   byte reqFuel;       //24
   byte divider;
   byte injTiming : 1; ///< Injector timing (aka. injector staging) 0=simultaneous, 1=alternating
-  byte multiplyMAP_old : 1;
+  byte crkngAddCLTAdv : 1;
   byte includeAFR : 1; //< Enable AFR compensation ? (See also @ref config2.incorporateAFR)
   byte hardCutType : 1;
   byte ignAlgorithm : 3;
