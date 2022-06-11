@@ -3378,19 +3378,6 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
-    case DECODER_VMAX:
-      triggerSetup_Vmax();
-      triggerHandler = triggerPri_Vmax;
-      getRPM = getRPM_Vmax;
-      getCrankAngle = getCrankAngle_Vmax;
-      triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
-
-      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
-      else { primaryTriggerEdge = false; }
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
-      break;
-
     default:
       triggerHandler = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
