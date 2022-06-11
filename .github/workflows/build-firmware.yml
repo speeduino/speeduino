@@ -58,7 +58,7 @@ jobs:
         SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
         SLACK_TITLE: 'Firmware build was successful :white_check_mark:'
         SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK: ${{ https://app.slack.com/client/T09MSCUFM/DK8M50MUP }}
         MSG_MINIMAL: actions url,commit
     
     - name: Slack Notification (Failed)
@@ -70,5 +70,5 @@ jobs:
         SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
         SLACK_TITLE: 'Firmware build FAILED :warning:'
         SLACK_USERNAME: Github
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_WEBHOOK: ${{ https://app.slack.com/client/T09MSCUFM/DK8M50MUP }}
         MSG_MINIMAL: actions url,commit
