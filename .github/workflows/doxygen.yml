@@ -33,7 +33,7 @@ jobs:
     - name: Setup git config
       run: |
         git config --global user.name "GitHub Actions Bot"
-        git config --global user.email "<>"
+        git config --global user.email "<sergiomedinablanco@gmail.com>"
 
     - name: Commit Doxygen HTML
       if: github.event_name != 'pull_request'

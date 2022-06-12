@@ -1707,7 +1707,6 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 26; //Reset control output
-
     #endif
       break;
 
