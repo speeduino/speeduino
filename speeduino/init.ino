@@ -1710,9 +1710,9 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-     case 15:
+     case 11:
       //Pin mappings as per the VasfEfi
-      #if defined(CORE_AVR)
+      #ifndef SMALL_FLASH_MODE
       pinInjector1 = 8; //Output pin injector 1 is on
       pinInjector2 = 9; //Output pin injector 2 is on
       pinInjector3 = 10; //Output pin injector 3 is on
