@@ -51,7 +51,7 @@ jobs:
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_ICON: http://avatars.githubusercontent.com/u/9919?v=4&size=48
         SLACK_TITLE: 'Unit tests successful :white_check_mark:'
         SLACK_USERNAME: Github
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
@@ -63,7 +63,7 @@ jobs:
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-        SLACK_ICON: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+        SLACK_ICON: http://avatars.githubusercontent.com/u/9919?v=4&size=48
         SLACK_TITLE: 'Unit tests FAILED :warning:'
         SLACK_USERNAME: Github
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

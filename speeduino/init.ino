@@ -1707,9 +1707,54 @@ void setPinMapping(byte boardID)
       pinTachOut = 49; //Tacho output pin
       pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinResetControl = 26; //Reset control output
-
     #endif
       break;
+
+     case 11:
+      //Pin mappings as per the VasfEfi
+      #ifndef SMALL_FLASH_MODE
+      pinInjector1 = 8; //Output pin injector 1 is on
+      pinInjector2 = 9; //Output pin injector 2 is on
+      pinInjector3 = 10; //Output pin injector 3 is on
+      pinInjector4 = 11; //Output pin injector 4 is on
+      pinInjector5 = 12; //Output pin injector 5 is on
+      pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
+      pinCoil1 = 40; //Pin for coil 1
+      pinCoil2 = 38; //Pin for coil 2
+      pinCoil3 = 52; //Pin for coil 3
+      pinCoil4 = 50; //Pin for coil 4
+      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger = 19; //The CAS pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 3; //The Cam sensor 2 pin
+      pinTPS = A2;//TPS input pin
+      pinMAP = A3; //MAP sensor pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A8; //O2 Sensor pin
+      pinBat = A4; //Battery reference voltage pin
+      pinDisplayReset = 48; // OLED reset pin
+      pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+      pinIdle1 = 5; //Single wire idle control
+      pinIdle2 = 6; //2 wire idle control
+      pinBoost = 7; //Boost control
+      pinVVT_1 = 4; //Default VVT output
+      pinVVT_2 = 48; //Default VVT2 output
+      pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
+      pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinStepperEnable = 24; //Enable pin for DRV8825
+      pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pinLaunch = 51; //Can be overwritten below
+      pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl = 43; //Reset control output
+      pinBaro = A5;
+      pinVSS = 20;
+      pinWMIEmpty = 46;
+      pinWMIIndicator = 44;
+      pinWMIEnabled = 42;
+    #endif
+      break; 
 
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
@@ -3330,19 +3375,6 @@ void initialiseTriggers()
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-      break;
-
-    case DECODER_VMAX:
-      triggerSetup_Vmax();
-      triggerHandler = triggerPri_Vmax;
-      getRPM = getRPM_Vmax;
-      getCrankAngle = getCrankAngle_Vmax;
-      triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
-
-      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
-      else { primaryTriggerEdge = false; }
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
 
     default:
