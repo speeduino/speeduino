@@ -116,6 +116,7 @@ byte checkAFRLimit()
   static bool afrProtectCountEnabled = false;
   static unsigned long afrProtectCount = 0;
   static constexpr char X2_MULTIPLIER = 2;
+  static constexpr char X100_MULTIPLIER = 100;
 
   /*
     To use this function, a wideband sensor is required.
