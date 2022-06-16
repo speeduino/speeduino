@@ -116,7 +116,6 @@ byte checkAFRLimit()
   static bool afrProtectCountEnabled = false;
   static unsigned long afrProtectCount = 0;
   static constexpr char X2_MULTIPLIER = 2;
-  static constexpr char X100_MULTIPLIER = 100;
 
   /*
     To use this function, a wideband sensor is required.
@@ -152,7 +151,7 @@ byte checkAFRLimit()
   if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == 2) {
     /* Conditions */
     bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
-    bool rpmCondition = (currentStatus.RPM >= (configPage9.afrProtectMinRPM * X100_MULTIPLIER)) ? true : false;
+    bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
     bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
     bool afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false;
 
