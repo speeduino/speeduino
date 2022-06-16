@@ -344,6 +344,17 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[120] = highByte(currentStatus.EMAP);
   fullStatus[121] = currentStatus.fanDuty;
 
+#if defined(UseCRCOnCANSerialData)
+  // Calculate the CRC from the actual data i.e. everything but the last four bytes
+  uint32_t canCRC = CRC32.crc32(fullStatus, (NEW_CAN_PACKET_SIZE - CAN_CRC_SIZE));
+
+  // Split the CRC into 4 bytes and add to the end of the buffer
+  fullStatus[NEW_CAN_PACKET_SIZE - 4] = (canCRC & 0xFF);
+  fullStatus[NEW_CAN_PACKET_SIZE - 3] = ((canCRC >> 8) & 0xFF);
+  fullStatus[NEW_CAN_PACKET_SIZE - 2] = ((canCRC >> 16) & 0xFF);
+  fullStatus[NEW_CAN_PACKET_SIZE - 1] = ((canCRC >> 24) & 0xFF);
+#endif
+
   for(byte x=0; x<packetLength; x++)
   {
       if (portType == 1){ CANSerial.write(fullStatus[offset+x]); }
