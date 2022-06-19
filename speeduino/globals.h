@@ -248,6 +248,10 @@
 #define COMPOSITE_LOG_TRIG 2
 #define COMPOSITE_LOG_SYNC 3
 
+#define EGO_TYPE_OFF      0
+#define EGO_TYPE_NARROW   1
+#define EGO_TYPE_WIDE     2
+
 #define INJ_TYPE_PORT 0
 #define INJ_TYPE_TBODY 1
 
@@ -1180,13 +1184,13 @@ struct config9 {
   byte unused10_182;
   byte unused10_183;
   byte unused10_184;
-  byte unused10_185;
-  byte unused10_186;
-  byte unused10_187;
-  byte unused10_188;
-  byte unused10_189;
-  byte unused10_190;
-  byte unused10_191;
+  byte afrProtectEnabled : 1; /* < AFR protection enabled status. 0 = disabled, 1 = enabled */
+  byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
+  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */
+  byte afrProtectMinTPS; /* < Minimum TPS. */
+  byte afrProtectDeviation; /* < Maximum deviation from AFR target table. Stored value is multiplied by 10 */
+  byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */
+  byte afrProtectReactivationTPS; /* Disable engine protection cut once below this TPS percentage */
   
 #if defined(CORE_AVR)
   };
