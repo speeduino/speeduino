@@ -659,6 +659,13 @@ void doUpdates()
       ++table_Y;
     }
 
+    //AFR Protection added, add default values
+    configPage9.afrProtectEnabled = 0; //Disable by default
+    configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
+    configPage9.afrProtectMinRPM = 40; //4000 RPM min
+    configPage9.afrProtectMinTPS = 160; //80% TPS min
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
+
     writeAllConfig();
     storeEEPROMVersion(20);
   }
