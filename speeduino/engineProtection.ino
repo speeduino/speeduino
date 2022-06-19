@@ -149,7 +149,7 @@ byte checkAFRLimit()
     - whether AFR protection is enabled
     - whether wideband sensor is used
   */
-  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == 2) {
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE) {
     /* Conditions */
     bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
     bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
@@ -157,28 +157,35 @@ byte checkAFRLimit()
     bool afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false;
 
     /* Check if conditions above are fulfilled */
-    if(mapCondition && rpmCondition && tpsCondition && afrCondition) {
+    if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
+    {
       /* All conditions fulfilled - start counter for 'protection delay' */
-      if(!afrProtectCountEnabled) {
+      if(!afrProtectCountEnabled) 
+      {
         afrProtectCountEnabled = true;
         afrProtectCount = millis();
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) {
+      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
+      {
         checkAFRLimitActive = true;
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
       }
-    } else {
+    } 
+    else 
+    {
       /* Conditions have presumably changed - deactivate and reset counter */
-      if(afrProtectCountEnabled) {
+      if(afrProtectCountEnabled) 
+      {
         afrProtectCountEnabled = false;
         afrProtectCount = 0;
       }
     }
 
     /* Check if condition for reactivation is fulfilled */
-    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) {
+    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) 
+    {
       checkAFRLimitActive = false;
       afrProtectCountEnabled = false;
       BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);

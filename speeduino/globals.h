@@ -248,6 +248,10 @@
 #define COMPOSITE_LOG_TRIG 2
 #define COMPOSITE_LOG_SYNC 3
 
+#define EGO_TYPE_OFF      0
+#define EGO_TYPE_NARROW   1
+#define EGO_TYPE_WIDE     2
+
 #define INJ_TYPE_PORT 0
 #define INJ_TYPE_TBODY 1
 
