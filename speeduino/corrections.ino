@@ -298,40 +298,49 @@ uint16_t correctionCranking()
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
- */
+ */   
 byte correctionASE()
 {
-  int16_t ASEValue;
+  int16_t ASEValue = 100;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ((currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && 
-      (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == false ) )
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
   {
-    BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-    ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    aseTaper = 0;
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) || (currentStatus.ASEValue == 0) )
+    {
+      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+      {
+        BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        aseTaper = 0;
+      }
+      else
+      {
+        if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
+        {
+          BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          aseTaper++;
+        }
+        else
+        {
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+          ASEValue = 100;
+        }
+      }
+      
+      //Safety checks
+      if(ASEValue > 255) { ASEValue = 255; }
+      if(ASEValue < 0) { ASEValue = 0; }
+      currentStatus.ASEValue = (byte)ASEValue;
+    }
   }
   else
   {
-    if ( (BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) == false) && (aseTaper < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
-    {
-      BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-      ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
-      if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) { aseTaper++; }
-    }
-    else
-    {
-      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-      ASEValue = 100;
-    }
+    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+    ASEValue = 100;
   }
-  
-  //Safety checks
-  if(ASEValue > 255) { ASEValue = 255; }
-  if(ASEValue < 0) { ASEValue = 0; }
-  currentStatus.ASEValue = (byte)ASEValue;
-    
   return currentStatus.ASEValue;
 }
 
