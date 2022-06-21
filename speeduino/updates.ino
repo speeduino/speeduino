@@ -4,29 +4,35 @@
 /** Store and load various configs to/from EEPROM considering the the data format versions of various SW generations.
  * This routine is used for doing any data conversions that are required during firmware changes.
  * This prevents users getting difference reports in TS when such a data change occurs.
- * It also can be used for setting good values when there are viarables that move locations in the ini.
+ * It also can be used for setting good values when there are variables that move locations in the ini.
  * When a user skips multiple firmware versions at a time, this will roll through the updates 1 at a time.
  * The doUpdates() uses may lower level routines from Arduino EEPROM library and storage.ino to carry out EEPROM storage tasks.
  */
 #include "globals.h"
 #include "storage.h"
+#include "sensors.h"
+#include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    18
-  //Only the latest updat for small flash devices must be retained
+  #define CURRENT_DATA_VERSION    20
+  //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(readEEPROMVersion() == 2)
   {
-    for(int x=0; x<16; x++)
+    auto table_it = ignitionTable.values.begin();
+    while (!table_it.at_end())
     {
-      for(int y=0; y<16; y++)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        ignitionTable.values[x][y] = ignitionTable.values[x][y] + 40;
-      }
+        *row = *row + 40;
+        ++row;
+      }      
+      ++table_it;
     }
     writeAllConfig();
     storeEEPROMVersion(3);
@@ -135,7 +141,7 @@ void doUpdates()
 
   if (readEEPROMVersion() == 8)
   {
-    //May 2018 adds separate load sources for fuel and ignition. Copy the existing load alogirthm into Both
+    //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
     configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
     configPage2.ignAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
 
@@ -156,13 +162,13 @@ void doUpdates()
     }
 
     //Ability to change the analog filter values was added. Set default values for these:
-    configPage4.ADCFILTER_TPS = 50;
-    configPage4.ADCFILTER_CLT = 180;
-    configPage4.ADCFILTER_IAT = 180;
-    configPage4.ADCFILTER_O2  = 128;
-    configPage4.ADCFILTER_BAT = 128;
-    configPage4.ADCFILTER_MAP = 20;
-    configPage4.ADCFILTER_BARO= 64;
+    configPage4.ADCFILTER_TPS  = ADCFILTER_TPS_DEFAULT;
+    configPage4.ADCFILTER_CLT  = ADCFILTER_CLT_DEFAULT;
+    configPage4.ADCFILTER_IAT  = ADCFILTER_IAT_DEFAULT;
+    configPage4.ADCFILTER_O2   = ADCFILTER_O2_DEFAULT;
+    configPage4.ADCFILTER_BAT  = ADCFILTER_BAT_DEFAULT;
+    configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
+    configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
 
     writeAllConfig();
     storeEEPROMVersion(10);
@@ -193,7 +199,7 @@ void doUpdates()
     configPage2.aseCount[1] = 10;
     configPage2.aseCount[2] = 10;
     configPage2.aseCount[3] = 10;
-    //Finally the coolant bins for the above are set to sane values (Rememerbing these are offset values)
+    //Finally the coolant bins for the above are set to sane values (Remembering these are offset values)
     configPage2.aseBins[0] = 0;
     configPage2.aseBins[1] = 20;
     configPage2.aseBins[2] = 60;
@@ -247,7 +253,7 @@ void doUpdates()
     //An option was added to select the older method of performing MAP reads with the pullup resistor active
     configPage2.legacyMAP = 0;
 
-    //Secondary fuel table was added for swtiching. Make sure it's all turned off initially
+    //Secondary fuel table was added for switching. Make sure it's all turned off initially
     configPage10.fuel2Mode = 0;
     configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
     configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
@@ -323,12 +329,12 @@ void doUpdates()
     configPage2.injAngRPM[2] = 45;
     configPage2.injAngRPM[3] = 65;
 
-    //Introdced a DFCO delay option. Default it to 0
+    //Introduced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
-    //Introdced a minimum temperature for DFCO. Default it to 40C
+    //Introduced a minimum temperature for DFCO. Default it to 40C
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
-    //Update flexfuel ignition config values for 40 degrees offset
+    //Update flex fuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
     {
       configPage10.flexAdvAdj[i] += 40;
@@ -359,7 +365,7 @@ void doUpdates()
     //ASE to run taper added. Default it to 0,1 secs
     configPage2.aseTaperTime = 1;
 
-    // there is now optioon for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
+    // there is now option for fixed and relative timing retard for soft limit. This sets the soft limiter to the old fixed timing mode.
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
     //VSS was added for testing, disable it by default
@@ -368,7 +374,6 @@ void doUpdates()
     writeAllConfig();
     storeEEPROMVersion(14);
 
-    //
   }
 
   if(readEEPROMVersion() == 14)
@@ -397,7 +402,7 @@ void doUpdates()
     configPage10.oilPressureProtEnbl = false;
     configPage10.oilPressureEnable = false;
     configPage10.fuelPressureEnable = false;
-
+    
     //wmi
     configPage10.wmiEnabled = 0;
     configPage10.wmiMode = 0;
@@ -463,14 +468,19 @@ void doUpdates()
 
   if(readEEPROMVersion() == 17)
   {
-    //VVT stuff has now 0.5 accurasy, so shift values in vvt table by one.
-    for(int x=0; x<8; x++)
+    //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
+    auto table_it = vvtTable.values.begin();
+    while (!table_it.at_end())
     {
-      for(int y=0; y<8; y++)
+      auto row = *table_it;
+      while (!row.at_end())
       {
-        vvtTable.values[x][y] = vvtTable.values[x][y] << 1;
-      }
+        *row = *row << 1;
+        ++row;
+      }      
+      ++table_it;
     }
+
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
     configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
     configPage10.vvtCLmaxDuty = configPage10.vvtCLmaxDuty << 1;
@@ -481,7 +491,7 @@ void doUpdates()
     configPage10.TrigEdgeThrd = 0;
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    if(configPage6.tachoMode == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -509,6 +519,157 @@ void doUpdates()
     storeEEPROMVersion(18);
   }
 
+  if(readEEPROMVersion() == 18)
+  {
+    //202202
+    configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
+
+    //TPS resolution increased to 0.5%
+    //configPage2.taeThresh *= 2;
+    configPage2.idleAdvTPS *= 2;
+    configPage2.iacTPSlimit *= 2;
+    configPage4.floodClear *= 2;
+    configPage4.dfcoTPSThresh *= 2;
+    configPage6.egoTPSMax *= 2;
+    configPage10.lnchCtrlTPS *= 2;
+    configPage10.wmiTPS *= 2;
+    configPage10.n2o_minTPS *= 2;
+    if(configPage10.fuel2SwitchVariable == FUEL2_CONDITION_TPS) { configPage10.fuel2SwitchValue *= 2; }
+    if(configPage10.spark2SwitchVariable == SPARK2_CONDITION_TPS) { configPage10.spark2SwitchVariable *= 2; }
+
+    // Each table Y axis need to be updated as well if TPS is the source
+    if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
+    {
+      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
+      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
+      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
+      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
+      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
+      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
+      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
+      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
+      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
+      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+      if(configPage4.sparkMode == IGN_MODE_ROTARY)
+      { 
+        for(uint8_t x = 0; x < 8; x++)
+        {
+          configPage10.rotarySplitBins[x] *= 2;
+        }
+      }
+    }
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
+    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+
+    if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
+    {
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
+      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
+      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+    }
+    else
+    {
+      //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
+      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
+      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+    }
+
+
+    configPage4.vvtDelay = 0;
+    configPage4.vvtMinClt = 0;
+
+    //Set SD logging related settings to zero.
+    configPage13.onboard_log_csv_separator = 0;
+    configPage13.onboard_log_file_style = 0;
+    configPage13.onboard_log_file_rate = 0;
+    configPage13.onboard_log_filenaming = 0;
+    configPage13.onboard_log_storage = 0;
+    configPage13.onboard_log_trigger_boot = 0;
+    configPage13.onboard_log_trigger_RPM = 0;
+    configPage13.onboard_log_trigger_prot = 0;
+    configPage13.onboard_log_trigger_Vbat = 0;
+    configPage13.onboard_log_trigger_Epin = 0;
+    configPage13.onboard_log_tr1_duration = 0;
+    configPage13.onboard_log_tr2_thr_on = 0;
+    configPage13.onboard_log_tr2_thr_off = 0;
+    configPage13.onboard_log_tr3_thr_RPM = 0;
+    configPage13.onboard_log_tr3_thr_MAP = 0;
+    configPage13.onboard_log_tr3_thr_Oil = 0;
+    configPage13.onboard_log_tr3_thr_AFR = 0;
+    configPage13.onboard_log_tr4_thr_on = 0;
+    configPage13.onboard_log_tr4_thr_off = 0;
+    configPage13.onboard_log_tr5_thr_on = 0;
+
+    writeAllConfig();
+    storeEEPROMVersion(19);
+  }
+  
+  if(readEEPROMVersion() == 19)
+  {
+    //202204
+
+    //Option added to select injector pairing on 4 cylinder engines
+    if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
+    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+
+    configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+    configPage6.tachoMode = 0;
+
+    //CAN broadcast introduced
+    configPage2.canBMWCluster = 0;
+    configPage2.canVAGCluster = 0;
+    
+
+    configPage15.boostDCWhenDisabled = 0;
+    configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
+    
+    //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
+    //This makes the boostcontrol fully backwards compatible.  
+    auto table_it = boostTableLookupDuty.values.begin();
+    while (!table_it.at_end())
+    {
+      auto row = *table_it;
+      while (!row.at_end())
+      {
+        *row = 50*2;
+        ++row;
+      }      
+      ++table_it;
+    }
+
+    //Set some sensible values at the RPM axis
+    auto table_X = boostTableLookupDuty.axisX.begin();
+    uint16_t i = 0;
+    while (!table_X.at_end())
+    {
+      ++i;
+      *table_X = 1000+(500*i);
+      ++table_X;
+    }
+
+    //Set some sensible values at the boosttarget axis
+    auto table_Y = boostTableLookupDuty.axisY.begin();
+    i = 0;
+    while (!table_Y.at_end())
+    {
+      ++i;
+      *table_Y = (120 + 10*i);
+      ++table_Y;
+    }
+
+    //AFR Protection added, add default values
+    configPage9.afrProtectEnabled = 0; //Disable by default
+    configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
+    configPage9.afrProtectMinRPM = 40; //4000 RPM min
+    configPage9.afrProtectMinTPS = 160; //80% TPS min
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
+
+    writeAllConfig();
+    storeEEPROMVersion(20);
+  }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
@@ -524,11 +685,31 @@ void doUpdates()
     configPage13.outputPin[6] = 0;
     configPage13.outputPin[7] = 0;
 
-    configPage4.FILTER_FLEX = 75;
+    configPage4.FILTER_FLEX = FILTER_FLEX_DEFAULT;
 
     storeEEPROMVersion(CURRENT_DATA_VERSION);
   }
 
   //Check to see if someone has downgraded versions:
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
+}
+
+void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = *y_it * multiplier; 
+    ++y_it;
+  }
+}
+
+void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+{
+  auto y_it = y_begin(pTable, key);
+  while(!y_it.at_end())
+  {
+    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
+    ++y_it;
+  }
 }

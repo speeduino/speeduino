@@ -6,10 +6,19 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 
-#if defined(STM32F407xx) || defined(STM32F103xB) || defined(STM32F405xx)
-#define NATIVE_CAN_AVAILABLE
+#if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
-STM32_CAN Can0 (_CAN1,DEF);
+STM32_CAN Can0 (CAN1, ALT_2, RX_SIZE_256, TX_SIZE_16);
+/*
+These CAN interfaces and pins are available for use, depending on the chip/package:
+Default CAN1 pins are PA11 and PA12. Alternative (ALT) pins are PB8 & PB9 and ALT_2 pins are PD0 & PD1.
+Default CAN2 pins are PB12 & PB13. Alternative (ALT) pins are PB5 & PB6.
+Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
+*/
+#endif
+
+#if defined SD_LOGGING
+    SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
 #endif
 
 #if defined(SRAM_AS_EEPROM)
@@ -21,7 +30,7 @@ STM32_CAN Can0 (_CAN1,DEF);
       SPIClass SPI_for_flash(PB15, PB14, PB13);
     #endif
  
-    //windbond W25Q16 SPI flash EEPROM emulation
+    //winbond W25Q16 SPI flash EEPROM emulation
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
     Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
@@ -85,8 +94,8 @@ STM32RTC& rtc = STM32RTC::getInstance();
     * Real Time clock for datalogging/time stamping
     */
     #ifdef RTC_ENABLED
-      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
-      rtc.begin(); // initialize RTC 24H format
+      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialise external clock for RTC. That is the only clock running of VBAT
+      rtc.begin(); // initialise RTC 24H format
     #endif
     /*
     ***********************************************************************************************************
@@ -133,20 +142,25 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
+    fan_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
     //Need to be initialised last due to instant interrupt
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
+	Timer1.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
+    Timer1.attachInterrupt(1, fanInterrupt);
     Timer1.attachInterrupt(2, boostInterrupt);
     Timer1.attachInterrupt(3, vvtInterrupt);
 
@@ -172,7 +186,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
     Timer2.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer2.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
@@ -183,7 +196,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer3.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer3.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
-    Timer1.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
     //Attach interrupt functions
     //Injection
@@ -298,8 +310,21 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
-      char top = 't';
-      return &top - reinterpret_cast<char*>(sbrk(0));
+    uint32_t freeRam;
+    uint32_t stackTop;
+    uint32_t heapTop;
+
+    // current position of the stack.
+    stackTop = (uint32_t)&stackTop;
+
+    // current position of heap.
+    void *hTop = malloc(1);
+    heapTop = (uint32_t)hTop;
+    free(hTop);
+    freeRam = stackTop - heapTop;
+
+    if(freeRam>0xFFFF){return 0xFFFF;}
+    else{return freeRam;}
   }
 
   void doSystemReset( void )
@@ -363,6 +388,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
   void idleInterrupt(HardwareTimer*){idleInterrupt();}
   void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
+  void fanInterrupt(HardwareTimer*){fanInterrupt();}
   void ignitionSchedule1Interrupt(HardwareTimer*){ignitionSchedule1Interrupt();}
   void ignitionSchedule2Interrupt(HardwareTimer*){ignitionSchedule2Interrupt();}
   void ignitionSchedule3Interrupt(HardwareTimer*){ignitionSchedule3Interrupt();}

@@ -5,6 +5,9 @@ All functions in the gamma file return
 #ifndef CORRECTIONS_H
 #define CORRECTIONS_H
 
+#define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
+#define TPSAE_ABSOLUTE_THRESHOLD 4 //TPS absolute threshold for when AE based idle control will engage, This equates to 2% throttle movement once the 0.5% resolution is applied
+
 void initialiseCorrections();
 
 uint16_t correctionsFuel();
@@ -49,8 +52,9 @@ extern unsigned long knockStartTime;
 extern byte lastKnockCount;
 extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-extern uint16_t aseTaperStart;
-extern uint16_t dfcoStart;
-extern uint16_t idleAdvStart;
+extern uint8_t aseTaper;
+extern uint8_t dfcoTaper;
+extern uint8_t idleAdvTaper;
+extern uint8_t crankingEnrichTaper;
 
 #endif // CORRECTIONS_H
