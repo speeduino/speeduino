@@ -667,6 +667,8 @@ struct statuses {
   int8_t advance1;    /**< The advance value from ignition table 1 */
   int8_t advance2;    /**< The advance value from ignition table 2 */
   uint16_t corrections; /**< The total current corrections % amount */
+  uint16_t crankCorrection; /**< The amount of cranking enrichment currently being applied */
+  byte ASEValue;            /**< The amount of afterstart enrichment currently being applied */
   uint16_t AEamount;    /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
   byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
@@ -732,7 +734,6 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
