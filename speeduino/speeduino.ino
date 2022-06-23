@@ -829,7 +829,7 @@ void loop()
       {
         if( (currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM) || currentStatus.launchingHard || currentStatus.flatShiftingHard) //Ugly, but the launch/flat shift check needs to be here as well to prevent these limiters not happening when under the the Engine Protection min rpm
         {
-          if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) ) 
+          if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) || (currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM + 300 && configPage2.hardCutType == HARD_CUT_ROLLING) )
           { 
             //Full hard cut turns outputs off completely. Note that hard cut is ALWAYS used on fuel cut only. 
             switch(configPage6.engineProtectType)
