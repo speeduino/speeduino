@@ -134,10 +134,6 @@ void initialiseSchedulers()
     FUEL8_TIMER_ENABLE();
 #endif
 
-    (TIM1)->CR1 |= TIM_CR1_CEN;
-    (TIM2)->CR1 |= TIM_CR1_CEN;
-    (TIM3)->CR1 |= TIM_CR1_CEN;
-
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
     ignitionSchedule3.schedulesSet = 0;
