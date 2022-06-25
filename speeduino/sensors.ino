@@ -644,7 +644,7 @@ uint16_t getSpeed()
 byte getGear()
 {
   byte tempGear = 0; //Unknown gear
-  if(currentStatus.vss > 0)
+  if ((currentStatus.vss > 0) && (currentStatus.RPM > 0))
   {
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
@@ -776,15 +776,25 @@ uint16_t readAuxdigital(uint8_t digitalPin)
   return tempReading;
 } 
 
+/**
+ * @brief Calculates a low pass filter using an "alpha value." Returns the filtered value
+ * 
+ * @param input The input value to be used to update the previous value.
+ * @param alpha The filter value. 128 would be a 50% per loop filter. Valid range 0-255
+ * @param prior The previous value.
+ */
 uint16_t filterADC(uint32_t input, uint32_t alpha, uint32_t prior)
 {
-  uint16_t result = (uint16_t)prior;
-  if (input != prior) // only need to calculate filter if there is a difference
+  uint16_t result = (uint16_t)input;
+  if ((input != prior) && (alpha > 0)) // only need to calculate filter if there is a difference or a filter value
   {
     result = (((input * (256 - alpha)) + (prior * alpha))) >> 8;
-    if (result == (uint16_t)prior) { result = (uint16_t)input; } // Ensures filter convergence to input value with heavy filters. In practice when alpha filters are greater than 128.
+    if (result == (uint16_t)prior) // non-convergence detected
+    { 
+      if (input > prior) { result = (uint16_t)prior + 1; }
+      else { result = (uint16_t)prior - 1; }
+    } // Ensures filter convergence to input value when alpha filters are large and changes in result are <1.
   }
-  // else result = prior = input. and nothing to do.
- 
+  // else result = input. and nothing to do.
   return result;
 }
