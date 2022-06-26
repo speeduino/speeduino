@@ -278,34 +278,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
-    Timer1.resume();
-    DISABLE_BOOST_TIMER();  //Make sure it is disabled. It's is enabled by default on the library
-    DISABLE_VVT_TIMER();    //Make sure it is disabled. It's is enabled by default on the library
-    IDLE_TIMER_DISABLE();   //Make sure it is disabled. It's is enabled by default on the library
-    Timer2.resume();
-    IGN1_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN2_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN3_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN4_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    Timer3.resume();
-    FUEL1_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL2_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL3_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL4_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    #if (IGN_CHANNELS >= 5)
-    Timer4.resume();
-    IGN5_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN6_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN7_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN8_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    #endif
-    #if (INJ_CHANNELS >= 5)
-    Timer5.resume();
-    FUEL5_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL6_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL7_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL8_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    #endif
+
   }
 
   uint16_t freeRam()
