@@ -358,7 +358,7 @@ static inline void readMAP()
               //Error check
               if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
               {
-                currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+                currentStatus.mapADC = filterADC(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
                 MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
                 MAPcount++;
               }
