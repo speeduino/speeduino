@@ -27,12 +27,12 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
-static bool eepromWritesPending = false;
+
 uint32_t deferEEPROMWritesUntil = 0;
 
 bool isEepromWritePending()
 {
-  return eepromWritesPending;
+  return BIT_CHECK(currentStatus.status4, BIT_STATUS4_BURNPENDING);
 }
 
 /** Write all config pages to EEPROM.
@@ -43,7 +43,7 @@ void writeAllConfig()
   uint8_t page = 1U;
   writeConfig(page);
   page = page + 1;
-  while (page<pageCount && !eepromWritesPending)
+  while (page<pageCount && !isEepromWritePending())
   {
     writeConfig(page);
     page = page + 1;
@@ -312,9 +312,7 @@ void writeConfig(uint8_t pageNum)
       break;
   }
 
-  eepromWritesPending = !result.can_write();
-  if(eepromWritesPending == true) { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
-  else { BIT_CLEAR(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+  BIT_WRITE(currentStatus.status4, BIT_STATUS4_BURNPENDING, !result.can_write());
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
