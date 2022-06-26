@@ -154,7 +154,20 @@ byte checkAFRLimit()
     bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
     bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
     bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
-    bool afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false;
+
+    /*
+      Depending on selected mode, this could either be fixed AFR value or a
+      value set to be the maximum deviation from AFR target table.
+
+      1 = fixed value mode, 2 = target table mode
+    */
+    bool afrCondition;
+    switch(configPage9.afrProtectEnabled)
+    {
+      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break; /* Fixed value */
+      case 2: afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
+      default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
+    }
 
     /* Check if conditions above are fulfilled */
     if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
