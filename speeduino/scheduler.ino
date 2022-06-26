@@ -116,10 +116,23 @@ void initialiseSchedulers()
     IGN2_TIMER_ENABLE();
     IGN3_TIMER_ENABLE();
     IGN4_TIMER_ENABLE();
+#if (IGN_CHANNELS >= 5)
     IGN5_TIMER_ENABLE();
     IGN6_TIMER_ENABLE();
     IGN7_TIMER_ENABLE();
     IGN8_TIMER_ENABLE();
+#endif
+
+    FUEL1_TIMER_ENABLE();
+    FUEL2_TIMER_ENABLE();
+    FUEL3_TIMER_ENABLE();
+    FUEL4_TIMER_ENABLE();
+#if (INJ_CHANNELS >= 5)
+    FUEL5_TIMER_ENABLE();
+    FUEL6_TIMER_ENABLE();
+    FUEL7_TIMER_ENABLE();
+    FUEL8_TIMER_ENABLE();
+#endif
 
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
