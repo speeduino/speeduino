@@ -25,7 +25,7 @@ void initialiseADC()
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 
   #if defined(ANALOG_ISR)
-    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
+    //This sets the ADC (Analog to Digital Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
     //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
     //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers
@@ -50,7 +50,7 @@ void initialiseADC()
     BIT_SET(ADCSRA,ADSC); //Start conversion
 
   #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
+    //This sets the ADC (Analog to Digital Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
     //Please see chapter 11 of 'Practical Arduino' (books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more detail
      BIT_SET(ADCSRA,ADPS2);
@@ -219,7 +219,9 @@ static inline void readMAP()
       case 1:
         //Average of a cycle
 
-        if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      {
+        if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
           if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
           {
@@ -297,113 +299,113 @@ static inline void readMAP()
         }
         break;
 
-      case 2:
-        //Minimum reading in a cycle
-        if (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
-        {
-          if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
+        case 2:
+          //Minimum reading in a cycle
+          if (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
           {
-            #if defined(ANALOG_ISR_MAP)
-              tempReading = AnChannel[pinMAP-A0];
-            #else
-              tempReading = analogRead(pinMAP);
-              tempReading = analogRead(pinMAP);
-            #endif
-            //Error check
-            if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+            if( (MAPcurRev == currentStatus.startRevolutions) || ((MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
             {
-              if( (unsigned long)tempReading < MAPrunningValue ) { MAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
+              #if defined(ANALOG_ISR_MAP)
+                tempReading = AnChannel[pinMAP-A0];
+              #else
+                tempReading = analogRead(pinMAP);
+                tempReading = analogRead(pinMAP);
+              #endif
+              //Error check
+              if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+              {
+                if( (unsigned long)tempReading < MAPrunningValue ) { MAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
+              }
+              else { mapErrorCount += 1; }
             }
-            else { mapErrorCount += 1; }
-          }
-          else
-          {
-            //Reaching here means that the last cylce has completed and the MAP value should be calculated
-
-            //Update the calculation times and last value. These are used by the MAP based Accel enrich
-            MAPlast = currentStatus.MAP;
-            MAPlast_time = MAP_time;
-            MAP_time = micros();
-
-            currentStatus.mapADC = MAPrunningValue;
-            currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
-            MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
-            MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
-
-            validateMAP();
-          }
-        }
-        else 
-        {
-          instanteneousMAPReading();
-          MAPrunningValue = currentStatus.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
-        }
-        break;
-
-      case 3:
-        //Average of an ignition event
-        if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
-        {
-          if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
-          {
-            #if defined(ANALOG_ISR_MAP)
-              tempReading = AnChannel[pinMAP-A0];
-            #else
-              tempReading = analogRead(pinMAP);
-              tempReading = analogRead(pinMAP);
-            #endif
-
-            //Error check
-            if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+            else
             {
-              currentStatus.mapADC = filterADC(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
-              MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
-              MAPcount++;
-            }
-            else { mapErrorCount += 1; }
-          }
-          else
-          {
-            //Reaching here means that the  next ignition event has occured and the MAP value should be calculated
-            //Sanity check
-            if( (MAPrunningValue != 0) && (MAPcount != 0) && (MAPcurRev < ignitionCount) )
-            {
+              //Reaching here means that the last cycle has completed and the MAP value should be calculated
+
               //Update the calculation times and last value. These are used by the MAP based Accel enrich
               MAPlast = currentStatus.MAP;
               MAPlast_time = MAP_time;
               MAP_time = micros();
 
-              currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+              currentStatus.mapADC = MAPrunningValue;
               currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+              MAPcurRev = currentStatus.startRevolutions; //Reset the current rev count
+              MAPrunningValue = 1023; //Reset the latest value so the next reading will always be lower
+
               validateMAP();
             }
-            else { instanteneousMAPReading(); }
-
-            MAPcurRev = ignitionCount; //Reset the current event count
-            MAPrunningValue = 0;
-            MAPcount = 0;
           }
-        }
-        else 
-        {
-          instanteneousMAPReading();
-          MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
-          MAPcount = 1;
-        }
-        break; 
+          else 
+          {
+            instanteneousMAPReading();
+            MAPrunningValue = currentStatus.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
+          }
+          break;
 
-      default:
-      //Instantaneous MAP readings (Just in case)
-      instanteneousMAPReading();
-      break;
+        case 3:
+          //Average of an ignition event
+          if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
+          {
+            if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
+            {
+              #if defined(ANALOG_ISR_MAP)
+                tempReading = AnChannel[pinMAP-A0];
+              #else
+                tempReading = analogRead(pinMAP);
+                tempReading = analogRead(pinMAP);
+              #endif
+
+              //Error check
+              if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
+              {
+                currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC);
+                MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
+                MAPcount++;
+              }
+              else { mapErrorCount += 1; }
+            }
+            else
+            {
+              //Reaching here means that the  next ignition event has occurred and the MAP value should be calculated
+              //Sanity check
+              if( (MAPrunningValue != 0) && (MAPcount != 0) && (MAPcurRev < ignitionCount) )
+              {
+                //Update the calculation times and last value. These are used by the MAP based Accel enrich
+                MAPlast = currentStatus.MAP;
+                MAPlast_time = MAP_time;
+                MAP_time = micros();
+
+                currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+                currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
+                validateMAP();
+              }
+              else { instanteneousMAPReading(); }
+
+              MAPcurRev = ignitionCount; //Reset the current event count
+              MAPrunningValue = 0;
+              MAPcount = 0;
+            }
+          }
+          else 
+          {
+            instanteneousMAPReading();
+            MAPrunningValue = currentStatus.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
+            MAPcount = 1;
+          }
+          break; 
+
+        default:
+        //Instantaneous MAP readings (Just in case)
+        instanteneousMAPReading();
+        break;
+      } 
     }
   }   
 }
 
 void readTPS(bool useFilter)
 {
-  TPSlast = currentStatus.TPS;
-  TPSlast_time = TPS_time;
+  currentStatus.TPSlast = currentStatus.TPS;
   #if defined(ANALOG_ISR)
     byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
@@ -447,7 +449,6 @@ void readTPS(bool useFilter)
     else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = 0; }
-  TPS_time = micros();
 }
 
 void readCLT(bool useFilter)
@@ -566,10 +567,10 @@ void readBat(bool useFilter)
 
   //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
   //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
-  //Should that happen, we retrigger the fuel pump priming and idle homing (If using a stepper)
+  //Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
   if( (currentStatus.battery10 < 55) && (tempReading > 70) && (currentStatus.RPM == 0) )
   {
-    //Reprime the fuel pump
+    //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
     fpPrimed = false;
     FUEL_PUMP_ON();
@@ -648,7 +649,7 @@ byte getGear()
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }

@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 /** @file
- * Speeduino initialization and main loop.
+ * Speeduino initialisation and main loop.
  */
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "speeduino.h"
 #include "scheduler.h"
 #include "comms.h"
-#include "newComms.h"
+#include "comms_legacy.h"
 #include "cancomms.h"
 #include "maths.h"
 #include "corrections.h"
@@ -39,7 +39,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include "utilities.h"
 #include "engineProtection.h"
+#include "scheduledIO.h"
 #include "secondaryTables.h"
+#include "canBroadcast.h"
 #include "SD_logger.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
@@ -100,7 +102,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in  order they are preformed):
- * - Check if serial comms or tooth logging are in progress (send or reveive, prioritize communication)
+ * - Check if serial comms or tooth logging are in progress (send or receive, prioritise communication)
  * - Record loop timing vars
  * - Check tooth time, update @ref statuses (currentStatus) variables
  * - Read sensors
@@ -127,7 +129,11 @@ void loop()
       //Perform the same check for the tooth and composite logs
       if( toothLogSendInProgress == true)
       {
-        if(Serial.availableForWrite() > 16) { sendToothLog(inProgressOffset); }
+        if(Serial.availableForWrite() > 16) 
+        { 
+          if(legacySerial == true) { sendToothLog_legacy(inProgressOffset); }
+          else { sendToothLog(inProgressOffset); }
+        }
       }
       if( compositeLogSendInProgress == true)
       {
@@ -138,14 +144,14 @@ void loop()
         if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
       }
 
-      //Check for any new requets from serial.
+      //Check for any new requests from serial.
       //if ( (Serial.available()) > 0) { command(); }
       if ( (Serial.available()) > 0) { parseSerial(); }
       
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
-        if (currentCommand == 'T') { command(); }
+        if (currentCommand == 'T') { legacySerialCommand(); }
       }
 
       //Check for any CAN comms requiring action 
@@ -178,10 +184,9 @@ void loop()
     //Displays currently disabled
     // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
 
-    previousLoopTime = currentLoopTime;
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the lastest time and doing the comparison
+    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
@@ -193,6 +198,7 @@ void loop()
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.RPM = 0;
+      currentStatus.RPMdiv100 = 0;
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
@@ -279,15 +285,18 @@ void loop()
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
 
+      
+
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
       checkProgrammableIO();
+      idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
 
-      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (deferEEPROMWrites == false)) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
-
+      //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
+      
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
@@ -304,16 +313,22 @@ void loop()
       vvtControl();
       //Water methanol injection
       wmiControl();
-      //FOR TEST PURPOSES ONLY!!!
-      //if(vvt2_pwm_value < vvt_pwm_max_count) { vvt2_pwm_value++; }
-      //else { vvt2_pwm_value = 1; }
+      #if defined(NATIVE_CAN_AVAILABLE)
+      if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
+      if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
+      #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
+      readO2();
+      readO2_2();
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
+
+      //Check for any outstanding EEPROM writes.
+      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -321,11 +336,14 @@ void loop()
       //The IAT and CLT readings can be done less frequently (4 times per second)
       readCLT();
       readIAT();
-      readO2();
-      readO2_2();
       readBat();
       nitrousControl();
-      idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+
+      //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
+      if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
+      {
+        currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+      }
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
@@ -337,7 +355,7 @@ void loop()
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
-        //check through the Aux input channels if enabed for Can or local use
+        //check through the Aux input channels if enabled for Can or local use
         for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
         {
           currentStatus.current_caninchannel = AuxinChan;          
@@ -395,14 +413,13 @@ void loop()
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       readBaro(); //Infrequent baro readings are not an issue.
-      deferEEPROMWrites = false; //Reset the slow EEPROM writes flag so that EEPROM burns will return to normal speed. This is set true in NewComms whenever there is a large chunk write to prvent mega2560s halting due to excess EEPROM burn times. 
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
         // water tank empty
         if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_WMI_EMPTY) > 0)
         {
-          // flash with 1sec inverval
+          // flash with 1sec interval
           digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
         }
         else
@@ -437,7 +454,7 @@ void loop()
 
     //Always check for sync
     //Main loop runs within this clause
-    if (currentStatus.hasSync && (currentStatus.RPM > 0))
+    if ((currentStatus.hasSync || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //Check whether running or cranking
@@ -516,7 +533,7 @@ void loop()
       //Handle multiple squirts per rev
       if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
       else { pwLimit = pwLimit / currentStatus.nSquirts; }
-      //Apply the pwLimit if staging is dsiabled and engine is not cranking
+      //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
       //Calculate staging pulsewidths if used
@@ -632,10 +649,10 @@ void loop()
           //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
 
-          if(configPage2.injLayout == INJ_SEQUENTIAL)
+          if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
           {
-            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-            //injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
+            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
             injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
             injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
 
@@ -656,6 +673,10 @@ void loop()
             injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
           }
+          else
+          {
+            if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+          }
           break;
         //5 cylinders
         case 5:
@@ -675,8 +696,10 @@ void loop()
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
           
           #if INJ_CHANNELS >= 6
-            if(configPage2.injLayout == INJ_SEQUENTIAL)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
             {
+            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
               injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
               injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
@@ -690,6 +713,10 @@ void loop()
                 currentStatus.PW5 = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW5);
                 currentStatus.PW6 = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW6);
               }
+            }
+            else
+            {
+              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
             }
           #endif
           break;
@@ -706,8 +733,10 @@ void loop()
           injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
 
           #if INJ_CHANNELS >= 8
-            if(configPage2.injLayout == INJ_SEQUENTIAL)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
             {
+              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
               injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees);
               injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees);
               injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel7InjDegrees);
@@ -725,6 +754,11 @@ void loop()
                 currentStatus.PW8 = applyFuelTrimToPW(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW8);
               }
             }
+            else
+            {
+              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+            }
+
           #endif
           break;
 
@@ -864,7 +898,7 @@ void loop()
         | A Note on tempCrankAngle and tempStartAngle:
         |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4+ on both injectors and ignition
         |   Essentially, these 2 variables are used to realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
-        |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylidner engine), then tempCrankAngle is 180* less than the current crank angle and
+        |   Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (Eg a standard 4 cylinder engine), then tempCrankAngle is 180* less than the current crank angle and
         |       tempStartAngle is the desired open time less 180*. Thus the cylinder is being treated relative to its own TDC, regardless of its offset
         |
         |   This is done to avoid problems with very short of very long times until tempStartAngle.
@@ -1012,7 +1046,7 @@ void loop()
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
       {
         fixedCrankingOverride = currentStatus.dwell * 3;
-        //This is a safety step to prevent the ignition start time occuring AFTER the target tooth pulse has already occcured. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
+        //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
         if(currentStatus.RPM < 250)
         {
           ignition1StartAngle -= 5;
@@ -1294,7 +1328,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
   else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
@@ -1307,7 +1341,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
   if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == 2) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
   }
@@ -1318,7 +1352,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
-    //If intermeditate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+    //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
     //AE Adds % of req_fuel
     if ( configPage2.aeApplyMode == AE_MODE_ADDER )
@@ -1515,8 +1549,10 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle2(dwellAngle);
 
       #if IGN_CHANNELS >= 4
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
+
         calculateIgnitionAngle3(dwellAngle);
         calculateIgnitionAngle4(dwellAngle);
       }
@@ -1528,6 +1564,10 @@ void calculateIgnitionAngles(int dwellAngle)
         //The trailing angles are set relative to the leading ones
         calculateIgnitionAngle3(dwellAngle, splitDegrees);
         calculateIgnitionAngle4(dwellAngle, splitDegrees);
+      }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;
@@ -1546,11 +1586,17 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle3(dwellAngle);
 
       #if IGN_CHANNELS >= 6
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
+
         calculateIgnitionAngle4(dwellAngle);
         calculateIgnitionAngle5(dwellAngle);
         calculateIgnitionAngle6(dwellAngle);
+      }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;
@@ -1562,12 +1608,18 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle4(dwellAngle);
 
       #if IGN_CHANNELS >= 8
-      if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
       {
+        if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
+
         calculateIgnitionAngle5(dwellAngle);
         calculateIgnitionAngle6(dwellAngle);
         calculateIgnitionAngle7(dwellAngle);
         calculateIgnitionAngle8(dwellAngle);
+      }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;

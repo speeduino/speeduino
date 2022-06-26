@@ -95,7 +95,12 @@
  * | 3151       |36          | Trim8 table (6x6)                    | @ref EEPROM_CONFIG8_MAP8           |
  * | 3187       |6           | Trim8 table (X axis) (RPM)           |                                    |
  * | 3193       |6           | Trim8 table (Y axis) (MAP)           |                                    |
- * | 3199       |475         | EMPTY                                |                                    |
+ * | 3199       |2           | X and Y sizes boostLUT table         |                                    |
+ * | 3201       |64          | boostLUT table (8x8)                 | @ref EEPROM_CONFIG15_MAP           |
+ * | 3265       |8           | boostLUT table (X axis) (RPM)        |                                    |
+ * | 3273       |8           | boostLUT table (Y axis) (targetBoost)|                                    |
+ * | 3281       |176         | Page 15 settings                     | @ref EEPROM_CONFIG15_START         |
+ * | 3457       |217         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |
  * | 3682       |4           | O2 Calibration CRC32                 |                                    |
@@ -135,7 +140,7 @@ uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
 uint16_t getEEPROMSize();
 bool isEepromWritePending();
 
-extern bool deferEEPROMWrites;
+extern uint32_t deferEEPROMWritesUntil;
 
 #define EEPROM_CONFIG1_MAP    3
 #define EEPROM_CONFIG2_START  291
@@ -174,6 +179,12 @@ extern bool deferEEPROMWrites;
 #define EEPROM_CONFIG8_MAP7   3101
 #define EEPROM_CONFIG8_MAP8   3151
 
+//Page 15 added after OUT OF ORDER page 8
+#define EEPROM_CONFIG15_MAP   3199
+#define EEPROM_CONFIG15_START 3281
+#define EEPROM_CONFIG15_END   3457
+
+
 #define EEPROM_CALIBRATION_CLT_CRC  3674
 #define EEPROM_CALIBRATION_IAT_CRC  3678
 #define EEPROM_CALIBRATION_O2_CRC   3682
@@ -182,5 +193,7 @@ extern bool deferEEPROMWrites;
 #define EEPROM_CALIBRATION_O2_OLD   2559
 #define EEPROM_CALIBRATION_IAT_OLD  3071
 #define EEPROM_CALIBRATION_CLT_OLD  3583
+
+#define EEPROM_DEFER_DELAY          1000000UL //1.0 second pause after large comms before writing to EEPROM
 
 #endif // STORAGE_H

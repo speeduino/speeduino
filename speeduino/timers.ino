@@ -32,6 +32,7 @@ void initialiseTimers()
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
+  tachoOutputFlag = DEACTIVE;
 }
 
 
@@ -68,8 +69,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
-  //Tacho output check
-  //Tacho is flagged as being ready for a pulse by the ignition outputs. 
+  //Tacho output check. This code will not do anything if tacho pulse duration is fixed to coil dwell.
+  //Tacho is flagged as being ready for a pulse by the ignition outputs.
   if(tachoOutputFlag == READY)
   {
     //Check for half speed tacho
@@ -85,7 +86,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Don't run on this pulse (Half speed tacho)
       tachoOutputFlag = DEACTIVE;
     }
-    tachoAlt = !tachoAlt; //Flip the alternating value incase half speed tacho is in use. 
+    tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
   else if(tachoOutputFlag == ACTIVE)
   {
@@ -120,7 +121,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loop100ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
 
-    currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelleratedin the last loop
+    currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
@@ -155,7 +156,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value incase setting has changed
+    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
@@ -163,7 +164,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     //If the engine is running or cranking, we need ot update the run time counter.
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!
-      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fueling (Which has to wait for the O2 to warmup))
+      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
@@ -171,13 +172,13 @@ void oneMSInterval() //Most ARM chips can simply call a function
     currentStatus.loopsPerSecond = mainLoopCount;
     mainLoopCount = 0;
     //**************************************************************************************************************************************************
-    //increament secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
+    //increment secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
     currentStatus.secl++;
     //**************************************************************************************************************************************************
     //Check the fan output status
     if (configPage2.fanEnable >= 1)
     {
-       fanControl();            // Fucntion to turn the cooling fan on/off
+       fanControl();            // Function to turn the cooling fan on/off
     }
 
     //Check whether fuel pump priming is complete
