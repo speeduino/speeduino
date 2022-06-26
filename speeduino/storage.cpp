@@ -28,7 +28,6 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 static bool eepromWritesPending = false;
-static bool forceBurn = false;
 uint32_t deferEEPROMWritesUntil = 0;
 
 bool isEepromWritePending()
@@ -44,15 +43,12 @@ void writeAllConfig()
   uint8_t page = 1U;
   writeConfig(page);
   page = page + 1;
-  while (page<pageCount && ( !eepromWritesPending || forceBurn ) )
+  while (page<pageCount && !eepromWritesPending)
   {
     writeConfig(page);
     page = page + 1;
   }
 }
-
-void enableForceBurn() { forceBurn = true; }
-void disableForceBurn() { forceBurn = false; }
 
 
 //  ================================= Internal write support ===============================
@@ -92,7 +88,7 @@ struct write_location {
 
 static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
 {
-  while ( (location.can_write() || forceBurn) && pStart!=pEnd)
+  while ( location.can_write() && pStart!=pEnd)
   {
     location.update(*pStart);
     ++pStart; 
@@ -108,7 +104,7 @@ static inline write_location write(const table_row_iterator &row, write_location
 
 static inline write_location write(table_value_iterator it, write_location location)
 {
-  while ((location.can_write() || forceBurn) && !it.at_end())
+  while (location.can_write() && !it.at_end())
   {
     location = write(*it, location);
     ++it;
@@ -119,7 +115,7 @@ static inline write_location write(table_value_iterator it, write_location locat
 static inline write_location write(table_axis_iterator it, write_location location)
 {
   const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
-  while ((location.can_write() || forceBurn) && !it.at_end())
+  while (location.can_write() && !it.at_end())
   {
     location.update(pConverter->to_byte(*it));
     ++location;

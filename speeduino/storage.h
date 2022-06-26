@@ -125,8 +125,6 @@ void loadCalibration();
 void writeCalibration();
 void writeCalibrationPage(uint8_t pageNum);
 void resetConfigPages();
-void enableForceBurn();
-void disableForceBurn();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
