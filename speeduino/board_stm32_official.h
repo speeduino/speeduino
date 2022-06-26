@@ -67,7 +67,7 @@ extern "C" char* sbrk(int incr);
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif
-  //Hack to alow compile on small STM boards
+  //Hack to allow compilation on small STM boards
   #ifndef A10
     #define A10  PA0
     #define A11  PA1

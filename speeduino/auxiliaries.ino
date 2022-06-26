@@ -391,7 +391,7 @@ void boostControl()
         if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
       } 
-      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is ususally set to boost with wastegate actuator only boost level)
+      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) & (currentStatus.MAP >= currentStatus.baro)) | ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) & (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
@@ -435,7 +435,7 @@ void boostControl()
         boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
         //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
         currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multipled by 100) to a pwm count
+        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
         ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
         if(currentStatus.boostDuty==0){
           //If boost control does nothing disable PWM completely

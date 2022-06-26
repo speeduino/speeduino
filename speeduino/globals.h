@@ -808,7 +808,7 @@ struct config2 {
 
   //config2 in ini
   byte fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
-  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=diable, 1=enable, See @ref configPage4.FixAng)
+  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref configPage4.FixAng)
   byte nInjectors : 4;   ///< Number of injectors
 
 
@@ -818,8 +818,8 @@ struct config2 {
   byte legacyMAP  : 1;  ///< Legacy MAP reading behaviour
   byte baroCorr : 1;    // Unused ?
   byte injLayout : 2;   /**< Injector Layout - 0=INJ_PAIRED (number outputs == number cyls/2, timed over 1 crank rev), 1=INJ_SEMISEQUENTIAL (like paired, but number outputs == number cyls, only for 4 cyl),
-                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (number ouputs == number cyls, timed over full cycle, 2 crank revs) */
-  byte perToothIgn : 1; ///< Experimental / New ign. mode ... (?) (See decoders.ino)
+                         2=INJ_BANKED (2 outputs are used), 3=INJ_SEQUENTIAL (number outputs == number cyls, timed over full cycle, 2 crank revs) */
+  byte perToothIgn : 1; ///< Experimental / New ignition mode ... (?) (See decoders.ino)
   byte dfcoEnabled : 1; ///< Whether or not DFCO (deceleration fuel cut-off) is turned on
 
   byte aeColdTaperMax;  ///< AE cold modifier, taper end temp (no modifier applied, was primePulse in early versions)
@@ -1397,7 +1397,7 @@ struct config13 {
   uint8_t outputDelay[8]; ///< Output write delay for each programmable I/O (Unit: 0.1S)
   uint8_t firstDataIn[8]; ///< Set of first I/O vars to compare
   uint8_t secondDataIn[8];///< Set of second I/O vars to compare
-  uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependant(Unit: 0.1S)
+  uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
   uint8_t unused_13[8]; // Unused
   int16_t firstTarget[8]; ///< first  target value to compare with numeric comp
   int16_t secondTarget[8];///< second target value to compare with bitwise op
@@ -1528,7 +1528,7 @@ extern byte pinFuelPressure;
 extern byte pinOilPressure;
 extern byte pinWMIEmpty; // Water tank empty sensor
 extern byte pinWMIIndicator; // No water indicator bulb
-extern byte pinWMIEnabled; // ON-OFF ouput to relay/pump/solenoid 
+extern byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
 #ifdef USE_SPI_EEPROM

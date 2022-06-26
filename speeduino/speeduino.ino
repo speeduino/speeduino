@@ -101,7 +101,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 
 /** Speeduino main loop.
  * 
- * Main loop chores (roughly in  order they are preformed):
+ * Main loop chores (roughly in the order that they are performed):
  * - Check if serial comms or tooth logging are in progress (send or receive, prioritise communication)
  * - Record loop timing vars
  * - Check tooth time, update @ref statuses (currentStatus) variables
