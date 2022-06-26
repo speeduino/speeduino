@@ -14,17 +14,8 @@ A full copy of the license may be found in the projects root directory
 #include "table3d_axis_io.h"
 
 
-
-//The maximum number of write operations that will be performed in one go. If we try to write to the EEPROM too fast (Each write takes ~3ms) then the rest of the system can hang)
-#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
-//#define EEPROM_MAX_WRITE_BLOCK 64
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
-#else
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 24;
-//#define EEPROM_MAX_WRITE_BLOCK 8
-#endif
-
 #define EEPROM_DATA_VERSION   0
+
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define STORAGE_END 0xFFF       // Should be E2END?
@@ -66,6 +57,7 @@ void disableForceBurn() { forceBurn = false; }
 struct write_location {
   eeprom_address_t address;
   uint16_t counter;
+  uint8_t write_block_size;
 
   /** Update byte to EEPROM by first comparing content and the need to write it.
   We only ever write to the EEPROM where the new value is different from the currently stored byte
@@ -89,8 +81,8 @@ struct write_location {
   bool can_write() const
   {
     bool canWrite = false;
-    if(currentStatus.RPM > 0) { canWrite = (counter <= EEPROM_MAX_WRITE_BLOCK); }
-    else { canWrite = (counter <= (EEPROM_MAX_WRITE_BLOCK * 8)); } //Write to EEPROM more aggressively if the engine is not running
+    if(currentStatus.RPM > 0) { canWrite = (counter <= write_block_size); }
+    else { canWrite = (counter <= (write_block_size * 8)); } //Write to EEPROM more aggressively if the engine is not running
 
     return canWrite;
   }
@@ -154,17 +146,30 @@ and writes them to EEPROM as per the layout defined in storage.h.
 */
 void writeConfig(uint8_t pageNum)
 {
-  write_location result = { 0, 0 };
+//The maximum number of write operations that will be performed in one go.
+//If we try to write to the EEPROM too fast (Each write takes ~3ms) then 
+//the rest of the system can hang)
+#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
+#else
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 24;
 
-  #ifdef CORE_AVR
-    //In order to prevent missed pulses during EEPROM writes on AVR, scale the maximum write block size based on the RPM
-    //This calculation is based on EEPROM writes taking approximately 4ms per byte (Actual value is 3.8ms, so 4ms has some safety margin) 
-    if(currentStatus.RPM > 65) { EEPROM_MAX_WRITE_BLOCK = (15000 / currentStatus.RPM); } //Min RPM of 65 prevents overflow of uint8_t. 
-    else { EEPROM_MAX_WRITE_BLOCK = 24; }
+#ifdef CORE_AVR
+  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+  //maximum write block size based on the RPM.
+  //This calculation is based on EEPROM writes taking approximately 4ms per byte
+  //(Actual value is 3.8ms, so 4ms has some safety margin) 
+  if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
+  { 
+    EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
+    EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
+    EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 24); //Any higher than this will cause comms timeouts on AVR
+  }
+#endif
 
-    if(EEPROM_MAX_WRITE_BLOCK < 1) { EEPROM_MAX_WRITE_BLOCK = 1; }
-    if(EEPROM_MAX_WRITE_BLOCK > 24) { EEPROM_MAX_WRITE_BLOCK = 24; } //Any higher than this will cause comms timeouts on AVR
-  #endif
+#endif
+
+  write_location result = { 0, 0, EEPROM_MAX_WRITE_BLOCK };
 
   switch(pageNum)
   {
@@ -173,7 +178,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable, fuelTable.type_key, { EEPROM_CONFIG1_MAP, 0 });
+      result = writeTable(&fuelTable, fuelTable.type_key, { EEPROM_CONFIG1_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case veSetPage:
@@ -181,7 +186,7 @@ void writeConfig(uint8_t pageNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), { EEPROM_CONFIG2_START, 0 });
+      result = write_range((byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2), { EEPROM_CONFIG2_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case ignMapPage:
@@ -189,7 +194,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable, ignitionTable.type_key, { EEPROM_CONFIG3_MAP, 0 });
+      result = writeTable(&ignitionTable, ignitionTable.type_key, { EEPROM_CONFIG3_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case ignSetPage:
@@ -197,7 +202,7 @@ void writeConfig(uint8_t pageNum)
       | Config page 2 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), { EEPROM_CONFIG4_START, 0 });
+      result = write_range((byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4), { EEPROM_CONFIG4_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case afrMapPage:
@@ -205,7 +210,7 @@ void writeConfig(uint8_t pageNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&afrTable, afrTable.type_key, {  EEPROM_CONFIG5_MAP, 0 });
+      result = writeTable(&afrTable, afrTable.type_key, {  EEPROM_CONFIG5_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case afrSetPage:
@@ -213,7 +218,7 @@ void writeConfig(uint8_t pageNum)
       | Config page 3 (See storage.h for data layout)
       | 64 byte long config table
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), { EEPROM_CONFIG6_START, 0 });
+      result = write_range((byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6), { EEPROM_CONFIG6_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case boostvvtPage:
@@ -221,9 +226,9 @@ void writeConfig(uint8_t pageNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&boostTable, boostTable.type_key, { EEPROM_CONFIG7_MAP1, 0 });
-      result = writeTable(&vvtTable, vvtTable.type_key, { EEPROM_CONFIG7_MAP2, result.counter });
-      result = writeTable(&stagingTable, stagingTable.type_key, { EEPROM_CONFIG7_MAP3, result.counter });
+      result = writeTable(&boostTable, boostTable.type_key, { EEPROM_CONFIG7_MAP1, 0, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&vvtTable, vvtTable.type_key, { EEPROM_CONFIG7_MAP2, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&stagingTable, stagingTable.type_key, { EEPROM_CONFIG7_MAP3, result.counter, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case seqFuelPage:
@@ -231,14 +236,14 @@ void writeConfig(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&trim1Table, trim1Table.type_key, { EEPROM_CONFIG8_MAP1, 0 });
-      result = writeTable(&trim2Table, trim2Table.type_key, { EEPROM_CONFIG8_MAP2, result.counter });
-      result = writeTable(&trim3Table, trim3Table.type_key, { EEPROM_CONFIG8_MAP3, result.counter });
-      result = writeTable(&trim4Table, trim4Table.type_key, { EEPROM_CONFIG8_MAP4, result.counter });
-      result = writeTable(&trim5Table, trim5Table.type_key, { EEPROM_CONFIG8_MAP5, result.counter });
-      result = writeTable(&trim6Table, trim6Table.type_key, { EEPROM_CONFIG8_MAP6, result.counter });
-      result = writeTable(&trim7Table, trim7Table.type_key, { EEPROM_CONFIG8_MAP7, result.counter });
-      result = writeTable(&trim8Table, trim8Table.type_key, { EEPROM_CONFIG8_MAP8, result.counter });
+      result = writeTable(&trim1Table, trim1Table.type_key, { EEPROM_CONFIG8_MAP1, 0, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim2Table, trim2Table.type_key, { EEPROM_CONFIG8_MAP2, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim3Table, trim3Table.type_key, { EEPROM_CONFIG8_MAP3, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim4Table, trim4Table.type_key, { EEPROM_CONFIG8_MAP4, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim5Table, trim5Table.type_key, { EEPROM_CONFIG8_MAP5, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim6Table, trim6Table.type_key, { EEPROM_CONFIG8_MAP6, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim7Table, trim7Table.type_key, { EEPROM_CONFIG8_MAP7, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&trim8Table, trim8Table.type_key, { EEPROM_CONFIG8_MAP8, result.counter, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case canbusPage:
@@ -246,7 +251,7 @@ void writeConfig(uint8_t pageNum)
       | Config page 10 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), { EEPROM_CONFIG9_START, 0 });
+      result = write_range((byte *)&configPage9, (byte *)&configPage9+sizeof(configPage9), { EEPROM_CONFIG9_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case warmupPage:
@@ -254,7 +259,7 @@ void writeConfig(uint8_t pageNum)
       | Config page 11 (See storage.h for data layout)
       | 192 byte long config table
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), { EEPROM_CONFIG10_START, 0});
+      result = write_range((byte *)&configPage10, (byte *)&configPage10+sizeof(configPage10), { EEPROM_CONFIG10_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case fuelMap2Page:
@@ -262,7 +267,7 @@ void writeConfig(uint8_t pageNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&fuelTable2, fuelTable2.type_key, { EEPROM_CONFIG11_MAP, 0 });
+      result = writeTable(&fuelTable2, fuelTable2.type_key, { EEPROM_CONFIG11_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case wmiMapPage:
@@ -272,16 +277,16 @@ void writeConfig(uint8_t pageNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&wmiTable, wmiTable.type_key, { EEPROM_CONFIG12_MAP, 0 });
-      result = writeTable(&vvt2Table, vvt2Table.type_key, { EEPROM_CONFIG12_MAP2, result.counter });
-      result = writeTable(&dwellTable, dwellTable.type_key, { EEPROM_CONFIG12_MAP3, result.counter });
+      result = writeTable(&wmiTable, wmiTable.type_key, { EEPROM_CONFIG12_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&vvt2Table, vvt2Table.type_key, { EEPROM_CONFIG12_MAP2, result.counter, EEPROM_MAX_WRITE_BLOCK });
+      result = writeTable(&dwellTable, dwellTable.type_key, { EEPROM_CONFIG12_MAP3, result.counter, EEPROM_MAX_WRITE_BLOCK });
       break;
       
   case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), { EEPROM_CONFIG13_START, 0});
+      result = write_range((byte *)&configPage13, (byte *)&configPage13+sizeof(configPage13), { EEPROM_CONFIG13_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
     
     case ignMap2Page:
@@ -289,7 +294,7 @@ void writeConfig(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0 });
+      result = writeTable(&ignitionTable2, ignitionTable2.type_key, { EEPROM_CONFIG14_MAP, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     case boostvvtPage2:
@@ -297,12 +302,12 @@ void writeConfig(uint8_t pageNum)
       | Boost duty cycle lookuptable (See storage.h for data layout) - Page 15
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      result = writeTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, { EEPROM_CONFIG15_MAP, result.counter });
+      result = writeTable(&boostTableLookupDuty, boostTableLookupDuty.type_key, { EEPROM_CONFIG15_MAP, result.counter, EEPROM_MAX_WRITE_BLOCK });
 
       /*---------------------------------------------------
       | Config page 15 (See storage.h for data layout)
       -----------------------------------------------------*/
-      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0});
+      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0, EEPROM_MAX_WRITE_BLOCK });
       break;
 
     default:
