@@ -293,7 +293,7 @@ uint16_t correctionCranking()
   return crankingValue;
 }
 
-/** Afer Start Enrichment calculation.
+/** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
