@@ -28,6 +28,16 @@ void sendVAGCluster()
   Can0.write(outMsg);
 }
 
+void sendGaugeSCluster()
+{
+    DashMessage(CAN_GAUGES_1);
+    Can0.write(outMsg);
+    DashMessage(CAN_GAUGES_2);
+    Can0.write(outMsg);
+    DashMessage(CAN_GAUGES_3);
+    Can0.write(outMsg);
+}
+
 // switch case for gathering all data to message based on CAN Id.
 void DashMessage(uint16_t DashMessageID)
 {
@@ -107,6 +117,49 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[5] = 0x00;
       outMsg.buf[6] = 0x00;
       outMsg.buf[7] = 0xAD;
+    break;
+
+    
+    case CAN_GAUGES_1:
+      //9a0 (2464)
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = currentStatus.VE;
+      outMsg.buf[1] = currentStatus.advance;
+      outMsg.buf[2] = currentStatus.RPM;
+      outMsg.buf[3] = currentStatus.TPS;
+      outMsg.buf[4] = currentStatus.coolant;
+      outMsg.buf[5] = currentStatus.IAT;
+      outMsg.buf[6] = currentStatus.MAP;
+      outMsg.buf[7] = currentStatus.vss;
+    break;
+
+    case CAN_GAUGES_2:
+    //7A0 1952
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = currentStatus.vvt1Angle;
+      outMsg.buf[1] = currentStatus.fuelPressure;
+      outMsg.buf[2] = currentStatus.oilPressure;
+      outMsg.buf[3] = currentStatus.battery10;
+      outMsg.buf[4] = lowByte(currentStatus.O2);
+      outMsg.buf[5] = highByte(currentStatus.O2);
+      outMsg.buf[6] = currentStatus.fuelLoad;
+      outMsg.buf[7] = currentStatus.ignLoad;
+    break;
+    
+    case CAN_GAUGES_3:
+    //6A0 1696
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = currentStatus.boostTarget;
+      outMsg.buf[1] = currentStatus.boostDuty;
+      outMsg.buf[2] = currentStatus.ethanolPct;
+      outMsg.buf[3] = currentStatus.afrTarget;
+      outMsg.buf[4] = currentStatus.fuelLoad;
+      outMsg.buf[5] = currentStatus.baro;
+      outMsg.buf[6] = 0x00;
+      outMsg.buf[7] = 0x00;
     break;
 
     default:

@@ -316,6 +316,7 @@ void loop()
       #if defined(NATIVE_CAN_AVAILABLE)
       if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
       if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
+      if (configPage2.canGaugeSCluster == true) { sendGaugeSCluster(); }
       #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();

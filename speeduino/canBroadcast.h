@@ -14,8 +14,13 @@
 #define CAN_VAG_RPM 0x280
 #define CAN_VAG_VSS 0x5A0
 
+#define CAN_GAUGES_1 0x9A0
+#define CAN_GAUGES_2 0x7A0
+#define CAN_GAUGES_3 0x6A0
+
 void sendBMWCluster();
 void sendVAGCluster();
+void sendGaugeSCluster();
 void DashMessages(uint16_t DashMessageID);
 #endif
 #endif // CANBROADCAST_H
