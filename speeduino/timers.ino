@@ -32,7 +32,7 @@ void initialiseTimers()
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
-  tachoOutputFlag = INACTIVE;
+  tachoOutputFlag = TACHO_INACTIVE;
 }
 
 
@@ -84,7 +84,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     else
     {
       //Don't run on this pulse (Half speed tacho)
-      tachoOutputFlag = INACTIVE;
+      tachoOutputFlag = TACHO_INACTIVE;
     }
     tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
@@ -94,7 +94,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if((uint8_t)ms_counter == tachoEndTime)
     {
       TACHO_PULSE_HIGH();
-      tachoOutputFlag = INACTIVE;
+      tachoOutputFlag = TACHO_INACTIVE;
     }
   }
   // Tacho sweep
