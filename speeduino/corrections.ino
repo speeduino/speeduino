@@ -151,8 +151,8 @@ uint16_t correctionsFuel()
   currentStatus.wueCorrection = correctionWUE();
   if (currentStatus.wueCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.wueCorrection); }
 
-  result = correctionASE();
-  if (result != 100) { sumCorrections = div100(sumCorrections * result); }
+  currentStatus.ASEValue = correctionASE();
+  if (currentStatus.ASEValue != 100) { sumCorrections = div100(sumCorrections * currentStatus.ASEValue); }
 
   result = correctionCranking();
   if (result != 100) { sumCorrections = div100(sumCorrections * result); }
@@ -213,7 +213,7 @@ static inline byte correctionsFuel_new()
 
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  uint16_t correctionASEvalue = correctionASE(); numCorrections++;
+  currentStatus.ASEValue = correctionASE(); numCorrections++;
   uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
   currentStatus.AEamount = correctionAccel(); numCorrections++;
   uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
@@ -229,7 +229,7 @@ static inline byte correctionsFuel_new()
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = currentStatus.wueCorrection \
-                  + correctionASEvalue \
+                  + currentStatus.ASEValue \
                   + correctionCrankingValue \
                   + currentStatus.AEamount \
                   + correctionFloodClearValue \
@@ -301,13 +301,13 @@ uint16_t correctionCranking()
  */   
 byte correctionASE()
 {
-  int16_t ASEValue = 100;
+  int16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
   {
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) || (currentStatus.ASEValue == 0) )
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
     {
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
@@ -333,15 +333,16 @@ byte correctionASE()
       //Safety checks
       if(ASEValue > 255) { ASEValue = 255; }
       if(ASEValue < 0) { ASEValue = 0; }
-      currentStatus.ASEValue = (byte)ASEValue;
+      ASEValue = (byte)ASEValue;
     }
   }
   else
   {
+    //Engine is cranking, ASE disabled
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
     ASEValue = 100;
   }
-  return currentStatus.ASEValue;
+  return ASEValue;
 }
 
 /** Acceleration enrichment correction calculation.
