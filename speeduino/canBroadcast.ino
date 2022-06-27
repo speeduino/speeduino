@@ -156,9 +156,9 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[1] = currentStatus.boostDuty;
       outMsg.buf[2] = currentStatus.ethanolPct;
       outMsg.buf[3] = currentStatus.afrTarget;
-      outMsg.buf[4] = currentStatus.fuelLoad;
+      outMsg.buf[4] = currentStatus.gear;
       outMsg.buf[5] = currentStatus.baro;
-      outMsg.buf[6] = 0x00;
+      outMsg.buf[6] = currentStatus.nitrous_status;
       outMsg.buf[7] = 0x00;
     break;
 
