@@ -314,14 +314,6 @@ void writeConfig(uint8_t pageNum)
       -----------------------------------------------------*/
       result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), result.changeWriteAddress(EEPROM_CONFIG15_START));
       break;
-      
-    case EFPage:
-      /*---------------------------------------------------
-      | Config page 15 (See storage.h for data layout)
-      | 128 byte long config table
-      -----------------------------------------------------*/
-      result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), { EEPROM_CONFIG15_START, 0 });
-      break;
 
     default:
       break;
@@ -479,13 +471,6 @@ void loadConfig()
   load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));  
 
   //*********************************************************************************************************************************************************************************
-  
-  //*********************************************************************************************************************************************************************************
-  //Extra feature PAGE (15)
-  load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));
-
-  //*********************************************************************************************************************************************************************************
-  
 }
 
 /** Read the calibration information from EEPROM.

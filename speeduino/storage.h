@@ -99,11 +99,11 @@
  * | 3201       |64          | boostLUT table (8x8)                 | @ref EEPROM_CONFIG15_MAP           |
  * | 3265       |8           | boostLUT table (X axis) (RPM)        |                                    |
  * | 3273       |8           | boostLUT table (Y axis) (targetBoost)|                                    |
- * | 3281       |1           | boostLUT enable                      |                                    |
+ * | 3281       |1           | boostLUT enable                      | @ref EEPROM_CONFIG15_START         |
  * | 3282       |1           | boostDCWhenDisabled                  |                                    |
  * | 3283       |1           | boostControlEnableThreshold          |                                    |
  * | 3284       |14          | A/C Control Settings                 |                                    |
- * | 3298       |159         | Page 15 spare                        | @ref EEPROM_CONFIG15_START         |
+ * | 3298       |159         | Page 15 spare                        |                                    |
  * | 3457       |217         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |
@@ -180,9 +180,6 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CONFIG8_MAP6   3051
 #define EEPROM_CONFIG8_MAP7   3101
 #define EEPROM_CONFIG8_MAP8   3151
-//This is test for the new pages-15-
-#define EEPROM_CONFIG15_START   3201
-#define EEPROM_CONFIG15_END     3329
 
 //Page 15 added after OUT OF ORDER page 8
 #define EEPROM_CONFIG15_MAP   3199

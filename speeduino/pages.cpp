@@ -397,12 +397,6 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
       CHECK_RAW(progOutsPage, offset, &configPage13, sizeof(configPage13), 0)
       END_OF_PAGE(progOutsPage, 1)
     }
-    
-    case EFPage:  
-    {
-      CHECK_RAW(EFPage, offset, &configPage15, sizeof(configPage15), 0)
-      END_OF_PAGE(EFPage, 1)
-    }
 
     case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
     {
