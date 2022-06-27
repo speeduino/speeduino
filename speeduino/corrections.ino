@@ -151,8 +151,8 @@ uint16_t correctionsFuel()
   currentStatus.wueCorrection = correctionWUE();
   if (currentStatus.wueCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.wueCorrection); }
 
-  result = correctionASE();
-  if (result != 100) { sumCorrections = div100(sumCorrections * result); }
+  currentStatus.ASEValue = correctionASE();
+  if (currentStatus.ASEValue != 100) { sumCorrections = div100(sumCorrections * currentStatus.ASEValue); }
 
   result = correctionCranking();
   if (result != 100) { sumCorrections = div100(sumCorrections * result); }
@@ -213,7 +213,7 @@ static inline byte correctionsFuel_new()
 
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  uint16_t correctionASEvalue = correctionASE(); numCorrections++;
+  currentStatus.ASEValue = correctionASE(); numCorrections++;
   uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
   currentStatus.AEamount = correctionAccel(); numCorrections++;
   uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
@@ -229,7 +229,7 @@ static inline byte correctionsFuel_new()
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = currentStatus.wueCorrection \
-                  + correctionASEvalue \
+                  + currentStatus.ASEValue \
                   + correctionCrankingValue \
                   + currentStatus.AEamount \
                   + correctionFloodClearValue \
@@ -288,52 +288,61 @@ uint16_t correctionCranking()
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
-    if( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
+    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
   }
   return crankingValue;
 }
 
-/** Afer Start Enrichment calculation.
+/** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
- */
+ */   
 byte correctionASE()
 {
-  int16_t ASEValue;
+  int16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
+  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
   {
-    if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
     {
-      BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-      ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-      aseTaper = 0;
-    }
-    else
-    {
-      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (aseTaper < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
+      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
-        aseTaper++;
+        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        aseTaper = 0;
       }
       else
       {
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-        ASEValue = 100;
+        if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
+        {
+          BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          aseTaper++;
+        }
+        else
+        {
+          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+          ASEValue = 100;
+        }
       }
+      
+      //Safety checks
+      if(ASEValue > 255) { ASEValue = 255; }
+      if(ASEValue < 0) { ASEValue = 0; }
+      ASEValue = (byte)ASEValue;
     }
-    
-    //Safety checks
-    if(ASEValue > 255) { ASEValue = 255; }
-    if(ASEValue < 0) { ASEValue = 0; }
-    currentStatus.ASEValue = (byte)ASEValue;
   }
-  return currentStatus.ASEValue;
+  else
+  {
+    //Engine is cranking, ASE disabled
+    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+    ASEValue = 100;
+  }
+  return ASEValue;
 }
 
 /** Acceleration enrichment correction calculation.

@@ -95,9 +95,16 @@
  * | 3151       |36          | Trim8 table (6x6)                    | @ref EEPROM_CONFIG8_MAP8           |
  * | 3187       |6           | Trim8 table (X axis) (RPM)           |                                    |
  * | 3193       |6           | Trim8 table (Y axis) (MAP)           |                                    |
- * | 3199       |2           | HOLE ??                              |                                    |
- * | 3201       |128         | Page 15 settings                     | @ref EEPROM_CONFIG15_START         |
- * | 3329       |345         | EMPTY                                |                                    |
+ * | 3199       |2           | X and Y sizes boostLUT table         |                                    |
+ * | 3201       |64          | boostLUT table (8x8)                 | @ref EEPROM_CONFIG15_MAP           |
+ * | 3265       |8           | boostLUT table (X axis) (RPM)        |                                    |
+ * | 3273       |8           | boostLUT table (Y axis) (targetBoost)|                                    |
+ * | 3281       |1           | boostLUT enable                      |                                    |
+ * | 3282       |1           | boostDCWhenDisabled                  |                                    |
+ * | 3283       |1           | boostControlEnableThreshold          |                                    |
+ * | 3284       |14          | A/C Control Settings                 |                                    |
+ * | 3298       |159         | Page 15 spare                        | @ref EEPROM_CONFIG15_START         |
+ * | 3457       |217         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |
  * | 3682       |4           | O2 Calibration CRC32                 |                                    |
@@ -122,8 +129,6 @@ void loadCalibration();
 void writeCalibration();
 void writeCalibrationPage(uint8_t pageNum);
 void resetConfigPages();
-void enableForceBurn();
-void disableForceBurn();
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 byte readLastBaro();
@@ -178,6 +183,12 @@ extern uint32_t deferEEPROMWritesUntil;
 //This is test for the new pages-15-
 #define EEPROM_CONFIG15_START   3201
 #define EEPROM_CONFIG15_END     3329
+
+//Page 15 added after OUT OF ORDER page 8
+#define EEPROM_CONFIG15_MAP   3199
+#define EEPROM_CONFIG15_START 3281
+#define EEPROM_CONFIG15_END   3457
+
 
 #define EEPROM_CALIBRATION_CLT_CRC  3674
 #define EEPROM_CALIBRATION_IAT_CRC  3678
