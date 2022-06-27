@@ -220,7 +220,7 @@ void doUpdates()
     configPage4.cltAdvValues[5] = 0;
 
 
-    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
+    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is the maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
 
     //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes

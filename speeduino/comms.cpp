@@ -527,7 +527,7 @@ void processSerialCommand()
           serialPayload[13] = 0;
           serialPayload[14] = 0;
 
-          //Unkown purpose for last 2 bytes
+          //Unknown purpose for last 2 bytes
           serialPayload[15] = 0;
           serialPayload[16] = 0;
 
