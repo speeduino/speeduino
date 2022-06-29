@@ -10,23 +10,24 @@
   uint16_t freeRam();
   void doSystemReset();
   void jumpToBootloader();
+  time_t getTeensy3Time();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint32_t
   #define COUNTER_TYPE uint32_t
   #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
-  #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
   typedef int eeprom_address_t;
-  #define RTC_ENABLED
+  //#define RTC_ENABLED
+  //#define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
   #define RTC_LIB_H "TimeLib.h"
   #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define PWM_FAN_AVAILABLE
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -125,7 +126,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   #define ENABLE_BOOST_TIMER()  TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
   #define DISABLE_BOOST_TIMER() TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN

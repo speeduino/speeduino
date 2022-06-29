@@ -17,7 +17,7 @@ void initBoard()
     */
 
     /*
-    Idle + Boost + VVT use the PIT timer. THIS IS ALSO USED BY THE INTERVALTIMER THAT CALLS THE 1MS LOW RES TIMER!
+    Idle + Boost + VVT use the PIT timer. THIS IS ALSO USED BY THE INTERVAL TIMER THAT CALLS THE 1MS LOW RES TIMER!
     This has 4 channels that don't have compare registers, but will run for a period of time and then fire an interrupt
     The clock for these is set to 24Mhz and a prescale of 48 is used to give a 2uS tick time
     Set Prescaler
@@ -57,11 +57,11 @@ void initBoard()
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
 
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
     fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
 
@@ -264,6 +264,12 @@ uint16_t freeRam()
 
     // The difference is the free, available ram.
     return (uint16_t)stackTop - heapTop;
+}
+
+//This function is used for attempting to set the RTC time during compile
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
 }
 
 void doSystemReset() { return; }
