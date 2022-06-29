@@ -78,7 +78,6 @@ uint16_t inj_opentime_uS = 0;
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
 
-byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
 byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
