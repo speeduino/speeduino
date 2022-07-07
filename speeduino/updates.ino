@@ -612,7 +612,11 @@ void doUpdates()
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
-    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    if( configPage2.nCylinders == 4 )
+    {
+      if ( configPage2.injLayout == INJ_SEQUENTIAL ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Since #478 engine will always start in semi, make the sequence right for the majority of inlie 4 engines
+      else { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    }
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
     configPage6.tachoMode = 0;
