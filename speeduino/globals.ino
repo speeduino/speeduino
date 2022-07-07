@@ -318,7 +318,9 @@ inline bool pinIsOutput(byte pin)
   || ((pin == pinStepperEnable) && isIdleSteper)
   || ((pin == pinStepperStep) && isIdleSteper)
   || ((pin == pinStepperDir) && isIdleSteper)
-  || (pin == pinTachOut) )
+  || (pin == pinTachOut)
+  || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }
