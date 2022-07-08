@@ -220,7 +220,7 @@ void doUpdates()
     configPage4.cltAdvValues[5] = 0;
 
 
-    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is tha maximum allowed value
+    //March 19 added a tacho pulse duration that could default to stupidly high values. Check if this is the case and fix it if found. 6ms is the maximum allowed value
     if(configPage2.tachoDuration > 6) { configPage2.tachoDuration = 3; }
 
     //MAP based AE was introduced, force the AE mode to be TPS for all existing tunes
@@ -600,7 +600,7 @@ void doUpdates()
     configPage13.onboard_log_tr3_thr_AFR = 0;
     configPage13.onboard_log_tr4_thr_on = 0;
     configPage13.onboard_log_tr4_thr_off = 0;
-    configPage13.onboard_log_tr5_thr_on = 0;
+    configPage13.onboard_log_tr5_Epin_pin = 0;
 
     writeAllConfig();
     storeEEPROMVersion(19);
@@ -612,7 +612,11 @@ void doUpdates()
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
-    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    if( configPage2.nCylinders == 4 )
+    {
+      if ( configPage2.injLayout == INJ_SEQUENTIAL ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Since #478 engine will always start in semi, make the sequence right for the majority of inlie 4 engines
+      else { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    }
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
     configPage6.tachoMode = 0;
