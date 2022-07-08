@@ -2617,8 +2617,11 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
+  if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) && (configPage13.onboard_log_tr5_Epin_pin < BOARD_MAX_IO_PINS) ) { pinSDEnable = pinTranslate(configPage13.onboard_log_tr5_Epin_pin); }
+  
 
   //Currently there's no default pin for Idle Up
+  
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
   //Currently there's no default pin for Idle Up Output
@@ -2818,6 +2821,10 @@ void setPinMapping(byte boardID)
   if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinOilPressure)) )
   {
     pinMode(pinOilPressure, INPUT);
+  }
+  if( (configPage13.onboard_log_trigger_Epin > 0) && (!pinIsOutput(pinSDEnable)) )
+  {
+    pinMode(pinSDEnable, INPUT);
   }
   if(configPage10.wmiEnabled > 0)
   {

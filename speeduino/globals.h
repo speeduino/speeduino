@@ -1428,10 +1428,11 @@ struct config13 {
   byte onboard_log_tr3_thr_AFR   :1;  // "Disabled", "Enabled"     
   byte onboard_log_tr4_thr_on;        // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)    
   byte onboard_log_tr4_thr_off;       // "V",        0.1,   0.0,  0.0,  15.90,      2 ; * (  1 byte)   
-  byte onboard_log_tr5_thr_on;        // "pin",      0,    0, 0,  1,    255,        0 ;  
+  byte onboard_log_tr5_Epin_pin  :6;        // "pin",      0,    0, 0,  1,    255,        0 ;  
+  byte unused13_125_2            :2;
 
 
-  byte unused12_125_127[2];
+  byte unused12_126_127[2];
 
 #if defined(CORE_AVR)
   };
@@ -1532,6 +1533,7 @@ extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
+extern byte pinSDEnable; //Input for manually enabling SD logging
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
 #endif
