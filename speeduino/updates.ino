@@ -600,7 +600,7 @@ void doUpdates()
     configPage13.onboard_log_tr3_thr_AFR = 0;
     configPage13.onboard_log_tr4_thr_on = 0;
     configPage13.onboard_log_tr4_thr_off = 0;
-    configPage13.onboard_log_tr5_thr_on = 0;
+    configPage13.onboard_log_tr5_Epin_pin = 0;
 
     writeAllConfig();
     storeEEPROMVersion(19);
