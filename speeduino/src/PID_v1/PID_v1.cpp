@@ -90,7 +90,7 @@ void PID::SetTunings(byte Kp, byte Ki, byte Kd)
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-  long InverseSampleTimeInSec = 100;
+  //long InverseSampleTimeInSec = 100;
   kp = Kp;
   ki = Ki;
   kd = Kd * 10;
