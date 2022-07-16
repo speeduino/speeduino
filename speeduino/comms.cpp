@@ -31,7 +31,6 @@ A full copy of the license may be found in the projects root directory
 uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
-uint32_t serialCRC = 0; 
 bool serialWriteInProgress = false;
 uint16_t serialBytesTransmitted = 0;
 uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
@@ -46,6 +45,8 @@ FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comm
   uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
+// ====================================== Internal Functions =============================
+
 /**
  * @brief      Flush all remaining bytes from the rx serial buffer
  */
@@ -53,6 +54,18 @@ void flushRXbuffer(void)
 {
   while (Serial.available() > 0) { Serial.read(); }
 }
+
+static uint32_t read32BigEndian()
+{
+  uint32_t crc1 = Serial.read();
+  uint32_t crc2 = Serial.read();
+  uint32_t crc3 = Serial.read();
+  uint32_t crc4 = Serial.read();
+  return  (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
+}
+
+// ====================================== End Internal Functions =============================
+
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -112,19 +125,8 @@ void parseSerial(void)
     }
     else if (Serial.available() >= SERIAL_CRC_LENGTH)
     {
-      uint32_t crc1 = Serial.read();
-      uint32_t crc2 = Serial.read();
-      uint32_t crc3 = Serial.read();
-      uint32_t crc4 = Serial.read();
-      serialCRC = (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
-      
       serialReceivePending = false; //The serial receive is now complete
-
-      //Test the CRC
-      uint32_t receivedCRC = CRC32_serial.crc32(serialPayload, serialPayloadLength);
-
-      //receivedCRC++;
-      if(serialCRC != receivedCRC)
+      if(read32BigEndian() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
         //CRC Error. Need to send an error message
         sendSerialReturnCode(SERIAL_RC_CRC_ERR);
