@@ -28,21 +28,22 @@ A full copy of the license may be found in the projects root directory
   #include "SD_logger.h"
 #endif
 
-uint16_t serialPayloadLength = 0;
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
-uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
 bool serialWriteInProgress = false;
-uint16_t serialBytesTransmitted = 0;
-uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
-FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
+
+static uint16_t serialPayloadLength = 0;
+static uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
+static uint16_t serialBytesTransmitted = 0;
+static uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
+static FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
 #ifdef RTC_ENABLED
-  uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
-  uint16_t SDcurrentDirChunk;
-  uint32_t SDreadStartSector;
-  uint32_t SDreadNumSectors;
-  uint32_t SDreadCompletedSectors = 0;
+  static uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
+  static uint16_t SDcurrentDirChunk;
+  static uint32_t SDreadStartSector;
+  static uint32_t SDreadNumSectors;
+  static uint32_t SDreadCompletedSectors = 0;
 #else
-  uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
+  static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
 // ====================================== Internal Functions =============================
