@@ -284,7 +284,7 @@ void fanControl()
            ((configPage15.airConTurnsFanOn&1) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
-      //Fan needs to be turned on.
+      //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C compressor).
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
@@ -321,7 +321,17 @@ void fanControl()
       }
       else
       {
-        currentStatus.fanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        byte tempFanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        if((configPage15.airConTurnsFanOn&1) == 1 &&
+           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+        {
+          // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C compressor
+          if(tempFanDuty < configPage15.airConPwmFanMinDuty)
+          {
+            tempFanDuty = configPage15.airConPwmFanMinDuty;
+          }
+        }
+        currentStatus.fanDuty = tempFanDuty;
         #if defined(PWM_FAN_AVAILABLE)
           fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
           if (currentStatus.fanDuty > 0)
