@@ -48,7 +48,7 @@ void initialiseAirCon()
 
     AIRCON_OFF();
 
-    if(pinAirConFan != 0)
+    if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
     {
       aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
       aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
