@@ -117,6 +117,43 @@ static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint
   return false;
 }
 
+/** Send a status record back to tuning/logging SW.
+ * This will "live" information from @ref currentStatus struct.
+ * @param offset - Start field number
+ * @param packetLength - Length of actual message (after possible ack/confirm headers)
+ * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
+ */
+//void sendValues(int packetlength, byte portNum)
+static void generateLiveValues(uint16_t offset, uint16_t packetLength)
+{  
+  if(requestCount == 0) { currentStatus.secl = 0; }
+  requestCount++;
+
+  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+
+  serialPayload[0] = SERIAL_RC_OK;
+  for(byte x=0; x<packetLength; x++)
+  {
+    serialPayload[x+1] = getTSLogEntry(offset+x); 
+  }
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+
+}
+
+static void sendSerialReturnCode(byte returnCode)
+{
+  sendBufferAndCrc(&returnCode, sizeof(returnCode));
+}
+
+static void sendSerialPayload(uint16_t payloadLength)
+{
+  //Start new transmission session
+  serialPayloadLength = payloadLength;
+  serialBytesTransmitted = sendBufferAndCrc(serialPayload, payloadLength);
+  serialWriteInProgress = serialBytesTransmitted!=payloadLength;
+}
+
 // ====================================== End Internal Functions =============================
 
 
@@ -202,19 +239,6 @@ void parseSerial(void)
       sendSerialReturnCode(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
-}
-
-void sendSerialReturnCode(byte returnCode)
-{
-  sendBufferAndCrc(&returnCode, sizeof(returnCode));
-}
-
-void sendSerialPayload(uint16_t payloadLength)
-{
-  //Start new transmission session
-  serialPayloadLength = payloadLength;
-  serialBytesTransmitted = sendBufferAndCrc(serialPayload, payloadLength);
-  serialWriteInProgress = serialBytesTransmitted!=payloadLength;
 }
 
 void continueSerialTransmission(void)
@@ -832,30 +856,6 @@ void processSerialCommand(void)
       sendSerialReturnCode(SERIAL_RC_UKWN_ERR);
       break;
   }
-}
-
-/** Send a status record back to tuning/logging SW.
- * This will "live" information from @ref currentStatus struct.
- * @param offset - Start field number
- * @param packetLength - Length of actual message (after possible ack/confirm headers)
- * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
- */
-//void sendValues(int packetlength, byte portNum)
-void generateLiveValues(uint16_t offset, uint16_t packetLength)
-{  
-  if(requestCount == 0) { currentStatus.secl = 0; }
-  requestCount++;
-
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
-
-  serialPayload[0] = SERIAL_RC_OK;
-  for(byte x=0; x<packetLength; x++)
-  {
-    serialPayload[x+1] = getTSLogEntry(offset+x); 
-  }
-  // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-
 }
 
 namespace 
