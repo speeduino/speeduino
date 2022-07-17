@@ -252,32 +252,9 @@ void processSerialCommand(void)
     }
 
     case 'E': // receive command button commands
-    {
-      uint16_t cmdCombined = word(serialPayload[1], serialPayload[2]);
-
-      if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_IGN8_50PC)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
-      {
-        //Hardware test buttons
-        if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
-      }
-      else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )
-      {
-        //VSS Calibration commands
-        TS_CommandButtonsHandler(cmdCombined);
-      }
-      else if( (cmdCombined >= TS_CMD_STM32_REBOOT) && (cmdCombined <= TS_CMD_STM32_BOOTLOADER) )
-      {
-        //STM32 DFU mode button
-        TS_CommandButtonsHandler(cmdCombined);
-      }
-      else if( (cmdCombined >= TS_CMD_SD_FORMAT) && (cmdCombined <= TS_CMD_SD_FORMAT) )
-      {
-        //SD Commands
-        TS_CommandButtonsHandler(cmdCombined);
-      }
+      TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
-    }
 
     case 'F': // send serial protocol version
     {
