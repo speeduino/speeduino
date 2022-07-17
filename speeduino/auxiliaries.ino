@@ -284,7 +284,7 @@ void fanControl()
            ((configPage15.airConTurnsFanOn&1) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
-      //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C compressor).
+      //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
@@ -325,7 +325,7 @@ void fanControl()
         if((configPage15.airConTurnsFanOn&1) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {
-          // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C compressor
+          // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
           if(tempFanDuty < configPage15.airConPwmFanMinDuty)
           {
             tempFanDuty = configPage15.airConPwmFanMinDuty;
