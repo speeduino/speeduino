@@ -102,6 +102,21 @@ static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t length)
   return sendBufferAndCrc(buffer, 0, length);
 }
 
+static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
+{
+  if ( (offset + length) <= getPageSize(pageNum) )
+  {
+    for(uint16_t i = 0; i < length; i++)
+    {
+      setPageValue(pageNum, (offset + i), buffer[i]);
+    }
+    deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
+    return true;
+  }
+
+  return false;
+}
+
 // ====================================== End Internal Functions =============================
 
 
@@ -348,32 +363,19 @@ void processSerialCommand(void)
       //2 - offset
       //2 - Length
       //1 - 1st New value
-      byte offset1, offset2, length1, length2;
+      uint8_t pageNum = serialPayload[2]; //Page ID is 2 bytes, but as the first byte is always 0 it can be ignored
+      uint16_t offset = word(serialPayload[4], serialPayload[3]);
+      uint16_t chunkLength = word(serialPayload[6], serialPayload[5]);
 
-      uint8_t currentPage = serialPayload[2]; //Page ID is 2 bytes, but as the first byte is always 0 it can be ignored
-      offset1 = serialPayload[3];
-      offset2 = serialPayload[4];
-      uint16_t valueOffset = word(offset2, offset1);
-      length1 = serialPayload[5];
-      length2 = serialPayload[6];
-      uint16_t chunkSize = word(length2, length1);
-
-      if( (valueOffset + chunkSize) > getPageSize(currentPage))
+      if (writePage(pageNum, offset, &serialPayload[7], chunkLength))
+      {
+        sendSerialReturnCode(SERIAL_RC_OK);    
+      }
+      else
       {
         //This should never happen, but just in case
         sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
-        break;
       }
-
-      for(uint16_t i = 0; i < chunkSize; i++)
-      {
-        setPageValue(currentPage, (valueOffset + i), serialPayload[7 + i]);
-      }
-      
-      deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
-      
-      sendSerialReturnCode(SERIAL_RC_OK);
-      
       break;
     }  
 
