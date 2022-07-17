@@ -21,6 +21,7 @@ A full copy of the license may be found in the projects root directory
 #include "comms_legacy.h"
 #include "src/FastCRC/FastCRC.h"
 #include "table3d_axis_io.h"
+#include <avr/pgmspace.h>
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -30,6 +31,13 @@ A full copy of the license may be found in the projects root directory
 
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 bool serialWriteInProgress = false;
+
+
+constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
+constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
+constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '1', '0', '-', 'd', 'e', 'v'};
+constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 
 static uint16_t serialPayloadLength = 0;
 static uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
@@ -79,7 +87,7 @@ static void serialWrite(uint16_t value)
   Serial.write(value & 255);
 }
 
-static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t start, uint16_t length)
+static uint16_t sendBufferAndCrc(const byte *buffer, size_t start, size_t length)
 {
   //Need to handle serial buffer being full. This is just for testing
   while (start < length && Serial.availableForWrite()!=0)
@@ -100,6 +108,31 @@ static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t length)
 {
   serialWrite(length);
   return sendBufferAndCrc(buffer, 0, length);
+}
+
+using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
+
+static void sendBufferAndCrcProgMem(const byte *buffer, uint16_t length)
+{
+  serialWrite(length);
+
+  uint16_t count = 0;
+  // First pass through the loop, we need to INITIALIZE the CRC
+  pCrcCalc pCrcFun = &FastCRC32::crc32;
+  uint32_t crc = 0;
+
+  while (count!=length)
+  {
+    byte value = pgm_read_byte(buffer+count);
+    Serial.write(value);
+    ++count;
+
+    crc =  (CRC32_serial.*pCrcFun)(&value, sizeof(value), false);
+    // Subsequent passes through the loop, we need to UPDATE the CRC
+    pCrcFun = &FastCRC32::crc32_upd;
+  }
+
+  serialWrite(~crc);
 }
 
 static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
@@ -270,11 +303,8 @@ void processSerialCommand(void)
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
-    {
-      const uint8_t tempPayload[] = { SERIAL_RC_OK, currentStatus.secl };
-      sendBufferAndCrc( tempPayload, sizeof(tempPayload) );
+      sendBufferAndCrcProgMem( testCommsResponse, sizeof(testCommsResponse) );
       break;
-    }
 
     case 'd': // Send a CRC32 hash of a given page
     {
@@ -296,11 +326,8 @@ void processSerialCommand(void)
       break;
 
     case 'F': // send serial protocol version
-    {
-      const byte serialVersion[] = {SERIAL_RC_OK, '0', '0', '2'};
-      sendBufferAndCrc(serialVersion, sizeof(serialVersion));
+      sendBufferAndCrcProgMem(serialVersion, sizeof(serialVersion));
       break;
-    }
 
     case 'H': //Start the tooth logger
       currentStatus.toothLogEnabled = true;
@@ -332,11 +359,8 @@ void processSerialCommand(void)
       break;
 
     case 'I': // send CAN ID
-    {
-      const byte serialVersion[] = {SERIAL_RC_OK, 0};
-      sendBufferAndCrc( serialVersion, sizeof(serialVersion));
+      sendBufferAndCrcProgMem( canId, sizeof(canId));
       break;
-    }
 
     case 'J': //Start the composite logger
       currentStatus.compositeLogEnabled = true;
@@ -427,12 +451,8 @@ void processSerialCommand(void)
     }
 
     case 'Q': // send code version
-    {
-      char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-      //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','7'} ; //Note no null terminator in array and statu variable at the start
-      sendBufferAndCrc( (const byte *)productString, sizeof(productString) );
+      sendBufferAndCrcProgMem(codeVersion, sizeof(codeVersion));
       break;
-    }
 
     case 'r': //New format for the optimised OutputChannels
     {
@@ -577,13 +597,9 @@ void processSerialCommand(void)
     }
 
     case 'S': // send code version
-    {
-      byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '1', '0', '-', 'd', 'e', 'v'};
-      //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '7'};
-      sendBufferAndCrc( productString, sizeof(productString) );
+      sendBufferAndCrcProgMem(productString, sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
-    }
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
