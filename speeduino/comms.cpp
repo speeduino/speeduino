@@ -56,13 +56,27 @@ void flushRXbuffer(void)
   while (Serial.available() > 0) { Serial.read(); }
 }
 
-static uint32_t read32BigEndian()
+static uint32_t readSerial32()
 {
   uint32_t crc1 = Serial.read();
   uint32_t crc2 = Serial.read();
   uint32_t crc3 = Serial.read();
   uint32_t crc4 = Serial.read();
   return  (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
+}
+
+static void serialWrite(uint32_t value)
+{
+  Serial.write( (value >> 24) & 255 );
+  Serial.write( (value >> 16) & 255 );
+  Serial.write( (value >> 8) & 255 );
+  Serial.write(  value & 255 );
+}
+
+static void serialWrite(uint16_t value)
+{
+  Serial.write((value >> 8) & 255);
+  Serial.write(value & 255);
 }
 
 // ====================================== End Internal Functions =============================
@@ -127,7 +141,7 @@ void parseSerial(void)
     else if (Serial.available() >= SERIAL_CRC_LENGTH)
     {
       serialReceivePending = false; //The serial receive is now complete
-      if(read32BigEndian() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
+      if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
         //CRC Error. Need to send an error message
         sendSerialReturnCode(SERIAL_RC_CRC_ERR);
@@ -160,11 +174,7 @@ void sendSerialReturnCode(byte returnCode)
   Serial.write(returnCode);
 
   //Calculate and send CRC
-  uint32_t CRC32_val = CRC32_serial.crc32(&returnCode, 1);
-  Serial.write( ((CRC32_val >> 24) & 255) );
-  Serial.write( ((CRC32_val >> 16) & 255) );
-  Serial.write( ((CRC32_val >> 8) & 255) );
-  Serial.write( (CRC32_val & 255) );
+  serialWrite(CRC32_serial.crc32(&returnCode, 1));
 }
 
 void sendSerialPayload(void *payload, uint16_t payloadLength)
@@ -173,9 +183,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   serialBytesTransmitted = 0; 
   serialWriteInProgress = false;
 
-  uint16_t totalPayloadLength = payloadLength;
-  Serial.write(totalPayloadLength >> 8);
-  Serial.write(totalPayloadLength);
+  serialWrite(payloadLength);
 
   //Need to handle serial buffer being full. This is just for testing
   serialPayloadLength = payloadLength; //Save the payload length in case we need to transmit in multiple steps
@@ -195,11 +203,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   if(serialWriteInProgress == false)
   {
     //All data transmitted. Send the CRC
-    uint32_t CRC32_val = CRC32_serial.crc32((uint8_t*)payload, payloadLength);
-    Serial.write( ((CRC32_val >> 24) & 255) );
-    Serial.write( ((CRC32_val >> 16) & 255) );
-    Serial.write( ((CRC32_val >> 8) & 255) );
-    Serial.write( (CRC32_val & 255) );
+    serialWrite(CRC32_serial.crc32((uint8_t*)payload, payloadLength));
   }
 }
 
@@ -225,11 +229,7 @@ void continueSerialTransmission(void)
     if(serialWriteInProgress == false)
     {
       //All data transmitted. Send the CRC
-      uint32_t CRC32_val = CRC32_serial.crc32(serialPayload, serialPayloadLength);
-      Serial.write( ((CRC32_val >> 24) & 255) );
-      Serial.write( ((CRC32_val >> 16) & 255) );
-      Serial.write( ((CRC32_val >> 8) & 255) );
-      Serial.write( (CRC32_val & 255) );
+      serialWrite(CRC32_serial.crc32(serialPayload, serialPayloadLength));
     }
   }
 }
@@ -956,8 +956,7 @@ void sendToothLog(uint8_t startOffset)
     {
       //Transmit the size of the packet
       uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 4) + 1; //Size of the tooth log (uint32_t values) plus the return code
-      Serial.write(totalPayloadLength >> 8);
-      Serial.write(totalPayloadLength);
+      serialWrite(totalPayloadLength);
 
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
@@ -1005,10 +1004,7 @@ void sendToothLog(uint8_t startOffset)
     CRC32_val = ~CRC32_val;
 
     //Send the CRC
-    Serial.write( ((CRC32_val >> 24) & 255) );
-    Serial.write( ((CRC32_val >> 16) & 255) );
-    Serial.write( ((CRC32_val >> 8) & 255) );
-    Serial.write( (CRC32_val & 255) );
+    serialWrite(CRC32_val);
   }
   else 
   { 
@@ -1030,8 +1026,7 @@ void sendCompositeLog(uint8_t startOffset)
 
       //Transmit the size of the packet
       uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 5) + 1; //Size of the tooth log (1x uint32_t + 1x uint8_t values) plus the return code
-      Serial.write(totalPayloadLength >> 8);
-      Serial.write(totalPayloadLength);
+      serialWrite(totalPayloadLength);
 
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
@@ -1087,10 +1082,7 @@ void sendCompositeLog(uint8_t startOffset)
     CRC32_val = ~CRC32_val;
 
     //Send the CRC
-    Serial.write( ((CRC32_val >> 24) & 255) );
-    Serial.write( ((CRC32_val >> 16) & 255) );
-    Serial.write( ((CRC32_val >> 8) & 255) );
-    Serial.write( (CRC32_val & 255) );
+    serialWrite(CRC32_val);
   }
   else 
   { 
