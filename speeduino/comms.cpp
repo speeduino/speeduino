@@ -388,21 +388,13 @@ void processSerialCommand(void)
       //2 - Page identifier
       //2 - offset
       //2 - Length
-      byte offset1, offset2, length1, length2;
-      int length;
-      byte tempPage;
-
-      tempPage = serialPayload[2];
-      offset1 = serialPayload[3];
-      offset2 = serialPayload[4];
-      valueOffset = word(offset2, offset1);
-      length1 = serialPayload[5];
-      length2 = serialPayload[6];
-      length = word(length2, length1);
+      byte tempPage = serialPayload[2];
+      valueOffset = word(serialPayload[4], serialPayload[3]);
+      uint16_t length = word(serialPayload[6], serialPayload[5]);
 
       //Setup the transmit buffer
       serialPayload[0] = SERIAL_RC_OK;
-      for(int i = 0; i < length; i++)
+      for(uint16_t i = 0; i < length; i++)
       {
         serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
       }
