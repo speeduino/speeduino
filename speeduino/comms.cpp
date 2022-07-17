@@ -79,6 +79,29 @@ static void serialWrite(uint16_t value)
   Serial.write(value & 255);
 }
 
+static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t start, uint16_t length)
+{
+  //Need to handle serial buffer being full. This is just for testing
+  while (start < length && Serial.availableForWrite()!=0)
+  {
+    Serial.write(buffer[start]);
+    start++;
+  }
+
+  if (start==length)
+  {
+    serialWrite(CRC32_serial.crc32(buffer, length));
+  }
+
+  return start;
+}
+
+static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t length)
+{
+  serialWrite(length);
+  return sendBufferAndCrc(buffer, 0, length);
+}
+
 // ====================================== End Internal Functions =============================
 
 
@@ -168,69 +191,23 @@ void parseSerial(void)
 
 void sendSerialReturnCode(byte returnCode)
 {
-  Serial.write((uint8_t)0);
-  Serial.write((uint8_t)1); //Size is always 1
-
-  Serial.write(returnCode);
-
-  //Calculate and send CRC
-  serialWrite(CRC32_serial.crc32(&returnCode, 1));
+  sendBufferAndCrc(&returnCode, sizeof(returnCode));
 }
 
-void sendSerialPayload(void *payload, uint16_t payloadLength)
+void sendSerialPayload(uint16_t payloadLength)
 {
   //Start new transmission session
-  serialBytesTransmitted = 0; 
-  serialWriteInProgress = false;
-
-  serialWrite(payloadLength);
-
-  //Need to handle serial buffer being full. This is just for testing
-  serialPayloadLength = payloadLength; //Save the payload length in case we need to transmit in multiple steps
-  for(uint16_t i = 0; i < payloadLength; i++)
-  {
-    Serial.write(((uint8_t*)payload)[i]);
-    serialBytesTransmitted++;
-
-    if(Serial.availableForWrite() == 0)
-    {
-      //Serial buffer is full. Need to wait for it to be free
-      serialWriteInProgress = true;
-      break;
-    }
-  }
-
-  if(serialWriteInProgress == false)
-  {
-    //All data transmitted. Send the CRC
-    serialWrite(CRC32_serial.crc32((uint8_t*)payload, payloadLength));
-  }
+  serialPayloadLength = payloadLength;
+  serialBytesTransmitted = sendBufferAndCrc(serialPayload, payloadLength);
+  serialWriteInProgress = serialBytesTransmitted!=payloadLength;
 }
 
 void continueSerialTransmission(void)
 {
   if(serialWriteInProgress == true)
   {
-    serialWriteInProgress = false; //Assume we will reach the end of the serial buffer. If we run out of buffer, this will be set to true below
-    //Serial buffer is free. Continue sending the data
-    for(uint16_t i = serialBytesTransmitted; i < serialPayloadLength; i++)
-    {
-      Serial.write(serialPayload[i]);
-      serialBytesTransmitted++;
-
-      if(Serial.availableForWrite() == 0)
-      {
-        //Serial buffer is full. Need to wait for it to be free
-        serialWriteInProgress = true;
-        break;
-      }
-    }
-
-    if(serialWriteInProgress == false)
-    {
-      //All data transmitted. Send the CRC
-      serialWrite(CRC32_serial.crc32(serialPayload, serialPayloadLength));
-    }
+    serialBytesTransmitted = sendBufferAndCrc(serialPayload, serialBytesTransmitted, serialPayloadLength);
+    serialWriteInProgress = serialBytesTransmitted!=serialPayloadLength;
   }
 }
 
@@ -255,27 +232,22 @@ void processSerialCommand(void)
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
     {
-      uint8_t tempPayload[] = {SERIAL_RC_OK, currentStatus.secl};
-      sendSerialPayload(&tempPayload, 2);
+      const uint8_t tempPayload[] = { SERIAL_RC_OK, currentStatus.secl };
+      sendBufferAndCrc( tempPayload, sizeof(tempPayload) );
       break;
     }
 
     case 'd': // Send a CRC32 hash of a given page
     {
       uint32_t CRC32_val = calculatePageCRC32( serialPayload[2] );
-      uint8_t payloadCRC32[5];
-      
-      //First byte is the flag
-      payloadCRC32[0] = SERIAL_RC_OK;
-
-      //Split the 4 bytes of the CRC32 value into individual bytes and send
-      payloadCRC32[1] =  ((CRC32_val >> 24) & 255);
-      payloadCRC32[2] = ((CRC32_val >> 16) & 255);
-      payloadCRC32[3] = ((CRC32_val >> 8) & 255);
-      payloadCRC32[4] = (CRC32_val & 255);
-      
-      sendSerialPayload( &payloadCRC32, 5);
-
+      const byte payloadCRC32[] = {
+        SERIAL_RC_OK, 
+        (byte)((CRC32_val >> 24) & 255),
+        (byte)((CRC32_val >> 16) & 255),
+        (byte)((CRC32_val >> 8) & 255),
+        (byte)(CRC32_val & 255)
+      };
+      sendBufferAndCrc( payloadCRC32, sizeof(payloadCRC32) );
       break;
     }
 
@@ -309,8 +281,8 @@ void processSerialCommand(void)
 
     case 'F': // send serial protocol version
     {
-      byte serialVersion[] = {SERIAL_RC_OK, '0', '0', '2'};
-      sendSerialPayload(&serialVersion, 4);
+      const byte serialVersion[] = {SERIAL_RC_OK, '0', '0', '2'};
+      sendBufferAndCrc(serialVersion, sizeof(serialVersion));
       break;
     }
 
@@ -345,8 +317,8 @@ void processSerialCommand(void)
 
     case 'I': // send CAN ID
     {
-      byte serialVersion[] = {SERIAL_RC_OK, 0};
-      sendSerialPayload(&serialVersion, 2);
+      const byte serialVersion[] = {SERIAL_RC_OK, 0};
+      sendBufferAndCrc( serialVersion, sizeof(serialVersion));
       break;
     }
 
@@ -387,8 +359,7 @@ void processSerialCommand(void)
       serialPayload[2] = ((CRC32_val >> 16) & 255);
       serialPayload[3] = ((CRC32_val >> 8) & 255);
       serialPayload[4] = (CRC32_val & 255);
-      sendSerialPayload( &serialPayload, 5);
-
+      sendSerialPayload(5);
       break;
     }
 
@@ -456,7 +427,7 @@ void processSerialCommand(void)
       {
         serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
       }
-      sendSerialPayload(&serialPayload, (length + 1));
+      sendSerialPayload(length + 1);
       break;
     }
 
@@ -464,7 +435,7 @@ void processSerialCommand(void)
     {
       char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
       //char productString[] = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','0','7'} ; //Note no null terminator in array and statu variable at the start
-      sendSerialPayload(&productString, sizeof(productString));
+      sendBufferAndCrc( (const byte *)productString, sizeof(productString) );
       break;
     }
 
@@ -481,7 +452,7 @@ void processSerialCommand(void)
       if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {
         generateLiveValues(offset, length);
-        sendSerialPayload(&serialPayload, (length + 1));
+        sendSerialPayload(length + 1);
       }
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
@@ -495,7 +466,7 @@ void processSerialCommand(void)
         serialPayload[6] = rtc_getMonth(); //Month
         serialPayload[7] = highByte(rtc_getYear()); //Year
         serialPayload[8] = lowByte(rtc_getYear()); //Year
-        sendSerialPayload(&serialPayload, 9);
+        sendSerialPayload(9);
 
       }
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
@@ -542,7 +513,7 @@ void processSerialCommand(void)
           serialPayload[15] = 0;
           serialPayload[16] = 0;
 
-          sendSerialPayload(&serialPayload, 17);
+          sendSerialPayload(17);
 
         }
         else if((SD_arg1 == SD_READ_DIR_ARG1) && (SD_arg2 == SD_READ_DIR_ARG2))
@@ -564,7 +535,7 @@ void processSerialCommand(void)
           //Serial.print("Index:");
           //Serial.print(payloadIndex);
 
-          sendSerialPayload(&serialPayload, (payloadIndex + 2));
+          sendSerialPayload(payloadIndex + 2);
 
         }
 
@@ -596,7 +567,7 @@ void processSerialCommand(void)
           else
           {
             readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
-            sendSerialPayload(&serialPayload, (numSectorsToSend * SD_SECTOR_SIZE + 3));
+            sendSerialPayload(numSectorsToSend * SD_SECTOR_SIZE + 3);
           }
         }
       }
@@ -614,11 +585,10 @@ void processSerialCommand(void)
     {
       byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '1', '0', '-', 'd', 'e', 'v'};
       //byte productString[] = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '0', '7'};
-      sendSerialPayload(&productString, sizeof(productString));
+      sendBufferAndCrc( productString, sizeof(productString) );
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
     }
-      
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
@@ -649,7 +619,6 @@ void processSerialCommand(void)
           {
             ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
             pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
-
           }
 
           //Update the CRC
