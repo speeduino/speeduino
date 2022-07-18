@@ -20,7 +20,6 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms_legacy.h"
 #include "src/FastCRC/FastCRC.h"
-#include "table3d_axis_io.h"
 #include <avr/pgmspace.h>
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
@@ -814,31 +813,6 @@ void processSerialCommand(void)
       sendSerialReturnCode(SERIAL_RC_UKWN_ERR);
       break;
   }
-}
-
-namespace 
-{
-
-  inline void send_table_values(table_value_iterator it)
-  {
-    while (!it.at_end())
-    {
-      auto row = *it;
-      Serial.write(&*row, row.size());
-      ++it;
-    }
-  }
-
-  inline void send_table_axis(table_axis_iterator it)
-  {
-    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
-    while (!it.at_end())
-    {
-      Serial.write(pConverter->to_byte(*it));
-      ++it;
-    }
-  }
-
 }
 
 /** 
