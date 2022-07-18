@@ -37,8 +37,6 @@ byte inProgressOffset;
 byte inProgressLength;
 uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
-bool toothLogSendInProgress = false;
-bool compositeLogSendInProgress = false;
 bool legacySerial = false;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -168,57 +166,21 @@ void legacySerialCommand(void)
     }
 
     case 'H': //Start the tooth logger
-      currentStatus.toothLogEnabled = true;
-      currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-
-      //Disconnect the standard interrupt and add the logger version
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
-
+      startToothLogger();
       Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'h': //Stop the tooth logger
-      currentStatus.toothLogEnabled = false;
-
-      //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      stopToothLogger();
       break;
 
     case 'J': //Start the composite logger
-      currentStatus.compositeLogEnabled = true;
-      currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-
-      //Disconnect the standard interrupt and add the logger version
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
-
+      startCompositeLogger();
       Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
     case 'j': //Stop the composite logger
-      currentStatus.compositeLogEnabled = false;
-
-      //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      stopCompositeLogger();
       break;
 
     case 'L': // List the contents of current page in human readable form

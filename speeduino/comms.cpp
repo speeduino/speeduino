@@ -330,31 +330,12 @@ void processSerialCommand(void)
       break;
 
     case 'H': //Start the tooth logger
-      currentStatus.toothLogEnabled = true;
-      currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
-      toothLogSendInProgress = false;
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-
-      //Disconnect the standard interrupt and add the logger version
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
-
+      startToothLogger();
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
     case 'h': //Stop the tooth logger
-      currentStatus.toothLogEnabled = false;
-
-      //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      stopToothLogger();
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
@@ -363,30 +344,12 @@ void processSerialCommand(void)
       break;
 
     case 'J': //Start the composite logger
-      currentStatus.compositeLogEnabled = true;
-      currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      toothHistoryIndex = 0;
-
-      //Disconnect the standard interrupt and add the logger version
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
-
+      startCompositeLogger();
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 
     case 'j': //Stop the composite logger
-      currentStatus.compositeLogEnabled = false;
-
-      //Disconnect the logger interrupts and attach the normal ones
-      detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
-
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      stopCompositeLogger();
       sendSerialReturnCode(SERIAL_RC_OK);
       break;
 

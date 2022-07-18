@@ -26,8 +26,6 @@ extern byte inProgressLength;
 extern bool legacySerial;
 extern uint32_t inProgressCompositeTime;
 extern bool serialInProgress;
-extern bool toothLogSendInProgress;
-extern bool compositeLogSendInProgress;
 
 void legacySerialCommand(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);

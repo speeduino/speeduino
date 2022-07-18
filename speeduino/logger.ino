@@ -2,6 +2,9 @@
 #include "logger.h"
 #include "errors.h"
 
+bool toothLogSendInProgress = false;
+bool compositeLogSendInProgress = false;
+
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
  * Notes on fields:
@@ -360,4 +363,59 @@ bool is2ByteEntry(uint8_t key)
   }
 
   return isFound;
+}
+
+void startToothLogger()
+{
+  currentStatus.toothLogEnabled = true;
+  currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+  toothLogSendInProgress = false;
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );  
+}
+
+void stopToothLogger()
+{
+  currentStatus.toothLogEnabled = false;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );  
+}
+
+void startCompositeLogger()
+{
+  currentStatus.compositeLogEnabled = true;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+}
+
+void stopCompositeLogger()
+{
+  currentStatus.compositeLogEnabled = false;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
 }
