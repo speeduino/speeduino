@@ -227,6 +227,41 @@ static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
   }
 }
 
+static uint16_t toTemperature(byte lo, byte hi)
+{
+  int16_t tempValue = (int16_t)(word(hi, lo)); //Combine the 2 bytes into a single, signed 16-bit value
+  tempValue = tempValue / 10; //TS sends values multiplied by 10 so divide back to whole degrees. 
+  tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
+  //Apply the temp offset and check that it results in all values being positive
+  return max( tempValue + CALIBRATION_TEMPERATURE_OFFSET, 0 );
+}
+
+static void updateTmpCalibration(uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
+{
+  // Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
+  for (uint16_t x = 0; x < 32; x++)
+  {
+    values[x] = toTemperature(serialPayload[(2 * x) + 7], serialPayload[(2 * x) + 8]);
+    bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
+  }
+  storeCalibrationCRC32(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+  writeCalibrationPage(calibrationPage);
+}
+
+void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
+{
+  //Temperature calibrations are sent as 32 16-bit values
+  if(calibrationLength == 64)
+  {
+    updateTmpCalibration(calibrationPage, values, bins);
+    sendSerialReturnCode(SERIAL_RC_OK);
+  }
+  else 
+  { 
+    sendSerialReturnCode(SERIAL_RC_RANGE_ERR); 
+  }
+}
+
 // ====================================== End Internal Functions =============================
 
 
@@ -615,7 +650,6 @@ void processSerialCommand(void)
       uint8_t cmd = serialPayload[2];
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
-      uint32_t calibrationCRC = 0;
 
       if(cmd == O2_CALIBRATION_PAGE)
       {
@@ -625,66 +659,11 @@ void processSerialCommand(void)
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
-        void* pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-
-        //Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
-        if(calibrationLength == 64)
-        {
-          for (uint16_t x = 0; x < 32; x++)
-          {
-            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
-            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-            
-            //Apply the temp offset and check that it results in all values being positive
-            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
-            if (tempValue < 0) { tempValue = 0; }
-
-            
-            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
-          }
-          //Update the CRC
-          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          storeCalibrationCRC32(IAT_CALIBRATION_PAGE, calibrationCRC);
-
-          writeCalibration();
-          sendSerialReturnCode(SERIAL_RC_OK);
-        }
-        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
-        
+        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibration_values, iatCalibration_bins);
       }
       else if(cmd == CLT_CALIBRATION_PAGE)
       {
-        void* pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-
-        //Temperature calibrations are sent as 32 16-bit values
-        if(calibrationLength == 64)
-        {
-          for (uint16_t x = 0; x < 32; x++)
-          {
-            int16_t tempValue = (int16_t)(word(serialPayload[((2 * x) + 8)], serialPayload[((2 * x) + 7)])); //Combine the 2 bytes into a single, signed 16-bit value
-            tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
-            tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-            
-            //Apply the temp offset and check that it results in all values being positive
-            tempValue = tempValue + CALIBRATION_TEMPERATURE_OFFSET;
-            if (tempValue < 0) { tempValue = 0; }
-
-            
-            ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
-          }
-          //Update the CRC
-          calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
-          storeCalibrationCRC32(CLT_CALIBRATION_PAGE, calibrationCRC);
-
-          writeCalibration();
-          sendSerialReturnCode(SERIAL_RC_OK);
-        }
-        else { sendSerialReturnCode(SERIAL_RC_RANGE_ERR); }
+        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibration_values, cltCalibration_bins);
       }
       else
       {
