@@ -187,6 +187,46 @@ static void sendSerialPayload(uint16_t payloadLength)
   serialWriteInProgress = serialBytesTransmitted!=payloadLength;
 }
 
+static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
+{
+  // First pass through the loop, we need to INITIALIZE the CRC
+  pCrcCalc pCrcFun = offset==0 ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
+  uint32_t calibrationCRC = 0;
+//Check if this is the final chunk of calibration data
+#ifdef CORE_STM32
+  //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
+  bool finalBlock = offset == (64*15);
+#else
+  bool finalBlock = offset == (256*3);
+#endif
+
+  //Read through the current chunk (Should be 256 bytes long)
+  // Note there are 2 loops here: 
+  //    [x, calibrationLength)
+  //    [offset, offset+calibrationLength)
+  for(uint16_t x = 0; x < calibrationLength; ++x, ++offset)
+  {
+    //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
+    //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
+    if( (x % 32) == 0 )
+    {
+      o2Calibration_values[offset/32] = serialPayload[x+7]; //O2 table stores 8 bit values
+      o2Calibration_bins[offset/32]   = offset;
+    }
+
+    //Update the CRC
+    calibrationCRC = (CRC32_serial.*pCrcFun)(&serialPayload[x+7], 1, false);
+    // Subsequent passes through the loop, we need to UPDATE the CRC
+    pCrcFun = &FastCRC32::crc32_upd;
+  }
+
+  if(finalBlock) 
+  {
+    storeCalibrationCRC32(O2_CALIBRATION_PAGE, ~calibrationCRC);
+    writeCalibrationPage(O2_CALIBRATION_PAGE);
+  }
+}
+
 // ====================================== End Internal Functions =============================
 
 
@@ -573,55 +613,15 @@ void processSerialCommand(void)
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
     {
       uint8_t cmd = serialPayload[2];
-      uint16_t valueOffset = word(serialPayload[3], serialPayload[4]);
+      uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
       uint32_t calibrationCRC = 0;
 
       if(cmd == O2_CALIBRATION_PAGE)
       {
-        //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
-        //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
-        void* pnt_TargetTable_values = (uint8_t *)&o2Calibration_values; //Pointer that will be used to point to the required target table values
-        uint16_t* pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins; //Pointer that will be used to point to the required target table bins
-
-        //Read through the current chunk (Should be 256 bytes long)
-        for(uint16_t x = 0; x < calibrationLength; x++)
-        {
-          uint16_t totalOffset = valueOffset + x;
-          //Only apply every 32nd value
-          if( (x % 32) == 0 )
-          {
-            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/32)] = serialPayload[x+7]; //O2 table stores 8 bit values
-            pnt_TargetTable_bins[(totalOffset/32)] = (totalOffset);
-          }
-
-          //Update the CRC
-          if(totalOffset == 0)
-          {
-            calibrationCRC = CRC32.crc32(&serialPayload[7], 1, false);
-          }
-          else
-          {
-            calibrationCRC = CRC32.crc32_upd(&serialPayload[x+7], 1, false);
-          }
-          //Check if CRC is finished
-          if(totalOffset == 1023) 
-          {
-            //apply CRC reflection
-            calibrationCRC = ~calibrationCRC;
-            storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
-          }
-        }
+        loadO2Calibration(calibrationLength, offset);
         sendSerialReturnCode(SERIAL_RC_OK);
         Serial.flush(); //This is safe because engine is assumed to not be running during calibration
-
-        //Check if this is the final chunk of calibration data
-        #ifdef CORE_STM32
-          //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
-          if(valueOffset == (64*15)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
-        #else
-          if(valueOffset == (256*3)) { writeCalibrationPage(cmd); } //Store received values in EEPROM if this is the final chunk of calibration
-        #endif
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
