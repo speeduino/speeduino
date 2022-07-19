@@ -74,13 +74,21 @@ static uint32_t readSerial32()
 
 static inline uint32_t reverse_bytes(uint32_t i)
 {
-  union {uint32_t i; unsigned char b[4];} a,b;
+  union {uint32_t i; unsigned char b[sizeof(i)];} a,b;
   a.i=i;
   b.b[0]=a.b[3];
   b.b[1]=a.b[2];
   b.b[2]=a.b[1];
   b.b[3]=a.b[0];
   return b.i;
+}
+
+// Serial.write is blocking - it will wait for the buffer to clear
+// We don't want that in some cases.
+static uint16_t writeNonBlocking(const byte *buffer, size_t length)
+{
+  size_t capacity = min((size_t)Serial.availableForWrite(), length);
+  return Serial.write(buffer, capacity);
 }
 
 static void serialWrite(uint32_t value)
@@ -103,13 +111,8 @@ static void serialWrite(uint16_t value)
 
 static uint16_t sendBufferAndCrc(const byte *buffer, size_t start, size_t length)
 {
-  //Need to handle serial buffer being full. This is just for testing
-  while (start < length && Serial.availableForWrite()!=0)
-  {
-    Serial.write(buffer[start]);
-    start++;
-  }
-
+  start = start + writeNonBlocking(buffer+start, length-start);
+  
   if (start==length)
   {
     serialWrite(CRC32_serial.crc32(buffer, length));
@@ -889,16 +892,12 @@ void sendCompositeLog(uint8_t startOffset)
 {
   if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
   {
-    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     uint32_t CRC32_val = 0;
     if(startOffset == 0)
     { 
-      inProgressCompositeTime = 0; 
-
       //Transmit the size of the packet
-      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 5) + 1; //Size of the tooth log (1x uint32_t + 1x uint8_t values) plus the return code
-      serialWrite(totalPayloadLength);
-
+      serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1)); //Size of the tooth log (uint32_t values) plus the return code
+      
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
       CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
@@ -906,10 +905,11 @@ void sendCompositeLog(uint8_t startOffset)
       //Send the return code
       Serial.write(returnCode);
     }
-    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+
+    for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; x++)
     {
       //Check whether the tx buffer still has space
-      if(Serial.availableForWrite() < 5) 
+      if((uint16_t)Serial.availableForWrite() < sizeof(toothHistory[x])+sizeof(compositeLogHistory[x])) 
       { 
         //tx buffer is full. Store the current state so it can be resumed later
         inProgressOffset = x;
@@ -918,36 +918,16 @@ void sendCompositeLog(uint8_t startOffset)
         return;
       }
 
-      inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record
-      uint8_t inProgressCompositeTime_1 = (inProgressCompositeTime >> 24) & 255;
-      uint8_t inProgressCompositeTime_2 = (inProgressCompositeTime >> 16) & 255;
-      uint8_t inProgressCompositeTime_3 = (inProgressCompositeTime >> 8) & 255;
-      uint8_t inProgressCompositeTime_4 = (inProgressCompositeTime) & 255;
-
-      //Transmit the tooth time
-      Serial.write(inProgressCompositeTime_1);
-      Serial.write(inProgressCompositeTime_2);
-      Serial.write(inProgressCompositeTime_3);
-      Serial.write(inProgressCompositeTime_4);
-
-      //Update the CRC
-      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_1, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_2, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_3, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&inProgressCompositeTime_4, 1, false);
+      serialWriteUpdateCrc(toothHistory[x]); //This combined runtime (in us) that the log was going for by this record
 
       //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-      uint8_t statusByte = compositeLogHistory[x];
-      Serial.write(statusByte);
-
-      //Update the CRC with the status byte
-      CRC32_val = CRC32_serial.crc32_upd(&statusByte, 1, false);
+      Serial.write(compositeLogHistory[x]);
+      CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[x], sizeof(compositeLogHistory[x]), false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
     cmdPending = false;
     compositeLogSendInProgress = false;
-    inProgressCompositeTime = 0;
 
     //Apply the CRC reflection
     CRC32_val = ~CRC32_val;
