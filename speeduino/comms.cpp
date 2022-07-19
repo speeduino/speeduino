@@ -72,12 +72,27 @@ static uint32_t readSerial32()
   return  (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
 }
 
+static inline uint32_t reverse_bytes(uint32_t i)
+{
+  union {uint32_t i; unsigned char b[4];} a,b;
+  a.i=i;
+  b.b[0]=a.b[3];
+  b.b[1]=a.b[2];
+  b.b[2]=a.b[1];
+  b.b[3]=a.b[0];
+  return b.i;
+}
+
 static void serialWrite(uint32_t value)
 {
-  Serial.write( (value >> 24) & 255 );
-  Serial.write( (value >> 16) & 255 );
-  Serial.write( (value >> 8) & 255 );
-  Serial.write(  value & 255 );
+  value = reverse_bytes(value);
+  Serial.write((const byte*)&value, sizeof(value));
+}
+static uint32_t serialWriteUpdateCrc(uint32_t value)
+{
+  value = reverse_bytes(value);
+  Serial.write((const byte*)&value, sizeof(value));
+  return CRC32_serial.crc32_upd((const byte*)&value, sizeof(value), false);
 }
 
 static void serialWrite(uint16_t value)
@@ -827,9 +842,7 @@ void sendToothLog(uint8_t startOffset)
     if(startOffset == 0)
     {
       //Transmit the size of the packet
-      uint16_t totalPayloadLength = (TOOTH_LOG_SIZE * 4) + 1; //Size of the tooth log (uint32_t values) plus the return code
-      serialWrite(totalPayloadLength);
-
+      serialWrite((uint16_t)(sizeof(toothHistory) + 1)); //Size of the tooth log (uint32_t values) plus the return code
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
       CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
@@ -838,7 +851,7 @@ void sendToothLog(uint8_t startOffset)
       Serial.write(returnCode);
     }
     
-    for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
+    for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; x++)
     {
       //Check whether the tx buffer still has space
       if(Serial.availableForWrite() < 4) 
@@ -851,21 +864,7 @@ void sendToothLog(uint8_t startOffset)
       }
 
       //Transmit the tooth time
-      uint32_t tempToothHistory = toothHistory[x];
-      uint8_t toothHistory_1 = ((tempToothHistory >> 24) & 255);
-      uint8_t toothHistory_2 = ((tempToothHistory >> 16) & 255);
-      uint8_t toothHistory_3 = ((tempToothHistory >> 8) & 255);
-      uint8_t toothHistory_4 = ((tempToothHistory) & 255);
-      Serial.write(toothHistory_1);
-      Serial.write(toothHistory_2);
-      Serial.write(toothHistory_3);
-      Serial.write(toothHistory_4);
-
-      //Update the CRC
-      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_1, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_2, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_3, 1, false);
-      CRC32_val = CRC32_serial.crc32_upd(&toothHistory_4, 1, false);
+      CRC32_val = serialWriteUpdateCrc(toothHistory[x]);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     cmdPending = false;
