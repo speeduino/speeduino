@@ -31,7 +31,6 @@ A full copy of the license may be found in the projects root directory
 bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 bool serialWriteInProgress = false;
 
-
 constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
 constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
@@ -51,6 +50,12 @@ static FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on t
   static uint32_t SDreadCompletedSectors = 0;
 #else
   static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
+#endif
+
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// These minimize RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
 #endif
 
 // ====================================== Internal Functions =============================
@@ -915,3 +920,7 @@ void sendCompositeLog(uint8_t startOffset)
     logSendStatusFlag = LOG_SEND_NONE;
   } 
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
