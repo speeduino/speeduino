@@ -33,6 +33,8 @@
 #define DECODER_WEBER             19
 #define DECODER_ST170             20
 #define DECODER_DRZ400            21
+#define DECODER_NGC               22
+#define DECODER_VMAX              23
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
@@ -188,6 +190,12 @@ void triggerSetEndTeeth_FordST170();
 void triggerSetup_DRZ400();
 void triggerSec_DRZ400();
 
+void triggerSetup_NGC();
+void triggerPri_NGC();
+void triggerSec_NGC4();
+void triggerSec_NGC68();
+uint16_t getRPM_NGC();
+void triggerSetEndTeeth_NGC();
 
 extern void (*triggerHandler)(); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -205,10 +213,9 @@ extern volatile unsigned long curTime3;
 extern volatile unsigned long curGap3;
 extern volatile unsigned long lastGap;
 extern volatile unsigned long targetGap;
-extern volatile unsigned long compositeLastToothTime;
 
 extern unsigned long MAX_STALL_TIME; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
-extern volatile uint16_t toothCurrentCount; //The current number of teeth (Onec sync has been achieved, this can never actually be 0
+extern volatile uint16_t toothCurrentCount; //The current number of teeth (Once sync has been achieved, this can never actually be 0
 extern volatile byte toothSystemCount; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 extern volatile unsigned long toothSystemLastToothTime; //As below, but used for decoders where not every tooth count is used for calculation
 extern volatile unsigned long toothLastToothTime; //The time (micros()) that the last tooth was registered

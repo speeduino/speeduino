@@ -3,7 +3,7 @@
  * @author Josh Stewart
  * 
  * This file contains the main system loop of the Speeduino core and thus much of the logic of the fuel and ignition algorithms is contained within this
- * It is where calls to all the auxilliary control systems, sensor reads, comms etc are made
+ * It is where calls to all the auxiliary control systems, sensor reads, comms etc are made
  * 
  * It also contains the setup() function that is called by the bootloader on system startup
  * 
@@ -38,7 +38,6 @@ extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set wit
 extern bool ignitionOn; /**< The current state of the ignition system (on or off) */
 extern bool fuelOn; /**< The current state of the fuel system (on or off) */
 
-extern byte maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 extern byte curRollingCut; /**< Rolling rev limiter, current ignition channel being cut */
 extern byte rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */
 extern uint32_t rollingCutLastRev; /**< Tracks whether we're on the same or a different rev for the rolling cut */

@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "errors.h"
 #include "corrections.h"
 #include "pages.h"
+#include "decoders.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
@@ -24,7 +25,7 @@ void initialiseADC()
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 
   #if defined(ANALOG_ISR)
-    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
+    //This sets the ADC (Analog to Digital Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
     //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
     //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers
@@ -49,7 +50,7 @@ void initialiseADC()
     BIT_SET(ADCSRA,ADSC); //Start conversion
 
   #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
+    //This sets the ADC (Analog to Digital Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
     //Please see chapter 11 of 'Practical Arduino' (books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more detail
      BIT_SET(ADCSRA,ADPS2);
@@ -78,7 +79,7 @@ void initialiseADC()
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
     {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-      byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+      byte pinNumber = pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63);
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
@@ -95,8 +96,8 @@ void initialiseADC()
     else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
-    {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) wih &12 and caninput_selxa(bits 0:1) with &3
-       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+    {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
+       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&63) + 1;
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
@@ -116,14 +117,14 @@ void initialiseADC()
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS > 240) { configPage4.ADCFILTER_TPS = 50; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_CLT > 240) { configPage4.ADCFILTER_CLT = 180; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_IAT > 240) { configPage4.ADCFILTER_IAT = 180; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_O2  > 240) { configPage4.ADCFILTER_O2 = 100; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BAT > 240) { configPage4.ADCFILTER_BAT = 128; writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_MAP > 240) { configPage4.ADCFILTER_MAP = 20;  writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO = 64; writeConfig(ignSetPage); }
-  if(configPage4.FILTER_FLEX > 240)   { configPage4.FILTER_FLEX = 75; writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_TPS  > 240) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_CLT  > 240) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_IAT  > 240) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_O2   > 240) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BAT  > 240) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_MAP  > 240) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BARO > 240) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
+  if(configPage4.FILTER_FLEX    > 240) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
 
   flexStartTime = micros();
 
@@ -214,7 +215,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -251,7 +252,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Reaching here means that the last cycle has completed and the MAP value should be calculated
           //Sanity check
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
@@ -313,7 +314,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Reaching here means that the last cycle has completed and the MAP value should be calculated
 
           //Update the calculation times and last value. These are used by the MAP based Accel enrich
           MAPlast = currentStatus.MAP;
@@ -337,7 +338,7 @@ static inline void readMAP()
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
@@ -359,7 +360,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the  next ignition event has occured and the MAP value should be calculated
+          //Reaching here means that the  next ignition event has occurred and the MAP value should be calculated
           //Sanity check
           if( (MAPrunningValue != 0) && (MAPcount != 0) && (MAPcurRev < ignitionCount) )
           {
@@ -396,8 +397,7 @@ static inline void readMAP()
 
 void readTPS(bool useFilter)
 {
-  TPSlast = currentStatus.TPS;
-  TPSlast_time = TPS_time;
+  currentStatus.TPSlast = currentStatus.TPS;
   #if defined(ANALOG_ISR)
     byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
@@ -407,7 +407,6 @@ void readTPS(bool useFilter)
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
   if(useFilter == true) { currentStatus.tpsADC = ADC_FILTER(tempTPS, configPage4.ADCFILTER_TPS, currentStatus.tpsADC); }
   else { currentStatus.tpsADC = tempTPS; }
-  //currentStatus.tpsADC = ADC_FILTER(tempTPS, 128, currentStatus.tpsADC);
   byte tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
@@ -415,7 +414,7 @@ void readTPS(bool useFilter)
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
     if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
     else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 100); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
   {
@@ -429,7 +428,7 @@ void readTPS(bool useFilter)
     //All checks below are reversed from the standard case above
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
     else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 100);
+    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
   }
 
   //Check whether the closed throttle position sensor is active
@@ -439,7 +438,6 @@ void readTPS(bool useFilter)
     else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = 0; }
-  TPS_time = micros();
 }
 
 void readCLT(bool useFilter)
@@ -486,9 +484,41 @@ void readBaro()
       tempReading = analogRead(pinBaro);
     #endif
 
-    currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); //Very weak filter
+    if(initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
+    else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
+  }
+  else
+  {
+    /*
+    * If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
+    * 1. Verify that the engine is not running
+    * 2. Verify that the reading from the MAP sensor is within the possible physical limits
+    */
+
+    //Attempt to use the last known good baro reading from EEPROM as a starting point
+    byte lastBaro = readLastBaro();
+    if ((lastBaro >= BARO_MIN) && (lastBaro <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+    { currentStatus.baro = lastBaro; } //last baro correction
+    else { currentStatus.baro = 100; } //Fall back position.
+
+    //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
+    unsigned long timeToLastTooth = (micros() - toothLastToothTime);
+    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    {
+      instanteneousMAPReading(); //Get the current MAP value
+      /* 
+      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+      * with record highs close to 108.5 kPa.
+      * The lowest possible baro reading is based on an altitude of 3500m above sea level.
+      */
+      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Safety check to ensure the baro reading is within the physical limits
+      {
+        currentStatus.baro = currentStatus.MAP;
+        storeLastBaro(currentStatus.baro);
+      }
+    }
   }
 }
 
@@ -552,10 +582,10 @@ void readBat()
 
   //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
   //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
-  //Should that happen, we retrigger the fuel pump priming and idle homing (If using a stepper)
+  //Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
   if( (currentStatus.battery10 < 55) && (tempReading > 70) && (currentStatus.RPM == 0) )
   {
-    //Reprime the fuel pump
+    //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
     fpPrimed = false;
     FUEL_PUMP_ON();
@@ -613,8 +643,12 @@ uint16_t getSpeed()
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
-    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+    if ( (micros() - vssTimes[0]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop
+    else 
+      {
+        tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+        tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
+      }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
 
   }
@@ -629,7 +663,7 @@ byte getGear()
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
@@ -654,7 +688,7 @@ byte getFuelPressure()
     tempReading = analogRead(pinFuelPressure);
 
     tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
-    tempFuelPressure = ADC_FILTER(tempFuelPressure, 150, currentStatus.fuelPressure); //Apply speed smoothing factor
+    tempFuelPressure = ADC_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
     //Sanity checks
     if(tempFuelPressure > configPage10.fuelPressureMax) { tempFuelPressure = configPage10.fuelPressureMax; }
     if(tempFuelPressure < 0 ) { tempFuelPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.
@@ -676,7 +710,7 @@ byte getOilPressure()
 
 
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
-    tempOilPressure = ADC_FILTER(tempOilPressure, 150, currentStatus.oilPressure); //Apply speed smoothing factor
+    tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
     //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
     if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.

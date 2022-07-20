@@ -4,16 +4,18 @@
 #include "Arduino.h"
 
 // The following are alpha values for the ADC filters.
-// Their values are from 0 to 255 with 0 being no filtering and 255 being maximum
-/*
-#define ADCFILTER_TPS  128
-#define ADCFILTER_CLT  180
-#define ADCFILTER_IAT  180
-#define ADCFILTER_O2   128
-#define ADCFILTER_BAT  128
-#define ADCFILTER_MAP   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
-#define ADCFILTER_BARO  64
-*/
+// Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
+#define ADCFILTER_TPS_DEFAULT   50
+#define ADCFILTER_CLT_DEFAULT  180
+#define ADCFILTER_IAT_DEFAULT  180
+#define ADCFILTER_O2_DEFAULT   128
+#define ADCFILTER_BAT_DEFAULT  128
+#define ADCFILTER_MAP_DEFAULT   20 //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+#define ADCFILTER_BARO_DEFAULT  64
+
+#define ADCFILTER_PSI_DEFAULT  150 //not currently configurable at runtime, used for misc pressure sensors, oil, fuel, etc.
+
+#define FILTER_FLEX_DEFAULT     75
 
 #define BARO_MIN      65
 #define BARO_MAX      108
@@ -24,7 +26,7 @@
 #define VSS_GEAR_HYSTERESIS 10
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
-#define TPS_READ_FREQUENCY  15 //ONLY VALID VALUES ARE 15 or 30!!!
+#define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
 /*
 #if defined(CORE_AVR)
@@ -50,10 +52,7 @@ unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
-byte TPSlast; /**< The previous TPS reading */
-unsigned long TPS_time; //The time the TPS sample was taken
-unsigned long TPSlast_time; //The time the previous TPS sample was taken
-byte MAPlast; /**< The previous MAP reading */
+uint16_t MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssTimes[VSS_SAMPLES] = {0};

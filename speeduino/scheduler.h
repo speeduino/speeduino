@@ -20,7 +20,7 @@ This means that the precision of the scheduler is:
 ## Features
 
 This differs from most other schedulers in that its calls are non-recurring (ie when you schedule an event at a certain time and once it has occurred,
-it will not reoccur unless you explicitely ask/re-register for it).
+it will not reoccur unless you explicitly ask/re-register for it).
 Each timer can have only 1 callback associated with it at any given time. If you call the setCallback function a 2nd time,
 the original schedule will be overwritten and not occur.
 
@@ -108,7 +108,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
-//The ARM cores use seprate functions for their ISRs
+//The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
   static inline void fuelSchedule1Interrupt();
   static inline void fuelSchedule2Interrupt();
@@ -158,6 +158,7 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  * - RUNNING - Schedule is currently running
  */
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
+
 /** Ignition schedule.
  */
 struct Schedule {
@@ -170,8 +171,8 @@ struct Schedule {
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  unsigned int nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 };
@@ -186,8 +187,8 @@ struct FuelSchedule {
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
-  unsigned int nextStartCompare;
-  unsigned int nextEndCompare;
+  COMPARE_TYPE nextStartCompare;
+  COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
 };
 
@@ -215,7 +216,7 @@ extern Schedule ignitionSchedule8;
 
 //IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
 
-static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
+static inline COMPARE_TYPE setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
 {
   //Create an array of all the upcoming targets, relative to the current count on the timer
   unsigned int tmpQueue[4];
@@ -253,7 +254,7 @@ static inline unsigned int setQueue(volatile Schedule *queue[], Schedule *schedu
 
 
   //Sort the queues. Both queues are kept in sync.
-  //This implementes a sorting networking based on the Bose-Nelson sorting network
+  //This implements a sorting networking based on the Bose-Nelson sorting network
   //See: pages.ripco.net/~jgamble/nw.html
   #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   /*SWAP(0, 1); */ //Likely not needed
