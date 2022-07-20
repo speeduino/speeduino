@@ -72,7 +72,7 @@ static uint32_t readSerial32()
   return  (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
 }
 
-static inline uint32_t reverse_bytes(uint32_t i)
+static uint32_t reverse_bytes(uint32_t i)
 {
   union {uint32_t i; unsigned char b[sizeof(i)];} a,b;
   a.i=i;
@@ -128,29 +128,6 @@ static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t length)
 }
 
 using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
-
-static void sendBufferAndCrcProgMem(const byte *buffer, uint16_t length)
-{
-  serialWrite(length);
-
-  uint16_t count = 0;
-  // First pass through the loop, we need to INITIALIZE the CRC
-  pCrcCalc pCrcFun = &FastCRC32::crc32;
-  uint32_t crc = 0;
-
-  while (count!=length)
-  {
-    byte value = pgm_read_byte(buffer+count);
-    Serial.write(value);
-    ++count;
-
-    crc =  (CRC32_serial.*pCrcFun)(&value, sizeof(value), false);
-    // Subsequent passes through the loop, we need to UPDATE the CRC
-    pCrcFun = &FastCRC32::crc32_upd;
-  }
-
-  serialWrite(~crc);
-}
 
 static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
 {
@@ -395,20 +372,20 @@ void processSerialCommand(void)
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
-      sendBufferAndCrcProgMem( testCommsResponse, sizeof(testCommsResponse) );
+      memcpy_P(serialPayload, testCommsResponse, sizeof(testCommsResponse) );
+      sendSerialPayload(sizeof(testCommsResponse));
       break;
 
     case 'd': // Send a CRC32 hash of a given page
     {
       uint32_t CRC32_val = calculatePageCRC32( serialPayload[2] );
-      const byte payloadCRC32[] = {
-        SERIAL_RC_OK, 
-        (byte)((CRC32_val >> 24) & 255),
-        (byte)((CRC32_val >> 16) & 255),
-        (byte)((CRC32_val >> 8) & 255),
-        (byte)(CRC32_val & 255)
-      };
-      sendBufferAndCrc( payloadCRC32, sizeof(payloadCRC32) );
+
+      serialPayload[0] = SERIAL_RC_OK;
+      serialPayload[1] = ((CRC32_val >> 24) & 255);
+      serialPayload[2] = ((CRC32_val >> 16) & 255);
+      serialPayload[3] = ((CRC32_val >> 8) & 255);
+      serialPayload[4] = (CRC32_val & 255);
+      sendSerialPayload(5);      
       break;
     }
 
@@ -418,7 +395,8 @@ void processSerialCommand(void)
       break;
 
     case 'F': // send serial protocol version
-      sendBufferAndCrcProgMem(serialVersion, sizeof(serialVersion));
+      memcpy_P(serialPayload, serialVersion, sizeof(serialVersion) );
+      sendSerialPayload(sizeof(serialVersion));
       break;
 
     case 'H': //Start the tooth logger
@@ -432,7 +410,8 @@ void processSerialCommand(void)
       break;
 
     case 'I': // send CAN ID
-      sendBufferAndCrcProgMem( canId, sizeof(canId));
+      memcpy_P(serialPayload, canId, sizeof(canId) );
+      sendSerialPayload(sizeof(serialVersion));
       break;
 
     case 'J': //Start the composite logger
@@ -506,7 +485,8 @@ void processSerialCommand(void)
     }
 
     case 'Q': // send code version
-      sendBufferAndCrcProgMem(codeVersion, sizeof(codeVersion));
+      memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
+      sendSerialPayload(sizeof(codeVersion));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -652,7 +632,8 @@ void processSerialCommand(void)
     }
 
     case 'S': // send code version
-      sendBufferAndCrcProgMem(productString, sizeof(productString));
+      memcpy_P(serialPayload, productString, sizeof(productString) );
+      sendSerialPayload(sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
