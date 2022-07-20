@@ -268,7 +268,6 @@ Comands are single byte (letter symbol) commands.
 */
 void parseSerial(void)
 {
-
   //Check for an existing legacy command in progress
   if(cmdPending == true)
   {
@@ -282,8 +281,7 @@ void parseSerial(void)
 
     //New command received
     //Need at least 2 bytes to read the length of the command
-    serialReceivePending = true; //Flag the serial receive as being in progress
-    byte highByte = Serial.read();
+    byte highByte = (byte)Serial.read();
 
     //Check if the command is legacy using the call/response mechanism
     if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
@@ -297,11 +295,11 @@ void parseSerial(void)
     }
     else
     {
-      while(Serial.available() == 0) { } //Wait for the 2nd byte to be received (This will almost never happen)
+      while(Serial.available() == 0) { /* Wait for the 2nd byte to be received (This will almost never happen) */ }
 
-      byte lowByte = Serial.read();
-      serialPayloadLength = word(highByte, lowByte);
+      serialPayloadLength = word(highByte, Serial.read());
       serialBytesReceived = 2;
+      serialReceivePending = true; //Flag the serial receive as being in progress
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
     }
@@ -312,7 +310,7 @@ void parseSerial(void)
   {
     if (serialBytesReceived < (serialPayloadLength + SERIAL_LEN_SIZE) )
     {
-      serialPayload[(serialBytesReceived - SERIAL_LEN_SIZE)] = Serial.read();
+      serialPayload[serialBytesReceived - SERIAL_LEN_SIZE] = (byte)Serial.read();
       serialBytesReceived++;
     }
     else if (Serial.available() >= SERIAL_CRC_LENGTH)
@@ -360,7 +358,6 @@ void processSerialCommand(void)
   {
 
     case 'A': // send x bytes of realtime values
-      //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
 
@@ -517,7 +514,6 @@ void processSerialCommand(void)
         serialPayload[7] = highByte(rtc_getYear()); //Year
         serialPayload[8] = lowByte(rtc_getYear()); //Year
         sendSerialPayload(9);
-
       }
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
       {
@@ -586,9 +582,7 @@ void processSerialCommand(void)
           //Serial.print(payloadIndex);
 
           sendSerialPayload(payloadIndex + 2);
-
         }
-
       }
       else if(cmd == SD_READFILE_PAGE)
       {
@@ -626,8 +620,7 @@ void processSerialCommand(void)
       {
         //No other r/ commands should be called
       }
-      cmdPending = false;
-    
+      cmdPending = false;    
       break;
     }
 
@@ -640,7 +633,6 @@ void processSerialCommand(void)
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       if(currentStatus.toothLogEnabled == true) { sendToothLog(0); } //Sends tooth log values as ints
       else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(0); }
-
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
