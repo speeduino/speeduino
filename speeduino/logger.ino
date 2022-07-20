@@ -2,8 +2,8 @@
 #include "logger.h"
 #include "errors.h"
 
-bool toothLogSendInProgress = false;
-bool compositeLogSendInProgress = false;
+logSendStatus logSendStatusFlag = LOG_SEND_NONE;
+
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
@@ -369,7 +369,7 @@ void startToothLogger()
 {
   currentStatus.toothLogEnabled = true;
   currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
-  toothLogSendInProgress = false;
+  logSendStatusFlag = LOG_SEND_NONE;
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
 

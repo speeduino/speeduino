@@ -861,7 +861,7 @@ void sendToothLog(uint8_t startOffset)
       { 
         //tx buffer is full. Store the current state so it can be resumed later
         inProgressOffset = x;
-        toothLogSendInProgress = true;
+        logSendStatusFlag = LOG_SEND_TOOTH;
         legacySerial = false;
         return;
       }
@@ -871,7 +871,7 @@ void sendToothLog(uint8_t startOffset)
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     cmdPending = false;
-    toothLogSendInProgress = false;
+    logSendStatusFlag = LOG_SEND_NONE;
     toothHistoryIndex = 0;
 
     //Apply the CRC reflection
@@ -884,13 +884,13 @@ void sendToothLog(uint8_t startOffset)
   { 
     sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
-    toothLogSendInProgress = false;
+    logSendStatusFlag = LOG_SEND_NONE;
   } 
 }
 
 void sendCompositeLog(uint8_t startOffset)
 {
-  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
+  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (logSendStatusFlag == LOG_SEND_COMPOSITE) ) //Sanity check. Flagging system means this should always be true
   {
     uint32_t CRC32_val = 0;
     if(startOffset == 0)
@@ -913,7 +913,7 @@ void sendCompositeLog(uint8_t startOffset)
       { 
         //tx buffer is full. Store the current state so it can be resumed later
         inProgressOffset = x;
-        compositeLogSendInProgress = true;
+        logSendStatusFlag = LOG_SEND_COMPOSITE;
         legacySerial = false;
         return;
       }
@@ -927,7 +927,7 @@ void sendCompositeLog(uint8_t startOffset)
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
     cmdPending = false;
-    compositeLogSendInProgress = false;
+    logSendStatusFlag = LOG_SEND_NONE;
 
     //Apply the CRC reflection
     CRC32_val = ~CRC32_val;
@@ -939,6 +939,6 @@ void sendCompositeLog(uint8_t startOffset)
   { 
     sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
-    compositeLogSendInProgress = false;
+    logSendStatusFlag = LOG_SEND_NONE;
   } 
 }

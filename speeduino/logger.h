@@ -34,8 +34,8 @@ void stopToothLogger();
 void startCompositeLogger();
 void stopCompositeLogger();
 
-extern bool toothLogSendInProgress;
-extern bool compositeLogSendInProgress;
+enum logSendStatus { LOG_SEND_NONE, LOG_SEND_TOOTH, LOG_SEND_COMPOSITE };
+extern logSendStatus logSendStatusFlag;
 
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order

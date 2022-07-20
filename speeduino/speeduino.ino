@@ -126,7 +126,7 @@ void loop(void)
         if(Serial.availableForWrite() > 16) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
       }
       //Perform the same check for the tooth and composite logs
-      if( toothLogSendInProgress == true)
+      if( logSendStatusFlag == LOG_SEND_TOOTH )
       {
         if(Serial.availableForWrite() > 16) 
         { 
@@ -134,7 +134,7 @@ void loop(void)
           else { sendToothLog(inProgressOffset); }
         }
       }
-      if( compositeLogSendInProgress == true)
+      if( logSendStatusFlag == LOG_SEND_COMPOSITE)
       {
         if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
       }

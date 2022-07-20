@@ -1105,18 +1105,6 @@ void sendToothLog_legacy(byte startOffset)
   {
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
-        //Check whether the tx buffer still has space
-        /*
-        if(Serial.availableForWrite() < 4) 
-        { 
-          //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
-          toothLogSendInProgress = true;
-          return;
-        }
-        */
-
-
         Serial.write(toothHistory[x] >> 24);
         Serial.write(toothHistory[x] >> 16);
         Serial.write(toothHistory[x] >> 8);
@@ -1124,7 +1112,7 @@ void sendToothLog_legacy(byte startOffset)
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
-      toothLogSendInProgress = false;
+      logSendStatusFlag = LOG_SEND_NONE;
       toothHistoryIndex = 0;
   }
   else 
@@ -1150,7 +1138,7 @@ void sendCompositeLog_legacy(byte startOffset)
         { 
           //tx buffer is full. Store the current state so it can be resumed later
           inProgressOffset = x;
-          compositeLogSendInProgress = true;
+          logSendStatusFlag = LOG_SEND_COMPOSITE;
           return;
         }
 
@@ -1166,7 +1154,7 @@ void sendCompositeLog_legacy(byte startOffset)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       cmdPending = false;
-      compositeLogSendInProgress = false;
+      logSendStatusFlag = LOG_SEND_NONE;
       inProgressCompositeTime = 0;
   }
   else 
