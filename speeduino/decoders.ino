@@ -1839,7 +1839,7 @@ int getCrankAngle_Jeep2000()
     interrupts();
 
     int crankAngle;
-    if (toothCurrentCount == 0) { crankAngle = 146 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 146 is the angle at which the crank tooth goes high.
+    if (toothCurrentCount == 0) { crankAngle = 118 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 146 is the angle at which the crank tooth goes high, but the timing was taken on the previous crank tooth, so it's 118
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
     //Estimate the number of degrees travelled since the last tooth}
