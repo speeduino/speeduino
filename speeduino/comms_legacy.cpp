@@ -25,7 +25,7 @@ A full copy of the license may be found in the projects root directory
 
 byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
-unsigned long requestCount = 0; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
 bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
@@ -565,8 +565,11 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
   }
   else
   {
-    if(requestCount == 0) { currentStatus.secl = 0; }
-    requestCount++;
+    if(firstCommsRequest) 
+    { 
+      firstCommsRequest = false;
+      currentStatus.secl = 0; 
+    }
   }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable

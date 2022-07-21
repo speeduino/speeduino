@@ -158,8 +158,11 @@ static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint
 //void sendValues(int packetlength, byte portNum)
 static void generateLiveValues(uint16_t offset, uint16_t packetLength)
 {  
-  if(requestCount == 0) { currentStatus.secl = 0; }
-  requestCount++;
+  if(firstCommsRequest) 
+  { 
+    firstCommsRequest = false;
+    currentStatus.secl = 0; 
+  }
 
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
