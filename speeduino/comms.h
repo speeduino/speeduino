@@ -69,8 +69,24 @@
 #define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
 #define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 
-extern bool serialWriteInProgress;
-extern bool serialReceivePending; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
+/** \enum SerialStatus
+ * @brief The current state of serial communication
+ * */
+enum SerialStatus {
+  /** No serial comms is in progress */
+  SERIAL_INACTIVE, 
+  /** A partial write is in progress. This can occur when the serial
+   * port buffer fills up before we've sent all data. I.e. the buffer
+   * is being emptied slower than we are writing to it.
+   */
+  SERIAL_WRITE_INPROGRESS, 
+  /** Whether or not a serial request has only been partially received.
+   *  This occurs when a the length has been received in the serial buffer,
+   *  but not all of the payload or CRC has yet been received. 
+  */
+  SERIAL_RECEIVE_PENDING 
+};
+extern SerialStatus serialStatusFlag;
 
 
 void parseSerial(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.

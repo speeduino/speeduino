@@ -28,8 +28,7 @@ A full copy of the license may be found in the projects root directory
   #include "SD_logger.h"
 #endif
 
-bool serialReceivePending = false; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
-bool serialWriteInProgress = false;
+SerialStatus serialStatusFlag = SERIAL_INACTIVE;
 
 constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
@@ -186,7 +185,7 @@ static void sendSerialPayload(uint16_t payloadLength)
   //Start new transmission session
   serialPayloadLength = payloadLength;
   serialBytesTransmitted = sendBufferAndCrc(serialPayload, payloadLength);
-  serialWriteInProgress = serialBytesTransmitted!=payloadLength;
+  serialStatusFlag = serialBytesTransmitted==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
 }
 
 static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
@@ -283,7 +282,7 @@ void parseSerial(void)
     return;
   }
 
-  if (serialReceivePending == false)
+  if (serialStatusFlag == SERIAL_INACTIVE)
   { 
     serialBytesReceived = 0; //Reset the number of bytes received as we're starting a new command
 
@@ -295,7 +294,7 @@ void parseSerial(void)
     if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
     {
       //Handle legacy cases here
-      serialReceivePending = false; //Make sure new serial handling does not interfere with legacy handling
+      serialStatusFlag = SERIAL_INACTIVE; //Make sure new serial handling does not interfere with legacy handling
       legacySerial = true;
       currentCommand = highByte;
       legacySerialCommand();
@@ -307,14 +306,14 @@ void parseSerial(void)
 
       serialPayloadLength = word(highByte, Serial.read());
       serialBytesReceived = 2;
-      serialReceivePending = true; //Flag the serial receive as being in progress
+      serialStatusFlag = SERIAL_RECEIVE_PENDING; //Flag the serial receive as being in progress
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
     }
   }
 
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
-  while( (Serial.available() > 0) && (serialReceivePending == true) )
+  while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_PENDING) )
   {
     if (serialBytesReceived < (serialPayloadLength + SERIAL_LEN_SIZE) )
     {
@@ -323,7 +322,7 @@ void parseSerial(void)
     }
     else if (Serial.available() >= SERIAL_CRC_LENGTH)
     {
-      serialReceivePending = false; //The serial receive is now complete
+      serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
       if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
         //CRC Error. Need to send an error message
@@ -341,7 +340,7 @@ void parseSerial(void)
     if( (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT)
     {
       //Timeout occurred
-      serialReceivePending = false; //Reset the serial receive
+      serialStatusFlag = SERIAL_INACTIVE; //Reset the serial receive
 
       flushRXbuffer();
       sendSerialReturnCode(SERIAL_RC_TIMEOUT);
@@ -351,10 +350,10 @@ void parseSerial(void)
 
 void continueSerialTransmission(void)
 {
-  if(serialWriteInProgress == true)
+  if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
   {
     serialBytesTransmitted = sendBufferAndCrc(serialPayload, serialBytesTransmitted, serialPayloadLength);
-    serialWriteInProgress = serialBytesTransmitted!=serialPayloadLength;
+    serialStatusFlag = serialBytesTransmitted==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
   }
 }
 

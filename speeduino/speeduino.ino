@@ -138,7 +138,7 @@ void loop(void)
       {
         if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
       }
-      if(serialWriteInProgress == true)
+      if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
       {
         if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
       }
@@ -301,8 +301,6 @@ void loop(void)
       // Air conditioning control
       airConControl();
 
-      //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
-      
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
@@ -334,7 +332,7 @@ void loop(void)
       #endif
 
       //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
