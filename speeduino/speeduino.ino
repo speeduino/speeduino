@@ -123,20 +123,20 @@ void loop(void)
       //Initially check that the last serial send values request is not still outstanding
       if (serialInProgress == true) 
       { 
-        if(Serial.availableForWrite() > 16) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
+        if(Serial.availableForWrite() > 16) { sendValues(logItemsTransmitted, inProgressLength, 0x30, 0); }
       }
       //Perform the same check for the tooth and composite logs
       if( logSendStatusFlag == LOG_SEND_TOOTH )
       {
         if(Serial.availableForWrite() > 16) 
         { 
-          if(legacySerial == true) { sendToothLog_legacy(inProgressOffset); }
-          else { sendToothLog(inProgressOffset); }
+          if(legacySerial == true) { sendToothLog_legacy(logItemsTransmitted); }
+          else { sendToothLog(); }
         }
       }
       if( logSendStatusFlag == LOG_SEND_COMPOSITE)
       {
-        if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
+        if(Serial.availableForWrite() > 16) { sendCompositeLog(); }
       }
       if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
       {

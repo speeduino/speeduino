@@ -33,7 +33,7 @@ uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have 
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte tsCanId = 0;     // current tscanid requested
-byte inProgressOffset;
+byte logItemsTransmitted;
 byte inProgressLength;
 uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
@@ -585,7 +585,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     if(Serial.availableForWrite() < 1) 
     { 
       //tx buffer is full. Store the current state so it can be resumed later
-      inProgressOffset = offset + x + 1;
+      logItemsTransmitted = offset + x + 1;
       inProgressLength = packetLength - x - 1;
       serialInProgress = true;
       return;
@@ -1140,7 +1140,7 @@ void sendCompositeLog_legacy(byte startOffset)
         if(Serial.availableForWrite() < 4) 
         { 
           //tx buffer is full. Store the current state so it can be resumed later
-          inProgressOffset = x;
+          logItemsTransmitted = x;
           logSendStatusFlag = LOG_SEND_COMPOSITE;
           return;
         }

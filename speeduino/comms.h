@@ -92,8 +92,8 @@ extern SerialStatus serialStatusFlag;
 void parseSerial(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
 void processSerialCommand(void);
 
-void sendToothLog(uint8_t startOffset);
-void sendCompositeLog(uint8_t startOffset);
+void sendToothLog(void);
+void sendCompositeLog(void);
 void continueSerialTransmission(void);
 
 #endif // COMMS_H
