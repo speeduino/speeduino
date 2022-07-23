@@ -37,8 +37,11 @@ constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd'
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 
 static uint16_t serialPayloadLength = 0;
-static uint16_t serialBytesReceived = 0; /**< The number of bytes received in the serial buffer during the current command. */
-static uint16_t serialBytesTransmitted = 0;
+/** The number of bytes received or transmitted to date during nonblocking I/O.
+ * It's possible because we only support simpex serial comms. 
+ * I.e. we can only be receiving or transmitting at any one time.
+ */
+static uint16_t serialBytesRxTx = 0; 
 static uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
 #ifdef RTC_ENABLED
@@ -187,8 +190,8 @@ static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
 {
   //Start new transmission session
   serialPayloadLength = payloadLength;
-  serialBytesTransmitted = sendBufferAndCrcNonBlocking(serialPayload, payloadLength);
-  serialStatusFlag = serialBytesTransmitted==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
+  serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, payloadLength);
+  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
 }
 
 static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
@@ -306,7 +309,7 @@ void parseSerial(void)
       while(Serial.available() == 0) { /* Wait for the 2nd byte to be received (This will almost never happen) */ }
 
       serialPayloadLength = word(highByte, Serial.read());
-      serialBytesReceived = 2;
+      serialBytesRxTx = 2;
       serialStatusFlag = SERIAL_RECEIVE_PENDING; //Flag the serial receive as being in progress
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
@@ -316,10 +319,10 @@ void parseSerial(void)
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
   while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_PENDING) )
   {
-    if (serialBytesReceived < (serialPayloadLength + SERIAL_LEN_SIZE) )
+    if (serialBytesRxTx < (serialPayloadLength + SERIAL_LEN_SIZE) )
     {
-      serialPayload[serialBytesReceived - SERIAL_LEN_SIZE] = (byte)Serial.read();
-      serialBytesReceived++;
+      serialPayload[serialBytesRxTx - SERIAL_LEN_SIZE] = (byte)Serial.read();
+      serialBytesRxTx++;
     }
     else if (Serial.available() >= SERIAL_CRC_LENGTH)
     {
@@ -353,8 +356,8 @@ void continueSerialTransmission(void)
 {
   if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
   {
-    serialBytesTransmitted = sendBufferAndCrcNonBlocking(serialPayload, serialBytesTransmitted, serialPayloadLength);
-    serialStatusFlag = serialBytesTransmitted==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
+    serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
+    serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
   }
 }
 
