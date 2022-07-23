@@ -100,6 +100,7 @@ static void serialWrite(uint32_t value)
   value = reverse_bytes(value);
   Serial.write((const byte*)&value, sizeof(value));
 }
+
 static uint32_t serialWriteUpdateCrc(uint32_t value)
 {
   value = reverse_bytes(value);
@@ -113,7 +114,7 @@ static void serialWrite(uint16_t value)
   Serial.write(value & 255);
 }
 
-static uint16_t sendBufferAndCrc(const byte *buffer, size_t start, size_t length)
+static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, size_t length)
 {
   start = start + writeNonBlocking(buffer+start, length-start);
   
@@ -125,10 +126,10 @@ static uint16_t sendBufferAndCrc(const byte *buffer, size_t start, size_t length
   return start;
 }
 
-static uint16_t sendBufferAndCrc(const byte *buffer, uint16_t length)
+static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, uint16_t length)
 {
   serialWrite(length);
-  return sendBufferAndCrc(buffer, 0, length);
+  return sendBufferAndCrcNonBlocking(buffer, 0, length);
 }
 
 using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
@@ -177,14 +178,16 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
 
 static void sendSerialReturnCode(byte returnCode)
 {
-  sendBufferAndCrc(&returnCode, sizeof(returnCode));
+  serialWrite((uint16_t)sizeof(returnCode));
+  Serial.write(returnCode);
+  serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
 }
 
-static void sendSerialPayload(uint16_t payloadLength)
+static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
 {
   //Start new transmission session
   serialPayloadLength = payloadLength;
-  serialBytesTransmitted = sendBufferAndCrc(serialPayload, payloadLength);
+  serialBytesTransmitted = sendBufferAndCrcNonBlocking(serialPayload, payloadLength);
   serialStatusFlag = serialBytesTransmitted==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
 }
 
@@ -284,8 +287,6 @@ void parseSerial(void)
 
   if (serialStatusFlag == SERIAL_INACTIVE)
   { 
-    serialBytesReceived = 0; //Reset the number of bytes received as we're starting a new command
-
     //New command received
     //Need at least 2 bytes to read the length of the command
     byte highByte = (byte)Serial.read();
@@ -352,7 +353,7 @@ void continueSerialTransmission(void)
 {
   if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
   {
-    serialBytesTransmitted = sendBufferAndCrc(serialPayload, serialBytesTransmitted, serialPayloadLength);
+    serialBytesTransmitted = sendBufferAndCrcNonBlocking(serialPayload, serialBytesTransmitted, serialPayloadLength);
     serialStatusFlag = serialBytesTransmitted==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
   }
 }
@@ -377,7 +378,7 @@ void processSerialCommand(void)
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
       memcpy_P(serialPayload, testCommsResponse, sizeof(testCommsResponse) );
-      sendSerialPayload(sizeof(testCommsResponse));
+      sendSerialPayloadNonBlocking(sizeof(testCommsResponse));
       break;
 
     case 'd': // Send a CRC32 hash of a given page
@@ -389,7 +390,7 @@ void processSerialCommand(void)
       serialPayload[2] = ((CRC32_val >> 16) & 255);
       serialPayload[3] = ((CRC32_val >> 8) & 255);
       serialPayload[4] = (CRC32_val & 255);
-      sendSerialPayload(5);      
+      sendSerialPayloadNonBlocking(5);      
       break;
     }
 
@@ -400,7 +401,7 @@ void processSerialCommand(void)
 
     case 'F': // send serial protocol version
       memcpy_P(serialPayload, serialVersion, sizeof(serialVersion) );
-      sendSerialPayload(sizeof(serialVersion));
+      sendSerialPayloadNonBlocking(sizeof(serialVersion));
       break;
 
     case 'H': //Start the tooth logger
@@ -415,7 +416,7 @@ void processSerialCommand(void)
 
     case 'I': // send CAN ID
       memcpy_P(serialPayload, canId, sizeof(canId) );
-      sendSerialPayload(sizeof(serialVersion));
+      sendSerialPayloadNonBlocking(sizeof(serialVersion));
       break;
 
     case 'J': //Start the composite logger
@@ -437,7 +438,7 @@ void processSerialCommand(void)
       serialPayload[2] = ((CRC32_val >> 16) & 255);
       serialPayload[3] = ((CRC32_val >> 8) & 255);
       serialPayload[4] = (CRC32_val & 255);
-      sendSerialPayload(5);
+      sendSerialPayloadNonBlocking(5);
       break;
     }
 
@@ -484,13 +485,13 @@ void processSerialCommand(void)
       {
         serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
       }
-      sendSerialPayload(length + 1);
+      sendSerialPayloadNonBlocking(length + 1);
       break;
     }
 
     case 'Q': // send code version
       memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
-      sendSerialPayload(sizeof(codeVersion));
+      sendSerialPayloadNonBlocking(sizeof(codeVersion));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -506,7 +507,7 @@ void processSerialCommand(void)
       if(cmd == 0x30) //Send output channels command 0x30 is 48dec
       {
         generateLiveValues(offset, length);
-        sendSerialPayload(length + 1);
+        sendSerialPayloadNonBlocking(length + 1);
       }
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
@@ -520,7 +521,7 @@ void processSerialCommand(void)
         serialPayload[6] = rtc_getMonth(); //Month
         serialPayload[7] = highByte(rtc_getYear()); //Year
         serialPayload[8] = lowByte(rtc_getYear()); //Year
-        sendSerialPayload(9);
+        sendSerialPayloadNonBlocking(9);
       }
       else if(cmd == SD_READWRITE_PAGE) //Request SD card extended parameters
       {
@@ -566,7 +567,7 @@ void processSerialCommand(void)
           serialPayload[15] = 0;
           serialPayload[16] = 0;
 
-          sendSerialPayload(17);
+          sendSerialPayloadNonBlocking(17);
 
         }
         else if((SD_arg1 == SD_READ_DIR_ARG1) && (SD_arg2 == SD_READ_DIR_ARG2))
@@ -588,7 +589,7 @@ void processSerialCommand(void)
           //Serial.print("Index:");
           //Serial.print(payloadIndex);
 
-          sendSerialPayload(payloadIndex + 2);
+          sendSerialPayloadNonBlocking(payloadIndex + 2);
         }
       }
       else if(cmd == SD_READFILE_PAGE)
@@ -618,7 +619,7 @@ void processSerialCommand(void)
           else
           {
             readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
-            sendSerialPayload(numSectorsToSend * SD_SECTOR_SIZE + 3);
+            sendSerialPayloadNonBlocking(numSectorsToSend * SD_SECTOR_SIZE + 3);
           }
         }
       }
@@ -633,7 +634,7 @@ void processSerialCommand(void)
 
     case 'S': // send code version
       memcpy_P(serialPayload, productString, sizeof(productString) );
-      sendSerialPayload(sizeof(productString));
+      sendSerialPayloadNonBlocking(sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
