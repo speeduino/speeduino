@@ -78,22 +78,35 @@ enum SerialStatus {
   /** A partial write is in progress. This can occur when the serial
    * port buffer fills up before we've sent all data. I.e. the buffer
    * is being emptied slower than we are writing to it.
+   * 
+   * Expectation is that continueSerialTransmission is called until
+   * the status reverts to SERIAL_INACTIVE
    */
   SERIAL_WRITE_INPROGRESS, 
   /** Whether or not a serial request has only been partially received.
-   *  This occurs when a the length has been received in the serial buffer,
-   *  but not all of the payload or CRC has yet been received. 
+   * This occurs when a the length has been received in the serial buffer,
+   * but not all of the payload or CRC has yet been received. 
+   * 
+   * Expectation is that parseSerial is called  until the status reverts 
+   * to SERIAL_INACTIVE
   */
   SERIAL_RECEIVE_PENDING 
 };
+/** @brief Current status of serial comms. See also ::logSendStatusFlag */
 extern SerialStatus serialStatusFlag;
 
+/**
+ * @brief The serial receive pump. Should be called whenever the serial port
+ * has data available to read.
+ */
+void parseSerial(void);
 
-void parseSerial(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
-void processSerialCommand(void);
-
-void sendToothLog(void);
-void sendCompositeLog(void);
+/** @brief Should be called when ::serialStatusFlag == SERIAL_WRITE_INPROGRESS */
 void continueSerialTransmission(void);
+
+/** @brief Should be called when ::logSendStatusFlag == LOG_SEND_TOOTH */
+void sendToothLog(void);
+/** @brief Should be called when ::logSendStatusFlag == LOG_SEND_COMPOSITE */
+void sendCompositeLog(void);
 
 #endif // COMMS_H

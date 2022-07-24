@@ -4,7 +4,7 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 /** @file
- * Process Incoming and outgoing serial communications.
+   * Process Incoming and outgoing serial communications.
  */
 #include "globals.h"
 #include "comms.h"
@@ -28,31 +28,39 @@ A full copy of the license may be found in the projects root directory
   #include "SD_logger.h"
 #endif
 
-SerialStatus serialStatusFlag = SERIAL_INACTIVE;
+/** @brief Processes a message once it has been fully recieved */
+void processSerialCommand();
 
+//!@{
+/** @brief Hard coded response for some TS messages.
+ * @attention Stored in flash (.text segment) and loaded on demand.
+ */
 constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
 constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
 constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '1', '0', '-', 'd', 'e', 'v'};
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
+//!@}
 
-static uint16_t serialPayloadLength = 0;
-/** The number of bytes received or transmitted to date during nonblocking I/O.
- * It's possible because we only support simpex serial comms. 
+/** @brief The number of bytes received or transmitted to date during nonblocking I/O.
+ * 
+ * @attention We can share one variable between rx & tx because we only support simpex serial comms. 
  * I.e. we can only be receiving or transmitting at any one time.
  */
 static uint16_t serialBytesRxTx = 0; 
-static uint32_t serialReceiveStartTime = 0; /**< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
-static FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comms envelope CRC validations. It is separate to those used for page or calibration calculations to prevent update calls clashing with one another
+static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
+static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
 #ifdef RTC_ENABLED
-  static uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; /**< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
-  static uint16_t SDcurrentDirChunk;
-  static uint32_t SDreadStartSector;
-  static uint32_t SDreadNumSectors;
-  static uint32_t SDreadCompletedSectors = 0;
+static uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; //!< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
+static uint16_t SDcurrentDirChunk;
+static uint32_t SDreadStartSector;
+static uint32_t SDreadNumSectors;
+static uint32_t SDreadCompletedSectors = 0;
 #else
-  static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
+static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 #endif
+static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
+SerialStatus serialStatusFlag = SERIAL_INACTIVE;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -60,7 +68,7 @@ static FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on t
 #pragma GCC optimize ("Os") 
 #endif
 
-// ====================================== Internal Functions =============================
+// ====================================== Endianess Support =============================
 
 /**
  * @brief      Flush all remaining bytes from the rx serial buffer
@@ -70,11 +78,16 @@ void flushRXbuffer(void)
   while (Serial.available() > 0) { Serial.read(); }
 }
 
+/** @brief Swap the values in stored in 2 bytes. */
 #define SWAP_BYTES(a, b) \
+  /* We use the XOR method to avoid a temporary on the stack */ \
   a = a ^ b; \
   b = a ^ b; \
   a = a ^ b
 
+/** @brief Reverse the byte order of a 4 byte buffer 
+ * Assumes a 4 byte buffer for optimization reasons (no loop required as in the general case)
+ */
 static byte* reverse_bytes_x4(byte *buffer)
 {
   SWAP_BYTES(buffer[0], buffer[3]);
@@ -82,11 +95,23 @@ static byte* reverse_bytes_x4(byte *buffer)
   return buffer;
 }
 
+/** @brief Reverse the byte order of a uint32_t
+ * 
+ * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
+ * off free ram reporting.
+ * */
 static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 {
   return *(uint32_t*)reverse_bytes_x4((byte *)&i);
 }
 
+// ====================================== Multibyte Primitive IO Support =============================
+
+/** @brief Read a uint32_t from Serial
+ * 
+ * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
+ * off free ram reporting.
+ * */
 static __attribute__((noinline)) uint32_t readSerial32()
 {
   byte raw[4];
@@ -94,19 +119,17 @@ static __attribute__((noinline)) uint32_t readSerial32()
   return *(uint32_t*)reverse_bytes_x4(raw);
 }
 
-// Serial.write is blocking - it will wait for the buffer to clear
-// We don't want that in some cases.
-static uint16_t writeNonBlocking(const byte *buffer, size_t length)
-{
-  size_t capacity = min((size_t)Serial.availableForWrite(), length);
-  return Serial.write(buffer, capacity);
-}
-
+/** @brief Write a uint32_t to Serial */
 static void serialWrite(uint32_t value)
 {
   Serial.write(reverse_bytes_x4((byte*)&value), sizeof(value));
 }
 
+/** @brief Write a uint32_t to Serial AND update the shared CRC 
+ * 
+ * @details The wire representation of a uint32_t isn't the
+ * same as in memory. So the CRC cannot use the in-memory uint32_t
+*/
 static uint32_t serialWriteUpdateCrc(uint32_t value)
 {
   value = reverse_bytes(value);
@@ -114,12 +137,33 @@ static uint32_t serialWriteUpdateCrc(uint32_t value)
   return CRC32_serial.crc32_upd((const byte*)&value, sizeof(value), false);
 }
 
+/** @brief Write a uint16_t to Serial */
 static void serialWrite(uint16_t value)
 {
   Serial.write((value >> 8) & 255);
   Serial.write(value & 255);
 }
 
+// ====================================== Non-blocking IO Support =============================
+
+/** @brief Send as much data as possible without blocking the caller
+ * @return Number of bytes sent
+ */
+static uint16_t writeNonBlocking(const byte *buffer, size_t length)
+{
+  size_t capacity = min((size_t)Serial.availableForWrite(), length);
+  return Serial.write(buffer, capacity);
+}
+
+/** @brief Send the buffer, followed by it's CRC
+ * 
+ * This is supposed to be called multiple times for the same buffer until
+ * it's all sent.
+ * 
+ * @param start Index into the buffer to start sending at. [0, length)
+ * @param length Total size of the buffer
+ * @return Cumulative total number of bytes written . I.e. the next start value
+ */
 static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, size_t length)
 {
   start = start + writeNonBlocking(buffer+start, length-start);
@@ -132,15 +176,56 @@ static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, si
   return start;
 }
 
-static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, uint16_t length)
+/** @brief Start sending the shared serialPayload buffer.
+ * 
+ * ::serialStatusFlag will be signal the result of the send:<br>
+ * ::serialStatusFlag == SERIAL_INACTIVE: send is complete <br>
+ * ::serialStatusFlag == SERIAL_WRITE_INPROGRESS: partial send, subsequent calls to continueSerialTransmission
+ * will finish sending serialPayload
+ * 
+ * @param payloadLength How many bytes to send [0, sizeof(serialPayload))
+*/
+static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
 {
-  serialWrite(length);
-  return sendBufferAndCrcNonBlocking(buffer, 0, length);
+  //Start new transmission session
+  serialWrite(payloadLength);
+  serialPayloadLength = payloadLength;
+  serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, 0, payloadLength);
+  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
 }
 
-using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
+// ====================================== TS Message Support =============================
 
-static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
+/** @brief Send a message to TS containing only a return code.
+ * 
+ * This is used when TS asks for an action to happen (E.g. start a logger) or
+ * to signal an error condition to TS
+ * 
+ * @attention This is a blocking operation
+ */
+static void sendReturnCodeMsg(byte returnCode)
+{
+  serialWrite((uint16_t)sizeof(returnCode));
+  Serial.write(returnCode);
+  serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
+}
+
+// ====================================== Command/Action Support =============================
+
+// The functions in this section are abstracted out to prevent enlarging callers stack frame, 
+// which in turn throws off free ram reporting.
+
+/**
+ * @brief Update a pages contents from a buffer
+ * 
+ * @param pageNum The index of the page to update
+ * @param offset Offset into the page
+ * @param buffer The buffer to read from
+ * @param length The buffer length
+ * @return true if page updated successfully
+ * @return false if page cannot be updated
+ */
+static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
 {
   if ( (offset + length) <= getPageSize(pageNum) )
   {
@@ -155,7 +240,15 @@ static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint
   return false;
 }
 
-static void loadPageToBuffer(uint8_t pageNum, uint16_t offset, byte *buffer, uint16_t length)
+/**
+ * @brief Loads a pages contents into a buffer
+ * 
+ * @param pageNum The index of the page to update
+ * @param offset Offset into the page
+ * @param buffer The buffer to read from
+ * @param length The buffer length
+ */
+static void loadPageValuesToBuffer(uint8_t pageNum, uint16_t offset, byte *buffer, uint16_t length)
 {
   for(uint16_t i = 0; i < length; i++)
   {
@@ -163,13 +256,12 @@ static void loadPageToBuffer(uint8_t pageNum, uint16_t offset, byte *buffer, uin
   }
 }
 
-/** Send a status record back to tuning/logging SW.
+/** @brief Send a status record back to tuning/logging SW.
  * This will "live" information from @ref currentStatus struct.
  * @param offset - Start field number
  * @param packetLength - Length of actual message (after possible ack/confirm headers)
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  */
-//void sendValues(int packetlength, byte portNum)
 static void generateLiveValues(uint16_t offset, uint16_t packetLength)
 {  
   if(firstCommsRequest) 
@@ -190,23 +282,15 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
 
 }
 
-static void sendSerialReturnCode(byte returnCode)
+/**
+ * @brief Update the oxygen sensor table from serialPayload
+ * 
+ * @param offset Offset into serialPayload and the table
+ * @param chunkSize Number of bytes available in serialPayload
+ */
+static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 {
-  serialWrite((uint16_t)sizeof(returnCode));
-  Serial.write(returnCode);
-  serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
-}
-
-static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
-{
-  //Start new transmission session
-  serialPayloadLength = payloadLength;
-  serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, payloadLength);
-  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
-}
-
-static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
-{
+  using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
   // First pass through the loop, we need to INITIALIZE the CRC
   pCrcCalc pCrcFun = offset==0 ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
   uint32_t calibrationCRC = 0;
@@ -220,9 +304,9 @@ static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
 
   //Read through the current chunk (Should be 256 bytes long)
   // Note there are 2 loops here: 
-  //    [x, calibrationLength)
-  //    [offset, offset+calibrationLength)
-  for(uint16_t x = 0; x < calibrationLength; ++x, ++offset)
+  //    [x, chunkSize)
+  //    [offset, offset+chunkSize)
+  for(uint16_t x = 0; x < chunkSize; ++x, ++offset)
   {
     //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
     //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
@@ -245,6 +329,10 @@ static void loadO2Calibration(uint16_t calibrationLength, uint16_t offset)
   }
 }
 
+/**
+ * @brief Convert 2 bytes into an offset temperature in degrees Celcius
+ * @attention Returned value will be offset CALIBRATION_TEMPERATURE_OFFSET
+ */
 static uint16_t toTemperature(byte lo, byte hi)
 {
   int16_t tempValue = (int16_t)(word(hi, lo)); //Combine the 2 bytes into a single, signed 16-bit value
@@ -254,6 +342,13 @@ static uint16_t toTemperature(byte lo, byte hi)
   return max( tempValue + CALIBRATION_TEMPERATURE_OFFSET, 0 );
 }
 
+/**
+ * @brief Update a temperature calibration table from serialPayload
+ * 
+ * @param calibrationPage Index of the table
+ * @param values The table values
+ * @param bins The table bin values
+ */
 static void updateTmpCalibration(uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
 {
   // Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
@@ -266,17 +361,25 @@ static void updateTmpCalibration(uint8_t calibrationPage, uint16_t *values, uint
   writeCalibrationPage(calibrationPage);
 }
 
-void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
+/**
+ * @brief Update a temperature calibration table from serialPayload
+  * 
+ * @param calibrationLength The chunk size received from TS
+ * @param calibrationPage Index of the table
+ * @param values The table values
+ * @param bins The table bin values
+ */
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64)
   {
     updateTmpCalibration(calibrationPage, values, bins);
-    sendSerialReturnCode(SERIAL_RC_OK);
+    sendReturnCodeMsg(SERIAL_RC_OK);
   }
   else 
   { 
-    sendSerialReturnCode(SERIAL_RC_RANGE_ERR); 
+    sendReturnCodeMsg(SERIAL_RC_RANGE_ERR); 
   }
 }
 
@@ -341,7 +444,7 @@ void parseSerial(void)
       if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
         //CRC Error. Need to send an error message
-        sendSerialReturnCode(SERIAL_RC_CRC_ERR);
+        sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
         flushRXbuffer();
       }
       else
@@ -358,7 +461,7 @@ void parseSerial(void)
       serialStatusFlag = SERIAL_INACTIVE; //Reset the serial receive
 
       flushRXbuffer();
-      sendSerialReturnCode(SERIAL_RC_TIMEOUT);
+      sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
 }
@@ -387,7 +490,7 @@ void processSerialCommand(void)
       if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
       else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
       
-      sendSerialReturnCode(SERIAL_RC_BURN_OK);
+      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -407,7 +510,7 @@ void processSerialCommand(void)
 
     case 'E': // receive command button commands
       TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
-      sendSerialReturnCode(SERIAL_RC_OK);
+      sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'F': // send serial protocol version
@@ -417,12 +520,12 @@ void processSerialCommand(void)
 
     case 'H': //Start the tooth logger
       startToothLogger();
-      sendSerialReturnCode(SERIAL_RC_OK);
+      sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'h': //Stop the tooth logger
       stopToothLogger();
-      sendSerialReturnCode(SERIAL_RC_OK);
+      sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'I': // send CAN ID
@@ -432,12 +535,12 @@ void processSerialCommand(void)
 
     case 'J': //Start the composite logger
       startCompositeLogger();
-      sendSerialReturnCode(SERIAL_RC_OK);
+      sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'j': //Stop the composite logger
       stopCompositeLogger();
-      sendSerialReturnCode(SERIAL_RC_OK);
+      sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'k': //Send CRC values for the calibration pages
@@ -458,14 +561,14 @@ void processSerialCommand(void)
       //2 - offset
       //2 - Length
       //1 - 1st New value
-      if (writePage(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[7], word(serialPayload[6], serialPayload[5])))
+      if (updatePageValues(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[7], word(serialPayload[6], serialPayload[5])))
       {
-        sendSerialReturnCode(SERIAL_RC_OK);    
+        sendReturnCodeMsg(SERIAL_RC_OK);    
       }
       else
       {
         //This should never happen, but just in case
-        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+        sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
       }
       break;
     }  
@@ -483,7 +586,7 @@ void processSerialCommand(void)
 
       //Setup the transmit buffer
       serialPayload[0] = SERIAL_RC_OK;
-      loadPageToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
+      loadPageValuesToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
       sendSerialPayloadNonBlocking(length + 1);
       break;
     }
@@ -614,7 +717,7 @@ void processSerialCommand(void)
           }
           SDreadCompletedSectors += numSectorsToSend;
           
-          if(numSectorsToSend <= 0) { sendSerialReturnCode(SERIAL_RC_OK); }
+          if(numSectorsToSend <= 0) { sendReturnCodeMsg(SERIAL_RC_OK); }
           else
           {
             readSDSectors(&serialPayload[3], currentSector, numSectorsToSend); 
@@ -651,8 +754,8 @@ void processSerialCommand(void)
 
       if(cmd == O2_CALIBRATION_PAGE)
       {
-        loadO2Calibration(calibrationLength, offset);
-        sendSerialReturnCode(SERIAL_RC_OK);
+        loadO2CalibrationChunk(offset, calibrationLength);
+        sendReturnCodeMsg(SERIAL_RC_OK);
         Serial.flush(); //This is safe because engine is assumed to not be running during calibration
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
@@ -665,7 +768,7 @@ void processSerialCommand(void)
       }
       else
       {
-        sendSerialReturnCode(SERIAL_RC_RANGE_ERR);
+        sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
       }
       break;
     }
@@ -713,14 +816,14 @@ void processSerialCommand(void)
             else if(command == 4) { setTS_SD_status(); }
             //else if(command == 5) { initSD(); }
             
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
           }
           else if((SD_arg1 == SD_WRITE_DIR_ARG1) && (SD_arg2 == SD_WRITE_DIR_ARG2))
           {
             //Begin SD directory read. Value in payload represents the directory chunk to read
             //Directory chunks are each 16 files long
             SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
           }
           else if((SD_arg1 == SD_WRITE_SEC_ARG1) && (SD_arg2 == SD_WRITE_SEC_ARG2))
           {
@@ -736,7 +839,7 @@ void processSerialCommand(void)
             char log4 = serialPayload[10];
 
             deleteLogFile(log1, log2, log3, log4);
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
           }
           else if((SD_arg1 == SD_SPD_TEST_ARG1) && (SD_arg2 == SD_SPD_TEST_ARG2))
           {
@@ -758,7 +861,7 @@ void processSerialCommand(void)
             uint8_t testSize4 = serialPayload[14];
             testSize = (testSize1 << 24) | (testSize2 << 16) | (testSize3 << 8) | testSize4; 
 
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
 
           }
           else if((SD_arg1 == SD_WRITE_COMP_ARG1) && (SD_arg2 == SD_WRITE_COMP_ARG2))
@@ -782,7 +885,7 @@ void processSerialCommand(void)
             //Reset the sector counter
             SDreadCompletedSectors = 0;
 
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
           }
         }
         else if(cmd == SD_RTC_PAGE)
@@ -800,7 +903,7 @@ void processSerialCommand(void)
             byte month = serialPayload[12];
             uint16_t year = word(serialPayload[13], serialPayload[14]);
             rtc_setTime(second, minute, hour, day, month, year);
-            sendSerialReturnCode(SERIAL_RC_OK);
+            sendReturnCodeMsg(SERIAL_RC_OK);
           }
         }
 #endif
@@ -809,7 +912,7 @@ void processSerialCommand(void)
 
     default:
       //Unknown command
-      sendSerialReturnCode(SERIAL_RC_UKWN_ERR);
+      sendReturnCodeMsg(SERIAL_RC_UKWN_ERR);
       break;
   }
 }
@@ -863,7 +966,7 @@ void sendToothLog(void)
   }
   else 
   { 
-    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
+    sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
     logSendStatusFlag = LOG_SEND_NONE;
   } 
@@ -918,7 +1021,7 @@ void sendCompositeLog(void)
   }
   else 
   { 
-    sendSerialReturnCode(SERIAL_RC_BUSY_ERR);
+    sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
     logSendStatusFlag = LOG_SEND_NONE;
   } 
