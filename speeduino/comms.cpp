@@ -152,6 +152,14 @@ static bool writePage(uint8_t pageNum, uint16_t offset, const byte *buffer, uint
   return false;
 }
 
+static void loadPageToBuffer(uint8_t pageNum, uint16_t offset, byte *buffer, uint16_t length)
+{
+  for(uint16_t i = 0; i < length; i++)
+  {
+    buffer[i] = getPageValue(pageNum, offset + i);
+  }
+}
+
 /** Send a status record back to tuning/logging SW.
  * This will "live" information from @ref currentStatus struct.
  * @param offset - Start field number
@@ -453,11 +461,7 @@ void processSerialCommand(void)
       //2 - offset
       //2 - Length
       //1 - 1st New value
-      uint8_t pageNum = serialPayload[2]; //Page ID is 2 bytes, but as the first byte is always 0 it can be ignored
-      uint16_t offset = word(serialPayload[4], serialPayload[3]);
-      uint16_t chunkLength = word(serialPayload[6], serialPayload[5]);
-
-      if (writePage(pageNum, offset, &serialPayload[7], chunkLength))
+      if (writePage(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[7], word(serialPayload[6], serialPayload[5])))
       {
         sendSerialReturnCode(SERIAL_RC_OK);    
       }
@@ -478,16 +482,11 @@ void processSerialCommand(void)
       //2 - Page identifier
       //2 - offset
       //2 - Length
-      byte tempPage = serialPayload[2];
-      valueOffset = word(serialPayload[4], serialPayload[3]);
       uint16_t length = word(serialPayload[6], serialPayload[5]);
 
       //Setup the transmit buffer
       serialPayload[0] = SERIAL_RC_OK;
-      for(uint16_t i = 0; i < length; i++)
-      {
-        serialPayload[i+1] = getPageValue(tempPage, valueOffset + i);
-      }
+      loadPageToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
       sendSerialPayloadNonBlocking(length + 1);
       break;
     }
