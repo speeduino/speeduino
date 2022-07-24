@@ -70,24 +70,28 @@ void flushRXbuffer(void)
   while (Serial.available() > 0) { Serial.read(); }
 }
 
-static uint32_t readSerial32()
+#define SWAP_BYTES(a, b) \
+  a = a ^ b; \
+  b = a ^ b; \
+  a = a ^ b
+
+static byte* reverse_bytes_x4(byte *buffer)
 {
-  uint32_t crc1 = Serial.read();
-  uint32_t crc2 = Serial.read();
-  uint32_t crc3 = Serial.read();
-  uint32_t crc4 = Serial.read();
-  return  (crc1<<24) | (crc2<<16) | (crc3<<8) | crc4;
+  SWAP_BYTES(buffer[0], buffer[3]);
+  SWAP_BYTES(buffer[1], buffer[2]);
+  return buffer;
 }
 
-static uint32_t reverse_bytes(uint32_t i)
+static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 {
-  union {uint32_t i; unsigned char b[sizeof(i)];} a,b;
-  a.i=i;
-  b.b[0]=a.b[3];
-  b.b[1]=a.b[2];
-  b.b[2]=a.b[1];
-  b.b[3]=a.b[0];
-  return b.i;
+  return *(uint32_t*)reverse_bytes_x4((byte *)&i);
+}
+
+static __attribute__((noinline)) uint32_t readSerial32()
+{
+  byte raw[4];
+  Serial.readBytes(raw, sizeof(raw));
+  return *(uint32_t*)reverse_bytes_x4(raw);
 }
 
 // Serial.write is blocking - it will wait for the buffer to clear
@@ -100,8 +104,7 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
 
 static void serialWrite(uint32_t value)
 {
-  value = reverse_bytes(value);
-  Serial.write((const byte*)&value, sizeof(value));
+  Serial.write(reverse_bytes_x4((byte*)&value), sizeof(value));
 }
 
 static uint32_t serialWriteUpdateCrc(uint32_t value)
@@ -394,13 +397,10 @@ void processSerialCommand(void)
 
     case 'd': // Send a CRC32 hash of a given page
     {
-      uint32_t CRC32_val = calculatePageCRC32( serialPayload[2] );
+      uint32_t CRC32_val = reverse_bytes(calculatePageCRC32( serialPayload[2] ));
 
       serialPayload[0] = SERIAL_RC_OK;
-      serialPayload[1] = ((CRC32_val >> 24) & 255);
-      serialPayload[2] = ((CRC32_val >> 16) & 255);
-      serialPayload[3] = ((CRC32_val >> 8) & 255);
-      serialPayload[4] = (CRC32_val & 255);
+      memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);      
       break;
     }
@@ -442,13 +442,10 @@ void processSerialCommand(void)
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = readCalibrationCRC32(serialPayload[2]); //Get the CRC for the requested page
+      uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
-      serialPayload[1] = ((CRC32_val >> 24) & 255);
-      serialPayload[2] = ((CRC32_val >> 16) & 255);
-      serialPayload[3] = ((CRC32_val >> 8) & 255);
-      serialPayload[4] = (CRC32_val & 255);
+      memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);
       break;
     }
