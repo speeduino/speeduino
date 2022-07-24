@@ -119,22 +119,14 @@ static __attribute__((noinline)) uint32_t readSerial32()
   return *(uint32_t*)reverse_bytes_x4(raw);
 }
 
-/** @brief Write a uint32_t to Serial */
-static void serialWrite(uint32_t value)
-{
-  Serial.write(reverse_bytes_x4((byte*)&value), sizeof(value));
-}
-
-/** @brief Write a uint32_t to Serial AND update the shared CRC 
- * 
- * @details The wire representation of a uint32_t isn't the
- * same as in memory. So the CRC cannot use the in-memory uint32_t
+/** @brief Write a uint32_t to Serial 
+ * @returns The value as transmitted on the wire
 */
-static uint32_t serialWriteUpdateCrc(uint32_t value)
+static uint32_t serialWrite(uint32_t value)
 {
   value = reverse_bytes(value);
   Serial.write((const byte*)&value, sizeof(value));
-  return CRC32_serial.crc32_upd((const byte*)&value, sizeof(value), false);
+  return value;
 }
 
 /** @brief Write a uint16_t to Serial */
@@ -344,25 +336,6 @@ static uint16_t toTemperature(byte lo, byte hi)
 
 /**
  * @brief Update a temperature calibration table from serialPayload
- * 
- * @param calibrationPage Index of the table
- * @param values The table values
- * @param bins The table bin values
- */
-static void updateTmpCalibration(uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
-{
-  // Temperature calibrations are sent as 32 16-bit values (ie 64 bytes total)
-  for (uint16_t x = 0; x < 32; x++)
-  {
-    values[x] = toTemperature(serialPayload[(2 * x) + 7], serialPayload[(2 * x) + 8]);
-    bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
-  }
-  storeCalibrationCRC32(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
-  writeCalibrationPage(calibrationPage);
-}
-
-/**
- * @brief Update a temperature calibration table from serialPayload
   * 
  * @param calibrationLength The chunk size received from TS
  * @param calibrationPage Index of the table
@@ -374,7 +347,13 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64)
   {
-    updateTmpCalibration(calibrationPage, values, bins);
+    for (uint16_t x = 0; x < 32; x++)
+    {
+      values[x] = toTemperature(serialPayload[(2 * x) + 7], serialPayload[(2 * x) + 8]);
+      bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
+    }
+    storeCalibrationCRC32(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+    writeCalibrationPage(calibrationPage);
     sendReturnCodeMsg(SERIAL_RC_OK);
   }
   else 
@@ -950,7 +929,8 @@ void sendToothLog(void)
       }
 
       //Transmit the tooth time
-      CRC32_val = serialWriteUpdateCrc(toothHistory[logItemsTransmitted]);
+      uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]);
+      CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     cmdPending = false;
@@ -1001,7 +981,8 @@ void sendCompositeLog(void)
         return;
       }
 
-      serialWriteUpdateCrc(toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
+      uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
+      CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
 
       //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       Serial.write(compositeLogHistory[logItemsTransmitted]);
