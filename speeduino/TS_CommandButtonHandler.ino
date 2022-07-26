@@ -25,7 +25,6 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
-      BIT_CLEAR(currentStatus.testOutputs, 1);
       endCoil1Charge();
       endCoil2Charge();
       endCoil3Charge();
@@ -60,9 +59,13 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
       #if INJ_CHANNELS >= 8
       closeInjector8();
       #endif
+      
+      currentStatus.fuelPumpOn = false;
 
       HWTest_INJ_50pc = 0;
       HWTest_IGN_50pc = 0;
+      
+      BIT_CLEAR(currentStatus.testOutputs, 1);
       break;
 
     case TS_CMD_TEST_ENBL: // cmd is enable
@@ -172,6 +175,14 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_INJ8_50PC: // cmd group is for injector8 50% dc actions
       if( BIT_CHECK(currentStatus.testOutputs, 1) ) { BIT_TOGGLE(HWTest_INJ_50pc, INJ8_CMD_BIT); }
       if(!BIT_CHECK(HWTest_INJ_50pc, INJ8_CMD_BIT)) { closeInjector8(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      break;
+    
+     case TS_CMD_FPUMP_ON: // cmd group is for fuel pump on actions
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ currentStatus.fuelPumpOn = true;}
+      break;
+
+    case TS_CMD_FPUMP_OFF: // cmd group is for fuel pump off actions
+      if( BIT_CHECK(currentStatus.testOutputs, 1) ){ currentStatus.fuelPumpOn = false;}
       break;
 
     case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions

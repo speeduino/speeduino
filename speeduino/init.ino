@@ -1198,15 +1198,6 @@ void initialiseAll()
         break;
     }
 
-    //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-    //First check that the priming time is not 0
-    if(configPage2.fpPrime > 0)
-    {
-      FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true;
-    }
-    else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
-
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state

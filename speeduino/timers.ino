@@ -126,6 +126,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
+    
+    fuelPumpControl(); // Control the fuel pump at 10Hz
 
     if ( (injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); injPrimed = true; }
     seclx10++;
@@ -180,22 +182,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     {
        fanControl();            // Function to turn the cooling fan on/off
     }
-
-    //Check whether fuel pump priming is complete
-    if(fpPrimed == false)
-    {
-      //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
-      if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
-      {
-        fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0)
-        {
-          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          digitalWrite(pinFuelPump, LOW);
-          currentStatus.fuelPumpOn = false;
-        }
-      }
-    }
+    
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage2.flexEnabled == true)
@@ -243,6 +230,8 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if( BIT_CHECK(currentStatus.testOutputs, 1) )
     {
       //Check whether any of the fuel outputs is on
+      
+      // HRW TEST  setFuelSchedule1(100, primingValue); - change these to trigger an injector pulse based on reqFuel.
 
       //Check for injector outputs on 50%
       if(BIT_CHECK(HWTest_INJ_50pc, INJ1_CMD_BIT)) { injector1Toggle(); }

@@ -31,6 +31,8 @@
 #define TS_CMD_INJ8_ON    534
 #define TS_CMD_INJ8_OFF   535
 #define TS_CMD_INJ8_50PC  536
+#define TS_CMD_FPUMP_ON   537
+#define TS_CMD_FPUMP_OFF  538
 
 #define TS_CMD_IGN1_ON    769
 #define TS_CMD_IGN1_OFF   770
