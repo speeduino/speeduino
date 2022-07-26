@@ -35,7 +35,6 @@ int valueOffset; /**< The memory offset within a given page for a value to be re
 byte tsCanId = 0;     // current tscanid requested
 byte logItemsTransmitted;
 byte inProgressLength;
-uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool legacySerial = false;
 SerialStatus serialStatusFlag;
@@ -1136,8 +1135,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
-      
-      if(startOffset == 0) { inProgressCompositeTime = 0; }
+
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
         //Check whether the tx buffer still has space
@@ -1149,7 +1147,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
           return;
         }
 
-        inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
+        uint32_t inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
         
         Serial.write(inProgressCompositeTime >> 24);
         Serial.write(inProgressCompositeTime >> 16);
@@ -1162,7 +1160,6 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
       toothHistoryIndex = 0;
       cmdPending = false;
       serialStatusFlag = SERIAL_INACTIVE; 
-      inProgressCompositeTime = 0;
   }
   else 
   { 
