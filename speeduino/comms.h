@@ -69,44 +69,18 @@
 #define SERIAL_RC_RANGE_ERR 0x84 //Incorrect range. TS will not retry command
 #define SERIAL_RC_BUSY_ERR  0x85 //TS will wait and retry
 
-/** \enum SerialStatus
- * @brief The current state of serial communication
- * */
-enum SerialStatus {
-  /** No serial comms is in progress */
-  SERIAL_INACTIVE, 
-  /** A partial write is in progress. This can occur when the serial
-   * port buffer fills up before we've sent all data. I.e. the buffer
-   * is being emptied slower than we are writing to it.
-   * 
-   * Expectation is that continueSerialTransmission is called until
-   * the status reverts to SERIAL_INACTIVE
-   */
-  SERIAL_WRITE_INPROGRESS, 
-  /** Whether or not a serial request has only been partially received.
-   * This occurs when a the length has been received in the serial buffer,
-   * but not all of the payload or CRC has yet been received. 
-   * 
-   * Expectation is that parseSerial is called  until the status reverts 
-   * to SERIAL_INACTIVE
-  */
-  SERIAL_RECEIVE_PENDING 
-};
-/** @brief Current status of serial comms. See also ::logSendStatusFlag */
-extern SerialStatus serialStatusFlag;
-
 /**
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.
  */
 void parseSerial(void);
 
-/** @brief Should be called when ::serialStatusFlag == SERIAL_WRITE_INPROGRESS */
+/** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS */
 void continueSerialTransmission(void);
 
-/** @brief Should be called when ::logSendStatusFlag == LOG_SEND_TOOTH */
+/** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
 void sendToothLog(void);
-/** @brief Should be called when ::logSendStatusFlag == LOG_SEND_COMPOSITE */
+/** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
 void sendCompositeLog(void);
 
 #endif // COMMS_H

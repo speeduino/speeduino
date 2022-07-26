@@ -34,20 +34,6 @@ void stopToothLogger();
 void startCompositeLogger();
 void stopCompositeLogger();
 
-/** \enum logSendStatus
- * @brief The current state of log transmisson
- * */
-enum logSendStatus { 
-  /** No log transmission is in progress */
-  LOG_SEND_NONE, 
-  /** We are part way through transmitting the tooth log */
-  LOG_SEND_TOOTH, 
-  /** We are part way through transmitting the composite log */
-  LOG_SEND_COMPOSITE
-};
-/** @brief The current state of log transmisson */
-extern logSendStatus logSendStatusFlag;
-
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order
 // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!

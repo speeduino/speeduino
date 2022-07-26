@@ -10,6 +10,35 @@
 #ifndef COMMS_H
 #define COMMS_H
 
+/** \enum SerialStatus
+ * @brief The current state of serial communication
+ * */
+enum SerialStatus {
+  /** No serial comms is in progress */
+  SERIAL_INACTIVE, 
+  /** A partial write is in progress. */
+  SERIAL_TRANSMIT_INPROGRESS, 
+  /** A partial write is in progress (legacy send). */
+  SERIAL_TRANSMIT_INPROGRESS_LEGACY, 
+  /** We are part way through transmitting the tooth log */
+  SERIAL_TRANSMIT_TOOTH_INPROGRESS, 
+  /** We are part way through transmitting the tooth log (legacy send) */
+  SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY, 
+  /** We are part way through transmitting the composite log */
+  SERIAL_TRANSMIT_COMPOSITE_INPROGRESS,
+  /** We are part way through transmitting the composite log (legacy send) */
+  SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY,
+  /** Whether or not a serial request has only been partially received.
+   * This occurs when a the length has been received in the serial buffer,
+   * but not all of the payload or CRC has yet been received. 
+   * 
+   * Expectation is that parseSerial is called  until the status reverts 
+   * to SERIAL_INACTIVE
+  */
+  SERIAL_RECEIVE_INPROGRESS,
+};
+/** @brief Current status of serial comms. */
+extern SerialStatus serialStatusFlag;
 
 extern byte currentPage;//Not the same as the speeduino config page numbers
 extern bool isMap; /**< Whether or not the currentPage contains only a 3D map that would require translation */

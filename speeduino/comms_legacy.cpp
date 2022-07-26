@@ -38,6 +38,7 @@ byte inProgressLength;
 uint32_t inProgressCompositeTime;
 bool serialInProgress = false;
 bool legacySerial = false;
+SerialStatus serialStatusFlag;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -1101,11 +1102,12 @@ void receiveCalibration(byte tableID)
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog_legacy(byte startOffset)
+void sendToothLog_legacy(byte startOffset) /* Blocking */
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
+      serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
         Serial.write(toothHistory[x] >> 24);
@@ -1115,7 +1117,7 @@ void sendToothLog_legacy(byte startOffset)
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       cmdPending = false;
-      logSendStatusFlag = LOG_SEND_NONE;
+      serialStatusFlag = SERIAL_INACTIVE; 
       toothHistoryIndex = 0;
   }
   else 
@@ -1129,10 +1131,12 @@ void sendToothLog_legacy(byte startOffset)
   } 
 }
 
-void sendCompositeLog_legacy(byte startOffset)
+void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 {
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
   {
+      serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
+      
       if(startOffset == 0) { inProgressCompositeTime = 0; }
       for (int x = startOffset; x < TOOTH_LOG_SIZE; x++)
       {
@@ -1141,7 +1145,7 @@ void sendCompositeLog_legacy(byte startOffset)
         { 
           //tx buffer is full. Store the current state so it can be resumed later
           logItemsTransmitted = x;
-          logSendStatusFlag = LOG_SEND_COMPOSITE;
+          legacySerial = true;
           return;
         }
 
@@ -1157,7 +1161,7 @@ void sendCompositeLog_legacy(byte startOffset)
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
       cmdPending = false;
-      logSendStatusFlag = LOG_SEND_NONE;
+      serialStatusFlag = SERIAL_INACTIVE; 
       inProgressCompositeTime = 0;
   }
   else 

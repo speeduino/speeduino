@@ -60,7 +60,6 @@ static uint32_t SDreadCompletedSectors = 0;
 static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 #endif
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
-SerialStatus serialStatusFlag = SERIAL_INACTIVE;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -172,7 +171,7 @@ static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, si
  * 
  * ::serialStatusFlag will be signal the result of the send:<br>
  * ::serialStatusFlag == SERIAL_INACTIVE: send is complete <br>
- * ::serialStatusFlag == SERIAL_WRITE_INPROGRESS: partial send, subsequent calls to continueSerialTransmission
+ * ::serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS: partial send, subsequent calls to continueSerialTransmission
  * will finish sending serialPayload
  * 
  * @param payloadLength How many bytes to send [0, sizeof(serialPayload))
@@ -183,7 +182,7 @@ static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
   serialWrite(payloadLength);
   serialPayloadLength = payloadLength;
   serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, 0, payloadLength);
-  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
+  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
 }
 
 // ====================================== TS Message Support =============================
@@ -381,7 +380,7 @@ void parseSerial(void)
     return;
   }
 
-  if (serialStatusFlag == SERIAL_INACTIVE)
+  if (Serial.available()!=0 && serialStatusFlag == SERIAL_INACTIVE)
   { 
     //New command received
     //Need at least 2 bytes to read the length of the command
@@ -403,21 +402,21 @@ void parseSerial(void)
 
       serialPayloadLength = word(highByte, Serial.read());
       serialBytesRxTx = 2;
-      serialStatusFlag = SERIAL_RECEIVE_PENDING; //Flag the serial receive as being in progress
+      serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
       cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
     }
   }
 
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
-  while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_PENDING) )
+  while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
   {
     if (serialBytesRxTx < (serialPayloadLength + SERIAL_LEN_SIZE) )
     {
       serialPayload[serialBytesRxTx - SERIAL_LEN_SIZE] = (byte)Serial.read();
       serialBytesRxTx++;
     }
-    else if (Serial.available() >= SERIAL_CRC_LENGTH)
+    else if (Serial.available() >= (int)sizeof(decltype(readSerial32())))
     {
       serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
       if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
@@ -447,18 +446,16 @@ void parseSerial(void)
 
 void continueSerialTransmission(void)
 {
-  if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
+  if(serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS)
   {
     serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
-    serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_WRITE_INPROGRESS;
+    serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
   }
 }
 
 void processSerialCommand(void)
 {
-  currentCommand = serialPayload[0];
-
-  switch (currentCommand)
+  switch (serialPayload[0])
   {
 
     case 'A': // send x bytes of realtime values
@@ -923,7 +920,7 @@ void sendToothLog(void)
       if(Serial.availableForWrite() < 4) 
       { 
         //tx buffer is full. Store the current state so it can be resumed later
-        logSendStatusFlag = LOG_SEND_TOOTH;
+        serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS;
         legacySerial = false;
         return;
       }
@@ -934,7 +931,7 @@ void sendToothLog(void)
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     cmdPending = false;
-    logSendStatusFlag = LOG_SEND_NONE;
+    serialStatusFlag = SERIAL_INACTIVE;
     toothHistoryIndex = 0;
     logItemsTransmitted = 0;
 
@@ -948,13 +945,13 @@ void sendToothLog(void)
   { 
     sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
-    logSendStatusFlag = LOG_SEND_NONE;
+    serialStatusFlag = SERIAL_INACTIVE;
   } 
 }
 
 void sendCompositeLog(void)
 {
-  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (logSendStatusFlag == LOG_SEND_COMPOSITE) ) //Sanity check. Flagging system means this should always be true
+  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (serialStatusFlag == SERIAL_TRANSMIT_COMPOSITE_INPROGRESS) ) //Sanity check. Flagging system means this should always be true
   {
     uint32_t CRC32_val = 0;
     if(logItemsTransmitted == 0)
@@ -976,7 +973,7 @@ void sendCompositeLog(void)
       if((uint16_t)Serial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
       { 
         //tx buffer is full. Store the current state so it can be resumed later
-        logSendStatusFlag = LOG_SEND_COMPOSITE;
+        serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS;
         legacySerial = false;
         return;
       }
@@ -991,7 +988,7 @@ void sendCompositeLog(void)
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
     cmdPending = false;
-    logSendStatusFlag = LOG_SEND_NONE;
+    serialStatusFlag = SERIAL_INACTIVE;
     logItemsTransmitted = 0;
 
     //Apply the CRC reflection
@@ -1004,7 +1001,7 @@ void sendCompositeLog(void)
   { 
     sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
     cmdPending = false; 
-    logSendStatusFlag = LOG_SEND_NONE;
+    serialStatusFlag = SERIAL_INACTIVE;    
   } 
 }
 

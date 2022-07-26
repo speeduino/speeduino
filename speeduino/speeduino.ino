@@ -121,32 +121,36 @@ void loop(void)
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
-      if (serialInProgress == true) 
+      if (serialInProgress == true && Serial.availableForWrite() > 16) 
       { 
-        if(Serial.availableForWrite() > 16) { sendValues(logItemsTransmitted, inProgressLength, 0x30, 0); }
+        sendValues(logItemsTransmitted, inProgressLength, 0x30, 0);
       }
       //Perform the same check for the tooth and composite logs
-      if( logSendStatusFlag == LOG_SEND_TOOTH )
+      if( Serial.availableForWrite() > 16 )
       {
-        if(Serial.availableForWrite() > 16) 
+        if (serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS )
+        {
+          sendToothLog();
+        }
+        else if( serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY)
         { 
-          if(legacySerial == true) { sendToothLog_legacy(logItemsTransmitted); }
-          else { sendToothLog(); }
+          sendToothLog_legacy(logItemsTransmitted);
         }
       }
-      if( logSendStatusFlag == LOG_SEND_COMPOSITE)
+      if( serialStatusFlag == SERIAL_TRANSMIT_COMPOSITE_INPROGRESS && Serial.availableForWrite() > 16)
       {
-        if(Serial.availableForWrite() > 16) { sendCompositeLog(); }
+        sendCompositeLog();
       }
-      if(serialStatusFlag == SERIAL_WRITE_INPROGRESS)
+      if(serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS && Serial.availableForWrite() > 16)
       {
-        if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
+        continueSerialTransmission();
       }
 
       //Check for any new requests from serial.
-      //if ( (Serial.available()) > 0) { command(); }
-      if ( (Serial.available()) > 0) { parseSerial(); }
-      
+      if ( (Serial.available()) > 0) 
+      { 
+        parseSerial();
+      }     
       else if(cmdPending == true)
       {
         //This is a special case just for the tooth and composite loggers
