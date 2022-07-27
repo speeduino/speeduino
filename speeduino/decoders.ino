@@ -4819,10 +4819,10 @@ void triggerSetup_Renix()
 
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
   secondDerivEnabled = false;
-  toothLastToothTime = micros();
+
   toothSystemCount = 1;
   toothCurrentCount = 1;
-
+  toothLastToothTime = 0;
 }
 
 
@@ -4870,7 +4870,7 @@ void triggerPri_Renix()
     renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
     renixSystemLastToothTime = curTime;
 
-    if( toothSystemCount == 12)
+    if( toothSystemCount == 12  || toothLastToothTime == 0) // toothLastToothTime used to ensure we set the value so the code that handles the fuel pump in speeduino.ini has a value to use once the engine is running.
     {
       toothCurrentCount++;
 
