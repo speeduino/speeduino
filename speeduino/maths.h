@@ -10,11 +10,11 @@ inline long powint(int, unsigned int);
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
-extern struct libdivide::libdivide_u16_t libdiv_u16_100;
-extern struct libdivide::libdivide_s16_t libdiv_s16_100;
-extern struct libdivide::libdivide_u32_t libdiv_u32_100;
-extern struct libdivide::libdivide_s32_t libdiv_s32_100;
-extern struct libdivide::libdivide_u32_t libdiv_u32_360;
+extern const struct libdivide::libdivide_u16_t libdiv_u16_100;
+extern const struct libdivide::libdivide_s16_t libdiv_s16_100;
+extern const struct libdivide::libdivide_u32_t libdiv_u32_100;
+extern const struct libdivide::libdivide_s32_t libdiv_s32_100;
+extern const struct libdivide::libdivide_u32_t libdiv_u32_360;
 #endif
 
 inline uint8_t div100(uint8_t n) {
