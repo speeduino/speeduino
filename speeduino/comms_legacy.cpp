@@ -23,14 +23,14 @@ A full copy of the license may be found in the projects root directory
   #include "rtc_common.h"
 #endif
 
-byte currentPage = 1;//Not the same as the speeduino config page numbers
-bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
+static byte currentPage = 1;//Not the same as the speeduino config page numbers
+static bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
-byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
-bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
-uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
-uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
-int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
+static byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
+static bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
+static uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
+static uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
+static int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
