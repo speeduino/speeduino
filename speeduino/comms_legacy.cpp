@@ -24,7 +24,6 @@ A full copy of the license may be found in the projects root directory
 #endif
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
-static bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 static byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 static bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
@@ -34,6 +33,12 @@ static int valueOffset; /**< The memory offset within a given page for a value t
 byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
+
+
+static bool isMap() {
+    // Detecting if the current page is a table/map
+  return (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page);
+}
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
@@ -216,10 +221,6 @@ void legacySerialCommand(void)
         {
           currentPage -= 55;
         }
-        
-        // Detecting if the current page is a table/map
-        if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
-        else { isMap = false; }
         serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -356,7 +357,7 @@ void legacySerialCommand(void)
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
       serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
-      if (isMap)
+      if (isMap())
       {
         if(Serial.available() >= 3) // 1 additional byte is required on the MAP pages which are larger than 255 bytes
         {
