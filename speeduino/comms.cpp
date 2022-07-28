@@ -366,15 +366,13 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
 
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
-- cmdPending = If a command has started but is waiting on further data to complete
-- chunkPending = Specifically for the new receive value method where TS will send a known number of contiguous bytes to be written to a table
 
 Comands are single byte (letter symbol) commands.
 */
 void parseSerial(void)
 {
   //Check for an existing legacy command in progress
-  if(cmdPending == true)
+  if(serialStatusFlag==SERIAL_COMMAND_INPROGRESS_LEGACY)
   {
     legacySerialCommand();
     return;
@@ -384,26 +382,23 @@ void parseSerial(void)
   { 
     //New command received
     //Need at least 2 bytes to read the length of the command
-    byte highByte = (byte)Serial.read();
+    byte highByte = (byte)Serial.peek();
 
     //Check if the command is legacy using the call/response mechanism
     if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
     {
       //Handle legacy cases here
-      serialStatusFlag = SERIAL_INACTIVE; //Make sure new serial handling does not interfere with legacy handling
-      legacySerial = true;
-      currentCommand = highByte;
       legacySerialCommand();
       return;
     }
     else
     {
+      Serial.read();
       while(Serial.available() == 0) { /* Wait for the 2nd byte to be received (This will almost never happen) */ }
 
       serialPayloadLength = word(highByte, Serial.read());
       serialBytesRxTx = 2;
       serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
-      cmdPending = false; // Make sure legacy handling does not interfere with new serial handling
       serialReceiveStartTime = millis();
     }
   }
@@ -706,7 +701,6 @@ void processSerialCommand(void)
       {
         //No other r/ commands should be called
       }
-      cmdPending = false;    
       break;
     }
 
@@ -753,7 +747,7 @@ void processSerialCommand(void)
       if (resetControl != RESET_CONTROL_DISABLED)
       {
       #ifndef SMALL_FLASH_MODE
-        if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
       #endif
 
         while (Serial.available() == 0) { }
@@ -762,7 +756,7 @@ void processSerialCommand(void)
       else
       {
       #ifndef SMALL_FLASH_MODE
-        if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Reset control is currently disabled.")); }
       #endif
       }
       break;
@@ -866,7 +860,6 @@ void processSerialCommand(void)
         }
         else if(cmd == SD_RTC_PAGE)
         {
-          cmdPending = false;
           //Used for setting RTC settings
           if((SD_arg1 == SD_RTC_WRITE_ARG1) && (SD_arg2 == SD_RTC_WRITE_ARG2))
           {
@@ -921,7 +914,6 @@ void sendToothLog(void)
       { 
         //tx buffer is full. Store the current state so it can be resumed later
         serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS;
-        legacySerial = false;
         return;
       }
 
@@ -930,7 +922,6 @@ void sendToothLog(void)
       CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-    cmdPending = false;
     serialStatusFlag = SERIAL_INACTIVE;
     toothHistoryIndex = 0;
     logItemsTransmitted = 0;
@@ -944,7 +935,6 @@ void sendToothLog(void)
   else 
   { 
     sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
-    cmdPending = false; 
     serialStatusFlag = SERIAL_INACTIVE;
   } 
 }
@@ -974,7 +964,6 @@ void sendCompositeLog(void)
       { 
         //tx buffer is full. Store the current state so it can be resumed later
         serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS;
-        legacySerial = false;
         return;
       }
 
@@ -987,7 +976,6 @@ void sendCompositeLog(void)
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
     toothHistoryIndex = 0;
-    cmdPending = false;
     serialStatusFlag = SERIAL_INACTIVE;
     logItemsTransmitted = 0;
 
@@ -1000,7 +988,6 @@ void sendCompositeLog(void)
   else 
   { 
     sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
-    cmdPending = false; 
     serialStatusFlag = SERIAL_INACTIVE;    
   } 
 }

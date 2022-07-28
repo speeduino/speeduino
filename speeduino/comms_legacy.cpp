@@ -27,7 +27,6 @@ byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool isMap = true; /**< Whether or not the currentPage contains only a 3D map that would require translation */
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
-bool cmdPending = false; /**< Whether or not a serial request has only been partially received. This occurs when a command character has been received in the serial buffer, but not all of its arguments have yet been received. If true, the active command will be stored in the currentCommand variable */
 bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
 uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
@@ -35,8 +34,6 @@ int valueOffset; /**< The memory offset within a given page for a value to be re
 byte tsCanId = 0;     // current tscanid requested
 byte logItemsTransmitted;
 byte inProgressLength;
-bool serialInProgress = false;
-bool legacySerial = false;
 SerialStatus serialStatusFlag;
 
 /** Processes the incoming data on the serial buffer based on the command sent.
@@ -48,20 +45,19 @@ Commands are single byte (letter symbol) commands.
 */
 void legacySerialCommand(void)
 {
-  if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
+  if ( serialStatusFlag == SERIAL_INACTIVE )  { currentCommand = Serial.read(); }
 
   switch (currentCommand)
   {
 
     case 'a':
-      cmdPending = true;
-
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       if (Serial.available() >= 2)
       {
         Serial.read(); //Ignore the first value, it's always 0
         Serial.read(); //Ignore the second value, it's always 6
         sendValuesLegacy();
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -69,19 +65,20 @@ void legacySerialCommand(void)
       sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       break;
 
-
     case 'B': // Burn current values to eeprom
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       writeAllConfig();
+      serialStatusFlag = SERIAL_INACTIVE;
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (Serial.available() >= 2)
       {
         Serial.read(); //Ignore the first table value, it's always 0
         writeConfig(Serial.read());
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -95,7 +92,7 @@ void legacySerialCommand(void)
       break;
 
     case 'd': // Send a CRC32 hash of a given page
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (Serial.available() >= 2)
       {
@@ -108,18 +105,18 @@ void legacySerialCommand(void)
         Serial.write( ((CRC32_val >> 8) & 255) );
         Serial.write( (CRC32_val & 255) );
         
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
     case 'E': // receive command button commands
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if(Serial.available() >= 2)
       {
         byte cmdGroup = (byte)Serial.read();
         (void)TS_CommandButtonsHandler(word(cmdGroup, Serial.read()));
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -139,7 +136,7 @@ void legacySerialCommand(void)
       {
         Serial.write(EEPROMReadRaw(x));
       }
-      cmdPending = false;
+      serialStatusFlag = SERIAL_INACTIVE;
       break;
 
     case 'g': // Receive a dump of raw EEPROM values from the user
@@ -161,7 +158,7 @@ void legacySerialCommand(void)
           EEPROMWriteRaw(x, Serial.read());
         }
       }
-      cmdPending = false;
+      serialStatusFlag = SERIAL_INACTIVE;
       break;
     }
 
@@ -202,7 +199,7 @@ void legacySerialCommand(void)
     case 'P': // set the current page
       //This is a legacy function and is no longer used by TunerStudio. It is maintained for compatibility with other systems
       //A 2nd byte of data is required after the 'P' specifying the new page number.
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (Serial.available() > 0)
       {
@@ -224,7 +221,7 @@ void legacySerialCommand(void)
         // Detecting if the current page is a table/map
         if ( (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page) ) { isMap = true; }
         else { isMap = false; }
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -232,7 +229,7 @@ void legacySerialCommand(void)
     * New method for sending page values
     */
     case 'p':
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       //6 bytes required:
       //2 - Page identifier
@@ -258,7 +255,7 @@ void legacySerialCommand(void)
           Serial.write( getPageValue(tempPage, valueOffset + i) );
         }
 
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -268,7 +265,7 @@ void legacySerialCommand(void)
       break;
 
     case 'r': //New format for the optimised OutputChannels
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       byte cmd;
       if (Serial.available() >= 6)
       {
@@ -282,6 +279,7 @@ void legacySerialCommand(void)
         tmp = Serial.read();
         length = word(Serial.read(), tmp);
 
+        serialStatusFlag = SERIAL_INACTIVE;
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
@@ -291,7 +289,6 @@ void legacySerialCommand(void)
         {
           //No other r/ commands are supported in legacy mode
         }
-        cmdPending = false;
       }
       break;
 
@@ -306,7 +303,7 @@ void legacySerialCommand(void)
       //2 - Page identifier
       //2 - offset
       //2 - Length
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       if(Serial.available() >= 6)
       {
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
@@ -318,12 +315,8 @@ void legacySerialCommand(void)
 
         if(currentStatus.toothLogEnabled == true) { sendToothLog_legacy(0); } //Sends tooth log values as ints
         else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog_legacy(0); }
-
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
-
-      
-
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
@@ -343,7 +336,7 @@ void legacySerialCommand(void)
       if (resetControl != RESET_CONTROL_DISABLED)
       {
       #ifndef SMALL_FLASH_MODE
-        if (!cmdPending) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
       #endif
 
         while (Serial.available() == 0) { }
@@ -352,7 +345,7 @@ void legacySerialCommand(void)
       else
       {
       #ifndef SMALL_FLASH_MODE
-        if (!cmdPending) { Serial.println(F("Reset control is currently disabled.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Reset control is currently disabled.")); }
       #endif
       }
       break;
@@ -362,7 +355,7 @@ void legacySerialCommand(void)
       break;
 
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (isMap)
       {
@@ -373,7 +366,7 @@ void legacySerialCommand(void)
           offset2 = Serial.read();
           valueOffset = word(offset2, offset1);
           setPageValue(currentPage, valueOffset, Serial.read());
-          cmdPending = false;
+          serialStatusFlag = SERIAL_INACTIVE;
         }
       }
       else
@@ -382,14 +375,14 @@ void legacySerialCommand(void)
         {
           valueOffset = Serial.read();
           setPageValue(currentPage, valueOffset, Serial.read());
-          cmdPending = false;
+          serialStatusFlag = SERIAL_INACTIVE;
         }
       }
 
       break;
 
     case 'M':
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if(chunkPending == false)
       {
@@ -426,7 +419,7 @@ void legacySerialCommand(void)
           setPageValue(currentPage, (valueOffset + chunkComplete), Serial.read());
           chunkComplete++;
         }
-        if(chunkComplete >= chunkSize) { cmdPending = false; chunkPending = false; }
+        if(chunkComplete >= chunkSize) { serialStatusFlag = SERIAL_INACTIVE; chunkPending = false; }
       }
       break;
 
@@ -487,11 +480,11 @@ void legacySerialCommand(void)
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
-      cmdPending = true;
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (Serial.available() >= 1) {
         configPage4.bootloaderCaps = Serial.read();
-        cmdPending = false;
+        serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
 
@@ -532,7 +525,7 @@ void legacySerialCommand(void)
 
     default:
       Serial.println(F("Err: Unknown cmd"));
-      cmdPending = false;
+      serialStatusFlag = SERIAL_INACTIVE;
       break;
   }
 }
@@ -546,9 +539,10 @@ void legacySerialCommand(void)
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-//void sendValues(int packetlength, byte portNum)
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {  
+  serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
+
   if (portNum == 3)
   {
     //CAN serial
@@ -587,15 +581,13 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
       //tx buffer is full. Store the current state so it can be resumed later
       logItemsTransmitted = offset + x + 1;
       inProgressLength = packetLength - x - 1;
-      serialInProgress = true;
       return;
     }
     
   }
-  serialInProgress = false;
+  serialStatusFlag = SERIAL_INACTIVE;
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-
 }
 
 void sendValuesLegacy(void)
@@ -1115,7 +1107,6 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
         Serial.write(toothHistory[x]);
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-      cmdPending = false;
       serialStatusFlag = SERIAL_INACTIVE; 
       toothHistoryIndex = 0;
   }
@@ -1126,7 +1117,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
     {
       Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
-    cmdPending = false; 
+    serialStatusFlag = SERIAL_INACTIVE; 
   } 
 }
 
@@ -1143,7 +1134,6 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
         { 
           //tx buffer is full. Store the current state so it can be resumed later
           logItemsTransmitted = x;
-          legacySerial = true;
           return;
         }
 
@@ -1158,7 +1148,6 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
       }
       BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
       toothHistoryIndex = 0;
-      cmdPending = false;
       serialStatusFlag = SERIAL_INACTIVE; 
   }
   else 
@@ -1168,7 +1157,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
     {
       Serial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
-    cmdPending = false; 
+    serialStatusFlag = SERIAL_INACTIVE; 
   } 
 }
 
