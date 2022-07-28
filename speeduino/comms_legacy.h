@@ -50,7 +50,6 @@ extern bool chunkPending; /**< Whether or not the current chunk write is complet
 extern uint16_t chunkComplete; /**< The number of bytes in a chunk write that have been written so far */
 extern uint16_t chunkSize; /**< The complete size of the requested chunk write */
 extern int valueOffset; /**< THe memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-extern byte tsCanId;     // current tscanid requested
 extern byte logItemsTransmitted;
 extern byte inProgressLength;
 

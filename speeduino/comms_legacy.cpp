@@ -31,7 +31,6 @@ bool chunkPending = false; /**< Whether or not the current chunk write is comple
 uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
 uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-byte tsCanId = 0;     // current tscanid requested
 byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
@@ -269,7 +268,7 @@ void legacySerialCommand(void)
       byte cmd;
       if (Serial.available() >= 6)
       {
-        tsCanId = Serial.read(); //Read the $tsCanId
+        Serial.read(); //Read the $tsCanId
         cmd = Serial.read(); // read the command
 
         uint16_t offset, length;
