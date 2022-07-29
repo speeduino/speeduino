@@ -430,7 +430,6 @@ void initialiseAll(void)
     }
 
     //Initial values for loop times
-    currentLoopTime = micros_safe();
     mainLoopCount = 0;
 
     currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)

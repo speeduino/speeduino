@@ -279,9 +279,29 @@ static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 }
 
 /**
+ * Returns true if the decoder has stalled. Returns false if the decoder has not stalled.
+ * Stalling is determined by looking at how long ago the last tooth was seen.
+ * The delay varies between decoders and can change from tooth to tooth.
+ * This function must always be called with interrupts disabled
+ */
+inline bool isDecoderStalled() {
+  bool decoderStalled;
+
+  uint32_t timeToLastTooth = (micros_safe() - toothLastToothTime);
+  if ( timeToLastTooth > MAX_STALL_TIME ) {
+    decoderStalled = true;
+  }
+  else {
+    decoderStalled = false;
+  }
+
+  return decoderStalled;
+}
+
+/**
  * Resets most decoder variables
  */
-void resetDecoderState() {
+inline void resetDecoderState() {
   //Decoder output variables
   toothLastToothTime = 0;
   toothLastMinusOneToothTime = 0;

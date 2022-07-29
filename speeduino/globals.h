@@ -599,7 +599,6 @@ extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
 extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
-extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 //The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
 #if defined(CORE_SAMD21)

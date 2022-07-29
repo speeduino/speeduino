@@ -180,10 +180,8 @@ void loop(void)
           }
       #endif
 
-    currentLoopTime = micros_safe();
     noInterrupts(); // Make sure we can reset everything before any other interrupts fire. It's also required for the isDecoderStalled function.
-    unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
+    if ( isDecoderStalled() == false ) //Check how long ago the last tooth was seen compared to now.
     { //Engine is not stalled so continue as normal
       interrupts();
       currentStatus.longRPM = getRPM(); //Long RPM is included here
