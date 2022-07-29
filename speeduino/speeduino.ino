@@ -198,15 +198,7 @@ void loop(void)
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
-      toothLastToothTime = 0;
-      toothLastSecToothTime = 0;
-      //toothLastMinusOneToothTime = 0;
-      currentStatus.hasSync = false;
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
-      currentStatus.startRevolutions = 0;
-      toothSystemCount = 0;
-      secondaryToothCount = 0;
       MAPcurRev = 0;
       MAPcount = 0;
       currentStatus.rpmDOT = 0;
@@ -222,6 +214,7 @@ void loop(void)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Same as above but the decel enleanment
+      resetDecoderState();
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
