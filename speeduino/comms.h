@@ -73,14 +73,10 @@
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.
  */
-void parseSerial(void);
+void serialReceive(void);
 
-/** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS */
-void continueSerialTransmission(void);
-
-/** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
-void sendToothLog(void);
-/** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
-void sendCompositeLog(void);
+/** @brief The serial transmit pump. Should be called when ::serialStatusFlag indicates a transmit
+ * operation is in progress */
+void serialTransmit(void);
 
 #endif // COMMS_H

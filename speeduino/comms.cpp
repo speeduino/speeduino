@@ -28,8 +28,16 @@ A full copy of the license may be found in the projects root directory
   #include "SD_logger.h"
 #endif
 
+// Forward declarations
+
 /** @brief Processes a message once it has been fully recieved */
 void processSerialCommand();
+
+/** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
+void sendToothLog();
+
+/** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
+void sendCompositeLog();
 
 //!@{
 /** @brief Hard coded response for some TS messages.
@@ -270,7 +278,6 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
   }
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-
 }
 
 /**
@@ -369,7 +376,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Comands are single byte (letter symbol) commands.
 */
-void parseSerial(void)
+void serialReceive(void)
 {
   //Check for an existing legacy command in progress
   if(serialStatusFlag==SERIAL_COMMAND_INPROGRESS_LEGACY)
@@ -439,13 +446,37 @@ void parseSerial(void)
   } //Data in serial buffer and serial receive in progress
 }
 
-void continueSerialTransmission(void)
+void serialTransmit(void)
 {
-  if(serialStatusFlag == SERIAL_TRANSMIT_INPROGRESS)
+  if (Serial.availableForWrite() > 16)
   {
-    serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
-    serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
-  }
+    switch (serialStatusFlag)
+    {
+      case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
+        sendValues(logItemsTransmitted, inProgressLength, 0x30, 0);
+        break;
+
+      case SERIAL_TRANSMIT_TOOTH_INPROGRESS:
+        sendToothLog();
+        break;
+
+      case SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY:
+        sendToothLog_legacy(logItemsTransmitted);
+        break;
+
+      case SERIAL_TRANSMIT_COMPOSITE_INPROGRESS:
+        sendCompositeLog();
+        break;
+
+      case SERIAL_TRANSMIT_INPROGRESS:
+        serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
+        serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
+        break;
+
+      default: // Nothing to do
+        break;
+    }
+  }      
 }
 
 void processSerialCommand(void)

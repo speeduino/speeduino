@@ -32,15 +32,41 @@ enum SerialStatus {
    * This occurs when a the length has been received in the serial buffer,
    * but not all of the payload or CRC has yet been received. 
    * 
-   * Expectation is that parseSerial is called  until the status reverts 
+   * Expectation is that ::serialReceive is called  until the status reverts 
    * to SERIAL_INACTIVE
   */
   SERIAL_RECEIVE_INPROGRESS,
-  /** We are part way through processing a legacy serial commang: call ::legacySerialCommand */
+  /** We are part way through processing a legacy serial commang: call ::serialReceive */
   SERIAL_COMMAND_INPROGRESS_LEGACY,
 };
 /** @brief Current status of serial comms. */
 extern SerialStatus serialStatusFlag;
+
+/**
+ * @brief Is a serial write in progress?
+ * 
+ * Expectation is that ::serialTransmit is called until this
+ * returns false
+ */
+inline bool serialTransmitInProgress() {
+    return serialStatusFlag==SERIAL_TRANSMIT_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_INPROGRESS_LEGACY
+    || serialStatusFlag==SERIAL_TRANSMIT_TOOTH_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY
+    || serialStatusFlag==SERIAL_TRANSMIT_COMPOSITE_INPROGRESS
+    || serialStatusFlag==SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
+}
+
+/**
+ * @brief Is a non-blocking serial receive operation in progress?
+ * 
+ * Expectation is the ::serialReceive is called until this
+ * returns false.
+ */
+inline bool serialRecieveInProgress() {
+  return serialStatusFlag==SERIAL_RECEIVE_INPROGRESS
+  || serialStatusFlag==SERIAL_COMMAND_INPROGRESS_LEGACY;
+}
 
 extern bool firstCommsRequest; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 extern byte logItemsTransmitted;
