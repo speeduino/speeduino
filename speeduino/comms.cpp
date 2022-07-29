@@ -115,7 +115,7 @@ void flushRXbuffer(void)
 /** @brief Reverse the byte order of a 4 byte buffer 
  * Assumes a 4 byte buffer for optimization reasons (no loop required as in the general case)
  */
-static byte* reverse_bytes_x4(byte *buffer)
+static char* reverse_bytes_x4(char *buffer)
 {
   SWAP_BYTES(buffer[0], buffer[3]);
   SWAP_BYTES(buffer[1], buffer[2]);
@@ -129,7 +129,7 @@ static byte* reverse_bytes_x4(byte *buffer)
  * */
 static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 {
-  return *(uint32_t*)reverse_bytes_x4((byte *)&i);
+  return *(uint32_t*)reverse_bytes_x4((char *)&i);
 }
 
 // ====================================== Multibyte Primitive IO Support =============================
@@ -141,7 +141,7 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
  * */
 static __attribute__((noinline)) uint32_t readSerial32()
 {
-  byte raw[4];
+  char raw[4];
   Serial.readBytes(raw, sizeof(raw));
   return *(uint32_t*)reverse_bytes_x4(raw);
 }
