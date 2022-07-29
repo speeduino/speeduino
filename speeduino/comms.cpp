@@ -23,6 +23,7 @@ A full copy of the license may be found in the projects root directory
 #include <avr/pgmspace.h>
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
+  #include "comms_sd.h"
 #endif
 #ifdef SD_LOGGING
   #include "SD_logger.h"
@@ -38,6 +39,21 @@ void sendToothLog();
 
 /** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
 void sendCompositeLog();
+
+#define SERIAL_RC_OK        0x00 //!< Success
+#define SERIAL_RC_REALTIME  0x01 //!< Unused
+#define SERIAL_RC_PAGE      0x02 //!< Unused
+
+#define SERIAL_RC_BURN_OK   0x04 //!< EEPROM write succeeded
+
+#define SERIAL_RC_TIMEOUT   0x80 //!< Timeout error
+#define SERIAL_RC_CRC_ERR   0x82 //!< CRC mismatch
+#define SERIAL_RC_UKWN_ERR  0x83 //!< Unknown command
+#define SERIAL_RC_RANGE_ERR 0x84 //!< Incorrect range. TS will not retry command
+#define SERIAL_RC_BUSY_ERR  0x85 //!< TS will wait and retry
+
+#define SERIAL_LEN_SIZE     2
+#define SERIAL_TIMEOUT      3000 //ms
 
 //!@{
 /** @brief Hard coded response for some TS messages.
@@ -59,14 +75,18 @@ static uint16_t serialBytesRxTx = 0;
 static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
 #ifdef RTC_ENABLED
-static uint8_t serialPayload[SD_FILE_TRANSMIT_BUFFER_SIZE]; //!< Serial payload buffer must be significantly larger for boards that support SD logging. Large enough to contain 4 sectors + overhead */
+#undef SERIAL_BUFFER_SIZE
+/** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
+ * 
+ * Large enough to contain 4 sectors + overhead 
+ */
+#define SERIAL_BUFFER_SIZE (2048 + 3)
 static uint16_t SDcurrentDirChunk;
 static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
-#else
-static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 #endif
+static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 
 #if defined(CORE_AVR)
