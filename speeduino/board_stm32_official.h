@@ -266,7 +266,7 @@ extern "C" char* sbrk(int incr);
 #define IDLE_COUNTER   (TIM1)->CNT
 #define IDLE_COMPARE   (TIM1)->CCR4
 
-#define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE
+#define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE; (TIM1)->CR1 |= TIM_CR1_CEN;
 #define IDLE_TIMER_DISABLE() (TIM1)->DIER &= ~TIM_DIER_CC4IE
 
 /*
