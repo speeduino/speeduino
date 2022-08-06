@@ -142,11 +142,11 @@ void fuelPumpControl()
 {
    if (BIT_CHECK(currentStatus.testOutputs, 1) == false) // Make sure test outputs is not on, otherwise fuel pump request is controlled by that function.
    {
-     if (currentStatus.hasSync == true) // Engine turning with sync
+     if (engineIsMoving == true) // Engine moving
      {
        currentStatus.fuelPumpOn = true;
        fpPrimed = true;
-       fpOffDelay = 10; //1 sec
+       fpOffDelay = 2; //0.2 sec delay for debouncing in case of noisy 
      }
      else if(fpPrimed == false) // Engine not running and not primed
      {
