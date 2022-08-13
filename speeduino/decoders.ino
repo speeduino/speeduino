@@ -1813,7 +1813,12 @@ void triggerPri_Jeep2000()
       
       tempTriggerToothAngle = toothAngles[(toothCurrentCount)] - toothAngles[(toothCurrentCount-1)]; // gap to the next tooth
 
-      tempCurGap = curGap * (tempTriggerToothAngle/triggerToothAngle);
+      /* scale up curGap to be what the duration would be for the next tooth gap, if the crank speed doesn't change. 
+      i.e. given next tooth gap might be longer or shorter than current, predict what curgap will be to the next tooth, 
+      so on the next primary trigger, a  trigger filter can be set for it. */
+      
+      tempCurGap = curGap * (tempTriggerToothAngle/triggerToothAngle); 
+      
       setFilter(tempCurGap); //Recalc the new filter value
 
       validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
