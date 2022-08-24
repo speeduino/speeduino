@@ -70,6 +70,78 @@ void initialiseCorrections()
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
+uint16_t correctionsFuel1()
+{
+  #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
+  uint32_t sumCorrections = 100;
+  byte activeCorrections = 0;
+  uint16_t result; //temporary variable to store the result of each corrections function
+
+  //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
+  currentStatus.wueCorrection = correctionWUE();
+  if (currentStatus.wueCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.wueCorrection); activeCorrections++; }
+
+  result = correctionASE();
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+
+  result = correctionCranking();
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
+
+  currentStatus.AEamount = correctionAccel();
+  if (configPage2.aeApplyMode == AE_MODE_MULTIPLIER)
+  {
+  if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  }
+
+  result = correctionFloodClear();
+  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.egoCorrection = correctionAFRClosedLoop();
+  if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.batCorrection = correctionBatVoltage();
+  if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
+  {
+    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
+  }
+  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
+  {
+    if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
+    if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }    
+  }
+
+  currentStatus.iatCorrection = correctionIATDensity();
+  if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.baroCorrection = correctionBaro();
+  if (currentStatus.baroCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.baroCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.flexCorrection = correctionFlex();
+  if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.fuelTempCorrection = correctionFuelTemp();
+  if (currentStatus.fuelTempCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.fuelTempCorrection); activeCorrections++; }
+  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+
+  currentStatus.launchCorrection = correctionLaunch();
+  if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
+
+  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+
+  sumCorrections = sumCorrections / powint(100,activeCorrections);
+
+  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
+  return (uint16_t)sumCorrections;
+}
+
 uint16_t correctionsFuel()
 {
   uint32_t sumCorrections = 100;
@@ -79,8 +151,8 @@ uint16_t correctionsFuel()
   currentStatus.wueCorrection = correctionWUE();
   if (currentStatus.wueCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.wueCorrection); }
 
-  currentStatus.ASEValue = correctionASE();
-  if (currentStatus.ASEValue != 100) { sumCorrections = div100(sumCorrections * currentStatus.ASEValue); }
+  result = correctionASE();
+  if (result != 100) { sumCorrections = div100(sumCorrections * result); }
 
   result = correctionCranking();
   if (result != 100) { sumCorrections = div100(sumCorrections * result); }
@@ -141,7 +213,7 @@ static inline byte correctionsFuel_new()
 
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  currentStatus.ASEValue = correctionASE(); numCorrections++;
+  uint16_t correctionASEvalue = correctionASE(); numCorrections++;
   uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
   currentStatus.AEamount = correctionAccel(); numCorrections++;
   uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
@@ -157,7 +229,7 @@ static inline byte correctionsFuel_new()
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
   sumCorrections = currentStatus.wueCorrection \
-                  + currentStatus.ASEValue \
+                  + correctionASEvalue \
                   + correctionCrankingValue \
                   + currentStatus.AEamount \
                   + correctionFloodClearValue \
@@ -216,61 +288,52 @@ uint16_t correctionCranking()
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
     if (crankingValue < 100) { crankingValue = 100; } //Sanity check
-    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
+    if( BIT_CHECK(TIMER_mask, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
   }
   return crankingValue;
 }
 
-/** After Start Enrichment calculation.
+/** Afer Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
- */   
+ */
 byte correctionASE()
 {
-  int16_t ASEValue = currentStatus.ASEValue;
+  int16_t ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
+  if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
   {
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
+    if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
     {
-      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+      BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+      ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+      aseTaper = 0;
+    }
+    else
+    {
+      if ( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (aseTaper < configPage2.aseTaperTime) ) //Cranking check needs to be here also, so cranking and afterstart enrichments won't run simultaneously
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-        aseTaper = 0;
+        ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+        aseTaper++;
       }
       else
       {
-        if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
-        {
-          BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
-          aseTaper++;
-        }
-        else
-        {
-          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-          ASEValue = 100;
-        }
+        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+        ASEValue = 100;
       }
-      
-      //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
-      if(ASEValue < 0) { ASEValue = 0; }
-      ASEValue = (byte)ASEValue;
     }
+    
+    //Safety checks
+    if(ASEValue > 255) { ASEValue = 255; }
+    if(ASEValue < 0) { ASEValue = 0; }
+    currentStatus.ASEValue = (byte)ASEValue;
   }
-  else
-  {
-    //Engine is cranking, ASE disabled
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
-    ASEValue = 100;
-  }
-  return ASEValue;
+  return currentStatus.ASEValue;
 }
 
 /** Acceleration enrichment correction calculation.
@@ -302,7 +365,7 @@ uint16_t correctionAccel()
   else if(configPage2.aeMode == AE_MODE_TPS)
   {
     //Get the TPS rate change
-    TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
+    TPS_change = (currentStatus.TPS - TPSlast);
     //TPS_rateOfChange = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
     TPS_rateOfChange = (TPS_READ_FREQUENCY * TPS_change) / 2; //This is the % per second that the TPS has moved, adjusted for the 0.5% resolution of the TPS
     if(TPS_rateOfChange >= 0) { currentStatus.tpsDOT = TPS_rateOfChange / 10; } //The TAE bins are divided by 10 in order to allow them to be stored in a byte
@@ -368,7 +431,7 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
               accelValue = percentage((100-taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
@@ -427,7 +490,7 @@ uint16_t correctionAccel()
             else 
             {
               int16_t taperRange = trueTaperMax - trueTaperMin;
-              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100UL) / taperRange; //The percentage of the way through the RPM taper range
+              int16_t taperPercent = ((currentStatus.RPM - trueTaperMin) * 100) / taperRange; //The percentage of the way through the RPM taper range
               accelValue = percentage( (100 - taperPercent), accelValue); //Calculate the above percentage of the calculated accel amount. 
             }
           }
@@ -605,7 +668,7 @@ byte correctionAFRClosedLoop()
     if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
   }
   
-  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
+  if( configPage6.egoType > 0 ) //egoType of 0 means no O2 sensor
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     

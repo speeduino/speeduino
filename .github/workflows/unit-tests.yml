@@ -1,3 +1,5 @@
+# This is a basic workflow to help you get started with Actions
+
 name: Unit Tests
 
 # Controls when the workflow will run
@@ -11,8 +13,6 @@ on:
 
 jobs:
   build:
-    # Only try to run hardware unit tests on the upstream repository
-    if: github.repository_owner == 'noisymime'
 
     runs-on: ubuntu-latest
 

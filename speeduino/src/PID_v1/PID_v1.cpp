@@ -54,21 +54,21 @@ bool PID::Compute()
       /*Compute all the working error variables*/
 	  long input = *myInput;
       long error = *mySetpoint - input;
-      ITerm += (ki * error);
+      ITerm += (ki * error)/100;
       if(ITerm > outMax) ITerm= outMax;
-      else if(ITerm < outMin) ITerm = outMin;
+      else if(ITerm < outMin) ITerm= outMin;
       long dInput = (input - lastInput);
 
       /*Compute PID Output*/
-      long output = (kp * error) + ITerm- (kd * dInput);
+      long output = (kp * error)/100 + ITerm- (kd * dInput)/100;
 
 	  if(output > outMax) { output = outMax; }
       else if(output < outMin) { output = outMin; }
-	  *myOutput = output/1000;
+	  *myOutput = output;
 
       /*Remember some variables for next time*/
       lastInput = input;
-      lastTime = now;
+      //lastTime = now;
 	  return true;
    }
    //else return false;
@@ -90,10 +90,10 @@ void PID::SetTunings(byte Kp, byte Ki, byte Kd)
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-  //long InverseSampleTimeInSec = 100;
+  long InverseSampleTimeInSec = 100000 / SampleTime;
   kp = Kp;
-  ki = Ki;
-  kd = Kd * 10;
+  ki = (Ki * 100) / InverseSampleTimeInSec;
+  kd = (Kd * InverseSampleTimeInSec) / 100;
 
   if(controllerDirection ==REVERSE)
    {
@@ -129,8 +129,8 @@ void PID::SetSampleTime(int NewSampleTime)
 void PID::SetOutputLimits(long Min, long Max)
 {
    if(Min >= Max) return;
-   outMin = Min*1000;
-   outMax = Max*1000;
+   outMin = Min;
+   outMax = Max;
 
    if(inAuto)
    {
@@ -554,18 +554,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  **********************************************************************************/
 bool integerPID_ideal::Compute()
 {
-   //This is the orginal PID with 50% Base target DC
-   return Compute(50*limitMultiplier);
-}
-
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/
-bool integerPID_ideal::Compute(uint16_t FeedForward)
-{
    unsigned long now = millis();
    //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
@@ -579,19 +567,19 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
 
       ITerm += error;
 
-      // uint16_t bias = 50; //Base target DC%
+      uint16_t bias = 50; //Base target DC%
       long output = 0;
 
       if(ki != 0)
       {
-        output = ((outMax * limitMultiplier * 100) - FeedForward) / (long)ki;
+        output = ((outMax - bias) * limitMultiplier * 100) / (long)ki;
         if (output < 0) { output = 0; }
       }
       if (ITerm > output) { ITerm = output; }
 
       if(ki != 0)
       {
-        output = (FeedForward - (-outMin * limitMultiplier * 100)) / (long)ki;
+        output = ((bias - outMin) * limitMultiplier * 100) / (long)ki;
         if (output < 0) { output = 0; }
       }
       else { output = 0; }
@@ -599,7 +587,7 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
 
       /*Compute PID Output*/
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
-      output = FeedForward + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
+      output = (bias * limitMultiplier) + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
       //if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
       //if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }

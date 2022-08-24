@@ -10,4 +10,3 @@ void test_corrections_iatdensity(void);
 void test_corrections_baro(void);
 void test_corrections_launch(void);
 void test_corrections_dfco(void);
-void test_corrections_TAE(void);
