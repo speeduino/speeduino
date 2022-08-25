@@ -76,7 +76,7 @@ volatile unsigned int secondaryToothCount; //Used for identifying the current se
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
-volatile uint16_t triggerActualTeeth;
+uint16_t triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
@@ -3227,7 +3227,7 @@ void triggerSetEndTeeth_Daihatsu()
 
 /** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
-Only rising Edge is used for simplicity.The second input is ignored, as it does not help to desolve cam position.
+Only rising Edge is used for simplicity.The second input is ignored, as it does not help to resolve cam position.
 * @defgroup dec_harley Harley Davidson
 * @{
 */

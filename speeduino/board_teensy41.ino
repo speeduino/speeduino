@@ -35,7 +35,7 @@ void initBoard()
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
@@ -264,6 +264,12 @@ uint16_t freeRam()
 
     // The difference is the free, available ram.
     return (uint16_t)stackTop - heapTop;
+}
+
+//This function is used for attempting to set the RTC time during compile
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
 }
 
 void doSystemReset() { return; }

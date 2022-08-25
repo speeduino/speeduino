@@ -21,7 +21,7 @@ int rpmDelta;
 * 
 * Currently 4 methods are planned and/or available:
 * 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependant)
+* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
@@ -41,9 +41,10 @@ unsigned long angleToTime(int16_t angle, byte method)
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
           
-          returnTime = ( (toothTime * angle) / triggerToothAngle );
+          returnTime = ( (toothTime * angle) / tempTriggerToothAngle );
         }
         else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }
@@ -55,7 +56,7 @@ unsigned long angleToTime(int16_t angle, byte method)
 * Convert a time (uS) into an angle at current speed
 * Currently 4 methods are planned and/or available:
 * 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependant)
+* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
@@ -76,9 +77,10 @@ uint16_t timeToAngle(unsigned long time, byte method)
         {
           noInterrupts();
           unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
 
-          returnAngle = ( (unsigned long)(time * triggerToothAngle) / toothTime );
+          returnAngle = ( (unsigned long)(time * tempTriggerToothAngle) / toothTime );
         }
         else { returnAngle = timeToAngle(time, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
     }
@@ -134,7 +136,7 @@ void doCrankSpeedCalcs()
           rpmDelta = (toothDeltaV << 10) / (6 * toothDeltaT);
         }
 
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This give accuracy down to 0.1 of a degree and can provide noticably better timing results on low res triggers
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
       }
       else
@@ -155,10 +157,10 @@ void doCrankSpeedCalcs()
         {
           //long timeThisRevolution = (micros_safe() - toothOneTime);
           interrupts();
-          //Take into account any likely accleration that has occurred since the last full revolution completed:
+          //Take into account any likely acceleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
           long rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low res triggers
+          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
         }
       }
