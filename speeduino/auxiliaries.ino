@@ -145,7 +145,6 @@ void fuelPumpControl()
      if (engineIsMoving == true) // Engine moving
      {
        currentStatus.fuelPumpOn = true;
-       fpPrimed = true;
        fpOffDelay = 2; //0.2 sec delay for debouncing in case of noisy 
      }
      else if(fpPrimed == false) // Engine not running and not primed
