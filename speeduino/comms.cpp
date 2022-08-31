@@ -170,8 +170,20 @@ static void serialWrite(uint16_t value)
  */
 static uint16_t writeNonBlocking(const byte *buffer, size_t length)
 {
-  size_t capacity = min((size_t)Serial.availableForWrite(), length);
-  return Serial.write(buffer, capacity);
+  uint16_t bytesTransmitted = 0;
+
+  while (bytesTransmitted<length && Serial.availableForWrite() != 0)
+  {
+    Serial.write(buffer[bytesTransmitted]);
+    bytesTransmitted++;
+  }
+
+  return bytesTransmitted;
+
+  // This doesn't work on Teensy.
+  // See https://github.com/PaulStoffregen/cores/issues/10#issuecomment-61514955
+  // size_t capacity = min((size_t)Serial.availableForWrite(), length);
+  // return Serial.write(buffer, capacity);
 }
 
 /** @brief Send the buffer, followed by it's CRC
