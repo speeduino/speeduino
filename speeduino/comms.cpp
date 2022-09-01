@@ -452,15 +452,16 @@ void serialReceive(void)
     }
     else if (Serial.available() >= (int)sizeof(decltype(readSerial32())))
     {
-      serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
       if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
+        serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
         //CRC Error. Need to send an error message
         sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
         flushRXbuffer();
       }
       else
       {
+        serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
         //CRC is correct. Process the command
         processSerialCommand();
       } //CRC match
