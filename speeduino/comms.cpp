@@ -176,6 +176,9 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
   {
     Serial.write(buffer[bytesTransmitted]);
     bytesTransmitted++;
+    if (Serial.availableForWrite()==0) {
+      break;
+    }
   }
 
   return bytesTransmitted;
@@ -481,35 +484,32 @@ void serialReceive(void)
 
 void serialTransmit(void)
 {
-  if (Serial.availableForWrite() > 16)
+  switch (serialStatusFlag)
   {
-    switch (serialStatusFlag)
-    {
-      case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
-        sendValues(logItemsTransmitted, inProgressLength, 0x30, 0);
-        break;
+    case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
+      sendValues(logItemsTransmitted, inProgressLength, 0x30, 0);
+      break;
 
-      case SERIAL_TRANSMIT_TOOTH_INPROGRESS:
-        sendToothLog();
-        break;
+    case SERIAL_TRANSMIT_TOOTH_INPROGRESS:
+      sendToothLog();
+      break;
 
-      case SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY:
-        sendToothLog_legacy(logItemsTransmitted);
-        break;
+    case SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY:
+      sendToothLog_legacy(logItemsTransmitted);
+      break;
 
-      case SERIAL_TRANSMIT_COMPOSITE_INPROGRESS:
-        sendCompositeLog();
-        break;
+    case SERIAL_TRANSMIT_COMPOSITE_INPROGRESS:
+      sendCompositeLog();
+      break;
 
-      case SERIAL_TRANSMIT_INPROGRESS:
-        serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
-        serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
-        break;
+    case SERIAL_TRANSMIT_INPROGRESS:
+      serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
+      serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
+      break;
 
-      default: // Nothing to do
-        break;
-    }
-  }      
+    default: // Nothing to do
+      break;
+  }
 }
 
 void processSerialCommand(void)
