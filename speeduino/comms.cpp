@@ -152,7 +152,11 @@ static __attribute__((noinline)) uint32_t readSerial32()
 static uint32_t serialWrite(uint32_t value)
 {
   value = reverse_bytes(value);
-  Serial.write((const byte*)&value, sizeof(value));
+  const byte *pBuffer = (const byte*)&value;
+  Serial.write(pBuffer[0]);
+  Serial.write(pBuffer[1]);
+  Serial.write(pBuffer[2]);
+  Serial.write(pBuffer[3]);
   return value;
 }
 
