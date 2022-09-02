@@ -343,7 +343,7 @@ uint16_t correctionAccel()
   {
     if(configPage2.aeMode == AE_MODE_MAP)
     {
-      if (MAP_change <= 2)
+      if (MAP_change <= configPage2.maeMinChange)
       {
         accelValue = 100;
         currentStatus.mapDOT = 0;
@@ -401,8 +401,8 @@ uint16_t correctionAccel()
     {
     
       //Check for deceleration (Deceleration adjustment not yet supported)
-      //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-      if (TPS_change <= TPSAE_ABSOLUTE_THRESHOLD)
+      //Also check for only very small movement. This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+      if (TPS_change <= configPage2.taeMinChange)
       {
         accelValue = 100;
         currentStatus.tpsDOT = 0;
