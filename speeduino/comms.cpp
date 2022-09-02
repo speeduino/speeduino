@@ -139,10 +139,19 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
  * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
  * off free ram reporting.
  * */
-static __attribute__((noinline)) uint32_t readSerial32()
+static __attribute__((noinline)) uint32_t readSerial32Timeout(uint32_t startTime)
 {
   char raw[4];
-  Serial.readBytes(raw, sizeof(raw));
+  // Teensy 3.5: Serial.available() should only be used as a boolean test
+  // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
+  int count=0;
+  while (count < sizeof(raw)) {
+    if (Serial.available()) {
+      raw[count++] =(byte)Serial.read();
+    } else if( (millis() - startTime) > SERIAL_TIMEOUT) {
+      return 0;
+    }
+  }  
   return *(uint32_t*)reverse_bytes_x4(raw);
 }
 
@@ -457,22 +466,23 @@ void serialReceive(void)
       serialPayload[serialBytesRxTx - SERIAL_LEN_SIZE] = (byte)Serial.read();
       serialBytesRxTx++;
     }
-    else if (Serial.available() >= (int)sizeof(decltype(readSerial32())))
+    else
     {
-      if(readSerial32() != CRC32_serial.crc32(serialPayload, serialPayloadLength))
+      uint32_t incomingCrc = readSerial32Timeout(serialReceiveStartTime);
+      serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
+
+      if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
       {
-        serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
+        //CRC is correct. Process the command
+        processSerialCommand();
+      }
+      else if (incomingCrc!=0) {
         //CRC Error. Need to send an error message
         sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
         flushRXbuffer();
       }
-      else
-      {
-        serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
-        //CRC is correct. Process the command
-        processSerialCommand();
-      } //CRC match
-    } //CRC received in full
+      // else timeout - code below will kick in.
+    }
 
     //Check for a timeout
     if( (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT)
