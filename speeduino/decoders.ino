@@ -731,7 +731,7 @@ void triggerSetup_DualWheel()
   doubleGap2 =  configPage4.triggerTeeth+1;
 
 
-//  Serial3.begin (38400);
+ // Serial3.begin (38400);
 
 }
 
@@ -745,7 +745,8 @@ void triggerPri_DualWheel_v2()
     toothCurrentCount++; //Increment the tooth counter
     validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-//    Serial3.print(" "); Serial3.print(toothCurrentCount);
+    // Serial3.print(" "); 
+    // Serial3.print(toothCurrentCount);
 
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) )
     {
@@ -758,7 +759,7 @@ void triggerPri_DualWheel_v2()
       {  
         //  Found a missing tooth, need to add additional missing teeth to toothCurrentCount & set missing tooth flag & triggerToothAngleIsCorrect to false       
         toothCurrentCount = toothCurrentCount + 2;
-//        Serial3.print(" GAP GAP"); 
+       // Serial3.print(" GAP GAP"); 
 
 
         // fake the last gap to ensure when we get to tooth 2 after the gap we don't get a silly large gap due to the missing teeth being part of the maths
@@ -778,7 +779,8 @@ void triggerPri_DualWheel_v2()
           )
         {
           // lost Sync as gap should be at the tooth after gap1 or gap2 
-//          Serial3.print(" LostSYNC1 ");Serial3.print(toothCurrentCount);
+          // Serial3.print(" LostSYNC1 ");
+          // Serial3.print(toothCurrentCount);
           currentStatus.hasSync = false;
           currentStatus.syncLossCounter++;
           triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
@@ -795,7 +797,11 @@ void triggerPri_DualWheel_v2()
           }
           else
           {
-//            Serial3.print(" LostSYNC2 "); Serial3.print(toothAfterGap); Serial3.print(":"); Serial3.print(toothCurrentCount); Serial3.print("> ");
+           // Serial3.print(" LostSYNC2 "); 
+           // Serial3.print(toothAfterGap); 
+           // Serial3.print(":"); 
+           // Serial3.print(toothCurrentCount); 
+           // Serial3.print("> ");
             currentStatus.hasSync = false;
             currentStatus.syncLossCounter++;
             triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
@@ -817,11 +823,11 @@ void triggerPri_DualWheel_v2()
       {
         if( toothCurrentCount > configPage4.triggerTeeth )
         {
-//          Serial3.println(" ROT ");
+         // Serial3.println(" ROT ");
           toothCurrentCount = toothCurrentCount - configPage4.triggerTeeth ;          
           if( toothCurrentCount != 1)
           {
-//            Serial3.print(" LostSYNC3");
+            // Serial3.print(" LostSYNC3");
             currentStatus.hasSync = false;
             currentStatus.syncLossCounter++;
             triggerToothAngleIsCorrect = false;
@@ -1086,58 +1092,58 @@ void triggerSetEndTeeth_DualWheel_v2()
     // check the calculated trigger tooth exists, if it doesn't use the previous tooth
     // nb the toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
 
-    if( tempIgnition1EndTooth < configPage4.triggerTeeth) { ignition1EndTooth = triggerToothCalc (tempIgnition1EndTooth,0); } // 0 to 360 degrees
-    else { ignition1EndTooth = triggerToothCalc (tempIgnition1EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition1EndTooth < configPage4.triggerTeeth) { ignition1EndTooth = triggerToothCalc_v2 (tempIgnition1EndTooth,0); } // 0 to 360 degrees
+    else { ignition1EndTooth = triggerToothCalc_v2 (tempIgnition1EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 
-    if( tempIgnition2EndTooth < configPage4.triggerTeeth) { ignition2EndTooth = triggerToothCalc (tempIgnition2EndTooth,0); } // 0 to 360 degrees
-    else { ignition2EndTooth = triggerToothCalc (tempIgnition2EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition2EndTooth < configPage4.triggerTeeth) { ignition2EndTooth = triggerToothCalc_v2 (tempIgnition2EndTooth,0); } // 0 to 360 degrees
+    else { ignition2EndTooth = triggerToothCalc_v2 (tempIgnition2EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 
-    if( tempIgnition3EndTooth < configPage4.triggerTeeth) { ignition3EndTooth = triggerToothCalc (tempIgnition3EndTooth,0); } // 0 to 360 degrees
-    else { ignition3EndTooth = triggerToothCalc (tempIgnition3EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition3EndTooth < configPage4.triggerTeeth) { ignition3EndTooth = triggerToothCalc_v2 (tempIgnition3EndTooth,0); } // 0 to 360 degrees
+    else { ignition3EndTooth = triggerToothCalc_v2 (tempIgnition3EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 
-    if( tempIgnition4EndTooth < configPage4.triggerTeeth) { ignition4EndTooth = triggerToothCalc (tempIgnition4EndTooth,0); } // 0 to 360 degrees
-    else { ignition4EndTooth = triggerToothCalc (tempIgnition4EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition4EndTooth < configPage4.triggerTeeth) { ignition4EndTooth = triggerToothCalc_v2 (tempIgnition4EndTooth,0); } // 0 to 360 degrees
+    else { ignition4EndTooth = triggerToothCalc_v2 (tempIgnition4EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 
 #if IGN_CHANNELS >= 5
-    if( tempIgnition5EndTooth < configPage4.triggerTeeth) { ignition5EndTooth = triggerToothCalc (tempIgnition5EndTooth,0); } // 0 to 360 degrees
-    else { ignition5EndTooth = triggerToothCalc (tempIgnition5EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition5EndTooth < configPage4.triggerTeeth) { ignition5EndTooth = triggerToothCalc_v2 (tempIgnition5EndTooth,0); } // 0 to 360 degrees
+    else { ignition5EndTooth = triggerToothCalc_v2 (tempIgnition5EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 #endif
 
 #if IGN_CHANNELS >= 6
-    if( tempIgnition6EndTooth < configPage4.triggerTeeth) { ignition6EndTooth = triggerToothCalc (tempIgnition6EndTooth,0); } // 0 to 360 degrees
-    else { ignition6EndTooth = triggerToothCalc (tempIgnition6EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition6EndTooth < configPage4.triggerTeeth) { ignition6EndTooth = triggerToothCalc_v2 (tempIgnition6EndTooth,0); } // 0 to 360 degrees
+    else { ignition6EndTooth = triggerToothCalc_v2 (tempIgnition6EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 #endif
 
 #if IGN_CHANNELS >= 7
-    if( tempIgnition7EndTooth < configPage4.triggerTeeth) { ignition7EndTooth = triggerToothCalc (tempIgnition7EndTooth,0); } // 0 to 360 degrees
-    else { ignition7EndTooth = triggerToothCalc (tempIgnition7EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition7EndTooth < configPage4.triggerTeeth) { ignition7EndTooth = triggerToothCalc_v2 (tempIgnition7EndTooth,0); } // 0 to 360 degrees
+    else { ignition7EndTooth = triggerToothCalc_v2 (tempIgnition7EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 #endif
 
 #if IGN_CHANNELS >= 8
-    if( tempIgnition8EndTooth < configPage4.triggerTeeth) { ignition8EndTooth = triggerToothCalc (tempIgnition8EndTooth,0); } // 0 to 360 degrees
-    else { ignition8EndTooth = triggerToothCalc (tempIgnition8EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
+    if( tempIgnition8EndTooth < configPage4.triggerTeeth) { ignition8EndTooth = triggerToothCalc_v2 (tempIgnition8EndTooth,0); } // 0 to 360 degrees
+    else { ignition8EndTooth = triggerToothCalc_v2 (tempIgnition8EndTooth,configPage4.triggerTeeth); } // tooth is on the 360 to 720 degrees
 #endif
   }
   else
   {
-    ignition1EndTooth = triggerToothCalc (tempIgnition1EndTooth,0);
-    ignition2EndTooth = triggerToothCalc (tempIgnition2EndTooth,0);
-    ignition3EndTooth = triggerToothCalc (tempIgnition3EndTooth,0);
-    ignition4EndTooth = triggerToothCalc (tempIgnition4EndTooth,0);
+    ignition1EndTooth = triggerToothCalc_v2 (tempIgnition1EndTooth,0);
+    ignition2EndTooth = triggerToothCalc_v2 (tempIgnition2EndTooth,0);
+    ignition3EndTooth = triggerToothCalc_v2 (tempIgnition3EndTooth,0);
+    ignition4EndTooth = triggerToothCalc_v2 (tempIgnition4EndTooth,0);
 #if IGN_CHANNELS >= 5
-    ignition5EndTooth = triggerToothCalc (tempIgnition5EndTooth,0); // 0 to 360 degrees
+    ignition5EndTooth = triggerToothCalc_v2 (tempIgnition5EndTooth,0); // 0 to 360 degrees
 #endif
 
 #if IGN_CHANNELS >= 6
-    ignition6EndTooth = triggerToothCalc (tempIgnition6EndTooth,0); // 0 to 360 degrees
+    ignition6EndTooth = triggerToothCalc_v2 (tempIgnition6EndTooth,0); // 0 to 360 degrees
 #endif
 
 #if IGN_CHANNELS >= 7
-    ignition7EndTooth = triggerToothCalc (tempIgnition7EndTooth,0); // 0 to 360 degrees
+    ignition7EndTooth = triggerToothCalc_v2 (tempIgnition7EndTooth,0); // 0 to 360 degrees
 #endif
 
 #if IGN_CHANNELS >= 8
-    ignition8EndTooth = triggerToothCalc (tempIgnition8EndTooth,0); // 0 to 360 degrees
+    ignition8EndTooth = triggerToothCalc_v2 (tempIgnition8EndTooth,0); // 0 to 360 degrees
 #endif
   }
  

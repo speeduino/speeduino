@@ -275,6 +275,7 @@
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
+#define SEC_TRIGGER_NISSAN_1_3_4_2    3
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
