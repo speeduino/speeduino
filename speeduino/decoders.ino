@@ -897,6 +897,17 @@ void triggerSec_DualWheel_v2()
         }
         toothAfterGap = 1;
         revolutionOne = 1; //Sequential revolution reset
+        //Record the VVT Angle
+        if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
+        {
+          int16_t curAngle;
+          curAngle = getCrankAngle();
+          while(curAngle > 360) { curAngle -= 360; }
+          curAngle -= configPage4.triggerAngle; //Value at TDC
+          if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
+
+          currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+        }
         break;
 
 
@@ -909,7 +920,7 @@ void triggerSec_DualWheel_v2()
           // remember this is the cam tooth AFTER the tooth counted.
           switch( secondaryToothCount)
           {
-            case 2:
+            case 2: //315 degrees on 4 cylinder
               // is detected at the first tooth of the 1 tooth cam
               revolutionOne = 0; //Sequential revolution reset
               switch (configPage2.nCylinders)
@@ -920,10 +931,10 @@ void triggerSec_DualWheel_v2()
                   toothAfterGap = 37;
                   break;
               }
-//              Serial3.println(" CAM 2 ");
-              break;
+              break;              
 
-            case 1:
+
+            case 1: //135 degrees on 4 cylinder
               // is detected at the first tooth of the 3 tooth cam pattern
               revolutionOne = 0; //Sequential revolution reset 
               switch (configPage2.nCylinders)
@@ -936,10 +947,9 @@ void triggerSec_DualWheel_v2()
                   toothAfterGap = 17;
                   break;
               }
-//              Serial3.println(" CAM 1 ");
               break;
 
-            case 3:
+            case 3: //334.5 degrees on 4 cylinder
               // is detected at the first tooth of the 4 tooth cam
               revolutionOne = 1; //Sequential revolution reset  
               switch (configPage2.nCylinders)
@@ -950,10 +960,10 @@ void triggerSec_DualWheel_v2()
                   toothAfterGap = 37;
                   break;
               }
-//              Serial3.println(" CAM 3 ");
+
               break;
 
-            case 4:
+            case 4: //155 degrees on 4 cylinder
               // is detected at the first tooth of the 2 tooth cam
               revolutionOne = 1; //Sequential revolution reset
               switch (configPage2.nCylinders)
@@ -966,7 +976,16 @@ void triggerSec_DualWheel_v2()
                   toothAfterGap = 17;
                   break;
               }
-//              Serial3.println(" CAM 4 ");
+              if( (configPage6.vvtEnabled > 0) ) 
+              {
+                int16_t curAngle;
+                curAngle = getCrankAngle();
+                while(curAngle > 360) { curAngle -= 360; }
+                curAngle -= configPage4.triggerAngle; //Value at TDC
+                if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
+
+                currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+              }              
               break;
           }
           secondaryToothCount = 1;
@@ -983,6 +1002,9 @@ void triggerSec_DualWheel_v2()
         currentStatus.syncLossCounter++;
         break;
     }
+
+
+
   } //Trigger filter
 }
 
@@ -1155,6 +1177,7 @@ char triggerToothCalc_v2(int16_t tempIgnitionEndTooth, byte tempSequentialTooth)
   }
   return tempIgnitionEndTooth;
 }
+
 
 
 /** Dual Wheel Primary.
