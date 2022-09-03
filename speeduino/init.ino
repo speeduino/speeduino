@@ -2929,14 +2929,14 @@ void initialiseTriggers()
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case 2:
+    case DECODER_DUAL_WHEEL:
       triggerSetup_DualWheel();
-      triggerHandler = triggerPri_DualWheel;
-      triggerSecondaryHandler = triggerSec_DualWheel;
+      triggerHandler = triggerPri_DualWheel_v2;
+      triggerSecondaryHandler = triggerSec_DualWheel_v2;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel_v2;
       decoderHasSecondary = true;
       getRPM = getRPM_DualWheel;
-      getCrankAngle = getCrankAngle_DualWheel;
-      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
