@@ -145,7 +145,7 @@ static __attribute__((noinline)) uint32_t readSerial32Timeout(uint32_t startTime
   char raw[4];
   // Teensy 3.5: Serial.available() should only be used as a boolean test
   // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
-  int count=0;
+  size_t count=0;
   while (count < sizeof(raw)) {
     if (Serial.available()) {
       raw[count++] =(byte)Serial.read();
