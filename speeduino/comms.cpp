@@ -185,13 +185,12 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
 {
   uint16_t bytesTransmitted = 0;
 
-  while (bytesTransmitted<length && Serial.availableForWrite() != 0)
+  while (bytesTransmitted<length 
+        && Serial.availableForWrite() != 0 
+        // Just in case
+        && Serial.write(buffer[bytesTransmitted]) == 1)
   {
-    Serial.write(buffer[bytesTransmitted]);
     bytesTransmitted++;
-    if (Serial.availableForWrite()==0) {
-      break;
-    }
   }
 
   return bytesTransmitted;
