@@ -249,6 +249,7 @@ static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, si
 static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
 {
   //Start new transmission session
+  serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS;
   serialWrite(payloadLength);
   serialPayloadLength = payloadLength;
   serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, 0, payloadLength);
