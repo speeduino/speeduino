@@ -74,6 +74,7 @@ constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 static uint16_t serialBytesRxTx = 0; 
 static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
+using crc_t = uint32_t;
 #ifdef RTC_ENABLED
 #undef SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
@@ -201,6 +202,17 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
   // return Serial.write(buffer, capacity);
 }
 
+/** @brief Write a uint32_t to Serial without blocking the caller
+ * @return Number of bytes sent
+ */
+static size_t writeNonBlocking(size_t start, uint32_t value)
+{
+  value = reverse_bytes(value);
+  const byte *pBuffer = (const byte*)&value;
+  return writeNonBlocking(pBuffer+start, sizeof(value)-start);
+}
+
+
 /** @brief Send the buffer, followed by it's CRC
  * 
  * This is supposed to be called multiple times for the same buffer until
@@ -212,11 +224,14 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
  */
 static uint16_t sendBufferAndCrcNonBlocking(const byte *buffer, size_t start, size_t length)
 {
-  start = start + writeNonBlocking(buffer+start, length-start);
-  
-  if (start==length)
+  if (start<length)
   {
-    serialWrite(CRC32_serial.crc32(buffer, length));
+    start = start + writeNonBlocking(buffer+start, length-start);
+  }
+  
+  if (start>=length && start<length+sizeof(crc_t))
+  {
+    start = start + writeNonBlocking(start-length, CRC32_serial.crc32(buffer, length));
   }
 
   return start;
@@ -237,7 +252,7 @@ static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
   serialWrite(payloadLength);
   serialPayloadLength = payloadLength;
   serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, 0, payloadLength);
-  serialStatusFlag = serialBytesRxTx==payloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
+  serialStatusFlag = serialBytesRxTx==payloadLength+sizeof(crc_t) ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
 }
 
 // ====================================== TS Message Support =============================
@@ -517,7 +532,7 @@ void serialTransmit(void)
 
     case SERIAL_TRANSMIT_INPROGRESS:
       serialBytesRxTx = sendBufferAndCrcNonBlocking(serialPayload, serialBytesRxTx, serialPayloadLength);
-      serialStatusFlag = serialBytesRxTx==serialPayloadLength ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
+      serialStatusFlag = serialBytesRxTx==serialPayloadLength+sizeof(crc_t) ? SERIAL_INACTIVE : SERIAL_TRANSMIT_INPROGRESS;
       break;
 
     default: // Nothing to do
