@@ -70,7 +70,7 @@ rm -f "$result_file"
 run_cppcheck
 error_count="$(process_cpp_results)"
 
-# cat "$result_file"
+cat "$result_file"
 echo $error_count MISRA violations
 echo $error_count > ".results/error_count.txt"
 
