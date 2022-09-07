@@ -29,7 +29,8 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/misra/
         chmod +x check_misra.sh
-        echo "VIOLATIONS=$(./check_misra.sh -c /usr/bin)" >> $GITHUB_ENV
+        ./check_misra.sh -c /usr/bin
+        echo "VIOLATIONS=$?" >> $GITHUB_ENV
 
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
