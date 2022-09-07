@@ -25,7 +25,6 @@ jobs:
         sudo apt-get install cppcheck
 
     - name: Run MISRA scan
-      continue-on-error: true
       run: |
         cd $GITHUB_WORKSPACE/misra/
         chmod +x check_misra.sh
