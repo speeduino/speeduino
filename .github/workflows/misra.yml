@@ -45,4 +45,4 @@ jobs:
         gistID: d8a449a3f6d3307dab457431512502f9
         filename: misra_results.json
         label: MISRA Violations
-        message: ${{ env.VIOLATIONS }}
+        message: $VIOLATIONS
