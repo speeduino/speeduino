@@ -30,11 +30,13 @@ jobs:
         cd $GITHUB_WORKSPACE/misra/
         chmod +x check_misra.sh
         ./check_misra.sh -c /usr/bin
+        echo "Scan complete"
         NumViolations = $(cat .results/error_count.txt)
-        echo "VIOLATIONS=$NumViolations" >> $GITHUB_ENV
-        cat $NumViolations
+        echo $NumViolations
         cat .results/error_count.txt
-
+        ls -la
+        echo "VIOLATIONS=$NumViolations" >> $GITHUB_ENV
+        
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
@@ -49,6 +51,8 @@ jobs:
         message: ${{ env.VIOLATIONS }}
       
     - name: Env Test
+      env:
+        VIOLATIONS: ${{ env.VIOLATIONS }}
       run: |
         echo Test1: ${{ env.VIOLATIONS }}
         echo Test2: $VIOLATIONS
