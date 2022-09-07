@@ -94,17 +94,17 @@ No text specified
 Rule 9.5
 No text specified
 Rule 10.1
-Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
+Mandatory - Operations must be of an essentially correct type (Eg no shift on signed values, comparison is not boolean, incrementing/decrementing a bool etc) 
 Rule 10.2
 No text specified
 Rule 10.3
 No text specified
 Rule 10.4
-The target of an operation must be of an appropriate type
+Mandatory - The target of an operation must be of an appropriate type
 Rule 10.5
 No text specified
 Rule 10.6
-An expression should not assign a value to a variable of a narrower or essentially different type
+Mandatory - An expression should not assign a value to a variable of a narrower or essentially different type
 Rule 10.7
 No text specified
 Rule 10.8
@@ -114,7 +114,7 @@ No text specified
 Rule 11.2
 No text specified
 Rule 11.3
-A cast shall not be performed between a pointer to object type and a pointer to a different object type
+Mandatory - A cast shall not be performed between a pointer to object type and a pointer to a different object type
 Rule 11.4
 Advisory - Object pointers should not be treated as or converted to integers
 Rule 11.5
@@ -126,7 +126,7 @@ No text specified
 Rule 11.8
 No text specified
 Rule 11.9
-An integer null pointer shall have no value assigned other than NULL macro
+Mandatory - An integer null pointer shall have no value assigned other than NULL macro
 Rule 12.1
 Advisory - Order of operations within an expression must be explicit. Multiple conditions in a logical operation should have brackets around them.
 Rule 12.2
@@ -166,9 +166,9 @@ No text specified
 Rule 15.5
 Advisory - A function should only have a single return point
 Rule 15.6
-Loops, switch and if/else statements must have brackets around their body
+Mandatory - Loops, switch and if/else statements must have brackets around their body
 Rule 15.7
-'else if' statements must terminate with a final 'else'
+Mandatory - 'else if' statements must terminate with a final 'else'
 Rule 16.1
 No text specified
 Rule 16.2
@@ -186,7 +186,7 @@ No text specified
 Rule 17.1
 No text specified
 Rule 17.2
-Functions shall not call themselves, either directly or indirectly
+Mandatory - Functions shall not call themselves, either directly or indirectly
 Rule 17.3
 No text specified
 Rule 17.4
@@ -196,7 +196,7 @@ No text specified
 Rule 17.6
 No text specified
 Rule 17.7
-The value returned by a function having non-void return type shall be used
+Mandatory - The value returned by a function having non-void return type shall be used
 Rule 17.8
 Advisory - An argument to a function should be treated as read-only
 Rule 18.1
@@ -232,7 +232,7 @@ Advisory - Use of #undef is not permitted
 Rule 20.6
 No text specified
 Rule 20.7
-Macro expressions must be enclosed in parentheses
+Mandatory - Macro expressions must be enclosed in parentheses
 Rule 20.8
 No text specified
 Rule 20.9
@@ -252,7 +252,7 @@ No text specified
 Rule 21.2
 No text specified
 Rule 21.3
-Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
+Mandatory - Memory allocation functions (Eg malloc(), talloc() etc) shall not be used
 Rule 21.4
 No text specified
 Rule 21.5
