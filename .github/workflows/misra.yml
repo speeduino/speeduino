@@ -33,6 +33,7 @@ jobs:
         NumViolations = $(cat .results/error_count.txt)
         echo "VIOLATIONS=$NumViolations" >> $GITHUB_ENV
         cat $NumViolations
+        cat .results/error_count.txt
 
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
