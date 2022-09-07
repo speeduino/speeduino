@@ -133,6 +133,16 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
   return *(uint32_t*)reverse_bytes_x4((char *)&i);
 }
 
+// ====================================== Blocking IO Support ================================
+
+void writeByteReliableBlocking(byte value) {
+  // Some platforms (I'm looking at you Teensy 3.5) do not mimic the Arduino 1.0
+  // contract and synchronously block. 
+  // https://github.com/PaulStoffregen/cores/blob/master/teensy3/usb_serial.c#L215
+  while (!Serial.availableForWrite()) { /* Wait for the buffer to free up space */ }
+  Serial.write(value);
+}
+
 // ====================================== Multibyte Primitive IO Support =============================
 
 /** @brief Read a uint32_t from Serial
@@ -163,18 +173,18 @@ static uint32_t serialWrite(uint32_t value)
 {
   value = reverse_bytes(value);
   const byte *pBuffer = (const byte*)&value;
-  Serial.write(pBuffer[0]);
-  Serial.write(pBuffer[1]);
-  Serial.write(pBuffer[2]);
-  Serial.write(pBuffer[3]);
+  writeByteReliableBlocking(pBuffer[0]);
+  writeByteReliableBlocking(pBuffer[1]);
+  writeByteReliableBlocking(pBuffer[2]);
+  writeByteReliableBlocking(pBuffer[3]);
   return value;
 }
 
 /** @brief Write a uint16_t to Serial */
 static void serialWrite(uint16_t value)
 {
-  Serial.write((value >> 8) & 255);
-  Serial.write(value & 255);
+  writeByteReliableBlocking((value >> 8) & 255);
+  writeByteReliableBlocking(value & 255);
 }
 
 // ====================================== Non-blocking IO Support =============================
@@ -268,7 +278,7 @@ static void sendSerialPayloadNonBlocking(uint16_t payloadLength)
 static void sendReturnCodeMsg(byte returnCode)
 {
   serialWrite((uint16_t)sizeof(returnCode));
-  Serial.write(returnCode);
+  writeByteReliableBlocking(returnCode);
   serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
 }
 
@@ -997,7 +1007,7 @@ void sendToothLog(void)
       CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
 
       //Send the return code
-      Serial.write(returnCode);
+      writeByteReliableBlocking(returnCode);
     }
     
     for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
@@ -1047,7 +1057,7 @@ void sendCompositeLog(void)
       CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
 
       //Send the return code
-      Serial.write(returnCode);
+      writeByteReliableBlocking(returnCode);
     }
 
     for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
@@ -1064,7 +1074,7 @@ void sendCompositeLog(void)
       CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
 
       //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-      Serial.write(compositeLogHistory[logItemsTransmitted]);
+      writeByteReliableBlocking(compositeLogHistory[logItemsTransmitted]);
       CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]), false);
     }
     BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
