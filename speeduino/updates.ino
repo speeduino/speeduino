@@ -16,7 +16,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    20
+  #define CURRENT_DATA_VERSION    21
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -608,7 +608,7 @@ void doUpdates()
   
   if(readEEPROMVersion() == 19)
   {
-    //202204
+    //202207
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
@@ -677,6 +677,16 @@ void doUpdates()
     
     writeAllConfig();
     storeEEPROMVersion(20);
+  }
+
+  if(readEEPROMVersion() == 20)
+  {
+    //202210
+    configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
+    configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+
+    writeAllConfig();
+    storeEEPROMVersion(21);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

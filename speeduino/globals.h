@@ -788,16 +788,10 @@ struct config2 {
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
   byte taeThresh;       /**< The TPSdot threshold that must be exceeded before AE is engaged */
   byte aeTime;
+  byte taeMinChange;    /**< The minimum change in TPS that must be made before AE is engaged */
+  byte maeMinChange;    /**< The minimum change in MAP that must be made before AE is engaged */
 
   //Display config bits
-  byte displayType : 3; //21
-  byte display1 : 3;
-  byte display2 : 2;
-
-  byte display3 : 3;    //22
-  byte display4 : 2;
-  byte display5 : 3;
-
   byte displayB1 : 4;   //23
   byte displayB2 : 4;
 
