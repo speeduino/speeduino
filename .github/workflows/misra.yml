@@ -35,8 +35,8 @@ jobs:
     - name: Run MISRA scan
       continue-on-error: true
       run: |
-        chmod +x $GITHUB_WORKSPACE/speeduino/misra/check_misra.sh
-        echo "VIOLATIONS=$($GITHUB_WORKSPACE/speeduino/misra/check_misra.sh -c 'cppcheck_github')" >> $GITHUB_ENV
+        chmod +x $GITHUB_WORKSPACE/misra/check_misra.sh
+        echo "VIOLATIONS=$($GITHUB_WORKSPACE/misra/check_misra.sh -c 'cppcheck_github')" >> $GITHUB_ENV
 
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
