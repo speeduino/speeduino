@@ -34,6 +34,7 @@ function run_cppcheck() {
         --suppressions-list="$script_folder/suppressions.txt" \
         -DCORE_AVR=1 \
         -D__AVR_ATmega2560__ \
+        --quiet \
         $i 2>> "$cpp_result_file"
   done
   shopt -u nullglob nocaseglob
@@ -47,7 +48,7 @@ function process_cpp_results() {
     # Remove duplicate lines
     sort | uniq > "$intermediate_file"
   # Count error lines
-  local __error_count=`grep ": error:" < "$intermediate_file" | wc -l`
+  local __error_count=`grep -i "Mandatory" < "$intermediate_file" | wc -l`
   # Unfold the line groups for readability
   tr '~' '\n' < "$intermediate_file" > "$result_file"
   rm -f "$intermediate_file"
@@ -73,7 +74,7 @@ cat "$result_file"
 echo $error_count MISRA violations
 
 if [ $error_count -gt 0 ]; then
-	exit 1
+	exit $error_count
 else
 	exit 0
 fi
