@@ -250,6 +250,9 @@ byte pinSDEnable;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
+byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
+byte pinAirConFan;    // Stand-alone air conditioning fan output (See: auxiliaries.ino)
+byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
@@ -316,7 +319,9 @@ inline bool pinIsOutput(byte pin)
   || ((pin == pinStepperEnable) && isIdleSteper)
   || ((pin == pinStepperStep) && isIdleSteper)
   || ((pin == pinStepperDir) && isIdleSteper)
-  || (pin == pinTachOut) )
+  || (pin == pinTachOut)
+  || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }

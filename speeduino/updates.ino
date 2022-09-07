@@ -625,7 +625,6 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
-
     configPage15.boostDCWhenDisabled = 0;
     configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
@@ -668,8 +667,8 @@ void doUpdates()
     configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min
-    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
-
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
+    
     writeAllConfig();
     storeEEPROMVersion(20);
   }
@@ -679,6 +678,10 @@ void doUpdates()
     //202210
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+    
+    //AC Control (configPage15)
+    //Set A/C default values - these line up with the ini file defaults
+    configPage15.airConEnable = 0;
 
     writeAllConfig();
     storeEEPROMVersion(21);

@@ -287,7 +287,7 @@ void writeConfig(uint8_t pageNum)
       result = writeTable(&dwellTable, decltype(dwellTable)::type_key, result.changeWriteAddress(EEPROM_CONFIG12_MAP3));
       break;
       
-  case progOutsPage:
+    case progOutsPage:
       /*---------------------------------------------------
       | Config page 13 (See storage.h for data layout)
       -----------------------------------------------------*/
