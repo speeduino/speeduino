@@ -36,7 +36,6 @@ jobs:
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         MISRA_GIST: ${{ secrets.MISRA_GIST }}
-        VIOLATIONS: ${{ env.VIOLATIONS }}
       uses: schneegans/dynamic-badges-action@v1.4.0
       with:
         auth: ${{ secrets.MISRA_GIST }}
