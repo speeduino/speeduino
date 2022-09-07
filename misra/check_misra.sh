@@ -74,8 +74,4 @@ cat "$result_file"
 echo $error_count MISRA violations
 echo $error_count > ".results/error_count.txt"
 
-if [ $error_count -gt 0 ]; then
-	exit 1
-else
-	exit 0
-fi
+exit 0
