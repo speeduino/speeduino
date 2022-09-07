@@ -1,0 +1,51 @@
+name: Perform MISRA scan
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches:
+      - master
+      - GH_misra
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+        
+    - name: Add dependencies
+      run: |
+        sudo sed -i -- 's/#deb-src/deb-src/g' /etc/apt/sources.list && sudo sed -i -- 's/# deb-src/deb-src/g' /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get build-dep -qq cppcheck
+
+    - name: Download and build cppcheck
+      run: |
+        git clone --depth=10 https://github.com/noisymime/cppcheck.git noisymime/cppcheck_github
+        cd noisymime/cppcheck_github
+        make
+
+    - name: Run MISRA scan
+      continue-on-error: true
+      run: |
+        chmod +x $GITHUB_WORKSPACE/speeduino/misra/check_misra.sh
+        echo "VIOLATIONS=$($GITHUB_WORKSPACE/speeduino/misra/check_misra.sh -c 'cppcheck_github')" >> $GITHUB_ENV
+
+    - name: Save output to Gist
+      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
+      env:
+        MISRA_GIST: ${{ secrets.MISRA_GIST }}
+      uses: schneegans/dynamic-badges-action@v1.4.0
+      with:
+        auth: ${{ secrets.MISRA_GIST }}
+        gistID: d8a449a3f6d3307dab457431512502f9
+        filename: misra_results.json
+        label: MISRA Violations
+        message: is ${{ env.VIOLATIONS }}
