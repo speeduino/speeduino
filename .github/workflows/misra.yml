@@ -56,4 +56,5 @@ jobs:
       with:
         name: MISRA results
         path: |
-          $GITHUB_WORKSPACE/misra/.results/*
+          misra/.results/results.txt
+          misra/.results/error_count.txt
