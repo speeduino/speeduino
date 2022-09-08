@@ -51,8 +51,8 @@ jobs:
         message: ${{ env.VIOLATIONS }}
 
     - name: Archive MISRA scan artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: MISRA results
-          path: |
-            $GITHUB_WORKSPACE/misra/.results/results.txt
+      uses: actions/upload-artifact@v3
+      with:
+        name: MISRA results
+        path: |
+          $GITHUB_WORKSPACE/misra/.results/results.txt
