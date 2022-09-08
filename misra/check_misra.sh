@@ -29,15 +29,21 @@ function parse_command_line() {
 function run_cppcheck() {
   shopt -s nullglob nocaseglob
   for i in "$source_folder"/*.{"$file_exts",}; do
-    "$cppcheck_bin" \
-        --inline-suppr \
-        --language=c++ \
-        --addon="$script_folder/misra.json" \
-        --suppressions-list="$script_folder/suppressions.txt" \
-        -DCORE_AVR=1 \
-        -D__AVR_ATmega2560__ \
-        --quiet \
-        $i 2>> "$cpp_result_file"
+    # cppcheck currently has no way of excluding files that are #include'd. If maths.ino is scanned on versions of cppcheck 2.8+, the scan will run for a significant period of time (15+ mins) due to all the static code from libdivide. 
+    # All violations from included libraries (*src* folders) are ignored
+    if [[ $i != *"maths.ino"* ]]; then
+      "$cppcheck_bin" \
+          --inline-suppr \
+          --language=c++ \
+          --addon="$script_folder/misra.json" \
+          --suppressions-list="$script_folder/suppressions.txt" \
+          --platform=avr8 \
+          -DCORE_AVR=1 \
+          -D__AVR_ATmega2560__ \
+          --suppress="*:*src*" \
+          --report-progress \
+          $i 2>> "$cpp_result_file"
+    fi
   done
   shopt -u nullglob nocaseglob
 }
@@ -49,8 +55,8 @@ function process_cpp_results() {
   sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
     # Remove duplicate lines
     sort | uniq > "$intermediate_file"
-  # Count error lines
-  local __error_count=`grep -i "Mandatory" < "$intermediate_file" | wc -l`
+  # Count lines for Mandatory or Required rules
+  local __error_count=`grep -i "Mandatory\|Required" < "$intermediate_file" | wc -l`
   # Unfold the line groups for readability
   tr '~' '\n' < "$intermediate_file" > "$result_file"
   rm -f "$intermediate_file"
