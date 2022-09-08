@@ -35,6 +35,7 @@ jobs:
         NumViolations=`cat .results/error_count.txt`
         echo $NumViolations
         echo "VIOLATIONS=$NumViolations" >> $GITHUB_ENV
+        ls $GITHUB_WORKSPACE/misra/.results/
         
     - name: Save output to Gist
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
@@ -55,4 +56,4 @@ jobs:
       with:
         name: MISRA results
         path: |
-          $GITHUB_WORKSPACE/misra/.results/results.txt
+          $GITHUB_WORKSPACE/misra/.results/*
