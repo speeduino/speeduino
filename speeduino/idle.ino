@@ -685,6 +685,7 @@ void idleControl()
           }
           
           doStep();
+          idleTaper = 0;
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           idlePID.ResetIntegeral();
           FeedForwardTerm = idle_pid_target_value;
@@ -703,6 +704,7 @@ void idleControl()
 
               //Tapering between cranking IAC value and running
               FeedForwardTerm = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              idleTaper++;
               idle_pid_target_value = FeedForwardTerm;
             }
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
