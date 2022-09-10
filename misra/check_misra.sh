@@ -4,7 +4,7 @@ script_folder="$(dirname $(readlink -f $0))"
 
 # Initialize variables with defaults
 source_folder="$script_folder/../speeduino" # -s, --source
-file_exts="ino"                             # -e, --exts
+file_exts="cpp,ino"                         # -e, --exts
 out_folder="$script_folder/.results"        # -o, --out
 cppcheck_path=""                            # -c, --cppcheck
 quiet=0                                     # -q, --quiet
@@ -27,11 +27,14 @@ function parse_command_line() {
 }
 
 function run_cppcheck() {
+  # There is no way to tell the misra add on to skip certain headers
+  # libdivide adds many 10+ minutes to each file so rename the folder 
+  # before the scan
+  mv "$source_folder"/src/libdivide "$source_folder"/src/_libdivide
   shopt -s nullglob nocaseglob
-  for i in "$source_folder"/*.{"$file_exts",}; do
-    # cppcheck currently has no way of excluding files that are #include'd. If maths.ino is scanned on versions of cppcheck 2.8+, the scan will run for a significant period of time (15+ mins) due to all the static code from libdivide. 
-    # All violations from included libraries (*src* folders) are ignored
-    if [[ $i != *"maths.ino"* ]]; then
+  for ext in ${file_exts//,/ }; do
+    for i in "$source_folder"/*."$ext"; do
+      # All violations from included libraries (*src* folders) are ignored
       "$cppcheck_bin" \
           --inline-suppr \
           --language=c++ \
@@ -43,9 +46,11 @@ function run_cppcheck() {
           --suppress="*:*src*" \
           --report-progress \
           $i 2>> "$cpp_result_file"
-    fi
+    done
   done
   shopt -u nullglob nocaseglob
+  # Restore libdivide folder name after scan
+  mv "$source_folder"/src/_libdivide "$source_folder"/src/libdivide
 }
 
 function process_cpp_results() {
