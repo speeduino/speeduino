@@ -238,7 +238,9 @@ void processSerialCommand()
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
+      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
+      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      
       sendSerialReturnCode(SERIAL_RC_BURN_OK);
       break;
 
