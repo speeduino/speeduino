@@ -180,8 +180,11 @@ void loop()
           }
       #endif
           
-    //Displays currently disabled
-    // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+    if(currentLoopTime > micros_safe())
+    {
+      //Occurs when micros() has overflowed
+      deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
+    }
 
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
@@ -238,7 +241,7 @@ void loop()
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();
+    readMAP();  
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
