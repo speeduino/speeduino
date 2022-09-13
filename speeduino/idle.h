@@ -69,7 +69,7 @@ uint8_t idleTaper;
 byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
-void initialiseIdle();
+void initialiseIdle(bool forcehoming);
 void initialiseIdleUpOutput();
 void disableIdle();
 void idleInterrupt();

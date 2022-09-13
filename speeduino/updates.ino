@@ -16,7 +16,7 @@
 
 void doUpdates()
 {
-  #define CURRENT_DATA_VERSION    20
+  #define CURRENT_DATA_VERSION    21
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -600,7 +600,7 @@ void doUpdates()
     configPage13.onboard_log_tr3_thr_AFR = 0;
     configPage13.onboard_log_tr4_thr_on = 0;
     configPage13.onboard_log_tr4_thr_off = 0;
-    configPage13.onboard_log_tr5_thr_on = 0;
+    configPage13.onboard_log_tr5_Epin_pin = 0;
 
     writeAllConfig();
     storeEEPROMVersion(19);
@@ -608,11 +608,15 @@ void doUpdates()
   
   if(readEEPROMVersion() == 19)
   {
-    //202204
+    //202207
 
     //Option added to select injector pairing on 4 cylinder engines
     if( configPage4.inj4cylPairing > INJ_PAIR_14_23 ) { configPage4.inj4cylPairing = 0; } //Check valid value
-    if( configPage2.nCylinders == 4 ) { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    if( configPage2.nCylinders == 4 )
+    {
+      if ( configPage2.injLayout == INJ_SEQUENTIAL ) { configPage4.inj4cylPairing = INJ_PAIR_13_24; } //Since #478 engine will always start in semi, make the sequence right for the majority of inlie 4 engines
+      else { configPage4.inj4cylPairing = INJ_PAIR_14_23; } //Force setting to use the default mode from previous FW versions. This is to prevent issues on any setups that have been wired accordingly
+    }
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
     configPage6.tachoMode = 0;
@@ -621,7 +625,6 @@ void doUpdates()
     configPage2.canBMWCluster = 0;
     configPage2.canVAGCluster = 0;
     
-
     configPage15.boostDCWhenDisabled = 0;
     configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
     
@@ -664,10 +667,24 @@ void doUpdates()
     configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min
-    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation
-
+    configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
+    
     writeAllConfig();
     storeEEPROMVersion(20);
+  }
+
+  if(readEEPROMVersion() == 20)
+  {
+    //202210
+    configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
+    configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+    
+    //AC Control (configPage15)
+    //Set A/C default values - these line up with the ini file defaults
+    configPage15.airConEnable = 0;
+
+    writeAllConfig();
+    storeEEPROMVersion(21);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

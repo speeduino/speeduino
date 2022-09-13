@@ -99,7 +99,11 @@
  * | 3201       |64          | boostLUT table (8x8)                 | @ref EEPROM_CONFIG15_MAP           |
  * | 3265       |8           | boostLUT table (X axis) (RPM)        |                                    |
  * | 3273       |8           | boostLUT table (Y axis) (targetBoost)|                                    |
- * | 3281       |176         | Page 15 settings                     | @ref EEPROM_CONFIG15_START         |
+ * | 3281       |1           | boostLUT enable                      | @ref EEPROM_CONFIG15_START         |
+ * | 3282       |1           | boostDCWhenDisabled                  |                                    |
+ * | 3283       |1           | boostControlEnableThreshold          |                                    |
+ * | 3284       |14          | A/C Control Settings                 |                                    |
+ * | 3298       |159         | Page 15 spare                        |                                    |
  * | 3457       |217         | EMPTY                                |                                    |
  * | 3674       |4           | CLT Calibration CRC32                |                                    |
  * | 3678       |4           | IAT Calibration CRC32                |                                    |

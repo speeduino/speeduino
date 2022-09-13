@@ -7,6 +7,7 @@ source_folder="$script_folder/../speeduino" # -s, --source
 file_exts="ino"                             # -e, --exts
 out_folder="$script_folder/.results"        # -o, --out
 cppcheck_path=""                            # -c, --cppcheck
+quiet=0                                     # -q, --quiet
 
 function parse_command_line() {
    while [ $# -gt 0 ] ; do
@@ -15,6 +16,7 @@ function parse_command_line() {
       -e | --exts) file_exts="$2" ;;
       -o | --out) out_folder="$2" ;;
       -c | --cppcheck) cppcheck_path="$2" ;;
+      -q | --quiet) quiet=1 ;;
       -*) 
         echo "Unknown option: " $1
         exit 1
@@ -27,14 +29,21 @@ function parse_command_line() {
 function run_cppcheck() {
   shopt -s nullglob nocaseglob
   for i in "$source_folder"/*.{"$file_exts",}; do
-    "$cppcheck_bin" \
-        --inline-suppr \
-        --language=c++ \
-        --addon="$script_folder/misra.json" \
-        --suppressions-list="$script_folder/suppressions.txt" \
-        -DCORE_AVR=1 \
-        -D__AVR_ATmega2560__ \
-        $i 2>> "$cpp_result_file"
+    # cppcheck currently has no way of excluding files that are #include'd. If maths.ino is scanned on versions of cppcheck 2.8+, the scan will run for a significant period of time (15+ mins) due to all the static code from libdivide. 
+    # All violations from included libraries (*src* folders) are ignored
+    if [[ $i != *"maths.ino"* ]]; then
+      "$cppcheck_bin" \
+          --inline-suppr \
+          --language=c++ \
+          --addon="$script_folder/misra.json" \
+          --suppressions-list="$script_folder/suppressions.txt" \
+          --platform=avr8 \
+          -DCORE_AVR=1 \
+          -D__AVR_ATmega2560__ \
+          --suppress="*:*src*" \
+          --report-progress \
+          $i 2>> "$cpp_result_file"
+    fi
   done
   shopt -u nullglob nocaseglob
 }
@@ -46,8 +55,8 @@ function process_cpp_results() {
   sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
     # Remove duplicate lines
     sort | uniq > "$intermediate_file"
-  # Count error lines
-  local __error_count=`grep ": error:" < "$intermediate_file" | wc -l`
+  # Count lines for Mandatory or Required rules
+  local __error_count=`grep -i "Mandatory\|Required" < "$intermediate_file" | wc -l`
   # Unfold the line groups for readability
   tr '~' '\n' < "$intermediate_file" > "$result_file"
   rm -f "$intermediate_file"
@@ -69,11 +78,10 @@ rm -f "$result_file"
 run_cppcheck
 error_count="$(process_cpp_results)"
 
-cat "$result_file"
-echo $error_count MISRA violations
-
-if [ $error_count -gt 0 ]; then
-	exit 1
-else
-	exit 0
+if [ $quiet -eq 0 ]; then
+  cat "$result_file"
 fi
+echo $error_count MISRA violations
+echo $error_count > ".results/error_count.txt"
+
+exit 0

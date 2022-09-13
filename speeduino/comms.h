@@ -80,6 +80,7 @@ void sendSerialPayload(void*, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t, uint16_t);
 void saveConfig();
+void flushRXbuffer();
 void sendToothLog(uint8_t);
 void commandButtons(int16_t);
 void sendCompositeLog(uint8_t);

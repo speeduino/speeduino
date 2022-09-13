@@ -70,78 +70,6 @@ void initialiseCorrections()
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-uint16_t correctionsFuel1()
-{
-  #define MAX_CORRECTIONS 3 //The maximum number of corrections allowed before the sum is reprocessed
-  uint32_t sumCorrections = 100;
-  byte activeCorrections = 0;
-  uint16_t result; //temporary variable to store the result of each corrections function
-
-  //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
-  currentStatus.wueCorrection = correctionWUE();
-  if (currentStatus.wueCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.wueCorrection); activeCorrections++; }
-
-  result = correctionASE();
-  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-
-  result = correctionCranking();
-  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; } // Need to check this to ensure that sumCorrections doesn't overflow. Can occur when the number of corrections is greater than 3 (Which is 100^4) as 100^5 can overflow
-
-  currentStatus.AEamount = correctionAccel();
-  if (configPage2.aeApplyMode == AE_MODE_MULTIPLIER)
-  {
-  if (currentStatus.AEamount != 100) { sumCorrections = (sumCorrections * currentStatus.AEamount); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-  }
-
-  result = correctionFloodClear();
-  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.egoCorrection = correctionAFRClosedLoop();
-  if (currentStatus.egoCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.egoCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.batCorrection = correctionBatVoltage();
-  if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
-  {
-    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
-  }
-  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
-  {
-    if (currentStatus.batCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.batCorrection); activeCorrections++; }
-    if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }    
-  }
-
-  currentStatus.iatCorrection = correctionIATDensity();
-  if (currentStatus.iatCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.iatCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.baroCorrection = correctionBaro();
-  if (currentStatus.baroCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.baroCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.flexCorrection = correctionFlex();
-  if (currentStatus.flexCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.flexCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.fuelTempCorrection = correctionFuelTemp();
-  if (currentStatus.fuelTempCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.fuelTempCorrection); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
-
-  currentStatus.launchCorrection = correctionLaunch();
-  if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
-
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
-
-  sumCorrections = sumCorrections / powint(100,activeCorrections);
-
-  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
-  return (uint16_t)sumCorrections;
-}
-
 uint16_t correctionsFuel()
 {
   uint32_t sumCorrections = 100;
@@ -415,7 +343,7 @@ uint16_t correctionAccel()
   {
     if(configPage2.aeMode == AE_MODE_MAP)
     {
-      if (MAP_change <= 2)
+      if (MAP_change <= configPage2.maeMinChange)
       {
         accelValue = 100;
         currentStatus.mapDOT = 0;
@@ -473,8 +401,8 @@ uint16_t correctionAccel()
     {
     
       //Check for deceleration (Deceleration adjustment not yet supported)
-      //Also check for only very small movement (Movement less than or equal to 2% is ignored). This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
-      if (TPS_change <= TPSAE_ABSOLUTE_THRESHOLD)
+      //Also check for only very small movement. This not only means we can skip the lookup, but helps reduce false triggering around 0-2% throttle openings
+      if (TPS_change <= configPage2.taeMinChange)
       {
         accelValue = 100;
         currentStatus.tpsDOT = 0;
@@ -677,7 +605,7 @@ byte correctionAFRClosedLoop()
     if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
   }
   
-  if( configPage6.egoType > 0 ) //egoType of 0 means no O2 sensor
+  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     

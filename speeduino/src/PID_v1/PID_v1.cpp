@@ -54,21 +54,21 @@ bool PID::Compute()
       /*Compute all the working error variables*/
 	  long input = *myInput;
       long error = *mySetpoint - input;
-      ITerm += (ki * error)/100;
+      ITerm += (ki * error);
       if(ITerm > outMax) ITerm= outMax;
-      else if(ITerm < outMin) ITerm= outMin;
+      else if(ITerm < outMin) ITerm = outMin;
       long dInput = (input - lastInput);
 
       /*Compute PID Output*/
-      long output = (kp * error)/100 + ITerm- (kd * dInput)/100;
+      long output = (kp * error) + ITerm- (kd * dInput);
 
 	  if(output > outMax) { output = outMax; }
       else if(output < outMin) { output = outMin; }
-	  *myOutput = output;
+	  *myOutput = output/1000;
 
       /*Remember some variables for next time*/
       lastInput = input;
-      //lastTime = now;
+      lastTime = now;
 	  return true;
    }
    //else return false;
@@ -90,10 +90,10 @@ void PID::SetTunings(byte Kp, byte Ki, byte Kd)
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-  long InverseSampleTimeInSec = 100000 / SampleTime;
+  //long InverseSampleTimeInSec = 100;
   kp = Kp;
-  ki = (Ki * 100) / InverseSampleTimeInSec;
-  kd = (Kd * InverseSampleTimeInSec) / 100;
+  ki = Ki;
+  kd = Kd * 10;
 
   if(controllerDirection ==REVERSE)
    {
@@ -129,8 +129,8 @@ void PID::SetSampleTime(int NewSampleTime)
 void PID::SetOutputLimits(long Min, long Max)
 {
    if(Min >= Max) return;
-   outMin = Min;
-   outMax = Max;
+   outMin = Min*1000;
+   outMax = Max*1000;
 
    if(inAuto)
    {

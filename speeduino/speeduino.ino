@@ -78,7 +78,6 @@ uint16_t inj_opentime_uS = 0;
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
 
-byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
 byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
@@ -181,8 +180,11 @@ void loop()
           }
       #endif
           
-    //Displays currently disabled
-    // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+    if(currentLoopTime > micros_safe())
+    {
+      //Occurs when micros() has overflowed
+      deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
+    }
 
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
@@ -239,7 +241,7 @@ void loop()
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();
+    readMAP();  
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
@@ -294,6 +296,9 @@ void loop()
       //updateFullStatus();
       checkProgrammableIO();
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
+      
+      // Air conditioning control
+      airConControl();
 
       //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
       
@@ -343,6 +348,7 @@ void loop()
       if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if(BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON)) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
       }
 
       #ifdef SD_LOGGING
@@ -351,7 +357,7 @@ void loop()
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
-
+      
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
@@ -396,7 +402,7 @@ void loop()
           { //if current input channel is enabled as analog local pin
             //read analog channel specified
             //currentStatus.canin[13] = (configPage9.Auxinpina[currentStatus.current_caninchannel]&63);  Dev test use only!127
-            currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63);
+            currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63));
           }
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
                   || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
