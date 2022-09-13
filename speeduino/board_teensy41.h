@@ -129,12 +129,13 @@
 ***********************************************************************************************************
 * Auxiliaries
 */
-  #define ENABLE_BOOST_TIMER()  TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define DISABLE_BOOST_TIMER() TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
+  #define ENABLE_BOOST_TIMER()  PIT_TCTRL1 |= PIT_TCTRL_TEN
+  #define DISABLE_BOOST_TIMER() PIT_TCTRL1 &= ~PIT_TCTRL_TEN
 
-  #define ENABLE_VVT_TIMER()    TMR3_CSCTRL0 |= TMR_CSCTRL_TCF2EN
-  #define DISABLE_VVT_TIMER()   TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF2EN
+  #define ENABLE_VVT_TIMER()    PIT_TCTRL2 |= PIT_TCTRL_TEN
+  #define DISABLE_VVT_TIMER()   PIT_TCTRL2 &= ~PIT_TCTRL_TEN
 
+  //Ran out of timers, this most likely won't work
   #define ENABLE_FAN_TIMER()    TMR3_CSCTRL1 |= TMR_CSCTRL_TCF2EN
   #define DISABLE_FAN_TIMER()   TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF2EN
 
@@ -146,9 +147,6 @@
   #define FAN_TIMER_COMPARE     TMR3_COMP22
   #define FAN_TIMER_COUNTER     TMR3_CNTR1
 
-  void boostInterrupt();
-  void vvtInterrupt();
-
 /*
 ***********************************************************************************************************
 * Idle
@@ -156,10 +154,8 @@
   #define IDLE_COUNTER 0
   #define IDLE_COMPARE PIT_LDVAL0
 
-  #define IDLE_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IDLE_TIMER_DISABLE() TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-
-  void idleInterrupt();
+  #define IDLE_TIMER_ENABLE() PIT_TCTRL0 |= PIT_TCTRL_TEN
+  #define IDLE_TIMER_DISABLE() PIT_TCTRL0 &= ~PIT_TCTRL_TEN
 
 /*
 ***********************************************************************************************************
