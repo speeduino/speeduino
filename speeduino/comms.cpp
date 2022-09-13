@@ -46,6 +46,14 @@ FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comm
   uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
+/**
+ * @brief      Flush all remaining bytes from the rx serial buffer
+ */
+void flushRXbuffer()
+{
+  while (Serial.available() > 0) { Serial.read(); }
+}
+
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 - cmdPending = If a command has started but is waiting on further data to complete
@@ -114,11 +122,13 @@ void parseSerial()
 
       //Test the CRC
       uint32_t receivedCRC = CRC32_serial.crc32(serialPayload, serialPayloadLength);
+
       //receivedCRC++;
       if(serialCRC != receivedCRC)
       {
         //CRC Error. Need to send an error message
         sendSerialReturnCode(SERIAL_RC_CRC_ERR);
+        flushRXbuffer();
       }
       else
       {
@@ -133,11 +143,7 @@ void parseSerial()
       //Timeout occurred
       serialReceivePending = false; //Reset the serial receive
 
-      //Flush the serial buffer
-      while(Serial.available() > 0)
-      {
-        Serial.read();
-      }
+      flushRXbuffer();
       sendSerialReturnCode(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
