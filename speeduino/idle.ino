@@ -32,7 +32,7 @@ static inline void enableIdle()
   }
 }
 
-void initialiseIdle()
+void initialiseIdle(bool forcehoming)
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
@@ -154,7 +154,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -185,7 +185,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -229,7 +229,7 @@ void initialiseIdle()
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
-      if( completedHomeSteps < (configPage6.iacStepHome * 3) )
+      if (forcehoming)
       {
         //Change between modes running make engine stall
         completedHomeSteps = 0;
@@ -393,7 +393,7 @@ static inline byte isStepperHomed()
 
 void idleControl()
 {
-  if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(); }
+  if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(false); }
   if( (currentStatus.RPM > 0) || (configPage6.iacPWMrun == true) ) { enableIdle(); }
 
   //Check whether the idleUp is active
@@ -637,6 +637,7 @@ void idleControl()
           }
           
           doStep();
+          idleTaper = 0;
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           idlePID.ResetIntegeral();
           FeedForwardTerm = idle_pid_target_value;
@@ -655,6 +656,7 @@ void idleControl()
 
               //Tapering between cranking IAC value and running
               FeedForwardTerm = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              idleTaper++;
               idle_pid_target_value = FeedForwardTerm;
             }
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
