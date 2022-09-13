@@ -342,7 +342,7 @@ void initialiseAll()
     //Perform all initialisations
     initialiseSchedulers();
     //initialiseDisplay();
-    initialiseIdle();
+    initialiseIdle(true);
     initialiseFan();
     initialiseAirCon();
     initialiseAuxPWM();
