@@ -143,6 +143,7 @@
   #define BOOST_TIMER_COUNTER   0
   #define VVT_TIMER_COMPARE     PIT_LDVAL2
   #define VVT_TIMER_COUNTER     0
+
   //these probaply need to be PIT_LDVAL something???
   #define FAN_TIMER_COMPARE     TMR3_COMP22
   #define FAN_TIMER_COUNTER     TMR3_CNTR1
