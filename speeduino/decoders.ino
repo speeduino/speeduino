@@ -1785,9 +1785,13 @@ void triggerSetup_Jeep2000()
 
 void triggerPri_Jeep2000()
 {
+
   if(toothCurrentCount == 13) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
+    uint16_t tempTriggerToothAngle;
+    long tempCurGap;
+
     curTime = micros();
     curGap = curTime - toothLastToothTime;
     if ( curGap >= triggerFilterTime )
@@ -1806,8 +1810,16 @@ void triggerPri_Jeep2000()
         toothCurrentCount++; //Increment the tooth counter
         triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
       }
+      
+      tempTriggerToothAngle = toothAngles[(toothCurrentCount)] - toothAngles[(toothCurrentCount-1)]; // gap to the next tooth
 
-      setFilter(curGap); //Recalc the new filter value
+      /* scale up curGap to be what the duration would be for the next tooth gap, if the crank speed doesn't change. 
+      i.e. given next tooth gap might be longer or shorter than current, predict what curgap will be to the next tooth, 
+      so on the next primary trigger, a  trigger filter can be set for it. */
+      
+      tempCurGap = curGap * (tempTriggerToothAngle/triggerToothAngle); 
+      
+      setFilter(tempCurGap); //Recalc the new filter value
 
       validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
@@ -1818,7 +1830,10 @@ void triggerPri_Jeep2000()
 }
 void triggerSec_Jeep2000()
 {
-  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  if(toothCurrentCount > 11) // The cam signal should only happen after primary tooth 12 (or 13, at startup). So this is a cheap way to filter cam signal noise 
+  {
+    toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  }
   return;
 }
 
@@ -1839,6 +1854,7 @@ int getCrankAngle_Jeep2000()
     interrupts();
 
     int crankAngle;
+
     if (toothCurrentCount == 0) { crankAngle = 146 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 146 is the angle at which the crank tooth goes high.
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
