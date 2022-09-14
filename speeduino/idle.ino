@@ -851,14 +851,24 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_HIGH();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      #else
       IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
       if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     else
     {
       //Reversed direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_LOW();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      #else
       IDLE_PIN_HIGH();  // Switch pin high
       if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value) );
     idle_pwm_state = false;
@@ -868,14 +878,24 @@ void idleInterrupt() //Most ARM chips can simply call a function
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_LOW();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      #else
       IDLE_PIN_HIGH();  // Switch pin high
       if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     else
     {
       //Reversed direction
+      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+      IDLE_PIN_HIGH();
+      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      #else
       IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
       if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + idle_pwm_target_value);
     idle_pwm_cur_value = idle_pwm_target_value;
