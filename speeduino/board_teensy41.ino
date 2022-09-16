@@ -26,7 +26,7 @@ void initBoard()
       * 48 * 1000000uS / PER_clock = 2uS
     */
     CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_CLK_SEL; // 24MHz
-    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b110000); //Prescale to 48
+    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b101111); //Prescale to 48
 
     attachInterruptVector(IRQ_PIT, PIT_isr);
     NVIC_ENABLE_IRQ(IRQ_PIT);
