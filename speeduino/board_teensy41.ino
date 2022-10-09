@@ -205,10 +205,10 @@ void PIT_isr()
   bool interrupt3 = (PIT_TFLG2 & PIT_TFLG_TIF);
   bool interrupt4 = (PIT_TFLG3 & PIT_TFLG_TIF);
 
-  if(interrupt1)      { idleInterrupt();  PIT_TFLG0 = 1;}
-  else if(interrupt2) { boostInterrupt(); PIT_TFLG1 = 1;}
-  else if(interrupt3) { vvtInterrupt();   PIT_TFLG2 = 1;}
-  else if(interrupt4) { oneMSInterval();  PIT_TFLG3 = 1;}
+  if(interrupt1)      { PIT_TFLG0 = 1; idleInterrupt();  }
+  else if(interrupt2) { PIT_TFLG1 = 1; boostInterrupt(); }
+  else if(interrupt3) { PIT_TFLG2 = 1; vvtInterrupt();   }
+  else if(interrupt4) { PIT_TFLG3 = 1; oneMSInterval();  }
 }
 
 void TMR1_isr(void)
