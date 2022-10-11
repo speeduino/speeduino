@@ -744,11 +744,11 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(99); // cold_adv_deg
   bytestosend -= Serial.write(99); // cold_adv_deg
 
-  temp = currentStatus.tpsDOT * 10;
+  temp = currentStatus.tpsDOT;
   bytestosend -= Serial.write(temp>>8); // TPSdot
   bytestosend -= Serial.write(temp); // TPSdot
 
-  temp = currentStatus.mapDOT * 10;
+  temp = currentStatus.mapDOT;
   bytestosend -= Serial.write(temp >> 8); // MAPdot
   bytestosend -= Serial.write(temp); // MAPdot
 
