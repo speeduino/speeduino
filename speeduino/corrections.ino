@@ -353,7 +353,7 @@ uint16_t correctionAccel()
       else
       {
         //If MAE isn't currently turned on, need to check whether it needs to be turned on
-        if (abs(currentStatus.mapDOT) > configPage2.maeThresh * 10)
+        if (abs(currentStatus.mapDOT) > configPage2.maeThresh)
         {
           activateMAPDOT = currentStatus.mapDOT;
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
@@ -419,7 +419,7 @@ uint16_t correctionAccel()
       else
       {
         //If TAE isn't currently turned on, need to check whether it needs to be turned on
-        if (abs(currentStatus.tpsDOT) > configPage2.taeThresh * 10)
+        if (abs(currentStatus.tpsDOT) > configPage2.taeThresh)
         {
           activateTPSDOT = abs(currentStatus.tpsDOT);
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
