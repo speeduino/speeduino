@@ -678,6 +678,8 @@ void doUpdates()
     //202210
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+
+    configPage2.decelAmount = 100; //Default decel fuel amount is 100%, so no change in fueling in decel as before.
     
     //AC Control (configPage15)
     //Set A/C default values - these line up with the ini file defaults

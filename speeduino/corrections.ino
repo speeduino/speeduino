@@ -292,7 +292,7 @@ uint16_t correctionAccel()
   {
     //Get the MAP rate change
     MAP_change = (currentStatus.MAP - MAPlast);
-    currentStatus.mapDOT = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the TPS has moved
+    currentStatus.mapDOT = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the MAP has moved
     //currentStatus.mapDOT = 15 * MAP_change; //This is the kpa per second that the MAP has moved
   }
   else if(configPage2.aeMode == AE_MODE_TPS)
@@ -341,8 +341,7 @@ uint16_t correctionAccel()
     }
   }
 
-  //else
-  if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)) //Need to check this again as it may have been changed in the above section
+  if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)) //Need to check this again as it may have been changed in the above section (Both ACC and DCC are off if this has changed)
   {
     if(configPage2.aeMode == AE_MODE_MAP)
     {
@@ -364,7 +363,7 @@ uint16_t correctionAccel()
             BIT_SET(currentStatus.engine, BIT_ENGINE_DCC); //Mark deceleration enleanment as active.
             accelValue = configPage2.decelAmount; //In decel, use the decel fuel amount as accelValue
           } //Deceleration
-          //Positive MAP rate of change is Acceleration.
+          //Positive MAP rate of change is acceleration.
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
@@ -404,7 +403,6 @@ uint16_t correctionAccel()
                 accelValue = (int16_t) accelValue_uint;
               }
             }
-            
             accelValue = 100 + accelValue; //In case of AE, add the 100 normalisation to the calculated amount
           }
         } //MAE Threshold
