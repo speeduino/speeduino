@@ -680,6 +680,14 @@ void doUpdates()
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
 
     configPage2.decelAmount = 100; //Default decel fuel amount is 100%, so no change in fueling in decel as before.
+    //full status structure has been changed. Update programmable outputs settings to match.
+    for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
+    {
+      if ((configPage13.firstDataIn[y] > 22) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.firstDataIn[y] > 92) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 22) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 92) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+    }
     
     //AC Control (configPage15)
     //Set A/C default values - these line up with the ini file defaults
