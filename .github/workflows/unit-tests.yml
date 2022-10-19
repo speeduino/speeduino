@@ -10,19 +10,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
     # Only try to run hardware unit tests on the upstream repository
     if: github.repository_owner == 'noisymime'
-  test:
+
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      uses: karniv00l/platformio-run-action@0.1.0
+
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
       with:
-        environments: megaatmega2560
+        version: latest
+        platform: x32
+
     - name: Run Unit Tests
-      uses: karniv00l/platformio-remote-test-action@0.1.0
+      uses: karniv00l/platformio-remote-test-action@v1
       with:
         environments: megaatmega2560
         force-remote: true
