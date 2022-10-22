@@ -3258,6 +3258,7 @@ int getCrankAngle_Nissan360()
 
   crankAngle = ( (tempToothCurrentCount - 1) * 2) + configPage4.triggerAngle;
   unsigned long halfTooth = (tempToothLastToothTime - tempToothLastMinusOneToothTime) / 2;
+  elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
   if (elapsedTime > halfTooth)
   {
     //Means we're over halfway to the next tooth, so add on 1 degree
