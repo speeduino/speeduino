@@ -712,9 +712,9 @@ void triggerSetup_DualWheel()
   decoderIsSequential = true;
   triggerToothAngleIsCorrect = true; //This is always true for this pattern
   
-  //MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   
-   MAX_STALL_TIME = 166667 * triggerToothAngle; //1 rpm for testing
+  // MAX_STALL_TIME = 166667 * triggerToothAngle; //1 rpm for testing
 
   targetGap = 100000L; // random value larger than 0 to ensure we start off being less than target
   toothLastToothTime = 0;
