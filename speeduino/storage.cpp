@@ -152,25 +152,28 @@ and writes them to EEPROM as per the layout defined in storage.h.
 void writeConfig(uint8_t pageNum)
 {
 //The maximum number of write operations that will be performed in one go.
-//If we try to write to the EEPROM too fast (Each write takes ~3ms) then 
+//If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
 //the rest of the system can hang)
-#if defined(CORE_STM32) || defined(CORE_TEENSY) & !defined(USE_SPI_EEPROM)
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint8_t EEPROM_MAX_WRITE_BLOCK = 20; //This needs tuning
+#elif defined(CORE_STM32) || defined(CORE_TEENSY)
   uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
 #else
   uint8_t EEPROM_MAX_WRITE_BLOCK = 20;
 
-#ifdef CORE_AVR
-  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
-  //maximum write block size based on the RPM.
-  //This calculation is based on EEPROM writes taking approximately 4ms per byte
-  //(Actual value is 3.8ms, so 4ms has some safety margin) 
-  if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
-  { 
-    EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
-    EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
-    EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 20); //Any higher than this will cause comms timeouts on AVR
-  }
-#endif
+  #ifdef CORE_AVR
+    //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+    //maximum write block size based on the RPM.
+    //This calculation is based on EEPROM writes taking approximately 4ms per byte
+    //(Actual value is 3.8ms, so 4ms has some safety margin) 
+    if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
+    { 
+      EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
+      EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
+      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 20); //Any higher than this will cause comms timeouts on AVR
+    }
+  #endif
 
 #endif
 
