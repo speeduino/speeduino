@@ -1,25 +1,16 @@
 name: Validate INI
 
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: pull_request
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    env:
-      NPM_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Authenticate
-        run: echo -e "@hyper-tuner:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_GITHUB_TOKEN}" > .npmrc
-      - name: Validate
-        run: npx -y hyper-tuner/ini validate reference/speeduino.ini
+        uses: actions/checkout@v2
+      - name: Validate INI
+        uses: hyper-tuner/ini-validate-action@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          filename: reference/speeduino.ini
