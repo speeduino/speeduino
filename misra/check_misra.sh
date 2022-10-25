@@ -4,9 +4,10 @@ script_folder="$(dirname $(readlink -f $0))"
 
 # Initialize variables with defaults
 source_folder="$script_folder/../speeduino" # -s, --source
-file_exts="ino"                             # -e, --exts
+file_exts="cpp,ino"                         # -e, --exts
 out_folder="$script_folder/.results"        # -o, --out
 cppcheck_path=""                            # -c, --cppcheck
+quiet=0                                     # -q, --quiet
 
 function parse_command_line() {
    while [ $# -gt 0 ] ; do
@@ -15,6 +16,7 @@ function parse_command_line() {
       -e | --exts) file_exts="$2" ;;
       -o | --out) out_folder="$2" ;;
       -c | --cppcheck) cppcheck_path="$2" ;;
+      -q | --quiet) quiet=1 ;;
       -*) 
         echo "Unknown option: " $1
         exit 1
@@ -25,18 +27,30 @@ function parse_command_line() {
 }
 
 function run_cppcheck() {
+  # There is no way to tell the misra add on to skip certain headers
+  # libdivide adds many 10+ minutes to each file so rename the folder 
+  # before the scan
+  mv "$source_folder"/src/libdivide "$source_folder"/src/_libdivide
   shopt -s nullglob nocaseglob
-  for i in "$source_folder"/*.{"$file_exts",}; do
-    "$cppcheck_bin" \
-        --inline-suppr \
-        --language=c++ \
-        --addon="$script_folder/misra.json" \
-        --suppressions-list="$script_folder/suppressions.txt" \
-        -DCORE_AVR=1 \
-        -D__AVR_ATmega2560__ \
-        $i 2>> "$cpp_result_file"
+  for ext in ${file_exts//,/ }; do
+    for i in "$source_folder"/*."$ext"; do
+      # All violations from included libraries (*src* folders) are ignored
+      "$cppcheck_bin" \
+          --inline-suppr \
+          --language=c++ \
+          --addon="$script_folder/misra.json" \
+          --suppressions-list="$script_folder/suppressions.txt" \
+          --platform=avr8 \
+          -DCORE_AVR=1 \
+          -D__AVR_ATmega2560__ \
+          --suppress="*:*src*" \
+          --report-progress \
+          $i 2>> "$cpp_result_file"
+    done
   done
   shopt -u nullglob nocaseglob
+  # Restore libdivide folder name after scan
+  mv "$source_folder"/src/_libdivide "$source_folder"/src/libdivide
 }
 
 function process_cpp_results() {
@@ -46,8 +60,8 @@ function process_cpp_results() {
   sed '$!N;$!N;s/\n/~/g' < "$cpp_result_file" |\
     # Remove duplicate lines
     sort | uniq > "$intermediate_file"
-  # Count error lines
-  local __error_count=`grep ": error:" < "$intermediate_file" | wc -l`
+  # Count lines for Mandatory or Required rules
+  local __error_count=`grep -i "Mandatory\|Required" < "$intermediate_file" | wc -l`
   # Unfold the line groups for readability
   tr '~' '\n' < "$intermediate_file" > "$result_file"
   rm -f "$intermediate_file"
@@ -69,11 +83,10 @@ rm -f "$result_file"
 run_cppcheck
 error_count="$(process_cpp_results)"
 
-cat "$result_file"
-echo $error_count MISRA violations
-
-if [ $error_count -gt 0 ]; then
-	exit 1
-else
-	exit 0
+if [ $quiet -eq 0 ]; then
+  cat "$result_file"
 fi
+echo $error_count MISRA violations
+echo $error_count > ".results/error_count.txt"
+
+exit 0

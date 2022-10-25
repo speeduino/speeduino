@@ -15,6 +15,7 @@ struct table3d16RpmLoad ignitionTable2; ///< 16x16 ignition map
 struct table3d16RpmLoad afrTable; ///< 16x16 afr target map
 struct table3d8RpmLoad stagingTable; ///< 8x8 fuel staging table
 struct table3d8RpmLoad boostTable; ///< 8x8 boost map
+struct table3d8RpmLoad boostTableLookupDuty; ///< 8x8 boost map lookup table
 struct table3d8RpmLoad vvtTable; ///< 8x8 vvt map
 struct table3d8RpmLoad vvt2Table; ///< 8x8 vvt2 map
 struct table3d8RpmLoad wmiTable; ///< 8x8 wmi map
@@ -125,7 +126,7 @@ int ignition8EndAngle = 0;
 //These are variables used across multiple files
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
-uint16_t softStartTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
+uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
 unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
@@ -139,7 +140,6 @@ volatile bool fpPrimed = false; ///< Tracks whether or not the fuel pump priming
 volatile bool injPrimed = false; ///< Tracks whether or not the injectors priming has been completed yet
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
-unsigned long previousLoopTime; /**< The time (in uS) that the previous mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 #if defined(CORE_SAMD21)
   PinStatus primaryTriggerEdge;
@@ -159,6 +159,7 @@ volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of t
 volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_50pc = 0; 
+byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 
 
 //This needs to be here because using the config page directly can prevent burning the setting
@@ -245,9 +246,13 @@ byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid 
 byte pinMC33810_1_CS;
 byte pinMC33810_2_CS;
+byte pinSDEnable;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
+byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
+byte pinAirConFan;    // Stand-alone air conditioning fan output (See: auxiliaries.ino)
+byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
@@ -256,6 +261,7 @@ struct config6 configPage6;
 struct config9 configPage9;
 struct config10 configPage10;
 struct config13 configPage13;
+struct config15 configPage15;
 
 //byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
@@ -270,3 +276,75 @@ struct table2D iatCalibrationTable;
 uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable; 
+
+//These function do checks on a pin to determine if it is already in use by another (higher importance) active function
+inline bool pinIsOutput(byte pin)
+{
+  bool used = false;
+  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
+  bool isIdleSteper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
+  //Injector?
+  if ((pin == pinInjector1)
+  || ((pin == pinInjector2) && (configPage2.nInjectors > 1))
+  || ((pin == pinInjector3) && (configPage2.nInjectors > 2))
+  || ((pin == pinInjector4) && (configPage2.nInjectors > 3))
+  || ((pin == pinInjector5) && (configPage2.nInjectors > 4))
+  || ((pin == pinInjector6) && (configPage2.nInjectors > 5))
+  || ((pin == pinInjector7) && (configPage2.nInjectors > 6))
+  || ((pin == pinInjector8) && (configPage2.nInjectors > 7)))
+  {
+    used = true;
+  }
+  //Ignition?
+  if ((pin == pinCoil1)
+  || ((pin == pinCoil2) && (maxIgnOutputs > 1))
+  || ((pin == pinCoil3) && (maxIgnOutputs > 2))
+  || ((pin == pinCoil4) && (maxIgnOutputs > 3))
+  || ((pin == pinCoil5) && (maxIgnOutputs > 4))
+  || ((pin == pinCoil6) && (maxIgnOutputs > 5))
+  || ((pin == pinCoil7) && (maxIgnOutputs > 6))
+  || ((pin == pinCoil8) && (maxIgnOutputs > 7)))
+  {
+    used = true;
+  }
+  //Functions?
+  if ((pin == pinFuelPump)
+  || ((pin == pinFan) && (configPage2.fanEnable == 1))
+  || ((pin == pinVVT_1) && (configPage6.vvtEnabled > 0))
+  || ((pin == pinVVT_1) && (configPage10.wmiEnabled > 0))
+  || ((pin == pinVVT_2) && (configPage10.vvt2Enabled > 0))
+  || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
+  || ((pin == pinIdle1) && isIdlePWM)
+  || ((pin == pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
+  || ((pin == pinStepperEnable) && isIdleSteper)
+  || ((pin == pinStepperStep) && isIdleSteper)
+  || ((pin == pinStepperDir) && isIdleSteper)
+  || (pin == pinTachOut)
+  || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
+  {
+    used = true;
+  }
+  //Forbiden or hardware reserved? (Defined at board_xyz.h file)
+  if ( pinIsReserved(pin) ) { used = true; }
+
+  return used;
+}
+
+inline bool pinIsUsed(byte pin)
+{
+  bool used = false;
+
+  //Analog input?
+  if ( pinIsSensor(pin) )
+  {
+    used = true;
+  }
+  //Functions?
+  if ( pinIsOutput(pin) )
+  {
+    used = true;
+  }
+
+  return used;
+}

@@ -15,6 +15,7 @@ RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 uint8_t SD_status = SD_STATUS_OFF;
 uint16_t currentLogFileNumber;
 bool manualLogActive = false;
+uint32_t logStartTime = 0; //In ms
 
 void initSD()
 {
@@ -24,7 +25,7 @@ void initSD()
   //Set the RTC callback. This is used to set the correct timestamp on file creation and sync operations
   FsDateTime::setCallback(dateTime);
 
-  // Initialize the SD.
+  // Initialise the SD.
   if (!sd.begin(SD_CONFIG)) 
   {
     //sd.initErrorHalt(&Serial);
@@ -32,7 +33,7 @@ void initSD()
     SD_status = SD_STATUS_ERROR_NO_CARD;
   }
   
-  //Set the TunerStudio status varable
+  //Set the TunerStudio status variable
   setTS_SD_status();
 }
 
@@ -41,6 +42,30 @@ bool createLogFile()
   //TunerStudio only supports 8.3 filename format. 
   char filenameBuffer[13]; //8 + 1 + 3 + 1
   bool returnValue = false;
+
+  //Saving this in case we ever go back to the datestamped filename
+  /*
+  //Filename format is: YYYY-MM-DD_HH.MM.SS.csv
+  char intBuffer[5];
+  itoa(rtc_getYear(), intBuffer, 10);
+  strcpy(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "-");
+  itoa(rtc_getMonth(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "-");
+  itoa(rtc_getDay(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, "_");
+  itoa(rtc_getHour(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".");
+  itoa(rtc_getMinute(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".");
+  itoa(rtc_getSecond(), intBuffer, 10);
+  strcat(filenameBuffer, intBuffer);
+  strcat(filenameBuffer, ".csv");
+  */
 
   //Lookup the next available file number
   currentLogFileNumber = getNextSDLogFileNumber();
@@ -152,7 +177,7 @@ void beginSDLogging()
 {
   if(SD_status == SD_STATUS_READY)
   {
-    SD_status = SD_STATUS_ACTIVE; //Set the status as being active so that entries will beging to be written. This will be updated below if there is an error
+    SD_status = SD_STATUS_ACTIVE; //Set the status as being active so that entries will begin to be written. This will be updated below if there is an error
 
     // Open or create file - truncate existing file.
     if (!createLogFile()) 
@@ -160,17 +185,20 @@ void beginSDLogging()
       SD_status = SD_STATUS_ERROR_NO_WRITE;
     }
 
-    //Perform pre-allocation on card. This dramatically inproves write speed
+    //Perform pre-allocation on card. This dramatically improves write speed
     if (!logFile.preAllocate(SD_LOG_FILE_SIZE)) 
     {
       SD_status = SD_STATUS_ERROR_NO_SPACE;
     }
 
-    //initialize the RingBuf.
+    //initialise the RingBuf.
     rb.begin(&logFile);
 
     //Write a header row
     writeSDLogHeader();
+
+    //Note the start time
+    logStartTime = millis();
   }
 }
 
@@ -200,10 +228,27 @@ void writeSDLogEntry()
 
   if(SD_status == SD_STATUS_ACTIVE)
   {
+    //Write the timestamp (x.yyy seconds format)
+    uint32_t duration = millis() - logStartTime;
+    uint32_t seconds = duration / 1000;
+    uint32_t milliseconds = duration % 1000;
+    rb.print(seconds);
+    rb.print('.');
+    if (milliseconds < 100) { rb.print("0"); }
+    if (milliseconds < 10) { rb.print("0"); }
+    rb.print(milliseconds);
+    rb.print(',');
+
     //Write the line to the ring buffer
     for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
     {
-      rb.print(getReadableLogEntry(x));
+      #if FPU_MAX_SIZE >= 32
+        float entryValue = getReadableFloatLogEntry(x);
+        if(IS_INTEGER(entryValue)) { rb.print((uint16_t)entryValue); }
+        else { rb.print(entryValue); }
+      #else
+        rb.print(getReadableLogEntry(x));
+      #endif
       if(x < (SD_LOG_NUM_FIELDS - 1)) { rb.print(","); }
     }
     rb.println("");
@@ -236,6 +281,10 @@ void writeSDLogEntry()
 
 void writeSDLogHeader()
 {
+  //Write header for Time field
+  rb.print("Time,");
+
+  //WRite remaining fields based on log definitions
   for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
   {
     #ifdef CORE_AVR
@@ -280,42 +329,48 @@ void checkForSDStart()
   //Logging can only start if we're in the ready state
   //We must check the SD_status each time to prevent trying to init a new log file multiple times
 
-  //Check for enable at boot
-  if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
+  if(configPage13.onboard_log_file_style > 0)
   {
-    //Check that we're not already finished the logging
-    if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
+    //Check for enable at boot
+    if( (configPage13.onboard_log_trigger_boot) && (SD_status == SD_STATUS_READY) )
     {
-      beginSDLogging(); //Setup the log file, prallocation, header row
-    }    
-  }
-
-  //Check for RPM based Enable
-  if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
-  {
-    if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
-    {
-      beginSDLogging(); //Setup the log file, prallocation, header row
+      //Check that we're not already finished the logging
+      if((millis() / 1000) <= configPage13.onboard_log_tr1_duration)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }    
     }
-  }
 
-  //Check for engine protection based enable
-  if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
-  {
-    if(currentStatus.engineProtectStatus > 0)
+    //Check for RPM based Enable
+    if( (configPage13.onboard_log_trigger_RPM) && (SD_status == SD_STATUS_READY) )
     {
-      beginSDLogging(); //Setup the log file, prallocation, header row
+      if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) ) //Need to check both on and off conditions to prevent logging starting and stopping continually
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
     }
-  }
 
-  if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
-  {
+    //Check for engine protection based enable
+    if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
+    {
+      if(currentStatus.engineProtectStatus > 0)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
+    }
 
-  }
+    if( (configPage13.onboard_log_trigger_Vbat) && (SD_status == SD_STATUS_READY) )
+    {
 
-  if(( configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
-  {
+    }
 
+    if((configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
+    {
+      if(digitalRead(pinSDEnable) == LOW)
+      {
+        beginSDLogging(); //Setup the log file, preallocation, header row
+      }
+    }
   }
 }
 
@@ -329,6 +384,7 @@ void checkForSDStop()
   bool log_RPM = false;
   bool log_prot = false;
   bool log_Vbat = false;
+  bool log_Epin = false;
 
   //Logging only needs to be stopped if already active
   if(SD_status == SD_STATUS_ACTIVE)
@@ -344,7 +400,7 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_RPM)
     {
-      if(currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_off)
+      if( (currentStatus.RPMdiv100 >= configPage13.onboard_log_tr2_thr_on) && (currentStatus.RPMdiv100 <= configPage13.onboard_log_tr2_thr_off) )
       {
         log_RPM = true;
       }
@@ -361,11 +417,22 @@ void checkForSDStop()
 
     }
 
-    //Check all conditions to see if we should stop logging
-    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (manualLogActive == false) )
+    //External Pin
+    if(configPage13.onboard_log_trigger_Epin)
     {
-      endSDLogging(); //Setup the log file, prallocation, header row
+      if(digitalRead(pinSDEnable) == LOW)
+      {
+        log_Epin = true;
+      }
     }
+
+    //Check all conditions to see if we should stop logging
+    if( (log_boot == false) && (log_RPM == false) && (log_prot == false) && (log_Vbat == false) && (log_Epin == false) && (manualLogActive == false) )
+    {
+      endSDLogging();
+    }
+    //ALso check whether logging has been disabled entirely
+    if(configPage13.onboard_log_file_style == 0) { endSDLogging(); }
   }
 
   
@@ -403,7 +470,7 @@ void formatExFat()
 /**
  * @brief Deletes a log file from the SD card
  * 
- * Log files all have hte same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
+ * Log files all have the same name with a 4 digit number at the end (Eg SPD_0001.csv). TS sends the 4 digits as ASCII characters and they are combined here with the logfile prefix
  * 
  * @param log1 
  * @param log2 

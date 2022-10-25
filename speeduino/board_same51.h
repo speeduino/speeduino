@@ -17,6 +17,7 @@
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE 257 //Size of the serial buffer used by new comms protocol. Additional 1 byte is for flag
+  #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     typedef uint16_t eeprom_address_t;
@@ -46,7 +47,7 @@
   #else
     #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
   #endif
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB on other boards
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
   //Additional analog pins (These won't work without other changes)
   #define PIN_A6               (8ul)
@@ -158,7 +159,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   //Uses the 2nd TC
   //The 2nd TC is referred to as TC4

@@ -2,7 +2,7 @@
  * @brief File for generating log files and meta data
  * @author Josh Stewart
  * 
- * This file contains functions for creating a log file for use eith by TunerStudio directly or to be written to an SD card
+ * This file contains functions for creating a log file for use with by TunerStudio directly or to be written to an SD card
  * 
  */
 
@@ -12,17 +12,20 @@
 #include <assert.h>
 
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      122 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   122 /**< The size of the live data packet used by the SD card.*/
+  #define LOG_ENTRY_SIZE      123 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+  #define SD_LOG_ENTRY_SIZE   123 /**< The size of the live data packet used by the SD card.*/
 #else
   #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
-#define SD_LOG_NUM_FIELDS   89 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
+#define SD_LOG_NUM_FIELDS   90 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 
 byte getTSLogEntry(uint16_t);
 int16_t getReadableLogEntry(uint16_t);
+#if FPU_MAX_SIZE >= 32
+  float getReadableFloatLogEntry(uint16_t);
+#endif
 bool is2ByteEntry(uint8_t);
 
 // This array indicates which index values from the log are 2 byte values
@@ -120,8 +123,8 @@ const char header_85[] PROGMEM = "Advance 2";
 const char header_86[] PROGMEM = "SD Status";
 const char header_87[] PROGMEM = "EMAP";
 const char header_88[] PROGMEM = "Fan Duty";
+const char header_89[] PROGMEM = "AirConStatus";
 /*
-const char header_89[] PROGMEM = "";
 const char header_90[] PROGMEM = "";
 const char header_91[] PROGMEM = "";
 const char header_92[] PROGMEM = "";
@@ -245,8 +248,8 @@ const char* const header_table[] PROGMEM = {  header_0,\
                                               header_86,\
                                               header_87,\
                                               header_88,\
-                                              /*
                                               header_89,\
+                                              /*
                                               header_90,\
                                               header_91,\
                                               header_92,\
