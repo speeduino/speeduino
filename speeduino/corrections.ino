@@ -126,13 +126,10 @@ uint16_t correctionsFuel()
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.fuelTempCorrection); }
 
   result = correctionDFCO();
-  if (result != 100) { sumCorrections = (sumCorrections * result); activeCorrections++; }
-  if (activeCorrections == MAX_CORRECTIONS) { sumCorrections = sumCorrections / powint(100,activeCorrections); activeCorrections = 0; }
+  if (result != 100) { sumCorrections = div100(sumCorrections * result); }
   
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
-
-  sumCorrections = sumCorrections / powint(100,activeCorrections);
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
@@ -548,22 +545,22 @@ byte correctionDFCO()
     switch (currentStatus.gear)
     {
       case 1:
-        if (configPage9.dfcoEnblGear1 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear1 == true) { dfcoGearEnabled = true; }
         break;
       case 2:
-        if (configPage9.dfcoEnblGear2 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear2 == true) { dfcoGearEnabled = true; }
         break;
       case 3:
-        if (configPage9.dfcoEnblGear3 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear3 == true) { dfcoGearEnabled = true; }
         break;
       case 4:
-        if (configPage9.dfcoEnblGear4 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear4 == true) { dfcoGearEnabled = true; }
         break;
       case 5:
-        if (configPage9.dfcoEnblGear5 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear5 == true) { dfcoGearEnabled = true; }
         break;
       case 6:
-        if (configPage9.dfcoEnblGear6 == true) { dfcoGearEnabled = true; }
+        if (configPage15.dfcoEnblGear6 == true) { dfcoGearEnabled = true; }
         break;
       default:
         dfcoGearEnabled = true; // Set true here in the case the vehicle does not have VSS and/or no gear detection.
@@ -571,12 +568,12 @@ byte correctionDFCO()
     }
     
     // Clutch Check
-    if ((configPage9.dfcoDsblwClutch == true) && (clutchTrigger == true)) { dfcoClutchEnabled = false; } 
+    if ((configPage15.dfcoDsblwClutch == true) && (clutchTrigger == true)) { dfcoClutchEnabled = false; } 
     else {  dfcoClutchEnabled = true; }
     
     if ((currentStatus.TPS < configPage4.dfcoTPSThresh ) && 
         (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) &&
-        (currentStatus.vss >= configPage9.dfcoMinVss) &&
+        (currentStatus.vss >= configPage15.dfcoMinVss) &&
         (dfcoGearEnabled == true ) &&
         (dfcoClutchEnabled == true ))
       {
@@ -610,7 +607,7 @@ byte correctionDFCO()
     {
       DFCOValue = 100;
       if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false)) { DFCO_State = DFCO_OFF ; }
-      if ((runSecsX10 - dfcoStateStrtTm) >= configPage9.dfcoRampInTime ) { DFCO_State = DFCO_ACTIVE; }
+      if ((runSecsX10 - dfcoStateStrtTm) >= configPage15.dfcoRampInTime ) { DFCO_State = DFCO_ACTIVE; }
     }
     
     if (DFCO_State == DFCO_ACTIVE) // No Fuel, Waiting for ramp out conditions
@@ -626,9 +623,9 @@ byte correctionDFCO()
     
     if (DFCO_State == DFCO_RAMP_OUT) //Spark blending happening here back to normal and enrichment applied to recover wall wetting and catalyst HC.
     {
-      if ( (runSecsX10 - dfcoStateStrtTm) > configPage9.dfcoRampOutTime ) { DFCO_State = DFCO_OFF; DFCOValue = 100; }
-      else if (configPage9.dfcoExitFuelTime == 1) { DFCOValue = configPage9.dfcoExitFuel; } // DFCO exit fuel applied for the duration of the exit ramp if selected via cal.
-      else if ((ignitionCount - dfcoFuelStartIgns) < (2 * configPage2.nCylinders)) { DFCOValue = configPage9.dfcoExitFuel; } // Cannot be longer than dfcoRampOutTime, hardcoded to each cylinder firing twice
+      if ( (runSecsX10 - dfcoStateStrtTm) > configPage15.dfcoRampOutTime ) { DFCO_State = DFCO_OFF; DFCOValue = 100; }
+      else if (configPage15.dfcoExitFuelTime == 1) { DFCOValue = configPage15.dfcoExitFuel; } // DFCO exit fuel applied for the duration of the exit ramp if selected via cal.
+      else if ((ignitionCount - dfcoFuelStartIgns) < (2 * configPage2.nCylinders)) { DFCOValue = configPage15.dfcoExitFuel; } // Cannot be longer than dfcoRampOutTime, hardcoded to each cylinder firing twice
       else { DFCOValue = 100; }
     }      
   }
@@ -846,7 +843,7 @@ int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionDFCOEntryExit(int8_t advance)
 {
-  int8_t advanceDFCOadjust = configPage9.dfcoAdv - 15;
+  int8_t advanceDFCOadjust = configPage15.dfcoAdv - 15;
   int8_t ignDFCOValue = advance;
   
   //Adjust the advance based on time into or out of DFCO. The DFCO advance variable is a modifier to the base advance.
@@ -854,11 +851,11 @@ int8_t correctionDFCOEntryExit(int8_t advance)
   if (DFCO_State == DFCO_ACTIVE) { ignDFCOValue = advance + advanceDFCOadjust; }
   else if (DFCO_State == DFCO_RAMP_IN)
   {
-    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampInTime), advance, (advance + advanceDFCOadjust)); // Ramp from advance to DFCO advance at rate of DFCO delay.
+    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage15.dfcoRampInTime), advance, (advance + advanceDFCOadjust)); // Ramp from advance to DFCO advance at rate of DFCO delay.
   }
   else if (DFCO_State == DFCO_RAMP_OUT)
   {
-    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampOutTime), (advance + advanceDFCOadjust), advance); // Ramp from DFCO advance to regular advance at rate of DFCO delay.
+    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage15.dfcoRampOutTime), (advance + advanceDFCOadjust), advance); // Ramp from DFCO advance to regular advance at rate of DFCO delay.
   }
   //Other states of DFCO do not modify advance.
   return ignDFCOValue;

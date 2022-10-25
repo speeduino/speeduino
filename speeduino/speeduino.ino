@@ -260,7 +260,7 @@ void loop()
       //Check for launching/flat shift (clutch) can be done around here too
       previousClutchTrigger = clutchTrigger;
       //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
-      if(configPage6.flatSEnable || configPage6.launchEnabled || (configPage9.dfcoDsblwClutch == true)){
+      if(configPage6.flatSEnable || configPage6.launchEnabled || (configPage15.dfcoDsblwClutch == true)){
         if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
         else { clutchTrigger = !digitalRead(pinLaunch); }
       }

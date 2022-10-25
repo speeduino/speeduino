@@ -1485,7 +1485,7 @@ struct config15 {
   byte airConPwmFanMinDuty;
   
   //Bytes 98-255
-  byte Unused15_98_250[153];
+  byte Unused15_98_250[150];
   
   //DFCO
   int8_t dfcoAdv; // Spark advance offset for DFCO entry and exit
