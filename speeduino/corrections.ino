@@ -593,7 +593,7 @@ byte correctionDFCO()
     {
       DFCOValue = 100;
       if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false)) { DFCO_State = DFCO_OFF ; }
-      if ((runSecsX10 - dfcoStateStrtTm) > configPage2.dfcoStartDelay ) 
+      if ((runSecsX10 - dfcoStateStrtTm) >= configPage2.dfcoStartDelay ) 
       { 
         dfcoStateStrtTm = runSecsX10;
         DFCO_State = DFCO_RAMP_IN; 
@@ -604,7 +604,7 @@ byte correctionDFCO()
     {
       DFCOValue = 100;
       if (( currentStatus.RPM < ( configPage4.dfcoRPM * 10)) || (dfcoGeneralEnable == false)) { DFCO_State = DFCO_OFF ; }
-      if ((runSecsX10 - dfcoStateStrtTm) > configPage9.dfcoRampInTime ) { DFCO_State = DFCO_ACTIVE; }
+      if ((runSecsX10 - dfcoStateStrtTm) >= configPage9.dfcoRampInTime ) { DFCO_State = DFCO_ACTIVE; }
     }
     
     if (DFCO_State == DFCO_ACTIVE) // No Fuel, Waiting for ramp out conditions
@@ -821,7 +821,7 @@ int8_t correctionWMITiming(int8_t advance)
  */
 int8_t correctionIATretard(int8_t advance)
 {
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT) - 15;
 
   return advance - advanceIATadjust;
 }
@@ -841,19 +841,22 @@ int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionDFCOEntryExit(int8_t advance)
 {
-  int8_t ignDFCOAdv = advance;
-  //Adjust the advance based on time into or out of DFCO. DFCO_State is controled by the fuel algorithm.
-  if (DFCO_State == DFCO_ACTIVE) { ignDFCOAdv = configPage9.dfcoAdv - 15; }
+  int8_t advanceDFCOadjust = configPage9.dfcoAdv - 15;
+  int8_t ignDFCOValue = advance;
+  
+  //Adjust the advance based on time into or out of DFCO. The DFCO advance variable is a modifier to the base advance.
+  // DFCO_State is controled by the fuel algorithm.
+  if (DFCO_State == DFCO_ACTIVE) { ignDFCOValue = advance + advanceDFCOadjust; }
   else if (DFCO_State == DFCO_RAMP_IN)
   {
-    ignDFCOAdv = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampInTime), advance, (configPage9.dfcoAdv - 15)); // Ramp from advance to DFCO advance at rate of DFCO delay.
+    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampInTime), advance, (advance + advanceDFCOadjust)); // Ramp from advance to DFCO advance at rate of DFCO delay.
   }
   else if (DFCO_State == DFCO_RAMP_OUT)
   {
-    ignDFCOAdv = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampOutTime), (configPage9.dfcoAdv - 15), advance); // Ramp from DFCO advance to regular advance at rate of DFCO delay.
+    ignDFCOValue = map(runSecsX10, dfcoStateStrtTm, (dfcoStateStrtTm + configPage9.dfcoRampOutTime), (advance + advanceDFCOadjust), advance); // Ramp from DFCO advance to regular advance at rate of DFCO delay.
   }
   //Other states of DFCO do not modify advance.
-  return ignDFCOAdv;
+  return ignDFCOValue;
 }
 
 /** Ignition Idle advance correction.
