@@ -96,6 +96,10 @@ static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload we
 #pragma GCC optimize ("Os") 
 #endif
 
+static inline bool isTimeout() {
+  return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
+}
+
 // ====================================== Endianess Support =============================
 
 /**
@@ -150,7 +154,7 @@ void writeByteReliableBlocking(byte value) {
  * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
  * off free ram reporting.
  * */
-static __attribute__((noinline)) uint32_t readSerial32Timeout(uint32_t startTime)
+static __attribute__((noinline)) uint32_t readSerial32Timeout()
 {
   char raw[4];
   // Teensy 3.5: Serial.available() should only be used as a boolean test
@@ -159,7 +163,7 @@ static __attribute__((noinline)) uint32_t readSerial32Timeout(uint32_t startTime
   while (count < sizeof(raw)) {
     if (Serial.available()) {
       raw[count++] =(byte)Serial.read();
-    } else if( (millis() - startTime) > SERIAL_TIMEOUT) {
+    } else if(isTimeout()) {
       return 0;
     }
   }  
@@ -493,32 +497,34 @@ void serialReceive(void)
     }
     else
     {
-      uint32_t incomingCrc = readSerial32Timeout(serialReceiveStartTime);
+      uint32_t incomingCrc = readSerial32Timeout();
       serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
 
-      if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
+      if (!isTimeout()) // CRC read can timeout also!
       {
-        //CRC is correct. Process the command
-        processSerialCommand();
-      }
-      else if (incomingCrc!=0) {
-        //CRC Error. Need to send an error message
-        sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
-        flushRXbuffer();
+        if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
+        {
+          //CRC is correct. Process the command
+          processSerialCommand();
+        }
+        else {
+          //CRC Error. Need to send an error message
+          sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
+          flushRXbuffer();
+        }
       }
       // else timeout - code below will kick in.
     }
-
-    //Check for a timeout
-    if( (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT)
-    {
-      //Timeout occurred
-      serialStatusFlag = SERIAL_INACTIVE; //Reset the serial receive
-
-      flushRXbuffer();
-      sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
-    } //Timeout
   } //Data in serial buffer and serial receive in progress
+
+  //Check for a timeout
+  if( isTimeout() )
+  {
+    serialStatusFlag = SERIAL_INACTIVE; //Reset the serial receive
+
+    flushRXbuffer();
+    sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
+  } //Timeout
 }
 
 void serialTransmit(void)
