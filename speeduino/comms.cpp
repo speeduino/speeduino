@@ -697,7 +697,7 @@ void processSerialCommand()
 
             
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
+            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
@@ -729,7 +729,7 @@ void processSerialCommand()
 
             
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
+            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
