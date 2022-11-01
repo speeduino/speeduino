@@ -843,7 +843,7 @@ int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionDFCOEntryExit(int8_t advance)
 {
-  int8_t advanceDFCOadjust = configPage15.dfcoAdv - 15;
+  int8_t advanceDFCOadjust = configPage9.dfcoAdv;
   int8_t ignDFCOValue = advance;
   
   //Adjust the advance based on time into or out of DFCO. The DFCO advance variable is a modifier to the base advance.
