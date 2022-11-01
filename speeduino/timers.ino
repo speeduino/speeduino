@@ -230,7 +230,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
       //Off by 1 error check
       if (tempEthPct == 1) { tempEthPct = 0; }
 
-      currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
+      currentStatus.ethanolPct = filterADC(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }

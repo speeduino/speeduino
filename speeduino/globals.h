@@ -1062,7 +1062,7 @@ struct config6 {
   byte egoRPM;      /// RPM must be above this for closed loop to function
   byte egoTPSMax;   /// TPS must be below this for closed loop to function
   byte vvt1Pin : 6;
-  byte useExtBaro : 1;
+  byte useSensorBaro : 1;
   byte boostMode : 1; /// Boost control mode: 0=Simple (BOOST_MODE_SIMPLE) or 1=full (BOOST_MODE_FULL)
   byte boostPin : 6;
   byte tachoMode : 1; /// Whether to use fixed tacho pulse duration or match to dwell duration
@@ -1375,8 +1375,12 @@ struct config10 {
   byte spark2InputPin : 6;
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
-
-  byte unused11_187_191[2]; //Bytes 187-191
+  
+  byte useSensorMAP :1;
+  byte mapSensPin : 4;
+  
+  byte unused11_190 : 3;
+  byte unused11_191;
 
 #if defined(CORE_AVR)
   };

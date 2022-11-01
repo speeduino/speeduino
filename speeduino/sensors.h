@@ -64,14 +64,7 @@ byte mapErrorCount = 0;
 byte iatErrorCount = 0;
 byte cltErrorCount = 0;
 
-/**
- * @brief Simple low pass IIR filter macro for the analog inputs
- * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
- * But removes the use of floats and uses 8 bits of fixed precision.
- */
-#define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
-
-static inline void instanteneousMAPReading() __attribute__((always_inline));
+static inline void instanteneousMAPReading(bool=true) __attribute__((always_inline));
 static inline void readMAP() __attribute__((always_inline));
 static inline void validateMAP();
 void initialiseADC();
@@ -86,11 +79,12 @@ byte getFuelPressure();
 byte getOilPressure();
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
+uint16_t filterADC(uint32_t input, uint32_t alpha, uint32_t prior); // replaces inline macro ADC_FILTER
 void readCLT(bool=true); //Allows the option to override the use of the filter
-void readIAT();
+void readIAT(bool=true); //Allows the option to override the use of the filter
 void readO2();
-void readBat();
-void readBaro();
+void readBat(bool=true); //Allows the option to override the use of the filter
+void readBaro(bool=true); //Allows the option to override the use of the filter
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];

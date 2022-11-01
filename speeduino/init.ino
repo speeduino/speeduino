@@ -351,6 +351,46 @@ void initialiseAll()
     initialiseADC();
     initialiseProgrammableIO();
 
+
+    //Lookup the current MAP reading for barometric pressure
+    instanteneousMAPReading(false); // No filter on first read to init MAP and For Accurate Baro Read when first MAP used to set baro.
+    //barometric reading can be taken from either an external sensor if enabled, or simply by using the initial MAP value
+    if ( configPage6.useSensorBaro == true )
+    {
+      readBaro(false); // read baro sensor without filter since ADC values start at 0.
+      if ((currentStatus.baro >= BARO_MIN) && (currentStatus.baro <= BARO_MAX)) // Check that read was within a reasonable range for saving.
+      {
+        storeLastBaro(currentStatus.baro);
+      }
+      else
+      {
+        //Attempt to use the last known good baro reading from EEPROM
+        if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+        { currentStatus.baro = readLastBaro(); } //last baro correction
+        else { currentStatus.baro = 100; } //Final fall back position.
+      }
+    }
+    else
+    {
+      /*
+      * The highest sea-level pressure on Earth occurs in Siberia, where the Siberian High often attains a sea-level pressure above 105 kPa;
+      * with record highs close to 108.5 kPa.
+      * The lowest measurable sea-level pressure is found at the centers of tropical cyclones and tornadoes, with a record low of 87 kPa;
+      */
+      if ((currentStatus.MAP >= BARO_MIN) && (currentStatus.MAP <= BARO_MAX)) //Check if engine isn't running
+      {
+        currentStatus.baro = currentStatus.MAP;
+        storeLastBaro(currentStatus.baro);
+      }
+      else
+      {
+        //Attempt to use the last known good baro reading from EEPROM
+        if ((readLastBaro() >= BARO_MIN) && (readLastBaro() <= BARO_MAX)) //Make sure it's not invalid (Possible on first run etc)
+        { currentStatus.baro = readLastBaro(); } //last baro correction
+        else { currentStatus.baro = 100; } //Final fall back position.
+      }
+    }
+
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
@@ -1210,7 +1250,9 @@ void initialiseAll()
 
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
+    readIAT(false); // Init IAT ADC without filter.
     readTPS(false); // Need to read tps to detect flood clear state
+    readBat(false); // Init battery ADC without filter.
 
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
@@ -2598,7 +2640,7 @@ void setPinMapping(byte boardID)
   }
 
   //Setup any devices that are using selectable pins
-
+  if ( (configPage10.useSensorMAP != 0) && (configPage10.mapSensPin < BOARD_MAX_IO_PINS) )  { pinMAP = pinTranslateAnalog(configPage10.mapSensPin); }
   if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_MAX_IO_PINS) ) { pinLaunch = pinTranslate(configPage6.launchPin); }
   if ( (configPage4.ignBypassPin != 0) && (configPage4.ignBypassPin < BOARD_MAX_IO_PINS) ) { pinIgnBypass = pinTranslate(configPage4.ignBypassPin); }
   if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_MAX_IO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
@@ -2606,7 +2648,7 @@ void setPinMapping(byte boardID)
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_MAX_IO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_MAX_IO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
   if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_MAX_IO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
-  if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinBaro = pinTranslateAnalog(configPage6.baroPin); }
+  if ( (configPage6.useSensorBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinBaro = pinTranslateAnalog(configPage6.baroPin); }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_MAX_IO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
   if ( (configPage10.spark2InputPin != 0) && (configPage10.spark2InputPin < BOARD_MAX_IO_PINS) ) { pinSpark2Input = pinTranslate(configPage10.spark2InputPin); }
