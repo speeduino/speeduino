@@ -3,6 +3,8 @@ name: Upload INI
 on:
   push:
     branches: [ master ]
+    paths:
+      - 'reference/speeduino.ini'
 
 jobs:
   validate:
