@@ -20,7 +20,7 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_targ
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
-static inline void enableIdle()
+static inline void enableIdle(void)
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
@@ -268,7 +268,7 @@ void initialiseIdle(bool forcehoming)
   currentStatus.idleLoad = 0;
 }
 
-void initialiseIdleUpOutput()
+void initialiseIdleUpOutput(void)
 {
   if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
   else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
@@ -286,7 +286,7 @@ Returns:
 True: If a step is underway or motor is 'cooling'
 False: If the motor is ready for another step
 */
-static inline byte checkForStepping()
+static inline byte checkForStepping(void)
 {
   bool isStepping = false;
   unsigned int timeCheck;
@@ -341,7 +341,7 @@ static inline byte checkForStepping()
 /*
 Performs a step
 */
-static inline void doStep()
+static inline void doStep(void)
 {
   if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteresis check
   {
@@ -374,7 +374,7 @@ Returns:
 True: If the system has been homed. No other action is taken
 False: If the motor has not yet been homed. Will also perform another homing step.
 */
-static inline byte isStepperHomed()
+static inline byte isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
@@ -391,7 +391,7 @@ static inline byte isStepperHomed()
   return isHomed;
 }
 
-void idleControl()
+void idleControl(void)
 {
   if( idleInitComplete != configPage6.iacAlgorithm) { initialiseIdle(false); }
   if( (currentStatus.RPM > 0) || (configPage6.iacPWMrun == true) ) { enableIdle(); }
@@ -798,7 +798,7 @@ void idleControl()
 
 
 //This function simply turns off the idle PWM and sets the pin low
-void disableIdle()
+void disableIdle(void)
 {
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
@@ -841,9 +841,9 @@ void disableIdle()
 }
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect)
+ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-void idleInterrupt() //Most ARM chips can simply call a function
+void idleInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if (idle_pwm_state)

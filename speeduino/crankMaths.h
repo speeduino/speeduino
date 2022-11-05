@@ -15,9 +15,9 @@
 #define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 
-unsigned long angleToTime(int16_t, byte);
-uint16_t timeToAngle(unsigned long, byte);
-void doCrankSpeedCalcs();
+unsigned long angleToTime(int16_t angle, byte method);
+uint16_t timeToAngle(unsigned long time, byte method);
+void doCrankSpeedCalcs(void);
 
 extern volatile uint16_t timePerDegree;
 extern volatile uint16_t timePerDegreex16;

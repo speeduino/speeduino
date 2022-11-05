@@ -49,7 +49,7 @@ FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comm
 /**
  * @brief      Flush all remaining bytes from the rx serial buffer
  */
-void flushRXbuffer()
+void flushRXbuffer(void)
 {
   while (Serial.available() > 0) { Serial.read(); }
 }
@@ -61,7 +61,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Comands are single byte (letter symbol) commands.
 */
-void parseSerial()
+void parseSerial(void)
 {
 
   //Check for an existing legacy command in progress
@@ -200,7 +200,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   }
 }
 
-void continueSerialTransmission()
+void continueSerialTransmission(void)
 {
   if(serialWriteInProgress == true)
   {
@@ -231,7 +231,7 @@ void continueSerialTransmission()
   }
 }
 
-void processSerialCommand()
+void processSerialCommand(void)
 {
   currentCommand = serialPayload[0];
 
@@ -943,7 +943,7 @@ namespace
 /** 
  * 
 */
-void sendToothLog(byte startOffset)
+void sendToothLog(uint8_t startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1015,7 +1015,7 @@ void sendToothLog(byte startOffset)
   } 
 }
 
-void sendCompositeLog(byte startOffset)
+void sendCompositeLog(uint8_t startOffset)
 {
   if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
   {

@@ -3,23 +3,22 @@
 
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
-void initialiseAuxPWM();
-void boostControl();
-void boostDisable();
-void boostByGear();
-void idleControl();
-void vvtControl();
-void initialiseFan();
-void initialiseAirCon();
-void nitrousControl();
-void fanControl();
-void airConControl();
-bool READ_AIRCON_REQUEST();
-void wmiControl();
+void initialiseAuxPWM(void);
+void boostControl(void);
+void boostDisable(void);
+void boostByGear(void);
+void vvtControl(void);
+void initialiseFan(void);
+void initialiseAirCon(void);
+void nitrousControl(void);
+void fanControl(void);
+void airConControl(void);
+bool READ_AIRCON_REQUEST(void);
+void wmiControl(void);
 
-static inline void checkAirConCoolantLockout();
-static inline void checkAirConTPSLockout();
-static inline void checkAirConRPMLockout();
+static inline void checkAirConCoolantLockout(void);
+static inline void checkAirConTPSLockout(void);
+static inline void checkAirConRPMLockout(void);
 
 #define SIMPLE_BOOST_P  1
 #define SIMPLE_BOOST_I  1
@@ -113,7 +112,7 @@ volatile bool fan_pwm_state;
 unsigned int fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
-void fanInterrupt();
+void fanInterrupt(void);
 #endif
 uint32_t vvtWarmTime;
 bool vvtIsHot;
@@ -134,8 +133,8 @@ long vvt2_pid_target_angle;
 long vvt_pid_current_angle;
 long vvt2_pid_current_angle;
 
-void boostInterrupt();
-void vvtInterrupt();
+void boostInterrupt(void);
+void vvtInterrupt(void);
 
 bool acIsEnabled;
 bool acStandAloneFanIsEnabled;

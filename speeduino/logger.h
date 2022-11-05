@@ -21,12 +21,12 @@
 
 #define SD_LOG_NUM_FIELDS   90 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 
-byte getTSLogEntry(uint16_t);
-int16_t getReadableLogEntry(uint16_t);
+byte getTSLogEntry(uint16_t byteNum);
+int16_t getReadableLogEntry(uint16_t logIndex);
 #if FPU_MAX_SIZE >= 32
-  float getReadableFloatLogEntry(uint16_t);
+  float getReadableFloatLogEntry(uint16_t logIndex);
 #endif
-bool is2ByteEntry(uint8_t);
+bool is2ByteEntry(uint8_t key);
 
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order

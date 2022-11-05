@@ -48,7 +48,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Commands are single byte (letter symbol) commands.
 */
-void legacySerialCommand()
+void legacySerialCommand(void)
 {
   if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
 
@@ -652,7 +652,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
 }
 
-void sendValuesLegacy()
+void sendValuesLegacy(void)
 {
   uint16_t temp;
   int bytestosend = 114;
@@ -841,7 +841,7 @@ namespace {
  * Note that some translation of the data is required to lay it out in the way Megasquirt / TunerStudio expect it.
  * Data is sent in binary format, as defined by in each page in the speeduino.ini.
  */
-void sendPage()
+void sendPage(void)
 {
   page_iterator_t entity = page_begin(currentPage);
 
@@ -951,7 +951,7 @@ namespace {
  * 
  * This is used for testing only (Not used by TunerStudio) in order to see current map and config data without the need for TunerStudio. 
  */
-void sendPageASCII()
+void sendPageASCII(void)
 {
   switch (currentPage)
   {

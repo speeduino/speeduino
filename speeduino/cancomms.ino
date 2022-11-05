@@ -46,7 +46,7 @@ bool canCmdPending = false;
   HardwareSerial &CANSerial = Serial2;
 #endif
 
-void secondserial_Command()
+void secondserial_Command(void)
 {
   #if defined(CANSerial_AVAILABLE)
   if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
@@ -362,7 +362,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 }
 
-void can_Command()
+void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)

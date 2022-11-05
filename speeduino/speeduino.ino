@@ -85,7 +85,7 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 #ifndef UNIT_TEST // Scope guard for unit testing
-void setup()
+void setup(void)
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
@@ -114,7 +114,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop()
+void loop(void)
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -1378,7 +1378,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1()
+byte getVE1(void)
 {
   byte tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
@@ -1407,7 +1407,7 @@ byte getVE1()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance1()
+byte getAdvance1(void)
 {
   byte tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used

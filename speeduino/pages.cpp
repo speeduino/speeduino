@@ -414,7 +414,7 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
 // ====================================== External functions  ====================================
 
-uint8_t getPageCount()
+uint8_t getPageCount(void)
 {
   return _countof(ini_page_sizes);
 }

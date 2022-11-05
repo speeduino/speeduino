@@ -2,7 +2,7 @@
 #include "globals.h"
 #include "engineProtection.h"
 
-byte checkEngineProtect()
+byte checkEngineProtect(void)
 {
   byte protectActive = 0;
   if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
@@ -13,7 +13,7 @@ byte checkEngineProtect()
   return protectActive;
 }
 
-byte checkRevLimit()
+byte checkRevLimit(void)
 {
   //Hardcut RPM limit
   byte revLimiterActive = 0;
@@ -49,7 +49,7 @@ byte checkRevLimit()
   return revLimiterActive;
 }
 
-byte checkBoostLimit()
+byte checkBoostLimit(void)
 {
   byte boostLimitActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
@@ -90,7 +90,7 @@ byte checkBoostLimit()
   return boostLimitActive;
 }
 
-byte checkOilPressureLimit()
+byte checkOilPressureLimit(void)
 {
   byte oilProtectActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
@@ -110,7 +110,7 @@ byte checkOilPressureLimit()
   return oilProtectActive;
 }
 
-byte checkAFRLimit()
+byte checkAFRLimit(void)
 {
   static bool checkAFRLimitActive = false;
   static bool afrProtectCountEnabled = false;

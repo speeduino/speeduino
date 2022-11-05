@@ -14,7 +14,7 @@
 #include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
-void doUpdates()
+void doUpdates(void)
 {
   #define CURRENT_DATA_VERSION    21
   //Only the latest update for small flash devices must be retained

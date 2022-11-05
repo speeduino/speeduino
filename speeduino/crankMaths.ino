@@ -99,7 +99,7 @@ uint16_t timeToAngle(unsigned long time, byte method)
     
 }
 
-void doCrankSpeedCalcs()
+void doCrankSpeedCalcs(void)
 {
      //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one

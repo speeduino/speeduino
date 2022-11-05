@@ -46,24 +46,24 @@ public:
     }
 
     /** @brief Increment the iterator by one element*/
-    inline table_axis_iterator& operator++()
+    inline table_axis_iterator& operator++(void)
     {
         return advance(1);
     }
 
     /** @brief Test for end of iteration */
-    inline bool at_end() const
+    inline bool at_end(void) const
     {
         return _pAxis == _pAxisEnd;
     }
 
     /** @brief Dereference the iterator */
-    inline table3d_axis_t& operator*()
+    inline table3d_axis_t& operator*(void)
     {
         return *const_cast<table3d_axis_t *>(_pAxis);
     }
     /** @copydoc table_axis_iterator::operator*()  */
-    inline const table3d_axis_t& operator*() const
+    inline const table3d_axis_t& operator*(void) const
     {
         return *_pAxis;
     }    
@@ -72,7 +72,7 @@ public:
      * 
      * Iterate from the end to the start. <b>This is only meant to be called on a freshly constructed iterator.</b>
      */
-    inline table_axis_iterator& reverse()
+    inline table_axis_iterator& reverse(void)
     {
         const table3d_axis_t *_pOldAxis = _pAxis;
         _pAxis = _pAxisEnd - _stride;
@@ -104,7 +104,7 @@ private:
         table3d_axis_t axis[size]; \
         \
         /** @brief Iterate over the axis elements */ \
-        inline table_axis_iterator begin() \
+        inline table_axis_iterator begin(void) \
         {  \
             return table_axis_iterator(axis, axis+size, 1, domain); \
         } \

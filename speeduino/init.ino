@@ -45,7 +45,7 @@
  * - Read CLT and TPS sensors to have cranking pulsewidths computed correctly
  * - Mark Initialisation completed (this flag-marking is used in code to prevent after-init changes)
  */
-void initialiseAll()
+void initialiseAll(void)
 {   
     fpPrimed = false;
     injPrimed = false;
@@ -2888,7 +2888,7 @@ void setPinMapping(byte boardID)
  * 
  * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
  */
-void initialiseTriggers()
+void initialiseTriggers(void)
 {
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;

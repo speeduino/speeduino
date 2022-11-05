@@ -5,7 +5,7 @@
 /**
  * Page count, as defined in the INI file
  */
-uint8_t getPageCount(); 
+uint8_t getPageCount(void); 
 
 /**
  * Page size in bytes

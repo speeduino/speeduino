@@ -20,7 +20,7 @@ integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_t
 /*
 Air Conditioning Control
 */
-void initialiseAirCon()
+void initialiseAirCon(void)
 {
   if( (configPage15.airConEnable&1) == 1 &&
       pinAirConRequest != 0 &&
@@ -69,7 +69,7 @@ void initialiseAirCon()
   }
 }
 
-void airConControl()
+void airConControl(void)
 {
   if(acIsEnabled == true)
   {
@@ -145,7 +145,7 @@ void airConControl()
   }
 }
 
-bool READ_AIRCON_REQUEST()
+bool READ_AIRCON_REQUEST(void)
 {
   if(acIsEnabled == false)
   {
@@ -159,7 +159,7 @@ bool READ_AIRCON_REQUEST()
   return acReqPinStatus;
 }
 
-static inline void checkAirConCoolantLockout()
+static inline void checkAirConCoolantLockout(void)
 {
   // ---------------------------
   // Coolant Temperature Lockout
@@ -182,7 +182,7 @@ static inline void checkAirConCoolantLockout()
   }
 }
 
-static inline void checkAirConTPSLockout()
+static inline void checkAirConTPSLockout(void)
 {
   // ------------------------------
   // High Throttle Position Lockout
@@ -212,7 +212,7 @@ static inline void checkAirConTPSLockout()
   }
 }
 
-static inline void checkAirConRPMLockout()
+static inline void checkAirConRPMLockout(void)
 {
   // --------------------
   // High/Low RPM Lockout
@@ -247,7 +247,7 @@ static inline void checkAirConRPMLockout()
 /*
 Fan control
 */
-void initialiseFan()
+void initialiseFan(void)
 {
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
@@ -267,7 +267,7 @@ void initialiseFan()
   #endif
 }
 
-void fanControl()
+void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
@@ -380,7 +380,7 @@ void fanControl()
   }
 }
 
-void initialiseAuxPWM()
+void initialiseAuxPWM(void)
 {
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
   boost_pin_mask = digitalPinToBitMask(pinBoost);
@@ -473,7 +473,7 @@ void initialiseAuxPWM()
 
 }
 
-void boostByGear()
+void boostByGear(void)
 {
   if(configPage4.boostType == OPEN_LOOP_BOOST)
   {
@@ -613,7 +613,7 @@ void boostByGear()
   }
 }
 
-void boostControl()
+void boostControl(void)
 {
   if( configPage6.boostEnabled==1 )
   {
@@ -707,7 +707,7 @@ void boostControl()
   boostCounter++;
 }
 
-void vvtControl()
+void vvtControl(void)
 {
   if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
   {
@@ -875,7 +875,7 @@ void vvtControl()
   } 
 }
 
-void nitrousControl()
+void nitrousControl(void)
 {
   bool nitrousOn = false; //This tracks whether the control gets turned on at any point. 
   if(configPage10.n2o_enable > 0)
@@ -932,7 +932,7 @@ void nitrousControl()
 }
 
 // Water methanol injection control
-void wmiControl()
+void wmiControl(void)
 {
   int wmiPW = 0;
   
@@ -999,7 +999,7 @@ void wmiControl()
   }
 }
 
-void boostDisable()
+void boostDisable(void)
 {
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
@@ -1009,9 +1009,9 @@ void boostDisable()
 
 //The interrupt to control the Boost PWM
 #if defined(CORE_AVR)
-  ISR(TIMER1_COMPA_vect)
+  ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-  void boostInterrupt() //Most ARM chips can simply call a function
+  void boostInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if (boost_pwm_state == true)
@@ -1039,9 +1039,9 @@ void boostDisable()
 
 //The interrupt to control the VVT PWM
 #if defined(CORE_AVR)
-  ISR(TIMER1_COMPB_vect)
+  ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-  void vvtInterrupt() //Most ARM chips can simply call a function
+  void vvtInterrupt(void) //Most ARM chips can simply call a function
 #endif
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
@@ -1158,7 +1158,7 @@ void boostDisable()
 
 #if defined(PWM_FAN_AVAILABLE)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
-  void fanInterrupt()
+  void fanInterrupt(void)
 {
   if (fan_pwm_state == true)
   {

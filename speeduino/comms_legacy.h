@@ -29,16 +29,14 @@ extern bool serialInProgress;
 extern bool toothLogSendInProgress;
 extern bool compositeLogSendInProgress;
 
-void legacySerialCommand();//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
-void sendValues(uint16_t, uint16_t,byte, byte);
-void sendValuesLegacy();
-void saveConfig();
-void sendPage();
-void sendPageASCII();
-void receiveCalibration(byte);
-void sendToothLog_legacy(uint8_t);
-void testComm();
-void commandButtons(int16_t);
-void sendCompositeLog_legacy(uint8_t);
+void legacySerialCommand(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
+void sendValuesLegacy(void);
+void sendPage(void);
+void sendPageASCII(void);
+void receiveCalibration(byte tableID);
+void testComm(void);
+void sendToothLog_legacy(byte startOffset);
+void sendCompositeLog_legacy(byte startOffset);
 
 #endif // COMMS_H

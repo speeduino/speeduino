@@ -41,10 +41,10 @@ volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number 
 
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
-  void oneMSInterval();
+  void oneMSInterval(void);
 #elif defined (ARDUINO_ARCH_STM32)
-  void oneMSInterval();
+  void oneMSInterval(void);
 #endif
-void initialiseTimers();
+void initialiseTimers(void);
 
 #endif // TIMERS_H
