@@ -32,13 +32,13 @@ A full copy of the license may be found in the projects root directory
 // Forward declarations
 
 /** @brief Processes a message once it has been fully recieved */
-void processSerialCommand();
+void processSerialCommand(void);
 
 /** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
-void sendToothLog();
+void sendToothLog(void);
 
 /** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
-void sendCompositeLog();
+void sendCompositeLog(void);
 
 #define SERIAL_RC_OK        0x00 //!< Success
 #define SERIAL_RC_REALTIME  0x01 //!< Unused
@@ -52,8 +52,10 @@ void sendCompositeLog();
 #define SERIAL_RC_RANGE_ERR 0x84 //!< Incorrect range. TS will not retry command
 #define SERIAL_RC_BUSY_ERR  0x85 //!< TS will wait and retry
 
-#define SERIAL_LEN_SIZE     2
+#define SERIAL_LEN_SIZE     2U
 #define SERIAL_TIMEOUT      3000 //ms
+
+#define SEND_OUTPUT_CHANNELS 48U
 
 //!@{
 /** @brief Hard coded response for some TS messages.
@@ -96,7 +98,7 @@ static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload we
 #pragma GCC optimize ("Os") 
 #endif
 
-static inline bool isTimeout() {
+static inline bool isTimeout(void) {
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }
 
@@ -110,23 +112,6 @@ void flushRXbuffer(void)
   while (Serial.available() > 0) { Serial.read(); }
 }
 
-/** @brief Swap the values in stored in 2 bytes. */
-#define SWAP_BYTES(a, b) \
-  /* We use the XOR method to avoid a temporary on the stack */ \
-  a = a ^ b; \
-  b = a ^ b; \
-  a = a ^ b
-
-/** @brief Reverse the byte order of a 4 byte buffer 
- * Assumes a 4 byte buffer for optimization reasons (no loop required as in the general case)
- */
-static char* reverse_bytes_x4(char *buffer)
-{
-  SWAP_BYTES(buffer[0], buffer[3]);
-  SWAP_BYTES(buffer[1], buffer[2]);
-  return buffer;
-}
-
 /** @brief Reverse the byte order of a uint32_t
  * 
  * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
@@ -134,7 +119,10 @@ static char* reverse_bytes_x4(char *buffer)
  * */
 static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 {
-  return *(uint32_t*)reverse_bytes_x4((char *)&i);
+  return  ((i>>24) & 0xffU) | // move byte 3 to byte 0
+          ((i<<8 ) & 0xff0000U) | // move byte 1 to byte 2
+          ((i>>8 ) & 0xff00U) | // move byte 2 to byte 1
+          ((i<<24) & 0xff000000U);
 }
 
 // ====================================== Blocking IO Support ================================
@@ -154,20 +142,23 @@ void writeByteReliableBlocking(byte value) {
  * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
  * off free ram reporting.
  * */
-static __attribute__((noinline)) uint32_t readSerial32Timeout()
+static __attribute__((noinline)) uint32_t readSerial32Timeout(void)
 {
-  char raw[4];
+  union {
+    char raw[sizeof(uint32_t)];
+    uint32_t value;
+  } buffer;
   // Teensy 3.5: Serial.available() should only be used as a boolean test
   // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
   size_t count=0;
-  while (count < sizeof(raw)) {
-    if (Serial.available()) {
-      raw[count++] =(byte)Serial.read();
+  while (count < sizeof(buffer.value)) {
+    if (Serial.available()!=0) {
+      buffer.raw[count++] =(byte)Serial.read();
     } else if(isTimeout()) {
       return 0;
-    }
+    } else { /* MISRA - no-op */ }
   }  
-  return *(uint32_t*)reverse_bytes_x4(raw);
+  return reverse_bytes(buffer.value);
 }
 
 /** @brief Write a uint32_t to Serial 
@@ -187,8 +178,8 @@ static uint32_t serialWrite(uint32_t value)
 /** @brief Write a uint16_t to Serial */
 static void serialWrite(uint16_t value)
 {
-  writeByteReliableBlocking((value >> 8) & 255);
-  writeByteReliableBlocking(value & 255);
+  writeByteReliableBlocking((value >> 8U) & 255U);
+  writeByteReliableBlocking(value & 255U);
 }
 
 // ====================================== Non-blocking IO Support =============================
@@ -223,7 +214,7 @@ static size_t writeNonBlocking(size_t start, uint32_t value)
 {
   value = reverse_bytes(value);
   const byte *pBuffer = (const byte*)&value;
-  return writeNonBlocking(pBuffer+start, sizeof(value)-start);
+  return writeNonBlocking(pBuffer+start, sizeof(value)-start); //cppcheck-suppress misra-c2012-17.2
 }
 
 
@@ -367,14 +358,14 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 {
   using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
   // First pass through the loop, we need to INITIALIZE the CRC
-  pCrcCalc pCrcFun = offset==0 ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
-  uint32_t calibrationCRC = 0;
+  pCrcCalc pCrcFun = offset==0U ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
+  uint32_t calibrationCRC = 0U;
 //Check if this is the final chunk of calibration data
 #ifdef CORE_STM32
   //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
-  bool finalBlock = offset == (64*15);
+  bool finalBlock = offset == (64U*15U);
 #else
-  bool finalBlock = offset == (256*3);
+  bool finalBlock = offset == (256U*3U);
 #endif
 
   //Read through the current chunk (Should be 256 bytes long)
@@ -385,14 +376,14 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
   {
     //TS sends a total of 1024 bytes of calibration data, broken up into 256 byte chunks
     //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
-    if( (x % 32) == 0 )
+    if( (x % 32U) == 0U )
     {
-      o2Calibration_values[offset/32] = serialPayload[x+7]; //O2 table stores 8 bit values
-      o2Calibration_bins[offset/32]   = offset;
+      o2Calibration_values[offset/32U] = serialPayload[x+7U]; //O2 table stores 8 bit values
+      o2Calibration_bins[offset/32U]   = offset;
     }
 
     //Update the CRC
-    calibrationCRC = (CRC32_serial.*pCrcFun)(&serialPayload[x+7], 1, false);
+    calibrationCRC = (CRC32_serial.*pCrcFun)(&serialPayload[x+7U], 1, false);
     // Subsequent passes through the loop, we need to UPDATE the CRC
     pCrcFun = &FastCRC32::crc32_upd;
   }
@@ -428,11 +419,11 @@ static uint16_t toTemperature(byte lo, byte hi)
 static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
-  if(calibrationLength == 64)
+  if(calibrationLength == 64U)
   {
-    for (uint16_t x = 0; x < 32; x++)
+    for (uint16_t x = 0; x < 32U; x++)
     {
-      values[x] = toTemperature(serialPayload[(2 * x) + 7], serialPayload[(2 * x) + 8]);
+      values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
       bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
     storeCalibrationCRC32(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
@@ -532,7 +523,7 @@ void serialTransmit(void)
   switch (serialStatusFlag)
   {
     case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
-      sendValues(logItemsTransmitted, inProgressLength, 0x30, 0);
+      sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, 0);
       break;
 
     case SERIAL_TRANSMIT_TOOTH_INPROGRESS:
@@ -574,7 +565,7 @@ void processSerialCommand(void)
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
-      memcpy_P(serialPayload, testCommsResponse, sizeof(testCommsResponse) );
+      (void)memcpy_P(serialPayload, testCommsResponse, sizeof(testCommsResponse) );
       sendSerialPayloadNonBlocking(sizeof(testCommsResponse));
       break;
 
@@ -583,18 +574,18 @@ void processSerialCommand(void)
       uint32_t CRC32_val = reverse_bytes(calculatePageCRC32( serialPayload[2] ));
 
       serialPayload[0] = SERIAL_RC_OK;
-      memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
+      (void)memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);      
       break;
     }
 
     case 'E': // receive command button commands
-      TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
+      (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
     case 'F': // send serial protocol version
-      memcpy_P(serialPayload, serialVersion, sizeof(serialVersion) );
+      (void)memcpy_P(serialPayload, serialVersion, sizeof(serialVersion) );
       sendSerialPayloadNonBlocking(sizeof(serialVersion));
       break;
 
@@ -609,7 +600,7 @@ void processSerialCommand(void)
       break;
 
     case 'I': // send CAN ID
-      memcpy_P(serialPayload, canId, sizeof(canId) );
+      (void)memcpy_P(serialPayload, canId, sizeof(canId) );
       sendSerialPayloadNonBlocking(sizeof(serialVersion));
       break;
 
@@ -628,7 +619,7 @@ void processSerialCommand(void)
       uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
-      memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
+      (void)memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);
       break;
     }
@@ -667,12 +658,12 @@ void processSerialCommand(void)
       //Setup the transmit buffer
       serialPayload[0] = SERIAL_RC_OK;
       loadPageValuesToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
-      sendSerialPayloadNonBlocking(length + 1);
+      sendSerialPayloadNonBlocking(length + 1U);
       break;
     }
 
     case 'Q': // send code version
-      memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
+      (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
       sendSerialPayloadNonBlocking(sizeof(codeVersion));
       break;
 
@@ -686,10 +677,10 @@ void processSerialCommand(void)
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 #endif
 
-      if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+      if(cmd == SEND_OUTPUT_CHANNELS) //Send output channels command 0x30 is 48dec
       {
         generateLiveValues(offset, length);
-        sendSerialPayloadNonBlocking(length + 1);
+        sendSerialPayloadNonBlocking(length + 1U);
       }
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
@@ -814,7 +805,7 @@ void processSerialCommand(void)
     }
 
     case 'S': // send code version
-      memcpy_P(serialPayload, productString, sizeof(productString) );
+      (void)memcpy_P(serialPayload, productString, sizeof(productString) );
       sendSerialPayloadNonBlocking(sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
@@ -823,6 +814,7 @@ void processSerialCommand(void)
       logItemsTransmitted = 0;
       if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
       else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+      else { /* MISRA no-op */ }
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
@@ -1007,7 +999,7 @@ void sendToothLog(void)
     if(logItemsTransmitted == 0)
     {
       //Transmit the size of the packet
-      serialWrite((uint16_t)(sizeof(toothHistory) + 1)); //Size of the tooth log (uint32_t values) plus the return code
+      (void)serialWrite((uint16_t)(sizeof(toothHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
       CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
@@ -1039,7 +1031,7 @@ void sendToothLog(void)
     CRC32_val = ~CRC32_val;
 
     //Send the CRC
-    serialWrite(CRC32_val);
+    (void)serialWrite(CRC32_val);
   }
   else 
   { 
@@ -1056,7 +1048,7 @@ void sendCompositeLog(void)
     if(logItemsTransmitted == 0)
     { 
       //Transmit the size of the packet
-      serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1)); //Size of the tooth log (uint32_t values) plus the return code
+      (void)serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
       
       //Begin new CRC hash
       const uint8_t returnCode = SERIAL_RC_OK;
@@ -1092,7 +1084,7 @@ void sendCompositeLog(void)
     CRC32_val = ~CRC32_val;
 
     //Send the CRC
-    serialWrite(CRC32_val);
+    (void)serialWrite(CRC32_val);
   }
   else 
   { 

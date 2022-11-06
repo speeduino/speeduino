@@ -28,11 +28,11 @@ int16_t getReadableLogEntry(uint16_t logIndex);
 #endif
 bool is2ByteEntry(uint8_t key);
 
-void startToothLogger();
-void stopToothLogger();
+void startToothLogger(void);
+void stopToothLogger(void);
 
-void startCompositeLogger();
-void stopCompositeLogger();
+void startCompositeLogger(void);
+void stopCompositeLogger(void);
 
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order

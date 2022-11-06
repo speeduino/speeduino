@@ -35,7 +35,7 @@ byte inProgressLength;
 SerialStatus serialStatusFlag;
 
 
-static bool isMap() {
+static bool isMap(void) {
     // Detecting if the current page is a table/map
   return (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page);
 }
@@ -1161,7 +1161,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
   } 
 }
 
-void testComm()
+void testComm(void)
 {
   Serial.write(1);
   return;

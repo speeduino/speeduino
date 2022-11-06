@@ -362,7 +362,7 @@ bool is2ByteEntry(uint8_t key)
   return isFound;
 }
 
-void startToothLogger()
+void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
   currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
@@ -377,7 +377,7 @@ void startToothLogger()
   attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );  
 }
 
-void stopToothLogger()
+void stopToothLogger(void)
 {
   currentStatus.toothLogEnabled = false;
 
@@ -389,7 +389,7 @@ void stopToothLogger()
   attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );  
 }
 
-void startCompositeLogger()
+void startCompositeLogger(void)
 {
   currentStatus.compositeLogEnabled = true;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
@@ -404,7 +404,7 @@ void startCompositeLogger()
   attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
 }
 
-void stopCompositeLogger()
+void stopCompositeLogger(void)
 {
   currentStatus.compositeLogEnabled = false;
 
