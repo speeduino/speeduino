@@ -2186,18 +2186,16 @@ void triggerPri_Miata9905(void)
 
       //EXPERIMENTAL!
       //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
-      if( (configPage2.perToothIgn == true) || (configPage4.triggerAngle == 0) )
+      if(    (configPage2.perToothIgn == true) 
+          && (configPage4.triggerAngle == 0) 
+          && (currentStatus.advance > 0) )
       {
-        if (currentStatus.advance > 0)
-        {
-          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+        int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
-          //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
-        }
+        //Handle non-sequential tooth counts 
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
+        else { checkPerToothTiming(crankAngle, toothCurrentCount); }
       }
-
     } //Has sync
 
     toothLastMinusOneToothTime = toothLastToothTime;
