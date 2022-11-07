@@ -105,7 +105,7 @@ void initialiseIdle(bool forcehoming)
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = 0;
@@ -129,7 +129,7 @@ void initialiseIdle(bool forcehoming)
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminDuty, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxDuty, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
@@ -205,7 +205,7 @@ void initialiseIdle(bool forcehoming)
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage6.iacOLStepVal[9]*3)<<1, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
+      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
@@ -249,7 +249,7 @@ void initialiseIdle(bool forcehoming)
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage6.iacOLStepVal[9]*3)<<1, (configPage9.iacMaxSteps * 3)<<2); //Maximum number of steps; always less than home steps count.
+      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle

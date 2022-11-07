@@ -852,8 +852,8 @@ struct config2 {
   byte aeTaperMin;
   byte aeTaperMax;
 
-  byte iacCLminDuty;
-  byte iacCLmaxDuty;
+  byte iacCLminValue;
+  byte iacCLmaxValue;
   byte boostMinDuty;
 
   int8_t baroMin; //Must be signed
