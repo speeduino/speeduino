@@ -38,8 +38,6 @@ long PID_O2, PID_output, PID_AFRTarget;
 */
 PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
-int MAP_rateOfChange;
-int TPS_rateOfChange;
 byte activateMAPDOT; //The mapDOT value seen when the MAE was activated. 
 byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 
@@ -289,6 +287,8 @@ uint16_t correctionAccel(void)
   int16_t accelValue = 100;
   int16_t MAP_change = 0;
   int16_t TPS_change = 0;
+  int16_t MAP_rateOfChange = 0;
+  int16_t TPS_rateOfChange = 0;
 
   if(configPage2.aeMode == AE_MODE_MAP)
   {
