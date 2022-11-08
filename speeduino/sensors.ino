@@ -17,6 +17,7 @@ A full copy of the license may be found in the projects root directory
 #include "corrections.h"
 #include "pages.h"
 #include "decoders.h"
+#include "utilities.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
