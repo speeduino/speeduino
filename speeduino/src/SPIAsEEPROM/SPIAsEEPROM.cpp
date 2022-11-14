@@ -120,71 +120,92 @@ byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
     return EEPROMbyte;
 }
 
-int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val){    
-    //Check if address is outside of the maximum. limit to get inside maximum and return an error.
-    if (addressEEPROM > _EEPROM_Emulation_Size){addressEEPROM = _EEPROM_Emulation_Size - 1; return -1;}  
-    
-    //read the current value
-    uint8_t readValue = read(addressEEPROM);
+int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val)
+{
+  // Check if address is outside of the maximum. limit to get inside maximum and return an error.
+  if (addressEEPROM > _EEPROM_Emulation_Size)
+  {
+    addressEEPROM = _EEPROM_Emulation_Size - 1;
+    return -1;
+  }
 
-    //After reading the current byte all global variables containing information about the address are set correctly. 
+  // read the current value
+  read(addressEEPROM);
 
-    //only write if value is changed. 
-    if (readValue != val){
-      //Check if section is full and an erase must be performed.
-      if (_nrOfOnes < _Addres_Translation_Size + 1){
+  // After reading the current byte all global variables containing information about the address are set correctly.
 
-        //First read all the values in this sector that will get distroyed when erasing
-        byte tempBuf[_config.EEPROM_Bytes_Per_Sector];
-        for(uint16_t i = 0; i<_config.EEPROM_Bytes_Per_Sector; i++){
-            uint16_t TempEEPROMaddress = (_sectorFlash*_config.EEPROM_Bytes_Per_Sector) + i;
-            tempBuf[i] = read(TempEEPROMaddress);
-        }
-
-        //Now erase the sector
-        eraseFlashSector(_sectorFlash*_config.Flash_Sector_Size, _config.Flash_Sector_Size);
-
-        //Write the magic numbers 
-        writeMagicNumbers(_sectorFlash);
-
-        //write all the values back
-        for(uint16_t i=0; i<_config.EEPROM_Bytes_Per_Sector; i++){
-            write((_sectorFlash*_config.EEPROM_Bytes_Per_Sector) + i, tempBuf[i]);
-        }
-
-        //Do not forget to write the new value!
-        write(addressEEPROM, val);
-
-        //Return we have writen a whole sector. 
-        return 0xFF;
-        
+  // only write if value is changed.
+  if (_ReadWriteBuffer[_nrOfOnes] != val)
+  {
+    // Check if section is full and an erase must be performed.
+    if (_nrOfOnes < _Addres_Translation_Size + 1)
+    {
+      // First read all the values in this sector that will get distroyed when erasing
+      byte tempBuf[_config.EEPROM_Bytes_Per_Sector];
+      for (uint16_t i = 0; i < _config.EEPROM_Bytes_Per_Sector; i++)
+      {
+        uint16_t TempEEPROMaddress = (_sectorFlash * _config.EEPROM_Bytes_Per_Sector) + i;
+        tempBuf[i] = read(TempEEPROMaddress);
       }
 
-      //determine the adress of the byte in the address translation section where one bit must be reset when writing new values 
-      uint8_t AdressInAddressTranslation = (_nrOfOnes - 1)/8;
+      // Now erase the sector
+      eraseFlashSector(_sectorFlash * _config.Flash_Sector_Size, _config.Flash_Sector_Size);
 
-      //write the new adress translation value at the new location in buffer
-      _ReadWriteBuffer[AdressInAddressTranslation] <<= 1;
+      // Write the magic numbers
+      writeMagicNumbers(_sectorFlash);
 
-      //Write the new EEPROM value at the new location in the buffer.
-      _nrOfOnes--; 
+      // write all the values back
+      for (uint16_t i = 0; i < _config.EEPROM_Bytes_Per_Sector; i++)
+      {
+        write((_sectorFlash * _config.EEPROM_Bytes_Per_Sector) + i, tempBuf[i]);
+      }
+
+      // Do not forget to write the new value!
+      write(addressEEPROM, val);
+
+      // Return we have writen a whole sector.
+      return 0xFF;
+    }
+
+    if (((_ReadWriteBuffer[_nrOfOnes] ^ 0xFF) & val) == 0) //Check if changing only unchaged bits
+    {
+      // Write the new EEPROM value at the same location in the buffer.
       _ReadWriteBuffer[_nrOfOnes] = val;
 
-      //Write the buffer to the undelying flash storage. 
-      // writeFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
-
-      //Write actual value part of the buffer to flash   
+      // Write actual value part of the buffer to flash
       byte tempBuffer[2];
-      _nrOfOnes &= ~(0x1); //align address with 2 byte (uint16_t) for write to flash for 32bit STM32 MCU
+      _nrOfOnes &= ~(0x1); // align address with 2 byte (uint16_t) for write to flash for 32bit STM32 MCU
       memcpy(&tempBuffer, &_ReadWriteBuffer[_nrOfOnes], sizeof(uint16_t));
-      writeFlashBytes(_addressFLASH +_nrOfOnes, tempBuffer, sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH + _nrOfOnes, tempBuffer, sizeof(uint16_t));
+    }
+    else
+    {
+      // determine the adress of the byte in the address translation section where one bit must be reset when writing new values
+      uint8_t AdressInAddressTranslation = (_nrOfOnes - 1) / 8;
 
-      //Write address translation part of the buffer to flash
-      AdressInAddressTranslation &= ~(0x1); //align address with 2 byte for write to flash for 32bit STM32 MCU
+      // write the new adress translation value at the new location in buffer
+      _ReadWriteBuffer[AdressInAddressTranslation] <<= 1;
+
+      // Write the new EEPROM value at the new location in the buffer.
+      _nrOfOnes--;
+      _ReadWriteBuffer[_nrOfOnes] = val;
+
+      // Write the buffer to the undelying flash storage.
+      //  writeFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
+
+      // Write actual value part of the buffer to flash
+      byte tempBuffer[2];
+      _nrOfOnes &= ~(0x1); // align address with 2 byte (uint16_t) for write to flash for 32bit STM32 MCU
+      memcpy(&tempBuffer, &_ReadWriteBuffer[_nrOfOnes], sizeof(uint16_t));
+      writeFlashBytes(_addressFLASH + _nrOfOnes, tempBuffer, sizeof(uint16_t));
+
+      // Write address translation part of the buffer to flash
+      AdressInAddressTranslation &= ~(0x1); // align address with 2 byte for write to flash for 32bit STM32 MCU
       memcpy(&tempBuffer, &_ReadWriteBuffer[AdressInAddressTranslation], sizeof(uint16_t));
-      writeFlashBytes(_addressFLASH+AdressInAddressTranslation, tempBuffer, sizeof(uint16_t));
-      return 1;
-    }  
+      writeFlashBytes(_addressFLASH + AdressInAddressTranslation, tempBuffer, sizeof(uint16_t));
+    }
+    return 1;
+  }
   return 0;
 }
 
@@ -223,18 +244,19 @@ int8_t FLASH_EEPROM_BaseClass::writeMagicNumbers(uint32_t sector){
 }
 
 uint16_t FLASH_EEPROM_BaseClass::count(byte* buffer, uint32_t length){
-  byte tempBuffer[length];
-  memcpy(&tempBuffer, buffer, length);
+  //byte tempBuffer[length];
+  //memcpy(&tempBuffer, buffer, length);
   uint16_t count = _Flash_Size_Per_EEPROM_Byte; //It is faster to count the zeroes
   for(int8_t j=(length-1); j >= 0; j--)
   {
-    if (tempBuffer[j] == 0) { count -= 8; } //Skip 8 shifts
-    else if(tempBuffer[j] == 255) { break; }//Next bytes are 0xFF
+    uint8_t value = buffer[j];
+    if (value == 0) { count -= 8; } //Skip 8 shifts
+    else if(value == 255) { break; }//Next bytes are 0xFF
     else
     {
-      while ((tempBuffer[j] & 0x01) == 0)
+      while ((value & 0x01) == 0)
       {
-        tempBuffer[j] >>= 1;
+        value >>= 1;
         count--;
       }
     }
@@ -257,11 +279,26 @@ SPI_EEPROM_Class::SPI_EEPROM_Class(EEPROM_Emulation_Config EmulationConfig, Flas
 byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
     //Check if emulated EEPROM is available if not yet start it first.
     if(!_EmulatedEEPROMAvailable){ 
-      SPISettings settings(22500000, MSBFIRST, SPI_MODE0); //22.5Mhz is highest it could get with this. But should be ~45Mhz :-(. 
+      uint32_t maxFreq = 22500000;
+#if defined(ARDUINO_ARCH_STM32)
+      if (*(uint32_t*)&_configSPI.SPIport == *(uint32_t*)&SPI)
+        maxFreq = HAL_RCC_GetPCLK2Freq() / 2;
+      else
+        maxFreq = HAL_RCC_GetPCLK1Freq() / 2;
+#endif
+      SPISettings settings(maxFreq, MSBFIRST, SPI_MODE0);
       _configSPI.SPIport.beginTransaction(settings);
-      begin(_configSPI.SPIport, _configSPI.pinChipSelect);
+      while (!begin(_configSPI.SPIport, _configSPI.pinChipSelect)) //Keep trying untill a sucessfull conection is stabilished
+      {
+        maxFreq /= 2;
+        if (maxFreq < 1000000)
+          break; //Failed to initialize the Flash chip, check connections
+        
+        _configSPI.SPIport.endTransaction();
+        settings = SPISettings(maxFreq, MSBFIRST, SPI_MODE0);
+        _configSPI.SPIport.beginTransaction(settings);
+      }
     }
-
     return FLASH_EEPROM_BaseClass::read(addressEEPROM);
 }
 
