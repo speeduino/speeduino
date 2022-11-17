@@ -354,12 +354,14 @@ void initialiseAll(void)
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
+      pinMode(pinFlex, INPUT);
       attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE);
       currentStatus.ethanolPct = 0;
     }
     //Same as above, but for the VSS input
     if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
+      pinMode(pinVSS, INPUT);
       attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
     }
 
@@ -2896,6 +2898,9 @@ void initialiseTriggers(void)
   byte triggerInterrupt2 = 1;
   byte triggerInterrupt3 = 2;
 
+  bool decoderHasSecondary = false; //Whether or not the pattern uses a secondary input
+  bool decoderHasTertiary = false; //Whether or not the pattern uses a tertiary input
+
   #if defined(CORE_AVR)
     switch (pinTrigger) {
       //Arduino Mega 2560 mapping
@@ -2962,13 +2967,6 @@ void initialiseTriggers(void)
     triggerInterrupt3 = pinTrigger3;
   #endif
 
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
-  //digitalWrite(pinTrigger, HIGH);
-  detachInterrupt(triggerInterrupt);
-  detachInterrupt(triggerInterrupt2);
-  detachInterrupt(triggerInterrupt3);
   //The default values for edges
   primaryTriggerEdge = 0; //This should ALWAYS be changed below
   secondaryTriggerEdge = 0; //This is optional and may not be changed below, depending on the decoder in use
@@ -2981,30 +2979,26 @@ void initialiseTriggers(void)
       //Missing tooth decoder
       triggerSetup_missingTooth();
       triggerHandler = triggerPri_missingTooth;
-      triggerSecondaryHandler = triggerSec_missingTooth;
-      triggerTertiaryHandler = triggerThird_missingTooth;
-      decoderHasSecondary = true;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
-
+      
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
-      if(configPage10.TrigEdgeThrd == 0) { tertiaryTriggerEdge = RISING; }
-      else { tertiaryTriggerEdge = FALLING; }
 
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-      if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
+      if(configPage4.TrigSpeed != CAM_SPEED){ // If CAM speed, then primary trigger is CAM and there is no triggerSec, frees 2nd trigger interrupt and pin for other uses */
+        decoderHasSecondary = true;         
+        triggerSecondaryHandler = triggerSec_missingTooth;
+        if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+        else { secondaryTriggerEdge = FALLING; }
+        }
 
-      /*
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); }
-      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
-      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
-      else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
-      */
+      if(configPage10.vvt2Enabled > 0){ // we only need this for vvt2, so not really needed if it's not used
+        decoderHasTertiary = true;
+        triggerTertiaryHandler = triggerThird_missingTooth;
+        if(configPage10.TrigEdgeThrd == 0) { tertiaryTriggerEdge = RISING; }
+        else { tertiaryTriggerEdge = FALLING; }
+        }
       break;
 
     case DECODER_BASIC_DISTRIBUTOR:
@@ -3017,8 +3011,6 @@ void initialiseTriggers(void)
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case 2:
@@ -3034,9 +3026,6 @@ void initialiseTriggers(void)
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_GM7X:
@@ -3046,13 +3035,8 @@ void initialiseTriggers(void)
       getCrankAngle = getCrankAngle_GM7X;
       triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
 
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
-
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_4G63:
@@ -3066,9 +3050,6 @@ void initialiseTriggers(void)
 
       primaryTriggerEdge = CHANGE;
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_24X:
@@ -3083,9 +3064,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = CHANGE; //Secondary is always on every change
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_JEEP2000:
@@ -3100,9 +3078,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_AUDI135:
@@ -3117,9 +3092,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = RISING; //always rising for this trigger
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_HONDA_D17:
@@ -3134,9 +3106,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_MIATA_9905:
@@ -3153,9 +3122,6 @@ void initialiseTriggers(void)
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_MAZDA_AU:
@@ -3170,9 +3136,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_NON360:
@@ -3187,9 +3150,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_NISSAN_360:
@@ -3204,9 +3164,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_SUBARU_67:
@@ -3221,9 +3178,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_DAIHATSU_PLUS1:
@@ -3236,8 +3190,6 @@ void initialiseTriggers(void)
       //No secondary input required for this pattern
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_HARLEY:
@@ -3249,7 +3201,6 @@ void initialiseTriggers(void)
       triggerSetEndTeeth = triggerSetEndTeeth_Harley;
 
       primaryTriggerEdge = RISING; //Always rising
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_36_2_2_2:
@@ -3266,9 +3217,6 @@ void initialiseTriggers(void)
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_36_2_1:
@@ -3288,9 +3236,6 @@ void initialiseTriggers(void)
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
       secondaryTriggerEdge = FALLING; //Always falling edge
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_WEBER:
@@ -3307,9 +3252,6 @@ void initialiseTriggers(void)
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_ST170:
@@ -3326,10 +3268,6 @@ void initialiseTriggers(void)
       else { primaryTriggerEdge = FALLING; }
       if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
       else { secondaryTriggerEdge = FALLING; }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-
       break;
 
     case DECODER_DRZ400:
@@ -3391,10 +3329,29 @@ void initialiseTriggers(void)
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
 
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
       break;
   }
+  
+  /* Note it's implied here that decoder triggers overwrite any earlier functions that are set to use these trigger inputs */
+  /* There is always a primary input defined */
+  pinMode(pinTrigger, INPUT);
+  detachInterrupt(triggerInterrupt);
+  attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+
+  if (decoderHasSecondary == true){ /* Attach Seccondary if required by decoder */
+    pinMode(pinTrigger2, INPUT);
+    detachInterrupt(triggerInterrupt2);
+    attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+  }
+
+  if (decoderHasTertiary == true){ /* Attach Tertiary if required by decoder */
+    pinMode(pinTrigger3, INPUT);
+    detachInterrupt(triggerInterrupt3);
+    attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge);
+  }
+  
 }
 
 /** Change injectors or/and ignition angles to 720deg.

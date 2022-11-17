@@ -243,7 +243,6 @@ extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToo
 extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 extern bool decoderIsSequential; //Whether or not the decoder supports sequential operation
 extern bool decoderIsLowRes; //Is set true, certain extra calculations are performed for better timing accuracy
-extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
 extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
 extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
