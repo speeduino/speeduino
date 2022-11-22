@@ -3003,10 +3003,9 @@ void initialiseTriggers(void)
       triggerSecondaryHandler = triggerSec_missingTooth;
       triggerTertiaryHandler = triggerThird_missingTooth;
       
-      if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) )
-      {
-        BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
-      }
+      if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) ) { BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY); }
+      else { BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); }
+      
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
@@ -3019,7 +3018,16 @@ void initialiseTriggers(void)
       else { tertiaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS.
+      if( (configPage2.vssMode > 1) && (pinVSS == pinTrigger2) && !BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY) )
+      {
+        //Secondary trigger input can safely be used for VSS
+        attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
+      }
+      else
+      {
+        attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      }
       if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
 
       /*
