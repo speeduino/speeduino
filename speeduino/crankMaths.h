@@ -7,6 +7,8 @@
 #define CRANKMATH_METHOD_ALPHA_BETA        3
 #define CRANKMATH_METHOD_2ND_DERIVATIVE    4
 
+#define SECOND_DERIV_ENABLED                0          
+
 //#define fastDegreesToUS(targetDegrees) ((targetDegrees) * (unsigned long)timePerDegree)
 #define fastDegreesToUS(targetDegrees) (((targetDegrees) * (unsigned long)timePerDegreex16) >> 4)
 /*#define fastTimeToAngle(time) (((unsigned long)time * degreesPeruSx2048) / 2048) */ //Divide by 2048 will be converted at compile time to bitshift

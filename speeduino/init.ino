@@ -585,6 +585,13 @@ void initialiseAll(void)
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
         }
+        else
+        {
+          //Should never happen, but default values
+          channel1InjDegrees = 0;
+          channel2InjDegrees = 120;
+          channel3InjDegrees = 240;
+        }
 
         channel1InjEnabled = true;
         channel2InjEnabled = true;
@@ -606,7 +613,7 @@ void initialiseAll(void)
             CRANK_ANGLE_MAX_IGN = 720;
             maxIgnOutputs = 4;
           }
-          else if(configPage4.sparkMode == IGN_MODE_ROTARY)
+          if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
             channel3IgnDegrees = 0;
@@ -640,6 +647,7 @@ void initialiseAll(void)
             //Adjust the injection angles based on the number of squirts
             channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
           }
+          else { } //Do nothing, default values are correct
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
@@ -653,6 +661,16 @@ void initialiseAll(void)
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
+        }
+        else
+        {
+          //Should never happen, but default values
+          channel3InjEnabled = false;
+          channel4InjEnabled = false;
+          channel5InjEnabled = false;
+          channel6InjEnabled = false;
+          channel7InjEnabled = false;
+          channel8InjEnabled = false;
         }
 
         //Check if injector staging is enabled
@@ -1182,6 +1200,7 @@ void initialiseAll(void)
           ign4StartFunction = beginCoil4Charge;
           ign4EndFunction = endCoil4Charge;
         }
+        else { } //No action for other RX ignition modes (Future expansion / MISRA compliant). 
         break;
 
     default:
@@ -2983,7 +3002,11 @@ void initialiseTriggers(void)
       triggerHandler = triggerPri_missingTooth;
       triggerSecondaryHandler = triggerSec_missingTooth;
       triggerTertiaryHandler = triggerThird_missingTooth;
-      decoderHasSecondary = true;
+      
+      if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) )
+      {
+        BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+      }
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
@@ -3025,7 +3048,7 @@ void initialiseTriggers(void)
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_DualWheel;
       triggerSecondaryHandler = triggerSec_DualWheel;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3059,7 +3082,7 @@ void initialiseTriggers(void)
       triggerSetup_4G63();
       triggerHandler = triggerPri_4G63;
       triggerSecondaryHandler = triggerSec_4G63;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_4G63;
       getCrankAngle = getCrankAngle_4G63;
       triggerSetEndTeeth = triggerSetEndTeeth_4G63;
@@ -3075,7 +3098,7 @@ void initialiseTriggers(void)
       triggerSetup_24X();
       triggerHandler = triggerPri_24X;
       triggerSecondaryHandler = triggerSec_24X;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_24X;
       getCrankAngle = getCrankAngle_24X;
       triggerSetEndTeeth = triggerSetEndTeeth_24X;
@@ -3092,7 +3115,7 @@ void initialiseTriggers(void)
       triggerSetup_Jeep2000();
       triggerHandler = triggerPri_Jeep2000;
       triggerSecondaryHandler = triggerSec_Jeep2000;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Jeep2000;
       getCrankAngle = getCrankAngle_Jeep2000;
       triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
@@ -3109,7 +3132,7 @@ void initialiseTriggers(void)
       triggerSetup_Audi135();
       triggerHandler = triggerPri_Audi135;
       triggerSecondaryHandler = triggerSec_Audi135;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Audi135;
       getCrankAngle = getCrankAngle_Audi135;
       triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
@@ -3126,7 +3149,7 @@ void initialiseTriggers(void)
       triggerSetup_HondaD17();
       triggerHandler = triggerPri_HondaD17;
       triggerSecondaryHandler = triggerSec_HondaD17;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_HondaD17;
       getCrankAngle = getCrankAngle_HondaD17;
       triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
@@ -3143,7 +3166,7 @@ void initialiseTriggers(void)
       triggerSetup_Miata9905();
       triggerHandler = triggerPri_Miata9905;
       triggerSecondaryHandler = triggerSec_Miata9905;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Miata9905;
       getCrankAngle = getCrankAngle_Miata9905;
       triggerSetEndTeeth = triggerSetEndTeeth_Miata9905;
@@ -3162,7 +3185,7 @@ void initialiseTriggers(void)
       triggerSetup_MazdaAU();
       triggerHandler = triggerPri_MazdaAU;
       triggerSecondaryHandler = triggerSec_MazdaAU;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_MazdaAU;
       getCrankAngle = getCrankAngle_MazdaAU;
       triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
@@ -3179,7 +3202,7 @@ void initialiseTriggers(void)
       triggerSetup_non360();
       triggerHandler = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       triggerSecondaryHandler = triggerSec_DualWheel; //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
       triggerSetEndTeeth = triggerSetEndTeeth_non360;
@@ -3196,7 +3219,7 @@ void initialiseTriggers(void)
       triggerSetup_Nissan360();
       triggerHandler = triggerPri_Nissan360;
       triggerSecondaryHandler = triggerSec_Nissan360;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Nissan360;
       getCrankAngle = getCrankAngle_Nissan360;
       triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
@@ -3213,7 +3236,7 @@ void initialiseTriggers(void)
       triggerSetup_Subaru67();
       triggerHandler = triggerPri_Subaru67;
       triggerSecondaryHandler = triggerSec_Subaru67;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Subaru67;
       getCrankAngle = getCrankAngle_Subaru67;
       triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
@@ -3257,7 +3280,7 @@ void initialiseTriggers(void)
       triggerSetup_ThirtySixMinus222();
       triggerHandler = triggerPri_ThirtySixMinus222;
       triggerSecondaryHandler = triggerSec_ThirtySixMinus222;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
@@ -3280,7 +3303,7 @@ void initialiseTriggers(void)
       triggerSetup_420a();
       triggerHandler = triggerPri_420a;
       triggerSecondaryHandler = triggerSec_420a;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_420a;
       getCrankAngle = getCrankAngle_420a;
       triggerSetEndTeeth = triggerSetEndTeeth_420a;
@@ -3298,7 +3321,7 @@ void initialiseTriggers(void)
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_Webber;
       triggerSecondaryHandler = triggerSec_Webber;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3317,7 +3340,7 @@ void initialiseTriggers(void)
       triggerSetup_FordST170();
       triggerHandler = triggerPri_missingTooth;
       triggerSecondaryHandler = triggerSec_FordST170;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_FordST170;
       getCrankAngle = getCrankAngle_FordST170;
       triggerSetEndTeeth = triggerSetEndTeeth_FordST170;
@@ -3336,7 +3359,7 @@ void initialiseTriggers(void)
       triggerSetup_DRZ400();
       triggerHandler = triggerPri_DualWheel;
       triggerSecondaryHandler = triggerSec_DRZ400;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3354,7 +3377,7 @@ void initialiseTriggers(void)
       //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
       triggerHandler = triggerPri_NGC;
-      decoderHasSecondary = true;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_NGC;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_NGC;

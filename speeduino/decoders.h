@@ -36,6 +36,26 @@
 #define DECODER_NGC               22
 #define DECODER_VMAX              23
 
+#define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
+#define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
+#define BIT_DECODER_UNUSED1             2 
+#define BIT_DECODER_HAS_SECONDARY       3 //Whether or not the decoder supports fixed cranking timing
+#define BIT_DECODER_HAS_FIXED_CRANKING  4
+#define BIT_DECODER_VALID_TRIGGER       5 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+#define BIT_DECODER_TOOTH_ANG_CORRECT   6 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
+
+//220 bytes free
+extern volatile uint8_t decoderState;
+
+/*
+extern volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
+extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
+extern bool decoderIsSequential; //Whether or not the decoder supports sequential operation
+extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
+extern bool decoderHasFixedCrankingTiming; 
+*/
+
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
 #define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 
@@ -236,15 +256,8 @@ extern volatile unsigned long secondaryLastToothTime1; //The time (micros()) tha
 extern uint16_t triggerActualTeeth;
 extern volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 extern volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
-extern volatile bool validTrigger; //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 extern unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 extern volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
-extern volatile bool triggerToothAngleIsCorrect; //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
-extern bool secondDerivEnabled; //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
-extern bool decoderIsSequential; //Whether or not the decoder supports sequential operation
-extern bool decoderIsLowRes; //Is set true, certain extra calculations are performed for better timing accuracy
-extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary input
-extern bool decoderHasFixedCrankingTiming; //Whether or not the decoder supports fixed cranking timing
 extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
