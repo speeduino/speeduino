@@ -683,6 +683,9 @@ void doUpdates(void)
     //Set A/C default values - these line up with the ini file defaults
     configPage15.airConEnable = 0;
 
+    //Oil Pressure protection delay added. Set to 0 to match existing behaviour
+    configPage10.oilPressureProtTime = 0;
+
     writeAllConfig();
     storeEEPROMVersion(21);
   }
