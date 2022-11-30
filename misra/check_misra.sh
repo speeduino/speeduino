@@ -55,16 +55,22 @@ function run_cppcheck() {
   mv "$source_folder"/src/libdivide "$source_folder"/src/_libdivide
   shopt -s nullglob nocaseglob
   
+  err_file="$out_folder/cppcheck_output.txt"
+
   for i in "${@}"; do
-    # Must redirect stdout to /dev/null else the cppcheck output is mixed in
+    # Must redirect stdout: if not, the cppcheck output is mixed in
     # with the function output (I.e. returned to caller)
     # Print current file to stderr instead.
     >&2 echo "Checking " $i
 
     out_file="$out_folder/$(basename $i).tmp"
-    rm -f $out_file
-    echo $out_file
-    "$cppcheck_bin" ${cppcheck_parameters[@]} --output-file=$out_file $i > /dev/null
+    rm -f $out_file    
+    echo $out_file # Function return
+
+    "$cppcheck_bin" ${cppcheck_parameters[@]} --output-file=$out_file $i > $err_file
+
+    # Echo cppcheck output to stderr
+    >&2 cat $err_file
   done
 
   shopt -u nullglob nocaseglob
