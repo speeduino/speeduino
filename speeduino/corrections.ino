@@ -355,7 +355,7 @@ uint16_t correctionAccel()
         //If MAE isn't currently turned on, need to check whether it needs to be turned on
         if (abs(currentStatus.mapDOT) > configPage2.maeThresh)
         {
-          activateMAPDOT = currentStatus.mapDOT;
+          activateMAPDOT = abs(currentStatus.mapDOT);
           currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           //Check if the MAP rate of change is negative or positive. Negative means decelarion.
           if (currentStatus.mapDOT < 0)
