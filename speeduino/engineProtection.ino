@@ -95,7 +95,6 @@ byte checkBoostLimit(void)
 byte checkOilPressureLimit(void)
 {
   byte oilProtectActive = 0;
-  static constexpr char X100_MULTIPLIER = 100;
   bool alreadyActive = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
 
