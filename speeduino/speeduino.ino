@@ -439,6 +439,7 @@ void loop(void)
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
       #endif
 
+      ignRptDur = uS_TO_TIMER_COMPARE(((ignitionSchedule1.duration * configPage9.ignRptScale)/100));
     } //1Hz timer
 
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL)

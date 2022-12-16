@@ -159,6 +159,10 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  */
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
 
+//Define bit positions within engine variable
+#define BIT_SCHEDULE_NEXT       0   // Enable flag for planned next schedule (when current schedule is RUNNING)
+#define BIT_SCHEDULE_DECODER    1   // Decoder had set the scheduler timer
+#define BIT_SCHEDULE_REPEATED   2   // Ignition had alread repeated
 /** Ignition schedule.
  */
 struct Schedule {
@@ -173,9 +177,11 @@ struct Schedule {
 
   COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
-  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
-  volatile bool endScheduleSetByDecoder = false;
-  volatile bool outputHadRepeated = false;
+  volatile byte scheduleFlags;        ///< All flags used in the scheduler
+
+//  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
+//  volatile bool endScheduleSetByDecoder = false;
+//  volatile bool outputHadRepeated = false;
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
