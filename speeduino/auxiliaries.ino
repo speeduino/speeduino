@@ -46,13 +46,12 @@ void initialiseAirCon(void)
     aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
     aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
 
-    AIRCON_OFF();
-
+    noInterrupts(); AIRCON_OFF(); interrupts();
     if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
     {
       aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
       aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
-      AIRCON_FAN_OFF();
+      noInterrupts(); AIRCON_FAN_OFF(); interrupts();
       acStandAloneFanIsEnabled = true;
     }
     else
@@ -116,13 +115,13 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_ON();
+        noInterrupts(); AIRCON_FAN_ON(); interrupts();
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
       if(acStartDelay >= configPage15.airConCompOnDelay)
       {
-        AIRCON_ON();
+        noInterrupts(); AIRCON_ON(); interrupts();
       }
       else
       {
@@ -136,10 +135,10 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_OFF();
+        noInterrupts(); AIRCON_FAN_OFF(); interrupts();
       }
 
-      AIRCON_OFF();
+      noInterrupts(); AIRCON_OFF(); interrupts();
       acStartDelay = 0;
     }
   }
@@ -251,7 +250,7 @@ void initialiseFan(void)
 {
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
-  FAN_OFF();  //Initialise program with the fan in the off state
+  noInterrupts(); FAN_OFF(); interrupts();  //Initialise program with the fan in the off state
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
   currentStatus.fanDuty = 0;
 
@@ -288,19 +287,19 @@ void fanControl(void)
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
-        FAN_OFF();
+        noInterrupts(); FAN_OFF(); interrupts(); 
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
       {
-        FAN_ON();
+        noInterrupts(); FAN_ON(); interrupts();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
-      FAN_OFF();
+      noInterrupts(); FAN_OFF(); interrupts(); 
       BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
   }
@@ -352,14 +351,14 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
+        noInterrupts(); FAN_OFF(); interrupts(); 
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
+        noInterrupts(); FAN_ON(); interrupts();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
         DISABLE_FAN_TIMER();
       }
@@ -367,13 +366,13 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
+        noInterrupts(); FAN_OFF(); interrupts(); 
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
+        noInterrupts(); FAN_ON(); interrupts();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
     #endif
@@ -1162,13 +1161,13 @@ void boostDisable(void)
 {
   if (fan_pwm_state == true)
   {
-    FAN_OFF();
+    noInterrupts(); FAN_OFF(); interrupts(); 
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    FAN_ON();
+    noInterrupts(); FAN_ON(); interrupts();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
