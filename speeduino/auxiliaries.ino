@@ -47,6 +47,7 @@ void initialiseAirCon(void)
     aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
 
     AIRCON_OFF();
+    
     if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
     {
       aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
@@ -250,7 +251,7 @@ void initialiseFan(void)
 {
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
-  noInterrupts(); FAN_OFF(); interrupts();  //Initialise program with the fan in the off state
+  FAN_OFF();  //Initialise program with the fan in the off state
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
   currentStatus.fanDuty = 0;
 
@@ -287,7 +288,7 @@ void fanControl(void)
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
-        noInterrupts(); FAN_OFF(); interrupts(); 
+        FAN_OFF();
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else 
@@ -299,7 +300,7 @@ void fanControl(void)
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
-      noInterrupts(); FAN_OFF(); interrupts(); 
+      FAN_OFF();
       BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
     }
   }
@@ -351,7 +352,7 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        noInterrupts(); FAN_OFF(); interrupts(); 
+        FAN_OFF();
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
         DISABLE_FAN_TIMER();
       }
@@ -366,7 +367,7 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        noInterrupts(); FAN_OFF(); interrupts(); 
+        FAN_OFF();
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
       }
       else if (currentStatus.fanDuty > 0)
@@ -1161,7 +1162,7 @@ void boostDisable(void)
 {
   if (fan_pwm_state == true)
   {
-    noInterrupts(); FAN_OFF(); interrupts(); 
+    FAN_OFF();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }

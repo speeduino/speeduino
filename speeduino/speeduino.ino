@@ -484,7 +484,7 @@ void loop(void)
           if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
 
           //Check whether the user has selected to disable to the fan during cranking
-          if(configPage2.fanWhenCranking == 0) { noInterrupts(); FAN_OFF(); interrupts();  }
+          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
         }
       //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
