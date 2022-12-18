@@ -46,12 +46,12 @@ void initialiseAirCon(void)
     aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
     aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
 
-    noInterrupts(); AIRCON_OFF(); interrupts();
+    AIRCON_OFF();
     if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
     {
       aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
       aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
-      noInterrupts(); AIRCON_FAN_OFF(); interrupts();
+      AIRCON_FAN_OFF();
       acStandAloneFanIsEnabled = true;
     }
     else
@@ -115,13 +115,13 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        noInterrupts(); AIRCON_FAN_ON(); interrupts();
+        AIRCON_FAN_ON();
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
       if(acStartDelay >= configPage15.airConCompOnDelay)
       {
-        noInterrupts(); AIRCON_ON(); interrupts();
+        AIRCON_ON();
       }
       else
       {
@@ -135,10 +135,10 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        noInterrupts(); AIRCON_FAN_OFF(); interrupts();
+        AIRCON_FAN_OFF();
       }
 
-      noInterrupts(); AIRCON_OFF(); interrupts();
+      AIRCON_OFF();
       acStartDelay = 0;
     }
   }

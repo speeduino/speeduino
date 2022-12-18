@@ -47,26 +47,26 @@ static inline void checkAirConRPMLockout(void);
 #define VVT1_PIN_LOW()   noInterrupts(); *vvt1_pin_port &= ~(vvt1_pin_mask); interrupts()
 #define VVT1_PIN_HIGH()  noInterrupts(); *vvt1_pin_port |= (vvt1_pin_mask); interrupts()
 #define VVT2_PIN_LOW()   noInterrupts(); *vvt2_pin_port &= ~(vvt2_pin_mask); interrupts()
-#define VVT2_PIN_HIGH()  noInterrupts();  *vvt2_pin_port |= (vvt2_pin_mask); interrupts()
-#define FAN_PIN_LOW()    *fan_pin_port &= ~(fan_pin_mask)
-#define FAN_PIN_HIGH()   *fan_pin_port |= (fan_pin_mask)
+#define VVT2_PIN_HIGH()  noInterrupts(); *vvt2_pin_port |= (vvt2_pin_mask); interrupts()
+#define FAN_PIN_LOW()    noInterrupts(); *fan_pin_port &= ~(fan_pin_mask); interrupts()
+#define FAN_PIN_HIGH()   noInterrupts(); *fan_pin_port |= (fan_pin_mask); interrupts()
 #define N2O_STAGE1_PIN_LOW() noInterrupts(); *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask); interrupts()
 #define N2O_STAGE1_PIN_HIGH() noInterrupts(); *n2o_stage1_pin_port |= (n2o_stage1_pin_mask); interrupts()
 #define N2O_STAGE2_PIN_LOW()  noInterrupts(); *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask); interrupts()
 #define N2O_STAGE2_PIN_HIGH() noInterrupts(); *n2o_stage2_pin_port |= (n2o_stage2_pin_mask); interrupts()
-#define AIRCON_PIN_LOW()    *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
-#define AIRCON_PIN_HIGH()   *aircon_comp_pin_port |= (aircon_comp_pin_mask)
-#define AIRCON_FAN_PIN_LOW()   *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
-#define AIRCON_FAN_PIN_HIGH()  *aircon_fan_pin_port |= (aircon_fan_pin_mask)
+#define AIRCON_PIN_LOW()    noInterrupts(); *aircon_comp_pin_port &= ~(aircon_comp_pin_mask); interrupts()
+#define AIRCON_PIN_HIGH()   noInterrupts(); *aircon_comp_pin_port |= (aircon_comp_pin_mask); interrupts()
+#define AIRCON_FAN_PIN_LOW()    noInterrupts(); *aircon_fan_pin_port &= ~(aircon_fan_pin_mask); interrupts()
+#define AIRCON_FAN_PIN_HIGH()   noInterrupts(); *aircon_fan_pin_port |= (aircon_fan_pin_mask); interrupts()
 
 #endif
 
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-#define AIRCON_ON()          {((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
-#define AIRCON_OFF()         {((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
-#define AIRCON_FAN_ON()      {((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN);}
-#define AIRCON_FAN_OFF()     {((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);}
+#define AIRCON_ON()          {if(((configPage15.airConCompPol&1)==1)) {AIRCON_PIN_LOW();} else {AIRCON_PIN_HIGH();} BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_OFF()         {if(((configPage15.airConCompPol&1)==1)) {AIRCON_PIN_HIGH();} else {AIRCON_PIN_LOW();} BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);}
+#define AIRCON_FAN_ON()      {if(((configPage15.airConFanPol&1)==1))  {AIRCON_FAN_PIN_LOW();} else {AIRCON_FAN_PIN_HIGH();} BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN);}
+#define AIRCON_FAN_OFF()     {if(((configPage15.airConFanPol&1)==1))  {AIRCON_FAN_PIN_HIGH();} else {AIRCON_FAN_PIN_LOW();} BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);}
 
 #define VVT1_PIN_ON()     VVT1_PIN_HIGH();
 #define VVT1_PIN_OFF()    VVT1_PIN_LOW();
@@ -74,8 +74,8 @@ static inline void checkAirConRPMLockout(void);
 #define VVT2_PIN_OFF()    VVT2_PIN_LOW();
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
-#define FAN_ON()         ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH())
-#define FAN_OFF()        ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW())
+#define FAN_ON()         if(configPage6.fanInv){FAN_PIN_LOW();}else{FAN_PIN_HIGH();}
+#define FAN_OFF()        if(configPage6.fanInv){FAN_PIN_HIGH();}else{FAN_PIN_LOW();}
 
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
