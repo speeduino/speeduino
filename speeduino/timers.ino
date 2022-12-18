@@ -138,7 +138,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visual for running code
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      noInterrupts(); digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); interrupts();
     #endif
 
     #if defined(CORE_AVR)
@@ -192,7 +192,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          digitalWrite(pinFuelPump, LOW);
+          FUEL_PUMP_OFF();
           currentStatus.fuelPumpOn = false;
         }
       }
