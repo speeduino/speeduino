@@ -138,7 +138,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     loop250ms = 0; //Reset Counter
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visual for running code
-      noInterrupts(); digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); interrupts();
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     #endif
 
     #if defined(CORE_AVR)
