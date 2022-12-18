@@ -88,7 +88,7 @@ private:
   uint8_t nss;
   SPIClass *spi_port;
   inline void select() {
-   digitalWrite(nss,LOW);
+    digitalWrite(nss,LOW);
   }
 
   inline uint8_t transfer(uint8_t x) {
