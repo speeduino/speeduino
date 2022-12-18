@@ -588,9 +588,7 @@ void readBat(void)
     //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
     fpPrimed = false;
-    noInterrupts();
     FUEL_PUMP_ON();
-    interrupts();
 
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )

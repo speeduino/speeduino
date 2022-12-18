@@ -421,8 +421,8 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
 
 #ifndef CORE_TEENSY41
-  #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
-  #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
+  #define FUEL_PUMP_ON() noInterrupts(); *pump_pin_port |= (pump_pin_mask); interrupts();
+  #define FUEL_PUMP_OFF() noInterrupts(); *pump_pin_port &= ~(pump_pin_mask); interrupts();
 #else
   //Special compatibility case for TEENSY 41 (for now)
   #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);

@@ -14,10 +14,10 @@
 #define IAC_ALGORITHM_PWM_OLCL  6 //Openloop plus closedloop IAC control
 #define IAC_ALGORITHM_STEP_OLCL  7 //Openloop plus closedloop IAC control
 
-#define IDLE_PIN_LOW()  *idle_pin_port &= ~(idle_pin_mask)
-#define IDLE_PIN_HIGH() *idle_pin_port |= (idle_pin_mask)
-#define IDLE2_PIN_LOW()  *idle2_pin_port &= ~(idle2_pin_mask)
-#define IDLE2_PIN_HIGH() *idle2_pin_port |= (idle2_pin_mask)
+#define IDLE_PIN_LOW()  noInterrupts(); *idle_pin_port &= ~(idle_pin_mask); interrupts(); 
+#define IDLE_PIN_HIGH() noInterrupts(); *idle_pin_port |= (idle_pin_mask); interrupts(); 
+#define IDLE2_PIN_LOW()  noInterrupts(); *idle2_pin_port &= ~(idle2_pin_mask); interrupts(); 
+#define IDLE2_PIN_HIGH() noInterrupts(); *idle2_pin_port |= (idle2_pin_mask); interrupts(); 
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1

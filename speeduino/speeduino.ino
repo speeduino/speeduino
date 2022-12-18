@@ -193,9 +193,7 @@ void loop(void)
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
-      noInterrupts();
       FUEL_PUMP_ON();
-      interrupts();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
     }
     else
@@ -222,7 +220,7 @@ void loop(void)
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed == true) { noInterrupts(); FUEL_PUMP_OFF();  interrupts(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
