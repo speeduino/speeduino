@@ -9,31 +9,31 @@
  * Functions here are typically assigned (at initialisation) to callback function variables (e.g. inj1StartFunction or inj1EndFunction) 
  * form where they are called (by scheduler.ino).
  */
-inline void openInjector1(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector1_DIRECT(); interrupts();}   else { openInjector1_MC33810(); } }
-inline void closeInjector1(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector1_DIRECT(); interrupts();}  else { closeInjector1_MC33810(); } }
-inline void openInjector2(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector2_DIRECT(); interrupts();}   else { openInjector2_MC33810(); } }
-inline void closeInjector2(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector2_DIRECT(); interrupts();}  else { closeInjector2_MC33810(); } }
-inline void openInjector3(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector3_DIRECT(); interrupts();}   else { openInjector3_MC33810(); } }
-inline void closeInjector3(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector3_DIRECT(); interrupts();}  else { closeInjector3_MC33810(); } }
-inline void openInjector4(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector4_DIRECT(); interrupts();}   else { openInjector4_MC33810(); } }
-inline void closeInjector4(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector4_DIRECT(); interrupts();}  else { closeInjector4_MC33810(); } }
-inline void openInjector5(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector5_DIRECT(); interrupts();}   else { openInjector5_MC33810(); } }
-inline void closeInjector5(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector5_DIRECT(); interrupts();}  else { closeInjector5_MC33810(); } }
-inline void openInjector6(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector6_DIRECT(); interrupts();}   else { openInjector6_MC33810(); } }
-inline void closeInjector6(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector6_DIRECT(); interrupts();}  else { closeInjector6_MC33810(); } }
-inline void openInjector7(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector7_DIRECT(); interrupts();}   else { openInjector7_MC33810(); } }
-inline void closeInjector7(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector7_DIRECT(); interrupts();}  else { closeInjector7_MC33810(); } }
-inline void openInjector8(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  openInjector8_DIRECT(); interrupts();}   else { openInjector8_MC33810(); } }
-inline void closeInjector8(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  closeInjector8_DIRECT(); interrupts();}  else { closeInjector8_MC33810(); } }
+inline void openInjector1(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector1_DIRECT(); }   else { openInjector1_MC33810(); } }
+inline void closeInjector1(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector1_DIRECT(); }  else { closeInjector1_MC33810(); } }
+inline void openInjector2(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector2_DIRECT(); }   else { openInjector2_MC33810(); } }
+inline void closeInjector2(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector2_DIRECT(); }  else { closeInjector2_MC33810(); } }
+inline void openInjector3(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector3_DIRECT(); }   else { openInjector3_MC33810(); } }
+inline void closeInjector3(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector3_DIRECT(); }  else { closeInjector3_MC33810(); } }
+inline void openInjector4(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector4_DIRECT(); }   else { openInjector4_MC33810(); } }
+inline void closeInjector4(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector4_DIRECT(); }  else { closeInjector4_MC33810(); } }
+inline void openInjector5(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector5_DIRECT(); }   else { openInjector5_MC33810(); } }
+inline void closeInjector5(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector5_DIRECT(); }  else { closeInjector5_MC33810(); } }
+inline void openInjector6(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector6_DIRECT(); }   else { openInjector6_MC33810(); } }
+inline void closeInjector6(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector6_DIRECT(); }  else { closeInjector6_MC33810(); } }
+inline void openInjector7(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector7_DIRECT(); }   else { openInjector7_MC33810(); } }
+inline void closeInjector7(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector7_DIRECT(); }  else { closeInjector7_MC33810(); } }
+inline void openInjector8(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector8_DIRECT(); }   else { openInjector8_MC33810(); } }
+inline void closeInjector8(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector8_DIRECT(); }  else { closeInjector8_MC33810(); } }
 
-inline void injector1Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector1Toggle_DIRECT(); interrupts();} else { injector1Toggle_MC33810(); } }
-inline void injector2Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector2Toggle_DIRECT(); interrupts();} else { injector2Toggle_MC33810(); } }
-inline void injector3Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector3Toggle_DIRECT(); interrupts();} else { injector3Toggle_MC33810(); } }
-inline void injector4Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector4Toggle_DIRECT(); interrupts();} else { injector4Toggle_MC33810(); } }
-inline void injector5Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector5Toggle_DIRECT(); interrupts();} else { injector5Toggle_MC33810(); } }
-inline void injector6Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector6Toggle_DIRECT(); interrupts();} else { injector6Toggle_MC33810(); } }
-inline void injector7Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector7Toggle_DIRECT(); interrupts();} else { injector7Toggle_MC33810(); } }
-inline void injector8Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  injector8Toggle_DIRECT(); interrupts();} else { injector8Toggle_MC33810(); } }
+inline void injector1Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector1Toggle_DIRECT(); } else { injector1Toggle_MC33810(); } }
+inline void injector2Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector2Toggle_DIRECT(); } else { injector2Toggle_MC33810(); } }
+inline void injector3Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector3Toggle_DIRECT(); } else { injector3Toggle_MC33810(); } }
+inline void injector4Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector4Toggle_DIRECT(); } else { injector4Toggle_MC33810(); } }
+inline void injector5Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector5Toggle_DIRECT(); } else { injector5Toggle_MC33810(); } }
+inline void injector6Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector6Toggle_DIRECT(); } else { injector6Toggle_MC33810(); } }
+inline void injector7Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector7Toggle_DIRECT(); } else { injector7Toggle_MC33810(); } }
+inline void injector8Toggle(void) { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { injector8Toggle_DIRECT(); } else { injector8Toggle_MC33810(); } }
 
 inline void coil1Toggle(void)     { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  coil1Toggle_DIRECT(); interrupts();} else { coil1Toggle_MC33810(); } }
 inline void coil2Toggle(void)     { if(ignitionOutputControl != OUTPUT_CONTROL_MC33810) { noInterrupts();  coil2Toggle_DIRECT(); interrupts();} else { coil2Toggle_MC33810(); } }

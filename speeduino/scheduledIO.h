@@ -180,22 +180,22 @@ void tachoOutputOff(void);
 
 //Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
 //The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
-#define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
-#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
-#define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
-#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
-#define openInjector3_DIRECT()  { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
-#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
-#define openInjector4_DIRECT()  { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
-#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
-#define openInjector5_DIRECT()  { *inj5_pin_port |= (inj5_pin_mask); }
-#define closeInjector5_DIRECT() { *inj5_pin_port &= ~(inj5_pin_mask); }
-#define openInjector6_DIRECT()  { *inj6_pin_port |= (inj6_pin_mask); }
-#define closeInjector6_DIRECT() { *inj6_pin_port &= ~(inj6_pin_mask); }
-#define openInjector7_DIRECT()  { *inj7_pin_port |= (inj7_pin_mask); }
-#define closeInjector7_DIRECT() { *inj7_pin_port &= ~(inj7_pin_mask); }
-#define openInjector8_DIRECT()  { *inj8_pin_port |= (inj8_pin_mask); }
-#define closeInjector8_DIRECT() { *inj8_pin_port &= ~(inj8_pin_mask); }
+#define openInjector1_DIRECT()  { noInterrupts(); *inj1_pin_port |= (inj1_pin_mask);  interrupts(); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define closeInjector1_DIRECT() { noInterrupts(); *inj1_pin_port &= ~(inj1_pin_mask); interrupts();  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define openInjector2_DIRECT()  { noInterrupts(); *inj2_pin_port |= (inj2_pin_mask);  interrupts(); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define closeInjector2_DIRECT() { noInterrupts(); *inj2_pin_port &= ~(inj2_pin_mask); interrupts();   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define openInjector3_DIRECT()  { noInterrupts(); *inj3_pin_port |= (inj3_pin_mask);  interrupts(); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define closeInjector3_DIRECT() { noInterrupts(); *inj3_pin_port &= ~(inj3_pin_mask); interrupts();  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define openInjector4_DIRECT()  { noInterrupts(); *inj4_pin_port |= (inj4_pin_mask);  interrupts(); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define closeInjector4_DIRECT() { noInterrupts(); *inj4_pin_port &= ~(inj4_pin_mask); interrupts();  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define openInjector5_DIRECT()  { noInterrupts(); *inj5_pin_port |= (inj5_pin_mask);  interrupts(); }
+#define closeInjector5_DIRECT() { noInterrupts(); *inj5_pin_port &= ~(inj5_pin_mask); interrupts(); }
+#define openInjector6_DIRECT()  { noInterrupts(); *inj6_pin_port |= (inj6_pin_mask);  interrupts(); }
+#define closeInjector6_DIRECT() { noInterrupts(); *inj6_pin_port &= ~(inj6_pin_mask); interrupts(); }
+#define openInjector7_DIRECT()  { noInterrupts(); *inj7_pin_port |= (inj7_pin_mask);  interrupts(); }
+#define closeInjector7_DIRECT() { noInterrupts(); *inj7_pin_port &= ~(inj7_pin_mask); interrupts(); }
+#define openInjector8_DIRECT()  { noInterrupts(); *inj8_pin_port |= (inj8_pin_mask);  interrupts(); }
+#define closeInjector8_DIRECT() { noInterrupts(); *inj8_pin_port &= ~(inj8_pin_mask); interrupts(); }
 
 #define coil1Low_DIRECT()       (*ign1_pin_port &= ~(ign1_pin_mask))
 #define coil1High_DIRECT()      (*ign1_pin_port |= (ign1_pin_mask))
@@ -258,14 +258,14 @@ void tachoOutputOff(void);
 #define coil7Toggle_DIRECT() (*ign7_pin_port ^= ign7_pin_mask )
 #define coil8Toggle_DIRECT() (*ign8_pin_port ^= ign8_pin_mask )
 
-#define injector1Toggle_DIRECT() (*inj1_pin_port ^= inj1_pin_mask )
-#define injector2Toggle_DIRECT() (*inj2_pin_port ^= inj2_pin_mask )
-#define injector3Toggle_DIRECT() (*inj3_pin_port ^= inj3_pin_mask )
-#define injector4Toggle_DIRECT() (*inj4_pin_port ^= inj4_pin_mask )
-#define injector5Toggle_DIRECT() (*inj5_pin_port ^= inj5_pin_mask )
-#define injector6Toggle_DIRECT() (*inj6_pin_port ^= inj6_pin_mask )
-#define injector7Toggle_DIRECT() (*inj7_pin_port ^= inj7_pin_mask )
-#define injector8Toggle_DIRECT() (*inj8_pin_port ^= inj8_pin_mask )
+#define injector1Toggle_DIRECT() {noInterrupts(); *inj1_pin_port ^= inj1_pin_mask; interrupts();}
+#define injector2Toggle_DIRECT() {noInterrupts(); *inj2_pin_port ^= inj2_pin_mask; interrupts();}
+#define injector3Toggle_DIRECT() {noInterrupts(); *inj3_pin_port ^= inj3_pin_mask; interrupts();}
+#define injector4Toggle_DIRECT() {noInterrupts(); *inj4_pin_port ^= inj4_pin_mask; interrupts();}
+#define injector5Toggle_DIRECT() {noInterrupts(); *inj5_pin_port ^= inj5_pin_mask; interrupts();}
+#define injector6Toggle_DIRECT() {noInterrupts(); *inj6_pin_port ^= inj6_pin_mask; interrupts();}
+#define injector7Toggle_DIRECT() {noInterrupts(); *inj7_pin_port ^= inj7_pin_mask; interrupts();}
+#define injector8Toggle_DIRECT() {noInterrupts(); *inj8_pin_port ^= inj8_pin_mask; interrupts();}
 
 void nullCallback(void);
 
