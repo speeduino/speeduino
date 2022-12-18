@@ -47,7 +47,7 @@ void initialiseAirCon(void)
     aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
 
     AIRCON_OFF();
-    
+
     if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
     {
       aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
@@ -293,7 +293,7 @@ void fanControl(void)
       }
       else 
       {
-        noInterrupts(); FAN_ON(); interrupts();
+        FAN_ON();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
     }
@@ -359,7 +359,7 @@ void fanControl(void)
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
-        noInterrupts(); FAN_ON(); interrupts();
+        FAN_ON();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
         DISABLE_FAN_TIMER();
       }
@@ -373,7 +373,7 @@ void fanControl(void)
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
-        noInterrupts(); FAN_ON(); interrupts();
+        FAN_ON();
         BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
       }
     #endif
@@ -1168,7 +1168,7 @@ void boostDisable(void)
   }
   else
   {
-    noInterrupts(); FAN_ON(); interrupts();
+    FAN_ON();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;
