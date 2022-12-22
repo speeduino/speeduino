@@ -102,7 +102,9 @@ private:
   inline void select()
   {
     //digitalWrite(nss, LOW);
-    *nssPort &= ~(nssMask); 
+    noInterrupts();
+    *nssPort &= ~(nssMask);
+    interrupts();
   }
 
   inline void tranfer(uint8_t *tx_buffer, uint16_t len)
@@ -173,7 +175,9 @@ private:
   inline void deselect()
   {
     //digitalWrite(nss, HIGH);
+    noInterrupts();
     *nssPort |= (nssMask);
+    interrupts();
   }
 
 public:
