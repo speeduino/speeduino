@@ -180,6 +180,43 @@ void tachoOutputOff(void);
 
 //Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
 //The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define openInjector1_DIRECT()  { digitalWrite(pinInjector1, HIGH); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define closeInjector1_DIRECT() { digitalWrite(pinInjector1, LOW);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
+#define openInjector2_DIRECT()  { digitalWrite(pinInjector2, HIGH); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define closeInjector2_DIRECT() { digitalWrite(pinInjector2, LOW);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
+#define openInjector3_DIRECT()  { digitalWrite(pinInjector3, HIGH); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define closeInjector3_DIRECT() { digitalWrite(pinInjector3, LOW);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
+#define openInjector4_DIRECT()  { digitalWrite(pinInjector4, HIGH); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define closeInjector4_DIRECT() { digitalWrite(pinInjector4, LOW);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define openInjector5_DIRECT()  { digitalWrite(pinInjector5, HIGH); }
+#define closeInjector5_DIRECT() { digitalWrite(pinInjector5, LOW); }
+#define openInjector6_DIRECT()  { digitalWrite(pinInjector6, HIGH); }
+#define closeInjector6_DIRECT() { digitalWrite(pinInjector6, LOW); }
+#define openInjector7_DIRECT()  { digitalWrite(pinInjector7, HIGH); }
+#define closeInjector7_DIRECT() { digitalWrite(pinInjector7, LOW); }
+#define openInjector8_DIRECT()  { digitalWrite(pinInjector8, HIGH); }
+#define closeInjector8_DIRECT() { digitalWrite(pinInjector8, LOW); }
+
+#define coil1Low_DIRECT()       (digitalWrite(pinCoil1, LOW))
+#define coil1High_DIRECT()      (digitalWrite(pinCoil1, HIGH))
+#define coil2Low_DIRECT()       (digitalWrite(pinCoil2, LOW))
+#define coil2High_DIRECT()      (digitalWrite(pinCoil2, HIGH))
+#define coil3Low_DIRECT()       (digitalWrite(pinCoil3, LOW))
+#define coil3High_DIRECT()      (digitalWrite(pinCoil3, HIGH))
+#define coil4Low_DIRECT()       (digitalWrite(pinCoil4, LOW))
+#define coil4High_DIRECT()      (digitalWrite(pinCoil4, HIGH))
+#define coil5Low_DIRECT()       (digitalWrite(pinCoil5, LOW))
+#define coil5High_DIRECT()      (digitalWrite(pinCoil5, HIGH))
+#define coil6Low_DIRECT()       (digitalWrite(pinCoil6, LOW))
+#define coil6High_DIRECT()      (digitalWrite(pinCoil6, HIGH))
+#define coil7Low_DIRECT()       (digitalWrite(pinCoil7, LOW))
+#define coil7High_DIRECT()      (digitalWrite(pinCoil7, HIGH))
+#define coil8Low_DIRECT()       (digitalWrite(pinCoil8, LOW))
+#define coil8High_DIRECT()      (digitalWrite(pinCoil8, HIGH))
+#else
+
 #define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
 #define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
 #define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
@@ -213,6 +250,7 @@ void tachoOutputOff(void);
 #define coil7High_DIRECT()      (*ign7_pin_port |= (ign7_pin_mask))
 #define coil8Low_DIRECT()       (*ign8_pin_port &= ~(ign8_pin_mask))
 #define coil8High_DIRECT()      (*ign8_pin_port |= (ign8_pin_mask))
+#endif
 
 //Set the value of the coil pins to the coilHIGH or coilLOW state
 #define coil1Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil1Low_DIRECT() : coil1High_DIRECT())
