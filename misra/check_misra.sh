@@ -40,6 +40,11 @@ cppcheck_parameters=( --inline-suppr
                       --platform=avr8
                       -DCORE_AVR=1
                       -D__AVR_ATmega2560__
+                      # This is defined in the AVR headers, which aren't included.
+                      # cppcheck will not do type checking on unknown types.
+                      # It's used a lot and it's unsigned, which can trigger a lot
+                      # of type mismatch violations.
+                      -Dbyte=uint8_t
                       # All violations from included libraries (*src* folders) are ignored
                       --suppress="*:*src*"
                       # Don't parse the /src folder
