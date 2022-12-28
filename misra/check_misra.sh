@@ -31,6 +31,9 @@ parse_command_line "$@"
 cppcheck_bin="${cppcheck_path}/cppcheck"
 cppcheck_misra="${cppcheck_path}/addons/misra.py"
 
+num_cores=`getconf _NPROCESSORS_ONLN`
+let num_cores--
+
 mkdir -p "$out_folder"
 
 cppcheck_parameters=( --inline-suppr
@@ -38,6 +41,7 @@ cppcheck_parameters=( --inline-suppr
                       --addon="$script_folder/misra.json"
                       --suppressions-list="$script_folder/suppressions.txt"
                       --platform=avr8
+                      -j "$num_cores"
                       -DCORE_AVR=1
                       -D__AVR_ATmega2560__
                       # This is defined in the AVR headers, which aren't included.
