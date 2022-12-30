@@ -41,6 +41,7 @@ cppcheck_parameters=( --inline-suppr
                       --addon="$script_folder/misra.json"
                       --suppressions-list="$script_folder/suppressions.txt"
                       --platform=avr8
+                      --cppcheck-build-dir="$out_folder"
                       -j "$num_cores"
                       -DCORE_AVR=1
                       -D__AVR_ATmega2560__
