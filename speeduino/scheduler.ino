@@ -539,7 +539,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule1.nextEndCompare = ignitionSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
+      BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule1.ignRptCnt <= 3))
@@ -1309,7 +1309,7 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
         BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_DECODER);
       }
       //If there is a next schedule queued up, activate it
-      else if (BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if (BIT_CHECK(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.nextStartCompare);
         ignitionSchedule2.Status = PENDING;
@@ -1365,7 +1365,7 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
         BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER);
       }
       //If there is a next schedule queued up, activate it
-      else if (BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if (BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.nextStartCompare);
         ignitionSchedule3.Status = PENDING;
@@ -1421,7 +1421,7 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
         BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER);
       }
       //If there is a next schedule queued up, activate it
-      else if (BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if (BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.nextStartCompare);
         ignitionSchedule4.Status = PENDING;
