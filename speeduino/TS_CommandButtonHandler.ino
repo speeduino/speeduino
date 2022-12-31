@@ -11,6 +11,7 @@
 #include "sensors.h"
 #include "storage.h"
 #include "SD_logger.h"
+#include "scheduler.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -22,6 +23,16 @@
  */
 void TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
+  //Special case because making 255 cases for injector deadtime would be tedious
+  if((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX)){
+    uint16_t injectorRunTime = ((buttonCommand & 0x00FF)*100); //Stored in us
+
+    setFuelSchedule1(40030,injectorRunTime);
+    setFuelSchedule1(40030,injectorRunTime);
+    setFuelSchedule1(40030,injectorRunTime);
+    setFuelSchedule1(40030,injectorRunTime);
+    setFuelSchedule1(40030,injectorRunTime);
+  }
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
