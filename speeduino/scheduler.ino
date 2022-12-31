@@ -142,6 +142,15 @@ void initialiseSchedulers(void)
     ignitionSchedule6.schedulesSet = 0;
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
+
+    ignitionSchedule1.ignRptCnt = 0;
+    ignitionSchedule2.ignRptCnt = 0;
+    ignitionSchedule3.ignRptCnt = 0;
+    ignitionSchedule4.ignRptCnt = 0;
+    ignitionSchedule5.ignRptCnt = 0;
+    ignitionSchedule6.ignRptCnt = 0;
+    ignitionSchedule7.ignRptCnt = 0;
+    ignitionSchedule8.ignRptCnt = 0;
 }
 
 /*
@@ -507,17 +516,19 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
     //Need to check that the timeout doesn't exceed the overflow
     COMPARE_TYPE timeout_timer_compare;
-    //timeout -= (micros() - lastCrankAngleCalc);
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-    noInterrupts();
-    ignitionSchedule1.startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(!BIT_CHECK(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.startCompare);
-    ignitionSchedule1.Status = PENDING; //Turn this schedule on
-    ignitionSchedule1.schedulesSet++;
-    interrupts();
+    
+    if (ignitionSchedule1.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule1.startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+      if(!BIT_CHECK(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overriden.
+      SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.startCompare);
+      ignitionSchedule1.Status = PENDING; //Turn this schedule on
+      ignitionSchedule1.schedulesSet++;
+      interrupts();
+    }
     IGN1_TIMER_ENABLE();
   }
   else
@@ -528,10 +539,16 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule1.nextEndCompare = ignitionSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule1.hasNextSchedule = true;
-      BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
+      BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
-
+  }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule1.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule1.ignRptCnt >=1)
+    { ignitionSchedule1.repeatStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule1.repeatStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule1.repeatEndCompare = ignitionSchedule1.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 
@@ -561,13 +578,16 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule2.startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(!BIT_CHECK(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.startCompare);
-    ignitionSchedule2.Status = PENDING; //Turn this schedule on
-    ignitionSchedule2.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule2.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule2.startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+      if(!BIT_CHECK(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overriden.
+      SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.startCompare);
+      ignitionSchedule2.Status = PENDING; //Turn this schedule on
+      ignitionSchedule2.schedulesSet++;
+      interrupts();
+    }
     IGN2_TIMER_ENABLE();
   }
   else
@@ -578,9 +598,16 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule2.nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule2.nextEndCompare = ignitionSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule2.hasNextSchedule = true;
       BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
+  }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule2.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule2.ignRptCnt >=1)
+    { ignitionSchedule2.repeatStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule2.repeatStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule2.repeatEndCompare = ignitionSchedule2.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -596,14 +623,17 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     COMPARE_TYPE timeout_timer_compare;
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-    noInterrupts();
-    ignitionSchedule3.startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-    if(!BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.startCompare);
-    ignitionSchedule3.Status = PENDING; //Turn this schedule on
-    ignitionSchedule3.schedulesSet++;
-    interrupts();
+    
+    if (ignitionSchedule3.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule3.startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+      if(!BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overriden.
+      SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.startCompare);
+      ignitionSchedule3.Status = PENDING; //Turn this schedule on
+      ignitionSchedule3.schedulesSet++;
+      interrupts();
+    }
     IGN3_TIMER_ENABLE();
   }
   else
@@ -614,9 +644,16 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule3.hasNextSchedule = true;
       BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
+  }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule3.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule3.ignRptCnt >=1)
+    { ignitionSchedule3.repeatStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule3.repeatStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule3.repeatEndCompare = ignitionSchedule3.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -633,13 +670,17 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule4.startCompare = IGN4_COUNTER + timeout_timer_compare;
-    if(!BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.startCompare);
-    ignitionSchedule4.Status = PENDING; //Turn this schedule on
-    ignitionSchedule4.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule4.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule4.startCompare = IGN4_COUNTER + timeout_timer_compare;
+      //if(ignitionSchedule4.endScheduleSetByDecoder == false) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+      if(!BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overriden.
+      SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.startCompare);
+      ignitionSchedule4.Status = PENDING; //Turn this schedule on
+      ignitionSchedule4.schedulesSet++;
+      interrupts();
+    }
     IGN4_TIMER_ENABLE();
   }
   else
@@ -650,11 +691,19 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule4.hasNextSchedule = true;
       BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule4.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule4.ignRptCnt >=1)
+    { ignitionSchedule4.repeatStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule4.repeatStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule4.repeatEndCompare = ignitionSchedule4.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+  }
 }
+#if IGN_CHANNELS >= 5
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
@@ -669,13 +718,16 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule5.startCompare = IGN5_COUNTER + timeout_timer_compare;
-    if(!BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.startCompare);
-    ignitionSchedule5.Status = PENDING; //Turn this schedule on
-    ignitionSchedule5.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule5.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule5.startCompare = IGN5_COUNTER + timeout_timer_compare;
+      if(!BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+      SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.startCompare);
+      ignitionSchedule5.Status = PENDING; //Turn this schedule on
+      ignitionSchedule5.schedulesSet++;
+      interrupts();
+    }
     IGN5_TIMER_ENABLE();
   }
   else
@@ -686,16 +738,24 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule5.nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule5.nextEndCompare = ignitionSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule5.hasNextSchedule = true;
       BIT_SET(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule5.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule5.ignRptCnt >=1)
+    { ignitionSchedule5.repeatStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule5.repeatStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule5.repeatEndCompare = ignitionSchedule5.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+  }
 }
+#endif
+#if IGN_CHANNELS >= 6
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
     ignitionSchedule6.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule6.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule6.duration = duration;
@@ -705,13 +765,16 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
-    if(!BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.startCompare);
-    ignitionSchedule6.Status = PENDING; //Turn this schedule on
-    ignitionSchedule6.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule6.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
+      if(!BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+      SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.startCompare);
+      ignitionSchedule6.Status = PENDING; //Turn this schedule on
+      ignitionSchedule6.schedulesSet++;
+      interrupts();
+    }
     IGN6_TIMER_ENABLE();
   }
   else
@@ -722,16 +785,24 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule6.hasNextSchedule = true;
       BIT_SET(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule6.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule6.ignRptCnt >=1)
+    { ignitionSchedule6.repeatStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule6.repeatStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule6.repeatEndCompare = ignitionSchedule6.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+  }
 }
+#endif
+#if IGN_CHANNELS >= 7
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
     ignitionSchedule7.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule7.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule7.duration = duration;
@@ -741,13 +812,16 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule7.startCompare = IGN7_COUNTER + timeout_timer_compare;
-    if(!BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.startCompare);
-    ignitionSchedule7.Status = PENDING; //Turn this schedule on
-    ignitionSchedule7.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule7.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule7.startCompare = IGN7_COUNTER + timeout_timer_compare;
+      if(!BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+      SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.startCompare);
+      ignitionSchedule7.Status = PENDING; //Turn this schedule on
+      ignitionSchedule7.schedulesSet++;
+      interrupts();
+    }
     IGN7_TIMER_ENABLE();
   }
   else
@@ -758,16 +832,24 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule7.hasNextSchedule = true;
       BIT_SET(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule7.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule7.ignRptCnt >=1)
+    { ignitionSchedule7.repeatStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule7.repeatStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule7.repeatEndCompare = ignitionSchedule7.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+  }
 }
+#endif
+#if IGN_CHANNELS >= 8
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
     ignitionSchedule8.StartCallback = startCallback; //Name the start callback function
     ignitionSchedule8.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule8.duration = duration;
@@ -777,13 +859,16 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
-    ignitionSchedule8.startCompare = IGN8_COUNTER + timeout_timer_compare;
-    if(!BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule8.endCompare = ignitionSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-    SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.startCompare);
-    ignitionSchedule8.Status = PENDING; //Turn this schedule on
-    ignitionSchedule8.schedulesSet++;
-    interrupts();
+    if (ignitionSchedule8.ignRptCnt == 0)
+    {
+      noInterrupts();
+      ignitionSchedule8.startCompare = IGN8_COUNTER + timeout_timer_compare;
+      if(!BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_DECODER)) { ignitionSchedule8.endCompare = ignitionSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+      SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.startCompare);
+      ignitionSchedule8.Status = PENDING; //Turn this schedule on
+      ignitionSchedule8.schedulesSet++;
+      interrupts();
+    }
     IGN8_TIMER_ENABLE();
   }
   else
@@ -794,11 +879,19 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     {
       ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(timeout);
       ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      //ignitionSchedule8.hasNextSchedule = true;
-      BIT_SET(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT);
+      BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT);
     }
   }
+  if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule8.ignRptCnt <= 3))
+  {
+    if (ignitionSchedule8.ignRptCnt >=1)
+    { ignitionSchedule8.repeatStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else
+    { ignitionSchedule8.repeatStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    ignitionSchedule8.repeatEndCompare = ignitionSchedule8.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+  }
 }
+#endif
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
@@ -1145,43 +1238,38 @@ static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule1.EndCallback();
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.schedulesSet = 0;
-      //ignitionSchedule1.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
-
+      if (ignitionSchedule1.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule1.ignRptCnt = 0; }
+      
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN1_COMPARE, IGN1_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule1.endCompare = (uint16_t)(IGN1_COMPARE + ignRptDur);
+        SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.repeatStartCompare);
+        ignitionSchedule1.endCompare = ignitionSchedule1.repeatEndCompare;
         ignitionSchedule1.Status = PENDING;
         ignitionSchedule1.schedulesSet = 1;
-        //ignitionSchedule1.endScheduleSetByDecoder = true;
-        //ignitionSchedule1.outputHadRepeated = true;
-        //ignitionSchedule1.hasNextSchedule = false;
+        ignitionSchedule1.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule1.hasNextSchedule == true)
-      else if (BIT_SET(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if (BIT_CHECK(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.nextStartCompare);
         ignitionSchedule1.Status = PENDING;
         ignitionSchedule1.schedulesSet = 1;
-        //ignitionSchedule1.hasNextSchedule = false;
-        //ignitionSchedule1.outputHadRepeated = false;
+        ignitionSchedule1.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN1_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN1_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule1.ignRptCnt = 0; }
     }
     else if (ignitionSchedule1.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN1_TIMER_DISABLE();
-      //ignitionSchedule1.outputHadRepeated = false;
       ignitionSchedule1.scheduleFlags = 0;
+      ignitionSchedule1.ignRptCnt = 0;
     }
   }
 #endif
@@ -1206,43 +1294,38 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule2.EndCallback();
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.schedulesSet = 0;
-      //ignitionSchedule2.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule2.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule2.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN2_COMPARE, IGN2_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule2.endCompare = (uint16_t)(IGN2_COMPARE + ignRptDur);
+        SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.repeatStartCompare);
+        ignitionSchedule2.endCompare = ignitionSchedule2.repeatEndCompare;
         ignitionSchedule2.Status = PENDING;
         ignitionSchedule2.schedulesSet = 1;
-        //ignitionSchedule2.endScheduleSetByDecoder = true;
-        //ignitionSchedule2.outputHadRepeated = true;
-        //ignitionSchedule2.hasNextSchedule = false;
+        ignitionSchedule2.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule2.hasNextSchedule == true)
       else if (BIT_SET(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.nextStartCompare);
         ignitionSchedule2.Status = PENDING;
         ignitionSchedule2.schedulesSet = 1;
-        //ignitionSchedule2.hasNextSchedule = false;
-        //ignitionSchedule2.outputHadRepeated = false;
+        ignitionSchedule2.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN2_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN2_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule2.ignRptCnt = 0; }
     }
     else if (ignitionSchedule2.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN2_TIMER_DISABLE();
-      //ignitionSchedule2.outputHadRepeated = false;
       ignitionSchedule2.scheduleFlags = 0;
+      ignitionSchedule2.ignRptCnt = 0;
     }
   }
 #endif
@@ -1260,50 +1343,45 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
       if(BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.endCompare); }
-      else { SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration) ); } //Doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule3.Status == RUNNING)
     {
       ignitionSchedule3.EndCallback();
       ignitionSchedule3.Status = OFF; //Turn off the schedule
       ignitionSchedule3.schedulesSet = 0;
-      //ignitionSchedule3.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule3.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule3.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule3.endCompare = (uint16_t)(IGN3_COMPARE + ignRptDur);
+        SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.repeatStartCompare);
+        ignitionSchedule3.endCompare = ignitionSchedule3.repeatEndCompare;
         ignitionSchedule3.Status = PENDING;
         ignitionSchedule3.schedulesSet = 1;
-        //ignitionSchedule3.endScheduleSetByDecoder = true;
-        //ignitionSchedule3.outputHadRepeated = true;
-        //ignitionSchedule3.hasNextSchedule = false;
+        ignitionSchedule3.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule3.hasNextSchedule == true)
       else if (BIT_SET(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.nextStartCompare);
         ignitionSchedule3.Status = PENDING;
         ignitionSchedule3.schedulesSet = 1;
-        //ignitionSchedule3.hasNextSchedule = false;
-        //ignitionSchedule3.outputHadRepeated = false;
+        ignitionSchedule3.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN3_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else { IGN3_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule3.ignRptCnt = 0; }
     }
     else if (ignitionSchedule3.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN3_TIMER_DISABLE();
-      //ignitionSchedule3.outputHadRepeated = false;
       ignitionSchedule3.scheduleFlags = 0;
+      ignitionSchedule3.ignRptCnt = 0;
     }
   }
 #endif
@@ -1321,50 +1399,45 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
       if(BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.endCompare); }
-      else { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration) ); } //Doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
       ignitionSchedule4.EndCallback();
       ignitionSchedule4.Status = OFF; //Turn off the schedule
       ignitionSchedule4.schedulesSet = 0;
-      //ignitionSchedule4.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule4.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule4.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule4.endCompare = (uint16_t)(IGN4_COMPARE + ignRptDur);
+        SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.repeatStartCompare);
+        ignitionSchedule4.endCompare = ignitionSchedule4.repeatEndCompare;
         ignitionSchedule4.Status = PENDING;
         ignitionSchedule4.schedulesSet = 1;
-        //ignitionSchedule4.endScheduleSetByDecoder = true;
-        //ignitionSchedule4.outputHadRepeated = true;
-        //ignitionSchedule4.hasNextSchedule = false;
+        ignitionSchedule4.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule4.hasNextSchedule == true)
       else if (BIT_SET(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.nextStartCompare);
         ignitionSchedule4.Status = PENDING;
         ignitionSchedule4.schedulesSet = 1;
-        //ignitionSchedule4.hasNextSchedule = false;
-        //ignitionSchedule4.outputHadRepeated = false;
+        ignitionSchedule4.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN4_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else { IGN4_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule4.ignRptCnt = 0; }
     }
     else if (ignitionSchedule4.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN4_TIMER_DISABLE();
-      //ignitionSchedule4.outputHadRepeated = false;
       ignitionSchedule4.scheduleFlags = 0;
+      ignitionSchedule4.ignRptCnt = 0;
     }
   }
 #endif
@@ -1382,50 +1455,45 @@ static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
       if(BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.endCompare); }
-      else { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
       ignitionSchedule5.EndCallback();
       ignitionSchedule5.Status = OFF; //Turn off the schedule
       ignitionSchedule5.schedulesSet = 0;
-      //ignitionSchedule5.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule5.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule5.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule5.endCompare = (uint16_t)(IGN5_COMPARE + ignRptDur);
+        SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.repeatStartCompare);
+        ignitionSchedule5.endCompare = ignitionSchedule5.repeatEndCompare;
         ignitionSchedule5.Status = PENDING;
         ignitionSchedule5.schedulesSet = 1;
-        //ignitionSchedule5.endScheduleSetByDecoder = true;
-        //ignitionSchedule5.outputHadRepeated = true;
-        //ignitionSchedule5.hasNextSchedule = false;
+        ignitionSchedule5.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule5.hasNextSchedule == true)
-      else if (BIT_SET(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if (BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.nextStartCompare);
         ignitionSchedule5.Status = PENDING;
         ignitionSchedule5.schedulesSet = 1;
-        //ignitionSchedule5.hasNextSchedule = false;
-        //ignitionSchedule5.outputHadRepeated = false;
+        ignitionSchedule5.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN5_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN5_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule5.ignRptCnt = 0; }
     }
     else if (ignitionSchedule5.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN5_TIMER_DISABLE();
-      //ignitionSchedule5.outputHadRepeated = false;
       ignitionSchedule5.scheduleFlags = 0;
+      ignitionSchedule5.ignRptCnt = 0;
     }
   }
 #endif
@@ -1443,50 +1511,45 @@ static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule6.startTime = micros();
       if(BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.endCompare); }
-      else { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
       ignitionSchedule6.EndCallback();
       ignitionSchedule6.Status = OFF; //Turn off the schedule
       ignitionSchedule6.schedulesSet = 0;
-      //ignitionSchedule6.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule6.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule6.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule6.endCompare = (uint16_t)(IGN6_COMPARE + ignRptDur);
+        SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.repeatStartCompare);
+        ignitionSchedule6.endCompare = ignitionSchedule6.repeatEndCompare;
         ignitionSchedule6.Status = PENDING;
         ignitionSchedule6.schedulesSet = 1;
-        //ignitionSchedule6.endScheduleSetByDecoder = true;
-        //ignitionSchedule6.outputHadRepeated = true;
-        //ignitionSchedule6.hasNextSchedule = false;
+        ignitionSchedule6.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule6.hasNextSchedule == true)
-      else if (BIT_SET(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if(BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.nextStartCompare);
         ignitionSchedule6.Status = PENDING;
         ignitionSchedule6.schedulesSet = 1;
-        //ignitionSchedule6.hasNextSchedule = false;
-        //ignitionSchedule6.outputHadRepeated = false;
+        ignitionSchedule6.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN6_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN6_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule6.ignRptCnt = 0; }
     }
     else if (ignitionSchedule6.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN6_TIMER_DISABLE();
-      //ignitionSchedule6.outputHadRepeated = false;
       ignitionSchedule6.scheduleFlags = 0;
+      ignitionSchedule6.ignRptCnt = 0;
     }
   }
 #endif
@@ -1504,50 +1567,45 @@ static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule7.startTime = micros();
       if(BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.endCompare); }
-      else { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
       ignitionSchedule7.EndCallback();
       ignitionSchedule7.Status = OFF; //Turn off the schedule
       ignitionSchedule7.schedulesSet = 0;
-      //ignitionSchedule7.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule7.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule7.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule7.endCompare = (uint16_t)(IGN7_COMPARE + ignRptDur);
+        SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.repeatStartCompare);
+        ignitionSchedule7.endCompare = ignitionSchedule7.repeatEndCompare;
         ignitionSchedule7.Status = PENDING;
         ignitionSchedule7.schedulesSet = 1;
-        //ignitionSchedule7.endScheduleSetByDecoder = true;
-        //ignitionSchedule7.outputHadRepeated = true;
-        //ignitionSchedule7.hasNextSchedule = false;
+        ignitionSchedule7.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule7.hasNextSchedule == true)
-      else if (BIT_SET(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if(BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.nextStartCompare);
         ignitionSchedule7.Status = PENDING;
         ignitionSchedule7.schedulesSet = 1;
-        //ignitionSchedule7.hasNextSchedule = false;
-        //ignitionSchedule7.outputHadRepeated = false;
+        ignitionSchedule7.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN7_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN7_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule7.ignRptCnt = 0; }
     }
     else if (ignitionSchedule7.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN7_TIMER_DISABLE();
-      //ignitionSchedule7.outputHadRepeated = false;
       ignitionSchedule7.scheduleFlags = 0;
+      ignitionSchedule7.ignRptCnt = 0;
     }
   }
 #endif
@@ -1565,50 +1623,45 @@ static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply 
       ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule8.startTime = micros();
       if(BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_DECODER)) { SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.endCompare); }
-      else { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration) ); } //Doing this here prevents a potential overflow on restarts
+      else { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {
       ignitionSchedule8.EndCallback();
       ignitionSchedule8.Status = OFF; //Turn off the schedule
       ignitionSchedule8.schedulesSet = 0;
-      //ignitionSchedule8.endScheduleSetByDecoder = false;
       BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_DECODER);
       ignitionCount += 1; //Increment the ignition counter
+      if (ignitionSchedule8.ignRptCnt >= 3) { (BIT_SET(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED)); ignitionSchedule8.ignRptCnt = 0; }
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(configPage4.sparkDur * 100));
-        ignitionSchedule8.endCompare = (uint16_t)(IGN8_COMPARE + ignRptDur);
+        SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.repeatStartCompare);
+        ignitionSchedule8.endCompare = ignitionSchedule8.repeatEndCompare;
         ignitionSchedule8.Status = PENDING;
         ignitionSchedule8.schedulesSet = 1;
-        //ignitionSchedule8.endScheduleSetByDecoder = true;
-        //ignitionSchedule8.outputHadRepeated = true;
-        //ignitionSchedule8.hasNextSchedule = false;
+        ignitionSchedule8.ignRptCnt += 1;
         BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_SET(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_DECODER);
-        BIT_SET(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
       //If there is a next schedule queued up, activate it
-      //else if(ignitionSchedule8.hasNextSchedule == true)
-      else if (BIT_SET(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT))
+      else if(BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT))
       {
         SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.nextStartCompare);
         ignitionSchedule8.Status = PENDING;
         ignitionSchedule8.schedulesSet = 1;
-        //ignitionSchedule8.hasNextSchedule = false;
-        //ignitionSchedule8.outputHadRepeated = false;
+        ignitionSchedule8.ignRptCnt = 0;
         BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN8_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED); }
+      else{ IGN8_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule8.ignRptCnt = 0; }
     }
     else if (ignitionSchedule8.Status == OFF)
     {
       //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
       IGN8_TIMER_DISABLE();
-      //ignitionSchedule8.outputHadRepeated = false;
       ignitionSchedule8.scheduleFlags = 0;
+      ignitionSchedule8.ignRptCnt = 0;
     }
   }
 #endif

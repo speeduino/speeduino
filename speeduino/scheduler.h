@@ -177,11 +177,13 @@ struct Schedule {
 
   COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE repeatStartCompare;
+  COMPARE_TYPE repeatEndCompare;
   volatile byte scheduleFlags;        ///< All flags used in the scheduler
-
-//  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
-//  volatile bool endScheduleSetByDecoder = false;
-//  volatile bool outputHadRepeated = false;
+  volatile byte ignRptCnt;
+  // volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
+  // volatile bool endScheduleSetByDecoder = false;
+  // volatile bool outputHadRepeated = false;
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
