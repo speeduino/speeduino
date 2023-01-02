@@ -63,7 +63,6 @@ void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
 
 inline void resetDecoderState();
-inline bool isDecoderStalled();
 
 //All of the below are the 6 required functions for each decoder / pattern
 void triggerSetup_missingTooth(void);
@@ -277,6 +276,26 @@ extern uint16_t ignition7EndTooth;
 extern uint16_t ignition8EndTooth;
 
 extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
+
+/**
+ * Returns true if the decoder has stalled. Returns false if the decoder has not stalled.
+ * Stalling is determined by looking at how long ago the last tooth was seen.
+ * The delay varies between decoders and can change from tooth to tooth.
+ * This function must always be called with interrupts disabled
+ */
+inline bool isDecoderStalled() {
+  bool decoderStalled;
+
+  uint32_t timeToLastTooth = (MICROS_SAFE_OR_TEST_INJECTION - toothLastToothTime);
+  if ( timeToLastTooth > MAX_STALL_TIME ) {
+    decoderStalled = true;
+  }
+  else {
+    decoderStalled = false;
+  }
+
+  return decoderStalled;
+}
 
 //Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
 #define LONG 0;

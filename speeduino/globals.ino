@@ -3,6 +3,11 @@
  */
 #include "globals.h"
 
+#ifdef UNIT_TEST
+  unsigned long micros_safe_injection;
+  unsigned long micros_injection;
+#endif
+
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. (outdated ?)
