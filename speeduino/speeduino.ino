@@ -153,6 +153,22 @@ void loop(void)
         if (currentCommand == 'T') { legacySerialCommand(); }
       }
 
+      //Check for fuel injector flow test. Requires no sync or would be in main loop.
+      if(!currentStatus.hasSync && FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+        // If there is pulses left to send and current schedule is not pending or running 
+        // The check for schedule status if to avoid pulse overlap and ensure each pulse is
+        // actually sent. Overall test time is not a factor for the injector flow rate
+        // calculation in TS so it is less important that pulses are immediately back-to-back.
+        if(FUEL_INJECTOR_FLOW_TEST_PULSES > 0 && (fuelSchedule1.Status == OFF)){
+          //Set the scheduled pulse
+          setFuelSchedule1(FUEL_INJECTOR_FLOW_TEST_OFFPW, FUEL_INJECTOR_FLOW_TEST_ONPW);
+          //Decrement remaining pulses
+          FUEL_INJECTOR_FLOW_TEST_PULSES--;
+        } else if(FUEL_INJECTOR_FLOW_TEST_PULSES == 0){
+            FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+        }
+      }
+
       //Check for any CAN comms requiring action 
       #if defined(CANSerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.

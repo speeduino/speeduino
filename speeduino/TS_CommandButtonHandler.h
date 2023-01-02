@@ -59,6 +59,7 @@
 
 #define TS_CMD_INJ_DT_MIN 1024
 #define TS_CMD_INJ_DT_MAX 1278
+#define TS_CMD_INJ_FT     1280
 
 #define TS_CMD_STM32_REBOOT     12800
 #define TS_CMD_STM32_BOOTLOADER 12801
@@ -75,3 +76,4 @@
 
 /* the maximum id number is 65,535 */
 void TS_CommandButtonsHandler(uint16_t buttonCommand);
+void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams);

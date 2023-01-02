@@ -123,10 +123,18 @@ void legacySerialCommand(void)
         byte cmdValue = Serial.read();
         uint16_t cmdCombined = word(cmdGroup, cmdValue);
 
-        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_INJ_DT_MAX)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
+        if ( ((cmdCombined >= TS_CMD_INJ1_ON) && (cmdCombined <= TS_CMD_INJ_FT)) || (cmdCombined == TS_CMD_TEST_ENBL) || (cmdCombined == TS_CMD_TEST_DSBL) )
         {
           //Hardware test buttons
-          if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
+          if(currentStatus.RPM == 0 && cmdCombined == TS_CMD_INJ_FT){
+            word flowTestParams[3];
+            for(int i = 0; i < 3; i++){
+              byte lowByteRecv = Serial.read();
+              byte highByteRecv = Serial.read();
+              flowTestParams[i] = word(highByteRecv, lowByteRecv);
+            }
+            TS_CommandButtonsHandler(cmdCombined, flowTestParams);
+          } else if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
           cmdPending = false;
         }
         else if( (cmdCombined >= TS_CMD_VSS_60KMH) && (cmdCombined <= TS_CMD_VSS_RATIO6) )

@@ -123,6 +123,11 @@ int ignition6EndAngle = 0;
 int ignition7EndAngle = 0;
 int ignition8EndAngle = 0;
 
+uint16_t FUEL_INJECTOR_FLOW_TEST_PULSES = 0;
+unsigned long FUEL_INJECTOR_FLOW_TEST_ONPW = 0;
+unsigned long FUEL_INJECTOR_FLOW_TEST_OFFPW = 0;
+bool FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+
 //These are variables used across multiple files
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming

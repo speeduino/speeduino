@@ -25,13 +25,13 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
   //Special case because making 255 cases for injector deadtime would be tedious
   if((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX)){
-    uint16_t injectorRunTime = ((buttonCommand & 0x00FF)*100); //Stored in us
-
-    setFuelSchedule1(40030,injectorRunTime);
-    setFuelSchedule1(40030,injectorRunTime);
-    setFuelSchedule1(40030,injectorRunTime);
-    setFuelSchedule1(40030,injectorRunTime);
-    setFuelSchedule1(40030,injectorRunTime);
+    if(BIT_CHECK(currentStatus.testOutputs, 1) && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+      unsigned long injectorRunTime = ((buttonCommand & 0x00FF) * 100); //Stored in uS
+      FUEL_INJECTOR_FLOW_TEST_PULSES = 5;
+      FUEL_INJECTOR_FLOW_TEST_ONPW = injectorRunTime;
+      FUEL_INJECTOR_FLOW_TEST_OFFPW = ((MAX_TIMER_PERIOD-1) - injectorRunTime);
+      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
+    }
   }
   switch (buttonCommand)
   {
@@ -375,5 +375,17 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 
     default:
       break;
+  }
+}
+void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
+  if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+    if(BIT_CHECK(currentStatus.testOutputs, 1)){
+      //Extract parameters
+      FUEL_INJECTOR_FLOW_TEST_PULSES = injectorTestParams[0];     
+      FUEL_INJECTOR_FLOW_TEST_ONPW  = (injectorTestParams[1]*100);
+      FUEL_INJECTOR_FLOW_TEST_OFFPW = (injectorTestParams[2]*100);
+      //Start test
+      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
+    }
   }
 }
