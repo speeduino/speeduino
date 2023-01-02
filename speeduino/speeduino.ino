@@ -179,12 +179,6 @@ void loop(void)
             }
           }
       #endif
-          
-    if(currentLoopTime > micros_safe())
-    {
-      //Occurs when micros() has overflowed
-      deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
-    }
 
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
@@ -301,7 +295,7 @@ void loop(void)
       // Air conditioning control
       airConControl();
 
-      //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
+      //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() - lastEEPROMDeferTime > EEPROM_DEFER_DELAY)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
       
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
@@ -334,7 +328,7 @@ void loop(void)
       #endif
 
       //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() - lastEEPROMDeferTime > EEPROM_DEFER_DELAY)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
