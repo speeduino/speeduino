@@ -289,7 +289,7 @@ inline void resetDecoderState() {
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
   currentStatus.startRevolutions = 0;
   triggerToothAngle = 0;
-  triggerToothAngleIsCorrect = false;
+  BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   revolutionTime = 0;
   MAX_STALL_TIME = 500000UL; // Default 0,5 seconds
 
