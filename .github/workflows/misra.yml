@@ -20,9 +20,10 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v3
 
-    - name: Install cppcheck
+    - name: Install cppcheck, dos2unix
       run: |
         sudo apt-get install cppcheck
+        sudo apt-get install dos2unix
 
     - name: Run MISRA scan
       continue-on-error: true
