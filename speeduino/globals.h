@@ -216,7 +216,7 @@
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary. Only used for comms/external devices. Firmware use replaced by decoderSyncedResolution
+#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary. Only used for comms/external devices. Firmware use replaced by decoderSync
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
