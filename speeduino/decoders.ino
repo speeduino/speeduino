@@ -221,7 +221,7 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
 
-  if( decoderSyncedResolution > 0 )
+  if( decoderSyncedResolution > DSR_NO_SYNC )
   {
     if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.startRevolutions == 0) ) { tempRPM = 0; } //Prevents crazy RPM spike when there has been less than 1 full revolution
     else if( (toothOneTime == 0) || (toothOneMinusOneTime == 0) ) { tempRPM = 0; }
@@ -263,7 +263,7 @@ For a missing tooth wheel, this is the number if the tooth had NOT been missing 
 static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
   uint16_t tempRPM = 0;
-  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (decoderSyncedResolution > 0) )
+  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (decoderSyncedResolution > DSR_NO_SYNC) )
   {
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
