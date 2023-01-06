@@ -20,6 +20,7 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "maths.h"
 #include "errors.h"
 #include "utilities.h"
+#include "comms.h"
 
 uint8_t currentsecondserialCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
@@ -203,7 +204,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
           }
     #endif
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-syncStatusForComms() ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark
 
 #if defined(CANSerial_AVAILABLE)
   byte fullStatus[NEW_CAN_PACKET_SIZE];    // this must be set to the maximum number of data fullstatus must read in

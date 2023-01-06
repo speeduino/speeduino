@@ -903,7 +903,7 @@ void generateLiveValues(uint16_t offset, uint16_t packetLength)
   if(requestCount == 0) { currentStatus.secl = 0; }
   requestCount++;
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-syncStatusForComms() ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable
 
   serialPayload[0] = SERIAL_RC_OK;
   for(byte x=0; x<packetLength; x++)
@@ -913,6 +913,25 @@ void generateLiveValues(uint16_t offset, uint16_t packetLength)
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
+}
+
+// Returns sync-status and sets half-sync status. Only used for comms.
+bool syncStatusForComms(void) {
+  bool hasFullSync = false;
+
+  if ( configPage4.sparkMode == IGN_MODE_SEQUENTIAL || configPage2.injLayout == INJ_SEQUENTIAL ) {
+    if      ( decoderSync == DS_4STROKE_CYCLE ) { hasFullSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
+    else if ( decoderSync == DS_REVOLUTION    ) { hasFullSync = false; BIT_SET  (currentStatus.status3, BIT_STATUS3_HALFSYNC); } 
+    else                                        { hasFullSync = false; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
+  }
+  else if (decoderSync > DS_NO_SYNC) {
+    hasFullSync = true; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+  }
+  else {
+    hasFullSync = false; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+  }
+
+  return hasFullSync;
 }
 
 namespace 

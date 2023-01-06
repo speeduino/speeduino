@@ -239,19 +239,6 @@ void loop(void)
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
-    // Update legacy variables for comms
-    if ( configPage4.sparkMode == IGN_MODE_SEQUENTIAL || configPage2.injLayout == INJ_SEQUENTIAL ) {
-      if      ( decoderSync == DS_4STROKE_CYCLE ) { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
-      else if ( decoderSync == DS_REVOLUTION    ) { currentStatus.hasSync = false; BIT_SET  (currentStatus.status3, BIT_STATUS3_HALFSYNC); } 
-      else                                                     { currentStatus.hasSync = false; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
-    }
-    else if (decoderSync > DS_NO_SYNC) {
-      currentStatus.hasSync = true; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
-    }
-    else {
-      currentStatus.hasSync = false; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
-    }
-
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readMAP();  
