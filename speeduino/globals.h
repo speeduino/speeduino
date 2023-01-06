@@ -642,7 +642,7 @@ extern volatile byte LOOP_TIMER;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
-  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino). Legacy, remove when possible. Replaced by decoderSyncedResolution
+  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino). Legacy, remove when possible. Replaced by decoderSync
     This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)

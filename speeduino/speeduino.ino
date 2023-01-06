@@ -207,7 +207,7 @@ void loop(void)
       toothLastToothTime = 0;
       toothLastSecToothTime = 0;
       //toothLastMinusOneToothTime = 0;
-      decoderSyncedResolution = DSR_NO_SYNC;
+      decoderSync = DS_NO_SYNC;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       currentStatus.startRevolutions = 0;
       toothSystemCount = 0;
@@ -241,11 +241,11 @@ void loop(void)
 
     // Update legacy variables for comms
     if ( configPage4.sparkMode == IGN_MODE_SEQUENTIAL || configPage2.injLayout == INJ_SEQUENTIAL ) {
-      if      ( decoderSyncedResolution == DSR_4STROKE_CYCLE ) { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
-      else if ( decoderSyncedResolution == DSR_REVOLUTION    ) { currentStatus.hasSync = false; BIT_SET  (currentStatus.status3, BIT_STATUS3_HALFSYNC); } 
+      if      ( decoderSync == DS_4STROKE_CYCLE ) { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
+      else if ( decoderSync == DS_REVOLUTION    ) { currentStatus.hasSync = false; BIT_SET  (currentStatus.status3, BIT_STATUS3_HALFSYNC); } 
       else                                                     { currentStatus.hasSync = false; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); }
     }
-    else if (decoderSyncedResolution > DSR_NO_SYNC) {
+    else if (decoderSync > DS_NO_SYNC) {
       currentStatus.hasSync = true; BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
     }
     else {
@@ -473,7 +473,7 @@ void loop(void)
 
     //Always check for sync
     //Main loop runs within this clause
-    if (decoderSyncedResolution > DSR_NO_SYNC && (currentStatus.RPM > 0))
+    if (decoderSync > DS_NO_SYNC && (currentStatus.RPM > 0))
     {
         if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //Check whether running or cranking
@@ -668,7 +668,7 @@ void loop(void)
           //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
 
-          if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+          if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
           {
             if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
@@ -694,7 +694,7 @@ void loop(void)
           }
           else
           {
-            if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+            if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
           }
           break;
         //5 cylinders
@@ -715,7 +715,7 @@ void loop(void)
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
           
           #if INJ_CHANNELS >= 6
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
             {
             if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
@@ -735,7 +735,7 @@ void loop(void)
             }
             else
             {
-              if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+              if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
             }
           #endif
           break;
@@ -752,7 +752,7 @@ void loop(void)
           injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees);
 
           #if INJ_CHANNELS >= 8
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
             {
               if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
 
@@ -775,7 +775,7 @@ void loop(void)
             }
             else
             {
-              if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+              if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
             }
 
           #endif
@@ -1573,7 +1573,7 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle2(dwellAngle);
 
       #if IGN_CHANNELS >= 4
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
@@ -1591,7 +1591,7 @@ void calculateIgnitionAngles(int dwellAngle)
       }
       else
       {
-        if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+        if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;
@@ -1610,7 +1610,7 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle3(dwellAngle);
 
       #if IGN_CHANNELS >= 6
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
@@ -1620,7 +1620,7 @@ void calculateIgnitionAngles(int dwellAngle)
       }
       else
       {
-        if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+        if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;
@@ -1632,7 +1632,7 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle4(dwellAngle);
 
       #if IGN_CHANNELS >= 8
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSyncedResolution == DSR_4STROKE_CYCLE)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && decoderSync == DS_4STROKE_CYCLE)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(); }
 
@@ -1643,7 +1643,7 @@ void calculateIgnitionAngles(int dwellAngle)
       }
       else
       {
-        if( decoderSyncedResolution == DSR_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
+        if( decoderSync == DS_REVOLUTION && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(); }
       }
       #endif
       break;
