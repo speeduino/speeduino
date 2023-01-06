@@ -216,7 +216,7 @@
 #define BIT_STATUS3_NITROUS       1
 #define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
+#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary. Only used for comms/external devices. Firmware use replaced by decoderSyncedResolution
 #define BIT_STATUS3_NSQUIRTS1     5
 #define BIT_STATUS3_NSQUIRTS2     6
 #define BIT_STATUS3_NSQUIRTS3     7
@@ -642,7 +642,7 @@ extern volatile byte LOOP_TIMER;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
-  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
+  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino). Legacy, remove when possible. Replaced by decoderSyncedResolution
     This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
