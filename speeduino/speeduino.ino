@@ -205,6 +205,7 @@ void loop(void)
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
       toothLastToothTime = 0;
+      lastGap = 0;
       toothLastSecToothTime = 0;
       currentStatus.hasSync = false;
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
