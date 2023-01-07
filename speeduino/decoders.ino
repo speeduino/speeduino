@@ -4407,11 +4407,11 @@ void triggerSec_NGC68(void)
 
   if ( curGap2 > triggerSecFilterTime )
   {
-    if ( toothLastSecToothTime > 0 && toothLastToothTime > 0 && toothLastMinusOneToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
+    if ( toothLastSecToothTime > 0 && lastGap > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
     {
       /* Cam wheel can have a single tooth in a group which can screw up the "targetgap" calculations
          Instead use primary wheel tooth gap as comparison as those values are always correct. 2.1 primary teeth are the same duration as one secondary tooth. */
-      if (curGap2 >= (3 * (toothLastToothTime - toothLastMinusOneToothTime) ) ) // Check if we have a bigger gap, that is missing teeth
+      if (curGap2 >= lastGap * 3 ) // Check if we have a bigger gap, that is missing teeth
       {
         //toothSystemCount > 0 means we have cam sync and identifies which group we have synced with
         //toothAngles is reused to store the cam pattern
@@ -4637,7 +4637,7 @@ void triggerPri_Vmax(void)
             triggerToothAngle = 70;
             setFilter(curGap);//Angle to this tooth is 70, next is in 70. No need to compensate.
           }
-          toothLastMinusOneToothTime = toothLastToothTime;
+          if (toothLastToothTime > 0) { lastGap = curGap; }
           toothLastToothTime = curTime;
           if (triggerFilterTime > 50000){//The first pulse seen 
             triggerFilterTime = 0;
@@ -4697,13 +4697,13 @@ uint16_t getRPM_Vmax(void)
     {
       int tempToothAngle;
       unsigned long toothTime;
-      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
+      if ( lastGap == 0 ) { tempRPM = 0; }
       else
       {
         noInterrupts();
         tempToothAngle = triggerToothAngle;
         revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); 
+        toothTime = lastGap; 
         interrupts();
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
