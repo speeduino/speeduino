@@ -81,7 +81,7 @@ volatile unsigned long triggerFilterTime; // The shortest time (in uS) that puls
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 
 volatile uint8_t decoderState = 0;
-volatile byte decoderSync; // When sync is achieved, this is set to how accurate the sync is. 0 = no sync, 360 = every rotation, 720 = every 4-stroke cycle. // TODO: What to set for per ignition event accuracy? // TODO: Maybe make this an enum?
+volatile decoderSync_t decoderSync; // If sync is achieved and the resolution of that sync
 
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth

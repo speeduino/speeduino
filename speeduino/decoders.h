@@ -45,12 +45,14 @@
 #define BIT_DECODER_TOOTH_ANG_CORRECT   6 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 
 // Decoder Synced Resolution
-#define DS_NO_SYNC       0 // No sync
-//#define DS_CYLINDER      1 // Per cylinder, normally basic distributor / degrees varies depending on cylinder count, 144 for 5 cylinder (720/5) (not in use)
-#define DS_REVOLUTION    2 // Per crankshaft revolution / 360 degrees
-#define DS_4STROKE_CYCLE 3 // Per 4-stroke cycle / 720 degrees
-//#define DS_WANKEL_CYCLE  4 // Per wankel cycle / 1080 degrees (not in use)
-extern volatile byte decoderSync;
+enum decoderSync_t : byte {
+  DS_NO_SYNC        = 0, // No sync
+  //DS_CYLINDER     = 1, // Per cylinder, normally basic distributor / degrees varies depending on cylinder count, 144 for 5 cylinder (720/5) (not in use)
+  DS_REVOLUTION     = 2, // Per crankshaft revolution / 360 degrees
+  DS_4STROKE_CYCLE  = 3, // Per 4-stroke cycle / 720 degrees
+  //DS_WANKEL_CYCLE = 4, // Per wankel cycle / 1080 degrees (not in use)
+};
+extern volatile decoderSync_t decoderSync;
 
 //220 bytes free
 extern volatile uint8_t decoderState;
