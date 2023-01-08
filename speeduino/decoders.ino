@@ -3723,6 +3723,8 @@ void triggerPri_420a(void)
     toothCurrentCount++; //Increment the tooth counter
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
+    if( lastGap == 0 ) { curGap = 0; }
+
     if( (toothCurrentCount > 16) && (currentStatus.hasSync == true) )
     {
       //Means a complete rotation has occurred.
