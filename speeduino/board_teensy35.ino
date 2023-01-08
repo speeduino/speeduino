@@ -23,7 +23,7 @@ void initBoard()
     ***********************************************************************************************************
     * Idle
     */
-    if ((configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL))
+    if ((configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
         //FlexTimer 2, compare channel 0 is used for idle
         FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -85,7 +85,7 @@ void initBoard()
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
 
     /*
@@ -385,6 +385,7 @@ void ftm2_isr(void)
 
 uint16_t freeRam()
 {
+    uint32_t freeRam;
     uint32_t stackTop;
     uint32_t heapTop;
 
@@ -395,9 +396,10 @@ uint16_t freeRam()
     void *hTop = malloc(1);
     heapTop = (uint32_t)hTop;
     free(hTop);
+    freeRam = stackTop - heapTop;
 
-    // The difference is the free, available ram.
-    return (uint16_t)stackTop - heapTop;
+    if(freeRam>0xFFFF){return 0xFFFF;}
+    else{return freeRam;}
 }
 
 //This function is used for attempting to set the RTC time during compile

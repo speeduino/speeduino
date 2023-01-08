@@ -17,7 +17,7 @@ void initBoard()
     */
 
     /*
-    Idle + Boost + VVT use the PIT timer. THIS IS ALSO USED BY THE INTERVALTIMER THAT CALLS THE 1MS LOW RES TIMER!
+    Idle + Boost + VVT use the PIT timer. THIS IS ALSO USED BY THE INTERVAL TIMER THAT CALLS THE 1MS LOW RES TIMER!
     This has 4 channels that don't have compare registers, but will run for a period of time and then fire an interrupt
     The clock for these is set to 24Mhz and a prescale of 48 is used to give a 2uS tick time
     Set Prescaler
@@ -26,7 +26,7 @@ void initBoard()
       * 48 * 1000000uS / PER_clock = 2uS
     */
     CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_CLK_SEL; // 24MHz
-    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b110000); //Prescale to 48
+    CCM_CSCMR1 |= CCM_CSCMR1_PERCLK_PODF(0b101111); //Prescale to 48
 
     attachInterruptVector(IRQ_PIT, PIT_isr);
     NVIC_ENABLE_IRQ(IRQ_PIT);
@@ -35,11 +35,12 @@ void initBoard()
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) )
+    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
       PIT_TCTRL0 |= PIT_TCTRL_TEN; // start Timer 1
+      PIT_LDVAL0 = 1; //1 * 2uS = 2uS
     }
 
     /*
@@ -57,11 +58,25 @@ void initBoard()
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
+    if (configPage6.boostEnabled == 1)
+    {
+      PIT_TCTRL1 = 0;
+      PIT_TCTRL1 |= PIT_TCTRL_TIE; // enable Timer 2 interrupts
+      PIT_TCTRL1 |= PIT_TCTRL_TEN; // start Timer 2
+      PIT_LDVAL1 = 1; //1 * 2uS = 2uS
+    }
+    if (configPage6.vvtEnabled == 1)
+    {
+      PIT_TCTRL2 = 0;
+      PIT_TCTRL2 |= PIT_TCTRL_TIE; // enable Timer 3 interrupts
+      PIT_TCTRL2 |= PIT_TCTRL_TEN; // start Timer 3
+      PIT_LDVAL2 = 1; //1 * 2uS = 2uS
+    }
 
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
     fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
 
@@ -190,10 +205,10 @@ void PIT_isr()
   bool interrupt3 = (PIT_TFLG2 & PIT_TFLG_TIF);
   bool interrupt4 = (PIT_TFLG3 & PIT_TFLG_TIF);
 
-  if(interrupt1)      { PIT_TFLG0 = 1;}
-  else if(interrupt2) { PIT_TFLG1 = 1;}
-  else if(interrupt3) { PIT_TFLG2 = 1;}
-  else if(interrupt4) { oneMSInterval(); PIT_TFLG3 = 1;}
+  if(interrupt1)      { PIT_TFLG0 = 1; idleInterrupt();  }
+  else if(interrupt2) { PIT_TFLG1 = 1; boostInterrupt(); }
+  else if(interrupt3) { PIT_TFLG2 = 1; vvtInterrupt();   }
+  else if(interrupt4) { PIT_TFLG3 = 1; oneMSInterval();  }
 }
 
 void TMR1_isr(void)
@@ -264,6 +279,12 @@ uint16_t freeRam()
 
     // The difference is the free, available ram.
     return (uint16_t)stackTop - heapTop;
+}
+
+//This function is used for attempting to set the RTC time during compile
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
 }
 
 void doSystemReset() { return; }

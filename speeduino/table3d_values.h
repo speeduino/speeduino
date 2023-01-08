@@ -31,9 +31,9 @@ public:
     }
 
     /** @brief Pointer to the end of the row */
-    inline const table3d_value_t* end() const { return pEnd; }
+    inline const table3d_value_t* end(void) const { return pEnd; }
     /** @copydoc table_row_iterator::end() const */
-    inline table3d_value_t* end() { return const_cast<table3d_value_t *>(pEnd); }
+    inline table3d_value_t* end(void) { return const_cast<table3d_value_t *>(pEnd); }
 
     /** @brief Advance the iterator
      * @param steps The number of elements to move the iterator
@@ -45,30 +45,30 @@ public:
     }
 
     /** @brief Increment the iterator by one element*/
-    inline table_row_iterator& operator++()
+    inline table_row_iterator& operator++(void)
     {
         return advance(1);
     }
 
     /** @brief Test for end of iteration */
-    inline bool at_end() const
+    inline bool at_end(void) const
     {
         return pValue == pEnd;
     }
 
     /** @brief Dereference the iterator */
-    inline const table3d_value_t& operator*() const
+    inline const table3d_value_t& operator*(void) const
     {
         return *pValue;
     }
     /** @copydoc table_row_iterator::operator*() const */
-    inline table3d_value_t& operator*()
+    inline table3d_value_t& operator*(void)
     {
         return *const_cast<table3d_value_t *>(pValue);
     }
 
     /** @brief Number of elements available */
-    inline table3d_dim_t size() const { return pEnd-pValue; }
+    inline table3d_dim_t size(void) const { return pEnd-pValue; }
 
 private:
     const table3d_value_t *pValue;
@@ -115,24 +115,24 @@ public:
     }
 
     /** @brief Increment the iterator by one \b row */
-    inline table_value_iterator& operator++()
+    inline table_value_iterator& operator++(void)
     {
         return advance(1);
     }
 
     /** @brief Dereference the iterator to access a row of data */
-    inline const table_row_iterator operator*() const
+    inline const table_row_iterator operator*(void) const
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }
     /** @copydoc table_value_iterator::operator*() const */
-    inline table_row_iterator operator*()
+    inline table_row_iterator operator*(void)
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }    
 
     /** @brief Test for end of iteration */
-    inline bool at_end() const
+    inline bool at_end(void) const
     {
         return pRowsStart == pRowsEnd;
     }
@@ -176,7 +176,7 @@ private:
          in 2 ways:<br> \
           1. Forcing uint8_t calculations. These are much faster than 16-bit calculations<br> \
           2. Compiling this per table *type*. This encodes the axis length as a constant \
-          thus allowing the optimizing compiler more opportunity. E.g. for axis lengths \
+          thus allowing the optimising compiler more opportunity. E.g. for axis lengths \
           that are a power of 2, the modulus can be optimised to add/multiply/shift - much \
           cheaper than calling a software division routine such as __udivmodqi4<br> \
          <br> \

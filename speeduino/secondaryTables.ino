@@ -2,7 +2,7 @@
 #include "secondaryTables.h"
 #include "corrections.h"
 
-void calculateSecondaryFuel()
+void calculateSecondaryFuel(void)
 {
   //If the secondary fuel table is in use, also get the VE value from there
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
@@ -11,7 +11,7 @@ void calculateSecondaryFuel()
     if(configPage10.fuel2Mode == FUEL2_MODE_MULTIPLY)
     {
       currentStatus.VE2 = getVE2();
-      //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100;
       if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
       else { currentStatus.VE = 255; }
@@ -76,7 +76,7 @@ void calculateSecondaryFuel()
 }
 
 
-void calculateSecondarySpark()
+void calculateSecondarySpark(void)
 {
   //Same as above but for the secondary ignition table
   BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
@@ -88,7 +88,7 @@ void calculateSecondarySpark()
       currentStatus.advance2 = getAdvance2();
       //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
       if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
-      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divded by 100
+      //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
       //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
       if(combinedAdvance <= 127) { currentStatus.advance = combinedAdvance; }
@@ -161,7 +161,7 @@ void calculateSecondarySpark()
  * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
  * @return byte 
  */
-byte getVE2()
+byte getVE2(void)
 {
   byte tempVE = 100;
   if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
@@ -172,7 +172,7 @@ byte getVE2()
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.fuelLoad2 = currentStatus.TPS;
+    currentStatus.fuelLoad2 = currentStatus.TPS * 2;
   }
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
@@ -190,7 +190,7 @@ byte getVE2()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance2()
+byte getAdvance2(void)
 {
   byte tempAdvance = 0;
   if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
@@ -201,7 +201,7 @@ byte getAdvance2()
   else if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad2 = currentStatus.TPS;
+    currentStatus.ignLoad2 = currentStatus.TPS * 2;
 
   }
   else if (configPage10.spark2Algorithm == LOAD_SOURCE_IMAPEMAP)
