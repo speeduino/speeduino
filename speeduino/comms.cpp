@@ -46,6 +46,14 @@ FastCRC32 CRC32_serial; //This instance of CRC32 is exclusively used on the comm
   uint8_t serialPayload[SERIAL_BUFFER_SIZE]; /**< Serial payload buffer. */
 #endif
 
+/**
+ * @brief      Flush all remaining bytes from the rx serial buffer
+ */
+void flushRXbuffer(void)
+{
+  while (Serial.available() > 0) { Serial.read(); }
+}
+
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 - cmdPending = If a command has started but is waiting on further data to complete
@@ -53,7 +61,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Comands are single byte (letter symbol) commands.
 */
-void parseSerial()
+void parseSerial(void)
 {
 
   //Check for an existing legacy command in progress
@@ -114,11 +122,13 @@ void parseSerial()
 
       //Test the CRC
       uint32_t receivedCRC = CRC32_serial.crc32(serialPayload, serialPayloadLength);
+
       //receivedCRC++;
       if(serialCRC != receivedCRC)
       {
         //CRC Error. Need to send an error message
         sendSerialReturnCode(SERIAL_RC_CRC_ERR);
+        flushRXbuffer();
       }
       else
       {
@@ -133,11 +143,7 @@ void parseSerial()
       //Timeout occurred
       serialReceivePending = false; //Reset the serial receive
 
-      //Flush the serial buffer
-      while(Serial.available() > 0)
-      {
-        Serial.read();
-      }
+      flushRXbuffer();
       sendSerialReturnCode(SERIAL_RC_TIMEOUT);
     } //Timeout
   } //Data in serial buffer and serial receive in progress
@@ -194,7 +200,7 @@ void sendSerialPayload(void *payload, uint16_t payloadLength)
   }
 }
 
-void continueSerialTransmission()
+void continueSerialTransmission(void)
 {
   if(serialWriteInProgress == true)
   {
@@ -225,7 +231,7 @@ void continueSerialTransmission()
   }
 }
 
-void processSerialCommand()
+void processSerialCommand(void)
 {
   currentCommand = serialPayload[0];
 
@@ -238,7 +244,9 @@ void processSerialCommand()
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      writeConfig(serialPayload[2]); //Read the table number and perform burn. Note that byte 1 in the array is unused
+      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
+      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      
       sendSerialReturnCode(SERIAL_RC_BURN_OK);
       break;
 
@@ -689,7 +697,7 @@ void processSerialCommand()
 
             
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
+            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
@@ -721,7 +729,7 @@ void processSerialCommand()
 
             
             ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-            pnt_TargetTable_bins[x] = (x * 32U);
+            pnt_TargetTable_bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
           }
           //Update the CRC
           calibrationCRC = CRC32.crc32(&serialPayload[7], 64);
@@ -935,7 +943,7 @@ namespace
 /** 
  * 
 */
-void sendToothLog(byte startOffset)
+void sendToothLog(uint8_t startOffset)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
@@ -1007,7 +1015,7 @@ void sendToothLog(byte startOffset)
   } 
 }
 
-void sendCompositeLog(byte startOffset)
+void sendCompositeLog(uint8_t startOffset)
 {
   if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (compositeLogSendInProgress == true) ) //Sanity check. Flagging system means this should always be true
   {

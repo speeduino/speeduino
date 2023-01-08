@@ -13,24 +13,24 @@
 #define SPEEDUINO_H
 //#include "globals.h"
 
-void setup();
-void loop();
+void setup(void);
+void loop(void);
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
-byte getVE1();
-byte getAdvance1();
+byte getVE1(void);
+byte getAdvance1(void);
 
-uint16_t calculateInjectorStartAngle(uint16_t, int16_t);
-void calculateIgnitionAngle1(int);
-void calculateIgnitionAngle2(int);
-void calculateIgnitionAngle3(int);
-void calculateIgnitionAngle3(int, int);
-void calculateIgnitionAngle4(int);
-void calculateIgnitionAngle4(int, int);
-void calculateIgnitionAngle5(int);
-void calculateIgnitionAngle6(int);
-void calculateIgnitionAngle7(int);
-void calculateIgnitionAngle8(int);
-void calculateIgnitionAngles(int);
+uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees);
+void calculateIgnitionAngle1(int dwellAngle);
+void calculateIgnitionAngle2(int dwellAngle);
+void calculateIgnitionAngle3(int dwellAngle);
+void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees);
+void calculateIgnitionAngle4(int dwellAngle);
+void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees);
+void calculateIgnitionAngle5(int dwellAngle);
+void calculateIgnitionAngle6(int dwellAngle);
+void calculateIgnitionAngle7(int dwellAngle);
+void calculateIgnitionAngle8(int dwellAngle);
+void calculateIgnitionAngles(int dwellAngle);
 
 extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
