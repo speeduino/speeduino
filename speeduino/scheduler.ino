@@ -544,11 +544,10 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule1.ignRptCnt <= 3))
   {
-    if (ignitionSchedule1.ignRptCnt >=1)
-    { ignitionSchedule1.repeatStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule1.repeatStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule1.repeatEndCompare = ignitionSchedule1.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule1.ignRptCnt >=1) { ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule1.nextStartCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule1.nextEndCompare = ignitionSchedule1.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 
@@ -603,11 +602,10 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule2.ignRptCnt <= 3))
   {
-    if (ignitionSchedule2.ignRptCnt >=1)
-    { ignitionSchedule2.repeatStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule2.repeatStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule2.repeatEndCompare = ignitionSchedule2.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule2.ignRptCnt >=1) { ignitionSchedule2.nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule2.nextStartCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule2.nextEndCompare = ignitionSchedule2.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -649,11 +647,10 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule3.ignRptCnt <= 3))
   {
-    if (ignitionSchedule3.ignRptCnt >=1)
-    { ignitionSchedule3.repeatStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule3.repeatStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule3.repeatEndCompare = ignitionSchedule3.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule3.ignRptCnt >=1) { ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule3.nextStartCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule3.nextEndCompare = ignitionSchedule3.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
@@ -696,11 +693,10 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule4.ignRptCnt <= 3))
   {
-    if (ignitionSchedule4.ignRptCnt >=1)
-    { ignitionSchedule4.repeatStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule4.repeatStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule4.repeatEndCompare = ignitionSchedule4.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule4.ignRptCnt >=1) { ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule4.nextStartCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule4.nextEndCompare = ignitionSchedule4.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 #if IGN_CHANNELS >= 5
@@ -743,11 +739,10 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule5.ignRptCnt <= 3))
   {
-    if (ignitionSchedule5.ignRptCnt >=1)
-    { ignitionSchedule5.repeatStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule5.repeatStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule5.repeatEndCompare = ignitionSchedule5.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule5.ignRptCnt >=1) { ignitionSchedule5.nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule5.nextStartCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule5.nextEndCompare = ignitionSchedule5.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 #endif
@@ -790,11 +785,10 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule6.ignRptCnt <= 3))
   {
-    if (ignitionSchedule6.ignRptCnt >=1)
-    { ignitionSchedule6.repeatStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule6.repeatStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule6.repeatEndCompare = ignitionSchedule6.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule6.ignRptCnt >=1) { ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule6.nextStartCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule6.nextEndCompare = ignitionSchedule6.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 #endif
@@ -837,11 +831,10 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule7.ignRptCnt <= 3))
   {
-    if (ignitionSchedule7.ignRptCnt >=1)
-    { ignitionSchedule7.repeatStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule7.repeatStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule7.repeatEndCompare = ignitionSchedule7.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule7.ignRptCnt >=1) { ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule7.nextStartCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+
+    ignitionSchedule7.nextEndCompare = ignitionSchedule7.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 #endif
@@ -884,11 +877,10 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
   }
   if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (ignitionSchedule8.ignRptCnt <= 3))
   {
-    if (ignitionSchedule8.ignRptCnt >=1)
-    { ignitionSchedule8.repeatStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
-    else
-    { ignitionSchedule8.repeatStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
-    ignitionSchedule8.repeatEndCompare = ignitionSchedule8.repeatStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
+    if (ignitionSchedule8.ignRptCnt >=1) { ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100) + (configPage4.sparkDur * 100)); }
+    else { ignitionSchedule8.nextStartCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE(duration + (configPage4.sparkDur * 100)); }
+    
+    ignitionSchedule8.nextEndCompare = ignitionSchedule8.nextStartCompare + uS_TO_TIMER_COMPARE(((((uint32_t)configPage4.dwellCrank * 100) * configPage9.ignRptScale) / 100));
   }
 }
 #endif
@@ -1244,8 +1236,8 @@ static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply 
       
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.repeatStartCompare);
-        ignitionSchedule1.endCompare = ignitionSchedule1.repeatEndCompare;
+        SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.nextStartCompare);
+        ignitionSchedule1.endCompare = ignitionSchedule1.nextEndCompare;
         ignitionSchedule1.Status = PENDING;
         ignitionSchedule1.schedulesSet = 1;
         ignitionSchedule1.ignRptCnt += 1;
@@ -1262,7 +1254,12 @@ static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN1_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule1.ignRptCnt = 0; }
+      else
+      {
+        IGN1_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule1.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule1.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule1.Status == OFF)
     {
@@ -1300,8 +1297,8 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.repeatStartCompare);
-        ignitionSchedule2.endCompare = ignitionSchedule2.repeatEndCompare;
+        SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.nextStartCompare);
+        ignitionSchedule2.endCompare = ignitionSchedule2.nextEndCompare;
         ignitionSchedule2.Status = PENDING;
         ignitionSchedule2.schedulesSet = 1;
         ignitionSchedule2.ignRptCnt += 1;
@@ -1318,7 +1315,12 @@ static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN2_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule2.ignRptCnt = 0; }
+      else
+      {
+        IGN2_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule2.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule2.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule2.Status == OFF)
     {
@@ -1356,8 +1358,8 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.repeatStartCompare);
-        ignitionSchedule3.endCompare = ignitionSchedule3.repeatEndCompare;
+        SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.nextStartCompare);
+        ignitionSchedule3.endCompare = ignitionSchedule3.nextEndCompare;
         ignitionSchedule3.Status = PENDING;
         ignitionSchedule3.schedulesSet = 1;
         ignitionSchedule3.ignRptCnt += 1;
@@ -1374,7 +1376,12 @@ static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else { IGN3_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule3.ignRptCnt = 0; }
+      else
+      {
+        IGN3_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule3.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule3.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule3.Status == OFF)
     {
@@ -1412,8 +1419,8 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.repeatStartCompare);
-        ignitionSchedule4.endCompare = ignitionSchedule4.repeatEndCompare;
+        SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.nextStartCompare);
+        ignitionSchedule4.endCompare = ignitionSchedule4.nextEndCompare;
         ignitionSchedule4.Status = PENDING;
         ignitionSchedule4.schedulesSet = 1;
         ignitionSchedule4.ignRptCnt += 1;
@@ -1430,7 +1437,12 @@ static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else { IGN4_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule4.ignRptCnt = 0; }
+      else
+      {
+        IGN4_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule4.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule4.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule4.Status == OFF)
     {
@@ -1468,8 +1480,8 @@ static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.repeatStartCompare);
-        ignitionSchedule5.endCompare = ignitionSchedule5.repeatEndCompare;
+        SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.nextStartCompare);
+        ignitionSchedule5.endCompare = ignitionSchedule5.nextEndCompare;
         ignitionSchedule5.Status = PENDING;
         ignitionSchedule5.schedulesSet = 1;
         ignitionSchedule5.ignRptCnt += 1;
@@ -1486,7 +1498,12 @@ static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN5_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule5.ignRptCnt = 0; }
+      else
+      {
+        IGN5_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule5.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule5.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule5.Status == OFF)
     {
@@ -1524,8 +1541,8 @@ static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.repeatStartCompare);
-        ignitionSchedule6.endCompare = ignitionSchedule6.repeatEndCompare;
+        SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.nextStartCompare);
+        ignitionSchedule6.endCompare = ignitionSchedule6.nextEndCompare;
         ignitionSchedule6.Status = PENDING;
         ignitionSchedule6.schedulesSet = 1;
         ignitionSchedule6.ignRptCnt += 1;
@@ -1542,7 +1559,12 @@ static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN6_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule6.ignRptCnt = 0; }
+      else
+      {
+        IGN6_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule6.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule6.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule6.Status == OFF)
     {
@@ -1580,8 +1602,8 @@ static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.repeatStartCompare);
-        ignitionSchedule7.endCompare = ignitionSchedule7.repeatEndCompare;
+        SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.nextStartCompare);
+        ignitionSchedule7.endCompare = ignitionSchedule7.nextEndCompare;
         ignitionSchedule7.Status = PENDING;
         ignitionSchedule7.schedulesSet = 1;
         ignitionSchedule7.ignRptCnt += 1;
@@ -1598,7 +1620,12 @@ static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN7_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule7.ignRptCnt = 0; }
+      else
+      {
+        IGN7_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule7.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule7.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule7.Status == OFF)
     {
@@ -1636,8 +1663,8 @@ static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply 
 
       if ((configPage9.crankIgnOutRpt == 1) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && !BIT_CHECK(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED))
       {
-        SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.repeatStartCompare);
-        ignitionSchedule8.endCompare = ignitionSchedule8.repeatEndCompare;
+        SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.nextStartCompare);
+        ignitionSchedule8.endCompare = ignitionSchedule8.nextEndCompare;
         ignitionSchedule8.Status = PENDING;
         ignitionSchedule8.schedulesSet = 1;
         ignitionSchedule8.ignRptCnt += 1;
@@ -1654,7 +1681,12 @@ static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply 
         BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_NEXT);
         BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED);
       }
-      else{ IGN8_TIMER_DISABLE(); BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED); ignitionSchedule8.ignRptCnt = 0; }
+      else
+      {
+        IGN8_TIMER_DISABLE();
+        BIT_CLEAR(ignitionSchedule8.scheduleFlags, BIT_SCHEDULE_REPEATED);
+        ignitionSchedule8.ignRptCnt = 0;
+      }
     }
     else if (ignitionSchedule8.Status == OFF)
     {
