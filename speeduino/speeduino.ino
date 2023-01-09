@@ -1364,11 +1364,16 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
-    //AE Adds % of req_fuel
-    if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+    //AE calculation only when ACC is active.
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
     {
-      intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+      //AE Adds % of req_fuel
+      if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+        {
+          intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+        }
     }
+
     if ( intermediate > 65535)
     {
       intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
