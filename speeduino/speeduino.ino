@@ -153,19 +153,22 @@ void loop(void)
         if (currentCommand == 'T') { legacySerialCommand(); }
       }
 
-      //Check for fuel injector flow test. Requires no sync or would be in main loop.
-      if(!currentStatus.hasSync && FUEL_INJECTOR_FLOW_TEST_ACTIVE){
-        // If there is pulses left to send and current schedule is not pending or running 
-        // The check for schedule status if to avoid pulse overlap and ensure each pulse is
-        // actually sent. Overall test time is not a factor for the injector flow rate
-        // calculation in TS so it is less important that pulses are immediately back-to-back.
-        if(FUEL_INJECTOR_FLOW_TEST_PULSES > 0 && (fuelSchedule1.Status == OFF)){
-          //Set the scheduled pulse
-          setFuelSchedule1(FUEL_INJECTOR_FLOW_TEST_OFFPW, FUEL_INJECTOR_FLOW_TEST_ONPW);
-          //Decrement remaining pulses
-          FUEL_INJECTOR_FLOW_TEST_PULSES--;
-        } else if(FUEL_INJECTOR_FLOW_TEST_PULSES == 0){
-            FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+      //Check for fuel injector flow test. Requires no engine rotation for safety.
+      if(currentStatus.RPM == 0 && FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+        //If there is pulses left to send
+        if(FUEL_INJECTOR_FLOW_TEST_PULSES > 0){
+          //If the current schedule is off
+           if (fuelSchedule1.Status == OFF) {
+            //Set the scheduled pulse
+            setFuelSchedule1(FUEL_INJECTOR_FLOW_TEST_OFFPW, FUEL_INJECTOR_FLOW_TEST_ONPW);
+            //Decrement remaining pulses
+            FUEL_INJECTOR_FLOW_TEST_PULSES--;
+          }
+        } else if(FUEL_INJECTOR_FLOW_TEST_PULSES == 0 && fuelSchedule1.Status == OFF){ //If out of pulses and done with current/next pulse
+          //Disable the test
+          FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+          //Safety check
+          closeInjector1();
         }
       }
 

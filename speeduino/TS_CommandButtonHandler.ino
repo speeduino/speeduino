@@ -381,9 +381,9 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
   if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
     if(BIT_CHECK(currentStatus.testOutputs, 1)){
       //Extract parameters
-      FUEL_INJECTOR_FLOW_TEST_PULSES = injectorTestParams[0];     
-      FUEL_INJECTOR_FLOW_TEST_ONPW  = (injectorTestParams[1]*100);
-      FUEL_INJECTOR_FLOW_TEST_OFFPW = (injectorTestParams[2]*100);
+      FUEL_INJECTOR_FLOW_TEST_PULSES = (unsigned long)(injectorTestParams[0]);
+      FUEL_INJECTOR_FLOW_TEST_ONPW  = (unsigned long)(injectorTestParams[1])*100;
+      FUEL_INJECTOR_FLOW_TEST_OFFPW = (unsigned long)(injectorTestParams[2])*100;
       //Start test
       FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
     }

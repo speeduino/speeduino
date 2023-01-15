@@ -127,13 +127,15 @@ void legacySerialCommand(void)
         {
           //Hardware test buttons
           if(currentStatus.RPM == 0 && cmdCombined == TS_CMD_INJ_FT){
-            word flowTestParams[3];
-            for(int i = 0; i < 3; i++){
-              byte lowByteRecv = Serial.read();
-              byte highByteRecv = Serial.read();
-              flowTestParams[i] = word(highByteRecv, lowByteRecv);
-            }
-            TS_CommandButtonsHandler(cmdCombined, flowTestParams);
+            // word flowTestParams[3];
+            // byte lowByteRecv;
+            // byte highByteRecv;
+            // for(int i = 0; i < 3; i++){
+            //   lowByteRecv = Serial.read();
+            //   highByteRecv = Serial.read();
+            //   flowTestParams[i] = word(highByteRecv, lowByteRecv);
+            // }
+            // TS_CommandButtonsHandler(cmdCombined, flowTestParams);
           } else if (currentStatus.RPM == 0) { TS_CommandButtonsHandler(cmdCombined); }
           cmdPending = false;
         }
