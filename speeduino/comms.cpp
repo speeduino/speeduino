@@ -644,8 +644,10 @@ void processSerialCommand(void)
           //Only apply every 33nd value
           if( (totalOffset % 33) == 0 )
           {
-            ((uint8_t*)pnt_TargetTable_values)[(totalOffset/33)] = serialPayload[x+7]; //O2 table stores 8 bit values
-            pnt_TargetTable_bins[(totalOffset/33)] = (totalOffset);
+            
+            uint8_t targetTable_offset = min(totalOffset/33, _countof(o2Calibration_values)-1); // Safety check so we don't write outside the target table
+            ((uint8_t*)pnt_TargetTable_values)[targetTable_offset] = serialPayload[x+7]; //O2 table stores 8 bit values
+            pnt_TargetTable_bins[targetTable_offset] = (totalOffset);
 
           }
 
