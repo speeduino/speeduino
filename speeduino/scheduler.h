@@ -45,8 +45,8 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule); //overload function
 
 void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 
-void setFuelSchedule (struct FuelSchedule *targetSchedule, unsigned long duration);
-void setFuelSchedule (struct FuelSchedule *targetSchedule, int16_t crankAngle, int16_t injectorEndAngle, unsigned long duration);
+void setFuelSchedule (struct Schedule *targetSchedule, unsigned long duration);
+void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16_t injectorEndAngle, unsigned long duration);
 
 
 //The ARM cores use seprate functions for their ISRs

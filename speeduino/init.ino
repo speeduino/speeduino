@@ -464,7 +464,7 @@ void initialiseAll(void)
 
     switch (configPage2.nCylinders) {
     case 1:
-        ignitionSchedule1.channelIgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 1;
 
@@ -489,11 +489,11 @@ void initialiseAll(void)
         break;
 
     case 2:
-        ignitionSchedule1.channelIgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2;
-        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelIgnDegrees = 180; }
-        else { ignitionSchedule2.channelIgnDegrees = configPage2.oddfire2; }
+        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
+        else { ignitionSchedule2.channelDegrees = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -530,28 +530,28 @@ void initialiseAll(void)
         break;
 
     case 3:
-        ignitionSchedule1.channelIgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
         //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
         if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
         {
-          ignitionSchedule2.channelIgnDegrees = 240;
-          ignitionSchedule3.channelIgnDegrees = 480;
+          ignitionSchedule2.channelDegrees = 240;
+          ignitionSchedule3.channelDegrees = 480;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
         else
         {
-          ignitionSchedule2.channelIgnDegrees = 120;
-          ignitionSchedule3.channelIgnDegrees = 240;
+          ignitionSchedule2.channelDegrees = 120;
+          ignitionSchedule3.channelDegrees = 240;
         }
         }
         else
         {
-        ignitionSchedule2.channelIgnDegrees = configPage2.oddfire2;
-        ignitionSchedule3.channelIgnDegrees = configPage2.oddfire3;
+        ignitionSchedule2.channelDegrees = configPage2.oddfire2;
+        ignitionSchedule3.channelDegrees = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -598,17 +598,17 @@ void initialiseAll(void)
         channel3InjEnabled = true;
         break;
     case 4:
-        ignitionSchedule1.channelIgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
         if (configPage2.engineType == EVEN_FIRE )
         {
-          ignitionSchedule2.channelIgnDegrees = 180;
+          ignitionSchedule2.channelDegrees = 180;
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
-            ignitionSchedule3.channelIgnDegrees = 360;
-            ignitionSchedule4.channelIgnDegrees = 540;
+            ignitionSchedule3.channelDegrees = 360;
+            ignitionSchedule4.channelDegrees = 540;
 
             CRANK_ANGLE_MAX_IGN = 720;
             maxIgnOutputs = 4;
@@ -616,8 +616,8 @@ void initialiseAll(void)
           if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-            ignitionSchedule3.channelIgnDegrees = 0;
-            ignitionSchedule4.channelIgnDegrees = 180;
+            ignitionSchedule3.channelDegrees = 0;
+            ignitionSchedule4.channelDegrees = 180;
             maxIgnOutputs = 4;
 
             configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
@@ -625,9 +625,9 @@ void initialiseAll(void)
         }
         else
         {
-          ignitionSchedule2.channelIgnDegrees = configPage2.oddfire2;
-          ignitionSchedule3.channelIgnDegrees = configPage2.oddfire3;
-          ignitionSchedule4.channelIgnDegrees = configPage2.oddfire4;
+          ignitionSchedule2.channelDegrees = configPage2.oddfire2;
+          ignitionSchedule3.channelDegrees = configPage2.oddfire3;
+          ignitionSchedule4.channelDegrees = configPage2.oddfire4;
           maxIgnOutputs = 4;
         }
 
@@ -687,19 +687,19 @@ void initialiseAll(void)
         channel2InjEnabled = true;
         break;
     case 5:
-        ignitionSchedule1.channelIgnDegrees = 0;
-        ignitionSchedule2.channelIgnDegrees = 72;
-        ignitionSchedule3.channelIgnDegrees = 144;
-        ignitionSchedule4.channelIgnDegrees = 216;
-        ignitionSchedule5.channelIgnDegrees = 288;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 72;
+        ignitionSchedule3.channelDegrees = 144;
+        ignitionSchedule4.channelDegrees = 216;
+        ignitionSchedule5.channelDegrees = 288;
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
-          ignitionSchedule2.channelIgnDegrees = 144;
-          ignitionSchedule3.channelIgnDegrees = 288;
-          ignitionSchedule4.channelIgnDegrees = 432;
-          ignitionSchedule5.channelIgnDegrees = 576;
+          ignitionSchedule2.channelDegrees = 144;
+          ignitionSchedule3.channelDegrees = 288;
+          ignitionSchedule4.channelDegrees = 432;
+          ignitionSchedule5.channelDegrees = 576;
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -750,17 +750,17 @@ void initialiseAll(void)
         channel4InjEnabled = true;
         break;
     case 6:
-        ignitionSchedule1.channelIgnDegrees = 0;
-        ignitionSchedule2.channelIgnDegrees = 120;
-        ignitionSchedule3.channelIgnDegrees = 240;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 120;
+        ignitionSchedule3.channelDegrees = 240;
         maxIgnOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        ignitionSchedule4.channelIgnDegrees = 360;
-        ignitionSchedule5.channelIgnDegrees = 480;
-        ignitionSchedule6.channelIgnDegrees = 600;
+        ignitionSchedule4.channelDegrees = 360;
+        ignitionSchedule5.channelDegrees = 480;
+        ignitionSchedule6.channelDegrees = 600;
         CRANK_ANGLE_MAX_IGN = 720;
         maxIgnOutputs = 6;
         }
@@ -812,10 +812,10 @@ void initialiseAll(void)
         channel3InjEnabled = true;
         break;
     case 8:
-        ignitionSchedule1.channelIgnDegrees = 0;
-        ignitionSchedule2.channelIgnDegrees = 90;
-        ignitionSchedule3.channelIgnDegrees = 180;
-        ignitionSchedule4.channelIgnDegrees = 270;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 90;
+        ignitionSchedule3.channelDegrees = 180;
+        ignitionSchedule4.channelDegrees = 270;
         maxIgnOutputs = 4;
 
     #if IGN_CHANNELS >= 1
@@ -829,10 +829,10 @@ void initialiseAll(void)
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        ignitionSchedule5.channelIgnDegrees = 360;
-        ignitionSchedule6.channelIgnDegrees = 450;
-        ignitionSchedule7.channelIgnDegrees = 540;
-        ignitionSchedule8.channelIgnDegrees = 630;
+        ignitionSchedule5.channelDegrees = 360;
+        ignitionSchedule6.channelDegrees = 450;
+        ignitionSchedule7.channelDegrees = 540;
+        ignitionSchedule8.channelDegrees = 630;
         maxIgnOutputs = 8;
         CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -914,17 +914,17 @@ void initialiseAll(void)
     {
     case INJ_PAIRED:
         //Paired injection
-        fuelSchedule1.injStartFunction = openInjector1;
-        fuelSchedule1.injEndFunction = closeInjector1;
-        fuelSchedule2.injStartFunction = openInjector2;
-        fuelSchedule2.injEndFunction = closeInjector2;
-        fuelSchedule3.injStartFunction = openInjector3;
-        fuelSchedule3.injEndFunction = closeInjector3;
-        fuelSchedule4.injStartFunction = openInjector4;
-        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule1.StartFunction = openInjector1;
+        fuelSchedule1.EndFunction = closeInjector1;
+        fuelSchedule2.StartFunction = openInjector2;
+        fuelSchedule2.EndFunction = closeInjector2;
+        fuelSchedule3.StartFunction = openInjector3;
+        fuelSchedule3.EndFunction = closeInjector3;
+        fuelSchedule4.StartFunction = openInjector4;
+        fuelSchedule4.EndFunction = closeInjector4;
         #if (INJ_CHANNELS >= 5)
-        fuelSchedule5.injStartFunction = openInjector5;
-        fuelSchedule5.injEndFunction = closeInjector5;
+        fuelSchedule5.StartFunction = openInjector5;
+        fuelSchedule5.EndFunction = closeInjector5;
         #endif
         break;
 
@@ -934,109 +934,109 @@ void initialiseAll(void)
         {
           if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
           {
-            fuelSchedule1.injStartFunction = openInjector1and3;
-            fuelSchedule1.injEndFunction = closeInjector1and3;
-            fuelSchedule2.injStartFunction = openInjector2and4;
-            fuelSchedule2.injEndFunction = closeInjector2and4;
+            fuelSchedule1.StartFunction = openInjector1and3;
+            fuelSchedule1.EndFunction = closeInjector1and3;
+            fuelSchedule2.StartFunction = openInjector2and4;
+            fuelSchedule2.EndFunction = closeInjector2and4;
           }
           else
           {
-            fuelSchedule1.injStartFunction = openInjector1and4;
-            fuelSchedule1.injEndFunction = closeInjector1and4;
-            fuelSchedule2.injStartFunction = openInjector2and3;
-            fuelSchedule2.injEndFunction = closeInjector2and3;
+            fuelSchedule1.StartFunction = openInjector1and4;
+            fuelSchedule1.EndFunction = closeInjector1and4;
+            fuelSchedule2.StartFunction = openInjector2and3;
+            fuelSchedule2.EndFunction = closeInjector2and3;
           }
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
-          fuelSchedule1.injStartFunction = openInjector1;
-          fuelSchedule1.injEndFunction = closeInjector1;
-          fuelSchedule2.injStartFunction = openInjector2;
-          fuelSchedule2.injEndFunction = closeInjector2;
-          fuelSchedule3.injStartFunction = openInjector3and5;
-          fuelSchedule3.injEndFunction = closeInjector3and5;
-          fuelSchedule4.injStartFunction = openInjector4;
-          fuelSchedule4.injEndFunction = closeInjector4;
+          fuelSchedule1.StartFunction = openInjector1;
+          fuelSchedule1.EndFunction = closeInjector1;
+          fuelSchedule2.StartFunction = openInjector2;
+          fuelSchedule2.EndFunction = closeInjector2;
+          fuelSchedule3.StartFunction = openInjector3and5;
+          fuelSchedule3.EndFunction = closeInjector3and5;
+          fuelSchedule4.StartFunction = openInjector4;
+          fuelSchedule4.EndFunction = closeInjector4;
         }
         else if( configPage2.nCylinders == 6 )
         {
-          fuelSchedule1.injStartFunction = openInjector1and4;
-          fuelSchedule1.injEndFunction = closeInjector1and4;
-          fuelSchedule2.injStartFunction = openInjector2and5;
-          fuelSchedule2.injEndFunction = closeInjector2and5;
-          fuelSchedule3.injStartFunction = openInjector3and6;
-          fuelSchedule3.injEndFunction = closeInjector3and6;
+          fuelSchedule1.StartFunction = openInjector1and4;
+          fuelSchedule1.EndFunction = closeInjector1and4;
+          fuelSchedule2.StartFunction = openInjector2and5;
+          fuelSchedule2.EndFunction = closeInjector2and5;
+          fuelSchedule3.StartFunction = openInjector3and6;
+          fuelSchedule3.EndFunction = closeInjector3and6;
         }
         else if( configPage2.nCylinders == 8 )
         {
-          fuelSchedule1.injStartFunction = openInjector1and5;
-          fuelSchedule1.injEndFunction = closeInjector1and5;
-          fuelSchedule2.injStartFunction = openInjector2and6;
-          fuelSchedule2.injEndFunction = closeInjector2and6;
-          fuelSchedule3.injStartFunction = openInjector3and7;
-          fuelSchedule3.injEndFunction = closeInjector3and7;
-          fuelSchedule4.injStartFunction = openInjector4and8;
-          fuelSchedule4.injEndFunction = closeInjector4and8;
+          fuelSchedule1.StartFunction = openInjector1and5;
+          fuelSchedule1.EndFunction = closeInjector1and5;
+          fuelSchedule2.StartFunction = openInjector2and6;
+          fuelSchedule2.EndFunction = closeInjector2and6;
+          fuelSchedule3.StartFunction = openInjector3and7;
+          fuelSchedule3.EndFunction = closeInjector3and7;
+          fuelSchedule4.StartFunction = openInjector4and8;
+          fuelSchedule4.EndFunction = closeInjector4and8;
         }
         else
         {
           //Fall back to paired injection
-          fuelSchedule1.injStartFunction = openInjector1;
-          fuelSchedule1.injEndFunction = closeInjector1;
-          fuelSchedule2.injStartFunction = openInjector2;
-          fuelSchedule2.injEndFunction = closeInjector2;
-          fuelSchedule3.injStartFunction = openInjector3;
-          fuelSchedule3.injEndFunction = closeInjector3;
-          fuelSchedule4.injStartFunction = openInjector4;
-          fuelSchedule4.injEndFunction = closeInjector4;
+          fuelSchedule1.StartFunction = openInjector1;
+          fuelSchedule1.EndFunction = closeInjector1;
+          fuelSchedule2.StartFunction = openInjector2;
+          fuelSchedule2.EndFunction = closeInjector2;
+          fuelSchedule3.StartFunction = openInjector3;
+          fuelSchedule3.EndFunction = closeInjector3;
+          fuelSchedule4.StartFunction = openInjector4;
+          fuelSchedule4.EndFunction = closeInjector4;
           #if (INJ_CHANNELS >= 5)
-          fuelSchedule5.injStartFunction = openInjector5;
-          fuelSchedule5.injEndFunction = closeInjector5;
+          fuelSchedule5.StartFunction = openInjector5;
+          fuelSchedule5.EndFunction = closeInjector5;
           #endif
         }
         break;
 
     case INJ_SEQUENTIAL:
         //Sequential injection
-        fuelSchedule1.injStartFunction = openInjector1;
-        fuelSchedule1.injEndFunction = closeInjector1;
-        fuelSchedule2.injStartFunction = openInjector2;
-        fuelSchedule2.injEndFunction = closeInjector2;
-        fuelSchedule3.injStartFunction = openInjector3;
-        fuelSchedule3.injEndFunction = closeInjector3;
-        fuelSchedule4.injStartFunction = openInjector4;
-        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule1.StartFunction = openInjector1;
+        fuelSchedule1.EndFunction = closeInjector1;
+        fuelSchedule2.StartFunction = openInjector2;
+        fuelSchedule2.EndFunction = closeInjector2;
+        fuelSchedule3.StartFunction = openInjector3;
+        fuelSchedule3.EndFunction = closeInjector3;
+        fuelSchedule4.StartFunction = openInjector4;
+        fuelSchedule4.EndFunction = closeInjector4;
         #if (INJ_CHANNELS >= 5)
-        fuelSchedule5.injStartFunction = openInjector5;
-        fuelSchedule5.injEndFunction = closeInjector5;
+        fuelSchedule5.StartFunction = openInjector5;
+        fuelSchedule5.EndFunction = closeInjector5;
         #endif
         #if (INJ_CHANNELS >= 6)
-        fuelSchedule6.injStartFunction = openInjector6;
-        fuelSchedule6.injEndFunction = closeInjector6;
+        fuelSchedule6.StartFunction = openInjector6;
+        fuelSchedule6.EndFunction = closeInjector6;
         #endif
         #if (INJ_CHANNELS >= 7)
-        fuelSchedule7.injStartFunction = openInjector7;
-        fuelSchedule7.injEndFunction = closeInjector7;
+        fuelSchedule7.StartFunction = openInjector7;
+        fuelSchedule7.EndFunction = closeInjector7;
         #endif
         #if (INJ_CHANNELS >= 8)
-        fuelSchedule8.injStartFunction = openInjector8;
-        fuelSchedule8.injEndFunction = closeInjector8;
+        fuelSchedule8.StartFunction = openInjector8;
+        fuelSchedule8.EndFunction = closeInjector8;
         #endif
         break;
 
     default:
         //Paired injection
-        fuelSchedule1.injStartFunction = openInjector1;
-        fuelSchedule1.injEndFunction = closeInjector1;
-        fuelSchedule2.injStartFunction = openInjector2;
-        fuelSchedule2.injEndFunction = closeInjector2;
-        fuelSchedule3.injStartFunction = openInjector3;
-        fuelSchedule3.injEndFunction = closeInjector3;
-        fuelSchedule4.injStartFunction = openInjector4;
-        fuelSchedule4.injEndFunction = closeInjector4;
+        fuelSchedule1.StartFunction = openInjector1;
+        fuelSchedule1.EndFunction = closeInjector1;
+        fuelSchedule2.StartFunction = openInjector2;
+        fuelSchedule2.EndFunction = closeInjector2;
+        fuelSchedule3.StartFunction = openInjector3;
+        fuelSchedule3.EndFunction = closeInjector3;
+        fuelSchedule4.StartFunction = openInjector4;
+        fuelSchedule4.EndFunction = closeInjector4;
         #if (INJ_CHANNELS >= 5)
-        fuelSchedule5.injStartFunction = openInjector5;
-        fuelSchedule5.injEndFunction = closeInjector5;
+        fuelSchedule5.StartFunction = openInjector5;
+        fuelSchedule5.EndFunction = closeInjector5;
         #endif
         break;
     }
@@ -1258,7 +1258,7 @@ void initialiseAll(void)
         break;
     }
 
-    initialiseSchedulers(); //reapply all nessesary changes to the Schedulers also(coil charge functions and channelIgnDegrees).
+    initialiseSchedulers(); //reapply all nessesary changes to the Schedulers also(coil charge functions and channelDegrees).
 
     //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
     //First check that the priming time is not 0
@@ -3488,22 +3488,30 @@ void changeHalfToFullSync(void)
     maxIgnOutputs = configPage2.nCylinders;
     req_fuel_uS *= 2;
     
-    fuelSchedule1.injStartFunction = openInjector1;
-    fuelSchedule1.injEndFunction = closeInjector1;
-    fuelSchedule2.injStartFunction = openInjector2;
-    fuelSchedule2.injEndFunction = closeInjector2;
-    fuelSchedule3.injStartFunction = openInjector3;
-    fuelSchedule3.injEndFunction = closeInjector3;
-    fuelSchedule4.injStartFunction = openInjector4;
-    fuelSchedule4.injEndFunction = closeInjector4;
-    fuelSchedule5.injStartFunction = openInjector5;
-    fuelSchedule5.injEndFunction = closeInjector5;
-    fuelSchedule6.injStartFunction = openInjector6;
-    fuelSchedule6.injEndFunction = closeInjector6;
-    fuelSchedule7.injStartFunction = openInjector7;
-    fuelSchedule7.injEndFunction = closeInjector7;
-    fuelSchedule8.injStartFunction = openInjector8;
-    fuelSchedule8.injEndFunction = closeInjector8;
+    fuelSchedule1.StartFunction = openInjector1;
+    fuelSchedule1.EndFunction = closeInjector1;
+    fuelSchedule2.StartFunction = openInjector2;
+    fuelSchedule2.EndFunction = closeInjector2;
+    fuelSchedule3.StartFunction = openInjector3;
+    fuelSchedule3.EndFunction = closeInjector3;
+    fuelSchedule4.StartFunction = openInjector4;
+    fuelSchedule4.EndFunction = closeInjector4;
+    #if INJ_CHANNELS >= 5
+    fuelSchedule5.StartFunction = openInjector5;
+    fuelSchedule5.EndFunction = closeInjector5;
+    #endif
+    #if INJ_CHANNELS >= 6
+    fuelSchedule6.StartFunction = openInjector6;
+    fuelSchedule6.EndFunction = closeInjector6;
+    #endif
+    #if INJ_CHANNELS >= 7
+    fuelSchedule7.StartFunction = openInjector7;
+    fuelSchedule7.EndFunction = closeInjector7;
+    #endif
+    #if INJ_CHANNELS >= 8
+    fuelSchedule8.StartFunction = openInjector8;
+    fuelSchedule8.EndFunction = closeInjector8;
+    #endif
 
     switch (configPage2.nCylinders)
     {
@@ -3588,43 +3596,43 @@ void changeFullToHalfSync(void)
       case 4:
         if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
         {
-          fuelSchedule1.injStartFunction = openInjector1and3;
-          fuelSchedule1.injEndFunction = closeInjector1and3;
-          fuelSchedule2.injStartFunction = openInjector2and4;
-          fuelSchedule2.injEndFunction = closeInjector2and4;
+          fuelSchedule1.StartFunction = openInjector1and3;
+          fuelSchedule1.EndFunction = closeInjector1and3;
+          fuelSchedule2.StartFunction = openInjector2and4;
+          fuelSchedule2.EndFunction = closeInjector2and4;
         }
         else
         {
-          fuelSchedule1.injStartFunction = openInjector1and4;
-          fuelSchedule1.injEndFunction = closeInjector1and4;
-          fuelSchedule2.injStartFunction = openInjector2and3;
-          fuelSchedule2.injEndFunction = closeInjector2and3;
+          fuelSchedule1.StartFunction = openInjector1and4;
+          fuelSchedule1.EndFunction = closeInjector1and4;
+          fuelSchedule2.StartFunction = openInjector2and3;
+          fuelSchedule2.EndFunction = closeInjector2and3;
         }
         channel3InjEnabled = false;
         channel4InjEnabled = false;
         break;
             
       case 6:
-        fuelSchedule1.injStartFunction = openInjector1and4;
-        fuelSchedule1.injEndFunction = closeInjector1and4;
-        fuelSchedule2.injStartFunction = openInjector2and5;
-        fuelSchedule2.injEndFunction = closeInjector2and5;
-        fuelSchedule3.injStartFunction = openInjector3and6;
-        fuelSchedule3.injEndFunction = closeInjector3and6;
+        fuelSchedule1.StartFunction = openInjector1and4;
+        fuelSchedule1.EndFunction = closeInjector1and4;
+        fuelSchedule2.StartFunction = openInjector2and5;
+        fuelSchedule2.EndFunction = closeInjector2and5;
+        fuelSchedule3.StartFunction = openInjector3and6;
+        fuelSchedule3.EndFunction = closeInjector3and6;
         channel4InjEnabled = false;
         channel5InjEnabled = false;
         channel6InjEnabled = false;
         break;
 
       case 8:
-        fuelSchedule1.injStartFunction = openInjector1and5;
-        fuelSchedule1.injEndFunction = closeInjector1and5;
-        fuelSchedule2.injStartFunction = openInjector2and6;
-        fuelSchedule2.injEndFunction = closeInjector2and6;
-        fuelSchedule3.injStartFunction = openInjector3and7;
-        fuelSchedule3.injEndFunction = closeInjector3and7;
-        fuelSchedule4.injStartFunction = openInjector4and8;
-        fuelSchedule4.injEndFunction = closeInjector4and8;
+        fuelSchedule1.StartFunction = openInjector1and5;
+        fuelSchedule1.EndFunction = closeInjector1and5;
+        fuelSchedule2.StartFunction = openInjector2and6;
+        fuelSchedule2.EndFunction = closeInjector2and6;
+        fuelSchedule3.StartFunction = openInjector3and7;
+        fuelSchedule3.EndFunction = closeInjector3and7;
+        fuelSchedule4.StartFunction = openInjector4and8;
+        fuelSchedule4.EndFunction = closeInjector4and8;
         channel5InjEnabled = false;
         channel6InjEnabled = false;
         channel7InjEnabled = false;
