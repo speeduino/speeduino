@@ -204,6 +204,7 @@ void test_corrections_TAE_setup()
   configPage4.taeBins[3] = 97; 
   
   configPage2.taeThresh = 0;
+  configPage2.taeMinChange = 0;
 
   //Divided by 100
   configPage2.aeTaperMin = 10; //1000
@@ -215,6 +216,7 @@ void test_corrections_TAE_setup()
 	currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Make sure AE is turned off
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
 }
 
 void test_corrections_TAE_no_rpm_taper()
