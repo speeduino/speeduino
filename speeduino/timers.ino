@@ -45,6 +45,7 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
 void oneMSInterval(void) //Most ARM chips can simply call a function
 #endif
 {
+  BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
   ms_counter++;
 
   //Increment Loop Counters
