@@ -119,10 +119,6 @@ void loop(void)
       #if INJ_CHANNELS >= 8
       uint16_t injector8EndAngle = 0;
       #endif
-      //These are used for comparisons on channels above 1 where the starting angle (for injectors or ignition) can be less than a single loop time
-      //(Don't ask why this is needed, it's just there)
-      //int tempCrankAngle;
-      //int tempStartAngle;
 
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -336,8 +332,6 @@ void loop(void)
       #endif
       readO2();
       readO2_2();
-
-      if(isEepromWritePending() == true) { writeAllConfig(); } //Check for any outstanding EEPROM writes.
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
@@ -592,7 +586,7 @@ void loop(void)
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
-      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPM / 100);
+      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
 
       injector1EndAngle= calculateInjectorEndAngle(channel1InjDegrees);
 
@@ -758,7 +752,7 @@ void loop(void)
       {
         if ( configPage2.useDwellMap == true )
         {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.MAP, currentStatus.RPM) * 100); //use running dwell from map
+          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100); //use running dwell from map
         }
         else
         {
@@ -1018,6 +1012,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 1023) { bitShift = 5; }
   
   iVE = ((unsigned int)VE << 7) / 100;
+  //iVE = divu100(((unsigned int)VE << 7));
 
   //Check whether either of the multiply MAP modes is turned on
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
@@ -1030,6 +1025,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
     iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
   iCorrections = (corrections << bitShift) / 100;
+  //iCorrections = divu100((corrections << bitShift));
 
 
   unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
@@ -1082,7 +1078,7 @@ byte getVE1(void)
   else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.fuelLoad = currentStatus.TPS;
+    currentStatus.fuelLoad = currentStatus.TPS * 2;
   }
   else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
   {
@@ -1111,7 +1107,7 @@ byte getAdvance1(void)
   else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS;
+    currentStatus.ignLoad = currentStatus.TPS * 2;
 
   }
   else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
@@ -1155,7 +1151,7 @@ void calculateIgnitionAngle4(int rotarySplitDegrees)
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
- * both start and end angles are calculated for each channel.
+ * only end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
 void calculateIgnitionAngles()
@@ -1196,8 +1192,7 @@ void calculateIgnitionAngles()
       else if(configPage4.sparkMode == IGN_MODE_ROTARY)
       {
         byte splitDegrees = 0;
-        if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.MAP/2); }
-        else { splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.TPS/2); }
+        splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.ignLoad);
 
         //The trailing angles are set relative to the leading ones
         calculateIgnitionAngle3(splitDegrees);
