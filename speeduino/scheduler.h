@@ -37,8 +37,8 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define INJECTION_REFRESH_TRESHOLD  230U //Time in us that the refresh functions will check to ensure there is enough time before changing the start or end compare
 #define INJECTION_OVERLAP_TRESHOLD  96U //Time in us, basically minimum injector off time that is allowed.
 
-void initialiseSchedulers();
-void beginInjectorPriming();
+void initialiseSchedulers(void);
+void beginInjectorPriming(void);
 
 void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int ignitionEndAngle, unsigned long duration);
 void setIgnitionSchedule(struct Schedule *ignitionSchedule); //overload function for starting schedule(dwell) immediately, this is used in the fixed cranking ignition
@@ -51,45 +51,45 @@ void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  static inline void fuelSchedule1Interrupt();
-  static inline void fuelSchedule2Interrupt();
-  static inline void fuelSchedule3Interrupt();
-  static inline void fuelSchedule4Interrupt();
+  static inline void fuelSchedule1Interrupt(void);
+  static inline void fuelSchedule2Interrupt(void);
+  static inline void fuelSchedule3Interrupt(void);
+  static inline void fuelSchedule4Interrupt(void);
 #if (INJ_CHANNELS >= 5)
-  static inline void fuelSchedule5Interrupt();
+  static inline void fuelSchedule5Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 6)
-  static inline void fuelSchedule6Interrupt();
+  static inline void fuelSchedule6Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 7)
-  static inline void fuelSchedule7Interrupt();
+  static inline void fuelSchedule7Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 8)
-  static inline void fuelSchedule8Interrupt();
+  static inline void fuelSchedule8Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 1)
-  static inline void ignitionSchedule1Interrupt();
+  static inline void ignitionSchedule1Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 2)
-  static inline void ignitionSchedule2Interrupt();
+  static inline void ignitionSchedule2Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 3)
-  static inline void ignitionSchedule3Interrupt();
+  static inline void ignitionSchedule3Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 4)
-  static inline void ignitionSchedule4Interrupt();
+  static inline void ignitionSchedule4Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 5)
-  static inline void ignitionSchedule5Interrupt();
+  static inline void ignitionSchedule5Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 6)
-  static inline void ignitionSchedule6Interrupt();
+  static inline void ignitionSchedule6Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 7)
-  static inline void ignitionSchedule7Interrupt();
+  static inline void ignitionSchedule7Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 8)
-  static inline void ignitionSchedule8Interrupt();
+  static inline void ignitionSchedule8Interrupt(void);
 #endif
 #endif
 /** Schedule statuses.
@@ -115,131 +115,131 @@ struct Schedule {
   void (*EndFunction)();          ///< End Callback function for schedule
 
   //pure virtual functions, these are really defined in sub-classes
-  virtual COMPARE_TYPE getCounter()=0; //Function for getting counter value
+  virtual COMPARE_TYPE getCounter(void)=0; //Function for getting counter value
   virtual void setCompare(COMPARE_TYPE compareValue)=0; //Function for setting counter compare value
-  virtual void timerDisable()=0; //Function to disable timer for specific channel
-  virtual void timerEnable()=0; //Function to enable timer for specific channel  
+  virtual void timerDisable(void)=0; //Function to disable timer for specific channel
+  virtual void timerEnable(void)=0; //Function to enable timer for specific channel  
 };
 
 struct Ign1: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN1_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN1_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN1_COMPARE =compareValue;}
-  void timerDisable(){IGN1_TIMER_DISABLE();}
-  void timerEnable(){IGN1_TIMER_ENABLE();}
+  void timerDisable(void){IGN1_TIMER_DISABLE();}
+  void timerEnable(void){IGN1_TIMER_ENABLE();}
 };
 
 struct Ign2: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN2_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN2_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN2_COMPARE =compareValue;}
-  void timerDisable(){IGN2_TIMER_DISABLE();}
-  void timerEnable(){IGN2_TIMER_ENABLE();}
+  void timerDisable(void){IGN2_TIMER_DISABLE();}
+  void timerEnable(void){IGN2_TIMER_ENABLE();}
 };
 
 struct Ign3: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN3_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN3_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN3_COMPARE =compareValue;}
-  void timerDisable(){IGN3_TIMER_DISABLE();}
-  void timerEnable(){IGN3_TIMER_ENABLE();}
+  void timerDisable(void){IGN3_TIMER_DISABLE();}
+  void timerEnable(void){IGN3_TIMER_ENABLE();}
 };
 
 struct Ign4: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN4_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN4_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN4_COMPARE =compareValue;}
-  void timerDisable(){IGN4_TIMER_DISABLE();}
-  void timerEnable(){IGN4_TIMER_ENABLE();}
+  void timerDisable(void){IGN4_TIMER_DISABLE();}
+  void timerEnable(void){IGN4_TIMER_ENABLE();}
 };
 
 struct Ign5: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN5_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN5_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN5_COMPARE =compareValue;}
-  void timerDisable(){IGN5_TIMER_DISABLE();}
-  void timerEnable(){IGN5_TIMER_ENABLE();}
+  void timerDisable(void){IGN5_TIMER_DISABLE();}
+  void timerEnable(void){IGN5_TIMER_ENABLE();}
 };
 
 struct Ign6: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN6_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN6_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN6_COMPARE =compareValue;}
-  void timerDisable(){IGN6_TIMER_DISABLE();}
-  void timerEnable(){IGN6_TIMER_ENABLE();}
+  void timerDisable(void){IGN6_TIMER_DISABLE();}
+  void timerEnable(void){IGN6_TIMER_ENABLE();}
 };
 
 struct Ign7: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN7_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN7_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN7_COMPARE =compareValue;}
-  void timerDisable(){IGN7_TIMER_DISABLE();}
-  void timerEnable(){IGN7_TIMER_ENABLE();}
+  void timerDisable(void){IGN7_TIMER_DISABLE();}
+  void timerEnable(void){IGN7_TIMER_ENABLE();}
 };
 
 struct Ign8: Schedule //Derived ignitionSchedule structs with  channel specific override functions
 {
-  COMPARE_TYPE getCounter(){return IGN8_COUNTER;}
+  COMPARE_TYPE getCounter(void){return IGN8_COUNTER;}
   void setCompare(COMPARE_TYPE compareValue){IGN8_COMPARE =compareValue;}
-  void timerDisable(){IGN8_TIMER_DISABLE();}
-  void timerEnable(){IGN8_TIMER_ENABLE();}
+  void timerDisable(void){IGN8_TIMER_DISABLE();}
+  void timerEnable(void){IGN8_TIMER_ENABLE();}
 };
 
 struct Fuel1: Schedule //derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL1_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL1_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL1_COMPARE =compareValue;};
-  void timerDisable(){FUEL1_TIMER_DISABLE();};
-  void timerEnable(){FUEL1_TIMER_ENABLE();};
+  void timerDisable(void){FUEL1_TIMER_DISABLE();};
+  void timerEnable(void){FUEL1_TIMER_ENABLE();};
 };
 struct Fuel2: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL2_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL2_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL2_COMPARE =compareValue;};
-  void timerDisable(){FUEL2_TIMER_DISABLE();};
-  void timerEnable(){FUEL2_TIMER_ENABLE();};
+  void timerDisable(void){FUEL2_TIMER_DISABLE();};
+  void timerEnable(void){FUEL2_TIMER_ENABLE();};
 };
 struct Fuel3: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL3_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL3_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL3_COMPARE =compareValue;};
-  void timerDisable(){FUEL3_TIMER_DISABLE();};
-  void timerEnable(){FUEL3_TIMER_ENABLE();};
+  void timerDisable(void){FUEL3_TIMER_DISABLE();};
+  void timerEnable(void){FUEL3_TIMER_ENABLE();};
 };
 struct Fuel4: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL4_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL4_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL4_COMPARE =compareValue;};
-  void timerDisable(){FUEL4_TIMER_DISABLE();};
-  void timerEnable(){FUEL4_TIMER_ENABLE();};
+  void timerDisable(void){FUEL4_TIMER_DISABLE();};
+  void timerEnable(void){FUEL4_TIMER_ENABLE();};
 };
 struct Fuel5: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL5_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL5_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL5_COMPARE =compareValue;};
-  void timerDisable(){FUEL5_TIMER_DISABLE();};
-  void timerEnable(){FUEL5_TIMER_ENABLE();};
+  void timerDisable(void){FUEL5_TIMER_DISABLE();};
+  void timerEnable(void){FUEL5_TIMER_ENABLE();};
 };
 struct Fuel6: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL6_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL6_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL6_COMPARE =compareValue;};
-  void timerDisable(){FUEL6_TIMER_DISABLE();};
-  void timerEnable(){FUEL6_TIMER_ENABLE();};
+  void timerDisable(void){FUEL6_TIMER_DISABLE();};
+  void timerEnable(void){FUEL6_TIMER_ENABLE();};
 };
 struct Fuel7: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL7_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL7_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL7_COMPARE =compareValue;};
-  void timerDisable(){FUEL7_TIMER_DISABLE();};
-  void timerEnable(){FUEL7_TIMER_ENABLE();};
+  void timerDisable(void){FUEL7_TIMER_DISABLE();};
+  void timerEnable(void){FUEL7_TIMER_ENABLE();};
 };
 struct Fuel8: Schedule//derived FuelShedule with channel specific functions
 {
-  COMPARE_TYPE getCounter() {return FUEL8_COUNTER;};
+  COMPARE_TYPE getCounter(void) {return FUEL8_COUNTER;};
   void setCompare(COMPARE_TYPE compareValue){FUEL8_COMPARE =compareValue;};
-  void timerDisable(){FUEL8_TIMER_DISABLE();};
-  void timerEnable(){FUEL8_TIMER_ENABLE();};
+  void timerDisable(void){FUEL8_TIMER_DISABLE();};
+  void timerEnable(void){FUEL8_TIMER_ENABLE();};
 };
 
 

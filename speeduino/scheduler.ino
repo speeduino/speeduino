@@ -61,7 +61,7 @@ Ign7 ignitionSchedule7;
 Ign8 ignitionSchedule8;
 #endif
 
-void initialiseSchedulers()
+void initialiseSchedulers(void)
 {
     //nullSchedule.Status = OFF;    
     fuelSchedule1.Status = OFF;    
@@ -203,7 +203,7 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule)
              ignitionSchedule->timerEnable();
 }
 
-extern void beginInjectorPriming()
+extern void beginInjectorPriming(void)
 {
   unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
@@ -246,7 +246,7 @@ extern void beginInjectorPriming()
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
 #else
-static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule1Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule1);
@@ -257,7 +257,7 @@ fuelScheduleInterrupt(&fuelSchedule1);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //fuelSchedule2
 #else
-static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule2Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule2);
@@ -268,7 +268,7 @@ fuelScheduleInterrupt(&fuelSchedule2);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //fuelSchedule3
 #else
-static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule3Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule3);
@@ -279,7 +279,7 @@ fuelScheduleInterrupt(&fuelSchedule3);
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //fuelSchedule4
 #else
-static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule4Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule4);
@@ -290,7 +290,7 @@ fuelScheduleInterrupt(&fuelSchedule4);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //fuelSchedule5
 #else
-static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule5Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule5);
@@ -301,7 +301,7 @@ fuelScheduleInterrupt(&fuelSchedule5);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //fuelSchedule6
 #else
-static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule6Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule6);
@@ -312,7 +312,7 @@ fuelScheduleInterrupt(&fuelSchedule6);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //fuelSchedule7
 #else
-static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule7Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule7);
@@ -323,7 +323,7 @@ fuelScheduleInterrupt(&fuelSchedule7);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //fuelSchedule8
 #else
-static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
+static inline void fuelSchedule8Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 fuelScheduleInterrupt(&fuelSchedule8);
@@ -377,7 +377,7 @@ void fuelScheduleInterrupt(struct Schedule *fuelSchedule)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //ignitionSchedule1
 #else
-static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule1);
@@ -388,7 +388,7 @@ ignitionScheduleInterrupt(&ignitionSchedule1);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //ignitionSchedule2
 #else
-static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule2);
@@ -399,7 +399,7 @@ ignitionScheduleInterrupt(&ignitionSchedule2);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //ignitionSchedule3
 #else
-static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule3);
@@ -410,7 +410,7 @@ ignitionScheduleInterrupt(&ignitionSchedule3);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //ignitionSchedule4
 #else
-static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule4);
@@ -421,7 +421,7 @@ ignitionScheduleInterrupt(&ignitionSchedule4);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //ignitionSchedule5
 #else
-static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule5);
@@ -432,7 +432,7 @@ ignitionScheduleInterrupt(&ignitionSchedule5);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //ignitionSchedule6
 #else
-static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule6);
@@ -443,7 +443,7 @@ ignitionScheduleInterrupt(&ignitionSchedule6);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //ignitionSchedule6
 #else
-static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule7);
@@ -454,7 +454,7 @@ ignitionScheduleInterrupt(&ignitionSchedule7);
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //ignitionSchedule8
 #else
-static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
+static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
 #endif
 {
 ignitionScheduleInterrupt(&ignitionSchedule8);
