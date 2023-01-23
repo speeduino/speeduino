@@ -78,7 +78,6 @@ uint16_t inj_opentime_uS = 0;
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
 
-byte maxIgnOutputs = 1; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
 byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
@@ -86,7 +85,7 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 #ifndef UNIT_TEST // Scope guard for unit testing
-void setup()
+void setup(void)
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
@@ -101,7 +100,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 
 /** Speeduino main loop.
  * 
- * Main loop chores (roughly in  order they are preformed):
+ * Main loop chores (roughly in the order that they are performed):
  * - Check if serial comms or tooth logging are in progress (send or receive, prioritise communication)
  * - Record loop timing vars
  * - Check tooth time, update @ref statuses (currentStatus) variables
@@ -115,7 +114,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop()
+void loop(void)
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -181,8 +180,11 @@ void loop()
           }
       #endif
           
-    //Displays currently disabled
-    // if (configPage2.displayType && (mainLoopCount & 255) == 1) { updateDisplay();}
+    if(currentLoopTime > micros_safe())
+    {
+      //Occurs when micros() has overflowed
+      deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
+    }
 
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
@@ -225,6 +227,7 @@ void loop()
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN); //Same as above except for RUNNING status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Same as above except for ASE status
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
+      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Same as above but the decel enleanment
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
@@ -239,7 +242,7 @@ void loop()
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();
+    readMAP();  
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
@@ -294,6 +297,9 @@ void loop()
       //updateFullStatus();
       checkProgrammableIO();
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
+      
+      // Air conditioning control
+      airConControl();
 
       //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
       
@@ -343,6 +349,7 @@ void loop()
       if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        if(BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON)) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
       }
 
       #ifdef SD_LOGGING
@@ -351,7 +358,7 @@ void loop()
       
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
-
+      
       if(auxIsEnabled == true)
       {
         //TODO dazq to clean this right up :)
@@ -396,7 +403,7 @@ void loop()
           { //if current input channel is enabled as analog local pin
             //read analog channel specified
             //currentStatus.canin[13] = (configPage9.Auxinpina[currentStatus.current_caninchannel]&63);  Dev test use only!127
-            currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63);
+            currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63));
           }
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
                   || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
@@ -1043,7 +1050,7 @@ void loop()
       //Same as above, except for ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (decoderHasFixedCrankingTiming == true) )
+      if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (BIT_CHECK(decoderState, BIT_DECODER_HAS_FIXED_CRANKING)) )
       {
         fixedCrankingOverride = currentStatus.dwell * 3;
         //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
@@ -1354,11 +1361,16 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
     intermediate += injOpen; //Add the injector opening time
-    //AE Adds % of req_fuel
-    if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+    //AE calculation only when ACC is active.
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
     {
-      intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+      //AE Adds % of req_fuel
+      if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+        {
+          intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+        }
     }
+
     if ( intermediate > 65535)
     {
       intermediate = 65535;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
@@ -1372,7 +1384,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1()
+byte getVE1(void)
 {
   byte tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
@@ -1401,7 +1413,7 @@ byte getVE1()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance1()
+byte getAdvance1(void)
 {
   byte tempAdvance = 0;
   if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used

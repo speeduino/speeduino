@@ -30,7 +30,7 @@ struct StepperIdle
   int curIdleStep; //Tracks the current location of the stepper
   int targetIdleStep; //What the targeted step is
   volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime; //The time the curren
+  volatile unsigned long stepStartTime;
   byte lessAirDirection;
   byte moreAirDirection;
 };
@@ -69,9 +69,10 @@ uint8_t idleTaper;
 byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 
-void initialiseIdle();
-void initialiseIdleUpOutput();
-void disableIdle();
-void idleInterrupt();
+void initialiseIdle(bool forcehoming);
+void idleControl(void);
+void initialiseIdleUpOutput(void);
+void disableIdle(void);
+void idleInterrupt(void);
 
 #endif

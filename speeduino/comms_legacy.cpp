@@ -48,7 +48,7 @@ Can be either data for a new command or a continuation of data for command that 
 
 Commands are single byte (letter symbol) commands.
 */
-void legacySerialCommand()
+void legacySerialCommand(void)
 {
   if ( (cmdPending == false) && (legacySerial == false) ) { currentCommand = Serial.read(); }
 
@@ -320,7 +320,8 @@ void legacySerialCommand()
       break;
 
     case 'Q': // send code version
-      Serial.print(F("speeduino 202204-dev"));
+      //Serial.print(F("speeduino 202207"));
+      Serial.print(F("speeduino 202210-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -352,7 +353,8 @@ void legacySerialCommand()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 2022.04-dev"));
+      //Serial.print(F("Speeduino 2022.07"));
+      Serial.print(F("Speeduino 2022.10-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -650,7 +652,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 
 }
 
-void sendValuesLegacy()
+void sendValuesLegacy(void)
 {
   uint16_t temp;
   int bytestosend = 114;
@@ -742,11 +744,11 @@ void sendValuesLegacy()
   bytestosend -= Serial.write(99); // cold_adv_deg
   bytestosend -= Serial.write(99); // cold_adv_deg
 
-  temp = currentStatus.tpsDOT * 10;
+  temp = currentStatus.tpsDOT;
   bytestosend -= Serial.write(temp>>8); // TPSdot
   bytestosend -= Serial.write(temp); // TPSdot
 
-  temp = currentStatus.mapDOT * 10;
+  temp = currentStatus.mapDOT;
   bytestosend -= Serial.write(temp >> 8); // MAPdot
   bytestosend -= Serial.write(temp); // MAPdot
 
@@ -794,7 +796,7 @@ namespace {
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
     while (!it.at_end())
     {
       Serial.write(pConverter->to_byte(*it));
@@ -839,7 +841,7 @@ namespace {
  * Note that some translation of the data is required to lay it out in the way Megasquirt / TunerStudio expect it.
  * Data is sent in binary format, as defined by in each page in the speeduino.ini.
  */
-void sendPage()
+void sendPage(void)
 {
   page_iterator_t entity = page_begin(currentPage);
 
@@ -903,7 +905,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(table3d_axis_io::to_byte(y_it.domain(), *y_it));
+    serial_print_prepadded_value(table3d_axis_io::to_byte(y_it.get_domain(), *y_it));
 
     while (!row.at_end())
     {
@@ -918,7 +920,7 @@ namespace {
     Serial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
-    const int16_byte *pConverter = table3d_axis_io::get_converter(x_it.domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(x_it.get_domain());
 
     while(!x_it.at_end())
     {
@@ -949,7 +951,7 @@ namespace {
  * 
  * This is used for testing only (Not used by TunerStudio) in order to see current map and config data without the need for TunerStudio. 
  */
-void sendPageASCII()
+void sendPageASCII(void)
 {
   switch (currentPage)
   {

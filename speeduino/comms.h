@@ -73,16 +73,15 @@ extern bool serialWriteInProgress;
 extern bool serialReceivePending; /**< Whether or not a serial request has only been partially received. This occurs when a the length has been received in the serial buffer, but not all of the payload or CRC has yet been received. */
 
 
-void parseSerial();//This is the heart of the Command Line Interpeter.  All that needed to be done was to make it human readable.
-void processSerialCommand();
+void parseSerial(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
+void processSerialCommand(void);
 void sendSerialReturnCode(byte returnCode);
-void sendSerialPayload(void*, uint16_t payloadLength);
+void sendSerialPayload(void* payload, uint16_t payloadLength);
 
-void generateLiveValues(uint16_t, uint16_t);
-void saveConfig();
-void sendToothLog(uint8_t);
-void commandButtons(int16_t);
-void sendCompositeLog(uint8_t);
-void continueSerialTransmission();
+void generateLiveValues(uint16_t offset, uint16_t packetLength);
+void flushRXbuffer(void);
+void sendToothLog(uint8_t startOffset);
+void sendCompositeLog(uint8_t startOffset);
+void continueSerialTransmission(void);
 
 #endif // COMMS_H
