@@ -467,6 +467,7 @@ void ignitionScheduleInterrupt(struct Schedule *targetSchedule) // common functi
     {
       targetSchedule->StartFunction();
       targetSchedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+      targetSchedule->startTime=(uint8_t)millis(); //store start time for overdwell protection
       targetSchedule->setCompare(targetSchedule->endCompare);
     }
     else if (targetSchedule->Status == RUNNING)

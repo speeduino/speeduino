@@ -118,7 +118,10 @@ struct Schedule {
   virtual COMPARE_TYPE getCounter(void)=0; //Function for getting counter value
   virtual void setCompare(COMPARE_TYPE compareValue)=0; //Function for setting counter compare value
   virtual void timerDisable(void)=0; //Function to disable timer for specific channel
-  virtual void timerEnable(void)=0; //Function to enable timer for specific channel  
+  virtual void timerEnable(void)=0; //Function to enable timer for specific channel
+
+  uint8_t startTime; /**[ms]this is used in owerdwell protection, not really needed for internal working of the schedulers 
+                     *only use uint8_t here assuming dwell limit is always way smaller than 255ms, this speeds up things on atmega, also saves some ram*/
 };
 
 struct Ign1: Schedule //Derived ignitionSchedule structs with  channel specific override functions

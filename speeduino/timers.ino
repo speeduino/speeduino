@@ -57,21 +57,29 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
 //  unsigned long targetOverdwellTime;
 
   //Overdwell check
-//  targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-//  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
+  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
 
-  //Dwell limiter here is commented out for now, because startTime saving in the schedulers still needs to be implemented!
-/*   if(configPage4.useDwellLim) && (isCrankLocked != true){
-    if( (ignitionSchedule1.startTime < targetOverdwellTime)) { ignitionSchedule1.endFunction(); ignitionSchedule1.Status = OFF; } 
-    if( (ignitionSchedule2.startTime < targetOverdwellTime)) { ignitionSchedule2.endFunction(); ignitionSchedule2.Status = OFF; } 
-    if( (ignitionSchedule3.startTime < targetOverdwellTime)) { ignitionSchedule3.endFunction(); ignitionSchedule3.Status = OFF; } 
-    if( (ignitionSchedule4.startTime < targetOverdwellTime)) { ignitionSchedule4.endFunction(); ignitionSchedule4.Status = OFF; } 
-    if( (ignitionSchedule5.startTime < targetOverdwellTime)) { ignitionSchedule5.endFunction(); ignitionSchedule5.Status = OFF; } 
-    if( (ignitionSchedule6.startTime < targetOverdwellTime)) { ignitionSchedule6.endFunction(); ignitionSchedule6.Status = OFF; } 
-    if( (ignitionSchedule7.startTime < targetOverdwellTime)) { ignitionSchedule7.endFunction(); ignitionSchedule7.Status = OFF; } 
-    if( (ignitionSchedule8.startTime < targetOverdwellTime)) { ignitionSchedule8.endFunction(); ignitionSchedule8.Status = OFF; } 
-  } */
+  //use millis() instead of micros() here because limiter is anyway called only once a ms, so no point of using more precision
+  //also use only 8bits of the millis() timer for performance
+  //dwell limiter mainly is intended to catch race conditions on port writes when read-modify-write to some other pin may revert the pin state when schedule interrupt occurs between read and write.
+  uint8_t currentMillis=(uint8_t)millis();
+  if((configPage4.useDwellLim) && (isCrankLocked == false)){
+    if((uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
+    if((uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
+    if((uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
+    if((uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
+    if((uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
+    #if IGN_CHANNELS >= 6
+    if((uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
+    #if IGN_CHANNELS >= 7
+    if((uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
+    #if IGN_CHANNELS >= 8
+    if((uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
+    #endif    
+    #endif
+    #endif
+  }
+
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
   // See if we're in power-on sweep mode
