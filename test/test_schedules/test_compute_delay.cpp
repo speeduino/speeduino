@@ -34,12 +34,14 @@ void test_calc_ign_timeout(uint16_t crankAngle, uint32_t pending, uint32_t runni
     TEST_ASSERT_EQUAL(running, calculateIgnitionNTimeout(testSchedule, ignition2StartAngle, testIgnDegrees, crankAngle));
 }
 
-void test_calc_ign_timeout(int16_t (*pStart)[4], int16_t (*pEnd)[4])
+void test_calc_ign_timeout(const int16_t (*pStart)[4], const int16_t (*pEnd)[4])
 {
+    int16_t local[4];
     while (pStart!=pEnd)
     {
-        currentStatus.advance = (*pStart)[0];
-        test_calc_ign_timeout((*pStart)[1], (*pStart)[2], (*pStart)[3]);
+        memcpy_P(local, pStart, sizeof(local));
+        currentStatus.advance = local[0];
+        test_calc_ign_timeout(local[1], local[2], local[3]);
         ++pStart;
     }
 }
@@ -47,13 +49,13 @@ void test_calc_ign_timeout(int16_t (*pStart)[4], int16_t (*pEnd)[4])
 // Test name format:
 // calc_ign_timeout_<channel offset>_<CRANK_ANGLE_MAX_IGN>
 
-void calc_ign_timeout_0_360()
+void test_calc_ign_timeout_0_360()
 {
     setEngineSpeed(4000, 360);
     memset(&testSchedule, 0, sizeof(testSchedule));
     testIgnDegrees = 0;
 
-    int16_t test_results[][4]={
+    static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
         { -40, 0, 12666, 12666 },
         { -40, 45, 10791, 10791 },
@@ -84,16 +86,16 @@ void calc_ign_timeout_0_360()
         { 40, 360, 0, 9333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], test_results+_countof(test_results));
+    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
 }
 
-void calc_ign_timeout_72_360()
+void test_calc_ign_timeout_72_360()
 {
     setEngineSpeed(4000, 360);
     memset(&testSchedule, 0, sizeof(testSchedule));
     testIgnDegrees = 72;
 
-    int16_t test_results[][4]={
+    static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
         { -40, 0, 666, 666 },
         { -40, 45, 0, 13791 },
@@ -124,17 +126,17 @@ void calc_ign_timeout_72_360()
         { 40, 360, 0, 12333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], test_results+_countof(test_results));
+    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
-void calc_ign_timeout_144_360()
+void test_calc_ign_timeout_144_360()
 {
     setEngineSpeed(4000, 360);
     memset(&testSchedule, 0, sizeof(testSchedule));
     testIgnDegrees = 144;
 
-    int16_t test_results[][4]={
+    static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
         { -40, 0, 3666, 3666 },
         { -40, 45, 1791, 1791 },
@@ -165,13 +167,13 @@ void calc_ign_timeout_144_360()
         { 40, 360, 333, 333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], test_results+_countof(test_results));
+    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
-void calc_ign_timeout(void)
+void test_calc_ign_timeout(void)
 {
-    RUN_TEST(calc_ign_timeout_0_360);
-    RUN_TEST(calc_ign_timeout_72_360);
-    RUN_TEST(calc_ign_timeout_144_360);
+    RUN_TEST(test_calc_ign_timeout_0_360);
+    RUN_TEST(test_calc_ign_timeout_72_360);
+    RUN_TEST(test_calc_ign_timeout_144_360);
 }

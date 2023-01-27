@@ -20,7 +20,7 @@ void setup()
   test_accuracy_timeout();
   test_accuracy_duration();
 
-  test_compute_delay();
+  test_calc_ign_timeout();
   
   UNITY_END(); // stop unit testing
 
