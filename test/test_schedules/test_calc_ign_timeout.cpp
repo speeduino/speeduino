@@ -9,9 +9,6 @@
 constexpr uint16_t DWELL_TIME_MS = 4;
 extern volatile uint16_t degreesPeruSx2048;
 
-Schedule &testSchedule = ignitionSchedule2;
-int &testIgnDegrees = channel2IgnDegrees;
-
 static uint16_t dwellAngle;
 static void setEngineSpeed(uint16_t rpm, int16_t max_ign) {
     timePerDegreex16 = ldiv( 2666656L, rpm).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
@@ -23,24 +20,45 @@ static void setEngineSpeed(uint16_t rpm, int16_t max_ign) {
     dwellAngle = timeToAngle(DWELL_TIME_MS*1000, CRANKMATH_METHOD_INTERVAL_REV);
 }
 
-void test_calc_ign_timeout(uint16_t crankAngle, uint32_t pending, uint32_t running)
+void test_calc_ignN_timeout(Schedule &schedule, int channelDegrees, const int &startAngle, void (*pEndAngleCalc)(int), uint16_t crankAngle, uint32_t pending, uint32_t running)
 {
-    testSchedule.Status = PENDING;
-    calculateIgnitionAngle2(dwellAngle);
-    TEST_ASSERT_EQUAL(pending, calculateIgnitionNTimeout(testSchedule, ignition2StartAngle, testIgnDegrees, crankAngle));
+    memset(&schedule, 0, sizeof(schedule));
+
+    schedule.Status = PENDING;
+    pEndAngleCalc(dwellAngle);
+    TEST_ASSERT_EQUAL(pending, calculateIgnitionNTimeout(schedule, startAngle, channelDegrees, crankAngle));
     
-    testSchedule.Status = RUNNING;
-    TEST_ASSERT_EQUAL(running, calculateIgnitionNTimeout(testSchedule, ignition2StartAngle, testIgnDegrees, crankAngle));
+    schedule.Status = RUNNING;
+    pEndAngleCalc(dwellAngle);
+    TEST_ASSERT_EQUAL(running, calculateIgnitionNTimeout(schedule, startAngle, channelDegrees, crankAngle));
 }
 
-void test_calc_ign_timeout(const int16_t (*pStart)[4], const int16_t (*pEnd)[4])
+void test_calc_ign_timeout(int channelDegrees, uint16_t crankAngle, uint32_t pending, uint32_t running)
+{
+    channel2IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule2, channelDegrees, ignition2StartAngle, &calculateIgnitionAngle2, crankAngle, pending, running);
+    channel3IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule3, channelDegrees, ignition3StartAngle, &calculateIgnitionAngle3, crankAngle, pending, running);
+    channel4IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule4, channelDegrees, ignition4StartAngle, &calculateIgnitionAngle4, crankAngle, pending, running);
+    channel5IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule5, channelDegrees, ignition5StartAngle, &calculateIgnitionAngle5, crankAngle, pending, running);
+    channel6IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule6, channelDegrees, ignition6StartAngle, &calculateIgnitionAngle6, crankAngle, pending, running);
+    channel7IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule7, channelDegrees, ignition7StartAngle, &calculateIgnitionAngle7, crankAngle, pending, running);
+    channel8IgnDegrees = channelDegrees;
+    test_calc_ignN_timeout(ignitionSchedule8, channelDegrees, ignition8StartAngle, &calculateIgnitionAngle8, crankAngle, pending, running);
+}
+
+void test_calc_ign_timeout(int channelDegrees, const int16_t (*pStart)[4], const int16_t (*pEnd)[4])
 {
     int16_t local[4];
     while (pStart!=pEnd)
     {
         memcpy_P(local, pStart, sizeof(local));
         currentStatus.advance = local[0];
-        test_calc_ign_timeout(local[1], local[2], local[3]);
+        test_calc_ign_timeout(channelDegrees, local[1], local[2], local[3]);
         ++pStart;
     }
 }
@@ -51,8 +69,6 @@ void test_calc_ign_timeout(const int16_t (*pStart)[4], const int16_t (*pEnd)[4])
 void test_calc_ign_timeout_0_360()
 {
     setEngineSpeed(4000, 360);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 0;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
@@ -85,14 +101,12 @@ void test_calc_ign_timeout_0_360()
         { 40, 360, 0, 9333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(0, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 void test_calc_ign_timeout_72_360()
 {
     setEngineSpeed(4000, 360);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 72;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
@@ -125,15 +139,13 @@ void test_calc_ign_timeout_72_360()
         { 40, 360, 0, 12333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(72, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
 void test_calc_ign_timeout_144_360()
 {
     setEngineSpeed(4000, 360);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 144;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Advance, Crank, Expected Pending, Expected Running
@@ -166,15 +178,13 @@ void test_calc_ign_timeout_144_360()
         { 40, 360, 333, 333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(144, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
 void test_calc_ign_timeout_480_720()
 {
     setEngineSpeed(4000, 720);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 480;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Crank, Advance, Expected Pending, Expected Running
@@ -207,14 +217,12 @@ void test_calc_ign_timeout_480_720()
         { 40, 360, 0, 29333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(480, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 void test_calc_ign_timeout_576_720()
 {
     setEngineSpeed(4000, 720);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 576;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Crank, Advance, Expected Pending, Expected Running
@@ -247,15 +255,13 @@ void test_calc_ign_timeout_576_720()
         { 40, 360, 3333, 3333 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(576, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
 void test_calc_ign_timeout_99_720()
 {
     setEngineSpeed(4000, 720);
-    memset(&testSchedule, 0, sizeof(testSchedule));
-    testIgnDegrees = 99;
 
     static const int16_t test_results[][4] PROGMEM = {
         // Crank, Advance, Expected Pending, Expected Running
@@ -288,7 +294,7 @@ void test_calc_ign_timeout_99_720()
         { 40, 360, 13458, 13458 },
     };
 
-    test_calc_ign_timeout(&test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(99, &test_results[0], &test_results[0]+_countof(test_results));
 }
 
 
