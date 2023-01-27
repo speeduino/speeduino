@@ -20,6 +20,8 @@ void setup()
   test_accuracy_timeout();
   test_accuracy_duration();
 
+  test_compute_delay();
+  
   UNITY_END(); // stop unit testing
 
 }
