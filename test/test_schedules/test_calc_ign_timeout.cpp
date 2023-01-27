@@ -20,6 +20,20 @@ static void setEngineSpeed(uint16_t rpm, int16_t max_ign) {
     dwellAngle = timeToAngle(DWELL_TIME_MS*1000, CRANKMATH_METHOD_INTERVAL_REV);
 }
 
+void test_calc_ign1_timeout(uint16_t crankAngle, uint32_t pending, uint32_t running)
+{
+    memset(&ignitionSchedule1, 0, sizeof(ignitionSchedule1));
+
+    ignitionSchedule1.Status = PENDING;
+    calculateIgnitionAngle1(dwellAngle);
+    TEST_ASSERT_EQUAL(pending, calculateIgnition1Timeout(crankAngle));
+    
+    ignitionSchedule1.Status = RUNNING;
+    calculateIgnitionAngle1(dwellAngle);
+    TEST_ASSERT_EQUAL(running, calculateIgnition1Timeout(crankAngle));    
+}
+
+
 void test_calc_ignN_timeout(Schedule &schedule, int channelDegrees, const int &startAngle, void (*pEndAngleCalc)(int), uint16_t crankAngle, uint32_t pending, uint32_t running)
 {
     memset(&schedule, 0, sizeof(schedule));
@@ -100,8 +114,22 @@ void test_calc_ign_timeout_0_360()
         { 40, 315, 0, 11208 },
         { 40, 360, 0, 9333 },
     };
+    const int16_t (*pStart)[4] = &test_results[0];
+    const int16_t (*pEnd)[4] = &test_results[0]+_countof(test_results);
 
-    test_calc_ign_timeout(0, &test_results[0], &test_results[0]+_countof(test_results));
+    test_calc_ign_timeout(0, pStart, pEnd);
+
+    // Separate test for ign 0 - different code path, same results!
+    channel1IgnDegrees = 0;
+    int16_t local[4];
+    while (pStart!=pEnd)
+    {
+        memcpy_P(local, pStart, sizeof(local));
+        currentStatus.advance = local[0];
+        test_calc_ign1_timeout(local[1], local[2], local[3]);
+        ++pStart;
+    }    
+
 }
 
 void test_calc_ign_timeout_72_360()
