@@ -37,7 +37,7 @@ struct ign_test_parameters
 void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
     char msg[150];
-    Schedule schedule;
+    IgnitionSchedule schedule;
     memset(&schedule, 0, sizeof(schedule));
 
     int startAngle;

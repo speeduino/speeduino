@@ -68,6 +68,6 @@ inline void __attribute__((always_inline)) calculateIgnitionAngle(const int dwel
 // Ignition for rotary.
 inline void __attribute__((always_inline))  calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle);
 
-inline uint32_t __attribute__((always_inline)) calculateIgnitionTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
+inline uint32_t __attribute__((always_inline)) calculateIgnitionTimeout(const IgnitionSchedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
 
 #include "schedule_calcs.hpp"

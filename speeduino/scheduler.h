@@ -187,7 +187,7 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a sched
 
 /** Ignition schedule.
  */
-struct Schedule {
+struct IgnitionSchedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   void (*StartCallback)(void);        ///< Start Callback function for schedule
@@ -235,11 +235,11 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 #endif
 
-extern Schedule ignitionSchedule1;
-extern Schedule ignitionSchedule2;
-extern Schedule ignitionSchedule3;
-extern Schedule ignitionSchedule4;
-extern Schedule ignitionSchedule5;
+extern IgnitionSchedule ignitionSchedule1;
+extern IgnitionSchedule ignitionSchedule2;
+extern IgnitionSchedule ignitionSchedule3;
+extern IgnitionSchedule ignitionSchedule4;
+extern IgnitionSchedule ignitionSchedule5;
 #if IGN_CHANNELS >= 6
 extern IgnitionSchedule ignitionSchedule6;
 #endif

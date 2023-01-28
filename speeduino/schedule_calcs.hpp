@@ -71,7 +71,7 @@ inline void calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegre
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-inline uint32_t _calculateIgnitionTimeout(const Schedule &schedule, int16_t startAngle, int16_t crankAngle) {
+inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) {
   int16_t delta = startAngle - crankAngle;
   if (delta<0)
   {
@@ -94,7 +94,7 @@ static inline uint16_t _adjustToIgnChannel(int angle, int channelInjDegrees) {
   return angle;
 }
 
-inline uint32_t calculateIgnitionTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
+inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
 {
   if (channelIgnDegrees==0) {
       return _calculateIgnitionTimeout(schedule, startAngle, crankAngle);

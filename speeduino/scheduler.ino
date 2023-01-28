@@ -49,19 +49,19 @@ FuelSchedule fuelSchedule8;
 #endif
 
 
-Schedule ignitionSchedule1;
-Schedule ignitionSchedule2;
-Schedule ignitionSchedule3;
-Schedule ignitionSchedule4;
-Schedule ignitionSchedule5;
+IgnitionSchedule ignitionSchedule1;
+IgnitionSchedule ignitionSchedule2;
+IgnitionSchedule ignitionSchedule3;
+IgnitionSchedule ignitionSchedule4;
+IgnitionSchedule ignitionSchedule5;
 #if IGN_CHANNELS >= 6
-Schedule ignitionSchedule6;
+IgnitionSchedule ignitionSchedule6;
 #endif
 #if IGN_CHANNELS >= 7
-Schedule ignitionSchedule7;
+IgnitionSchedule ignitionSchedule7;
 #endif
 #if IGN_CHANNELS >= 8
-Schedule ignitionSchedule8;
+IgnitionSchedule ignitionSchedule8;
 #endif
 
 void (*inj1StartFunction)(void);
@@ -275,7 +275,7 @@ endCallback: This function is called once the duration time has been reached
 */
 
 //Experimental new generic function. This is NOT yet ready and functional
-void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, unsigned long duration)
+void setFuelSchedule(struct IgnitionSchedule *targetSchedule, unsigned long timeout, unsigned long duration)
 {
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
