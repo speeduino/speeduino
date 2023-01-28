@@ -987,8 +987,10 @@ void initialiseAll(void)
         inj3EndFunction = closeInjector3;
         inj4StartFunction = openInjector4;
         inj4EndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
         inj5StartFunction = openInjector5;
         inj5EndFunction = closeInjector5;
+#endif
         break;
 
     case INJ_SEMISEQUENTIAL:
@@ -1052,8 +1054,10 @@ void initialiseAll(void)
           inj3EndFunction = closeInjector3;
           inj4StartFunction = openInjector4;
           inj4EndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
           inj5StartFunction = openInjector5;
           inj5EndFunction = closeInjector5;
+#endif
         }
         break;
 
@@ -1067,14 +1071,22 @@ void initialiseAll(void)
         inj3EndFunction = closeInjector3;
         inj4StartFunction = openInjector4;
         inj4EndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
         inj5StartFunction = openInjector5;
         inj5EndFunction = closeInjector5;
+#endif
+#if INJ_CHANNELS >= 6
         inj6StartFunction = openInjector6;
         inj6EndFunction = closeInjector6;
+#endif
+#if INJ_CHANNELS >= 7
         inj7StartFunction = openInjector7;
         inj7EndFunction = closeInjector7;
+#endif
+#if INJ_CHANNELS >= 8
         inj8StartFunction = openInjector8;
         inj8EndFunction = closeInjector8;
+#endif
         break;
 
     default:
@@ -1087,8 +1099,10 @@ void initialiseAll(void)
         inj3EndFunction = closeInjector3;
         inj4StartFunction = openInjector4;
         inj4EndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
         inj5StartFunction = openInjector5;
         inj5EndFunction = closeInjector5;
+#endif
         break;
     }
 
@@ -1120,12 +1134,18 @@ void initialiseAll(void)
         ign4EndFunction = endCoil1Charge;
         ign5StartFunction = beginCoil1Charge;
         ign5EndFunction = endCoil1Charge;
+#if IGN_CHANNELS >= 6
         ign6StartFunction = beginCoil1Charge;
         ign6EndFunction = endCoil1Charge;
+#endif
+#if IGN_CHANNELS >= 7
         ign7StartFunction = beginCoil1Charge;
         ign7EndFunction = endCoil1Charge;
+#endif
+#if IGN_CHANNELS >= 8
         ign8StartFunction = beginCoil1Charge;
         ign8EndFunction = endCoil1Charge;
+#endif
         break;
 
     case IGN_MODE_WASTEDCOP:
@@ -1157,8 +1177,10 @@ void initialiseAll(void)
           ign4EndFunction = nullCallback;
           ign5StartFunction = nullCallback;
           ign5EndFunction = nullCallback;
+#if IGN_CHANNELS >= 6
           ign6StartFunction = nullCallback;
           ign6EndFunction = nullCallback;
+#endif
         }
         //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
@@ -1174,12 +1196,18 @@ void initialiseAll(void)
 
           ign5StartFunction = nullCallback;
           ign5EndFunction = nullCallback;
+#if IGN_CHANNELS >= 6
           ign6StartFunction = nullCallback;
           ign6EndFunction = nullCallback;
+#endif
+#if IGN_CHANNELS >= 7
           ign7StartFunction = nullCallback;
           ign7EndFunction = nullCallback;
+#endif
+#if IGN_CHANNELS >= 8
           ign8StartFunction = nullCallback;
           ign8EndFunction = nullCallback;
+#endif
         }
         else
         {
@@ -1208,12 +1236,18 @@ void initialiseAll(void)
         ign4EndFunction = endCoil4Charge;
         ign5StartFunction = beginCoil5Charge;
         ign5EndFunction = endCoil5Charge;
+#if IGN_CHANNELS >= 6
         ign6StartFunction = beginCoil6Charge;
         ign6EndFunction = endCoil6Charge;
+#endif
+#if IGN_CHANNELS >= 7
         ign7StartFunction = beginCoil7Charge;
         ign7EndFunction = endCoil7Charge;
+#endif
+#if IGN_CHANNELS >= 8
         ign8StartFunction = beginCoil8Charge;
         ign8EndFunction = endCoil8Charge;
+#endif
         break;
 
     case IGN_MODE_ROTARY:
@@ -3602,14 +3636,22 @@ void changeHalfToFullSync(void)
     inj3EndFunction = closeInjector3;
     inj4StartFunction = openInjector4;
     inj4EndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
     inj5StartFunction = openInjector5;
     inj5EndFunction = closeInjector5;
+#endif
+#if INJ_CHANNELS >= 6
     inj6StartFunction = openInjector6;
     inj6EndFunction = closeInjector6;
+#endif
+#if INJ_CHANNELS >= 6
     inj7StartFunction = openInjector7;
     inj7EndFunction = closeInjector7;
+#endif
+#if INJ_CHANNELS >= 6
     inj8StartFunction = openInjector8;
     inj8EndFunction = closeInjector8;
+#endif
 
     switch (configPage2.nCylinders)
     {

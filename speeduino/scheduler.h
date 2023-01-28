@@ -58,14 +58,22 @@ extern void (*inj3StartFunction)(void);
 extern void (*inj3EndFunction)(void);
 extern void (*inj4StartFunction)(void);
 extern void (*inj4EndFunction)(void);
+#if INJ_CHANNELS >= 5
 extern void (*inj5StartFunction)(void);
 extern void (*inj5EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 6
 extern void (*inj6StartFunction)(void);
 extern void (*inj6EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 7
 extern void (*inj7StartFunction)(void);
 extern void (*inj7EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 8
 extern void (*inj8StartFunction)(void);
 extern void (*inj8EndFunction)(void);
+#endif
 
 /** @name IgnitionCallbacks
  * These are the (global) function pointers that get called to begin and end the ignition coil charging.
@@ -82,12 +90,18 @@ extern void (*ign4StartFunction)(void);
 extern void (*ign4EndFunction)(void);
 extern void (*ign5StartFunction)(void);
 extern void (*ign5EndFunction)(void);
+#if IGN_CHANNELS >= 6
 extern void (*ign6StartFunction)(void);
 extern void (*ign6EndFunction)(void);
+#endif
+#if IGN_CHANNELS >= 7
 extern void (*ign7StartFunction)(void);
 extern void (*ign7EndFunction)(void);
+#endif
+#if IGN_CHANNELS >= 8
 extern void (*ign8StartFunction)(void);
 extern void (*ign8EndFunction)(void);
+#endif
 /** @} */
 
 void initialiseSchedulers(void);
@@ -96,19 +110,33 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
 void setFuelSchedule4(unsigned long timeout, unsigned long duration);
+#if INJ_CHANNELS >= 5
 void setFuelSchedule5(unsigned long timeout, unsigned long duration);
+#endif
+#if INJ_CHANNELS >= 6
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
+#endif
+#if INJ_CHANNELS >= 7
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
+#endif
+#if INJ_CHANNELS >= 8
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
+#endif
 
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+#if IGN_CHANNELS >= 6
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+#endif
+#if IGN_CHANNELS >= 7
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+#endif
+#if IGN_CHANNELS >= 8
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+#endif
 
 void disablePendingFuelSchedule(byte channel);
 void disablePendingIgnSchedule(byte channel);
@@ -117,45 +145,36 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  inline void fuelSchedule1Interrupt(void);
-  inline void fuelSchedule2Interrupt(void);
-  inline void fuelSchedule3Interrupt(void);
-  inline void fuelSchedule4Interrupt(void);
-#if (INJ_CHANNELS >= 5)
-  inline void fuelSchedule5Interrupt(void);
+  inline void fuelSchedule1Interrupt();
+  inline void fuelSchedule2Interrupt();
+  inline void fuelSchedule3Interrupt();
+  inline void fuelSchedule4Interrupt();
+#if INJ_CHANNELS >= 5
+  inline void fuelSchedule5Interrupt();
 #endif
-#if (INJ_CHANNELS >= 6)
-  inline void fuelSchedule6Interrupt(void);
+#if INJ_CHANNELS >= 6
+  inline void fuelSchedule6Interrupt();
 #endif
-#if (INJ_CHANNELS >= 7)
-  inline void fuelSchedule7Interrupt(void);
+#if INJ_CHANNELS >= 7
+  inline void fuelSchedule7Interrupt();
 #endif
-#if (INJ_CHANNELS >= 8)
-  inline void fuelSchedule8Interrupt(void);
+#if INJ_CHANNELS >= 8
+  inline void fuelSchedule8Interrupt();
 #endif
-#if (IGN_CHANNELS >= 1)
-  inline void ignitionSchedule1Interrupt(void);
+
+  inline void ignitionSchedule1Interrupt();
+  inline void ignitionSchedule2Interrupt();
+  inline void ignitionSchedule3Interrupt();
+  inline void ignitionSchedule4Interrupt();
+  inline void ignitionSchedule5Interrupt();
+#if IGN_CHANNELS >= 6
+  inline void ignitionSchedule6Interrupt();
 #endif
-#if (IGN_CHANNELS >= 2)
-  inline void ignitionSchedule2Interrupt(void);
+#if IGN_CHANNELS >= 7
+  inline void ignitionSchedule7Interrupt();
 #endif
-#if (IGN_CHANNELS >= 3)
-  inline void ignitionSchedule3Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 4)
-  inline void ignitionSchedule4Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 5)
-  inline void ignitionSchedule5Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 6)
-  inline void ignitionSchedule6Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 7)
-  inline void ignitionSchedule7Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 8)
-  inline void ignitionSchedule8Interrupt(void);
+#if IGN_CHANNELS >= 8
+  inline void ignitionSchedule8Interrupt();
 #endif
 #endif
 /** Schedule statuses.
@@ -171,8 +190,8 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a sched
 struct Schedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  void (*StartCallback)();        ///< Start Callback function for schedule
-  void (*EndCallback)();          ///< End Callback function for schedule
+  void (*StartCallback)(void);        ///< Start Callback function for schedule
+  void (*EndCallback)(void);          ///< End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
@@ -203,18 +222,32 @@ extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
 extern FuelSchedule fuelSchedule3;
 extern FuelSchedule fuelSchedule4;
+#if INJ_CHANNELS >= 5
 extern FuelSchedule fuelSchedule5;
+#endif
+#if INJ_CHANNELS >= 6
 extern FuelSchedule fuelSchedule6;
+#endif
+#if INJ_CHANNELS >= 7
 extern FuelSchedule fuelSchedule7;
+#endif
+#if INJ_CHANNELS >= 8
 extern FuelSchedule fuelSchedule8;
+#endif
 
 extern Schedule ignitionSchedule1;
 extern Schedule ignitionSchedule2;
 extern Schedule ignitionSchedule3;
 extern Schedule ignitionSchedule4;
 extern Schedule ignitionSchedule5;
-extern Schedule ignitionSchedule6;
-extern Schedule ignitionSchedule7;
-extern Schedule ignitionSchedule8;
+#if IGN_CHANNELS >= 6
+extern IgnitionSchedule ignitionSchedule6;
+#endif
+#if IGN_CHANNELS >= 7
+extern IgnitionSchedule ignitionSchedule7;
+#endif
+#if IGN_CHANNELS >= 8
+extern IgnitionSchedule ignitionSchedule8;
+#endif
 
 #endif // SCHEDULER_H

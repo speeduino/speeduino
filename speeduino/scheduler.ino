@@ -34,19 +34,35 @@ FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
 FuelSchedule fuelSchedule3;
 FuelSchedule fuelSchedule4;
+
+#if INJ_CHANNELS >= 5
 FuelSchedule fuelSchedule5;
+#endif
+#if INJ_CHANNELS >= 6
 FuelSchedule fuelSchedule6;
+#endif
+#if INJ_CHANNELS >= 7
 FuelSchedule fuelSchedule7;
+#endif
+#if INJ_CHANNELS >= 8
 FuelSchedule fuelSchedule8;
+#endif
+
 
 Schedule ignitionSchedule1;
 Schedule ignitionSchedule2;
 Schedule ignitionSchedule3;
 Schedule ignitionSchedule4;
 Schedule ignitionSchedule5;
+#if IGN_CHANNELS >= 6
 Schedule ignitionSchedule6;
+#endif
+#if IGN_CHANNELS >= 7
 Schedule ignitionSchedule7;
+#endif
+#if IGN_CHANNELS >= 8
 Schedule ignitionSchedule8;
+#endif
 
 void (*inj1StartFunction)(void);
 void (*inj1EndFunction)(void);
@@ -56,14 +72,22 @@ void (*inj3StartFunction)(void);
 void (*inj3EndFunction)(void);
 void (*inj4StartFunction)(void);
 void (*inj4EndFunction)(void);
+#if INJ_CHANNELS >= 5
 void (*inj5StartFunction)(void);
 void (*inj5EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 6
 void (*inj6StartFunction)(void);
 void (*inj6EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 7
 void (*inj7StartFunction)(void);
 void (*inj7EndFunction)(void);
+#endif
+#if INJ_CHANNELS >= 8
 void (*inj8StartFunction)(void);
 void (*inj8EndFunction)(void);
+#endif
 
 void (*ign1StartFunction)(void);
 void (*ign1EndFunction)(void);
@@ -75,12 +99,18 @@ void (*ign4StartFunction)(void);
 void (*ign4EndFunction)(void);
 void (*ign5StartFunction)(void);
 void (*ign5EndFunction)(void);
+#if IGN_CHANNELS >= 6
 void (*ign6StartFunction)(void);
 void (*ign6EndFunction)(void);
+#endif
+#if IGN_CHANNELS >= 7
 void (*ign7StartFunction)(void);
 void (*ign7EndFunction)(void);
+#endif
+#if IGN_CHANNELS >= 8
 void (*ign8StartFunction)(void);
 void (*ign8EndFunction)(void);
+#endif
 
 void initialiseSchedulers(void)
 {
@@ -88,28 +118,41 @@ void initialiseSchedulers(void)
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
     fuelSchedule4.Status = OFF;
+#if INJ_CHANNELS >= 5
     fuelSchedule5.Status = OFF;
+#endif
+#if INJ_CHANNELS >= 6
     fuelSchedule6.Status = OFF;
+#endif
+#if INJ_CHANNELS >= 7
     fuelSchedule7.Status = OFF;
+#endif
+#if INJ_CHANNELS >= 8
     fuelSchedule8.Status = OFF;
+#endif
 
     ignitionSchedule1.Status = OFF;
-    ignitionSchedule2.Status = OFF;
-    ignitionSchedule3.Status = OFF;
-    ignitionSchedule4.Status = OFF;
-    ignitionSchedule5.Status = OFF;
-    ignitionSchedule6.Status = OFF;
-    ignitionSchedule7.Status = OFF;
-    ignitionSchedule8.Status = OFF;
-
     IGN1_TIMER_ENABLE();
+    ignitionSchedule2.Status = OFF;
     IGN2_TIMER_ENABLE();
+    ignitionSchedule3.Status = OFF;
     IGN3_TIMER_ENABLE();
+    ignitionSchedule4.Status = OFF;
     IGN4_TIMER_ENABLE();
 #if (IGN_CHANNELS >= 5)
+    ignitionSchedule5.Status = OFF;
     IGN5_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 6
+    ignitionSchedule6.Status = OFF;
     IGN6_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 7
+    ignitionSchedule7.Status = OFF;
     IGN7_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 8
+    ignitionSchedule8.Status = OFF;
     IGN8_TIMER_ENABLE();
 #endif
 
@@ -742,6 +785,8 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
+
+#if IGN_CHANNELS >= 6
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
@@ -776,6 +821,9 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
+#endif
+
+#if IGN_CHANNELS >= 7
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
@@ -810,6 +858,9 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
+#endif
+
+#if IGN_CHANNELS >= 8
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
   if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
@@ -844,6 +895,8 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
+#endif
+
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
@@ -887,7 +940,6 @@ extern void beginInjectorPriming(void)
 * - endCallback - change scheduler into OFF state (or PENDING if schedule.hasNextSchedule is set)
 */
 //Timer3A (fuel schedule 1) Compare Vector
-#if (INJ_CHANNELS >= 1)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 //fuelSchedules 1 and 5
 ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
@@ -919,9 +971,8 @@ inline void fuelSchedule1Interrupt(void)
     }
     else if (fuelSchedule1.Status == OFF) { FUEL1_TIMER_DISABLE(); } //Safety check. Turn off this output compare unit and return without performing any action
   }
-#endif
 
-#if (INJ_CHANNELS >= 2)
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -950,9 +1001,8 @@ inline void fuelSchedule2Interrupt(void)
        else { FUEL2_TIMER_DISABLE(); }
     }
   }
-#endif
 
-#if (INJ_CHANNELS >= 3)
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -981,9 +1031,8 @@ inline void fuelSchedule3Interrupt(void)
        else { FUEL3_TIMER_DISABLE(); }
     }
   }
-#endif
 
-#if (INJ_CHANNELS >= 4)
+
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1012,9 +1061,8 @@ inline void fuelSchedule4Interrupt(void)
        else { FUEL4_TIMER_DISABLE(); }
     }
   }
-#endif
 
-#if (INJ_CHANNELS >= 5)
+#if INJ_CHANNELS >= 5
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1045,7 +1093,7 @@ inline void fuelSchedule5Interrupt(void)
 }
 #endif
 
-#if (INJ_CHANNELS >= 6)
+#if INJ_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1076,7 +1124,7 @@ inline void fuelSchedule6Interrupt(void)
 }
 #endif
 
-#if (INJ_CHANNELS >= 7)
+#if INJ_CHANNELS >= 7
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1107,7 +1155,7 @@ inline void fuelSchedule7Interrupt(void)
 }
 #endif
 
-#if (INJ_CHANNELS >= 8)
+#if INJ_CHANNELS >= 8
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
