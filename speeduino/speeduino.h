@@ -15,7 +15,7 @@
 
 void setup(void);
 void loop(void);
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
+uint16_t PW(const int& REQ_FUEL, const byte& VE, const long& MAP, const uint16_t& corrections, const int& injOpen);
 byte getVE1(void);
 byte getAdvance1(void);
 
