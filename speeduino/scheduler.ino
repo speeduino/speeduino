@@ -249,37 +249,6 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-//Experimental new generic function. This is NOT yet ready and functional
-void setFuelSchedule(struct IgnitionSchedule *targetSchedule, unsigned long timeout, unsigned long duration)
-{
-  if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
-  {
-    targetSchedule->duration = duration;
-
-    //Need to check that the timeout doesn't exceed the overflow
-    COMPARE_TYPE timeout_timer_compare;
-    if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >16x (Each tick represents 16uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when appliedcausing erratic behaviour such as erroneous sparking.
-    else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-    //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-    noInterrupts();
-    targetSchedule->startCompare = FUEL1_COUNTER + timeout_timer_compare; //Insert correct counter HERE!
-    targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
-    targetSchedule->Status = PENDING; //Turn this schedule on
-    SET_COMPARE(FUEL1_COMPARE, targetSchedule->startCompare); //Insert corrector compare HERE!
-    interrupts();
-    FUEL1_TIMER_ENABLE();
-  }
-  else
-  {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
-    //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-    //targetSchedule->nextStartCompare = *targetSchedule->counter + uS_TO_TIMER_COMPARE(timeout);
-    targetSchedule->nextEndCompare = targetSchedule->nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-    targetSchedule->hasNextSchedule = true;
-  }
-}
-
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
@@ -328,9 +297,6 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses time
   {
     if(fuelSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
     {
-      //Callbacks no longer used, but retained for now:
-      //fuelSchedule2.StartCallback = startCallback;
-      //fuelSchedule2.EndCallback = endCallback;
       fuelSchedule2.duration = duration;
 
       //Need to check that the timeout doesn't exceed the overflow
@@ -365,9 +331,6 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses time
   {
     if(fuelSchedule3.Status != RUNNING) //Check that we're not already part way through a schedule
     {
-      //Callbacks no longer used, but retained for now:
-      //fuelSchedule3.StartCallback = startCallback;
-      //fuelSchedule3.EndCallback = endCallback;
       fuelSchedule3.duration = duration;
 
       //Need to check that the timeout doesn't exceed the overflow
@@ -402,9 +365,6 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
   {
     if(fuelSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
     {
-      //Callbacks no longer used, but retained for now:
-      //fuelSchedule4.StartCallback = startCallback;
-      //fuelSchedule4.EndCallback = endCallback;
       fuelSchedule4.duration = duration;
 
       //Need to check that the timeout doesn't exceed the overflow
