@@ -50,31 +50,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
-extern void (*inj1StartFunction)(void);
-extern void (*inj1EndFunction)(void);
-extern void (*inj2StartFunction)(void);
-extern void (*inj2EndFunction)(void);
-extern void (*inj3StartFunction)(void);
-extern void (*inj3EndFunction)(void);
-extern void (*inj4StartFunction)(void);
-extern void (*inj4EndFunction)(void);
-#if INJ_CHANNELS >= 5
-extern void (*inj5StartFunction)(void);
-extern void (*inj5EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 6
-extern void (*inj6StartFunction)(void);
-extern void (*inj6EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 7
-extern void (*inj7StartFunction)(void);
-extern void (*inj7EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 8
-extern void (*inj8StartFunction)(void);
-extern void (*inj8EndFunction)(void);
-#endif
-
 /** @name IgnitionCallbacks
  * These are the (global) function pointers that get called to begin and end the ignition coil charging.
  * They are required for the various spark output modes.
@@ -212,7 +187,8 @@ struct FuelSchedule {
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-
+  void (*pStartFunction)(void);
+  void (*pEndFunction)(void);  
   COMPARE_TYPE nextStartCompare;
   COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;

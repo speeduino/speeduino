@@ -64,31 +64,6 @@ IgnitionSchedule ignitionSchedule7;
 IgnitionSchedule ignitionSchedule8;
 #endif
 
-void (*inj1StartFunction)(void);
-void (*inj1EndFunction)(void);
-void (*inj2StartFunction)(void);
-void (*inj2EndFunction)(void);
-void (*inj3StartFunction)(void);
-void (*inj3EndFunction)(void);
-void (*inj4StartFunction)(void);
-void (*inj4EndFunction)(void);
-#if INJ_CHANNELS >= 5
-void (*inj5StartFunction)(void);
-void (*inj5EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 6
-void (*inj6StartFunction)(void);
-void (*inj6EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 7
-void (*inj7StartFunction)(void);
-void (*inj7EndFunction)(void);
-#endif
-#if INJ_CHANNELS >= 8
-void (*inj8StartFunction)(void);
-void (*inj8EndFunction)(void);
-#endif
-
 void (*ign1StartFunction)(void);
 void (*ign1EndFunction)(void);
 void (*ign2StartFunction)(void);
@@ -167,29 +142,29 @@ void initialiseSchedulers(void)
     FUEL8_TIMER_ENABLE();
 #endif
 
-  inj1StartFunction = nullCallback;
-  inj1EndFunction = nullCallback;
-  inj2StartFunction = nullCallback;
-  inj2EndFunction = nullCallback;
-  inj3StartFunction = nullCallback;
-  inj3EndFunction = nullCallback;
-  inj4StartFunction = nullCallback;
-  inj4EndFunction = nullCallback;
-#if INJ_CHANNELS>=5
-  inj5StartFunction = nullCallback;
-  inj5EndFunction = nullCallback;
+  fuelSchedule1.pStartFunction = nullCallback;
+  fuelSchedule1.pEndFunction = nullCallback;
+  fuelSchedule2.pStartFunction = nullCallback;
+  fuelSchedule2.pEndFunction = nullCallback;
+  fuelSchedule3.pStartFunction = nullCallback;
+  fuelSchedule3.pEndFunction = nullCallback;
+  fuelSchedule4.pStartFunction = nullCallback;
+  fuelSchedule4.pEndFunction = nullCallback;
+#if (INJ_CHANNELS >= 5)  
+  fuelSchedule5.pStartFunction = nullCallback;
+  fuelSchedule5.pEndFunction = nullCallback;
 #endif
-#if INJ_CHANNELS>=6
-  inj6StartFunction = nullCallback;
-  inj6EndFunction = nullCallback;
+#if (INJ_CHANNELS >= 6)
+  fuelSchedule6.pStartFunction = nullCallback;
+  fuelSchedule6.pEndFunction = nullCallback;
 #endif
-#if INJ_CHANNELS>=7
-  inj7StartFunction = nullCallback;
-  inj7EndFunction = nullCallback;
+#if (INJ_CHANNELS >= 7)
+  fuelSchedule7.pStartFunction = nullCallback;
+  fuelSchedule7.pEndFunction = nullCallback;
 #endif
-#if INJ_CHANNELS>=8
-  inj8StartFunction = nullCallback;
-  inj8EndFunction = nullCallback;
+#if (INJ_CHANNELS >= 8)
+  fuelSchedule8.pStartFunction = nullCallback;
+  fuelSchedule8.pEndFunction = nullCallback;
 #endif
 
   ign1StartFunction = nullCallback;
@@ -950,13 +925,13 @@ inline void fuelSchedule1Interrupt(void)
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
       //To use timer queue, change fuelShedule1 to timer3Aqueue[0];
-      inj1StartFunction();
+      fuelSchedule1.pStartFunction();
       fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL1_COMPARE, FUEL1_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule1.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule1.Status == RUNNING)
     {
-       inj1EndFunction();
+       fuelSchedule1.pEndFunction();
        fuelSchedule1.Status = OFF; //Turn off the schedule
 
        //If there is a next schedule queued up, activate it
@@ -981,13 +956,13 @@ inline void fuelSchedule2Interrupt(void)
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      inj2StartFunction();
+      fuelSchedule2.pStartFunction();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL2_COMPARE, FUEL2_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule2.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
-       inj2EndFunction();
+       fuelSchedule2.pEndFunction();
        fuelSchedule2.Status = OFF; //Turn off the schedule
 
        //If there is a next schedule queued up, activate it
@@ -1011,13 +986,13 @@ inline void fuelSchedule3Interrupt(void)
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      inj3StartFunction();
+      fuelSchedule3.pStartFunction();
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL3_COMPARE, FUEL3_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule3.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
-       inj3EndFunction();
+       fuelSchedule3.pEndFunction();
        fuelSchedule3.Status = OFF; //Turn off the schedule
 
        //If there is a next schedule queued up, activate it
@@ -1041,13 +1016,13 @@ inline void fuelSchedule4Interrupt(void)
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      inj4StartFunction();
+      fuelSchedule4.pStartFunction();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL4_COMPARE, FUEL4_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule4.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
-       inj4EndFunction();
+       fuelSchedule4.pEndFunction();
        fuelSchedule4.Status = OFF; //Turn off the schedule
 
        //If there is a next schedule queued up, activate it
@@ -1071,13 +1046,13 @@ inline void fuelSchedule5Interrupt(void)
 {
   if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
   {
-    inj5StartFunction();
+    fuelSchedule5.pStartFunction();
     fuelSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL5_COMPARE, FUEL5_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule5.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule5.Status == RUNNING)
   {
-     inj5EndFunction();
+     fuelSchedule5.pEndFunction();
      fuelSchedule5.Status = OFF; //Turn off the schedule
 
      //If there is a next schedule queued up, activate it
@@ -1102,13 +1077,13 @@ inline void fuelSchedule6Interrupt(void)
 {
   if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
   {
-    inj6StartFunction();
+    fuelSchedule6.pStartFunction();
     fuelSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL6_COMPARE, FUEL6_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule6.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule6.Status == RUNNING)
   {
-     inj6EndFunction();
+     fuelSchedule6.pEndFunction();
      fuelSchedule6.Status = OFF; //Turn off the schedule
 
      //If there is a next schedule queued up, activate it
@@ -1133,13 +1108,13 @@ inline void fuelSchedule7Interrupt(void)
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
   {
-    inj7StartFunction();
+    fuelSchedule7.pStartFunction();
     fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL7_COMPARE, FUEL7_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule7.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule7.Status == RUNNING)
   {
-     inj7EndFunction();
+     fuelSchedule7.pEndFunction();
      fuelSchedule7.Status = OFF; //Turn off the schedule
 
      //If there is a next schedule queued up, activate it
@@ -1164,13 +1139,13 @@ inline void fuelSchedule8Interrupt(void)
 {
   if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
   {
-    inj8StartFunction();
+    fuelSchedule8.pStartFunction();
     fuelSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL8_COMPARE, FUEL8_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule8.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule8.Status == RUNNING)
   {
-     inj8EndFunction();
+     fuelSchedule8.pEndFunction();
      fuelSchedule8.Status = OFF; //Turn off the schedule
 
      //If there is a next schedule queued up, activate it
