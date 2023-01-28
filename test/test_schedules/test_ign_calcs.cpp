@@ -1,22 +1,22 @@
 #include <Arduino.h>
 #include <unity.h>
-
+#include "test_calcs_common.h"
 #include "schedule_calcs.h"
 #include "crankMaths.h"
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
-constexpr uint16_t DWELL_TIME_MS = 4;
 extern volatile uint16_t degreesPeruSx2048;
 
-static uint16_t dwellAngle;
-static void setEngineSpeed(uint16_t rpm, int16_t max_ign) {
+uint16_t dwellAngle;
+void setEngineSpeed(uint16_t rpm, int16_t max_crank) {
     timePerDegreex16 = ldiv( 2666656L, rpm).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
     timePerDegree = timePerDegreex16 / 16; 
     degreesPeruSx2048 = 2048 / timePerDegree;
     degreesPeruSx32768 = 524288 / timePerDegreex16;       
     revolutionTime =  (60*1000000) / rpm;
-    CRANK_ANGLE_MAX_IGN = max_ign;
+    CRANK_ANGLE_MAX_IGN = max_crank;
+    CRANK_ANGLE_MAX_INJ = max_crank;
     dwellAngle = timeToAngle(DWELL_TIME_MS*1000, CRANKMATH_METHOD_INTERVAL_REV);
 }
 
@@ -78,7 +78,7 @@ void test_calc_ign_timeout(int channelDegrees, const int16_t (*pStart)[4], const
 }
 
 // Test name format:
-// calc_ign_timeout_<channel offset>_<CRANK_ANGLE_MAX_IGN>
+// test_calc_ign_timeout_<channel offset>_<CRANK_ANGLE_MAX_IGN>
 
 void test_calc_ign_timeout_0_360()
 {
@@ -119,7 +119,7 @@ void test_calc_ign_timeout_0_360()
 
     test_calc_ign_timeout(0, pStart, pEnd);
 
-    // Separate test for ign 0 - different code path, same results!
+    // Separate test for ign 1 - different code path, same results!
     channel1IgnDegrees = 0;
     int16_t local[4];
     while (pStart!=pEnd)
