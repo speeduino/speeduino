@@ -84,8 +84,6 @@ void (*ign8EndFunction)(void);
 
 void initialiseSchedulers(void)
 {
-    //nullSchedule.Status = OFF;
-
     fuelSchedule1.Status = OFF;
     fuelSchedule2.Status = OFF;
     fuelSchedule3.Status = OFF;
@@ -94,15 +92,6 @@ void initialiseSchedulers(void)
     fuelSchedule6.Status = OFF;
     fuelSchedule7.Status = OFF;
     fuelSchedule8.Status = OFF;
-
-    fuelSchedule1.schedulesSet = 0;
-    fuelSchedule2.schedulesSet = 0;
-    fuelSchedule3.schedulesSet = 0;
-    fuelSchedule4.schedulesSet = 0;
-    fuelSchedule5.schedulesSet = 0;
-    fuelSchedule6.schedulesSet = 0;
-    fuelSchedule7.schedulesSet = 0;
-    fuelSchedule8.schedulesSet = 0;
 
     ignitionSchedule1.Status = OFF;
     ignitionSchedule2.Status = OFF;
@@ -134,15 +123,6 @@ void initialiseSchedulers(void)
     FUEL7_TIMER_ENABLE();
     FUEL8_TIMER_ENABLE();
 #endif
-
-  ignitionSchedule1.schedulesSet = 0;
-  ignitionSchedule2.schedulesSet = 0;
-  ignitionSchedule3.schedulesSet = 0;
-  ignitionSchedule4.schedulesSet = 0;
-  ignitionSchedule5.schedulesSet = 0;
-  ignitionSchedule6.schedulesSet = 0;
-  ignitionSchedule7.schedulesSet = 0;
-  ignitionSchedule8.schedulesSet = 0;
 
   inj1StartFunction = nullCallback;
   inj1EndFunction = nullCallback;
@@ -265,13 +245,9 @@ void setFuelSchedule(struct Schedule *targetSchedule, unsigned long timeout, uns
 
     //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
     noInterrupts();
-    //targetSchedule->startCompare = *targetSchedule->counter + timeout_timer_compare;
     targetSchedule->startCompare = FUEL1_COUNTER + timeout_timer_compare; //Insert correct counter HERE!
     targetSchedule->endCompare = targetSchedule->startCompare + uS_TO_TIMER_COMPARE(duration);
     targetSchedule->Status = PENDING; //Turn this schedule on
-    targetSchedule->schedulesSet++; //Increment the number of times this schedule has been set
-
-    //*targetSchedule->compare = targetSchedule->startCompare;
     SET_COMPARE(FUEL1_COMPARE, targetSchedule->startCompare); //Insert corrector compare HERE!
     interrupts();
     FUEL1_TIMER_ENABLE();
@@ -304,11 +280,7 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses time
         fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
         fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration);
         fuelSchedule1.Status = PENDING; //Turn this schedule on
-        fuelSchedule1.schedulesSet++; //Increment the number of times this schedule has been set
         //Schedule 1 shares a timer with schedule 5
-        //if(channel5InjEnabled) { SET_COMPARE(FUEL1_COMPARE, setQueue(timer3Aqueue, &fuelSchedule1, &fuelSchedule5, FUEL1_COUNTER) ); }
-        //else { timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1; SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.startCompare); }
-        //timer3Aqueue[0] = &fuelSchedule1; timer3Aqueue[1] = &fuelSchedule1; timer3Aqueue[2] = &fuelSchedule1; timer3Aqueue[3] = &fuelSchedule1;
         SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.startCompare);
         interrupts();
         FUEL1_TIMER_ENABLE();
@@ -354,7 +326,6 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule2.endCompare = fuelSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL2_COMPARE, fuelSchedule2.startCompare); //Use the B compare unit of timer 3
       fuelSchedule2.Status = PENDING; //Turn this schedule on
-      fuelSchedule2.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL2_TIMER_ENABLE();
     }
@@ -392,7 +363,6 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule3.endCompare = fuelSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL3_COMPARE, fuelSchedule3.startCompare); //Use the C compare unit of timer 3
       fuelSchedule3.Status = PENDING; //Turn this schedule on
-      fuelSchedule3.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL3_TIMER_ENABLE();
     }
@@ -430,7 +400,6 @@ void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule4.endCompare = fuelSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL4_COMPARE, fuelSchedule4.startCompare); //Use the B compare unit of timer 4
       fuelSchedule4.Status = PENDING; //Turn this schedule on
-      fuelSchedule4.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL4_TIMER_ENABLE();
     }
@@ -466,7 +435,6 @@ void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule5.endCompare = fuelSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL5_COMPARE, fuelSchedule5.startCompare); //Use the C compare unit of timer 4
       fuelSchedule5.Status = PENDING; //Turn this schedule on
-      fuelSchedule5.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL5_TIMER_ENABLE();
     }
@@ -503,7 +471,6 @@ void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule6.endCompare = fuelSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL6_COMPARE, fuelSchedule6.startCompare); //Use the A compare unit of timer 4
       fuelSchedule6.Status = PENDING; //Turn this schedule on
-      fuelSchedule6.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL6_TIMER_ENABLE();
     }
@@ -540,7 +507,6 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule7.endCompare = fuelSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL7_COMPARE, fuelSchedule7.startCompare); //Use the C compare unit of timer 5
       fuelSchedule7.Status = PENDING; //Turn this schedule on
-      fuelSchedule7.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL7_TIMER_ENABLE();
     }
@@ -577,7 +543,6 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
       fuelSchedule8.endCompare = fuelSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration);
       SET_COMPARE(FUEL8_COMPARE, fuelSchedule8.startCompare); //Use the B compare unit of timer 5
       fuelSchedule8.Status = PENDING; //Turn this schedule on
-      fuelSchedule8.schedulesSet++; //Increment the number of times this schedule has been set
       interrupts();
       FUEL8_TIMER_ENABLE();
     }
@@ -604,7 +569,6 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
 
     //Need to check that the timeout doesn't exceed the overflow
     COMPARE_TYPE timeout_timer_compare;
-    //timeout -= (micros() - lastCrankAngleCalc);
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
@@ -613,7 +577,6 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule1.endScheduleSetByDecoder == false) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.startCompare);
     ignitionSchedule1.Status = PENDING; //Turn this schedule on
-    ignitionSchedule1.schedulesSet++;
     interrupts();
     IGN1_TIMER_ENABLE();
   }
@@ -662,7 +625,6 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule2.endScheduleSetByDecoder == false) { ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.startCompare);
     ignitionSchedule2.Status = PENDING; //Turn this schedule on
-    ignitionSchedule2.schedulesSet++;
     interrupts();
     IGN2_TIMER_ENABLE();
   }
@@ -697,7 +659,6 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule3.endScheduleSetByDecoder == false) { ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.startCompare);
     ignitionSchedule3.Status = PENDING; //Turn this schedule on
-    ignitionSchedule3.schedulesSet++;
     interrupts();
     IGN3_TIMER_ENABLE();
   }
@@ -732,7 +693,6 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule4.endScheduleSetByDecoder == false) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.startCompare);
     ignitionSchedule4.Status = PENDING; //Turn this schedule on
-    ignitionSchedule4.schedulesSet++;
     interrupts();
     IGN4_TIMER_ENABLE();
   }
@@ -767,7 +727,6 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule5.endScheduleSetByDecoder == false) { ignitionSchedule5.endCompare = ignitionSchedule5.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.startCompare);
     ignitionSchedule5.Status = PENDING; //Turn this schedule on
-    ignitionSchedule5.schedulesSet++;
     interrupts();
     IGN5_TIMER_ENABLE();
   }
@@ -802,7 +761,6 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule6.endScheduleSetByDecoder == false) { ignitionSchedule6.endCompare = ignitionSchedule6.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.startCompare);
     ignitionSchedule6.Status = PENDING; //Turn this schedule on
-    ignitionSchedule6.schedulesSet++;
     interrupts();
     IGN6_TIMER_ENABLE();
   }
@@ -837,7 +795,6 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule7.endScheduleSetByDecoder == false) { ignitionSchedule7.endCompare = ignitionSchedule7.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.startCompare);
     ignitionSchedule7.Status = PENDING; //Turn this schedule on
-    ignitionSchedule7.schedulesSet++;
     interrupts();
     IGN7_TIMER_ENABLE();
   }
@@ -872,7 +829,6 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     if(ignitionSchedule8.endScheduleSetByDecoder == false) { ignitionSchedule8.endCompare = ignitionSchedule8.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
     SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.startCompare);
     ignitionSchedule8.Status = PENDING; //Turn this schedule on
-    ignitionSchedule8.schedulesSet++;
     interrupts();
     IGN8_TIMER_ENABLE();
   }
@@ -948,11 +904,8 @@ inline void fuelSchedule1Interrupt(void)
     }
     else if (fuelSchedule1.Status == RUNNING)
     {
-       //timer3Aqueue[0]->EndCallback();
        inj1EndFunction();
        fuelSchedule1.Status = OFF; //Turn off the schedule
-       fuelSchedule1.schedulesSet = 0;
-       //SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.endCompare);
 
        //If there is a next schedule queued up, activate it
        if(fuelSchedule1.hasNextSchedule == true)
@@ -960,7 +913,6 @@ inline void fuelSchedule1Interrupt(void)
          SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.nextStartCompare);
          fuelSchedule1.endCompare = fuelSchedule1.nextEndCompare;
          fuelSchedule1.Status = PENDING;
-         fuelSchedule1.schedulesSet = 1;
          fuelSchedule1.hasNextSchedule = false;
        }
        else { FUEL1_TIMER_DISABLE(); }
@@ -978,17 +930,14 @@ inline void fuelSchedule2Interrupt(void)
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule2.StartCallback();
       inj2StartFunction();
       fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL2_COMPARE, FUEL2_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule2.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule2.Status == RUNNING)
     {
-       //fuelSchedule2.EndCallback();
        inj2EndFunction();
        fuelSchedule2.Status = OFF; //Turn off the schedule
-       fuelSchedule2.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
        if(fuelSchedule2.hasNextSchedule == true)
@@ -996,7 +945,6 @@ inline void fuelSchedule2Interrupt(void)
          SET_COMPARE(FUEL2_COMPARE, fuelSchedule2.nextStartCompare);
          fuelSchedule2.endCompare = fuelSchedule2.nextEndCompare;
          fuelSchedule2.Status = PENDING;
-         fuelSchedule2.schedulesSet = 1;
          fuelSchedule2.hasNextSchedule = false;
        }
        else { FUEL2_TIMER_DISABLE(); }
@@ -1013,17 +961,14 @@ inline void fuelSchedule3Interrupt(void)
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule3.StartCallback();
       inj3StartFunction();
       fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL3_COMPARE, FUEL3_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule3.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule3.Status == RUNNING)
     {
-       //fuelSchedule3.EndCallback();
        inj3EndFunction();
        fuelSchedule3.Status = OFF; //Turn off the schedule
-       fuelSchedule3.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
        if(fuelSchedule3.hasNextSchedule == true)
@@ -1031,7 +976,6 @@ inline void fuelSchedule3Interrupt(void)
          SET_COMPARE(FUEL3_COMPARE, fuelSchedule3.nextStartCompare);
          fuelSchedule3.endCompare = fuelSchedule3.nextEndCompare;
          fuelSchedule3.Status = PENDING;
-         fuelSchedule3.schedulesSet = 1;
          fuelSchedule3.hasNextSchedule = false;
        }
        else { FUEL3_TIMER_DISABLE(); }
@@ -1048,17 +992,14 @@ inline void fuelSchedule4Interrupt(void)
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      //fuelSchedule4.StartCallback();
       inj4StartFunction();
       fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       SET_COMPARE(FUEL4_COMPARE, FUEL4_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule4.duration) ); //Doing this here prevents a potential overflow on restarts
     }
     else if (fuelSchedule4.Status == RUNNING)
     {
-       //fuelSchedule4.EndCallback();
        inj4EndFunction();
        fuelSchedule4.Status = OFF; //Turn off the schedule
-       fuelSchedule4.schedulesSet = 0;
 
        //If there is a next schedule queued up, activate it
        if(fuelSchedule4.hasNextSchedule == true)
@@ -1066,7 +1007,6 @@ inline void fuelSchedule4Interrupt(void)
          SET_COMPARE(FUEL4_COMPARE, fuelSchedule4.nextStartCompare);
          fuelSchedule4.endCompare = fuelSchedule4.nextEndCompare;
          fuelSchedule4.Status = PENDING;
-         fuelSchedule4.schedulesSet = 1;
          fuelSchedule4.hasNextSchedule = false;
        }
        else { FUEL4_TIMER_DISABLE(); }
@@ -1091,7 +1031,6 @@ inline void fuelSchedule5Interrupt(void)
   {
      inj5EndFunction();
      fuelSchedule5.Status = OFF; //Turn off the schedule
-     fuelSchedule5.schedulesSet = 0;
 
      //If there is a next schedule queued up, activate it
      if(fuelSchedule5.hasNextSchedule == true)
@@ -1099,7 +1038,6 @@ inline void fuelSchedule5Interrupt(void)
        SET_COMPARE(FUEL5_COMPARE, fuelSchedule5.nextStartCompare);
        fuelSchedule5.endCompare = fuelSchedule5.nextEndCompare;
        fuelSchedule5.Status = PENDING;
-       fuelSchedule5.schedulesSet = 1;
        fuelSchedule5.hasNextSchedule = false;
      }
      else { FUEL5_TIMER_DISABLE(); }
@@ -1116,17 +1054,14 @@ inline void fuelSchedule6Interrupt(void)
 {
   if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
   {
-    //fuelSchedule6.StartCallback();
     inj6StartFunction();
     fuelSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL6_COMPARE, FUEL6_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule6.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule6.Status == RUNNING)
   {
-     //fuelSchedule6.EndCallback();
      inj6EndFunction();
      fuelSchedule6.Status = OFF; //Turn off the schedule
-     fuelSchedule6.schedulesSet = 0;
 
      //If there is a next schedule queued up, activate it
      if(fuelSchedule6.hasNextSchedule == true)
@@ -1134,7 +1069,6 @@ inline void fuelSchedule6Interrupt(void)
        SET_COMPARE(FUEL6_COMPARE, fuelSchedule6.nextStartCompare);
        fuelSchedule6.endCompare = fuelSchedule6.nextEndCompare;
        fuelSchedule6.Status = PENDING;
-       fuelSchedule6.schedulesSet = 1;
        fuelSchedule6.hasNextSchedule = false;
      }
      else { FUEL6_TIMER_DISABLE(); }
@@ -1151,17 +1085,14 @@ inline void fuelSchedule7Interrupt(void)
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
   {
-    //fuelSchedule7.StartCallback();
     inj7StartFunction();
     fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL7_COMPARE, FUEL7_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule7.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule7.Status == RUNNING)
   {
-     //fuelSchedule7.EndCallback();
      inj7EndFunction();
      fuelSchedule7.Status = OFF; //Turn off the schedule
-     fuelSchedule7.schedulesSet = 0;
 
      //If there is a next schedule queued up, activate it
      if(fuelSchedule7.hasNextSchedule == true)
@@ -1169,7 +1100,6 @@ inline void fuelSchedule7Interrupt(void)
        SET_COMPARE(FUEL7_COMPARE, fuelSchedule7.nextStartCompare);
        fuelSchedule7.endCompare = fuelSchedule7.nextEndCompare;
        fuelSchedule7.Status = PENDING;
-       fuelSchedule7.schedulesSet = 1;
        fuelSchedule7.hasNextSchedule = false;
      }
      else { FUEL7_TIMER_DISABLE(); }
@@ -1186,17 +1116,14 @@ inline void fuelSchedule8Interrupt(void)
 {
   if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
   {
-    //fuelSchedule8.StartCallback();
     inj8StartFunction();
     fuelSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(FUEL8_COMPARE, FUEL8_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule8.duration) ); //Doing this here prevents a potential overflow on restarts
   }
   else if (fuelSchedule8.Status == RUNNING)
   {
-     //fuelSchedule8.EndCallback();
      inj8EndFunction();
      fuelSchedule8.Status = OFF; //Turn off the schedule
-     fuelSchedule8.schedulesSet = 0;
 
      //If there is a next schedule queued up, activate it
      if(fuelSchedule8.hasNextSchedule == true)
@@ -1204,7 +1131,6 @@ inline void fuelSchedule8Interrupt(void)
        SET_COMPARE(FUEL8_COMPARE, fuelSchedule8.nextStartCompare);
        fuelSchedule8.endCompare = fuelSchedule8.nextEndCompare;
        fuelSchedule8.Status = PENDING;
-       fuelSchedule8.schedulesSet = 1;
        fuelSchedule8.hasNextSchedule = false;
      }
      else { FUEL8_TIMER_DISABLE(); }
@@ -1231,7 +1157,6 @@ inline void ignitionSchedule1Interrupt(void)
     {
       ignitionSchedule1.EndCallback();
       ignitionSchedule1.Status = OFF; //Turn off the schedule
-      ignitionSchedule1.schedulesSet = 0;
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule1.startTime) );
@@ -1241,7 +1166,6 @@ inline void ignitionSchedule1Interrupt(void)
       {
         SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.nextStartCompare);
         ignitionSchedule1.Status = PENDING;
-        ignitionSchedule1.schedulesSet = 1;
         ignitionSchedule1.hasNextSchedule = false;
       }
       else{ IGN1_TIMER_DISABLE(); }
@@ -1273,7 +1197,6 @@ inline void ignitionSchedule2Interrupt(void)
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
       ignitionSchedule2.EndCallback();
-      ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule2.startTime) );
@@ -1283,7 +1206,6 @@ inline void ignitionSchedule2Interrupt(void)
       {
         SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.nextStartCompare);
         ignitionSchedule2.Status = PENDING;
-        ignitionSchedule2.schedulesSet = 1;
         ignitionSchedule2.hasNextSchedule = false;
       }
       else{ IGN2_TIMER_DISABLE(); }
@@ -1315,7 +1237,6 @@ inline void ignitionSchedule3Interrupt(void)
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
        ignitionSchedule3.EndCallback();
-       ignitionSchedule3.schedulesSet = 0;
        ignitionSchedule3.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
        currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule3.startTime) );
@@ -1325,7 +1246,6 @@ inline void ignitionSchedule3Interrupt(void)
        {
          SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.nextStartCompare);
          ignitionSchedule3.Status = PENDING;
-         ignitionSchedule3.schedulesSet = 1;
          ignitionSchedule3.hasNextSchedule = false;
        }
        else { IGN3_TIMER_DISABLE(); }
@@ -1357,7 +1277,6 @@ inline void ignitionSchedule4Interrupt(void)
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
        ignitionSchedule4.EndCallback();
-       ignitionSchedule4.schedulesSet = 0;
        ignitionSchedule4.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
        currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule4.startTime) );
@@ -1367,7 +1286,6 @@ inline void ignitionSchedule4Interrupt(void)
        {
          SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.nextStartCompare);
          ignitionSchedule4.Status = PENDING;
-         ignitionSchedule4.schedulesSet = 1;
          ignitionSchedule4.hasNextSchedule = false;
        }
        else { IGN4_TIMER_DISABLE(); }
@@ -1399,7 +1317,6 @@ inline void ignitionSchedule5Interrupt(void)
     {
       ignitionSchedule5.Status = OFF; //Turn off the schedule
       ignitionSchedule5.EndCallback();
-      ignitionSchedule5.schedulesSet = 0;
       ignitionSchedule5.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule5.startTime) );
@@ -1409,7 +1326,6 @@ inline void ignitionSchedule5Interrupt(void)
       {
         SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.nextStartCompare);
         ignitionSchedule5.Status = PENDING;
-        ignitionSchedule5.schedulesSet = 1;
         ignitionSchedule5.hasNextSchedule = false;
       }
       else{ IGN5_TIMER_DISABLE(); }
@@ -1441,7 +1357,6 @@ inline void ignitionSchedule6Interrupt(void)
     {
       ignitionSchedule6.Status = OFF; //Turn off the schedule
       ignitionSchedule6.EndCallback();
-      ignitionSchedule6.schedulesSet = 0;
       ignitionSchedule6.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule6.startTime) );
@@ -1451,7 +1366,6 @@ inline void ignitionSchedule6Interrupt(void)
       {
         SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.nextStartCompare);
         ignitionSchedule6.Status = PENDING;
-        ignitionSchedule6.schedulesSet = 1;
         ignitionSchedule6.hasNextSchedule = false;
       }
       else{ IGN6_TIMER_DISABLE(); }
@@ -1483,7 +1397,6 @@ inline void ignitionSchedule7Interrupt(void)
     {
       ignitionSchedule7.Status = OFF; //Turn off the schedule
       ignitionSchedule7.EndCallback();
-      ignitionSchedule7.schedulesSet = 0;
       ignitionSchedule7.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule7.startTime) );
@@ -1493,7 +1406,6 @@ inline void ignitionSchedule7Interrupt(void)
       {
         SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.nextStartCompare);
         ignitionSchedule7.Status = PENDING;
-        ignitionSchedule7.schedulesSet = 1;
         ignitionSchedule7.hasNextSchedule = false;
       }
       else{ IGN7_TIMER_DISABLE(); }
@@ -1525,7 +1437,6 @@ inline void ignitionSchedule8Interrupt(void)
     {
       ignitionSchedule8.Status = OFF; //Turn off the schedule
       ignitionSchedule8.EndCallback();
-      ignitionSchedule8.schedulesSet = 0;
       ignitionSchedule8.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule8.startTime) );
@@ -1535,7 +1446,6 @@ inline void ignitionSchedule8Interrupt(void)
       {
         SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.nextStartCompare);
         ignitionSchedule8.Status = PENDING;
-        ignitionSchedule8.schedulesSet = 1;
         ignitionSchedule8.hasNextSchedule = false;
       }
       else{ IGN8_TIMER_DISABLE(); }

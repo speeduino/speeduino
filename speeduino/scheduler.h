@@ -96,11 +96,11 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
 void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-//void setFuelSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)()); //Schedule 5 remains a special case for now due to the way it's implemented 
 void setFuelSchedule5(unsigned long timeout, unsigned long duration);
 void setFuelSchedule6(unsigned long timeout, unsigned long duration);
 void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
+
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
@@ -171,7 +171,6 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a sched
 struct Schedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile byte schedulesSet;     ///< A counter of how many times the schedule has been set
   void (*StartCallback)();        ///< Start Callback function for schedule
   void (*EndCallback)();          ///< End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
@@ -183,6 +182,8 @@ struct Schedule {
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   volatile bool endScheduleSetByDecoder = false;
 };
+
+
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
@@ -190,7 +191,6 @@ struct Schedule {
 struct FuelSchedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile byte schedulesSet; ///< A counter of how many times the schedule has been set
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
@@ -198,10 +198,6 @@ struct FuelSchedule {
   COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
 };
-
-//volatile Schedule *timer3Aqueue[4];
-//Schedule *timer3Bqueue[4];
-//Schedule *timer3Cqueue[4];
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
@@ -220,78 +216,5 @@ extern Schedule ignitionSchedule5;
 extern Schedule ignitionSchedule6;
 extern Schedule ignitionSchedule7;
 extern Schedule ignitionSchedule8;
-
-//IgnitionSchedule nullSchedule; //This is placed at the end of the queue. It's status will always be set to OFF and hence will never perform any action within an ISR
-
-static inline COMPARE_TYPE setQueue(volatile Schedule *queue[], Schedule *schedule1, Schedule *schedule2, unsigned int CNT)
-{
-  //Create an array of all the upcoming targets, relative to the current count on the timer
-  unsigned int tmpQueue[4];
-
-  //Set the initial queue state. This order matches the tmpQueue order
-  if(schedule1->Status == OFF)
-  {
-    queue[0] = schedule2;
-    queue[1] = schedule2;
-    tmpQueue[0] = schedule2->startCompare - CNT;
-    tmpQueue[1] = schedule2->endCompare - CNT;
-  }
-  else
-  {
-    queue[0] = schedule1;
-    queue[1] = schedule1;
-    tmpQueue[0] = schedule1->startCompare - CNT;
-    tmpQueue[1] = schedule1->endCompare - CNT;
-  }
-
-  if(schedule2->Status == OFF)
-  {
-    queue[2] = schedule1;
-    queue[3] = schedule1;
-    tmpQueue[2] = schedule1->startCompare - CNT;
-    tmpQueue[3] = schedule1->endCompare - CNT;
-  }
-  else
-  {
-    queue[2] = schedule2;
-    queue[3] = schedule2;
-    tmpQueue[2] = schedule2->startCompare - CNT;
-    tmpQueue[3] = schedule2->endCompare - CNT;
-  }
-
-
-  //Sort the queues. Both queues are kept in sync.
-  //This implements a sorting networking based on the Bose-Nelson sorting network
-  //See: pages.ripco.net/~jgamble/nw.html
-  #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
-  /*SWAP(0, 1); */ //Likely not needed
-  /*SWAP(2, 3); */ //Likely not needed
-  SWAP(0, 2);
-  SWAP(1, 3);
-  SWAP(1, 2);
-
-  //Return the next compare time in the queue
-  return tmpQueue[0] + CNT; //Return the
-}
-
-/*
- * Moves all the Schedules in a queue forward one position.
- * The current item (0) is discarded
- * The final queue slot is set to nullSchedule to indicate that no action should be taken
- */
-static inline unsigned int popQueue(volatile Schedule *queue[])
-{
-  queue[0] = queue[1];
-  queue[1] = queue[2];
-  queue[2] = queue[3];
-  //queue[3] = &nullSchedule;
-
-  unsigned int returnCompare;
-  if( queue[0]->Status == PENDING ) { returnCompare = queue[0]->startCompare; }
-  else { returnCompare = queue[0]->endCompare; }
-
-  return returnCompare;
-}
-
 
 #endif // SCHEDULER_H
