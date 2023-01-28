@@ -249,10 +249,8 @@ void test_calc_injN_timeout_360()
         { 360, 3000, 315, 0, 13407 },
         { 360, 3000, 360, 11562, 11562 },
     };
-    const inj_test_parameters (*pStart) = &test_data[0];
-    const inj_test_parameters (*pEnd) = pStart+_countof(test_data);
 
-    test_calc_inj_timeout(pStart, pEnd);
+    test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
 void test_calc_injN_timeout_720()
@@ -443,10 +441,8 @@ void test_calc_injN_timeout_720()
         { 630, 3000, 315, 0, 24477 },
         { 630, 3000, 360, 0, 22632 },
     };
-    const inj_test_parameters (*pStart) = &test_data[0];
-    const inj_test_parameters (*pEnd) = pStart+_countof(test_data);
 
-    test_calc_inj_timeout(pStart, pEnd);
+    test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
 // 
