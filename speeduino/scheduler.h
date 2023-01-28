@@ -50,37 +50,9 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
-/** @name IgnitionCallbacks
- * These are the (global) function pointers that get called to begin and end the ignition coil charging.
- * They are required for the various spark output modes.
- * @{
-*/
-extern void (*ign1StartFunction)(void);
-extern void (*ign1EndFunction)(void);
-extern void (*ign2StartFunction)(void);
-extern void (*ign2EndFunction)(void);
-extern void (*ign3StartFunction)(void);
-extern void (*ign3EndFunction)(void);
-extern void (*ign4StartFunction)(void);
-extern void (*ign4EndFunction)(void);
-extern void (*ign5StartFunction)(void);
-extern void (*ign5EndFunction)(void);
-#if IGN_CHANNELS >= 6
-extern void (*ign6StartFunction)(void);
-extern void (*ign6EndFunction)(void);
-#endif
-#if IGN_CHANNELS >= 7
-extern void (*ign7StartFunction)(void);
-extern void (*ign7EndFunction)(void);
-#endif
-#if IGN_CHANNELS >= 8
-extern void (*ign8StartFunction)(void);
-extern void (*ign8EndFunction)(void);
-#endif
-/** @} */
-
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
+
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
@@ -98,19 +70,19 @@ void setFuelSchedule7(unsigned long timeout, unsigned long duration);
 void setFuelSchedule8(unsigned long timeout, unsigned long duration);
 #endif
 
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule1(unsigned long timeout, unsigned long duration);
+void setIgnitionSchedule2(unsigned long timeout, unsigned long duration);
+void setIgnitionSchedule3(unsigned long timeout, unsigned long duration);
+void setIgnitionSchedule4(unsigned long timeout, unsigned long duration);
+void setIgnitionSchedule5(unsigned long timeout, unsigned long duration);
 #if IGN_CHANNELS >= 6
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule6(unsigned long timeout, unsigned long duration);
 #endif
 #if IGN_CHANNELS >= 7
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule7(unsigned long timeout, unsigned long duration);
 #endif
 #if IGN_CHANNELS >= 8
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)());
+void setIgnitionSchedule8(unsigned long timeout, unsigned long duration);
 #endif
 
 void disablePendingFuelSchedule(byte channel);
@@ -165,8 +137,8 @@ enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a sched
 struct IgnitionSchedule {
   volatile unsigned long duration;///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  void (*StartCallback)(void);        ///< Start Callback function for schedule
-  void (*EndCallback)(void);          ///< End Callback function for schedule
+  void (*pStartCallback)(void);        ///< Start Callback function for schedule
+  void (*pEndCallback)(void);          ///< End Callback function for schedule
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end

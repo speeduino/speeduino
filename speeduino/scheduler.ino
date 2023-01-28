@@ -64,30 +64,7 @@ IgnitionSchedule ignitionSchedule7;
 IgnitionSchedule ignitionSchedule8;
 #endif
 
-void (*ign1StartFunction)(void);
-void (*ign1EndFunction)(void);
-void (*ign2StartFunction)(void);
-void (*ign2EndFunction)(void);
-void (*ign3StartFunction)(void);
-void (*ign3EndFunction)(void);
-void (*ign4StartFunction)(void);
-void (*ign4EndFunction)(void);
-void (*ign5StartFunction)(void);
-void (*ign5EndFunction)(void);
-#if IGN_CHANNELS >= 6
-void (*ign6StartFunction)(void);
-void (*ign6EndFunction)(void);
-#endif
-#if IGN_CHANNELS >= 7
-void (*ign7StartFunction)(void);
-void (*ign7EndFunction)(void);
-#endif
-#if IGN_CHANNELS >= 8
-void (*ign8StartFunction)(void);
-void (*ign8EndFunction)(void);
-#endif
-
-void initialiseSchedulers(void)
+void initialiseSchedulers()
 {
     fuelSchedule1.Status = OFF;
     fuelSchedule2.Status = OFF;
@@ -167,54 +144,54 @@ void initialiseSchedulers(void)
   fuelSchedule8.pEndFunction = nullCallback;
 #endif
 
-  ign1StartFunction = nullCallback;
-  ign1EndFunction = nullCallback;
+  ignitionSchedule1.pStartCallback = nullCallback;
+  ignitionSchedule1.pEndCallback = nullCallback;
   ignition1StartAngle=0;
   ignition1EndAngle=0;
   channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
 
-  ign2StartFunction = nullCallback;
-  ign2EndFunction = nullCallback;
+  ignitionSchedule2.pStartCallback = nullCallback;
+  ignitionSchedule2.pEndCallback = nullCallback;
   ignition2StartAngle=0;
   ignition2EndAngle=0;
   channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
-  ign3StartFunction = nullCallback;
-  ign3EndFunction = nullCallback;
+  ignitionSchedule3.pStartCallback = nullCallback;
+  ignitionSchedule3.pEndCallback = nullCallback;
   ignition3StartAngle=0;
   ignition3EndAngle=0;
   channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
-  ign4StartFunction = nullCallback;
-  ign4EndFunction = nullCallback;
+  ignitionSchedule4.pStartCallback = nullCallback;
+  ignitionSchedule4.pEndCallback = nullCallback;
   ignition4StartAngle=0;
   ignition4EndAngle=0;
   channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
 #if (IGN_CHANNELS >= 5)
-  ign5StartFunction = nullCallback;
-  ign5EndFunction = nullCallback;
+  ignitionSchedule5.pStartCallback = nullCallback;
+  ignitionSchedule5.pEndCallback = nullCallback;
   ignition5StartAngle=0;
   ignition5EndAngle=0;
   channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 6)
-  ign6StartFunction = nullCallback;
-  ign6EndFunction = nullCallback;
+  ignitionSchedule6.pStartCallback = nullCallback;
+  ignitionSchedule6.pEndCallback = nullCallback;
   ignition6StartAngle=0;
   ignition6EndAngle=0;
   channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 7)
-  ign7StartFunction = nullCallback;
-  ign7EndFunction = nullCallback;
+  ignitionSchedule7.pStartCallback = nullCallback;
+  ignitionSchedule7.pEndCallback = nullCallback;
   ignition7StartAngle=0;
   ignition7EndAngle=0;
   channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 #if (IGN_CHANNELS >= 8)
-  ign8StartFunction = nullCallback;
-  ign8EndFunction = nullCallback;
+  ignitionSchedule8.pStartCallback = nullCallback;
+  ignitionSchedule8.pEndCallback = nullCallback;
   ignition8StartAngle=0;
   ignition8EndAngle=0;
   channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
@@ -250,7 +227,6 @@ endCallback: This function is called once the duration time has been reached
 */
 
 
-//void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
@@ -323,7 +299,7 @@ void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses time
     }
   }
 }
-//void setFuelSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+
 void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
@@ -357,7 +333,7 @@ void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses time
     }
   }
 }
-//void setFuelSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+
 void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
@@ -537,12 +513,10 @@ void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses time
 #endif
 
 //Ignition schedulers use Timer 5
-void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule1(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule1.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    ignitionSchedule1.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule1.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule1.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -585,12 +559,10 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule2(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule2.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-    ignitionSchedule2.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule2.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule2.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -618,13 +590,10 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule3(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule3.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule3.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule3.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule3.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -652,13 +621,10 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule4(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule4.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule4.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule4.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule4.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -686,13 +652,10 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
-void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule5(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule5.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule5.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule5.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule5.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -722,13 +685,10 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
 }
 
 #if IGN_CHANNELS >= 6
-void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule6(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule6.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule6.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule6.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule6.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -759,13 +719,10 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
 #endif
 
 #if IGN_CHANNELS >= 7
-void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule7(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule7.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule7.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule7.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule7.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -796,13 +753,10 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
 #endif
 
 #if IGN_CHANNELS >= 8
-void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
+void setIgnitionSchedule8(unsigned long timeout, unsigned long duration)
 {
   if(ignitionSchedule8.Status != RUNNING) //Check that we're not already part way through a schedule
   {
-
-    ignitionSchedule8.StartCallback = startCallback; //Name the start callback function
-    ignitionSchedule8.EndCallback = endCallback; //Name the start callback function
     ignitionSchedule8.duration = duration;
 
     //Need to check that the timeout doesn't exceed the overflow
@@ -1130,7 +1084,7 @@ inline void ignitionSchedule1Interrupt(void)
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule1.StartCallback();
+      ignitionSchedule1.pStartCallback();
       ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule1.startTime = micros();
       if(ignitionSchedule1.endScheduleSetByDecoder == true) { SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare); }
@@ -1138,7 +1092,7 @@ inline void ignitionSchedule1Interrupt(void)
     }
     else if (ignitionSchedule1.Status == RUNNING)
     {
-      ignitionSchedule1.EndCallback();
+      ignitionSchedule1.pEndCallback();
       ignitionSchedule1.Status = OFF; //Turn off the schedule
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
@@ -1170,7 +1124,7 @@ inline void ignitionSchedule2Interrupt(void)
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule2.StartCallback();
+      ignitionSchedule2.pStartCallback();
       ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule2.startTime = micros();
       if(ignitionSchedule2.endScheduleSetByDecoder == true) { SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1179,7 +1133,7 @@ inline void ignitionSchedule2Interrupt(void)
     else if (ignitionSchedule2.Status == RUNNING)
     {
       ignitionSchedule2.Status = OFF; //Turn off the schedule
-      ignitionSchedule2.EndCallback();
+      ignitionSchedule2.pEndCallback();
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule2.startTime) );
@@ -1210,7 +1164,7 @@ inline void ignitionSchedule3Interrupt(void)
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule3.StartCallback();
+      ignitionSchedule3.pStartCallback();
       ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule3.startTime = micros();
       if(ignitionSchedule3.endScheduleSetByDecoder == true) { SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.endCompare ); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1219,7 +1173,7 @@ inline void ignitionSchedule3Interrupt(void)
     else if (ignitionSchedule3.Status == RUNNING)
     {
        ignitionSchedule3.Status = OFF; //Turn off the schedule
-       ignitionSchedule3.EndCallback();
+       ignitionSchedule3.pEndCallback();
        ignitionSchedule3.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
        currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule3.startTime) );
@@ -1250,7 +1204,7 @@ inline void ignitionSchedule4Interrupt(void)
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule4.StartCallback();
+      ignitionSchedule4.pStartCallback();
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
       if(ignitionSchedule4.endScheduleSetByDecoder == true) { SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1259,7 +1213,7 @@ inline void ignitionSchedule4Interrupt(void)
     else if (ignitionSchedule4.Status == RUNNING)
     {
        ignitionSchedule4.Status = OFF; //Turn off the schedule
-       ignitionSchedule4.EndCallback();
+       ignitionSchedule4.pEndCallback();
        ignitionSchedule4.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
        currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule4.startTime) );
@@ -1290,7 +1244,7 @@ inline void ignitionSchedule5Interrupt(void)
   {
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule5.StartCallback();
+      ignitionSchedule5.pStartCallback();
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
       if(ignitionSchedule5.endScheduleSetByDecoder == true) { SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1299,7 +1253,7 @@ inline void ignitionSchedule5Interrupt(void)
     else if (ignitionSchedule5.Status == RUNNING)
     {
       ignitionSchedule5.Status = OFF; //Turn off the schedule
-      ignitionSchedule5.EndCallback();
+      ignitionSchedule5.pEndCallback();
       ignitionSchedule5.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule5.startTime) );
@@ -1330,7 +1284,7 @@ inline void ignitionSchedule6Interrupt(void)
   {
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule6.StartCallback();
+      ignitionSchedule6.pStartCallback();
       ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule6.startTime = micros();
       if(ignitionSchedule6.endScheduleSetByDecoder == true) { SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1339,7 +1293,7 @@ inline void ignitionSchedule6Interrupt(void)
     else if (ignitionSchedule6.Status == RUNNING)
     {
       ignitionSchedule6.Status = OFF; //Turn off the schedule
-      ignitionSchedule6.EndCallback();
+      ignitionSchedule6.pEndCallback();
       ignitionSchedule6.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule6.startTime) );
@@ -1370,7 +1324,7 @@ inline void ignitionSchedule7Interrupt(void)
   {
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule7.StartCallback();
+      ignitionSchedule7.pStartCallback();
       ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule7.startTime = micros();
       if(ignitionSchedule7.endScheduleSetByDecoder == true) { SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1379,7 +1333,7 @@ inline void ignitionSchedule7Interrupt(void)
     else if (ignitionSchedule7.Status == RUNNING)
     {
       ignitionSchedule7.Status = OFF; //Turn off the schedule
-      ignitionSchedule7.EndCallback();
+      ignitionSchedule7.pEndCallback();
       ignitionSchedule7.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule7.startTime) );
@@ -1410,7 +1364,7 @@ inline void ignitionSchedule8Interrupt(void)
   {
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
     {
-      ignitionSchedule8.StartCallback();
+      ignitionSchedule8.pStartCallback();
       ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule8.startTime = micros();
       if(ignitionSchedule8.endScheduleSetByDecoder == true) { SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
@@ -1419,7 +1373,7 @@ inline void ignitionSchedule8Interrupt(void)
     else if (ignitionSchedule8.Status == RUNNING)
     {
       ignitionSchedule8.Status = OFF; //Turn off the schedule
-      ignitionSchedule8.EndCallback();
+      ignitionSchedule8.pEndCallback();
       ignitionSchedule8.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule8.startTime) );
