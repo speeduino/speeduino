@@ -6,7 +6,7 @@
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
-struct test_parameters
+struct inj_test_parameters
 {
     uint16_t channelAngle;  // deg
     uint16_t pw;            // uS
@@ -31,7 +31,7 @@ void test_calc_inj1_timeout(uint16_t pw, uint16_t crankAngle, uint32_t pending, 
 }
 
 
-void test_calc_injN_timeout(const test_parameters &parameters)
+void test_calc_injN_timeout(const inj_test_parameters &parameters)
 {
     uint16_t PWdivTimerPerDegree = div(parameters.pw, timePerDegree).quot;
 
@@ -47,9 +47,9 @@ void test_calc_injN_timeout(const test_parameters &parameters)
 }
 
 
-void test_calc_inj_timeout(const test_parameters *pStart, const test_parameters *pEnd)
+void test_calc_inj_timeout(const inj_test_parameters *pStart, const inj_test_parameters *pEnd)
 {
-    test_parameters local;
+    inj_test_parameters local;
     while (pStart!=pEnd)
     {
         memcpy_P(&local, pStart, sizeof(local));
@@ -64,35 +64,35 @@ void test_calc_inj1_timeout()
     setEngineSpeed(4000, 360);
     currentStatus.injAngle = 355;
 
-    static const int16_t test_data[][5] PROGMEM = {
+    static const int16_t test_data[][4] PROGMEM = {
         // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending, Expected Running
-        { 0, 3000, 0, 11562, 11562 },
-        { 0, 3000, 45, 9717, 9717 },
-        { 0, 3000, 90, 7872, 7872 },
-        { 0, 3000, 135, 6027, 6027 },
-        { 0, 3000, 180, 4182, 4182 },
-        { 0, 3000, 215, 2747, 2747 },
-        { 0, 3000, 270, 492, 492 },
-        { 0, 3000, 315, 0, 13407 },
-        { 0, 3000, 360, 0, 11562 },
-        { 0, 3000, 0, 11562, 11562 },
-        { 0, 3000, 45, 9717, 9717 },
-        { 0, 3000, 90, 7872, 7872 },
-        { 0, 3000, 135, 6027, 6027 },
-        { 0, 3000, 180, 4182, 4182 },
-        { 0, 3000, 215, 2747, 2747 },
-        { 0, 3000, 270, 492, 492 },
-        { 0, 3000, 315, 0, 13407 },
-        { 0, 3000, 360, 0, 11562 },
+        { 3000, 0, 11562, 11562 },
+        { 3000, 45, 9717, 9717 },
+        { 3000, 90, 7872, 7872 },
+        { 3000, 135, 6027, 6027 },
+        { 3000, 180, 4182, 4182 },
+        { 3000, 215, 2747, 2747 },
+        { 3000, 270, 492, 492 },
+        { 3000, 315, 0, 13407 },
+        { 3000, 360, 0, 11562 },
+        { 3000, 0, 11562, 11562 },
+        { 3000, 45, 9717, 9717 },
+        { 3000, 90, 7872, 7872 },
+        { 3000, 135, 6027, 6027 },
+        { 3000, 180, 4182, 4182 },
+        { 3000, 215, 2747, 2747 },
+        { 3000, 270, 492, 492 },
+        { 3000, 315, 0, 13407 },
+        { 3000, 360, 0, 11562 },
     };
-    const int16_t (*pStart)[5] = &test_data[0];
-    const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
+    const int16_t (*pStart)[4] = &test_data[0];
+    const int16_t (*pEnd)[4] = &test_data[0]+_countof(test_data);
 
-    int16_t local[5];
+    int16_t local[4];
     while (pStart!=pEnd)
     {
         memcpy_P(local, pStart, sizeof(local));
-        test_calc_inj1_timeout(local[1], local[2], local[3], local[4]);
+        test_calc_inj1_timeout(local[0], local[1], local[2], local[3]);
         ++pStart;
     }
 }
@@ -102,7 +102,7 @@ void test_calc_injN_timeout_360()
     setEngineSpeed(4000, 360);
     currentStatus.injAngle = 355;
 
-    static const test_parameters test_data[] PROGMEM = {
+    static const inj_test_parameters test_data[] PROGMEM = {
         // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending (uS), Expected Running (uS)
         { 0, 3000, 0, 11562, 11562 },
         { 0, 3000, 0, 11562, 11562 },
@@ -249,8 +249,8 @@ void test_calc_injN_timeout_360()
         { 360, 3000, 315, 0, 13407 },
         { 360, 3000, 360, 11562, 11562 },
     };
-    const test_parameters (*pStart) = &test_data[0];
-    const test_parameters (*pEnd) = pStart+_countof(test_data);
+    const inj_test_parameters (*pStart) = &test_data[0];
+    const inj_test_parameters (*pEnd) = pStart+_countof(test_data);
 
     test_calc_inj_timeout(pStart, pEnd);
 }
@@ -260,7 +260,7 @@ void test_calc_injN_timeout_720()
     setEngineSpeed(4000, 720);
     currentStatus.injAngle = 355;
 
-    static const test_parameters test_data[] PROGMEM = {
+    static const inj_test_parameters test_data[] PROGMEM = {
         // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending (uS), Expected Running (uS)
         { 0, 3000, 0, 11562, 11562 },
         { 0, 3000, 0, 11562, 11562 },
@@ -443,8 +443,8 @@ void test_calc_injN_timeout_720()
         { 630, 3000, 315, 0, 24477 },
         { 630, 3000, 360, 0, 22632 },
     };
-    const test_parameters (*pStart) = &test_data[0];
-    const test_parameters (*pEnd) = pStart+_countof(test_data);
+    const inj_test_parameters (*pStart) = &test_data[0];
+    const inj_test_parameters (*pEnd) = pStart+_countof(test_data);
 
     test_calc_inj_timeout(pStart, pEnd);
 }
