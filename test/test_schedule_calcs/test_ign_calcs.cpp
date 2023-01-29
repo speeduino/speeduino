@@ -8,16 +8,18 @@
 
 extern volatile uint16_t degreesPeruSx2048;
 
+constexpr uint16_t DWELL_TIME_MS = 4;
+
 uint16_t dwellAngle;
 void setEngineSpeed(uint16_t rpm, int16_t max_crank) {
     timePerDegreex16 = ldiv( 2666656L, rpm).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
     timePerDegree = timePerDegreex16 / 16; 
     degreesPeruSx2048 = 2048 / timePerDegree;
-    degreesPeruSx32768 = 524288 / timePerDegreex16;       
-    revolutionTime =  (60*1000000) / rpm;
+    degreesPeruSx32768 = 524288L / timePerDegreex16;       
+    revolutionTime =  (60L*1000000L) / rpm;
     CRANK_ANGLE_MAX_IGN = max_crank;
     CRANK_ANGLE_MAX_INJ = max_crank;
-    dwellAngle = timeToAngle(DWELL_TIME_MS*1000, CRANKMATH_METHOD_INTERVAL_REV);
+    dwellAngle = timeToAngle(DWELL_TIME_MS*1000UL, CRANKMATH_METHOD_INTERVAL_REV);
 }
 
 void test_calc_ign1_timeout(uint16_t crankAngle, uint16_t pending, uint16_t running)
@@ -38,11 +40,11 @@ struct ign_test_parameters
     uint16_t channelAngle;  // deg
     int8_t advanceAngle;  // deg
     uint16_t crankAngle;    // deg
-    uint16_t pending;       // Expected delay when channel status is PENDING
-    uint16_t running;       // Expected delay when channel status is RUNNING
+    uint32_t pending;       // Expected delay when channel status is PENDING
+    uint32_t running;       // Expected delay when channel status is RUNNING
 };
 
-void test_calc_ignN_timeout(Schedule &schedule, uint16_t channelDegrees, const int &startAngle, void (*pEndAngleCalc)(int), uint16_t crankAngle, uint16_t pending, uint16_t running)
+void test_calc_ignN_timeout(Schedule &schedule, uint16_t channelDegrees, const int &startAngle, void (*pEndAngleCalc)(int), uint16_t crankAngle, uint32_t pending, uint32_t running)
 {
     memset(&schedule, 0, sizeof(schedule));
 
@@ -55,7 +57,7 @@ void test_calc_ignN_timeout(Schedule &schedule, uint16_t channelDegrees, const i
     TEST_ASSERT_EQUAL(running, calculateIgnitionNTimeout(schedule, startAngle, channelDegrees, crankAngle));
 }
 
-void test_calc_ign_timeout(uint16_t channelDegrees, uint16_t crankAngle, uint16_t pending, uint16_t running)
+void test_calc_ign_timeout(uint16_t channelDegrees, uint16_t crankAngle, uint32_t pending, uint32_t running)
 {
     channel2IgnDegrees = channelDegrees;
     test_calc_ignN_timeout(ignitionSchedule2, channelDegrees, ignition2StartAngle, &calculateIgnitionAngle2, crankAngle, pending, running);

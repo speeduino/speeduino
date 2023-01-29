@@ -11,7 +11,5 @@ void test_accuracy_timeout(void);
 void test_accuracy_duration(void);
 
 void test_accuracy_timeout(void);
-void test_calc_ign_timeout(void);
-void test_calc_inj_timeout(void);
 
 #endif // __TEST_SCHEDULE_H__
