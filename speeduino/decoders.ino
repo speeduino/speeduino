@@ -51,8 +51,6 @@ volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
-volatile unsigned long curTime3;
-volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 
@@ -4594,9 +4592,8 @@ void triggerSetup_Vmax(void)
   toothAngles[6] = 290;    //tooth #6
 }
 
-//curGap = The difference between the rising lobes.
-//curGap2 = the time in micros when the rising lobe is seen
-//curGap3 = the time in micros when the falling lobe is seen
+//curGap = microseconds between primary triggers
+//curGap2 = microseconds between secondary triggers
 //toothCurrentCount = the current number for the end of a lobe
 //secondaryToothCount = the current number of the beginning of a lobe
 //We measure the width of a lobe so on the end of a lobe, but want to trigger on the beginning. Variable toothCurrentCount tracks the downward events, and secondaryToothCount updates on the upward events. Ideally, it should be the other way round but the engine stall routine resets secondaryToothCount, so it would not sync again after an engine stall.
@@ -4669,7 +4666,7 @@ void triggerPri_Vmax(void)
   }
   else if( BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER) ) // Inverted due to vr conditioner. So this is the falling lobe. We only process if there was a valid trigger.
   {
-    curGap3 = curTime - curGap2;
+    unsigned long curGap3 = curTime - curGap2;
     if (curGap3 > (lastGap * 2)){// Small lobe is 5 degrees, big lobe is 45 degrees. So this should be the wide lobe.
         if (toothCurrentCount == 0 || toothCurrentCount == 6){//Wide should be seen with toothCurrentCount = 0, when there is no sync yet, or toothCurrentCount = 6 when we have done a full revolution. 
           currentStatus.hasSync = true;
