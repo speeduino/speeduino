@@ -104,7 +104,7 @@ enum ScheduleStatus : uint8_t {OFF, PENDING, RUNNING}; //The statuses that a sch
 /** Ignition schedule and Fuel Schedule, both use the same struct now.
  */
 struct Schedule {  
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, RUNNING
  
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 

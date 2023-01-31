@@ -9,18 +9,19 @@ A full copy of the license may be found in the projects root directory
  * 
  * ## Scheduling structures
  * 
- * Structures @ref FuelSchedule and @ref Schedule describe (from scheduler.h) describe the scheduling info for Fuel and Ignition respectively.
+ * Structure @ref Schedule describe (from scheduler.h) describe the scheduling info for Fuel and Ignition.
  * They contain duration, current activity status, start timing, end timing, callbacks to carry out action, etc.
  * 
  * ## Scheduling Functions
  * 
  * For Injection:
- * - setFuelSchedule*(tout,dur) - **Setup** schedule for (next) injection on the channel
+ * - setFuelSchedule*(channel, current crank position, desired end angle, fuel pulse duration) - **Setup** schedule for (next) injection on the channel
  * - inj*StartFunction() - Execute **start** of injection (Interrupt handler)
  * - inj*EndFunction() - Execute **end** of injection (interrupt handler)
+ * Fuel schedules also allow for continous "ON" in the event when pulse durations are overlapping each other.
  * 
  * For Ignition (has more complex schedule setup):
- * - setIgnitionSchedule*(cb_st,tout,dur,cb_end) - **Setup** schedule for (next) ignition on the channel
+ * - setIgnitionSchedule*(channel, current crank position, desired end angle, ignition pulse duration) - **Setup** schedule for (next) ignition on the channel
  * - ign*StartFunction() - Execute **start** of ignition (Interrupt handler)
  * - ign*EndFunction() - Execute **end** of ignition (Interrupt handler)
  */
