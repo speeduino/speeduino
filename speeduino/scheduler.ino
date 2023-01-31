@@ -202,6 +202,14 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule)
              ignitionSchedule->Status=RUNNING;
              ignitionSchedule->timerEnable();
 }
+//overload function for starting schedule immediately with specified dwell, this is used in the tests
+void setIgnitionSchedule(struct Schedule *ignitionSchedule,uint16_t dwell)
+{            
+             ignitionSchedule->StartFunction(); //start coil charging
+             ignitionSchedule->setCompare(ignitionSchedule->getCounter()+ (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(dwell)));
+             ignitionSchedule->Status=RUNNING;
+             ignitionSchedule->timerEnable();
+}
 
 extern void beginInjectorPriming(void)
 {

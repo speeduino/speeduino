@@ -1,208 +1,119 @@
-
 #include <Arduino.h>
 #include <unity.h>
-
+#include "globals.h"
+#include "crankMaths.h"
 #include "scheduler.h"
+#include "scheduledIO.h"
 
-#define TIMEOUT 1000
+#define TESTCRANKANGLE 26
 #define DURATION 1000
 
-static void emptyCallback(void) {  }
+struct crankmaths_rev_testdata {
+  uint16_t rpm;
+  unsigned long revolutionTime;
+  int16_t angle;
+  unsigned long expected;  
+}static *timeout_testdata_current;
 
-void test_status_running_to_pending_inj1(void)
+static Schedule *targetSchedule;
+static void startCallback(void) {}
+static void endCallback(void) {}
+
+//test for second ignition pulse being prepared by the scheduler
+void test_status_running_to_pending_ign(void)
 {
+    crankmaths_rev_testdata *testdata = timeout_testdata_current;
+    revolutionTime = testdata->revolutionTime;
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule1(2*TIMEOUT, DURATION);
-    while(fuelSchedule1.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule1.Status);
+    targetSchedule->StartFunction=startCallback;
+    targetSchedule->EndFunction =endCallback;
+    setIgnitionSchedule(targetSchedule,DURATION);//this sets the schedule immediately
+    setIgnitionSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION); //this should set the next schedule so that it goes from running to pending
+    while(targetSchedule->Status == RUNNING) /*Wait*/ ; 
+    TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status); //test if there is already next schedule pending
 }
-
-void test_status_running_to_pending_inj2(void)
+//test for second fuel injection pulse being prepared by the scheduler
+void test_status_running_to_pending_inj(void)
 {
+    crankmaths_rev_testdata *testdata = timeout_testdata_current;
+    revolutionTime = testdata->revolutionTime;
+    timePerDegree=revolutionTime/360; //fuelschedules use timePerDegree, lets see if it passes the accuracy test!
     initialiseSchedulers();
-    setFuelSchedule2(TIMEOUT, DURATION);
-    while(fuelSchedule2.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule2(2*TIMEOUT, DURATION);
-    while(fuelSchedule2.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule2.Status);
-}
-
-void test_status_running_to_pending_inj3(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule3(TIMEOUT, DURATION);
-    while(fuelSchedule3.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule3(2*TIMEOUT, DURATION);
-    while(fuelSchedule3.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule3.Status);
-}
-
-void test_status_running_to_pending_inj4(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule4(TIMEOUT, DURATION);
-    while(fuelSchedule4.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule4(2*TIMEOUT, DURATION);
-    while(fuelSchedule4.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule4.Status);
-}
-
-void test_status_running_to_pending_inj5(void)
-{
-#if INJ_CHANNELS >= 5
-    initialiseSchedulers();
-    setFuelSchedule5(TIMEOUT, DURATION);
-    while(fuelSchedule5.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule5(2*TIMEOUT, DURATION);
-    while(fuelSchedule5.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule5.Status);
-#endif
-}
-
-void test_status_running_to_pending_inj6(void)
-{
-#if INJ_CHANNELS >= 6
-    initialiseSchedulers();
-    setFuelSchedule6(TIMEOUT, DURATION);
-    while(fuelSchedule6.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule6(2*TIMEOUT, DURATION);
-    while(fuelSchedule6.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule6.Status);
-#endif
-}
-
-void test_status_running_to_pending_inj7(void)
-{
-#if INJ_CHANNELS >= 7
-    initialiseSchedulers();
-    setFuelSchedule7(TIMEOUT, DURATION);
-    while(fuelSchedule7.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule7(2*TIMEOUT, DURATION);
-    while(fuelSchedule7.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule7.Status);
-#endif
-}
-
-void test_status_running_to_pending_inj8(void)
-{
-#if INJ_CHANNELS >= 8
-    initialiseSchedulers();
-    setFuelSchedule8(TIMEOUT, DURATION);
-    while(fuelSchedule8.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule8(2*TIMEOUT, DURATION);
-    while(fuelSchedule8.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule8.Status);
-#endif
-}
-
-
-void test_status_running_to_pending_ign1(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule1.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule1(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule1.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule1.Status);
-}
-
-void test_status_running_to_pending_ign2(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule2.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule2(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule2.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule2.Status);
-}
-
-void test_status_running_to_pending_ign3(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule3.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule3(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule3.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule3.Status);
-}
-
-void test_status_running_to_pending_ign4(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule4.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule4(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule4.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule4.Status);
-}
-
-void test_status_running_to_pending_ign5(void)
-{
-#if IGN_CHANNELS >= 5
-    initialiseSchedulers();
-    setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule5.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule5(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule5.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule5.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign6(void)
-{
-#if INJ_CHANNELS >= 6
-    initialiseSchedulers();
-    setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule6.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule6(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule6.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule6.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign7(void)
-{
-#if INJ_CHANNELS >= 7
-    initialiseSchedulers();
-    setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule7.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule7(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule7.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule7.Status);
-#endif
-}
-
-void test_status_running_to_pending_ign8(void)
-{
-#if INJ_CHANNELS >= 8
-    initialiseSchedulers();
-    setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule8.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule8(emptyCallback, 2*TIMEOUT, DURATION, emptyCallback);
-    while(ignitionSchedule8.Status == RUNNING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule8.Status);
-#endif
+    targetSchedule->StartFunction=startCallback;
+    targetSchedule->EndFunction =endCallback;
+    setFuelSchedule(targetSchedule,DURATION);//sets one schedule immediately
+    setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);//this should set the next schedule so that it goes from running to pending
+    while(targetSchedule->Status == RUNNING) /*Wait*/ ;//test if there is already next schedule pending
+    TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
 }
 
 void test_status_running_to_pending(void)
 {
-    RUN_TEST(test_status_running_to_pending_inj1);
-    RUN_TEST(test_status_running_to_pending_inj2);
-    RUN_TEST(test_status_running_to_pending_inj3);
-    RUN_TEST(test_status_running_to_pending_inj4);
-    RUN_TEST(test_status_running_to_pending_inj5);
-    RUN_TEST(test_status_running_to_pending_inj6);
-    RUN_TEST(test_status_running_to_pending_inj7);
-    RUN_TEST(test_status_running_to_pending_inj8);
+  const byte testNameLength = 200;
+  char testName[testNameLength];
+  uint8_t i;  
 
-    RUN_TEST(test_status_running_to_pending_ign1);
-    RUN_TEST(test_status_running_to_pending_ign2);
-    RUN_TEST(test_status_running_to_pending_ign3);
-    RUN_TEST(test_status_running_to_pending_ign4);
-    RUN_TEST(test_status_running_to_pending_ign5);
-    RUN_TEST(test_status_running_to_pending_ign6);
-    RUN_TEST(test_status_running_to_pending_ign7);
-    RUN_TEST(test_status_running_to_pending_ign8);
+  const crankmaths_rev_testdata crankmaths_rev_testdatas[] = {
+    //50 rpm is too low for this test, the next pulse is way too far away for schedulers reach, so start from 2500rpm with this test
+    //{ .rpm = 50,    .revolutionTime = 1200000, .angle = 1,   .expected = 3333 },//3333,3333
+    //{ .rpm = 50,    .revolutionTime = 1200000, .angle = 25,  .expected = 83333 }, // 83333,3333
+    //{ .rpm = 50,    .revolutionTime = 1200000, .angle = 75, .expected = 250000 },//max timing is 262140uS for schedules, longer times do not activate the scheduler!
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 0,   .expected = 48000 },
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 25,  .expected = 1666 }, // 1666,6666
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 720, .expected = 48000 },
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 0,   .expected = 6000 },
+    //{ .rpm = 20000, .revolutionTime = 3000,    .angle = 25,  .expected = 208 }, // 208,3333 //everything that is under DURATION+IGNITION_REFRESH_THRESHOLD will fail!
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 180,  .expected = 1500 },
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 720, .expected = 6000 }
+  };
+    CRANK_ANGLE_MAX_IGN=720;
+    for(i=1;i<=IGN_CHANNELS;i++){
+        switch(i){
+            case 1: targetSchedule=&ignitionSchedule1;break;
+            case 2: targetSchedule=&ignitionSchedule2;break;
+            case 3: targetSchedule=&ignitionSchedule3;break;
+            case 4: targetSchedule=&ignitionSchedule4;break;
+            case 5: targetSchedule=&ignitionSchedule5;break;
+            #if IGN_CHANNELS >= 6
+            case 6: targetSchedule=&ignitionSchedule6;break;
+            #if IGN_CHANNELS >= 7
+            case 7: targetSchedule=&ignitionSchedule7;break;
+            #if IGN_CHANNELS >= 8
+            case 8: targetSchedule=&ignitionSchedule8;break;
+            #endif
+            #endif
+            #endif
+        }
+        for (auto testdata : crankmaths_rev_testdatas) {
+            timeout_testdata_current = &testdata;
+            snprintf(testName, testNameLength, "test_running_to_pending_ign%u/%urpm/%uangle",i, testdata.rpm, testdata.angle);
+            UnityDefaultTestRun(test_status_running_to_pending_ign, testName, __LINE__);
+        }
+    }
+    //fuel schedules testing loop
+    for(i=1;i<=INJ_CHANNELS;i++){
+        switch(i){
+            case 1: targetSchedule=&fuelSchedule1;break;
+            case 2: targetSchedule=&fuelSchedule2;break;
+            case 3: targetSchedule=&fuelSchedule3;break;
+            case 4: targetSchedule=&fuelSchedule4;break;
+            #if (INJ_CHANNELS >= 5)
+            case 5: targetSchedule=&fuelSchedule5;break;
+            #if IGN_CHANNELS >= 6
+            case 6: targetSchedule=&fuelSchedule6;break;
+            #if IGN_CHANNELS >= 7
+            case 7: targetSchedule=&fuelSchedule7;break;
+            #if IGN_CHANNELS >= 8
+            case 8: targetSchedule=&fuelSchedule8;break;
+            #endif
+            #endif
+            #endif
+            #endif
+        }
+        for (auto testdata : crankmaths_rev_testdatas) {
+            timeout_testdata_current = &testdata;
+            snprintf(testName, testNameLength, "test_running_to_pending_inj%u/%urpm/%uangle",i, testdata.rpm, testdata.angle);
+            UnityDefaultTestRun(test_status_running_to_pending_inj, testName, __LINE__);
+        }
+    }
 }
