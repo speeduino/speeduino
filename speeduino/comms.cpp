@@ -930,7 +930,7 @@ namespace
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const int16_byte *pConverter = table3d_axis_io::get_converter(it.domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
     while (!it.at_end())
     {
       Serial.write(pConverter->to_byte(*it));
