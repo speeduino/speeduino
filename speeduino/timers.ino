@@ -64,33 +64,17 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //dwell limiter mainly is intended to catch race conditions on port writes when read-modify-write to some other pin may revert the pin state when schedule interrupt occurs between read and write.
   uint8_t currentMillis=(uint8_t)millis();
   if((configPage4.useDwellLim) && (isCrankLocked == false)){
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
-    sei(); //allow for possible high priority other interrupts
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
-    sei(); //allow for possible high priority other interrupts
-    #if IGN_CHANNELS >= 6        
-    cli();
+    #if IGN_CHANNELS >= 6
     if((uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
     #if IGN_CHANNELS >= 7
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
     #if IGN_CHANNELS >= 8
-    cli();
     if((uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
-    sei(); //allow for possible high priority other interrupts
     #endif    
     #endif
     #endif
