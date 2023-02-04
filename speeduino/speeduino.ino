@@ -602,7 +602,7 @@ void loop(void)
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
-      injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
+      injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, CRANK_ANGLE_MAX_INJ);
 
       //Repeat the above for each cylinder
       switch (configPage2.nCylinders)
@@ -885,23 +885,7 @@ void loop(void)
       } //Protection active check
       else { curRollingCut = 0; } //Disables the rolling hard cut
 
-#if INJ_CHANNELS >= 1
-      if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
-      {
-        if(currentStatus.PW1 >= inj_opentime_uS)
-        {
-          if ( (injector1StartAngle <= crankAngle) && (fuelSchedule1.Status == RUNNING) ) { injector1StartAngle += CRANK_ANGLE_MAX_INJ; }
-          if (injector1StartAngle > crankAngle)
-          {
-            setFuelSchedule1(
-                      ((injector1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1
-                      );
-          }
-        }
-#endif
-
-        /*-----------------------------------------------------------------------------------------
+      /*-----------------------------------------------------------------------------------------
         | A Note on tempCrankAngle and tempStartAngle:
         |   The use of tempCrankAngle/tempStartAngle is described below. It is then used in the same way for channels 2, 3 and 4+ on both injectors and ignition
         |   Essentially, these 2 variables are used to realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
@@ -911,12 +895,32 @@ void loop(void)
         |   This is done to avoid problems with very short of very long times until tempStartAngle.
         |------------------------------------------------------------------------------------------
         */
+#if INJ_CHANNELS >= 1
+      if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
+      {
+        if(currentStatus.PW1 >= inj_opentime_uS)
+        {
+          tempCrankAngle = crankAngle - CRANK_ANGLE_MAX_INJ + currentStatus.injAngle;
+          if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
+          tempStartAngle = injector1StartAngle - CRANK_ANGLE_MAX_INJ + currentStatus.injAngle;
+          if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule1.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
+          if ( tempStartAngle > tempCrankAngle )
+          {
+            setFuelSchedule1(
+                      ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
+                      (unsigned long)currentStatus.PW1
+                      );
+          }
+        }
+#endif
+
 #if INJ_CHANNELS >= 2
         if( (channel2InjEnabled) && (currentStatus.PW2 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel2InjDegrees;
+          tempCrankAngle = crankAngle - channel2InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector2StartAngle - channel2InjDegrees;
+          tempStartAngle = injector2StartAngle - channel2InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule2.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
@@ -932,9 +936,9 @@ void loop(void)
 #if INJ_CHANNELS >= 3
         if( (channel3InjEnabled) && (currentStatus.PW3 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel3InjDegrees;
+          tempCrankAngle = crankAngle - channel3InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector3StartAngle - channel3InjDegrees;
+          tempStartAngle = injector3StartAngle - channel3InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule3.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
@@ -950,9 +954,9 @@ void loop(void)
 #if INJ_CHANNELS >= 4
         if( (channel4InjEnabled) && (currentStatus.PW4 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel4InjDegrees;
+          tempCrankAngle = crankAngle - channel4InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector4StartAngle - channel4InjDegrees;
+          tempStartAngle = injector4StartAngle - channel4InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule4.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
@@ -968,21 +972,13 @@ void loop(void)
 #if INJ_CHANNELS >= 5
         if( (channel5InjEnabled) && (currentStatus.PW5 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel5InjDegrees;
+          tempCrankAngle = crankAngle - channel5InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector5StartAngle - channel5InjDegrees;
+          tempStartAngle = injector5StartAngle - channel5InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule5.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
           {
-            //Note the hacky use of fuel schedule 3 below
-            /*
-            setFuelSchedule3(openInjector3and5,
-                      ((unsigned long)(tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
-                      (unsigned long)currentStatus.PW1,
-                      closeInjector3and5
-                    );*/
-            
             setFuelSchedule5(
                       ((tempStartAngle - tempCrankAngle) * (unsigned long)timePerDegree),
                       (unsigned long)currentStatus.PW5
@@ -994,9 +990,9 @@ void loop(void)
 #if INJ_CHANNELS >= 6
         if( (channel6InjEnabled) && (currentStatus.PW6 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel6InjDegrees;
+          tempCrankAngle = crankAngle - channel6InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector6StartAngle - channel6InjDegrees;
+          tempStartAngle = injector6StartAngle - channel6InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule6.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
@@ -1012,9 +1008,9 @@ void loop(void)
 #if INJ_CHANNELS >= 7
         if( (channel7InjEnabled) && (currentStatus.PW7 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel7InjDegrees;
+          tempCrankAngle = crankAngle - channel7InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector7StartAngle - channel7InjDegrees;
+          tempStartAngle = injector7StartAngle - channel7InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule7.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )
@@ -1030,9 +1026,9 @@ void loop(void)
 #if INJ_CHANNELS >= 8
         if( (channel8InjEnabled) && (currentStatus.PW8 >= inj_opentime_uS) )
         {
-          tempCrankAngle = crankAngle - channel8InjDegrees;
+          tempCrankAngle = crankAngle - channel8InjDegrees + currentStatus.injAngle;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
-          tempStartAngle = injector8StartAngle - channel8InjDegrees;
+          tempStartAngle = injector8StartAngle - channel8InjDegrees + currentStatus.injAngle;
           if ( tempStartAngle < 0) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( (tempStartAngle <= tempCrankAngle) && (fuelSchedule8.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_INJ; }
           if ( tempStartAngle > tempCrankAngle )

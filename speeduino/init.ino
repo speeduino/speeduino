@@ -459,6 +459,15 @@ void initialiseAll(void)
     ignition7EndAngle = 0;
     ignition8EndAngle = 0;
 
+    fuelSchedule1.scheduleFlags = 0;
+    fuelSchedule2.scheduleFlags = 0;
+    fuelSchedule3.scheduleFlags = 0;
+    fuelSchedule4.scheduleFlags = 0;
+
+    fuelSchedule5.scheduleFlags = 0;
+    fuelSchedule6.scheduleFlags = 0;
+    fuelSchedule7.scheduleFlags = 0;
+    fuelSchedule8.scheduleFlags = 0;
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 

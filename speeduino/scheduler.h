@@ -159,6 +159,10 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((alw
  */
 enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
 
+//Define bit positions within engine variable
+#define BIT_SCHEDULE_NEXT        0    // Enable flag for planned next schedule (when current schedule is RUNNING)
+#define BIT_SCHEDULE_DECODER     1    // Decoder had set the scheduler timer
+#define BIT_SCHEDULE_REPEATED    2    // Ignition had already repeated
 /** Ignition schedule.
  */
 struct Schedule {
@@ -190,6 +194,7 @@ struct FuelSchedule {
   COMPARE_TYPE nextStartCompare;
   COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
+  volatile byte scheduleFlags;
 };
 
 //volatile Schedule *timer3Aqueue[4];
