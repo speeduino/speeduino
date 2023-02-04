@@ -557,14 +557,7 @@ extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
 
 //These need to be here as they are used in both speeduino.ino and scheduler.ino
-extern bool channel1InjEnabled;
-extern bool channel2InjEnabled;
-extern bool channel3InjEnabled;
-extern bool channel4InjEnabled;
-extern bool channel5InjEnabled;
-extern bool channel6InjEnabled;
-extern bool channel7InjEnabled;
-extern bool channel8InjEnabled;
+extern byte channelInjEnabled;
 
 extern int ignition1EndAngle;
 extern int ignition2EndAngle;
