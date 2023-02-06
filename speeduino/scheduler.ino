@@ -801,27 +801,27 @@ extern void beginInjectorPriming(void)
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( channel1InjEnabled == true ) { setFuelSchedule1(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ1_CMD_BIT) == true ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( channel2InjEnabled == true ) { setFuelSchedule2(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true ) { setFuelSchedule2(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( channel3InjEnabled == true ) { setFuelSchedule3(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true ) { setFuelSchedule3(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( channel4InjEnabled == true ) { setFuelSchedule4(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true ) { setFuelSchedule4(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( channel5InjEnabled == true ) { setFuelSchedule5(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true ) { setFuelSchedule5(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( channel6InjEnabled == true ) { setFuelSchedule6(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true ) { setFuelSchedule6(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( channel7InjEnabled == true) { setFuelSchedule7(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) { setFuelSchedule7(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( channel8InjEnabled == true ) { setFuelSchedule8(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true ) { setFuelSchedule8(100, primingValue); }
 #endif
   }
 }
