@@ -912,7 +912,7 @@ void loop(void)
         |------------------------------------------------------------------------------------------
         */
 #if INJ_CHANNELS >= 2
-        if( (channel2InjEnabled) && (currentStatus.PW2 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true) && (currentStatus.PW2 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel2InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -930,7 +930,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 3
-        if( (channel3InjEnabled) && (currentStatus.PW3 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true) && (currentStatus.PW3 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel3InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -948,7 +948,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 4
-        if( (channel4InjEnabled) && (currentStatus.PW4 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true) && (currentStatus.PW4 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel4InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -966,7 +966,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (channel5InjEnabled) && (currentStatus.PW5 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true) && (currentStatus.PW5 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel5InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -992,7 +992,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 6
-        if( (channel6InjEnabled) && (currentStatus.PW6 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true) && (currentStatus.PW6 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel6InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -1010,7 +1010,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 7
-        if( (channel7InjEnabled) && (currentStatus.PW7 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) && (currentStatus.PW7 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel7InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
@@ -1028,7 +1028,7 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 8
-        if( (channel8InjEnabled) && (currentStatus.PW8 >= inj_opentime_uS) )
+        if( (BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true) && (currentStatus.PW8 >= inj_opentime_uS) )
         {
           tempCrankAngle = crankAngle - channel8InjDegrees;
           if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
