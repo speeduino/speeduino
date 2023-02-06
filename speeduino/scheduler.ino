@@ -154,23 +154,24 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-static void SET_FUEL1(COMPARE_TYPE compare) { FUEL1_COMPARE = compare; }
-static void SET_FUEL2(COMPARE_TYPE compare) { FUEL2_COMPARE = compare; }
-static void SET_FUEL3(COMPARE_TYPE compare) { FUEL3_COMPARE = compare; }
-static void SET_FUEL4(COMPARE_TYPE compare) { FUEL4_COMPARE = compare; }
-static void SET_FUEL5(COMPARE_TYPE compare) { FUEL5_COMPARE = compare; }
-static void SET_FUEL6(COMPARE_TYPE compare) { FUEL6_COMPARE = compare; }
-static void SET_FUEL7(COMPARE_TYPE compare) { FUEL7_COMPARE = compare; }
-static void SET_FUEL8(COMPARE_TYPE compare) { FUEL8_COMPARE = compare; }
+// Helper functions for injection schedulers
+static void SET_INJ1_CMP(COMPARE_TYPE compare) { FUEL1_COMPARE = compare; }
+static void SET_INJ2_CMP(COMPARE_TYPE compare) { FUEL2_COMPARE = compare; }
+static void SET_INJ3_CMP(COMPARE_TYPE compare) { FUEL3_COMPARE = compare; }
+static void SET_INJ4_CMP(COMPARE_TYPE compare) { FUEL4_COMPARE = compare; }
+static void SET_INJ5_CMP(COMPARE_TYPE compare) { FUEL5_COMPARE = compare; }
+static void SET_INJ6_CMP(COMPARE_TYPE compare) { FUEL6_COMPARE = compare; }
+static void SET_INJ7_CMP(COMPARE_TYPE compare) { FUEL7_COMPARE = compare; }
+static void SET_INJ8_CMP(COMPARE_TYPE compare) { FUEL8_COMPARE = compare; }
 
-static COUNTER_TYPE GET_FUEL1() { return FUEL1_COUNTER; }
-static COUNTER_TYPE GET_FUEL2() { return FUEL2_COUNTER; }
-static COUNTER_TYPE GET_FUEL3() { return FUEL3_COUNTER; }
-static COUNTER_TYPE GET_FUEL4() { return FUEL4_COUNTER; }
-static COUNTER_TYPE GET_FUEL5() { return FUEL5_COUNTER; }
-static COUNTER_TYPE GET_FUEL6() { return FUEL6_COUNTER; }
-static COUNTER_TYPE GET_FUEL7() { return FUEL7_COUNTER; }
-static COUNTER_TYPE GET_FUEL8() { return FUEL8_COUNTER; }
+static COUNTER_TYPE GET_INJ1_CNT() { return FUEL1_COUNTER; }
+static COUNTER_TYPE GET_INJ2_CNT() { return FUEL2_COUNTER; }
+static COUNTER_TYPE GET_INJ3_CNT() { return FUEL3_COUNTER; }
+static COUNTER_TYPE GET_INJ4_CNT() { return FUEL4_COUNTER; }
+static COUNTER_TYPE GET_INJ5_CNT() { return FUEL5_COUNTER; }
+static COUNTER_TYPE GET_INJ6_CNT() { return FUEL6_COUNTER; }
+static COUNTER_TYPE GET_INJ7_CNT() { return FUEL7_COUNTER; }
+static COUNTER_TYPE GET_INJ8_CNT() { return FUEL8_COUNTER; }
 
 //Experimental new generic function. This is NOT yet ready and functional
 static inline __attribute__((always_inline)) // <-- this is critical for performance
@@ -266,54 +267,55 @@ void setFuelSchedule(unsigned long timeout,
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
 {
-  setFuelSchedule(timeout, duration, fuelSchedule1, FUEL1_TIMER_ENABLE, SET_FUEL1, GET_FUEL1, true);
+  setFuelSchedule(timeout, duration, fuelSchedule1, FUEL1_TIMER_ENABLE, SET_INJ1_CMP, GET_INJ1_CNT, true);
 }
 void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
 {
-  setFuelSchedule(timeout, duration, fuelSchedule2, FUEL2_TIMER_ENABLE, SET_FUEL2, GET_FUEL2, false);
+  setFuelSchedule(timeout, duration, fuelSchedule2, FUEL2_TIMER_ENABLE, SET_INJ2_CMP, GET_INJ2_CNT, false);
 }
 void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
 {
-  setFuelSchedule(timeout, duration, fuelSchedule3, FUEL3_TIMER_ENABLE, SET_FUEL3, GET_FUEL3, false);
+  setFuelSchedule(timeout, duration, fuelSchedule3, FUEL3_TIMER_ENABLE, SET_INJ3_CMP, GET_INJ3_CNT, false);
 }
 void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
 {
-  setFuelSchedule(timeout, duration, fuelSchedule4, FUEL4_TIMER_ENABLE, SET_FUEL4, GET_FUEL4, false);
+  setFuelSchedule(timeout, duration, fuelSchedule4, FUEL4_TIMER_ENABLE, SET_INJ4_CMP, GET_INJ4_CNT, false);
 }
 void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses timer 4 compare C
 {
-  setFuelSchedule(timeout, duration, fuelSchedule5, FUEL5_TIMER_ENABLE, SET_FUEL5, GET_FUEL5, false);
+  setFuelSchedule(timeout, duration, fuelSchedule5, FUEL5_TIMER_ENABLE, SET_INJ5_CMP, GET_INJ5_CNT, false);
 }
 void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses timer 4 compare A
 {
-  setFuelSchedule(timeout, duration, fuelSchedule6, FUEL6_TIMER_ENABLE, SET_FUEL6, GET_FUEL6, false);
+  setFuelSchedule(timeout, duration, fuelSchedule6, FUEL6_TIMER_ENABLE, SET_INJ6_CMP, GET_INJ6_CNT, false);
 }
 void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses timer 5 compare C
 {
-  setFuelSchedule(timeout, duration, fuelSchedule7, FUEL7_TIMER_ENABLE, SET_FUEL7, GET_FUEL7, false);
+  setFuelSchedule(timeout, duration, fuelSchedule7, FUEL7_TIMER_ENABLE, SET_INJ7_CMP, GET_INJ7_CNT, false);
 }
 void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses timer 5 compare B
 {
-  setFuelSchedule(timeout, duration, fuelSchedule8, FUEL8_TIMER_ENABLE, SET_FUEL8, GET_FUEL8, false);
+  setFuelSchedule(timeout, duration, fuelSchedule8, FUEL8_TIMER_ENABLE, SET_INJ8_CMP, GET_INJ8_CNT, false);
 }
 
-static void SET_IGN1(COMPARE_TYPE compare) { IGN1_COMPARE = compare; }
-static void SET_IGN2(COMPARE_TYPE compare) { IGN2_COMPARE = compare; }
-static void SET_IGN3(COMPARE_TYPE compare) { IGN3_COMPARE = compare; }
-static void SET_IGN4(COMPARE_TYPE compare) { IGN4_COMPARE = compare; }
-static void SET_IGN5(COMPARE_TYPE compare) { IGN5_COMPARE = compare; }
-static void SET_IGN6(COMPARE_TYPE compare) { IGN6_COMPARE = compare; }
-static void SET_IGN7(COMPARE_TYPE compare) { IGN7_COMPARE = compare; }
-static void SET_IGN8(COMPARE_TYPE compare) { IGN8_COMPARE = compare; }
+// Helper functions for ignition schedulers
+static void SET_IGN1_CMP(COMPARE_TYPE compare) { IGN1_COMPARE = compare; }
+static void SET_IGN2_CMP(COMPARE_TYPE compare) { IGN2_COMPARE = compare; }
+static void SET_IGN3_CMP(COMPARE_TYPE compare) { IGN3_COMPARE = compare; }
+static void SET_IGN4_CMP(COMPARE_TYPE compare) { IGN4_COMPARE = compare; }
+static void SET_IGN5_CMP(COMPARE_TYPE compare) { IGN5_COMPARE = compare; }
+static void SET_IGN6_CMP(COMPARE_TYPE compare) { IGN6_COMPARE = compare; }
+static void SET_IGN7_CMP(COMPARE_TYPE compare) { IGN7_COMPARE = compare; }
+static void SET_IGN8_CMP(COMPARE_TYPE compare) { IGN8_COMPARE = compare; }
 
-static COUNTER_TYPE GET_IGN1() { return IGN1_COUNTER; }
-static COUNTER_TYPE GET_IGN2() { return IGN2_COUNTER; }
-static COUNTER_TYPE GET_IGN3() { return IGN3_COUNTER; }
-static COUNTER_TYPE GET_IGN4() { return IGN4_COUNTER; }
-static COUNTER_TYPE GET_IGN5() { return IGN5_COUNTER; }
-static COUNTER_TYPE GET_IGN6() { return IGN6_COUNTER; }
-static COUNTER_TYPE GET_IGN7() { return IGN7_COUNTER; }
-static COUNTER_TYPE GET_IGN8() { return IGN8_COUNTER; }
+static COUNTER_TYPE GET_IGN1_CNT() { return IGN1_COUNTER; }
+static COUNTER_TYPE GET_IGN2_CNT() { return IGN2_COUNTER; }
+static COUNTER_TYPE GET_IGN3_CNT() { return IGN3_COUNTER; }
+static COUNTER_TYPE GET_IGN4_CNT() { return IGN4_COUNTER; }
+static COUNTER_TYPE GET_IGN5_CNT() { return IGN5_COUNTER; }
+static COUNTER_TYPE GET_IGN6_CNT() { return IGN6_COUNTER; }
+static COUNTER_TYPE GET_IGN7_CNT() { return IGN7_COUNTER; }
+static COUNTER_TYPE GET_IGN8_CNT() { return IGN8_COUNTER; }
 
 static inline __attribute__((always_inline)) // <-- this is critical for performance
 void setIgnitionSchedule(
@@ -362,7 +364,7 @@ void setIgnitionSchedule(
 
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule1, IGN1_TIMER_ENABLE, SET_IGN1, GET_IGN1);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule1, IGN1_TIMER_ENABLE, SET_IGN1_CMP, GET_IGN1_CNT);
 }
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
@@ -380,31 +382,31 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule2, IGN2_TIMER_ENABLE, SET_IGN2, GET_IGN2);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule2, IGN2_TIMER_ENABLE, SET_IGN2_CMP, GET_IGN2_CNT);
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule3, IGN3_TIMER_ENABLE, SET_IGN3, GET_IGN3);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule3, IGN3_TIMER_ENABLE, SET_IGN3_CMP, GET_IGN3_CNT);
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule4, IGN4_TIMER_ENABLE, SET_IGN4, GET_IGN4);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule4, IGN4_TIMER_ENABLE, SET_IGN4_CMP, GET_IGN4_CNT);
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule5, IGN5_TIMER_ENABLE, SET_IGN5, GET_IGN5);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule5, IGN5_TIMER_ENABLE, SET_IGN5_CMP, GET_IGN5_CNT);
 }
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule6, IGN6_TIMER_ENABLE, SET_IGN6, GET_IGN6);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule6, IGN6_TIMER_ENABLE, SET_IGN6_CMP, GET_IGN6_CNT);
 }
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule7, IGN7_TIMER_ENABLE, SET_IGN7, GET_IGN7);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule7, IGN7_TIMER_ENABLE, SET_IGN7_CMP, GET_IGN7_CNT);
 }
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule8, IGN8_TIMER_ENABLE, SET_IGN8, GET_IGN8);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule8, IGN8_TIMER_ENABLE, SET_IGN8_CMP, GET_IGN8_CNT);
 }
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
@@ -499,7 +501,7 @@ ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterrupt(fuelSchedule1, FUEL1_TIMER_DISABLE, GET_FUEL1, SET_FUEL1, inj1StartFunction, inj1EndFunction, true);
+    fuelScheduleInterrupt(fuelSchedule1, FUEL1_TIMER_DISABLE, GET_INJ1_CNT, SET_INJ1_CMP, inj1StartFunction, inj1EndFunction, true);
   }
 #endif
 
@@ -510,7 +512,7 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterrupt(fuelSchedule2, FUEL2_TIMER_DISABLE, GET_IGN2, SET_IGN2, inj2StartFunction, inj2EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule2, FUEL2_TIMER_DISABLE, GET_IGN2_CNT, SET_IGN2_CMP, inj2StartFunction, inj2EndFunction, false);
   }
 #endif
 
@@ -521,7 +523,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterrupt(fuelSchedule3, FUEL3_TIMER_DISABLE, GET_IGN3, SET_IGN3, inj3StartFunction, inj3EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule3, FUEL3_TIMER_DISABLE, GET_IGN3_CNT, SET_IGN3_CMP, inj3StartFunction, inj3EndFunction, false);
   }
 #endif
 
@@ -532,7 +534,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterrupt(fuelSchedule4, FUEL4_TIMER_DISABLE, GET_IGN4, SET_IGN4, inj4StartFunction, inj4EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule4, FUEL4_TIMER_DISABLE, GET_IGN4_CNT, SET_IGN4_CMP, inj4StartFunction, inj4EndFunction, false);
   }
 #endif
 
@@ -543,7 +545,7 @@ ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterrupt(fuelSchedule5, FUEL5_TIMER_DISABLE, GET_IGN5, SET_IGN5, inj5StartFunction, inj5EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule5, FUEL5_TIMER_DISABLE, GET_IGN5_CNT, SET_IGN5_CMP, inj5StartFunction, inj5EndFunction, false);
 }
 #endif
 
@@ -554,7 +556,7 @@ ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterrupt(fuelSchedule6, FUEL6_TIMER_DISABLE, GET_IGN6, SET_IGN6, inj6StartFunction, inj6EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule6, FUEL6_TIMER_DISABLE, GET_IGN6_CNT, SET_IGN6_CMP, inj6StartFunction, inj6EndFunction, false);
 }
 #endif
 
@@ -565,7 +567,7 @@ ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterrupt(fuelSchedule7, FUEL7_TIMER_DISABLE, GET_IGN7, SET_IGN7, inj7StartFunction, inj7EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule7, FUEL7_TIMER_DISABLE, GET_IGN7_CNT, SET_IGN7_CMP, inj7StartFunction, inj7EndFunction, false);
 }
 #endif
 
@@ -576,7 +578,7 @@ ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterrupt(fuelSchedule8, FUEL8_TIMER_DISABLE, GET_IGN8, SET_IGN8, inj8StartFunction, inj8EndFunction, false);
+    fuelScheduleInterrupt(fuelSchedule8, FUEL8_TIMER_DISABLE, GET_IGN8_CNT, SET_IGN8_CMP, inj8StartFunction, inj8EndFunction, false);
 }
 #endif
 
@@ -626,7 +628,7 @@ ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule1, IGN1_TIMER_DISABLE, GET_IGN1, SET_IGN1);
+    ignitionScheduleInterrupt(ignitionSchedule1, IGN1_TIMER_DISABLE, GET_IGN1_CNT, SET_IGN1_CMP);
   }
 #endif
 
@@ -637,7 +639,7 @@ ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule2, IGN2_TIMER_DISABLE, GET_IGN2, SET_IGN2);
+    ignitionScheduleInterrupt(ignitionSchedule2, IGN2_TIMER_DISABLE, GET_IGN2_CNT, SET_IGN2_CMP);
   }
 #endif
 
@@ -648,7 +650,7 @@ ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule3, IGN3_TIMER_DISABLE, GET_IGN3, SET_IGN3);
+    ignitionScheduleInterrupt(ignitionSchedule3, IGN3_TIMER_DISABLE, GET_IGN3_CNT, SET_IGN3_CMP);
   }
 #endif
 
@@ -659,7 +661,7 @@ ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule4, IGN4_TIMER_DISABLE, GET_IGN4, SET_IGN4);
+    ignitionScheduleInterrupt(ignitionSchedule4, IGN4_TIMER_DISABLE, GET_IGN4_CNT, SET_IGN4_CMP);
   }
 #endif
 
@@ -670,7 +672,7 @@ ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule5, IGN5_TIMER_DISABLE, GET_IGN5, SET_IGN5);
+    ignitionScheduleInterrupt(ignitionSchedule5, IGN5_TIMER_DISABLE, GET_IGN5_CNT, SET_IGN5_CMP);
   }
 #endif
 
@@ -681,7 +683,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule6, IGN6_TIMER_DISABLE, GET_IGN6, SET_IGN6);
+    ignitionScheduleInterrupt(ignitionSchedule6, IGN6_TIMER_DISABLE, GET_IGN6_CNT, SET_IGN6_CMP);
   }
 #endif
 
@@ -692,7 +694,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule7, IGN7_TIMER_DISABLE, GET_IGN7, SET_IGN7);
+    ignitionScheduleInterrupt(ignitionSchedule7, IGN7_TIMER_DISABLE, GET_IGN7_CNT, SET_IGN7_CMP);
   }
 #endif
 
@@ -703,6 +705,6 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterrupt(ignitionSchedule8, IGN8_TIMER_DISABLE, GET_IGN8, SET_IGN8);
+    ignitionScheduleInterrupt(ignitionSchedule8, IGN8_TIMER_DISABLE, GET_IGN8_CNT, SET_IGN8_CMP);
   }
 #endif
