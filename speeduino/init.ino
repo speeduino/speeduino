@@ -441,14 +441,9 @@ void initialiseAll(void)
     CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
-    channel1InjEnabled = true;
-    channel2InjEnabled = false;
-    channel3InjEnabled = false;
-    channel4InjEnabled = false;
-    channel5InjEnabled = false;
-    channel6InjEnabled = false;
-    channel7InjEnabled = false;
-    channel8InjEnabled = false;
+
+    channelInjEnabled = 0; // Disable all injectors
+    BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
 
     ignition1EndAngle = 0;
     ignition2EndAngle = 0;
@@ -478,12 +473,12 @@ void initialiseAll(void)
           req_fuel_uS = req_fuel_uS * 2;
         }
 
-        channel1InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
         }
         break;
@@ -514,14 +509,14 @@ void initialiseAll(void)
           fuelSchedule2.channelDegrees = 0; 
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
           fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
@@ -593,9 +588,9 @@ void initialiseAll(void)
           fuelSchedule3.channelDegrees = 240;
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         break;
     case 4:
         ignitionSchedule1.channelDegrees = 0;
@@ -655,8 +650,8 @@ void initialiseAll(void)
           fuelSchedule3.channelDegrees = 360;
           fuelSchedule4.channelDegrees = 540;
 
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -665,26 +660,26 @@ void initialiseAll(void)
         else
         {
           //Should never happen, but default values
-          channel3InjEnabled = false;
-          channel4InjEnabled = false;
-          channel5InjEnabled = false;
-          channel6InjEnabled = false;
-          channel7InjEnabled = false;
-          channel8InjEnabled = false;
+          BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
           fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         break;
     case 5:
         ignitionSchedule1.channelDegrees = 0;
@@ -740,7 +735,7 @@ void initialiseAll(void)
           fuelSchedule4.channelDegrees = 432;
           fuelSchedule5.channelDegrees = 576;
 
-          channel5InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -748,10 +743,10 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
     case 6:
         ignitionSchedule1.channelDegrees = 0;
@@ -801,9 +796,9 @@ void initialiseAll(void)
           fuelSchedule5.channelDegrees = 480;
           fuelSchedule6.channelDegrees = 600;
 
-          channel4InjEnabled = true;
-          channel5InjEnabled = true;
-          channel6InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -811,9 +806,9 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         break;
     case 8:
         ignitionSchedule1.channelDegrees = 0;
@@ -879,10 +874,10 @@ void initialiseAll(void)
           fuelSchedule7.channelDegrees = 540;
           fuelSchedule8.channelDegrees = 630;
 
-          channel5InjEnabled = true;
-          channel6InjEnabled = true;
-          channel7InjEnabled = true;
-          channel8InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -890,10 +885,10 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
     default: //Handle this better!!!
         fuelSchedule1.channelDegrees = 0;
@@ -3518,21 +3513,21 @@ void changeHalfToFullSync(void)
     switch (configPage2.nCylinders)
     {
       case 4:
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
             
       case 6:
-        channel4InjEnabled = true;
-        channel5InjEnabled = true;
-        channel6InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
         break;
 
       case 8:
-        channel5InjEnabled = true;
-        channel6InjEnabled = true;
-        channel7InjEnabled = true;
-        channel8InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
         break;
 
       default:
@@ -3610,8 +3605,8 @@ void changeFullToHalfSync(void)
           fuelSchedule2.StartFunction = openInjector2and3;
           fuelSchedule2.EndFunction = closeInjector2and3;
         }
-        channel3InjEnabled = false;
-        channel4InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
         break;
             
       case 6:
@@ -3621,9 +3616,9 @@ void changeFullToHalfSync(void)
         fuelSchedule2.EndFunction = closeInjector2and5;
         fuelSchedule3.StartFunction = openInjector3and6;
         fuelSchedule3.EndFunction = closeInjector3and6;
-        channel4InjEnabled = false;
-        channel5InjEnabled = false;
-        channel6InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
         break;
 
       case 8:
@@ -3635,10 +3630,10 @@ void changeFullToHalfSync(void)
         fuelSchedule3.EndFunction = closeInjector3and7;
         fuelSchedule4.StartFunction = openInjector4and8;
         fuelSchedule4.EndFunction = closeInjector4and8;
-        channel5InjEnabled = false;
-        channel6InjEnabled = false;
-        channel7InjEnabled = false;
-        channel8InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
         break;
     }
   }
