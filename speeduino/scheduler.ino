@@ -174,145 +174,141 @@ static COUNTER_TYPE GET_FUEL8() { return FUEL8_COUNTER; }
 
 //Experimental new generic function. This is NOT yet ready and functional
 static inline __attribute__((always_inline)) // <-- this is critical for performance
-void setFuelScheduleA(unsigned long timeout,
+void setFuelSchedule(unsigned long timeout,
   unsigned long duration,
   FuelSchedule& schedule,
   void (*timer_enable)(),
   void (*set_compare)(COMPARE_TYPE),
-  COMPARE_TYPE (*get_counter)())
+  COMPARE_TYPE (*get_counter)(),
+  const bool safety_check)
 {
-  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  //if(timeout < MAX_TIMER_PERIOD)
+  if (safety_check)
   {
-    if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
+    //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+    //if(timeout < MAX_TIMER_PERIOD)
     {
-      //Need to check that the timeout doesn't exceed the overflow
-      if ((timeout+duration) < MAX_TIMER_PERIOD)
+      if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
       {
+        //Need to check that the timeout doesn't exceed the overflow
+        if ((timeout+duration) < MAX_TIMER_PERIOD)
+        {
+          schedule.duration = duration;
+          //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+          noInterrupts();
+          schedule.startCompare = get_counter() + uS_TO_TIMER_COMPARE(timeout);
+          schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
+          schedule.Status = PENDING; //Turn this schedule on
+          schedule.schedulesSet++; //Increment the number of times this schedule has been set
+          //Schedule 1 shares a timer with schedule 5
+          //if(channel5InjEnabled) { SET_COMPARE(compare, setQueue(timer3Aqueue, &schedule, &fuelSchedule5, FUEL1_COUNTER) ); }
+          //else { timer3Aqueue[0] = &schedule; timer3Aqueue[1] = &schedule; timer3Aqueue[2] = &schedule; timer3Aqueue[3] = &schedule; SET_COMPARE(compare, fuelSchedule1.startCompare); }
+          //timer3Aqueue[0] = &schedule; timer3Aqueue[1] = &schedule; timer3Aqueue[2] = &schedule; timer3Aqueue[3] = &schedule;
+          set_compare(schedule.startCompare);
+          interrupts();
+          timer_enable();
+        }
+      }
+      else
+      {
+        //If the schedule is already running, we can set the next schedule so it is ready to go
+        //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+        if( (timeout+duration) < MAX_TIMER_PERIOD )
+        {
+          noInterrupts();
+          schedule.nextStartCompare = get_counter() + uS_TO_TIMER_COMPARE(timeout);
+          schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+          schedule.duration = duration;
+          schedule.hasNextSchedule = true;
+          interrupts();
+        }
+      } //Schedule is RUNNING
+    } //Timeout less than threshold
+  }
+  else
+  {
+    //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+    if(timeout < MAX_TIMER_PERIOD)
+    {
+      if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
+      {
+        //Callbacks no longer used, but retained for now:
+        //schedule.StartCallback = startCallback;
+        //schedule.EndCallback = endCallback;
         schedule.duration = duration;
+
+        //Need to check that the timeout doesn't exceed the overflow
+        COMPARE_TYPE timeout_timer_compare;
+        if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
+        else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
         //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
         noInterrupts();
-        schedule.startCompare = get_counter() + uS_TO_TIMER_COMPARE(timeout);
+        schedule.startCompare = get_counter() + timeout_timer_compare;
         schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
+        set_compare(schedule.startCompare); //Use the B compare unit of timer 3
         schedule.Status = PENDING; //Turn this schedule on
         schedule.schedulesSet++; //Increment the number of times this schedule has been set
-        //Schedule 1 shares a timer with schedule 5
-        //if(channel5InjEnabled) { SET_COMPARE(compare, setQueue(timer3Aqueue, &schedule, &fuelSchedule5, FUEL1_COUNTER) ); }
-        //else { timer3Aqueue[0] = &schedule; timer3Aqueue[1] = &schedule; timer3Aqueue[2] = &schedule; timer3Aqueue[3] = &schedule; SET_COMPARE(compare, fuelSchedule1.startCompare); }
-        //timer3Aqueue[0] = &schedule; timer3Aqueue[1] = &schedule; timer3Aqueue[2] = &schedule; timer3Aqueue[3] = &schedule;
-        set_compare(schedule.startCompare);
         interrupts();
         timer_enable();
       }
-    }
-    else
-    {
-      //If the schedule is already running, we can set the next schedule so it is ready to go
-      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      if( (timeout+duration) < MAX_TIMER_PERIOD )
+      else
       {
-        noInterrupts();
+        //If the schedule is already running, we can set the next schedule so it is ready to go
+        //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
         schedule.nextStartCompare = get_counter() + uS_TO_TIMER_COMPARE(timeout);
         schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-        schedule.duration = duration;
         schedule.hasNextSchedule = true;
-        interrupts();
       }
-    } //Schedule is RUNNING
-  } //Timeout less than threshold
+    }
+  }
 }
 
 //void setFuelSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
 {
-  setFuelScheduleA(timeout, duration, fuelSchedule1, FUEL1_TIMER_ENABLE, SET_FUEL1, GET_FUEL1);
-}
-
-//Experimental new generic function. This is NOT yet ready and functional
-static inline __attribute__((always_inline)) // <-- this is critical for performance
-void setFuelScheduleB(unsigned long timeout,
-  unsigned long duration,
-  FuelSchedule& schedule,
-  void (*timer_enable)(),
-  void (*set_compare)(COMPARE_TYPE),
-  COMPARE_TYPE (*get_counter)())
-{
-  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  if(timeout < MAX_TIMER_PERIOD)
-  {
-    if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
-    {
-      //Callbacks no longer used, but retained for now:
-      //schedule.StartCallback = startCallback;
-      //schedule.EndCallback = endCallback;
-      schedule.duration = duration;
-
-      //Need to check that the timeout doesn't exceed the overflow
-      COMPARE_TYPE timeout_timer_compare;
-      if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
-      else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-      noInterrupts();
-      schedule.startCompare = get_counter() + timeout_timer_compare;
-      schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
-      set_compare(schedule.startCompare); //Use the B compare unit of timer 3
-      schedule.Status = PENDING; //Turn this schedule on
-      schedule.schedulesSet++; //Increment the number of times this schedule has been set
-      interrupts();
-      timer_enable();
-    }
-    else
-    {
-      //If the schedule is already running, we can set the next schedule so it is ready to go
-      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      schedule.nextStartCompare = get_counter() + uS_TO_TIMER_COMPARE(timeout);
-      schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      schedule.hasNextSchedule = true;
-    }
-  }
+  setFuelSchedule(timeout, duration, fuelSchedule1, FUEL1_TIMER_ENABLE, SET_FUEL1, GET_FUEL1, true);
 }
 
 void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule2, FUEL2_TIMER_ENABLE, SET_FUEL2, GET_FUEL2);
+  setFuelSchedule(timeout, duration, fuelSchedule2, FUEL2_TIMER_ENABLE, SET_FUEL2, GET_FUEL2, false);
 }
 
 void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule3, FUEL3_TIMER_ENABLE, SET_FUEL3, GET_FUEL3);
+  setFuelSchedule(timeout, duration, fuelSchedule3, FUEL3_TIMER_ENABLE, SET_FUEL3, GET_FUEL3, false);
 }
 
 void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule4, FUEL4_TIMER_ENABLE, SET_FUEL4, GET_FUEL4);
+  setFuelSchedule(timeout, duration, fuelSchedule4, FUEL4_TIMER_ENABLE, SET_FUEL4, GET_FUEL4, false);
 }
 
 #if INJ_CHANNELS >= 5
 void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses timer 4 compare C
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule5, FUEL5_TIMER_ENABLE, SET_FUEL5, GET_FUEL5);
+  setFuelSchedule(timeout, duration, fuelSchedule5, FUEL5_TIMER_ENABLE, SET_FUEL5, GET_FUEL5, false);
 }
 #endif
 
 #if INJ_CHANNELS >= 6
 void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses timer 4 compare A
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule6, FUEL6_TIMER_ENABLE, SET_FUEL6, GET_FUEL6);
+  setFuelSchedule(timeout, duration, fuelSchedule6, FUEL6_TIMER_ENABLE, SET_FUEL6, GET_FUEL6, false);
 }
 #endif
 
 #if INJ_CHANNELS >= 7
 void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses timer 5 compare C
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule7, FUEL7_TIMER_ENABLE, SET_FUEL7, GET_FUEL7);
+  setFuelSchedule(timeout, duration, fuelSchedule7, FUEL7_TIMER_ENABLE, SET_FUEL7, GET_FUEL7, false);
 }
 #endif
 
 #if INJ_CHANNELS >= 8
 void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses timer 5 compare B
 {
-  setFuelScheduleB(timeout, duration, fuelSchedule8, FUEL8_TIMER_ENABLE, SET_FUEL8, GET_FUEL8);
+  setFuelSchedule(timeout, duration, fuelSchedule8, FUEL8_TIMER_ENABLE, SET_FUEL8, GET_FUEL8, false);
 }
 #endif
 
@@ -335,7 +331,7 @@ static COUNTER_TYPE GET_IGN7() { return IGN7_COUNTER; }
 static COUNTER_TYPE GET_IGN8() { return IGN8_COUNTER; }
 
 static inline __attribute__((always_inline)) // <-- this is critical for performance
-void setIgnitionScheduleA(
+void setIgnitionSchedule(
   void (*startCallback)(),
   unsigned long timeout,
   unsigned long duration,
@@ -381,7 +377,7 @@ void setIgnitionScheduleA(
 
 void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule1, IGN1_TIMER_ENABLE, SET_IGN1, GET_IGN1);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule1, IGN1_TIMER_ENABLE, SET_IGN1, GET_IGN1);
 }
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
@@ -399,31 +395,31 @@ inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
 
 void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule2, IGN2_TIMER_ENABLE, SET_IGN2, GET_IGN2);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule2, IGN2_TIMER_ENABLE, SET_IGN2, GET_IGN2);
 }
 void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule3, IGN3_TIMER_ENABLE, SET_IGN3, GET_IGN3);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule3, IGN3_TIMER_ENABLE, SET_IGN3, GET_IGN3);
 }
 void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule4, IGN4_TIMER_ENABLE, SET_IGN4, GET_IGN4);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule4, IGN4_TIMER_ENABLE, SET_IGN4, GET_IGN4);
 }
 void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule5, IGN5_TIMER_ENABLE, SET_IGN5, GET_IGN5);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule5, IGN5_TIMER_ENABLE, SET_IGN5, GET_IGN5);
 }
 void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule6, IGN6_TIMER_ENABLE, SET_IGN6, GET_IGN6);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule6, IGN6_TIMER_ENABLE, SET_IGN6, GET_IGN6);
 }
 void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule7, IGN7_TIMER_ENABLE, SET_IGN7, GET_IGN7);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule7, IGN7_TIMER_ENABLE, SET_IGN7, GET_IGN7);
 }
 void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsigned long duration, void(*endCallback)())
 {
-  setIgnitionScheduleA(startCallback, timeout, duration, endCallback, ignitionSchedule8, IGN8_TIMER_ENABLE, SET_IGN8, GET_IGN8);
+  setIgnitionSchedule(startCallback, timeout, duration, endCallback, ignitionSchedule8, IGN8_TIMER_ENABLE, SET_IGN8, GET_IGN8);
 }
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
@@ -469,13 +465,14 @@ extern void beginInjectorPriming(void)
 */
 
 static inline __attribute__((always_inline)) // <-- this is critical for performance
-void fuelScheduleInterruptA(
+void fuelScheduleInterrupt(
   FuelSchedule& schedule,
   void (*timer_disable)(),
   COUNTER_TYPE (*get_counter)(),
   void (*set_compare)(COMPARE_TYPE),
   void (*start_function)(),
-  void (*end_function)())
+  void (*end_function)(),
+  const bool safety_check)
 {
     if (schedule.Status == PENDING) //Check to see if this schedule is turn on
     {
@@ -502,7 +499,10 @@ void fuelScheduleInterruptA(
        }
        else { timer_disable(); }
     }
-    else if (schedule.Status == OFF) { timer_disable(); } //Safety check. Turn off this output compare unit and return without performing any action
+    else if (safety_check)
+    {
+      if (schedule.Status == OFF) { timer_disable(); } //Safety check. Turn off this output compare unit and return without performing any action
+    }
 }
 
 //Timer3A (fuel schedule 1) Compare Vector
@@ -514,45 +514,10 @@ ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterruptA(fuelSchedule1, FUEL1_TIMER_DISABLE, GET_FUEL1, SET_FUEL1, inj1StartFunction, inj1EndFunction);
+    fuelScheduleInterrupt(fuelSchedule1, FUEL1_TIMER_DISABLE, GET_FUEL1, SET_FUEL1, inj1StartFunction, inj1EndFunction, true);
   }
 #endif
 
-static inline __attribute__((always_inline)) // <-- this is critical for performance
-void fuelScheduleInterruptB(
-  FuelSchedule& schedule,
-  void (*timer_disable)(),
-  COUNTER_TYPE (*get_counter)(),
-  void (*set_compare)(COMPARE_TYPE),
-  void (*start_function)(),
-  void (*end_function)())
-{
-    if (schedule.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      //schedule.StartCallback();
-      start_function();
-      schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      set_compare(get_counter() + uS_TO_TIMER_COMPARE(schedule.duration) ); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (schedule.Status == RUNNING)
-    {
-       //schedule.EndCallback();
-       end_function();
-       schedule.Status = OFF; //Turn off the schedule
-       schedule.schedulesSet = 0;
-
-       //If there is a next schedule queued up, activate it
-       if(schedule.hasNextSchedule == true)
-       {
-         set_compare(schedule.nextStartCompare);
-         schedule.endCompare = schedule.nextEndCompare;
-         schedule.Status = PENDING;
-         schedule.schedulesSet = 1;
-         schedule.hasNextSchedule = false;
-       }
-       else { timer_disable(); }
-    }
-}
 #if (INJ_CHANNELS >= 2)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
@@ -560,7 +525,7 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterruptB(fuelSchedule2, FUEL2_TIMER_DISABLE, GET_IGN2, SET_IGN2, inj2StartFunction, inj2EndFunction);
+    fuelScheduleInterrupt(fuelSchedule2, FUEL2_TIMER_DISABLE, GET_IGN2, SET_IGN2, inj2StartFunction, inj2EndFunction, false);
   }
 #endif
 
@@ -571,7 +536,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterruptB(fuelSchedule3, FUEL3_TIMER_DISABLE, GET_IGN3, SET_IGN3, inj3StartFunction, inj3EndFunction);
+    fuelScheduleInterrupt(fuelSchedule3, FUEL3_TIMER_DISABLE, GET_IGN3, SET_IGN3, inj3StartFunction, inj3EndFunction, false);
   }
 #endif
 
@@ -582,7 +547,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
 #endif
   {
-    fuelScheduleInterruptB(fuelSchedule4, FUEL4_TIMER_DISABLE, GET_IGN4, SET_IGN4, inj4StartFunction, inj4EndFunction);
+    fuelScheduleInterrupt(fuelSchedule4, FUEL4_TIMER_DISABLE, GET_IGN4, SET_IGN4, inj4StartFunction, inj4EndFunction, false);
   }
 #endif
 
@@ -593,7 +558,7 @@ ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterruptB(fuelSchedule5, FUEL5_TIMER_DISABLE, GET_IGN5, SET_IGN5, inj5StartFunction, inj5EndFunction);
+    fuelScheduleInterrupt(fuelSchedule5, FUEL5_TIMER_DISABLE, GET_IGN5, SET_IGN5, inj5StartFunction, inj5EndFunction, false);
 }
 #endif
 
@@ -604,7 +569,7 @@ ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterruptB(fuelSchedule6, FUEL6_TIMER_DISABLE, GET_IGN6, SET_IGN6, inj6StartFunction, inj6EndFunction);
+    fuelScheduleInterrupt(fuelSchedule6, FUEL6_TIMER_DISABLE, GET_IGN6, SET_IGN6, inj6StartFunction, inj6EndFunction, false);
 }
 #endif
 
@@ -615,7 +580,7 @@ ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterruptB(fuelSchedule7, FUEL7_TIMER_DISABLE, GET_IGN7, SET_IGN7, inj7StartFunction, inj7EndFunction);
+    fuelScheduleInterrupt(fuelSchedule7, FUEL7_TIMER_DISABLE, GET_IGN7, SET_IGN7, inj7StartFunction, inj7EndFunction, false);
 }
 #endif
 
@@ -626,12 +591,12 @@ ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
 #endif
 {
-    fuelScheduleInterruptB(fuelSchedule8, FUEL8_TIMER_DISABLE, GET_IGN8, SET_IGN8, inj8StartFunction, inj8EndFunction);
+    fuelScheduleInterrupt(fuelSchedule8, FUEL8_TIMER_DISABLE, GET_IGN8, SET_IGN8, inj8StartFunction, inj8EndFunction, false);
 }
 #endif
 
 static inline __attribute__((always_inline)) // <-- this is critical for performance
-void ignitionScheduleInterruptA(
+void ignitionScheduleInterrupt(
   Schedule& schedule,
   void (*timer_disable)(),
   COUNTER_TYPE (*get_counter)(),
@@ -676,7 +641,7 @@ ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule1, IGN1_TIMER_DISABLE, GET_IGN1, SET_IGN1);
+    ignitionScheduleInterrupt(ignitionSchedule1, IGN1_TIMER_DISABLE, GET_IGN1, SET_IGN1);
   }
 #endif
 
@@ -687,7 +652,7 @@ ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule2, IGN2_TIMER_DISABLE, GET_IGN2, SET_IGN2);
+    ignitionScheduleInterrupt(ignitionSchedule2, IGN2_TIMER_DISABLE, GET_IGN2, SET_IGN2);
   }
 #endif
 
@@ -698,7 +663,7 @@ ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule3, IGN3_TIMER_DISABLE, GET_IGN3, SET_IGN3);
+    ignitionScheduleInterrupt(ignitionSchedule3, IGN3_TIMER_DISABLE, GET_IGN3, SET_IGN3);
   }
 #endif
 
@@ -709,7 +674,7 @@ ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule4, IGN4_TIMER_DISABLE, GET_IGN4, SET_IGN4);
+    ignitionScheduleInterrupt(ignitionSchedule4, IGN4_TIMER_DISABLE, GET_IGN4, SET_IGN4);
   }
 #endif
 
@@ -720,7 +685,7 @@ ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule5, IGN5_TIMER_DISABLE, GET_IGN5, SET_IGN5);
+    ignitionScheduleInterrupt(ignitionSchedule5, IGN5_TIMER_DISABLE, GET_IGN5, SET_IGN5);
   }
 #endif
 
@@ -731,7 +696,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule6, IGN6_TIMER_DISABLE, GET_IGN6, SET_IGN6);
+    ignitionScheduleInterrupt(ignitionSchedule6, IGN6_TIMER_DISABLE, GET_IGN6, SET_IGN6);
   }
 #endif
 
@@ -742,7 +707,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule7, IGN7_TIMER_DISABLE, GET_IGN7, SET_IGN7);
+    ignitionScheduleInterrupt(ignitionSchedule7, IGN7_TIMER_DISABLE, GET_IGN7, SET_IGN7);
   }
 #endif
 
@@ -753,6 +718,6 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 static inline void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
 #endif
   {
-    ignitionScheduleInterruptA(ignitionSchedule8, IGN8_TIMER_DISABLE, GET_IGN8, SET_IGN8);
+    ignitionScheduleInterrupt(ignitionSchedule8, IGN8_TIMER_DISABLE, GET_IGN8, SET_IGN8);
   }
 #endif

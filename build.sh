@@ -1,3 +1,4 @@
+pio run -t clean
 pio run
 
 rm speeduino.S
