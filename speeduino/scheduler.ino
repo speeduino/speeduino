@@ -268,49 +268,34 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses time
 {
   setFuelSchedule(timeout, duration, fuelSchedule1, FUEL1_TIMER_ENABLE, SET_FUEL1, GET_FUEL1, true);
 }
-
 void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
 {
   setFuelSchedule(timeout, duration, fuelSchedule2, FUEL2_TIMER_ENABLE, SET_FUEL2, GET_FUEL2, false);
 }
-
 void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
 {
   setFuelSchedule(timeout, duration, fuelSchedule3, FUEL3_TIMER_ENABLE, SET_FUEL3, GET_FUEL3, false);
 }
-
 void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
 {
   setFuelSchedule(timeout, duration, fuelSchedule4, FUEL4_TIMER_ENABLE, SET_FUEL4, GET_FUEL4, false);
 }
-
-#if INJ_CHANNELS >= 5
 void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses timer 4 compare C
 {
   setFuelSchedule(timeout, duration, fuelSchedule5, FUEL5_TIMER_ENABLE, SET_FUEL5, GET_FUEL5, false);
 }
-#endif
-
-#if INJ_CHANNELS >= 6
 void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses timer 4 compare A
 {
   setFuelSchedule(timeout, duration, fuelSchedule6, FUEL6_TIMER_ENABLE, SET_FUEL6, GET_FUEL6, false);
 }
-#endif
-
-#if INJ_CHANNELS >= 7
 void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses timer 5 compare C
 {
   setFuelSchedule(timeout, duration, fuelSchedule7, FUEL7_TIMER_ENABLE, SET_FUEL7, GET_FUEL7, false);
 }
-#endif
-
-#if INJ_CHANNELS >= 8
 void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses timer 5 compare B
 {
   setFuelSchedule(timeout, duration, fuelSchedule8, FUEL8_TIMER_ENABLE, SET_FUEL8, GET_FUEL8, false);
 }
-#endif
 
 static void SET_IGN1(COMPARE_TYPE compare) { IGN1_COMPARE = compare; }
 static void SET_IGN2(COMPARE_TYPE compare) { IGN2_COMPARE = compare; }

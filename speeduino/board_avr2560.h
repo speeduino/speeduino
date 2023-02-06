@@ -87,6 +87,7 @@
   #define IGN7_COMPARE  OCR3C //Replaces injector 3
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
 
+#pragma GCC diagnostic ignored "-Wunused-function" // suppress unused function warning
   //Note that the interrupt flag is reset BEFORE the interrupt is enabled
   static void FUEL1_TIMER_ENABLE() { TIFR3 |= (1<<OCF3A); TIMSK3 |= (1 << OCIE3A); } //Turn on the A compare unit (ie turn on the interrupt)
   static void FUEL2_TIMER_ENABLE() { TIFR3 |= (1<<OCF3B); TIMSK3 |= (1 << OCIE3B); } //Turn on the B compare unit (ie turn on the interrupt)
@@ -124,6 +125,7 @@
   static void IGN6_TIMER_DISABLE() { TIMSK4 &= ~(1 << OCIE4B); } //Replaces injector 4
   static void IGN7_TIMER_DISABLE() { TIMSK3 &= ~(1 << OCIE3C); } //Replaces injector 3
   static void IGN8_TIMER_DISABLE() { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
+#pragma GCC diagnostic pop
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
