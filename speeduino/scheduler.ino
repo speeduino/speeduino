@@ -173,7 +173,7 @@ static COUNTER_TYPE GET_INJ6_CNT() { return FUEL6_COUNTER; }
 static COUNTER_TYPE GET_INJ7_CNT() { return FUEL7_COUNTER; }
 static COUNTER_TYPE GET_INJ8_CNT() { return FUEL8_COUNTER; }
 
-//Experimental new generic function. This is NOT yet ready and functional
+
 static inline __attribute__((always_inline)) // <-- this is critical for performance
 void setFuelSchedule(unsigned long timeout,
   unsigned long duration,
