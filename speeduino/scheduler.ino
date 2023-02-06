@@ -183,7 +183,7 @@ void setFuelSchedule(unsigned long timeout,
   COMPARE_TYPE (*get_counter)(),
   const bool safety_check)
 {
-  if (safety_check)
+  if (safety_check) // why is FuelSchedule1 different from every other?
   {
     //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
     //if(timeout < MAX_TIMER_PERIOD)
