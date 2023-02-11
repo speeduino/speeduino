@@ -50,7 +50,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 // Forward declarations
-static byte getVE1(void);
+static uint8_t getVE1(void);
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
@@ -1229,28 +1229,31 @@ void __attribute__((always_inline)) loop(void)
 
 #endif //Unit test guard
 
-static inline uint16_t getPwIMapMultiplier(long MAP) {
-  //Check whether either of the multiply MAP modes is turned on
+static inline uint32_t pwApplyMapMode(uint32_t intermediate, uint16_t MAP) {
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
-    return div100((uint16_t)MAP << 7U);
+    uint16_t mutiplier = div100((uint16_t)(MAP << 7U));
+    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-    return ((uint16_t)MAP << 7U) / currentStatus.baro; 
+     uint16_t mutiplier = (MAP << 7U) / currentStatus.baro; 
+    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
-  return 100U;
+  return intermediate;
 }
 
-static inline uint16_t getPwiAFR() {
+static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate) {
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    return ((uint16_t)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    uint16_t mutiplier = ((uint16_t)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    return ((uint16_t)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    uint16_t mutiplier = ((uint16_t)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
-  return 147U;
+  return intermediate;
 }
 
-static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t corrections) {
+static inline uint32_t pwApplyCorrections(uint32_t intermediate, uint16_t corrections) {
   if (corrections < 512 ) { 
     intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
   } else if (corrections < 1024 ) { 
@@ -1258,6 +1261,28 @@ static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t correcti
   } else {
     intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
   }  
+  return intermediate;
+}
+
+static inline uint32_t pwComputeInitial(uint16_t REQ_FUEL, uint8_t VE) {
+  uint16_t iVE = div100((uint16_t)(VE << 7U));
+  return ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7UL; //Need to use an intermediate value to avoid overflowing the long
+}
+
+static inline uint32_t pwIncludeOpenTime(uint32_t intermediate, uint16_t injOpen) {
+  // If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
+  if (intermediate != 0) {
+    return intermediate + injOpen; //Add the injector opening time
+  }
+  return intermediate;
+}
+
+static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL) {
+  // If intermediate is not 0, we need to add Acceleration Enrichment pct increase if the engine
+  // is accelerating (0 typically indicates that one of the full fuel cuts is active)
+  if ((intermediate != 0) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) && (configPage2.aeApplyMode == AE_MODE_ADDER)) {
+    return intermediate + div100( (uint32_t)REQ_FUEL * (currentStatus.AEamount - 100U) );
+  }
   return intermediate;
 }
 
@@ -1271,46 +1296,25 @@ static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t correcti
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
+uint16_t PW(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  uint32_t intermediate = 
+    pwIncludeAe(
+      pwIncludeOpenTime(
+        pwApplyCorrections(
+          pwApplyAFRMultiplier(
+            pwApplyMapMode(
+              pwComputeInitial(REQ_FUEL, VE), 
+              MAP)), 
+          corrections), 
+        injOpen), 
+        REQ_FUEL);
 
-  //100% float free version, does sacrifice a little bit of accuracy, but not much.
-
-  uint16_t iVE = div100((uint16_t)(VE << 7U));
-
-  uint32_t intermediate = rshift<7U>((uint32_t)REQ_FUEL * (uint32_t)iVE); //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP!=0U ) { 
-    intermediate = rshift<7U>(intermediate * (uint32_t)getPwIMapMultiplier(MAP)); 
-  }
-  
-  if (( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) )
-  || ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ))
-  {
-    //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = rshift<7U>(intermediate * getPwiAFR());  
-  }
-  
-  intermediate = applyCorrections(intermediate, corrections);
-  if (intermediate != 0)
-  {
-    //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
-    intermediate += injOpen; //Add the injector opening time
-    
-    //AE calculation only when ACC is active.
-    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) )
-    {
-      //AE Adds % of req_fuel
-      if ( configPage2.aeApplyMode == AE_MODE_ADDER )
-      {
-        intermediate += div100( (uint32_t)REQ_FUEL * (currentStatus.AEamount - 100U) );
-      }
-    }
-  }
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return (uint16_t)min(intermediate, 65535UL);
+  return (uint16_t)min(intermediate, (uint32_t)UINT16_MAX);
 }
 
 /** Lookup the current VE value from the primary 3D fuel map.
@@ -1318,9 +1322,8 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1(void)
+uint8_t getVE1(void)
 {
-  byte tempVE = 100;
   if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
   {
     //Speed Density
@@ -1337,9 +1340,8 @@ byte getVE1(void)
     currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
   }
   else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
-  tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 
-  return tempVE;
+  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 /** Lookup the ignition advance from 3D ignition table.
