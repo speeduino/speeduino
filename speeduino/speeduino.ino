@@ -1312,6 +1312,9 @@ void loop(void)
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
+#ifndef UNIT_TEST
+inline
+#endif
 uint16_t PW(const int& REQ_FUEL, const byte& VE, const long& MAP, const uint16_t& corrections, const int& injOpen)
 {
   //Standard float version of the calculation
