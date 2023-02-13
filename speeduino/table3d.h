@@ -92,7 +92,7 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 
 // Generate get3DTableValue() functions
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
-    static inline int get3DTableValue(TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
+    static inline table3d_value_t get3DTableValue(TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, table3d_axis_t y, table3d_axis_t x) \
     { \
       return get3DTableValue( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
