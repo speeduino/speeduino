@@ -505,33 +505,52 @@ void triggerSec_missingTooth(void)
 
   if ( curGap2 >= triggerSecFilterTime )
   {
-    if ( configPage4.trigPatternSec == SEC_TRIGGER_4_1 )
+switch (configPage4.trigPatternSec)
     {
-      targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-      toothLastMinusOneSecToothTime = toothLastSecToothTime;
-      if ( (curGap2 >= targetGap2) || (secondaryToothCount > 3) )
-      {
-        secondaryToothCount = 1;
+      case SEC_TRIGGER_4_1:
+        targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+        toothLastMinusOneSecToothTime = toothLastSecToothTime;
+        if ( (curGap2 >= targetGap2) || (secondaryToothCount > 3) )
+        {
+          secondaryToothCount = 1;
+          revolutionOne = 1; //Sequential revolution reset
+          triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+          recordVVT1Angle ();
+        }
+        else
+        {
+          triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+          secondaryToothCount++;
+        }
+        break;
+
+      case SEC_TRIGGER_SINGLE:
+        //Standard single tooth cam trigger
         revolutionOne = 1; //Sequential revolution reset
-        triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-      }
-      else
-      {
-        triggerSecFilterTime = curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
+        triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
         secondaryToothCount++;
-      }
-    }
-    else if ( configPage4.trigPatternSec == SEC_TRIGGER_SINGLE )
-    {
-      //Standard single tooth cam trigger
-      revolutionOne = 1; //Sequential revolution reset
-      triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
-      secondaryToothCount++;
+        recordVVT1Angle ();
+        break;
+
+      case SEC_TRIGGER_TRIPPLE:
+        //designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. As VVT moves the tooth need to provide a range to work with. -4 gives the advanced tooth, +2 because the starting point is the start of the next cycle
+        if( toothCurrentCount > (triggerActualTeeth -4)  )
+        { revolutionOne = 0; } //Sequential revolution reset still on the first 360 degrees with VVT movement
+        else if( toothCurrentCount < 3  )
+        { revolutionOne = 1; } //Sequential revolution reset moved to second 360 degrees with VVT movement
+
+        triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
+        secondaryToothCount++;
+        recordVVT1Angle ();
+        break;
     }
     toothLastSecToothTime = curTime2;
   } //Trigger filter
+}
 
-  //Record the VVT Angle
+void recordVVT1Angle ()
+{
+//Record the VVT Angle
   if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
   {
     int16_t curAngle;
@@ -543,6 +562,7 @@ void triggerSec_missingTooth(void)
     currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
   }
 }
+
 
 void triggerThird_missingTooth(void)
 {
