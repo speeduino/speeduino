@@ -441,14 +441,9 @@ void initialiseAll(void)
     CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
-    channel1InjEnabled = true;
-    channel2InjEnabled = false;
-    channel3InjEnabled = false;
-    channel4InjEnabled = false;
-    channel5InjEnabled = false;
-    channel6InjEnabled = false;
-    channel7InjEnabled = false;
-    channel8InjEnabled = false;
+
+    channelInjEnabled = 0; // Disable all injectors
+    BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
 
     ignition1EndAngle = 0;
     ignition2EndAngle = 0;
@@ -478,12 +473,12 @@ void initialiseAll(void)
           req_fuel_uS = req_fuel_uS * 2;
         }
 
-        channel1InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
           channel3InjDegrees = channel1InjDegrees;
         }
         break;
@@ -514,14 +509,14 @@ void initialiseAll(void)
           channel2InjDegrees = 0; 
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           channel3InjDegrees = channel1InjDegrees;
           channel4InjDegrees = channel2InjDegrees;
@@ -593,9 +588,9 @@ void initialiseAll(void)
           channel3InjDegrees = 240;
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         break;
     case 4:
         channel1IgnDegrees = 0;
@@ -655,8 +650,8 @@ void initialiseAll(void)
           channel3InjDegrees = 360;
           channel4InjDegrees = 540;
 
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -665,26 +660,26 @@ void initialiseAll(void)
         else
         {
           //Should never happen, but default values
-          channel3InjEnabled = false;
-          channel4InjEnabled = false;
-          channel5InjEnabled = false;
-          channel6InjEnabled = false;
-          channel7InjEnabled = false;
-          channel8InjEnabled = false;
+          BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
+          BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          channel3InjEnabled = true;
-          channel4InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
           channel3InjDegrees = channel1InjDegrees;
           channel4InjDegrees = channel2InjDegrees;
         }
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         break;
     case 5:
         channel1IgnDegrees = 0;
@@ -736,7 +731,7 @@ void initialiseAll(void)
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
 
-          channel5InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -744,10 +739,10 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
     case 6:
         channel1IgnDegrees = 0;
@@ -797,9 +792,9 @@ void initialiseAll(void)
           channel5InjDegrees = 480;
           channel6InjDegrees = 600;
 
-          channel4InjEnabled = true;
-          channel5InjEnabled = true;
-          channel6InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -807,9 +802,9 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         break;
     case 8:
         channel1IgnDegrees = 0;
@@ -875,10 +870,10 @@ void initialiseAll(void)
           channel7InjDegrees = 540;
           channel8InjDegrees = 630;
 
-          channel5InjEnabled = true;
-          channel6InjEnabled = true;
-          channel7InjEnabled = true;
-          channel8InjEnabled = true;
+          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -886,10 +881,10 @@ void initialiseAll(void)
         }
     #endif
 
-        channel1InjEnabled = true;
-        channel2InjEnabled = true;
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
     default: //Handle this better!!!
         channel1InjDegrees = 0;
@@ -900,7 +895,7 @@ void initialiseAll(void)
     if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
     else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
     else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
-    currentStatus.status3 = currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
+    currentStatus.status3 |= currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
     
     //Special case:
     //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
@@ -1231,6 +1226,12 @@ void initialiseAll(void)
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
 
+    /* tacho sweep function. */
+    tachoSweepEnabled = (configPage2.useTachoSweep > 0);
+    /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
+       tachoSweepIncr is also the number of tach pulses per second */
+    tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
+    
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 }
@@ -3460,21 +3461,21 @@ void changeHalfToFullSync(void)
     switch (configPage2.nCylinders)
     {
       case 4:
-        channel3InjEnabled = true;
-        channel4InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
             
       case 6:
-        channel4InjEnabled = true;
-        channel5InjEnabled = true;
-        channel6InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
         break;
 
       case 8:
-        channel5InjEnabled = true;
-        channel6InjEnabled = true;
-        channel7InjEnabled = true;
-        channel8InjEnabled = true;
+        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+        BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
         break;
 
       default:
@@ -3552,8 +3553,8 @@ void changeFullToHalfSync(void)
           inj2StartFunction = openInjector2and3;
           inj2EndFunction = closeInjector2and3;
         }
-        channel3InjEnabled = false;
-        channel4InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
         break;
             
       case 6:
@@ -3563,9 +3564,9 @@ void changeFullToHalfSync(void)
         inj2EndFunction = closeInjector2and5;
         inj3StartFunction = openInjector3and6;
         inj3EndFunction = closeInjector3and6;
-        channel4InjEnabled = false;
-        channel5InjEnabled = false;
-        channel6InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
         break;
 
       case 8:
@@ -3577,10 +3578,10 @@ void changeFullToHalfSync(void)
         inj3EndFunction = closeInjector3and7;
         inj4StartFunction = openInjector4and8;
         inj4EndFunction = closeInjector4and8;
-        channel5InjEnabled = false;
-        channel6InjEnabled = false;
-        channel7InjEnabled = false;
-        channel8InjEnabled = false;
+        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
+        BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
         break;
     }
   }

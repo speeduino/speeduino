@@ -30,53 +30,51 @@ public:
 
     /** @brief Construct */
     table_axis_iterator(table3d_axis_t *pStart, const table3d_axis_t *pEnd, axis_domain domain)
-     : _pAxis(pStart), _pAxisEnd(pEnd), _stride(pEnd>pStart ? stride_inc : stride_dec), _domain(domain)
+     : _pAxis(pStart), _pAxisEnd(pEnd), _stride(pEnd>pStart ? stride_inc : stride_dec), _domain(domain) //cppcheck-suppress misra-c2012-10.4
     {
     }
 
-    axis_domain domain(void) const { return _domain; }
+    axis_domain get_domain(void) const { return _domain; }
 
     /** @brief Advance the iterator
      * @param steps The number of elements to move the iterator
     */
-    inline table_axis_iterator& advance(int8_t steps)
+    table_axis_iterator& advance(int8_t steps)
     {
-        _pAxis = _pAxis + (_stride * steps);
+        _pAxis = _pAxis + ((int16_t)_stride * steps);
         return *this;
     }
 
     /** @brief Increment the iterator by one element*/
-    inline table_axis_iterator& operator++(void)
+    table_axis_iterator& operator++(void)
     {
         return advance(1);
     }
 
     /** @brief Test for end of iteration */
-    inline bool at_end(void) const
+    bool at_end(void) const
     {
         return _pAxis == _pAxisEnd;
     }
 
     /** @brief Dereference the iterator */
-    inline table3d_axis_t& operator*(void)
+    table3d_axis_t& operator*(void)
     {
         return *_pAxis;
     }
     /** @copydoc table_axis_iterator::operator*()  */
-    inline const table3d_axis_t& operator*(void) const
+    const table3d_axis_t& operator*(void) const
     {
         return *_pAxis;
     }    
     
 private:
 
-    enum stride {
-        stride_inc = 1,
-        stride_dec = -1
-    };
+    static constexpr int8_t stride_inc = 1;
+    static constexpr int8_t stride_dec = -1;
     table3d_axis_t *_pAxis;
     const table3d_axis_t *_pAxisEnd;
-    const stride _stride;
+    int8_t _stride;
     const axis_domain _domain;
 };
 
@@ -86,23 +84,23 @@ private:
     /** @brief The dxis for a 3D table with size x size dimensions and domain 'domain' */ \
     struct TABLE3D_TYPENAME_AXIS(size, dom) { \
         /** @brief The length of the axis in elements */ \
-        static constexpr table3d_dim_t length = size; \
+        static constexpr table3d_dim_t length = (size); \
         /** @brief The domain the axis represents */ \
         static constexpr axis_domain domain = axis_domain_ ## dom; \
         /**
           @brief The axis elements\
         */ \
-        table3d_axis_t axis[size]; \
+        table3d_axis_t axis[(size)]; \
         \
         /** @brief Iterate over the axis elements */ \
-        inline table_axis_iterator begin(void) \
+        table_axis_iterator begin(void) \
         {  \
-            return table_axis_iterator(axis+size-1, axis-1, domain); \
+            return table_axis_iterator(axis+(size)-1, axis-1, domain); \
         } \
         /** @brief Iterate over the axis elements, from largest to smallest */ \
-        inline table_axis_iterator rbegin() \
+        table_axis_iterator rbegin(void) \
         {  \
-            return table_axis_iterator(axis, axis+size, domain); \
+            return table_axis_iterator(axis, axis+(size), domain); \
         } \
     };
 

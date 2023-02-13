@@ -229,8 +229,6 @@ extern volatile unsigned long curTime;
 extern volatile unsigned long curGap;
 extern volatile unsigned long curTime2;
 extern volatile unsigned long curGap2;
-extern volatile unsigned long curTime3;
-extern volatile unsigned long curGap3;
 extern volatile unsigned long lastGap;
 extern volatile unsigned long targetGap;
 
