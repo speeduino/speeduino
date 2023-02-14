@@ -447,6 +447,16 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define LOGGER_FILENAMING_DATETIME      1
 #define LOGGER_FILENAMING_SEQENTIAL     2
 
+#ifdef UNIT_TEST
+  extern unsigned long micros_safe_injection;
+  #define MICROS_SAFE_OR_TEST_INJECTION micros_safe_injection
+  extern unsigned long micros_injection;
+  #define MICROS_OR_TEST_INJECTION micros_injection
+#else
+  #define MICROS_SAFE_OR_TEST_INJECTION micros_safe()
+  #define MICROS_OR_TEST_INJECTION micros()
+#endif
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
@@ -592,7 +602,6 @@ extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
 extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
-extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
 //The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
 #if defined(CORE_SAMD21)

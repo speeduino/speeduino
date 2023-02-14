@@ -277,6 +277,29 @@ static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 }
 
 /**
+ * Resets most decoder variables
+ */
+inline void resetDecoderState() {
+  //Decoder output variables
+  toothLastToothTime = 0;
+  toothLastMinusOneToothTime = 0;
+  currentStatus.hasSync = false;
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+  currentStatus.startRevolutions = 0;
+  triggerToothAngle = 0;
+  BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+  revolutionTime = 0;
+  MAX_STALL_TIME = 500000UL; // Default 0,5 seconds
+
+  //Common decoder shared variables
+  toothOneTime = 0;
+  toothOneMinusOneTime = 0;
+  toothLastSecToothTime = 0;
+  toothSystemCount = 0;
+  secondaryToothCount = 0;
+}
+
+/**
 On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
 For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
 Only if both these conditions are met will the schedule be updated with the latest timing information.

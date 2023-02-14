@@ -28,7 +28,7 @@ A full copy of the license may be found in the projects root directory
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 
-uint32_t deferEEPROMWritesUntil = 0;
+uint32_t lastEEPROMDeferTime;
 
 bool isEepromWritePending(void)
 {
