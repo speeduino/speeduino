@@ -74,6 +74,10 @@ volatile unsigned int secondaryToothCount; //Used for identifying the current se
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
+volatile unsigned int thirdToothCount; //Used for identifying the current third (Usually exhaust cam - used for VVT2) tooth for patterns with multiple secondary teeth
+volatile unsigned long thirdLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
+volatile unsigned long thirdLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
+
 uint16_t triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
@@ -370,6 +374,7 @@ void triggerSetup_missingTooth(void)
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
+  thirdToothCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage4.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -505,7 +510,7 @@ void triggerSec_missingTooth(void)
 
   if ( curGap2 >= triggerSecFilterTime )
   {
-switch (configPage4.trigPatternSec)
+    switch (configPage4.trigPatternSec)
     {
       case SEC_TRIGGER_4_1:
         targetGap2 = (3 * (toothLastSecToothTime - toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
@@ -532,16 +537,33 @@ switch (configPage4.trigPatternSec)
         recordVVT1Angle ();
         break;
 
-      case SEC_TRIGGER_TRIPPLE:
-        //designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. As VVT moves the tooth need to provide a range to work with. -4 gives the advanced tooth, +2 because the starting point is the start of the next cycle
-        if( toothCurrentCount > (triggerActualTeeth -4)  )
-        { revolutionOne = 0; } //Sequential revolution reset still on the first 360 degrees with VVT movement
-        else if( toothCurrentCount < 3  )
-        { revolutionOne = 1; } //Sequential revolution reset moved to second 360 degrees with VVT movement
+      case SEC_TRIGGER_TOYOTA_3:
+        //designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. 
+        // v8 - As VVT moves the tooth need to provide a range to work with, targetting the tooth that is around the revolution point. -4 gives the advanced tooth, +2 because the starting point is the start of the next cycle
+        // I4 - 4 cylinder engines based on internet information, the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
+        
+        if (cylinders == 4)
+        {
+          // this code gets triggered on seeing a tooth, if we've seen the third tooth this means we've just had 2 teeth on the second 360 degrees and then gone round to the first 360 again
+          secondaryToothCount++;
 
-        triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
-        secondaryToothCount++;
-        recordVVT1Angle ();
+          if (secondaryToothCount > 2)
+          {
+            revolutionOne = 0;
+            recordVVT1Angle ();
+            secondaryToothCount =1;
+          }                  
+        }
+        else 
+        {
+          if( toothCurrentCount > (triggerActualTeeth -4)  )
+          { revolutionOne = 0; } //Sequential revolution reset still on the first 360 degrees with VVT movement
+          else if( toothCurrentCount < 3  )
+          { revolutionOne = 1; } //Sequential revolution reset moved to second 360 degrees with VVT movement
+          secondaryToothCount = 1;
+          recordVVT1Angle ();
+        }
+        triggerSecFilterTime = curGap2 >> 2; //Next secondary filter is 25% the current gap
         break;
     }
     toothLastSecToothTime = curTime2;
@@ -566,14 +588,23 @@ void recordVVT1Angle ()
 
 void triggerThird_missingTooth(void)
 {
-  //Record the VVT2 Angle (the only purpose of the third trigger)
+//Record the VVT2 Angle (the only purpose of the third trigger)
+//NB no filtering of this signal with current implementation unlike Cam (VVT1)
+
   int16_t curAngle;
-  curAngle = getCrankAngle();
-  while(curAngle > 360) { curAngle -= 360; }
-  curAngle -= configPage4.triggerAngle; //Value at TDC
-  if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-  //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
-  currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
+
+  thirdToothCount++;
+
+  if( thirdToothCount > 1 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the pattern.
+  {
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
+    //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
+    currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
+    thirdToothCount = 0;
+  }
 }
 
 uint16_t getRPM_missingTooth(void)
