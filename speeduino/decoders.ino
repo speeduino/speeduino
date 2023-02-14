@@ -542,7 +542,7 @@ void triggerSec_missingTooth(void)
         // v8 - As VVT moves the tooth need to provide a range to work with, targetting the tooth that is around the revolution point. -4 gives the advanced tooth, +2 because the starting point is the start of the next cycle
         // I4 - 4 cylinder engines based on internet information, the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
         
-        if (cylinders == 4)
+        if (configPage2.nCylinders == 4)
         {
           // this code gets triggered on seeing a tooth, if we've seen the third tooth this means we've just had 2 teeth on the second 360 degrees and then gone round to the first 360 again
           secondaryToothCount++;
@@ -554,7 +554,7 @@ void triggerSec_missingTooth(void)
             secondaryToothCount =1;
           }                  
         }
-        else 
+        else // V8
         {
           if( toothCurrentCount > (triggerActualTeeth -4)  )
           { revolutionOne = 0; } //Sequential revolution reset still on the first 360 degrees with VVT movement
