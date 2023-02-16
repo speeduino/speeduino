@@ -142,7 +142,7 @@ uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
 uint16_t getEEPROMSize(void);
 bool isEepromWritePending(void);
 
-extern uint32_t deferEEPROMWritesUntil;
+extern uint32_t lastEEPROMDeferTime;
 
 #define EEPROM_CONFIG1_MAP    3
 #define EEPROM_CONFIG2_START  291
