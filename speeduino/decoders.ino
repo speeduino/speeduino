@@ -556,12 +556,24 @@ void triggerSec_missingTooth(void)
         }
         else // V8
         {
-          if( toothCurrentCount > (triggerActualTeeth -4)  )
-          { revolutionOne = 0; } //Sequential revolution reset still on the first 360 degrees with VVT movement
-          else if( toothCurrentCount < 3  )
-          { revolutionOne = 1; } //Sequential revolution reset moved to second 360 degrees with VVT movement
-          secondaryToothCount = 1;
-          recordVVT1Angle ();
+          if( toothCurrentCount > (triggerActualTeeth -2)  ) //Sequential revolution reset still on the first 360 degrees with VVT movement
+          { 
+            revolutionOne = 0; 
+            secondaryToothCount = 1;
+          } 
+          else if( toothCurrentCount < 4  ) //Sequential revolution reset moved to second 360 degrees with VVT movement
+          { 
+            revolutionOne = 1; 
+            secondaryToothCount = 1;
+          } 
+          else
+          {
+            secondaryToothCount++;
+          }
+          
+          if(secondaryToothCount == 2)
+          { recordVVT1Angle (); }
+          
         }
         triggerSecFilterTime = curGap2 >> 2; //Next secondary filter is 25% the current gap
         break;
