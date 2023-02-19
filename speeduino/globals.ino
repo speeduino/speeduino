@@ -143,9 +143,9 @@ volatile uint16_t ignitionCount; /**< The count of ignition events that have tak
   byte secondaryTriggerEdge;
   byte tertiaryTriggerEdge;
 #endif
-int CRANK_ANGLE_MAX = 720;
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+int CRANK_ANGLE_MAX;
+int CRANK_ANGLE_MAX_IGN;
+int CRANK_ANGLE_MAX_INJ; ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */

@@ -18,6 +18,7 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
+#include "comms.h"
 #include "table3d_axis_io.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
@@ -626,7 +627,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     requestCount++;
   }
 
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.spark ^= (-syncStatusForComms() ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable
 
   for(byte x=0; x<packetLength; x++)
   {

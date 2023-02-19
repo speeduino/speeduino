@@ -79,6 +79,7 @@ void sendSerialReturnCode(byte returnCode);
 void sendSerialPayload(void* payload, uint16_t payloadLength);
 
 void generateLiveValues(uint16_t offset, uint16_t packetLength);
+bool syncStatusForComms(void);
 void flushRXbuffer(void);
 void sendToothLog(uint8_t startOffset);
 void sendCompositeLog(uint8_t startOffset);

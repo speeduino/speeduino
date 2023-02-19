@@ -393,8 +393,7 @@ void initialiseAll(void)
     //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
     currentStatus.RPM = 0;
-    currentStatus.hasSync = false;
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+    decoderSync = DS_NO_SYNC;
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     //currentStatus.seclx10 = 0;

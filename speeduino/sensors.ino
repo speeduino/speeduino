@@ -215,7 +215,7 @@ static inline void readMAP(void)
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (decoderSync > DS_NO_SYNC) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -338,7 +338,7 @@ static inline void readMAP(void)
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (decoderSync > DS_NO_SYNC) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
