@@ -3482,7 +3482,6 @@ void changeHalfToFullSync(void)
   if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) )
   {
     CRANK_ANGLE_MAX_INJ = 720;
-    maxIgnOutputs = configPage2.nCylinders;
     req_fuel_uS *= 2;
     
     fuelSchedule1.StartFunction = openInjector1;
@@ -3586,7 +3585,6 @@ void changeFullToHalfSync(void)
   if(configPage2.injLayout == INJ_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_INJ = 360;
-    maxIgnOutputs = configPage2.nCylinders / 2;
     req_fuel_uS /= 2;
     switch (configPage2.nCylinders)
     {
