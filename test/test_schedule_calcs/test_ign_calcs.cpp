@@ -22,12 +22,13 @@ void setEngineSpeed(uint16_t rpm, int16_t max_crank) {
     dwellAngle = timeToAngle(DWELL_TIME_MS*1000UL, CRANKMATH_METHOD_INTERVAL_REV);
 }
 
-void test_calc_ign1_timeout(uint16_t crankAngle, uint16_t pending, uint16_t running)
+void test_calc_ign1_timeout(uint16_t crankAngle, uint16_t pending, uint16_t running, int16_t expectedEndAngle)
 {
     memset(&ignitionSchedule1, 0, sizeof(ignitionSchedule1));
 
     ignitionSchedule1.Status = PENDING;
     calculateIgnitionAngle1(dwellAngle);
+    TEST_ASSERT_EQUAL(expectedEndAngle, ignition1EndAngle);
     TEST_ASSERT_EQUAL(pending, calculateIgnition1Timeout(crankAngle));
     
     ignitionSchedule1.Status = RUNNING;
@@ -102,48 +103,48 @@ void test_calc_ign1_timeout()
 {
     setEngineSpeed(4000, 360);
 
-    static const int16_t test_data[][4] PROGMEM = {
-        // Advance, Crank, Expected Pending, Expected Running
-        { -40, 0, 12666, 12666 },
-        { -40, 45, 10791, 10791 },
-        { -40, 90, 8916, 8916 },
-        { -40, 135, 7041, 7041 },
-        { -40, 180, 5166, 5166 },
-        { -40, 215, 3708, 3708 },
-        { -40, 270, 1416, 1416 },
-        { -40, 315, 0, 14541 },
-        { -40, 360, 0, 12666 },
-        { 0, 0, 11000, 11000 },
-        { 0, 45, 9125, 9125 },
-        { 0, 90, 7250, 7250 },
-        { 0, 135, 5375, 5375 },
-        { 0, 180, 3500, 3500 },
-        { 0, 215, 2041, 2041 },
-        { 0, 270, 0, 14750 },
-        { 0, 315, 0, 12875 },
-        { 0, 360, 0, 11000 },
-        { 40, 0, 9333, 9333 },
-        { 40, 45, 7458, 7458 },
-        { 40, 90, 5583, 5583 },
-        { 40, 135, 3708, 3708 },
-        { 40, 180, 1833, 1833 },
-        { 40, 215, 375, 375 },
-        { 40, 270, 0, 13083 },
-        { 40, 315, 0, 11208 },
-        { 40, 360, 0, 9333 },
+    static const ign_test_parameters test_data[] PROGMEM = {
+         // ChannelAngle (deg), Advance, Crank, Expected Pending, Expected Running
+        { 0, -40, 0, 12666, 12666, 40 },
+        { 0, -40, 45, 10791, 10791, 40 },
+        { 0, -40, 90, 8916, 8916, 40 },
+        { 0, -40, 135, 7041, 7041, 40 },
+        { 0, -40, 180, 5166, 5166, 40 },
+        { 0, -40, 215, 3708, 3708, 40 },
+        { 0, -40, 270, 1416, 1416, 40 },
+        { 0, -40, 315, 0, 14541, 40 },
+        { 0, -40, 360, 0, 12666, 40 },
+        { 0, 0, 0, 11000, 11000, 360 },
+        { 0, 0, 45, 9125, 9125, 360 },
+        { 0, 0, 90, 7250, 7250, 360 },
+        { 0, 0, 135, 5375, 5375, 360 },
+        { 0, 0, 180, 3500, 3500, 360 },
+        { 0, 0, 215, 2041, 2041, 360 },
+        { 0, 0, 270, 0, 14750, 360 },
+        { 0, 0, 315, 0, 12875, 360 },
+        { 0, 0, 360, 0, 11000, 360 },
+        { 0, 40, 0, 9333, 9333, 320 },
+        { 0, 40, 45, 7458, 7458, 320 },
+        { 0, 40, 90, 5583, 5583, 320 },
+        { 0, 40, 135, 3708, 3708, 320 },
+        { 0, 40, 180, 1833, 1833, 320 },
+        { 0, 40, 215, 375, 375, 320 },
+        { 0, 40, 270, 0, 13083, 320 },
+        { 0, 40, 315, 0, 11208, 320 },
+        { 0, 40, 360, 0, 9333, 320 },
     };
-    const int16_t (*pStart)[4] = &test_data[0];
-    const int16_t (*pEnd)[4] = &test_data[0]+_countof(test_data);
 
-    channel1IgnDegrees = 0;
-    int16_t local[4];
+    const ign_test_parameters *pStart = &test_data[0];
+    const ign_test_parameters *pEnd = pStart + +_countof(test_data);
+
+    ign_test_parameters local;
     while (pStart!=pEnd)
     {
-        memcpy_P(local, pStart, sizeof(local));
-        currentStatus.advance = (int8_t)local[0];
-        test_calc_ign1_timeout(local[1], local[2], local[3]);
+        memcpy_P(&local, pStart, sizeof(local));
+        currentStatus.advance = local.advanceAngle;
+        test_calc_ign1_timeout(local.crankAngle, local.pending, local.running, local.endAngle);
         ++pStart;
-    } 
+    }    
 }
 
 void test_calc_ign_timeout_360()
