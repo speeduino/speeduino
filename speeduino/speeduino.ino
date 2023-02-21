@@ -1235,7 +1235,7 @@ void loop(void)
         while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
 
 #if IGN_CHANNELS >= 1
-        uint32_t timeOut = calculateIgnition1Timeout(crankAngle);
+        uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
         if ( (timeOut > 0U) && (BIT_CHECK(ignitionChannelsOn, IGN1_CMD_BIT)) )
         {
           
@@ -1271,7 +1271,7 @@ void loop(void)
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2)
         {
-            unsigned long ignition2StartTime = calculateIgnitionNTimeout(ignitionSchedule2, ignition2StartAngle, channel2IgnDegrees, crankAngle);
+            unsigned long ignition2StartTime = calculateIgnitionTimeout(ignitionSchedule2, ignition2StartAngle, channel2IgnDegrees, crankAngle);
 
             if ( (ignition2StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN2_CMD_BIT)) )
             {
@@ -1287,7 +1287,7 @@ void loop(void)
 #if IGN_CHANNELS >= 3
         if (maxIgnOutputs >= 3)
         {
-            unsigned long ignition3StartTime = calculateIgnitionNTimeout(ignitionSchedule3, ignition3StartAngle, channel3IgnDegrees, crankAngle);
+            unsigned long ignition3StartTime = calculateIgnitionTimeout(ignitionSchedule3, ignition3StartAngle, channel3IgnDegrees, crankAngle);
 
             if ( (ignition3StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN3_CMD_BIT)) )
             {
@@ -1303,7 +1303,7 @@ void loop(void)
 #if IGN_CHANNELS >= 4
         if (maxIgnOutputs >= 4)
         {
-            unsigned long ignition4StartTime = calculateIgnitionNTimeout(ignitionSchedule4, ignition4StartAngle, channel4IgnDegrees, crankAngle);
+            unsigned long ignition4StartTime = calculateIgnitionTimeout(ignitionSchedule4, ignition4StartAngle, channel4IgnDegrees, crankAngle);
 
             if ( (ignition4StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN4_CMD_BIT)) )
             {
@@ -1319,7 +1319,7 @@ void loop(void)
 #if IGN_CHANNELS >= 5
         if (maxIgnOutputs >= 5)
         {
-            unsigned long ignition5StartTime = calculateIgnitionNTimeout(ignitionSchedule5, ignition5StartAngle, channel5IgnDegrees, crankAngle);
+            unsigned long ignition5StartTime = calculateIgnitionTimeout(ignitionSchedule5, ignition5StartAngle, channel5IgnDegrees, crankAngle);
 
             if ( (ignition5StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN5_CMD_BIT)) )
             {
@@ -1335,7 +1335,7 @@ void loop(void)
 #if IGN_CHANNELS >= 6
         if (maxIgnOutputs >= 6)
         {
-            unsigned long ignition6StartTime = calculateIgnitionNTimeout(ignitionSchedule6, ignition6StartAngle, channel6IgnDegrees, crankAngle);
+            unsigned long ignition6StartTime = calculateIgnitionTimeout(ignitionSchedule6, ignition6StartAngle, channel6IgnDegrees, crankAngle);
 
             if ( (ignition6StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN6_CMD_BIT)) )
             {
@@ -1351,7 +1351,7 @@ void loop(void)
 #if IGN_CHANNELS >= 7
         if (maxIgnOutputs >= 7)
         {
-            unsigned long ignition7StartTime = calculateIgnitionNTimeout(ignitionSchedule7, ignition7StartAngle, channel7IgnDegrees, crankAngle);
+            unsigned long ignition7StartTime = calculateIgnitionTimeout(ignitionSchedule7, ignition7StartAngle, channel7IgnDegrees, crankAngle);
 
             if ( (ignition7StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN7_CMD_BIT)) )
             {
@@ -1367,7 +1367,7 @@ void loop(void)
 #if IGN_CHANNELS >= 8
         if (maxIgnOutputs >= 8)
         {
-            unsigned long ignition8StartTime = calculateIgnitionNTimeout(ignitionSchedule8, ignition8StartAngle, channel8IgnDegrees, crankAngle);
+            unsigned long ignition8StartTime = calculateIgnitionTimeout(ignitionSchedule8, ignition8StartAngle, channel8IgnDegrees, crankAngle);
 
             if ( (ignition8StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN8_CMD_BIT)) )
             {
