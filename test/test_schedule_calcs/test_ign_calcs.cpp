@@ -688,6 +688,59 @@ void test_rotary_channel3_calcs(void)
         TEST_ASSERT_EQUAL(local[4], ignition3StartAngle);
         ++pStart;
     } 
+}
+
+void test_rotary_channel4_calcs(void)
+{
+    setEngineSpeed(4000, 360);
+
+    static const int16_t test_data[][5] PROGMEM = {
+        { -40, 5, 0, -40, 315 },
+        { -40, 95, 0, -40, 225 },
+        { -40, 185, 0, -40, 135 },
+        { -40, 275, 0, -40, 45 },
+        { -40, 355, 0, -40, -35 },
+        { -40, 5, 40, 0, 355 },
+        { -40, 95, 40, 0, 265 },
+        { -40, 185, 40, 0, 175 },
+        { -40, 275, 40, 0, 85 },
+        { -40, 355, 40, 0, 5 },
+        { 0, 5, 0, 0, 355 },
+        { 0, 95, 0, 0, 265 },
+        { 0, 185, 0, 0, 175 },
+        { 0, 275, 0, 0, 85 },
+        { 0, 355, 0, 0, 5 },
+        { 0, 5, 40, 40, 35 },
+        { 0, 95, 40, 40, 305 },
+        { 0, 185, 40, 40, 215 },
+        { 0, 275, 40, 40, 125 },
+        { 0, 355, 40, 40, 45 },
+        { 40, 5, 0, 40, 35 },
+        { 40, 95, 0, 40, 305 },
+        { 40, 185, 0, 40, 215 },
+        { 40, 275, 0, 40, 125 },
+        { 40, 355, 0, 40, 45 },
+        { 40, 5, 40, 80, 75 },
+        { 40, 95, 40, 80, 345 },
+        { 40, 185, 40, 80, 255 },
+        { 40, 275, 40, 80, 165 },
+        { 40, 355, 40, 80, 85 },
+    };
+
+    const int16_t (*pStart)[5] = &test_data[0];
+    const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
+
+    channel1IgnDegrees = 0;
+    int16_t local[5];
+    while (pStart!=pEnd)
+    {
+        memcpy_P(local, pStart, sizeof(local));
+        ignition2EndAngle = local[0];
+        calculateIgnitionAngle4(local[1], local[2]);
+        TEST_ASSERT_EQUAL(local[3], ignition4EndAngle);
+        TEST_ASSERT_EQUAL(local[4], ignition4StartAngle);
+        ++pStart;
+    } 
 
 }
 
@@ -697,4 +750,5 @@ void test_calc_ign_timeout(void)
     RUN_TEST(test_calc_ign_timeout_360);
     RUN_TEST(test_calc_ign_timeout_720);
     RUN_TEST(test_rotary_channel3_calcs);
+    RUN_TEST(test_rotary_channel4_calcs);
 }
