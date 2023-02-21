@@ -22,23 +22,7 @@ struct inj_test_parameters
     uint32_t running;       // Expected delay when channel status is RUNNING
 };
 
-static void test_calc_inj1_timeout(uint16_t pw, uint16_t crankAngle, uint32_t pending, uint32_t running)
-{
-    uint16_t PWdivTimerPerDegree = div(pw, timePerDegree).quot;
-
-    memset(&fuelSchedule1, 0, sizeof(fuelSchedule1));
-
-    fuelSchedule1.Status = PENDING;
-    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, 0);
-    TEST_ASSERT_EQUAL(pending, calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, startAngle, crankAngle));
-    
-    fuelSchedule1.Status = RUNNING;
-    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, 0);
-    TEST_ASSERT_EQUAL(running, calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, startAngle, crankAngle));
-}
-
-
-static void test_calc_injN_timeout(const inj_test_parameters &parameters)
+static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     char msg[150];
     uint16_t PWdivTimerPerDegree = div(parameters.pw, timePerDegree).quot;
@@ -63,51 +47,12 @@ static void test_calc_inj_timeout(const inj_test_parameters *pStart, const inj_t
     while (pStart!=pEnd)
     {
         memcpy_P(&local, pStart, sizeof(local));
-        test_calc_injN_timeout(local);
+        test_calc_inj_timeout(local);
         ++pStart;
     }
 }
 
-// Separate test for fuel 1 - different code path, same results!
-static void test_calc_inj1_timeout()
-{
-    setEngineSpeed(4000, 360);
-    currentStatus.injAngle = 355;
-
-    static const int16_t test_data[][4] PROGMEM = {
-        // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending, Expected Running
-        { 3000, 0, 11562, 11562 },
-        { 3000, 45, 9717, 9717 },
-        { 3000, 90, 7872, 7872 },
-        { 3000, 135, 6027, 6027 },
-        { 3000, 180, 4182, 4182 },
-        { 3000, 215, 2747, 2747 },
-        { 3000, 270, 492, 492 },
-        { 3000, 315, 0, 13407 },
-        { 3000, 360, 0, 11562 },
-        { 3000, 0, 11562, 11562 },
-        { 3000, 45, 9717, 9717 },
-        { 3000, 90, 7872, 7872 },
-        { 3000, 135, 6027, 6027 },
-        { 3000, 180, 4182, 4182 },
-        { 3000, 215, 2747, 2747 },
-        { 3000, 270, 492, 492 },
-        { 3000, 315, 0, 13407 },
-        { 3000, 360, 0, 11562 },
-    };
-    const int16_t (*pStart)[4] = &test_data[0];
-    const int16_t (*pEnd)[4] = &test_data[0]+_countof(test_data);
-
-    int16_t local[4];
-    while (pStart!=pEnd)
-    {
-        memcpy_P(local, pStart, sizeof(local));
-        test_calc_inj1_timeout(local[0], local[1], local[2], local[3]);
-        ++pStart;
-    }
-}
-
-static void test_calc_injN_timeout_360()
+static void test_calc_inj_timeout_360()
 {
     setEngineSpeed(4000, 360);
     currentStatus.injAngle = 355;
@@ -200,7 +145,7 @@ static void test_calc_injN_timeout_360()
     test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
-static void test_calc_injN_timeout_720()
+static void test_calc_inj_timeout_720()
 {
     setEngineSpeed(4000, 720);
     currentStatus.injAngle = 355;
@@ -330,7 +275,6 @@ static void test_calc_injN_timeout_720()
 // 
 void test_calc_inj_timeout(void)
 {
-    RUN_TEST(test_calc_inj1_timeout);
-    RUN_TEST(test_calc_injN_timeout_360);
-    RUN_TEST(test_calc_injN_timeout_720);
+    RUN_TEST(test_calc_inj_timeout_360);
+    RUN_TEST(test_calc_inj_timeout_720);
 }
