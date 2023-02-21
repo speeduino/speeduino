@@ -111,12 +111,7 @@ inline void calculateIgnitionAngle8(int dwellAngle)
 
 inline uint32_t calculateIgnition1Timeout(int crankAngle)
 {
-    if ( (ignition1StartAngle <= crankAngle) && (ignitionSchedule1.Status == RUNNING) ) { ignition1StartAngle += CRANK_ANGLE_MAX_IGN; }
-    if ( ignition1StartAngle > crankAngle)
-    {
-        return angleToTime((ignition1StartAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
-    }
-    return 0;
+    return calculateIgnitionNTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
 }
 
 inline uint32_t calculateIgnitionNTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
