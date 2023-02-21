@@ -115,36 +115,15 @@ void loop(void)
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
-      if (serialInProgress == true) 
-      { 
-        if(Serial.availableForWrite() > 16) { sendValues(inProgressOffset, inProgressLength, 0x30, 0); }
-      }
-      //Perform the same check for the tooth and composite logs
-      if( toothLogSendInProgress == true)
+      if (serialTransmitInProgress())
       {
-        if(Serial.availableForWrite() > 16) 
-        { 
-          if(legacySerial == true) { sendToothLog_legacy(inProgressOffset); }
-          else { sendToothLog(inProgressOffset); }
-        }
-      }
-      if( compositeLogSendInProgress == true)
-      {
-        if(Serial.availableForWrite() > 16) { sendCompositeLog(inProgressOffset); }
-      }
-      if(serialWriteInProgress == true)
-      {
-        if(Serial.availableForWrite() > 16) { continueSerialTransmission(); }
+        serialTransmit();
       }
 
-      //Check for any new requests from serial.
-      //if ( (Serial.available()) > 0) { command(); }
-      if ( (Serial.available()) > 0) { parseSerial(); }
-      
-      else if(cmdPending == true)
+      //Check for any new or in-progress requests from serial.
+      if (Serial.available()>0 || serialRecieveInProgress())
       {
-        //This is a special case just for the tooth and composite loggers
-        if (currentCommand == 'T') { legacySerialCommand(); }
+        serialReceive();
       }
 
       //Check for any CAN comms requiring action 
@@ -295,8 +274,6 @@ void loop(void)
       // Air conditioning control
       airConControl();
 
-      //if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } //Used for slower EEPROM writes (Currently this runs in the 30Hz block)
-      
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
@@ -328,7 +305,7 @@ void loop(void)
       #endif
 
       //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialReceivePending == false) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
