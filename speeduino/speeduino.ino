@@ -1085,7 +1085,7 @@ void loop(void)
       {
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
-          uint32_t timeOut = calculateInjector1Timeout(injector1StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
           if (timeOut>0U)
           {
             setFuelSchedule1(
@@ -1109,7 +1109,7 @@ void loop(void)
 #if INJ_CHANNELS >= 2
         if( (BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true) && (currentStatus.PW2 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule2, channel2InjDegrees, injector2StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, channel2InjDegrees, injector2StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule2(
@@ -1123,7 +1123,7 @@ void loop(void)
 #if INJ_CHANNELS >= 3
         if( (BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true) && (currentStatus.PW3 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule3, channel3InjDegrees, injector3StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, channel3InjDegrees, injector3StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule3(
@@ -1137,7 +1137,7 @@ void loop(void)
 #if INJ_CHANNELS >= 4
         if( (BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true) && (currentStatus.PW4 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule4, channel4InjDegrees, injector4StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, channel4InjDegrees, injector4StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule4(
@@ -1151,7 +1151,7 @@ void loop(void)
 #if INJ_CHANNELS >= 5
         if( (BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true) && (currentStatus.PW5 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule5, channel5InjDegrees, injector5StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, channel5InjDegrees, injector5StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule5(
@@ -1165,7 +1165,7 @@ void loop(void)
 #if INJ_CHANNELS >= 6
         if( (BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true) && (currentStatus.PW6 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule6, channel6InjDegrees, injector6StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, channel6InjDegrees, injector6StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule6(
@@ -1179,7 +1179,7 @@ void loop(void)
 #if INJ_CHANNELS >= 7
         if( (BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) && (currentStatus.PW7 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule7, channel7InjDegrees, injector7StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, channel7InjDegrees, injector7StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule7(
@@ -1193,7 +1193,7 @@ void loop(void)
 #if INJ_CHANNELS >= 8
         if( (BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true) && (currentStatus.PW8 >= inj_opentime_uS) )
         {
-          uint32_t timeOut = calculateInjectorNTimeout(fuelSchedule8, channel8InjDegrees, injector8StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, channel8InjDegrees, injector8StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule8(

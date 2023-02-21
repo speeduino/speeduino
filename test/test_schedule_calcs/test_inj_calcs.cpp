@@ -30,11 +30,11 @@ static void test_calc_inj1_timeout(uint16_t pw, uint16_t crankAngle, uint32_t pe
 
     fuelSchedule1.Status = PENDING;
     uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, 0);
-    TEST_ASSERT_EQUAL(pending, calculateInjector1Timeout(startAngle, crankAngle));
+    TEST_ASSERT_EQUAL(pending, calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, startAngle, crankAngle));
     
     fuelSchedule1.Status = RUNNING;
     startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, 0);
-    TEST_ASSERT_EQUAL(running, calculateInjector1Timeout(startAngle, crankAngle));
+    TEST_ASSERT_EQUAL(running, calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, startAngle, crankAngle));
 }
 
 
@@ -48,12 +48,12 @@ static void test_calc_injN_timeout(const inj_test_parameters &parameters)
     fuelSchedule2.Status = PENDING;
     uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle);
     sprintf_P(msg, PSTR("PENDING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
     
     fuelSchedule2.Status = RUNNING;
     startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle);
     sprintf_P(msg, PSTR("RUNNING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
 }
 
 

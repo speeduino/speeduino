@@ -31,8 +31,7 @@ extern int channel8InjDegrees; /**< The number of crank degrees until cylinder 8
 
 inline uint16_t __attribute__((always_inline)) calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees);
 
-inline uint32_t __attribute__((always_inline)) calculateInjector1Timeout(int injector1StartAngle, int crankAngle);
-inline uint32_t __attribute__((always_inline)) calculateInjectorNTimeout(const FuelSchedule &schedule, int channelInjDegrees, int injectorStartAngle, int crankAngle);
+inline uint32_t __attribute__((always_inline)) calculateInjectorTimeout(const FuelSchedule &schedule, int channelInjDegrees, int injectorStartAngle, int crankAngle);
 
 inline void __attribute__((always_inline)) calculateIgnitionAngle1(int dwellAngle);
 inline void __attribute__((always_inline)) calculateIgnitionAngle2(int dwellAngle);

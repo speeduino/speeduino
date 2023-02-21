@@ -12,12 +12,7 @@ inline uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_
   return tempInjectorStartAngle;
 }
 
-inline uint32_t calculateInjector1Timeout(int injector1StartAngle, int crankAngle)
-{
-    return calculateInjectorNTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
-}
-
-inline uint32_t calculateInjectorNTimeout(const FuelSchedule &schedule, int channelInjDegrees, int injectorStartAngle, int crankAngle)
+inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int channelInjDegrees, int injectorStartAngle, int crankAngle)
 {
     int tempCrankAngle = crankAngle - channelInjDegrees;
     if( tempCrankAngle < 0) { tempCrankAngle += CRANK_ANGLE_MAX_INJ; }
