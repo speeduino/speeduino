@@ -2,9 +2,9 @@
 #include "scheduler.h"
 #include "crankMaths.h"
 
-inline uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees)
+inline uint16_t calculateInjectorStartAngle(uint16_t PWdivTimerPerDegree, int16_t injChannelDegrees, uint16_t injAngle)
 {
-  uint16_t tempInjectorStartAngle = (currentStatus.injAngle + injChannelDegrees);
+  uint16_t tempInjectorStartAngle = (injAngle + injChannelDegrees);
   if(tempInjectorStartAngle < PWdivTimerPerDegree) { tempInjectorStartAngle += CRANK_ANGLE_MAX_INJ; }
   tempInjectorStartAngle -= PWdivTimerPerDegree;
   while(tempInjectorStartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { tempInjectorStartAngle -= CRANK_ANGLE_MAX_INJ; }

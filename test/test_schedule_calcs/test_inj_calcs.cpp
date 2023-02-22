@@ -24,18 +24,19 @@ struct inj_test_parameters
 
 static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
+    static constexpr uint16_t injAngle = 355;
     char msg[150];
     uint16_t PWdivTimerPerDegree = div(parameters.pw, timePerDegree).quot;
 
     memset(&fuelSchedule2, 0, sizeof(fuelSchedule2));
 
     fuelSchedule2.Status = PENDING;
-    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle);
+    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
     sprintf_P(msg, PSTR("PENDING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
     TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
     
     fuelSchedule2.Status = RUNNING;
-    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle);
+    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
     sprintf_P(msg, PSTR("RUNNING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
     TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
 }
@@ -55,7 +56,6 @@ static void test_calc_inj_timeout(const inj_test_parameters *pStart, const inj_t
 static void test_calc_inj_timeout_360()
 {
     setEngineSpeed(4000, 360);
-    currentStatus.injAngle = 355;
 
     static const inj_test_parameters test_data[] PROGMEM = {
         // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending (uS), Expected Running (uS)
@@ -148,8 +148,7 @@ static void test_calc_inj_timeout_360()
 static void test_calc_inj_timeout_720()
 {
     setEngineSpeed(4000, 720);
-    currentStatus.injAngle = 355;
-
+    
     static const inj_test_parameters test_data[] PROGMEM = {
         // ChannelAngle (deg), PW (uS), Crank (deg), Expected Pending (uS), Expected Running (uS)
         { 0, 3000, 90, 7872, 7872 },
