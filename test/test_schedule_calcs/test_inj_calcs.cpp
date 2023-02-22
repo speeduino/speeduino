@@ -40,17 +40,20 @@ static void test_calc_inj1_timeout(uint16_t pw, uint16_t crankAngle, uint32_t pe
 
 static void test_calc_injN_timeout(const inj_test_parameters &parameters)
 {
+    char msg[150];
     uint16_t PWdivTimerPerDegree = div(parameters.pw, timePerDegree).quot;
 
     memset(&fuelSchedule2, 0, sizeof(fuelSchedule2));
 
     fuelSchedule2.Status = PENDING;
     uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle);
-    TEST_ASSERT_EQUAL(parameters.pending, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle));
+    sprintf_P(msg, PSTR("PENDING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
     
     fuelSchedule2.Status = RUNNING;
     startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle);
-    TEST_ASSERT_EQUAL(parameters.running, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle));
+    sprintf_P(msg, PSTR("RUNNING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorNTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
 }
 
 
