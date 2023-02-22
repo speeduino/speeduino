@@ -36,12 +36,7 @@ inline uint32_t __attribute__((always_inline)) calculateInjectorTimeout(const Fu
 inline void __attribute__((always_inline)) calculateIgnitionAngle(const int dwellAngle, const uint16_t channelIgnDegrees, int *pEndAngle, int *pStartAngle);
 
 // Ignition for rotary.
-inline void calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle);
-
-// ignition 3 for rotary
-inline void __attribute__((always_inline)) calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees);
-// ignition 4 for rotary
-inline void __attribute__((always_inline)) calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees);
+inline void __attribute__((always_inline))  calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle);
 
 inline uint32_t __attribute__((always_inline)) calculateIgnitionTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
 

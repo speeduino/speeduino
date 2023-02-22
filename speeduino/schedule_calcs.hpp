@@ -43,19 +43,6 @@ inline void calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegre
 }
 
 
-// ignition 3 for rotary
-inline void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
-{
-  calculateIgnitionTrailingRotary(dwellAngle, rotarySplitDegrees, ignition1EndAngle, &ignition3EndAngle, &ignition3StartAngle);
-}
-
-// ignition 4 for rotary
-inline void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
-{
-  calculateIgnitionTrailingRotary(dwellAngle, rotarySplitDegrees, ignition2EndAngle, &ignition4EndAngle, &ignition4StartAngle);
-}
-
-
 inline uint32_t calculateIgnitionTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
 {
     int tempCrankAngle = crankAngle - channelIgnDegrees;
@@ -70,5 +57,4 @@ inline uint32_t calculateIgnitionTimeout(const Schedule &schedule, int startAngl
     }
     
     return 0U;
-
 }

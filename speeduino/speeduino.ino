@@ -1578,8 +1578,8 @@ void calculateIgnitionAngles(int dwellAngle)
         splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.ignLoad);
 
         //The trailing angles are set relative to the leading ones
-        calculateIgnitionAngle3(dwellAngle, splitDegrees);
-        calculateIgnitionAngle4(dwellAngle, splitDegrees);
+        calculateIgnitionTrailingRotary(dwellAngle, splitDegrees, ignition1EndAngle, &ignition3EndAngle, &ignition3StartAngle);
+        calculateIgnitionTrailingRotary(dwellAngle, splitDegrees, ignition2EndAngle, &ignition4EndAngle, &ignition4StartAngle);
       }
       else
       {
