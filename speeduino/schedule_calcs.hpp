@@ -1,4 +1,3 @@
-#include "globals.h"
 #include "scheduler.h"
 #include "crankMaths.h"
 
@@ -26,9 +25,9 @@ inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int chann
     return 0U;
 }
 
-inline void calculateIgnitionAngle(const int dwellAngle, const uint16_t channelIgnDegrees, int *pEndAngle, int *pStartAngle)
+inline void calculateIgnitionAngle(const int dwellAngle, const uint16_t channelIgnDegrees, int8_t advance, int *pEndAngle, int *pStartAngle)
 {
-  *pEndAngle = (channelIgnDegrees==0 ? CRANK_ANGLE_MAX_IGN : channelIgnDegrees) - currentStatus.advance;
+  *pEndAngle = (channelIgnDegrees==0 ? CRANK_ANGLE_MAX_IGN : channelIgnDegrees) - advance;
   if(*pEndAngle > CRANK_ANGLE_MAX_IGN) {*pEndAngle -= CRANK_ANGLE_MAX_IGN;}
   *pStartAngle = *pEndAngle - dwellAngle;
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}

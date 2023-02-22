@@ -43,7 +43,7 @@ void test_calc_ign_timeout(const ign_test_parameters &test_params)
     int startAngle;
     int endAngle;
 
-    calculateIgnitionAngle(dwellAngle, test_params.channelAngle, &endAngle, &startAngle);
+    calculateIgnitionAngle(dwellAngle, test_params.channelAngle, test_params.advanceAngle, &endAngle, &startAngle);
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedStartAngle, startAngle, "startAngle");
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, endAngle, "endAngle");
     
@@ -62,7 +62,6 @@ void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_par
     while (pStart!=pEnd)
     {
         memcpy_P(&local, pStart, sizeof(local));
-        currentStatus.advance = local.advanceAngle;
         test_calc_ign_timeout(local);
         ++pStart;
     }
