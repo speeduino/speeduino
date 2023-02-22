@@ -34,53 +34,26 @@ struct ign_test_parameters
 };
 
 
-void test_calc_ign_timeout(Schedule &schedule, const ign_test_parameters &test_params, const int &startAngle, void (*pEndAngleCalc)(int), const int16_t &endAngle)
+void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
     char msg[150];
+    Schedule schedule;
     memset(&schedule, 0, sizeof(schedule));
 
-    schedule.Status = PENDING;
-    pEndAngleCalc(dwellAngle);
+    int startAngle;
+    int endAngle;
+
+    calculateIgnitionAngle(dwellAngle, test_params.channelAngle, &endAngle, &startAngle);
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedStartAngle, startAngle, "startAngle");
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, endAngle, "endAngle");
     
     sprintf_P(msg, PSTR("PENDING advanceAngle: %" PRIi8 ", channelAngle: % " PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
+    schedule.Status = PENDING;
     TEST_ASSERT_EQUAL_MESSAGE(test_params.pending, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
     
-    schedule.Status = RUNNING;
-    pEndAngleCalc(dwellAngle);
     sprintf_P(msg, PSTR("RUNNING advanceAngle: %" PRIi8 ", channelAngle: % " PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
+    schedule.Status = RUNNING;
     TEST_ASSERT_EQUAL_MESSAGE(test_params.running, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
-}
-
-//test_params.channelAngle, local.crankAngle, local.pending, local.running, local.endAngle
-
-void test_calc_ign_timeout(const ign_test_parameters &test_params)
-{
-    channel1IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule1, test_params, ignition1StartAngle, &calculateIgnitionAngle1, ignition1EndAngle);
-    channel2IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule2, test_params, ignition2StartAngle, &calculateIgnitionAngle2, ignition2EndAngle);
-    channel3IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule3, test_params, ignition3StartAngle, &calculateIgnitionAngle3, ignition3EndAngle);
-    channel4IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule4, test_params, ignition4StartAngle, &calculateIgnitionAngle4, ignition4EndAngle);
-#if (IGN_CHANNELS >= 5)
-    channel5IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule5, test_params, ignition5StartAngle, &calculateIgnitionAngle5, ignition5EndAngle);
-#endif
-#if (IGN_CHANNELS >= 6)
-    channel6IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule6, test_params, ignition6StartAngle, &calculateIgnitionAngle6, ignition6EndAngle);
-#endif
-#if (IGN_CHANNELS >= 7)
-    channel7IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule7, test_params, ignition7StartAngle, &calculateIgnitionAngle7, ignition7EndAngle);
-#endif
-#if (IGN_CHANNELS >= 8)
-    channel8IgnDegrees = test_params.channelAngle;
-    test_calc_ign_timeout(ignitionSchedule8, test_params, ignition8StartAngle, &calculateIgnitionAngle8, ignition8EndAngle);
-#endif
 }
 
 void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_parameters *pEnd)
