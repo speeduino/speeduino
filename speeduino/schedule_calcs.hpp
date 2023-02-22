@@ -34,23 +34,25 @@ inline void calculateIgnitionAngle(const int dwellAngle, const uint16_t channelI
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
+inline void calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle)
+{
+  *pEndAngle = leadIgnitionAngle + rotarySplitDegrees;
+  *pStartAngle = *pEndAngle - dwellAngle;
+  if(*pStartAngle > CRANK_ANGLE_MAX_IGN) {*pStartAngle -= CRANK_ANGLE_MAX_IGN;}
+  if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
+}
+
 
 // ignition 3 for rotary
 inline void calculateIgnitionAngle3(int dwellAngle, int rotarySplitDegrees)
 {
-  ignition3EndAngle = ignition1EndAngle + rotarySplitDegrees;
-  ignition3StartAngle = ignition3EndAngle - dwellAngle;
-  if(ignition3StartAngle > CRANK_ANGLE_MAX_IGN) {ignition3StartAngle -= CRANK_ANGLE_MAX_IGN;}
-  if(ignition3StartAngle < 0) {ignition3StartAngle += CRANK_ANGLE_MAX_IGN;}
+  calculateIgnitionTrailingRotary(dwellAngle, rotarySplitDegrees, ignition1EndAngle, &ignition3EndAngle, &ignition3StartAngle);
 }
 
 // ignition 4 for rotary
 inline void calculateIgnitionAngle4(int dwellAngle, int rotarySplitDegrees)
 {
-  ignition4EndAngle = ignition2EndAngle + rotarySplitDegrees;
-  ignition4StartAngle = ignition4EndAngle - dwellAngle;
-  if(ignition4StartAngle > CRANK_ANGLE_MAX_IGN) {ignition4StartAngle -= CRANK_ANGLE_MAX_IGN;}
-  if(ignition4StartAngle < 0) {ignition4StartAngle += CRANK_ANGLE_MAX_IGN;}
+  calculateIgnitionTrailingRotary(dwellAngle, rotarySplitDegrees, ignition2EndAngle, &ignition4EndAngle, &ignition4StartAngle);
 }
 
 
