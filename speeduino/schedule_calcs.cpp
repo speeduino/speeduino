@@ -1,5 +1,16 @@
 #include "schedule_calcs.h"
 
+byte channelInjEnabled = 0;
+
+int ignition1EndAngle = 0;
+int ignition2EndAngle = 0;
+int ignition3EndAngle = 0;
+int ignition4EndAngle = 0;
+int ignition5EndAngle = 0;
+int ignition6EndAngle = 0;
+int ignition7EndAngle = 0;
+int ignition8EndAngle = 0;
+
 int ignition1StartAngle = 0;
 int ignition2StartAngle = 0;
 int ignition3StartAngle = 0;

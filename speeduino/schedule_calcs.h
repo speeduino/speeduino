@@ -3,6 +3,17 @@
 #include <stdint.h>
 #include "scheduler.h"
 
+extern byte channelInjEnabled;
+
+extern int ignition1EndAngle;
+extern int ignition2EndAngle;
+extern int ignition3EndAngle;
+extern int ignition4EndAngle;
+extern int ignition5EndAngle;
+extern int ignition6EndAngle;
+extern int ignition7EndAngle;
+extern int ignition8EndAngle;
+
 extern int ignition1StartAngle;
 extern int ignition2StartAngle;
 extern int ignition3StartAngle;
