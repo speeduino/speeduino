@@ -465,10 +465,18 @@ void initialiseAll(void)
     ignition2EndAngle = 0;
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
+#if IGN_CHANNELS >= 5
     ignition5EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 6
     ignition6EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 7
     ignition7EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 8
     ignition8EndAngle = 0;
+#endif
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -724,8 +732,10 @@ void initialiseAll(void)
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existant channel 5
+              #if INJ_CHANNELS >= 5
               BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
               channel5InjDegrees = channel1InjDegrees;
+              #endif
             #endif
           }
           else
@@ -766,7 +776,9 @@ void initialiseAll(void)
             channel2InjDegrees = 0;
             channel3InjDegrees = 0;
             channel4InjDegrees = 0;
+#if (INJ_CHANNELS >= 5)
             channel5InjDegrees = 0; 
+#endif
           }
           else
           {
@@ -774,7 +786,9 @@ void initialiseAll(void)
             channel2InjDegrees = 72;
             channel3InjDegrees = 144;
             channel4InjDegrees = 216;
+#if (INJ_CHANNELS >= 5)
             channel5InjDegrees = 288;
+#endif
 
             //Divide by currentStatus.nSquirts ?
           }

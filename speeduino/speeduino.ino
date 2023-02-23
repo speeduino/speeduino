@@ -594,8 +594,10 @@ void loop(void)
               #else
                 //This is an invalid config as there are not enough outputs to support sequential + staging
                 //Put the staging output to the non-existant channel 5
-                BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-                channel5InjDegrees = channel1InjDegrees;
+                #if INJ_CHANNELS >= 5
+                  BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+                  channel5InjDegrees = channel1InjDegrees;
+                #endif
               #endif
             }
             else
@@ -1219,10 +1221,18 @@ void loop(void)
           ignition2StartAngle -= 5;
           ignition3StartAngle -= 5;
           ignition4StartAngle -= 5;
+#if IGN_CHANNELS >= 5
           ignition5StartAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 6          
           ignition6StartAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 7
           ignition7StartAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 8
           ignition8StartAngle -= 5;
+#endif
         }
       }
       else { fixedCrankingOverride = 0; }
