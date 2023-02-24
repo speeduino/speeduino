@@ -841,6 +841,41 @@ extern void beginInjectorPriming(void)
   }
 }
 
+// Shared ISR function for all fuel timers.
+// This is completely inlined into the ISR - there is no function call
+// overhead.
+static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &schedule)
+{
+  if (schedule.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    schedule.pStartFunction();
+    schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE(schedule.duration) ); //Doing this here prevents a potential overflow on restarts
+  }
+  else if (schedule.Status == RUNNING)
+  {
+      schedule.pEndFunction();
+      schedule.Status = OFF; //Turn off the schedule
+
+      //If there is a next schedule queued up, activate it
+      if(schedule.hasNextSchedule == true)
+      {
+        SET_COMPARE(schedule.compare, schedule.nextStartCompare);
+        SET_COMPARE(schedule.endCompare, schedule.nextEndCompare);
+        schedule.Status = PENDING;
+        schedule.hasNextSchedule = false;
+      }
+      else 
+      { 
+        schedule.pTimerDisable(); 
+      }
+  }
+  else if (schedule.Status == OFF) 
+  { 
+    schedule.pTimerDisable(); //Safety check. Turn off this output compare unit and return without performing any action
+  } 
+} 
+
 /*******************************************************************************************************************************************************************************************************/
 /** fuelSchedule*Interrupt (All 8 ISR functions below) get called (as timed interrupts) when either the start time or the duration time are reached.
 * This calls the relevant callback function (startCallback or endCallback) depending on the status (PENDING => Needs to run, RUNNING => Needs to stop) of the schedule.
@@ -856,29 +891,7 @@ ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 inline void fuelSchedule1Interrupt(void)
 #endif
   {
-    if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      //To use timer queue, change fuelShedule1 to timer3Aqueue[0];
-      fuelSchedule1.pStartFunction();
-      fuelSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      SET_COMPARE(FUEL1_COMPARE, FUEL1_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule1.duration) ); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule1.Status == RUNNING)
-    {
-       fuelSchedule1.pEndFunction();
-       fuelSchedule1.Status = OFF; //Turn off the schedule
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule1.hasNextSchedule == true)
-       {
-         SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.nextStartCompare);
-         fuelSchedule1.endCompare = fuelSchedule1.nextEndCompare;
-         fuelSchedule1.Status = PENDING;
-         fuelSchedule1.hasNextSchedule = false;
-       }
-       else { FUEL1_TIMER_DISABLE(); }
-    }
-    else if (fuelSchedule1.Status == OFF) { FUEL1_TIMER_DISABLE(); } //Safety check. Turn off this output compare unit and return without performing any action
+    fuelScheduleISR(fuelSchedule1);
   }
 
 
@@ -888,27 +901,7 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 inline void fuelSchedule2Interrupt(void)
 #endif
   {
-    if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      fuelSchedule2.pStartFunction();
-      fuelSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      SET_COMPARE(FUEL2_COMPARE, FUEL2_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule2.duration) ); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule2.Status == RUNNING)
-    {
-       fuelSchedule2.pEndFunction();
-       fuelSchedule2.Status = OFF; //Turn off the schedule
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule2.hasNextSchedule == true)
-       {
-         SET_COMPARE(FUEL2_COMPARE, fuelSchedule2.nextStartCompare);
-         fuelSchedule2.endCompare = fuelSchedule2.nextEndCompare;
-         fuelSchedule2.Status = PENDING;
-         fuelSchedule2.hasNextSchedule = false;
-       }
-       else { FUEL2_TIMER_DISABLE(); }
-    }
+    fuelScheduleISR(fuelSchedule2);
   }
 
 
@@ -918,27 +911,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 inline void fuelSchedule3Interrupt(void)
 #endif
   {
-    if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      fuelSchedule3.pStartFunction();
-      fuelSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      SET_COMPARE(FUEL3_COMPARE, FUEL3_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule3.duration) ); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule3.Status == RUNNING)
-    {
-       fuelSchedule3.pEndFunction();
-       fuelSchedule3.Status = OFF; //Turn off the schedule
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule3.hasNextSchedule == true)
-       {
-         SET_COMPARE(FUEL3_COMPARE, fuelSchedule3.nextStartCompare);
-         fuelSchedule3.endCompare = fuelSchedule3.nextEndCompare;
-         fuelSchedule3.Status = PENDING;
-         fuelSchedule3.hasNextSchedule = false;
-       }
-       else { FUEL3_TIMER_DISABLE(); }
-    }
+    fuelScheduleISR(fuelSchedule3);
   }
 
 
@@ -948,27 +921,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 inline void fuelSchedule4Interrupt(void)
 #endif
   {
-    if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      fuelSchedule4.pStartFunction();
-      fuelSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      SET_COMPARE(FUEL4_COMPARE, FUEL4_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule4.duration) ); //Doing this here prevents a potential overflow on restarts
-    }
-    else if (fuelSchedule4.Status == RUNNING)
-    {
-       fuelSchedule4.pEndFunction();
-       fuelSchedule4.Status = OFF; //Turn off the schedule
-
-       //If there is a next schedule queued up, activate it
-       if(fuelSchedule4.hasNextSchedule == true)
-       {
-         SET_COMPARE(FUEL4_COMPARE, fuelSchedule4.nextStartCompare);
-         fuelSchedule4.endCompare = fuelSchedule4.nextEndCompare;
-         fuelSchedule4.Status = PENDING;
-         fuelSchedule4.hasNextSchedule = false;
-       }
-       else { FUEL4_TIMER_DISABLE(); }
-    }
+    fuelScheduleISR(fuelSchedule4);
   }
 
 #if INJ_CHANNELS >= 5
@@ -977,29 +930,9 @@ ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void fuelSchedule5Interrupt(void)
 #endif
-{
-  if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
   {
-    fuelSchedule5.pStartFunction();
-    fuelSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(FUEL5_COMPARE, FUEL5_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule5.duration) ); //Doing this here prevents a potential overflow on restarts
+    fuelScheduleISR(fuelSchedule5);
   }
-  else if (fuelSchedule5.Status == RUNNING)
-  {
-     fuelSchedule5.pEndFunction();
-     fuelSchedule5.Status = OFF; //Turn off the schedule
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule5.hasNextSchedule == true)
-     {
-       SET_COMPARE(FUEL5_COMPARE, fuelSchedule5.nextStartCompare);
-       fuelSchedule5.endCompare = fuelSchedule5.nextEndCompare;
-       fuelSchedule5.Status = PENDING;
-       fuelSchedule5.hasNextSchedule = false;
-     }
-     else { FUEL5_TIMER_DISABLE(); }
-  }
-}
 #endif
 
 #if INJ_CHANNELS >= 6
@@ -1008,29 +941,9 @@ ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void fuelSchedule6Interrupt(void)
 #endif
-{
-  if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
   {
-    fuelSchedule6.pStartFunction();
-    fuelSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(FUEL6_COMPARE, FUEL6_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule6.duration) ); //Doing this here prevents a potential overflow on restarts
+    fuelScheduleISR(fuelSchedule6);
   }
-  else if (fuelSchedule6.Status == RUNNING)
-  {
-     fuelSchedule6.pEndFunction();
-     fuelSchedule6.Status = OFF; //Turn off the schedule
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule6.hasNextSchedule == true)
-     {
-       SET_COMPARE(FUEL6_COMPARE, fuelSchedule6.nextStartCompare);
-       fuelSchedule6.endCompare = fuelSchedule6.nextEndCompare;
-       fuelSchedule6.Status = PENDING;
-       fuelSchedule6.hasNextSchedule = false;
-     }
-     else { FUEL6_TIMER_DISABLE(); }
-  }
-}
 #endif
 
 #if INJ_CHANNELS >= 7
@@ -1039,29 +952,9 @@ ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void fuelSchedule7Interrupt(void)
 #endif
-{
-  if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
   {
-    fuelSchedule7.pStartFunction();
-    fuelSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(FUEL7_COMPARE, FUEL7_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule7.duration) ); //Doing this here prevents a potential overflow on restarts
+    fuelScheduleISR(fuelSchedule7);
   }
-  else if (fuelSchedule7.Status == RUNNING)
-  {
-     fuelSchedule7.pEndFunction();
-     fuelSchedule7.Status = OFF; //Turn off the schedule
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule7.hasNextSchedule == true)
-     {
-       SET_COMPARE(FUEL7_COMPARE, fuelSchedule7.nextStartCompare);
-       fuelSchedule7.endCompare = fuelSchedule7.nextEndCompare;
-       fuelSchedule7.Status = PENDING;
-       fuelSchedule7.hasNextSchedule = false;
-     }
-     else { FUEL7_TIMER_DISABLE(); }
-  }
-}
 #endif
 
 #if INJ_CHANNELS >= 8
@@ -1070,29 +963,9 @@ ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void fuelSchedule8Interrupt(void)
 #endif
-{
-  if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
   {
-    fuelSchedule8.pStartFunction();
-    fuelSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(FUEL8_COMPARE, FUEL8_COUNTER + uS_TO_TIMER_COMPARE(fuelSchedule8.duration) ); //Doing this here prevents a potential overflow on restarts
+    fuelScheduleISR(fuelSchedule8);
   }
-  else if (fuelSchedule8.Status == RUNNING)
-  {
-     fuelSchedule8.pEndFunction();
-     fuelSchedule8.Status = OFF; //Turn off the schedule
-
-     //If there is a next schedule queued up, activate it
-     if(fuelSchedule8.hasNextSchedule == true)
-     {
-       SET_COMPARE(FUEL8_COMPARE, fuelSchedule8.nextStartCompare);
-       fuelSchedule8.endCompare = fuelSchedule8.nextEndCompare;
-       fuelSchedule8.Status = PENDING;
-       fuelSchedule8.hasNextSchedule = false;
-     }
-     else { FUEL8_TIMER_DISABLE(); }
-  }
-}
 #endif
 
 #if IGN_CHANNELS >= 1
