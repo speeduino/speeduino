@@ -987,205 +987,93 @@ inline void fuelSchedule8Interrupt(void)
   }
 #endif
 
-#if IGN_CHANNELS >= 1
+// Shared ISR function for all ignition timers.
+// This is completely inlined into the ISR - there is no function call
+// overhead.
+static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSchedule &schedule)
+{
+  if (schedule.Status == PENDING) //Check to see if this schedule is turn on
+  {
+    schedule.pStartCallback();
+    schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+    schedule.startTime = micros();
+    if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule.compare, schedule.endCompare); }
+    else { SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE(schedule.duration) ); } //Doing this here prevents a potential overflow on restarts
+  }
+  else if (schedule.Status == RUNNING)
+  {
+    schedule.pEndCallback();
+    schedule.Status = OFF; //Turn off the schedule
+    schedule.endScheduleSetByDecoder = false;
+    ignitionCount = ignitionCount + 1; //Increment the ignition counter
+    currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
+
+    //If there is a next schedule queued up, activate it
+    if(schedule.hasNextSchedule == true)
+    {
+      SET_COMPARE(schedule.compare, schedule.nextStartCompare);
+      schedule.Status = PENDING;
+      schedule.hasNextSchedule = false;
+    }
+    else
+    { 
+      schedule.pTimerDisable(); 
+    }
+  }
+  else if (schedule.Status == OFF)
+  {
+    //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
+    schedule.pTimerDisable(); 
+  }
+}
+
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void ignitionSchedule1Interrupt(void)
 #endif
   {
-    if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule1.pStartCallback();
-      ignitionSchedule1.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule1.startTime = micros();
-      if(ignitionSchedule1.endScheduleSetByDecoder == true) { SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare); }
-      else { SET_COMPARE(IGN1_COMPARE, IGN1_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule1.duration) ); } //Doing this here prevents a potential overflow on restarts
-    }
-    else if (ignitionSchedule1.Status == RUNNING)
-    {
-      ignitionSchedule1.pEndCallback();
-      ignitionSchedule1.Status = OFF; //Turn off the schedule
-      ignitionSchedule1.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule1.startTime) );
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule1.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.nextStartCompare);
-        ignitionSchedule1.Status = PENDING;
-        ignitionSchedule1.hasNextSchedule = false;
-      }
-      else{ IGN1_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule1.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN1_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule1);
   }
-#endif
 
-#if IGN_CHANNELS >= 2
+
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void ignitionSchedule2Interrupt(void)
 #endif
   {
-    if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule2.pStartCallback();
-      ignitionSchedule2.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule2.startTime = micros();
-      if(ignitionSchedule2.endScheduleSetByDecoder == true) { SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN2_COMPARE, IGN2_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule2.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule2.Status == RUNNING)
-    {
-      ignitionSchedule2.Status = OFF; //Turn off the schedule
-      ignitionSchedule2.pEndCallback();
-      ignitionSchedule2.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule2.startTime) );
-      
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule2.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.nextStartCompare);
-        ignitionSchedule2.Status = PENDING;
-        ignitionSchedule2.hasNextSchedule = false;
-      }
-      else{ IGN2_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule2.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN2_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule2);
   }
-#endif
 
-#if IGN_CHANNELS >= 3
+
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void ignitionSchedule3Interrupt(void)
 #endif
   {
-    if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule3.pStartCallback();
-      ignitionSchedule3.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule3.startTime = micros();
-      if(ignitionSchedule3.endScheduleSetByDecoder == true) { SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.endCompare ); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule3.duration)); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule3.Status == RUNNING)
-    {
-       ignitionSchedule3.Status = OFF; //Turn off the schedule
-       ignitionSchedule3.pEndCallback();
-       ignitionSchedule3.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the ignition counter
-       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule3.startTime) );
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule3.hasNextSchedule == true)
-       {
-         SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.nextStartCompare);
-         ignitionSchedule3.Status = PENDING;
-         ignitionSchedule3.hasNextSchedule = false;
-       }
-       else { IGN3_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule3.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN3_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule3);
   }
-#endif
 
-#if IGN_CHANNELS >= 4
+
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void ignitionSchedule4Interrupt(void)
 #endif
   {
-    if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule4.pStartCallback();
-      ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule4.startTime = micros();
-      if(ignitionSchedule4.endScheduleSetByDecoder == true) { SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule4.Status == RUNNING)
-    {
-       ignitionSchedule4.Status = OFF; //Turn off the schedule
-       ignitionSchedule4.pEndCallback();
-       ignitionSchedule4.endScheduleSetByDecoder = false;
-       ignitionCount += 1; //Increment the ignition counter
-       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule4.startTime) );
-
-       //If there is a next schedule queued up, activate it
-       if(ignitionSchedule4.hasNextSchedule == true)
-       {
-         SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.nextStartCompare);
-         ignitionSchedule4.Status = PENDING;
-         ignitionSchedule4.hasNextSchedule = false;
-       }
-       else { IGN4_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule4.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN4_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule4);
   }
-#endif
 
-#if IGN_CHANNELS >= 5
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 inline void ignitionSchedule5Interrupt(void)
 #endif
   {
-    if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule5.pStartCallback();
-      ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule5.startTime = micros();
-      if(ignitionSchedule5.endScheduleSetByDecoder == true) { SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule5.Status == RUNNING)
-    {
-      ignitionSchedule5.Status = OFF; //Turn off the schedule
-      ignitionSchedule5.pEndCallback();
-      ignitionSchedule5.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule5.startTime) );
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule5.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.nextStartCompare);
-        ignitionSchedule5.Status = PENDING;
-        ignitionSchedule5.hasNextSchedule = false;
-      }
-      else{ IGN5_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule5.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN5_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule5);
   }
-#endif
 
 #if IGN_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
@@ -1194,36 +1082,7 @@ ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 inline void ignitionSchedule6Interrupt(void)
 #endif
   {
-    if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule6.pStartCallback();
-      ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule6.startTime = micros();
-      if(ignitionSchedule6.endScheduleSetByDecoder == true) { SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule6.Status == RUNNING)
-    {
-      ignitionSchedule6.Status = OFF; //Turn off the schedule
-      ignitionSchedule6.pEndCallback();
-      ignitionSchedule6.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule6.startTime) );
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule6.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.nextStartCompare);
-        ignitionSchedule6.Status = PENDING;
-        ignitionSchedule6.hasNextSchedule = false;
-      }
-      else{ IGN6_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule6.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN6_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule6);
   }
 #endif
 
@@ -1234,36 +1093,7 @@ ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 inline void ignitionSchedule7Interrupt(void)
 #endif
   {
-    if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule7.pStartCallback();
-      ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule7.startTime = micros();
-      if(ignitionSchedule7.endScheduleSetByDecoder == true) { SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule7.Status == RUNNING)
-    {
-      ignitionSchedule7.Status = OFF; //Turn off the schedule
-      ignitionSchedule7.pEndCallback();
-      ignitionSchedule7.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule7.startTime) );
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule7.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.nextStartCompare);
-        ignitionSchedule7.Status = PENDING;
-        ignitionSchedule7.hasNextSchedule = false;
-      }
-      else{ IGN7_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule7.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN7_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule7);
   }
 #endif
 
@@ -1274,36 +1104,7 @@ ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 inline void ignitionSchedule8Interrupt(void)
 #endif
   {
-    if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
-    {
-      ignitionSchedule8.pStartCallback();
-      ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-      ignitionSchedule8.startTime = micros();
-      if(ignitionSchedule8.endScheduleSetByDecoder == true) { SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
-    }
-    else if (ignitionSchedule8.Status == RUNNING)
-    {
-      ignitionSchedule8.Status = OFF; //Turn off the schedule
-      ignitionSchedule8.pEndCallback();
-      ignitionSchedule8.endScheduleSetByDecoder = false;
-      ignitionCount += 1; //Increment the ignition counter
-      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule8.startTime) );
-
-      //If there is a next schedule queued up, activate it
-      if(ignitionSchedule8.hasNextSchedule == true)
-      {
-        SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.nextStartCompare);
-        ignitionSchedule8.Status = PENDING;
-        ignitionSchedule8.hasNextSchedule = false;
-      }
-      else{ IGN8_TIMER_DISABLE(); }
-    }
-    else if (ignitionSchedule8.Status == OFF)
-    {
-      //Catch any spurious interrupts. This really shouldn't ever be called, but there as a safety
-      IGN8_TIMER_DISABLE();
-    }
+    ignitionScheduleISR(ignitionSchedule8);
   }
 #endif
 
