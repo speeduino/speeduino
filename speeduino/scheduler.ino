@@ -30,23 +30,43 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "schedule_calcs.h"
 
-FuelSchedule fuelSchedule1;
-FuelSchedule fuelSchedule2;
-FuelSchedule fuelSchedule3;
-FuelSchedule fuelSchedule4;
+static void fun_FUEL1_TIMER_DISABLE() { FUEL1_TIMER_DISABLE(); }
+static void fun_FUEL1_TIMER_ENABLE() { FUEL1_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, fun_FUEL1_TIMER_DISABLE, fun_FUEL1_TIMER_ENABLE);
 
-#if INJ_CHANNELS >= 5
-FuelSchedule fuelSchedule5;
+static void fun_FUEL2_TIMER_DISABLE() { FUEL2_TIMER_DISABLE(); }
+static void fun_FUEL2_TIMER_ENABLE() { FUEL2_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE, fun_FUEL2_TIMER_DISABLE, fun_FUEL2_TIMER_ENABLE);
+
+static void fun_FUEL3_TIMER_DISABLE() { FUEL3_TIMER_DISABLE(); }
+static void fun_FUEL3_TIMER_ENABLE() { FUEL3_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE, fun_FUEL3_TIMER_DISABLE, fun_FUEL3_TIMER_ENABLE);
+
+static void fun_FUEL4_TIMER_DISABLE() { FUEL4_TIMER_DISABLE(); }
+static void fun_FUEL4_TIMER_ENABLE() { FUEL4_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE, fun_FUEL4_TIMER_DISABLE, fun_FUEL4_TIMER_ENABLE);
+
+#if (INJ_CHANNELS >= 5)
+static void fun_FUEL5_TIMER_DISABLE() { FUEL5_TIMER_DISABLE(); }
+static void fun_FUEL5_TIMER_ENABLE() { FUEL5_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE, fun_FUEL5_TIMER_DISABLE, fun_FUEL5_TIMER_ENABLE);
 #endif
-#if INJ_CHANNELS >= 6
-FuelSchedule fuelSchedule6;
+#if (INJ_CHANNELS >= 6)
+static void fun_FUEL6_TIMER_DISABLE() { FUEL6_TIMER_DISABLE(); }
+static void fun_FUEL6_TIMER_ENABLE() { FUEL6_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE, fun_FUEL6_TIMER_DISABLE, fun_FUEL6_TIMER_ENABLE);
 #endif
-#if INJ_CHANNELS >= 7
-FuelSchedule fuelSchedule7;
+#if (INJ_CHANNELS >= 7)
+static void fun_FUEL7_TIMER_DISABLE() { FUEL7_TIMER_DISABLE(); }
+static void fun_FUEL7_TIMER_ENABLE() { FUEL7_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE, fun_FUEL7_TIMER_DISABLE, fun_FUEL7_TIMER_ENABLE);
 #endif
-#if INJ_CHANNELS >= 8
-FuelSchedule fuelSchedule8;
+#if (INJ_CHANNELS >= 8)
+static void fun_FUEL8_TIMER_DISABLE() { FUEL8_TIMER_DISABLE(); }
+static void fun_FUEL8_TIMER_ENABLE() { FUEL8_TIMER_ENABLE(); }
+FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE, fun_FUEL8_TIMER_DISABLE, fun_FUEL8_TIMER_ENABLE);
 #endif
+
 
 
 IgnitionSchedule ignitionSchedule1;
