@@ -88,40 +88,40 @@ void setIgnitionSchedule8(unsigned long timeout, unsigned long duration);
 void disablePendingFuelSchedule(byte channel);
 void disablePendingIgnSchedule(byte channel);
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  inline void fuelSchedule1Interrupt();
-  inline void fuelSchedule2Interrupt();
-  inline void fuelSchedule3Interrupt();
-  inline void fuelSchedule4Interrupt();
+  void fuelSchedule1Interrupt();
+  void fuelSchedule2Interrupt();
+  void fuelSchedule3Interrupt();
+  void fuelSchedule4Interrupt();
 #if INJ_CHANNELS >= 5
-  inline void fuelSchedule5Interrupt();
+  void fuelSchedule5Interrupt();
 #endif
 #if INJ_CHANNELS >= 6
-  inline void fuelSchedule6Interrupt();
+  void fuelSchedule6Interrupt();
 #endif
 #if INJ_CHANNELS >= 7
-  inline void fuelSchedule7Interrupt();
+  void fuelSchedule7Interrupt();
 #endif
 #if INJ_CHANNELS >= 8
-  inline void fuelSchedule8Interrupt();
+  void fuelSchedule8Interrupt();
 #endif
 
-  inline void ignitionSchedule1Interrupt();
-  inline void ignitionSchedule2Interrupt();
-  inline void ignitionSchedule3Interrupt();
-  inline void ignitionSchedule4Interrupt();
-  inline void ignitionSchedule5Interrupt();
+  void ignitionSchedule1Interrupt();
+  void ignitionSchedule2Interrupt();
+  void ignitionSchedule3Interrupt();
+  void ignitionSchedule4Interrupt();
+  void ignitionSchedule5Interrupt();
 #if IGN_CHANNELS >= 6
-  inline void ignitionSchedule6Interrupt();
+  void ignitionSchedule6Interrupt();
 #endif
 #if IGN_CHANNELS >= 7
-  inline void ignitionSchedule7Interrupt();
+  void ignitionSchedule7Interrupt();
 #endif
 #if IGN_CHANNELS >= 8
-  inline void ignitionSchedule8Interrupt();
+  void ignitionSchedule8Interrupt();
 #endif
 #endif
 /** Schedule statuses.
