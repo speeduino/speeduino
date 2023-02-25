@@ -52,7 +52,7 @@ inline uint32_t calculateIgnitionTimeout(const Schedule &schedule, int startAngl
     if ( (tempStartAngle <= tempCrankAngle) && (schedule.Status == RUNNING) ) { tempStartAngle += CRANK_ANGLE_MAX_IGN; }
     if(tempStartAngle > tempCrankAngle)
     { 
-        return angleToTime((tempStartAngle - tempCrankAngle), CRANKMATH_METHOD_INTERVAL_REV); 
+        return angleToTimeIntervalRev(tempStartAngle - tempCrankAngle); 
     }
     
     return 0U;
