@@ -179,7 +179,9 @@ struct IgnitionSchedule : public Schedule {
 
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
   volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile bool endScheduleSetByDecoder = false;
+  int16_t startAngle; ///< Interim calculated value
+  int16_t endAngle; ///< Interim calculated value
+  int16_t channelIgnDegrees; ///< The number of crank degrees until cylinder is at TDC
 };
 
 /**
