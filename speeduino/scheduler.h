@@ -52,7 +52,6 @@ void initialiseIgnitionSchedulers(void);
 
 void startIgnitionSchedulers(void);
 void stopIgnitionSchedulers(void);
-void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 void initialiseFuelSchedulers(void);
 
