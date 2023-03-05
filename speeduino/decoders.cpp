@@ -93,22 +93,7 @@ static unsigned long elapsedTime;
 static unsigned long lastCrankAngleCalc;
 static unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
-TESTABLE_STATIC uint16_t ignition1EndTooth = 0;
-TESTABLE_STATIC uint16_t ignition2EndTooth = 0;
-TESTABLE_STATIC uint16_t ignition3EndTooth = 0;
-TESTABLE_STATIC uint16_t ignition4EndTooth = 0;
-#if IGN_CHANNELS >= 5
-TESTABLE_STATIC uint16_t ignition5EndTooth = 0;
-#endif
-#if IGN_CHANNELS >= 6
-TESTABLE_STATIC uint16_t ignition6EndTooth = 0;
-#endif
-#if IGN_CHANNELS >= 7
-TESTABLE_STATIC uint16_t ignition7EndTooth = 0;
-#endif
-#if IGN_CHANNELS >= 8
-TESTABLE_STATIC uint16_t ignition8EndTooth = 0;
-#endif
+TESTABLE_STATIC uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 static int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
@@ -499,42 +484,42 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
 {
   if ( (fixedCrankingOverride == 0) && (currentStatus.RPM > 0) )
   {
-    if ( (currentTooth == ignition1EndTooth) )
+    if ( (currentTooth == ignitionEndTeeth[0]) )
     {
       adjustCrankAngle(ignitionSchedule1, crankAngle);
     }
-    else if ( (currentTooth == ignition2EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[1]) )
     {
       adjustCrankAngle(ignitionSchedule2, crankAngle);
     }
-    else if ( (currentTooth == ignition3EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[2]) )
     {
       adjustCrankAngle(ignitionSchedule3, crankAngle);
     }
-    else if ( (currentTooth == ignition4EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[3]) )
     {
       adjustCrankAngle(ignitionSchedule4, crankAngle);
     }
 #if IGN_CHANNELS >= 5
-    else if ( (currentTooth == ignition5EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[4]) )
     {
       adjustCrankAngle(ignitionSchedule5, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 6
-    else if ( (currentTooth == ignition6EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[5]) )
     {
       adjustCrankAngle(ignitionSchedule6, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 7
-    else if ( (currentTooth == ignition7EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[6]) )
     {
       adjustCrankAngle(ignitionSchedule7, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 8
-    else if ( (currentTooth == ignition8EndTooth) )
+    else if ( (currentTooth == ignitionEndTeeth[7]) )
     {
       adjustCrankAngle(ignitionSchedule8, crankAngle);
     }
@@ -865,21 +850,21 @@ static void triggerSetEndTeeth_missingTooth(void)
   uint8_t toothAdder = 0;
   if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
 
-  ignition1EndTooth = calcEndTeeth_missingTooth(ignitionSchedule1, toothAdder);
-  ignition2EndTooth = calcEndTeeth_missingTooth(ignitionSchedule2, toothAdder);
-  ignition3EndTooth = calcEndTeeth_missingTooth(ignitionSchedule3, toothAdder);
-  ignition4EndTooth = calcEndTeeth_missingTooth(ignitionSchedule4, toothAdder);
+  ignitionEndTeeth[0] = calcEndTeeth_missingTooth(ignitionSchedule1, toothAdder);
+  ignitionEndTeeth[1] = calcEndTeeth_missingTooth(ignitionSchedule2, toothAdder);
+  ignitionEndTeeth[2] = calcEndTeeth_missingTooth(ignitionSchedule3, toothAdder);
+  ignitionEndTeeth[3] = calcEndTeeth_missingTooth(ignitionSchedule4, toothAdder);
 #if IGN_CHANNELS >= 5
-  ignition5EndTooth = calcEndTeeth_missingTooth(ignitionSchedule5, toothAdder);
+  ignitionEndTeeth[4] = calcEndTeeth_missingTooth(ignitionSchedule5, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  ignition6EndTooth = calcEndTeeth_missingTooth(ignitionSchedule6, toothAdder);
+  ignitionEndTeeth[5] = calcEndTeeth_missingTooth(ignitionSchedule6, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  ignition7EndTooth = calcEndTeeth_missingTooth(ignitionSchedule7, toothAdder);
+  ignitionEndTeeth[6] = calcEndTeeth_missingTooth(ignitionSchedule7, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  ignition8EndTooth = calcEndTeeth_missingTooth(ignitionSchedule8, toothAdder);
+  ignitionEndTeeth[7] = calcEndTeeth_missingTooth(ignitionSchedule8, toothAdder);
 #endif
 }
 
@@ -1093,21 +1078,21 @@ static void triggerSetEndTeeth_DualWheel(void)
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
-  ignition1EndTooth = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
-  ignition2EndTooth = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
-  ignition3EndTooth = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
-  ignition4EndTooth = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
+  ignitionEndTeeth[0] = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
+  ignitionEndTeeth[1] = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
+  ignitionEndTeeth[2] = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
+  ignitionEndTeeth[3] = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
 #if IGN_CHANNELS >= 5
-  ignition5EndTooth = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
+  ignitionEndTeeth[4] = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  ignition6EndTooth = calcEndTeeth_DualWheel(ignitionSchedule6, toothAdder);
+  ignitionEndTeeth[5] = calcEndTeeth_DualWheel(ignitionSchedule6, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  ignition7EndTooth = calcEndTeeth_DualWheel(ignitionSchedule7, toothAdder);
+  ignitionEndTeeth[6] = calcEndTeeth_DualWheel(ignitionSchedule7, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  ignition8EndTooth = calcEndTeeth_DualWheel(ignitionSchedule8, toothAdder);
+  ignitionEndTeeth[7] = calcEndTeeth_DualWheel(ignitionSchedule8, toothAdder);
 #endif
 }
 
@@ -1264,64 +1249,64 @@ static void triggerSetEndTeeth_BasicDistributor(void)
     case 4:
       if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 1;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
       }
       break;
     case 3: //Shared with 6 cylinder
     case 6:
       if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 3;
-        ignition3EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 3;
+        ignitionEndTeeth[2] = 1;
       }
       else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 3;
-        ignition2EndTooth = 1;
-        ignition3EndTooth = 2;
+        ignitionEndTeeth[0] = 3;
+        ignitionEndTeeth[1] = 1;
+        ignitionEndTeeth[2] = 2;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
-        ignition3EndTooth = 3;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
+        ignitionEndTeeth[2] = 3;
       }
       break;
     case 8:
       if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 3;
-        ignition3EndTooth = 4;
-        ignition4EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 3;
+        ignitionEndTeeth[2] = 4;
+        ignitionEndTeeth[3] = 1;
       }
       else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
       {
-        ignition1EndTooth = 3;
-        ignition2EndTooth = 4;
-        ignition3EndTooth = 1;
-        ignition4EndTooth = 2;
+        ignitionEndTeeth[0] = 3;
+        ignitionEndTeeth[1] = 4;
+        ignitionEndTeeth[2] = 1;
+        ignitionEndTeeth[3] = 2;
       }
       else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 4;
-        ignition2EndTooth = 1;
-        ignition3EndTooth = 2;
-        ignition4EndTooth = 3;
+        ignitionEndTeeth[0] = 4;
+        ignitionEndTeeth[1] = 1;
+        ignitionEndTeeth[2] = 2;
+        ignitionEndTeeth[3] = 3;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
-        ignition3EndTooth = 3;
-        ignition4EndTooth = 4;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
+        ignitionEndTeeth[2] = 3;
+        ignitionEndTeeth[3] = 4;
       }
       break;
   }
@@ -1469,15 +1454,15 @@ static void triggerSetEndTeeth_GM7X(void)
 {
   if(currentStatus.advance < 18 ) 
   { 
-    ignition1EndTooth = 7;
-    ignition2EndTooth = 2;
-    ignition3EndTooth = 5;
+    ignitionEndTeeth[0] = 7;
+    ignitionEndTeeth[1] = 2;
+    ignitionEndTeeth[2] = 5;
   }
   else 
   { 
-    ignition1EndTooth = 6;
-    ignition2EndTooth = 1;
-    ignition3EndTooth = 4;
+    ignitionEndTeeth[0] = 6;
+    ignitionEndTeeth[1] = 1;
+    ignitionEndTeeth[2] = 4;
   }
 }
 
@@ -1836,17 +1821,17 @@ static void triggerSetEndTeeth_4G63(void)
   {
     if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
     { 
-      ignition1EndTooth = 8;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4;
-      ignition4EndTooth = 6;
+      ignitionEndTeeth[0] = 8;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4;
+      ignitionEndTeeth[3] = 6;
     }
     else
     {
-      ignition1EndTooth = 4;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4; //Not used
-      ignition4EndTooth = 2;
+      ignitionEndTeeth[0] = 4;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4; //Not used
+      ignitionEndTeeth[3] = 2;
     }
   }
   if(configPage2.nCylinders == 6)
@@ -1854,17 +1839,17 @@ static void triggerSetEndTeeth_4G63(void)
     if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
     { 
       //This should never happen as 6 cylinder sequential not supported
-      ignition1EndTooth = 8;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4;
-      ignition4EndTooth = 6;
+      ignitionEndTeeth[0] = 8;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4;
+      ignitionEndTeeth[3] = 6;
     }
     else
     {
-      ignition1EndTooth = 6;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4;
-      ignition4EndTooth = 2; //Not used
+      ignitionEndTeeth[0] = 6;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4;
+      ignitionEndTeeth[3] = 2; //Not used
     }
   }
 }
@@ -2749,17 +2734,17 @@ static void triggerSetEndTeeth_Miata9905(void)
   { 
     if(currentStatus.advance >= 10)
     {
-      ignition1EndTooth = 8;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4;
-      ignition4EndTooth = 6;
+      ignitionEndTeeth[0] = 8;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4;
+      ignitionEndTeeth[3] = 6;
     }
     else if (currentStatus.advance > 0)
     {
-      ignition1EndTooth = 1;
-      ignition2EndTooth = 3;
-      ignition3EndTooth = 5;
-      ignition4EndTooth = 7;
+      ignitionEndTeeth[0] = 1;
+      ignitionEndTeeth[1] = 3;
+      ignitionEndTeeth[2] = 5;
+      ignitionEndTeeth[3] = 7;
     }
     
   }
@@ -2767,17 +2752,17 @@ static void triggerSetEndTeeth_Miata9905(void)
   {
     if(currentStatus.advance >= 10)
     {
-      ignition1EndTooth = 4;
-      ignition2EndTooth = 2;
-      ignition3EndTooth = 4; //Not used
-      ignition4EndTooth = 2; //Not used
+      ignitionEndTeeth[0] = 4;
+      ignitionEndTeeth[1] = 2;
+      ignitionEndTeeth[2] = 4; //Not used
+      ignitionEndTeeth[3] = 2; //Not used
     }
     else if(currentStatus.advance > 0)
     {
-      ignition1EndTooth = 1;
-      ignition2EndTooth = 3;
-      ignition3EndTooth = 1; //Not used
-      ignition4EndTooth = 3; //Not used
+      ignitionEndTeeth[0] = 1;
+      ignitionEndTeeth[1] = 3;
+      ignitionEndTeeth[2] = 1; //Not used
+      ignitionEndTeeth[3] = 3; //Not used
     }
   }
 }
@@ -3262,14 +3247,14 @@ static void triggerSetEndTeeth_Nissan360(void)
 {
   //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
   byte offset_teeth = 4;
-  if((ignitionSchedule1.endAngle - offset_teeth) > configPage4.triggerAngle) { ignition1EndTooth = ( (ignitionSchedule1.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  else { ignition1EndTooth = ( (ignitionSchedule1.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  if((ignitionSchedule2.endAngle - offset_teeth) > configPage4.triggerAngle) { ignition2EndTooth = ( (ignitionSchedule2.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  else { ignition2EndTooth = ( (ignitionSchedule2.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  if((ignitionSchedule3.endAngle - offset_teeth) > configPage4.triggerAngle) { ignition3EndTooth = ( (ignitionSchedule3.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  else { ignition3EndTooth = ( (ignitionSchedule3.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  if((ignitionSchedule4.endAngle - offset_teeth) > configPage4.triggerAngle) { ignition4EndTooth = ( (ignitionSchedule4.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-  else { ignition4EndTooth = ( (ignitionSchedule4.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  if((ignitionSchedule1.endAngle - offset_teeth) > configPage4.triggerAngle) { ignitionEndTeeth[0] = ( (ignitionSchedule1.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  else { ignitionEndTeeth[0] = ( (ignitionSchedule1.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  if((ignitionSchedule2.endAngle - offset_teeth) > configPage4.triggerAngle) { ignitionEndTeeth[1] = ( (ignitionSchedule2.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  else { ignitionEndTeeth[1] = ( (ignitionSchedule2.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  if((ignitionSchedule3.endAngle - offset_teeth) > configPage4.triggerAngle) { ignitionEndTeeth[2] = ( (ignitionSchedule3.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  else { ignitionEndTeeth[2] = ( (ignitionSchedule3.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  if((ignitionSchedule4.endAngle - offset_teeth) > configPage4.triggerAngle) { ignitionEndTeeth[3] = ( (ignitionSchedule4.endAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
+  else { ignitionEndTeeth[3] = ( (ignitionSchedule4.endAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
@@ -3507,37 +3492,37 @@ static void triggerSetEndTeeth_Subaru67(void)
 {
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
-    //if(ignitionSchedule1.endAngle < 710) { ignition1EndTooth = 12; }
+    //if(ignitionSchedule1.endAngle < 710) { ignitionEndTeeth[0] = 12; }
     if(currentStatus.advance >= 10 ) 
     { 
-      ignition1EndTooth = 12;
-      ignition2EndTooth = 3;
-      ignition3EndTooth = 6;
-      ignition4EndTooth = 9;
+      ignitionEndTeeth[0] = 12;
+      ignitionEndTeeth[1] = 3;
+      ignitionEndTeeth[2] = 6;
+      ignitionEndTeeth[3] = 9;
     }
     else 
     { 
-      ignition1EndTooth = 1;
-      ignition2EndTooth = 4;
-      ignition3EndTooth = 7;
-      ignition4EndTooth = 10;
+      ignitionEndTeeth[0] = 1;
+      ignitionEndTeeth[1] = 4;
+      ignitionEndTeeth[2] = 7;
+      ignitionEndTeeth[3] = 10;
     }
   }
   else    
   {
     if(currentStatus.advance >= 10 ) 
     { 
-      ignition1EndTooth = 6;
-      ignition2EndTooth = 3;
-      //ignition3EndTooth = 6;
-      //ignition4EndTooth = 9;
+      ignitionEndTeeth[0] = 6;
+      ignitionEndTeeth[1] = 3;
+      //ignitionEndTeeth[2] = 6;
+      //ignitionEndTeeth[3] = 9;
     }
     else 
     { 
-      ignition1EndTooth = 1;
-      ignition2EndTooth = 4;
-      //ignition3EndTooth = 7;
-      //ignition4EndTooth = 10;
+      ignitionEndTeeth[0] = 1;
+      ignitionEndTeeth[1] = 4;
+      //ignitionEndTeeth[2] = 7;
+      //ignitionEndTeeth[3] = 10;
     }
   }
 }
@@ -4014,31 +3999,31 @@ static void triggerSetEndTeeth_ThirtySixMinus222(void)
 {
   if(configPage2.nCylinders == 4 )
   { 
-    if(currentStatus.advance < 10) { ignition1EndTooth = 36; }
-    else if(currentStatus.advance < 20) { ignition1EndTooth = 35; }
-    else if(currentStatus.advance < 30) { ignition1EndTooth = 34; }
-    else { ignition1EndTooth = 31; }
+    if(currentStatus.advance < 10) { ignitionEndTeeth[0] = 36; }
+    else if(currentStatus.advance < 20) { ignitionEndTeeth[0] = 35; }
+    else if(currentStatus.advance < 30) { ignitionEndTeeth[0] = 34; }
+    else { ignitionEndTeeth[0] = 31; }
 
-    if(currentStatus.advance < 30) { ignition2EndTooth = 16; }
-    else { ignition2EndTooth = 13; }
+    if(currentStatus.advance < 30) { ignitionEndTeeth[1] = 16; }
+    else { ignitionEndTeeth[1] = 13; }
   }
   else if(configPage2.nCylinders == 6) 
   { 
     //H6
-    if(currentStatus.advance < 10) { ignition1EndTooth = 36; }
-    else if(currentStatus.advance < 20) { ignition1EndTooth = 35; }
-    else if(currentStatus.advance < 30) { ignition1EndTooth = 34; }
-    else if(currentStatus.advance < 40) { ignition1EndTooth = 33; }
-    else { ignition1EndTooth = 31; }
+    if(currentStatus.advance < 10) { ignitionEndTeeth[0] = 36; }
+    else if(currentStatus.advance < 20) { ignitionEndTeeth[0] = 35; }
+    else if(currentStatus.advance < 30) { ignitionEndTeeth[0] = 34; }
+    else if(currentStatus.advance < 40) { ignitionEndTeeth[0] = 33; }
+    else { ignitionEndTeeth[0] = 31; }
 
-    if(currentStatus.advance < 20) { ignition2EndTooth = 9; }
-    else { ignition2EndTooth = 6; }
+    if(currentStatus.advance < 20) { ignitionEndTeeth[1] = 9; }
+    else { ignitionEndTeeth[1] = 6; }
 
-    if(currentStatus.advance < 10) { ignition3EndTooth = 23; }
-    else if(currentStatus.advance < 20) { ignition3EndTooth = 22; }
-    else if(currentStatus.advance < 30) { ignition3EndTooth = 21; }
-    else if(currentStatus.advance < 40) { ignition3EndTooth = 20; }
-    else { ignition3EndTooth = 19; }
+    if(currentStatus.advance < 10) { ignitionEndTeeth[2] = 23; }
+    else if(currentStatus.advance < 20) { ignitionEndTeeth[2] = 22; }
+    else if(currentStatus.advance < 30) { ignitionEndTeeth[2] = 21; }
+    else if(currentStatus.advance < 40) { ignitionEndTeeth[2] = 20; }
+    else { ignitionEndTeeth[2] = 19; }
   } 
 }
 
@@ -4165,8 +4150,8 @@ static uint16_t getRPM_ThirtySixMinus21(void)
 
 static void triggerSetEndTeeth_ThirtySixMinus21(void)
 {
-  ignition1EndTooth = 10; 
-  ignition2EndTooth = 28; // Arbitrarily picked  at 180°.
+  ignitionEndTeeth[0] = 10; 
+  ignitionEndTeeth[1] = 28; // Arbitrarily picked  at 180°.
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
@@ -4336,17 +4321,17 @@ static void triggerSetEndTeeth_420a(void)
 {
   if(currentStatus.advance < 9)
   {
-    ignition1EndTooth = 1;
-    ignition2EndTooth = 5;
-    ignition3EndTooth = 9;
-    ignition4EndTooth = 13;  
+    ignitionEndTeeth[0] = 1;
+    ignitionEndTeeth[1] = 5;
+    ignitionEndTeeth[2] = 9;
+    ignitionEndTeeth[3] = 13;  
   }
   else
   {
-    ignition1EndTooth = 16;
-    ignition2EndTooth = 4;
-    ignition3EndTooth = 8;
-    ignition4EndTooth = 12;  
+    ignitionEndTeeth[0] = 16;
+    ignitionEndTeeth[1] = 4;
+    ignitionEndTeeth[2] = 8;
+    ignitionEndTeeth[3] = 12;  
   }
 }
 
@@ -4613,10 +4598,10 @@ static void triggerSetEndTeeth_FordST170(void)
   byte toothAdder = 0;
    if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
 
-  ignition1EndTooth = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
-  ignition2EndTooth = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
-  ignition3EndTooth = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
-  ignition4EndTooth = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
+  ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
+  ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
+  ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
+  ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
 
   // Removed ign channels >4 as an ST170 engine is a 4 cylinder
 }
@@ -4981,18 +4966,18 @@ static void triggerSetEndTeeth_NGC(void)
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
   
-  ignition1EndTooth = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder);
-  ignition2EndTooth = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder);
-  ignition3EndTooth = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder);
-  ignition4EndTooth = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder);
+  ignitionEndTeeth[0] = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder);
+  ignitionEndTeeth[1] = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder);
+  ignitionEndTeeth[2] = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder);
+  ignitionEndTeeth[3] = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder);
   #if IGN_CHANNELS >= 6
-  ignition5EndTooth = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder);
-  ignition6EndTooth = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder);
+  ignitionEndTeeth[4] = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder);
+  ignitionEndTeeth[5] = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder);
   #endif
 
   #if IGN_CHANNELS >= 8
-  ignition7EndTooth = calcSetEndTeeth_NGC(ignitionSchedule7, toothAdder);
-  ignition8EndTooth = calcSetEndTeeth_NGC(ignitionSchedule8, toothAdder);
+  ignitionEndTeeth[6] = calcSetEndTeeth_NGC(ignitionSchedule7, toothAdder);
+  ignitionEndTeeth[7] = calcSetEndTeeth_NGC(ignitionSchedule8, toothAdder);
   #endif
 }
 
@@ -5368,22 +5353,22 @@ static void triggerSetEndTeeth_Renix(void)
 
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
 
-  ignition1EndTooth = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
-  ignition2EndTooth = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
-  currentStatus.canin[1] = ignition2EndTooth;
-  ignition3EndTooth = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
-  ignition4EndTooth = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
+  ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
+  ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
+  currentStatus.canin[1] = ignitionEndTeeth[1];
+  ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
+  ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
 #if IGN_CHANNELS >= 5
-  ignition5EndTooth = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
+  ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  ignition6EndTooth = calcEndTeeth_Renix(ignitionSchedule6, toothAdder);
+  ignitionEndTeeth[5] = calcEndTeeth_Renix(ignitionSchedule6, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  ignition7EndTooth = calcEndTeeth_Renix(ignitionSchedule7, toothAdder);
+  ignitionEndTeeth[6] = calcEndTeeth_Renix(ignitionSchedule7, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  ignition8EndTooth = calcEndTeeth_Renix(ignitionSchedule8, toothAdder);
+  ignitionEndTeeth[7] = calcEndTeeth_Renix(ignitionSchedule8, toothAdder);
 #endif
 }
 
@@ -5763,10 +5748,10 @@ static void triggerSetEndTeeth_RoverMEMS(void)
   }
   
   
-  ignition1EndTooth = tempIgnitionEndTooth[1];  
-  ignition2EndTooth = tempIgnitionEndTooth[2];
-  ignition3EndTooth = tempIgnitionEndTooth[3];
-  ignition4EndTooth = tempIgnitionEndTooth[4];
+  ignitionEndTeeth[0] = tempIgnitionEndTooth[1];  
+  ignitionEndTeeth[1] = tempIgnitionEndTooth[2];
+  ignitionEndTeeth[2] = tempIgnitionEndTooth[3];
+  ignitionEndTeeth[3] = tempIgnitionEndTooth[4];
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
@@ -6073,9 +6058,9 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionS
 
 static void triggerSetEndTeeth_SuzukiK6A(void)
 {
-  ignition1EndTooth = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
-  ignition2EndTooth = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
-  ignition3EndTooth = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
+  ignitionEndTeeth[0] = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
+  ignitionEndTeeth[1] = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
+  ignitionEndTeeth[2] = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
@@ -6322,63 +6307,63 @@ static void triggerSetEndTeeth_FordTFI(void)
     case 4:
       if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 1;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
       }
       break;
     case 6:
       if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 3;
-        ignition3EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 3;
+        ignitionEndTeeth[2] = 1;
       }
       else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 3;
-        ignition2EndTooth = 1;
-        ignition3EndTooth = 2;
+        ignitionEndTeeth[0] = 3;
+        ignitionEndTeeth[1] = 1;
+        ignitionEndTeeth[2] = 2;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
-        ignition3EndTooth = 3;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
+        ignitionEndTeeth[2] = 3;
       }
       break;
     case 8:
       if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
       {
-        ignition1EndTooth = 2;
-        ignition2EndTooth = 3;
-        ignition3EndTooth = 4;
-        ignition4EndTooth = 1;
+        ignitionEndTeeth[0] = 2;
+        ignitionEndTeeth[1] = 3;
+        ignitionEndTeeth[2] = 4;
+        ignitionEndTeeth[3] = 1;
       }
       else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
       {
-        ignition1EndTooth = 3;
-        ignition2EndTooth = 4;
-        ignition3EndTooth = 1;
-        ignition4EndTooth = 2;
+        ignitionEndTeeth[0] = 3;
+        ignitionEndTeeth[1] = 4;
+        ignitionEndTeeth[2] = 1;
+        ignitionEndTeeth[3] = 2;
       }
       else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
       {
-        ignition1EndTooth = 4;
-        ignition2EndTooth = 1;
-        ignition3EndTooth = 2;
-        ignition4EndTooth = 3;
+        ignitionEndTeeth[0] = 4;
+        ignitionEndTeeth[1] = 1;
+        ignitionEndTeeth[2] = 2;
+        ignitionEndTeeth[3] = 3;
       }
       else
       {
-        ignition1EndTooth = 1;
-        ignition2EndTooth = 2;
-        ignition3EndTooth = 3;
-        ignition4EndTooth = 4;
+        ignitionEndTeeth[0] = 1;
+        ignitionEndTeeth[1] = 2;
+        ignitionEndTeeth[2] = 3;
+        ignitionEndTeeth[3] = 4;
       }
       break;
   }

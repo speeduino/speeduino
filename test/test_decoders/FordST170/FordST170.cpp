@@ -5,10 +5,7 @@
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
 
-extern uint16_t ignition1EndTooth;
-extern uint16_t ignition2EndTooth;
-extern uint16_t ignition3EndTooth;
-extern uint16_t ignition4EndTooth;
+extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 void test_fordst170_newIgn_12_trig0_1()
 {
@@ -22,19 +19,19 @@ void test_fordst170_newIgn_12_trig0_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
   
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
 
     //Test again with 0 degrees advance
     calculateIgnitionAngle(ignitionSchedule1, 5, 0);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(35, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(35, ignitionEndTeeth[0]);
 
     //Test again with 35 degrees advance
     calculateIgnitionAngle(ignitionSchedule1, 5, 35);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(31, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(31, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig90_1()
@@ -49,7 +46,7 @@ void test_fordst170_newIgn_12_trig90_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 35);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(22, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(22, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig180_1()
@@ -64,7 +61,7 @@ void test_fordst170_newIgn_12_trig180_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
  
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig270_1()
@@ -79,7 +76,7 @@ void test_fordst170_newIgn_12_trig270_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig360_1()
@@ -94,7 +91,7 @@ void test_fordst170_newIgn_12_trig360_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg90_1()
@@ -109,7 +106,7 @@ void test_fordst170_newIgn_12_trigNeg90_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg180_1()
@@ -124,7 +121,7 @@ void test_fordst170_newIgn_12_trigNeg180_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg270_1()
@@ -139,7 +136,7 @@ void test_fordst170_newIgn_12_trigNeg270_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg360_1()
@@ -154,7 +151,7 @@ void test_fordst170_newIgn_12_trigNeg360_1()
     calculateIgnitionAngle(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
 }
 
 void testFordST170()

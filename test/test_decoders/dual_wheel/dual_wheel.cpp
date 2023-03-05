@@ -16,9 +16,9 @@ static decoder_t test_setup_dualwheel_12_1()
     return triggerSetup_DualWheel();
 }
 
+extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+
 //************************************** Begin the new ignition setEndTooth tests **************************************
-extern uint16_t ignition1EndTooth;
-extern uint16_t ignition2EndTooth;
 
 void test_dualwheel_newIgn_12_1_trig0_1()
 {
@@ -32,17 +32,17 @@ void test_dualwheel_newIgn_12_1_trig0_1()
     configPage4.triggerAngle = 0; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(11, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(11, ignitionEndTeeth[0]);
 
     //Test again with 0 degrees advance
     ignitionSchedule1.endAngle = 360 - 0; //Set 0 degrees advance
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(12, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(12, ignitionEndTeeth[0]);
 
     //Test again with 35 degrees advance
     ignitionSchedule1.endAngle = 360 - 35; //Set 35 degrees advance
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(10, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(10, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trig90_1()
@@ -57,7 +57,7 @@ void test_dualwheel_newIgn_12_1_trig90_1()
     configPage4.triggerAngle = 90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(8, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(8, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trig180_1()
@@ -72,7 +72,7 @@ void test_dualwheel_newIgn_12_1_trig180_1()
     configPage4.triggerAngle = 180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(5, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(5, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trig270_1()
@@ -87,7 +87,7 @@ void test_dualwheel_newIgn_12_1_trig270_1()
     configPage4.triggerAngle = 270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(2, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trig360_1()
@@ -102,7 +102,7 @@ void test_dualwheel_newIgn_12_1_trig360_1()
     configPage4.triggerAngle = 360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(12, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(12, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg90_1()
@@ -117,7 +117,7 @@ void test_dualwheel_newIgn_12_1_trigNeg90_1()
     configPage4.triggerAngle = -90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(2, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg180_1()
@@ -132,7 +132,7 @@ void test_dualwheel_newIgn_12_1_trigNeg180_1()
     configPage4.triggerAngle = -180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(5, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(5, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg270_1()
@@ -147,7 +147,7 @@ void test_dualwheel_newIgn_12_1_trigNeg270_1()
     configPage4.triggerAngle = -270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(8, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(8, ignitionEndTeeth[0]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg360_1()
@@ -162,7 +162,7 @@ void test_dualwheel_newIgn_12_1_trigNeg360_1()
     configPage4.triggerAngle = -360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(11, ignition1EndTooth);
+    TEST_ASSERT_EQUAL(11, ignitionEndTeeth[0]);
 }
 
 // ******* CHannel 2 *******
@@ -178,7 +178,7 @@ void test_dualwheel_newIgn_12_1_trig0_2()
     configPage4.triggerAngle = 0; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trig90_2()
@@ -193,7 +193,7 @@ void test_dualwheel_newIgn_12_1_trig90_2()
     configPage4.triggerAngle = 90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trig180_2()
@@ -208,7 +208,7 @@ void test_dualwheel_newIgn_12_1_trig180_2()
     configPage4.triggerAngle = 180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trig270_2()
@@ -223,7 +223,7 @@ void test_dualwheel_newIgn_12_1_trig270_2()
     configPage4.triggerAngle = 270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trig360_2()
@@ -238,7 +238,7 @@ void test_dualwheel_newIgn_12_1_trig360_2()
     configPage4.triggerAngle = 360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg90_2()
@@ -253,7 +253,7 @@ void test_dualwheel_newIgn_12_1_trigNeg90_2()
     configPage4.triggerAngle = -90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg180_2()
@@ -268,7 +268,7 @@ void test_dualwheel_newIgn_12_1_trigNeg180_2()
     configPage4.triggerAngle = -180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg270_2()
@@ -283,7 +283,7 @@ void test_dualwheel_newIgn_12_1_trigNeg270_2()
     configPage4.triggerAngle = -270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_12_1_trigNeg360_2()
@@ -298,7 +298,7 @@ void test_dualwheel_newIgn_12_1_trigNeg360_2()
     configPage4.triggerAngle = -360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignition2EndTooth);
+    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
 }
 
 void test_dualwheel_newIgn_2()
