@@ -179,19 +179,9 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
 #if defined(USE_IGN_REFRESH)
   if( (isRunning(ignitionSchedule1)) && (ignitionSchedule1.endAngle > (int)crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
   {
-    unsigned long uSToEnd = 0;
-
     crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
-    
-    //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
-    //*********
-    if(ignitionSchedule1.endAngle > (int)crankAngle) { uSToEnd = angleToTimeMicroSecPerDegree( (ignitionSchedule1.endAngle - crankAngle) ); }
-    else { uSToEnd = angleToTimeMicroSecPerDegree( (360 + ignitionSchedule1.endAngle - crankAngle) ); }
-    //*********
-    //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
-    //*********
 
-    refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
+    adjustCrankAngle(ignitionSchedule1, crankAngle);
   }
 #endif
   
