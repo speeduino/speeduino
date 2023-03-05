@@ -5,6 +5,7 @@
 
 #include "missing_tooth/missing_tooth.h"
 #include "dual_wheel/dual_wheel.h"
+#include "Nissan360/Nissan360.h"
 
 void setup()
 {
@@ -18,6 +19,7 @@ void setup()
 
     testMissingTooth();
     testDualWheel();
+    testNissan360();
 
     UNITY_END(); // stop unit testing
 }
