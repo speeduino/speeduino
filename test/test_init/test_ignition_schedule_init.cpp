@@ -31,14 +31,14 @@ static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutp
   strcpy_P(msg, PSTR("maxIgnOutputs"));
   TEST_ASSERT_EQUAL_UINT16_MESSAGE(expectedOutputs, currentStatus.maxIgnOutputs, msg);
 
-  RUNIF_IGNCHANNEL1(assert_ignition_channel(angle[0], 0, channel1IgnDegrees, ignitionSchedule1.pStartCallback, ignitionSchedule1.pEndCallback), {});
-  RUNIF_IGNCHANNEL2(assert_ignition_channel(angle[1], 1, channel2IgnDegrees, ignitionSchedule2.pStartCallback, ignitionSchedule2.pEndCallback), {});
-  RUNIF_IGNCHANNEL3(assert_ignition_channel(angle[2], 2, channel3IgnDegrees, ignitionSchedule3.pStartCallback, ignitionSchedule3.pEndCallback), {});
-  RUNIF_IGNCHANNEL4(assert_ignition_channel(angle[3], 3, channel4IgnDegrees, ignitionSchedule4.pStartCallback, ignitionSchedule4.pEndCallback), {});
-  RUNIF_IGNCHANNEL5(assert_ignition_channel(angle[4], 4, channel5IgnDegrees, ignitionSchedule5.pStartCallback, ignitionSchedule5.pEndCallback), {});
-  RUNIF_IGNCHANNEL6(assert_ignition_channel(angle[5], 5, channel6IgnDegrees, ignitionSchedule6.pStartCallback, ignitionSchedule6.pEndCallback), {});
-  RUNIF_IGNCHANNEL7(assert_ignition_channel(angle[6], 6, channel7IgnDegrees, ignitionSchedule7.pStartCallback, ignitionSchedule7.pEndCallback), {});
-  RUNIF_IGNCHANNEL8(assert_ignition_channel(angle[7], 7, channel8IgnDegrees, ignitionSchedule8.pStartCallback, ignitionSchedule8.pEndCallback), {});
+  RUNIF_IGNCHANNEL1(assert_ignition_channel(angle[0], 0, ignitionSchedule1.channelIgnDegrees, ignitionSchedule1.pStartCallback, ignitionSchedule1.pEndCallback), {});
+  RUNIF_IGNCHANNEL2(assert_ignition_channel(angle[1], 1, ignitionSchedule2.channelIgnDegrees, ignitionSchedule2.pStartCallback, ignitionSchedule2.pEndCallback), {});
+  RUNIF_IGNCHANNEL3(assert_ignition_channel(angle[2], 2, ignitionSchedule3.channelIgnDegrees, ignitionSchedule3.pStartCallback, ignitionSchedule3.pEndCallback), {});
+  RUNIF_IGNCHANNEL4(assert_ignition_channel(angle[3], 3, ignitionSchedule4.channelIgnDegrees, ignitionSchedule4.pStartCallback, ignitionSchedule4.pEndCallback), {});
+  RUNIF_IGNCHANNEL5(assert_ignition_channel(angle[4], 4, ignitionSchedule5.channelIgnDegrees, ignitionSchedule5.pStartCallback, ignitionSchedule5.pEndCallback), {});
+  RUNIF_IGNCHANNEL6(assert_ignition_channel(angle[5], 5, ignitionSchedule6.channelIgnDegrees, ignitionSchedule6.pStartCallback, ignitionSchedule6.pEndCallback), {});
+  RUNIF_IGNCHANNEL7(assert_ignition_channel(angle[6], 6, ignitionSchedule7.channelIgnDegrees, ignitionSchedule7.pStartCallback, ignitionSchedule7.pEndCallback), {});
+  RUNIF_IGNCHANNEL8(assert_ignition_channel(angle[7], 7, ignitionSchedule8.channelIgnDegrees, ignitionSchedule8.pStartCallback, ignitionSchedule8.pEndCallback), {});
 }
 
 static void assert_cylinder1_stroke4_seq_even(void)

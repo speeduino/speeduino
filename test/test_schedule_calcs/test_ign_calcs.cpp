@@ -40,20 +40,18 @@ void test_calc_ign_timeout(const ign_test_parameters &test_params)
   char msg[150];
   IgnitionSchedule schedule(IGN4_COUNTER, IGN4_COMPARE);
 
-  int startAngle;
-  int endAngle;
-
-  calculateIgnitionAngle(dwellAngle, test_params.channelAngle, test_params.advanceAngle, &endAngle, &startAngle);
-  TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedStartAngle, startAngle, "startAngle");
-  TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, endAngle, "endAngle");
-  
-  sprintf_P(msg, PSTR("PENDING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
-  schedule.Status = PENDING;
-  TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.pending, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
-  
-  sprintf_P(msg, PSTR("RUNNING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, endAngle);
-  schedule.Status = RUNNING;
-  TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.running, calculateIgnitionTimeout(schedule, startAngle, test_params.channelAngle,  test_params.crankAngle), msg);
+    schedule.channelIgnDegrees = test_params.channelAngle;
+    calculateIgnitionAngle(schedule, dwellAngle, test_params.advanceAngle);
+    TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedStartAngle, schedule.startAngle, "startAngle");
+    TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, schedule.endAngle, "endAngle");
+    
+    sprintf_P(msg, PSTR("PENDING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, schedule.endAngle);
+    schedule.Status = PENDING;
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.pending, calculateIgnitionTimeout(schedule, test_params.crankAngle), msg);
+    
+    sprintf_P(msg, PSTR("RUNNING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", endAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, schedule.endAngle);
+    schedule.Status = RUNNING;
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.running, calculateIgnitionTimeout(schedule, test_params.crankAngle), msg);
 }
 
 void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_parameters *pEnd)
@@ -596,15 +594,16 @@ void test_rotary_channel_calcs(void)
     const int (*pStart)[5] = &test_data[0];
     const int (*pEnd)[5] = &test_data[0]+_countof(test_data);
 
-    int endAngle, startAngle;
+    IgnitionSchedule leading(IGN4_COUNTER, IGN4_COMPARE);
+    IgnitionSchedule trailing(IGN4_COUNTER, IGN4_COMPARE);
     int local[5];
     while (pStart!=pEnd)
     {
         memcpy_P(local, pStart, sizeof(local));
-        ignition2EndAngle = local[0];
-        calculateIgnitionTrailingRotary(local[1], local[2], local[0], &endAngle, &startAngle);
-        TEST_ASSERT_EQUAL_MESSAGE(local[3], endAngle, "endAngle");
-        TEST_ASSERT_EQUAL_MESSAGE(local[4], startAngle, "startAngle");
+        leading.endAngle = local[0];
+        calculateIgnitionTrailingRotary(leading, local[1], local[2], trailing);
+        TEST_ASSERT_EQUAL_MESSAGE(local[3], trailing.endAngle, "endAngle");
+        TEST_ASSERT_EQUAL_MESSAGE(local[4], trailing.startAngle, "startAngle");
         ++pStart;
     } 
 
