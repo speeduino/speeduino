@@ -26,6 +26,11 @@ void test_setup_60_2()
     triggerSetup_missingTooth();
 }
 
+extern uint16_t ignition1EndTooth;
+extern uint16_t ignition2EndTooth;
+extern uint16_t ignition3EndTooth;
+extern uint16_t ignition4EndTooth;
+
 //************************************** Begin the new ignition setEndTooth tests **************************************
 void test_missingtooth_newIgn_36_1_trig0_1()
 {

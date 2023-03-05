@@ -4,6 +4,9 @@
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
 
+extern uint16_t ignition1EndTooth; //The end tooth for the first ignition channel
+extern uint16_t ignition2EndTooth; //The end tooth for the second ignition channel
+
 void test_setup_renix44()
 {
     //Setup a renix 44 tooth wheel
