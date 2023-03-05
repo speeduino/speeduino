@@ -13,6 +13,8 @@ static void test_setup_SuzukiK6A()
     triggerSetup_SuzukiK6A();
 }
 
+extern uint16_t ignition1EndTooth; //The end tooth for the first ignition channel
+extern uint16_t ignition2EndTooth; //The end tooth for the second ignition channel
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 static void test_k6A_newIgn_trig0_1()

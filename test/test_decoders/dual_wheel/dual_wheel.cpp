@@ -27,6 +27,11 @@ void test_setup_dualwheel_60_2()
     triggerSetup_missingTooth();
 }
 
+extern uint16_t ignition1EndTooth;
+extern uint16_t ignition2EndTooth;
+extern uint16_t ignition3EndTooth;
+extern uint16_t ignition4EndTooth;
+
 //************************************** Begin the new ignition setEndTooth tests **************************************
 void test_dualwheel_newIgn_12_1_trig0_1()
 {
