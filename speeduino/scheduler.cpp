@@ -293,18 +293,6 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
   }  
 }
 
-void refreshIgnitionSchedule1(unsigned long timeToEnd)
-{
-  if( (isRunning(ignitionSchedule1)) && (uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
-  //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
-  {
-    ATOMIC() {
-      ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
-      SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare);
-    }
-  }
-}
-
 constexpr table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
 
 /** Perform the injector priming pulses.
