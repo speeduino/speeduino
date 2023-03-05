@@ -79,6 +79,9 @@ static inline void reset(FuelSchedule &schedule)
 static inline void reset(IgnitionSchedule &schedule) 
 {
     reset((Schedule&)schedule);
+    schedule.startAngle = 0;
+    schedule.endAngle = 0;
+    schedule.channelIgnDegrees = 0;
 }
 
 void initialiseFuelSchedulers(void)
@@ -135,43 +138,6 @@ void initialiseIgnitionSchedulers(void)
 #endif
 #if IGN_CHANNELS >= 8
     reset(ignitionSchedule8);
-#endif
-
-  ignition1StartAngle=0;
-  ignition1EndAngle=0;
-  channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-
-  ignition2StartAngle=0;
-  ignition2EndAngle=0;
-  channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-  ignition3StartAngle=0;
-  ignition3EndAngle=0;
-  channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-  ignition4StartAngle=0;
-  ignition4EndAngle=0;
-  channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-#if (IGN_CHANNELS >= 5)
-  ignition5StartAngle=0;
-  ignition5EndAngle=0;
-  channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 6)
-  ignition6StartAngle=0;
-  ignition6EndAngle=0;
-  channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 7)
-  ignition7StartAngle=0;
-  ignition7EndAngle=0;
-  channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 8)
-  ignition8StartAngle=0;
-  ignition8EndAngle=0;
-  channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
 }
 
@@ -412,7 +378,6 @@ void moveToNextState(FuelSchedule &schedule)
  * @param pSchedule Pointer to the schedule that fired the spark
  */
 static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
-  pSchedule->endScheduleSetByDecoder = false;
   ignitionCount = ignitionCount + 1U; //Increment the ignition counter
   int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
   currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
@@ -425,7 +390,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) static ignitionPendingToRunning(Schedule *pSchedul
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
   IgnitionSchedule *pIgnition = (IgnitionSchedule *)pSchedule;
   pIgnition->startTime = micros();
-  if(pIgnition->endScheduleSetByDecoder) { SET_COMPARE(pIgnition->_compare, pIgnition->endCompare); }
+  // if(pIgnition->endScheduleSetByDecoder) { SET_COMPARE(pIgnition->_compare, pIgnition->endCompare); }
 }
 END_LTO_INLINE()
 
