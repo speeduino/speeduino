@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "secondaryTables.h"
 #include "canBroadcast.h"
 #include "SD_logger.h"
+#include "schedule_calcs.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -484,7 +485,6 @@ void loop(void)
         currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
       }
 
-
       doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
@@ -700,6 +700,7 @@ void loop(void)
             //PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
             injector2EndAngle = calculateInjectorEndAngle(fuelSchedule2.channelDegrees);
+
           }
           break;
         //2 cylinders
@@ -716,6 +717,7 @@ void loop(void)
             //PWdivTimerPerDegree = div(currentStatus.PW3, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injector3EndAngle = calculateInjectorEndAngle(fuelSchedule1.channelDegrees);
             injector4EndAngle = calculateInjectorEndAngle(fuelSchedule2.channelDegrees);
+
 
             injector4EndAngle = injector3EndAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
             if(injector4EndAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4EndAngle -= CRANK_ANGLE_MAX_INJ; }
@@ -751,6 +753,7 @@ void loop(void)
                 injector6EndAngle= calculateInjectorEndAngle(fuelSchedule2.channelDegrees);
                 injector7EndAngle= calculateInjectorEndAngle(fuelSchedule3.channelDegrees);
                 injector8EndAngle= calculateInjectorEndAngle(fuelSchedule4.channelDegrees);
+
               }
             #endif
 
@@ -791,7 +794,7 @@ void loop(void)
               injector6EndAngle = calculateInjectorEndAngle(fuelSchedule6.channelDegrees);
             }
           #endif
-
+          
           break;
         //6 cylinders
         case 6:
@@ -825,6 +828,7 @@ void loop(void)
                   injector4EndAngle= calculateInjectorEndAngle(fuelSchedule1.channelDegrees);
                   injector5EndAngle= calculateInjectorEndAngle(fuelSchedule2.channelDegrees);
                   injector6EndAngle= calculateInjectorEndAngle(fuelSchedule3.channelDegrees);
+
                 }
               #endif
             }
@@ -991,6 +995,7 @@ void loop(void)
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
           setFuelSchedule(&fuelSchedule1, crankAngle, injector1EndAngle, (unsigned long)currentStatus.PW1);          
+
         }
 #endif
 
@@ -1074,6 +1079,7 @@ void loop(void)
 #if IGN_CHANNELS >= 2
         if (maxIgnOutputs >= 2 && !BIT_CHECK(curRollingCut, IGN2_CMD_BIT))
         {
+
           setIgnitionSchedule(&ignitionSchedule2, crankAngle, ignition2EndAngle, currentStatus.dwell);
         }
 #endif
@@ -1088,6 +1094,7 @@ void loop(void)
 #if IGN_CHANNELS >= 4
         if (maxIgnOutputs >= 4 && !BIT_CHECK(curRollingCut, IGN4_CMD_BIT))
         {
+
           setIgnitionSchedule(&ignitionSchedule4, crankAngle, ignition4EndAngle, currentStatus.dwell);
         }
 #endif
@@ -1096,6 +1103,7 @@ void loop(void)
         if (maxIgnOutputs >= 5  && !BIT_CHECK(curRollingCut, IGN5_CMD_BIT))
         {
           setIgnitionSchedule(&ignitionSchedule5, crankAngle, ignition5EndAngle, currentStatus.dwell);
+
         }
 #endif
 
@@ -1103,6 +1111,7 @@ void loop(void)
         if (maxIgnOutputs >= 6 && !BIT_CHECK(curRollingCut, IGN6_CMD_BIT))
         {
           setIgnitionSchedule(&ignitionSchedule6, crankAngle, ignition6EndAngle, currentStatus.dwell);
+
         }
 #endif
 
@@ -1110,6 +1119,7 @@ void loop(void)
         if (maxIgnOutputs >= 7 && !BIT_CHECK(curRollingCut, IGN7_CMD_BIT))
         {
           setIgnitionSchedule(&ignitionSchedule7, crankAngle, ignition7EndAngle, currentStatus.dwell);
+
         }
 #endif
 
@@ -1118,6 +1128,7 @@ void loop(void)
         {
           setIgnitionSchedule(&ignitionSchedule8, crankAngle, ignition8EndAngle, currentStatus.dwell);
         } 
+
 #endif
 
       } //Ignition schedules on

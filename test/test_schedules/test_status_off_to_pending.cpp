@@ -16,9 +16,11 @@ struct crankmaths_rev_testdata {
   unsigned long expected;  
 }static *timeout_testdata_current;
 
+
 static Schedule *targetSchedule;
 static void startCallback(void) { }
 static void endCallback(void) {}
+
 
 //test for ignition schedule reaching 'PENDING' state after activation
 void test_off_to_pending_ign(void)
@@ -42,7 +44,9 @@ void test_off_to_pending_inj(void)
     targetSchedule->EndFunction =endCallback;
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+
 }
+#endif
 
 void test_status_off_to_pending(void)
 {
@@ -113,3 +117,4 @@ void test_status_off_to_pending(void)
         }
     }
 }
+

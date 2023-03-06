@@ -29,6 +29,7 @@ void test_accuracy_timeout_ign(void)
 {
     crankmaths_rev_testdata *testdata = timeout_testdata_current;
     revolutionTime = testdata->revolutionTime;
+
     initialiseSchedulers();
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
@@ -37,6 +38,7 @@ void test_accuracy_timeout_ign(void)
     while(targetSchedule->Status == PENDING) /*Wait*/;
     while(targetSchedule->Status == RUNNING) /*Wait*/;
     end_time = micros();
+
     TEST_ASSERT_UINT32_WITHIN(DELTA, testdata->expected, (unsigned long)(end_time - start_time));
 }
 //test for fuel injection pulse end timing
@@ -45,6 +47,7 @@ void test_accuracy_timeout_inj(void)
     crankmaths_rev_testdata *testdata = timeout_testdata_current;
     revolutionTime = testdata->revolutionTime;
     timePerDegree=revolutionTime/360; //fuelschedules use timePerDegree, lets see if it passes the accuracy test!
+
     initialiseSchedulers();
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
@@ -53,8 +56,10 @@ void test_accuracy_timeout_inj(void)
     while(targetSchedule->Status == PENDING) /*Wait*/;
     while(targetSchedule->Status == RUNNING) /*Wait*/;
     end_time = micros();
+
     TEST_ASSERT_UINT32_WITHIN(DELTA_FOR_INJ, testdata->expected, end_time - start_time);
 }
+#endif
 
 void test_accuracy_timeout(void)
 {
@@ -126,3 +131,4 @@ void test_accuracy_timeout(void)
         }
     }
 }
+
