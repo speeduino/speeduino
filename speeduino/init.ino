@@ -709,7 +709,9 @@ void initialiseAll(void)
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existant channel 5
               BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              #if INJ_CHANNELS >= 5
               fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
+              #endif
             #endif
           }
           else
