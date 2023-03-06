@@ -479,9 +479,7 @@ void initialiseAll(void)
         if(configPage10.stagingEnabled == true)
         {
           BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
-
         }
         break;
 
@@ -609,7 +607,6 @@ void initialiseAll(void)
             //Staged output is on channel 4
             BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
             fuelSchedule4.channelDegrees=fuelSchedule1.channelDegrees;
-
           #endif
         }
         break;
@@ -708,22 +705,17 @@ void initialiseAll(void)
               fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
               fuelSchedule7.channelDegrees = fuelSchedule3.channelDegrees;
               fuelSchedule8.channelDegrees = fuelSchedule4.channelDegrees;
-
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existant channel 5
               BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-              
               fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
-
             #endif
           }
           else
           {
-
             fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
             fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
-
           }
         }
 
@@ -873,17 +865,14 @@ void initialiseAll(void)
               BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
               BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
 
-
               fuelSchedule5.channelDegrees=fuelSchedule1.channelDegrees;
               fuelSchedule6.channelDegrees=fuelSchedule2.channelDegrees;
               fuelSchedule7.channelDegrees=fuelSchedule3.channelDegrees;
               fuelSchedule8.channelDegrees=fuelSchedule4.channelDegrees;
-
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existant channel 5
               BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-
               fuelSchedule5.channelDegrees=fuelSchedule1.channelDegrees;
             #endif
           }

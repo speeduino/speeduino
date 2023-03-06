@@ -40,7 +40,6 @@ void test_accuracy_duration_ign(void)
 }
 //test for fuel injection pulse end timing
 void test_accuracy_duration_inj(void)
-
 {
     crankmaths_rev_testdata *testdata = duration_testdata_current;
     revolutionTime = testdata->revolutionTime;
@@ -54,7 +53,6 @@ void test_accuracy_duration_inj(void)
     while(targetSchedule->Status == RUNNING) /*Wait*/;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
-
 
 void test_accuracy_duration(void)
 {
@@ -124,5 +122,4 @@ void test_accuracy_duration(void)
             UnityDefaultTestRun(test_accuracy_duration_inj, testName, __LINE__);
         }
     }
-
 }
