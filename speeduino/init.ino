@@ -478,7 +478,7 @@ void initialiseAll(void)
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
         }
         break;
@@ -591,6 +591,24 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+
+        //Check if injector staging is enabled
+        if(configPage10.stagingEnabled == true)
+        {
+          #if INJ_CHANNELS >= 6
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+
+            fuelSchedule4.channelDegrees=fuelSchedule1.channelDegrees;
+            fuelSchedule5.channelDegrees=fuelSchedule2.channelDegrees;
+            fuelSchedule6.channelDegrees=fuelSchedule3.channelDegrees;
+          #else
+            //Staged output is on channel 4
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            fuelSchedule4.channelDegrees=fuelSchedule1.channelDegrees;
+          #endif
+        }
         break;
     case 4:
         ignitionSchedule1.channelDegrees = 0;
@@ -674,8 +692,31 @@ void initialiseAll(void)
           BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
           BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
-          fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
-          fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
+              fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
+              fuelSchedule7.channelDegrees = fuelSchedule3.channelDegrees;
+              fuelSchedule8.channelDegrees = fuelSchedule4.channelDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
+            #endif
+          }
+          else
+          {
+            fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+            fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
+          }
         }
 
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
@@ -736,6 +777,9 @@ void initialiseAll(void)
           fuelSchedule5.channelDegrees = 576;
 
           BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+    #if INJ_CHANNELS >= 6
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ6_CMD_BIT); }
+    #endif
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -747,6 +791,9 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+    #if INJ_CHANNELS >= 5
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ5_CMD_BIT); }
+    #endif
         break;
     case 6:
         ignitionSchedule1.channelDegrees = 0;
@@ -787,7 +834,7 @@ void initialiseAll(void)
         }
 
     #if INJ_CHANNELS >= 6
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           fuelSchedule1.channelDegrees = 0;
           fuelSchedule2.channelDegrees = 120;
@@ -803,6 +850,32 @@ void initialiseAll(void)
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
+        }
+        else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
+        {
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              fuelSchedule5.channelDegrees=fuelSchedule1.channelDegrees;
+              fuelSchedule6.channelDegrees=fuelSchedule2.channelDegrees;
+              fuelSchedule7.channelDegrees=fuelSchedule3.channelDegrees;
+              fuelSchedule8.channelDegrees=fuelSchedule4.channelDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              fuelSchedule5.channelDegrees=fuelSchedule1.channelDegrees;
+            #endif
+          }
         }
     #endif
 
