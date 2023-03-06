@@ -28,9 +28,6 @@ volatile byte loop66ms;
 volatile byte loop100ms;
 volatile byte loop250ms;
 volatile int loopSec;
-
-volatile unsigned int dwellLimit_uS;
-
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
@@ -207,7 +204,6 @@ void oneMSInterval(void)
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************

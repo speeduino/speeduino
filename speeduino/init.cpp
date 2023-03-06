@@ -242,7 +242,6 @@ void initialiseAll(void)
     currentStatus.fuelPumpOn = false;
     resetEngineProtect(currentStatus);
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise. This is simply a default value, the actual values are set in the setup() functions of each decoder
-    dwellLimit_uS = (1000 * configPage4.dwellLimit);
     fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;

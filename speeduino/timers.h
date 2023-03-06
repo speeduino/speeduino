@@ -37,8 +37,6 @@ extern volatile uint16_t tachoSweepIncr;
 #define TACHO_SWEEP_RAMP_MS (TACHO_SWEEP_TIME_MS * 2 / 3)
 #define MS_PER_SEC  1000
 
-extern volatile unsigned int dwellLimit_uS;
-
 void oneMSInterval(void);
 void initialiseTimers(void);
 
