@@ -478,7 +478,7 @@ void initialiseAll(void)
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
           channel3InjDegrees = channel1InjDegrees;
         }
         break;
@@ -591,6 +591,24 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+
+        //Check if injector staging is enabled
+        if(configPage10.stagingEnabled == true)
+        {
+          #if INJ_CHANNELS >= 6
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+
+            channel4InjDegrees = channel1InjDegrees;
+            channel5InjDegrees = channel2InjDegrees;
+            channel6InjDegrees = channel3InjDegrees;
+          #else
+            //Staged output is on channel 4
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            channel4InjDegrees = channel1InjDegrees;
+          #endif
+        }
         break;
     case 4:
         channel1IgnDegrees = 0;
@@ -674,8 +692,31 @@ void initialiseAll(void)
           BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
           BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
-          channel3InjDegrees = channel1InjDegrees;
-          channel4InjDegrees = channel2InjDegrees;
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              channel5InjDegrees = channel1InjDegrees;
+              channel6InjDegrees = channel2InjDegrees;
+              channel7InjDegrees = channel3InjDegrees;
+              channel8InjDegrees = channel4InjDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              channel5InjDegrees = channel1InjDegrees;
+            #endif
+          }
+          else
+          {
+            channel3InjDegrees = channel1InjDegrees;
+            channel4InjDegrees = channel2InjDegrees;
+          }
         }
 
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
@@ -732,6 +773,9 @@ void initialiseAll(void)
           channel5InjDegrees = 576;
 
           BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+    #if INJ_CHANNELS >= 6
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ6_CMD_BIT); }
+    #endif
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -743,6 +787,9 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+    #if INJ_CHANNELS >= 5
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ5_CMD_BIT); }
+    #endif
         break;
     case 6:
         channel1IgnDegrees = 0;
@@ -783,7 +830,7 @@ void initialiseAll(void)
         }
 
     #if INJ_CHANNELS >= 6
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 120;
@@ -799,6 +846,32 @@ void initialiseAll(void)
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
+        }
+        else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
+        {
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              channel5InjDegrees = channel1InjDegrees;
+              channel6InjDegrees = channel2InjDegrees;
+              channel7InjDegrees = channel3InjDegrees;
+              channel8InjDegrees = channel4InjDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              channel5InjDegrees = channel1InjDegrees;
+            #endif
+          }
         }
     #endif
 
