@@ -218,6 +218,8 @@ extern IgnitionSchedule ignitionSchedule7;
 extern IgnitionSchedule ignitionSchedule8;
 #endif
 
+void applyOverDwellProtection(void);
+
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
