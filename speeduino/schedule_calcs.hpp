@@ -32,7 +32,7 @@ static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(cons
   return delta > 0 ? angleToTimeMicroSecPerDegree((uint16_t)delta) : 0U;
 }
 
-static inline __attribute__((always_inline)) uint16_t _adjustToTDC(int angle, uint16_t angleOffset, uint16_t maxAngle) {
+static inline __attribute__((always_inline)) uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
   angle = angle - (int)angleOffset;
   if( angle < 0) { return angle + (int)maxAngle; }
   return angle;
@@ -54,7 +54,7 @@ static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(cons
             maxAngle);
 }
 
-static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int openAngle, int crankAngle)
+static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t openAngle, int16_t crankAngle)
 {
   int16_t delta = openAngle - crankAngle;
 
@@ -72,7 +72,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
   return angleToTimeMicroSecPerDegree((uint16_t)delta);
 }
 
-static inline void calculateIgnitionAngle(IgnitionSchedule &schedule, const uint16_t dwellAngle, int8_t advance)
+static inline void calculateIgnitionAngle(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance)
 {
   schedule.endAngle = (schedule.channelIgnDegrees==0 ? CRANK_ANGLE_MAX_IGN : schedule.channelIgnDegrees) - advance;
   if(schedule.endAngle > CRANK_ANGLE_MAX_IGN) {schedule.endAngle -= CRANK_ANGLE_MAX_IGN;}
@@ -80,14 +80,16 @@ static inline void calculateIgnitionAngle(IgnitionSchedule &schedule, const uint
   if(schedule.startAngle < 0) {schedule.startAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-static inline void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int rotarySplitDegrees, IgnitionSchedule &trailing) {
+
+static inline void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int16_t rotarySplitDegrees, IgnitionSchedule &trailing) 
+{
   trailing.endAngle = leading.endAngle + rotarySplitDegrees;
   trailing.startAngle = trailing.endAngle - dwellAngle;
   if(trailing.startAngle > CRANK_ANGLE_MAX_IGN) {trailing.startAngle -= CRANK_ANGLE_MAX_IGN;}
   if(trailing.startAngle < 0) {trailing.startAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int crankAngle) 
+static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle) 
 {
   int16_t delta = schedule.startAngle - crankAngle;
   if (delta < 0)
@@ -106,21 +108,24 @@ static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(
   return angleToTimeMicroSecPerDegree(delta);
 }
 
-static inline uint16_t _adjustToIgnChannel(int angle, int channelInjDegrees) 
+static inline uint16_t _adjustToIgnChannel(int16_t angle, int16_t channelInjDegrees) 
 {
   angle = angle - channelInjDegrees;
   if( angle < 0) { return angle + CRANK_ANGLE_MAX_IGN; }
   return angle;
 }
 
-static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int crankAngle)
+static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
 {
   return _calculateAngularTime(schedule, schedule.channelIgnDegrees, schedule.startAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
 
 // The concept here is that we have a more accurate crank angle.
 // Ignition timing is driven by target spark angle relative to crank position.
-static inline void adjustCrankAngle(IgnitionSchedule &schedule, int crankAngle) {
+// So the timing to begin & end charging the coil is based on crank angle.
+// With a more accurate crank angle, we can increase the precision of the
+// spark timing.
+static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
 
   if( isRunning(schedule) ) { 
