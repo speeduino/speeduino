@@ -18,7 +18,7 @@ void test_adjust_crank_angle_pending_below_minrevolutions()
 
     schedule._compare = 101;
     schedule._counter = 100;
-    schedule.endAngle = 359;
+    schedule.dischargeAngle = 359;
 
     // Should do nothing.
     adjustCrankAngle(schedule, 180);
@@ -42,7 +42,7 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
 
     constexpr uint16_t newCrankAngle = 180;
     constexpr uint16_t chargeAngle = 359;
-    schedule.startAngle = chargeAngle;
+    schedule.chargeAngle = chargeAngle;
 
     adjustCrankAngle(schedule, newCrankAngle);
 
@@ -65,7 +65,7 @@ void test_adjust_crank_angle_running()
     schedule._counter = 100;
     constexpr uint16_t newCrankAngle = 180;
     constexpr uint16_t chargeAngle = 359;
-    schedule.endAngle = chargeAngle;
+    schedule.dischargeAngle = chargeAngle;
 
     adjustCrankAngle(schedule, newCrankAngle);
 

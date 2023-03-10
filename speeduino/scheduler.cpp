@@ -79,9 +79,9 @@ static inline void reset(FuelSchedule &schedule)
 static inline void reset(IgnitionSchedule &schedule) 
 {
     reset((Schedule&)schedule);
-    schedule.startAngle = 0;
-    schedule.endAngle = 0;
-    schedule.channelIgnDegrees = 0;
+    schedule.chargeAngle = 0;
+    schedule.dischargeAngle = 0;
+    schedule.channelDegrees = 0;
 }
 
 void initialiseFuelSchedulers(void)
@@ -349,22 +349,25 @@ void moveToNextState(FuelSchedule &schedule)
  * @{
  */
 
-///@cond
-// Dwell smoothing macros. They are split up like this for MISRA compliance.
-#define DWELL_AVERAGE_ALPHA 30
-#define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
-//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
-///@endcond
+ /** @brief Increment a volatile variable correctly */
+ template <typename T>
+ static inline void increment_volatile(volatile T& value) {
+  T next = value;
+  ++next;
+  value = next;
+ }
 
 /**
  * @brief Called when an ignition event ends. I.e. a spark fires
  * 
  * @param pSchedule Pointer to the schedule that fired the spark
  */
-static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
-  ignitionCount = ignitionCount + 1U; //Increment the ignition counter
-  int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
-  currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
+static inline void onEndIgnitionEvent(const IgnitionSchedule *pSchedule) {
+  increment_volatile(ignitionCount); //Increment the ignition counter
+
+  int32_t elapsed = (int32_t)(micros() - pSchedule->_startTime);
+  constexpr uint8_t DWELL_AVERAGE_ALPHA = 30U; // ~10% smoothing (30/255)
+  currentStatus.actualDwell = LOW_PASS_FILTER(elapsed, DWELL_AVERAGE_ALPHA, currentStatus.actualDwell);
 }
 
 /** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */
@@ -373,7 +376,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) static ignitionPendingToRunning(Schedule *pSchedul
 
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
   IgnitionSchedule *pIgnition = (IgnitionSchedule *)pSchedule;
-  pIgnition->startTime = micros();
+  pIgnition->_startTime = micros();
 }
 END_LTO_INLINE()
 
@@ -401,7 +404,7 @@ void moveToNextState(IgnitionSchedule &schedule)
 TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   ATOMIC() {
-    if (isRunning(schedule) && (schedule.startTime < targetOverdwellTime)) { 
+    if (isRunning(schedule) && (schedule._startTime < targetOverdwellTime)) { 
       ignitionRunningToOff(&schedule); //Call the end function to disable the spark output
     }
   }
