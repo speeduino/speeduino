@@ -53,7 +53,7 @@ static void test_applyChannelOverDwellProtection_notRunning(void) {
   setCallbacks(schedule, counter_callback, counter_callback);
 
   schedule.Status = PENDING;
-  schedule.startTime = 0; 
+  schedule._startTime = 0; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(0, counter); // Check that the callback was not called when the schedule is not running
 }
@@ -64,7 +64,7 @@ static void test_applyChannelOverDwellProtection_running_notimeout(void) {
   setCallbacks(schedule, counter_callback, counter_callback);
   
   schedule.Status = RUNNING;
-  schedule.startTime = 2000; 
+  schedule._startTime = 2000; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(0, counter); // Check that the callback was not called when the schedule is not running
 }
@@ -75,7 +75,7 @@ static void test_applyChannelOverDwellProtection_running_timeout(void) {
   setCallbacks(schedule, counter_callback, counter_callback);
 
   schedule.Status = RUNNING;
-  schedule.startTime = 0; 
+  schedule._startTime = 0; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(1, counter); // Check that the callback was called when the schedule is running
 }
