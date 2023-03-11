@@ -10,9 +10,8 @@
  * @param angle A crank angle in degrees
  * @return int16_t 
  */
-static inline int16_t ignitionLimits(int16_t angle)
-{
-    return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+static inline int16_t ignitionLimits(int16_t angle) {
+    return nudge(0, CRANK_ANGLE_MAX_IGN-1, angle, CRANK_ANGLE_MAX_IGN);
 }
 
 /**

@@ -558,17 +558,17 @@ void test_rotary_channel_calcs(void)
     setEngineSpeed(4000, 360);
 
     static const int test_data[][5] PROGMEM = {
-        // End Angle (deg), Dwell Angle, rotary split degrees, expected start angle, expected end angle
-        { -40, 5, 0, -40, 315 },
-        { -40, 95, 0, -40, 225 },
-        { -40, 185, 0, -40, 135 },
-        { -40, 275, 0, -40, 45 },
-        { -40, 355, 0, -40, -35 },
-        { -40, 5, 40, 0, 355 },
-        { -40, 95, 40, 0, 265 },
-        { -40, 185, 40, 0, 175 },
-        { -40, 275, 40, 0, 85 },
-        { -40, 355, 40, 0, 5 },
+        // End Angle (deg), Dwell Angle, rotary split degrees, expected end angle, expected start angle
+        { 320, 5, 0, 320, 315 },
+        { 320, 95, 0, 320, 225 },
+        { 320, 185, 0, 320, 135 },
+        { 320, 275, 0, 320, 45 },
+        { 320, 355, 0, 320, 325 },
+        { 320, 5, 40, 0, 355 },
+        { 320, 95, 40, 0, 265 },
+        { 320, 185, 40, 0, 175 },
+        { 320, 275, 40, 0, 85 },
+        { 320, 355, 40, 0, 5 },
         { 0, 5, 0, 0, 355 },
         { 0, 95, 0, 0, 265 },
         { 0, 185, 0, 0, 175 },
