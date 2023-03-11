@@ -80,7 +80,7 @@ inline uint16_t getCrankAngleIgn(void) {
 
 inline uint16_t getCrankAngleInj(void) {
   int16_t crankAngle = getCrankAngle();
-  if (crankAngle < 0 ) { crankAngle = crankAngle + CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
+  if (crankAngle < 0 ) { crankAngle = crankAngle + CRANK_ANGLE_MAX_INJ; }
   while (crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
   return crankAngle;
 }
@@ -1026,7 +1026,7 @@ void loop(void)
       {
         //Determine the current crank angle
         uint16_t crankAngle = getCrankAngleInj();
-        
+
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
           uint32_t timeOut = calculateInjector1Timeout(injector1StartAngle, crankAngle);
