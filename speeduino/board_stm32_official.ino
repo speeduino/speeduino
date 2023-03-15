@@ -23,6 +23,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 
 #if defined(SRAM_AS_EEPROM)
     BackupSramAsEEPROM EEPROM;
+
 #elif defined(USE_SPI_EEPROM)
     #if defined(STM32F407xx)
       SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
@@ -34,6 +35,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
     Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
     #if defined(STM32F407xx)
       SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
@@ -42,6 +44,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
       SPIClass SPI_for_FRAM(PB15, PB14, PB13);
       FramClass EEPROM(PB12, SPI_for_FRAM);
     #endif
+
 #elif defined(STM32F7xx)
   #if defined(DUAL_BANK)
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
@@ -49,23 +52,25 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
 #elif defined(STM32F401xC)
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
 #elif defined(STM32F411xE)
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+
 #else //default case, internal flash as EEPROM for STM32F4
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
-
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);
 HardwareTimer Timer4(TIM4);
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
+#if !defined(STM32F103xB) // F103 has only 4 timers
 HardwareTimer Timer5(TIM5);
 #if defined(TIM11)
 HardwareTimer Timer11(TIM11);
@@ -100,6 +105,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
       }
       rtc.begin(); // initialise RTC 24H format
     #endif
+
     /*
     ***********************************************************************************************************
     * Idle
@@ -122,7 +128,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Timers
     */
-    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
+    #if defined(STM32F103xB)
       Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
       #if ( STM32_CORE_VERSION_MAJOR < 2 )
       Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -159,7 +165,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
-	Timer1.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer1.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer1.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     Timer1.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif

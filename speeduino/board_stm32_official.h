@@ -16,6 +16,7 @@
 #else /*Default should be STM32F4*/
 #include "stm32f4xx_ll_tim.h"
 #endif
+
 /*
 ***********************************************************************************************************
 * General
@@ -46,12 +47,15 @@
   //Alternatively same SPI bus can be used as there is for SPI flash. But this is not recommended due to slower speed and other possible problems.
   //#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &SPI_for_flash)
 #endif
+
 #define USE_SERIAL3
 
-//When building for Black board Serial1 is instantiated,building generic STM32F4x7 has serial2 and serial 1 must be done here
-#if SERIAL_UART_INSTANCE==2
+//When building for Black board Serial1 is instantiated, building generic STM32F4x7 has serial2 and serial 1 must be done here
+#if SERIAL_UART_INSTANCE == 2
 HardwareSerial Serial1(PA10, PA9);
 #endif
+
+#define RTC_LIB_H "STM32RTC.h"
 
 extern STM32RTC& rtc;
 
@@ -61,13 +65,22 @@ void doSystemReset();
 void jumpToBootloader();
 extern "C" char* sbrk(int incr);
 
-#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
- || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
+// Reserved pins for bluepill & blackpill boards
+#if defined(ARDUINO_BLUEPILL_F103C8)  || defined(ARDUINO_BLUEPILL_F103CB) \
+ || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F401CE) \
+ || defined(ARDUINO_BLACKPILL_F411CE)
+
+  // PA11 USB_D+, PA12 USB_D-, PC13 LED_BUILTIN, PC14 OSC32_IN, PC15 OSC32_OUT, PB13 SCK2, PB14 MISO2, PB15 MOSI2. No support for onboard external flash on SPI1 because of ADC conflicts
+  #ifdef USE_SPI_EEPROM
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC13) || ((pin) == PC14) || ((pin) == PC15) || ((pin) == PB13) || ((pin) == PB14) || ((pin) == PB15) || ((pin) == USE_SPI_EEPROM))
+  #else
+    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC13) || ((pin) == PC14) || ((pin) == PC15) )
+  #endif
 
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
   #endif
+
   //Hack to allow compilation on small STM boards
   #ifndef A10
     #define A10  PA0
@@ -77,6 +90,8 @@ extern "C" char* sbrk(int incr);
     #define A14  PA4
     #define A15  PA5
   #endif
+
+// Reserved pins for other boards
 #else
   #ifdef USE_SPI_EEPROM
     #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbidden pins like USB
@@ -89,6 +104,11 @@ extern "C" char* sbrk(int incr);
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
+#endif
+
+// Try to save space on devices with only 128k of internal flash
+#if defined(STM32F103xB) || (defined(STM32F401xC) && !defined(ARDUINO_BLACKPILL_F401CC))  // F401CC has 256k flash but is matched by STM32F401xC
+  #define SMALL_FLASH_MODE
 #endif
 
 /*
@@ -116,6 +136,7 @@ extern "C" char* sbrk(int incr);
     #define EEPROM_LIB_H "src/FRAM/Fram.h"
     typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
+
     #if defined(STM32F407xx)
       extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
     #else
@@ -126,14 +147,9 @@ extern "C" char* sbrk(int incr);
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   typedef uint16_t eeprom_address_t;
   #include EEPROM_LIB_H
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
-  #if defined(STM32F401xC)
-    #define SMALL_FLASH_MODE
-  #endif
+  extern InternalSTM32F4_EEPROM_Class EEPROM;
+
 #endif
-
-
-#define RTC_LIB_H "STM32RTC.h"
 
 /*
 ***********************************************************************************************************
@@ -195,7 +211,6 @@ extern "C" char* sbrk(int incr);
 #define IGN7_COMPARE (TIM4)->CCR3
 #define IGN8_COMPARE (TIM4)->CCR4
 
-  
 #define FUEL1_TIMER_ENABLE() (TIM3)->CR1 |= TIM_CR1_CEN; (TIM3)->SR = ~TIM_FLAG_CC1; (TIM3)->DIER |= TIM_DIER_CC1IE
 #define FUEL2_TIMER_ENABLE() (TIM3)->CR1 |= TIM_CR1_CEN; (TIM3)->SR = ~TIM_FLAG_CC2; (TIM3)->DIER |= TIM_DIER_CC2IE
 #define FUEL3_TIMER_ENABLE() (TIM3)->CR1 |= TIM_CR1_CEN; (TIM3)->SR = ~TIM_FLAG_CC3; (TIM3)->DIER |= TIM_DIER_CC3IE
@@ -216,7 +231,6 @@ extern "C" char* sbrk(int incr);
 #define IGN3_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC3IE
 #define IGN4_TIMER_DISABLE() (TIM2)->DIER &= ~TIM_DIER_CC4IE
 
-
 #define FUEL5_TIMER_ENABLE() (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->SR = ~TIM_FLAG_CC1; (TIM5)->DIER |= TIM_DIER_CC1IE
 #define FUEL6_TIMER_ENABLE() (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->SR = ~TIM_FLAG_CC2; (TIM5)->DIER |= TIM_DIER_CC2IE
 #define FUEL7_TIMER_ENABLE() (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->SR = ~TIM_FLAG_CC3; (TIM5)->DIER |= TIM_DIER_CC3IE
@@ -236,9 +250,6 @@ extern "C" char* sbrk(int incr);
 #define IGN6_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC2IE
 #define IGN7_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC3IE
 #define IGN8_TIMER_DISABLE() (TIM4)->DIER &= ~TIM_DIER_CC4IE
-
-  
-
 
 /*
 ***********************************************************************************************************
@@ -274,12 +285,11 @@ extern "C" char* sbrk(int incr);
 ***********************************************************************************************************
 * Timers
 */
-
 extern HardwareTimer Timer1;
 extern HardwareTimer Timer2;
 extern HardwareTimer Timer3;
 extern HardwareTimer Timer4;
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
+#if !defined(STM32F103xB) // F103 has only 4 timers
 extern HardwareTimer Timer5;
 #if defined(TIM11)
 extern HardwareTimer Timer11;
