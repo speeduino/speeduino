@@ -6,7 +6,11 @@ A full copy of the license may be found in the projects root directory
 /** @file
  * Process Incoming and outgoing serial communications.
  */
+
+#ifndef DISABLE_LEGACY_COMMS
+
 #include "globals.h"
+#include "comms.h"
 #include "comms_legacy.h"
 #include "cancomms.h"
 #include "storage.h"
@@ -24,16 +28,12 @@ A full copy of the license may be found in the projects root directory
 #endif
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
-bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
 static byte currentCommand; /**< The serial command that is currently being processed. This is only useful when cmdPending=True */
 static bool chunkPending = false; /**< Whether or not the current chunk write is complete or not */
 static uint16_t chunkComplete = 0; /**< The number of bytes in a chunk write that have been written so far */
 static uint16_t chunkSize = 0; /**< The complete size of the requested chunk write */
 static int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
-byte logItemsTransmitted;
 byte inProgressLength;
-SerialStatus serialStatusFlag;
-
 
 static bool isMap(void) {
     // Detecting if the current page is a table/map
@@ -998,7 +998,6 @@ void sendPageASCII(void)
   }
 }
 
-
 /** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
  * Result is store in EEPROM and memory.
  * 
@@ -1166,3 +1165,5 @@ void testComm(void)
   Serial.write(1);
   return;
 }
+
+#endif // DISABLE_LEGACY_COMMS

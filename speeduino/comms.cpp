@@ -92,6 +92,10 @@ static uint32_t SDreadCompletedSectors = 0;
 static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 
+bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
+byte logItemsTransmitted;
+SerialStatus serialStatusFlag;
+
 #if defined(CORE_AVR)
 #pragma GCC push_options
 // These minimize RAM usage at no performance cost
@@ -446,12 +450,15 @@ Comands are single byte (letter symbol) commands.
 */
 void serialReceive(void)
 {
+
+  #ifndef DISABLE_LEGACY_COMMS
   //Check for an existing legacy command in progress
   if(serialStatusFlag==SERIAL_COMMAND_INPROGRESS_LEGACY)
   {
     legacySerialCommand();
     return;
   }
+  #endif
 
   if (Serial.available()!=0 && serialStatusFlag == SERIAL_INACTIVE)
   { 
@@ -463,7 +470,9 @@ void serialReceive(void)
     if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
     {
       //Handle legacy cases here
+      #ifndef DISABLE_LEGACY_COMMS
       legacySerialCommand();
+      #endif
       return;
     }
     else
@@ -522,17 +531,21 @@ void serialTransmit(void)
 {
   switch (serialStatusFlag)
   {
+    #ifndef DISABLE_LEGACY_COMMS
     case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
       sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, 0);
       break;
+    #endif
 
     case SERIAL_TRANSMIT_TOOTH_INPROGRESS:
       sendToothLog();
       break;
 
+    #ifndef DISABLE_LEGACY_COMMS
     case SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY:
       sendToothLog_legacy(logItemsTransmitted);
       break;
+    #endif
 
     case SERIAL_TRANSMIT_COMPOSITE_INPROGRESS:
       sendCompositeLog();
