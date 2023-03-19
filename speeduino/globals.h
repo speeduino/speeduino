@@ -1161,6 +1161,8 @@ struct config9 {
   byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
   byte boostByGearEnabled : 2;
+  byte blankfield : 1;
+  byte afrLoad : 1;
 
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
   byte idleAdvStartDelay;     //delay for idle advance engage

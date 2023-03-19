@@ -619,7 +619,11 @@ byte correctionAFRClosedLoop(void)
 
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
     //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
-    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
+    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) 
+    { 
+      if (configPage9.afrLoad == 0) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.MAP, currentStatus.RPM); }
+      else { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.TPS * 2, currentStatus.RPM); }
+    } //Perform the target lookup
   }
   
   if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
