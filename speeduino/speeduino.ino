@@ -160,11 +160,7 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 
 static inline __attribute__((always_inline))  void setIgnitionChannel(IgnitionSchedule &schedule, uint8_t channel, uint16_t crankAngle, uint16_t dwell) {
   if ((currentStatus.maxIgnOutputs >= channel) && BIT_CHECK(ignitionChannelsOn, channel-1U)) {
-    uint32_t timeOut = calculateIgnitionTimeout(schedule, crankAngle);
-    if (timeOut > 0U)
-    {
-      setIgnitionSchedule(schedule, timeOut, dwell);
-    }
+    setIgnitionSchedule(schedule, crankAngle, dwell);
   }
 }
 

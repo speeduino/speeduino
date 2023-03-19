@@ -216,6 +216,9 @@ struct IgnitionSchedule : public Schedule {
   int16_t channelDegrees;     ///< The number of crank degrees until cylinder is at TDC  
 };
 
+/// @cond 
+// Private functions - not for use external to the scheduler code
+
 /**
  * @brief Set the ignition schedule action (charge & fire a coil) to run for a certain duration in the future
  * 
@@ -223,11 +226,12 @@ struct IgnitionSchedule : public Schedule {
  * @param delay Delay until the coil begins charging (µS)
  * @param duration Dwell time (µS)
  */
-static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
+static inline void _setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
   // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
+/// @endcond
 
 /**
  * @brief Check that no ignition channel has been charging the coil for too long

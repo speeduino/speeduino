@@ -63,7 +63,7 @@ static void test_status_pending_to_running_ign(IgnitionSchedule &schedule)
 {
     initialiseIgnitionSchedulers();
     startIgnitionSchedulers();
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
+    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
     TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
     while(schedule.Status != OFF) /*Wait*/ ;

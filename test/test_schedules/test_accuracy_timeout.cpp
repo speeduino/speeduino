@@ -77,7 +77,7 @@ static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
     startIgnitionSchedulers();
     setCallbacks(schedule, startCallback, endCallback);
     start_time = micros();
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
+    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
     while(schedule.Status != OFF) /*Wait*/ ;
     stopIgnitionSchedulers();
