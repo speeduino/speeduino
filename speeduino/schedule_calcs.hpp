@@ -98,7 +98,7 @@ static inline void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, ui
   trailing.chargeAngle = (int16_t)ignitionLimits(trailing.dischargeAngle - (int16_t)dwellAngle); 
 }
 
-static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle) 
+static inline __attribute__((always_inline)) uint32_t __calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle) 
 {
   int16_t delta = schedule.chargeAngle - crankAngle;
   if (delta < 0)
@@ -124,7 +124,7 @@ static inline uint16_t _adjustToIgnChannel(int16_t angle, int16_t channelInjDegr
   return angle;
 }
 
-static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
+static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
 {
   return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
@@ -161,5 +161,13 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
     } else {
       // Unknown state, so no adjustment possible
     }
+  }
+}
+
+static inline  __attribute__((always_inline))void setIgnitionSchedule(IgnitionSchedule &schedule, int16_t crankAngle, uint32_t dwellDuration) {
+  uint32_t delay = _calculateIgnitionTimeout(schedule, crankAngle);
+
+  if (delay > 0U) {
+    _setIgnitionScheduleDuration(schedule, delay, dwellDuration);
   }
 }
