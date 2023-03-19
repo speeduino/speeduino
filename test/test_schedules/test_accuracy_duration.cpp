@@ -73,7 +73,7 @@ static void test_accuracy_duration_ign(IgnitionSchedule &schedule)
     initialiseIgnitionSchedulers();
     startIgnitionSchedulers();
     setCallbacks(schedule, startCallback, endCallback);
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
+    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
     while(schedule.Status != OFF) /*Wait*/ ;
     stopIgnitionSchedulers();
 #if defined(NATIVE_BOARD)
