@@ -69,14 +69,20 @@ void legacySerialCommand(void)
       sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
       break;
 
-    case 'B': // Burn current values to eeprom
-      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-      writeAllConfig();
-      serialStatusFlag = SERIAL_INACTIVE;
-      break;
-
     case 'b': // New EEPROM burn command to only burn a single page at a time
       serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if (Serial.available() >= 2)
+      {
+        Serial.read(); //Ignore the first table value, it's always 0
+        writeConfig(Serial.read());
+        serialStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'B': // AS above but for the serial compatibility mode. 
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
 
       if (Serial.available() >= 2)
       {
