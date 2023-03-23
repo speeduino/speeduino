@@ -227,7 +227,7 @@
 #define BIT_STATUS4_FAN           3 //Fan Status
 #define BIT_STATUS4_BURNPENDING   4
 #define BIT_STATUS4_STAGING_ACTIVE 5
-#define BIT_STATUS4_UNUSED7       6
+#define BIT_STATUS4_COMMS_COMPAT  6
 #define BIT_STATUS4_UNUSED8       7
 
 #define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
