@@ -2287,6 +2287,22 @@ void setPinMapping(byte boardID)
         pinO2 = A16; //O2 Sensor pin
         pinBat = A3; //Battery reference voltage pin. Needs Alpha4+
         pinLaunch = 34; //Can be overwritten below
+        pinSpareTemp1 = A17; //WRONG! Needs updating!!
+
+        //New pins for the actual T4.1 version of the Dropbear
+        pinBaro = A4; 
+        pinMAP = A5;
+        pinTPS = A3; //TPS input pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A2; //O2 Sensor pin
+        pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 34; //Can be overwritten below
+        pinSpareTemp2 = A16; //WRONG! Needs updating!!
+        pinSpareTemp2 = A17; //WRONG! Needs updating!!
+
+        pinTrigger = 20; //The CAS pin
+        pinTrigger2 = 21; //The Cam Sensor pin
       #endif
 
         pinMC33810_1_CS = 10;
