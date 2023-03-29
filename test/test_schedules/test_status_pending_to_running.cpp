@@ -30,7 +30,12 @@ void test_status_pending_to_running_ign(void)
     targetSchedule->EndFunction =endCallback;
     setIgnitionSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, targetSchedule->Status);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_EQUAL(RUNNING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
 //test for fuel injection schedule reaching 'RUNNING' state
 void test_status_pending_to_running_inj(void)
@@ -43,7 +48,12 @@ void test_status_pending_to_running_inj(void)
     targetSchedule->EndFunction =endCallback;
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, targetSchedule->Status);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_EQUAL(RUNNING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
 
 void test_status_pending_to_running(void)

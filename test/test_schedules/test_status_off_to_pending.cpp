@@ -29,7 +29,12 @@ void test_off_to_pending_ign(void)
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
     setIgnitionSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
 //test for fuel injection schedule reaching 'PENDING' state after activation
 void test_off_to_pending_inj(void)
@@ -41,7 +46,12 @@ void test_off_to_pending_inj(void)
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
 
 void test_status_off_to_pending(void)
@@ -95,11 +105,11 @@ void test_status_off_to_pending(void)
             case 4: targetSchedule=&fuelSchedule4;break;
             #if (INJ_CHANNELS >= 5)
             case 5: targetSchedule=&fuelSchedule5;break;
-            #if IGN_CHANNELS >= 6
+            #if INJ_CHANNELS >= 6
             case 6: targetSchedule=&fuelSchedule6;break;
-            #if IGN_CHANNELS >= 7
+            #if INJ_CHANNELS >= 7
             case 7: targetSchedule=&fuelSchedule7;break;
-            #if IGN_CHANNELS >= 8
+            #if INJ_CHANNELS >= 8
             case 8: targetSchedule=&fuelSchedule8;break;
             #endif
             #endif

@@ -30,13 +30,20 @@ void test_accuracy_duration_ign(void)
     initialiseSchedulers();
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
-    start_time = micros();//reset start_time so that we do not get false positives from previous tests
+    start_time = micros();//reset start_time
+    end_time=start_time; //reset end_time so that we can detect when schedule was not started at all.
     setIgnitionSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/;
     //start_time is saved in the startCallback of the schedule under test
     while(targetSchedule->Status == RUNNING) /*Wait*/;
     //end_time is saved in the endCallback of the schedule under test
-    TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+    }
+    else    //special case when duration is longer than ignition timer allows, in this case shedule should not have been started
+    {
+        TEST_ASSERT_UINT32_WITHIN(DELTA, 0, end_time - start_time);
+    }
 }
 //test for fuel injection pulse end timing
 void test_accuracy_duration_inj(void)
@@ -47,11 +54,18 @@ void test_accuracy_duration_inj(void)
     initialiseSchedulers();
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
-    start_time = micros();//reset start_time so that we do not get false positives from previous tests
+    start_time = micros();//reset start_time
+    end_time=start_time; //reset end_time so that we can detect when schedule was not started at all.
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/;
     while(targetSchedule->Status == RUNNING) /*Wait*/;
-    TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+    }
+    else    //special case when duration is longer than injection timer allows, in this case shedule should not have been started
+    {
+        TEST_ASSERT_UINT32_WITHIN(DELTA, 0, end_time - start_time);
+    }
 }
 
 void test_accuracy_duration(void)
