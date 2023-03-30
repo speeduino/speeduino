@@ -217,6 +217,13 @@ void triggerSec_NGC68(void);
 uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
 
+void triggerSetup_Vmax(void);
+void triggerPri_Vmax(void);
+void triggerSec_Vmax(void);
+uint16_t getRPM_Vmax(void);
+int getCrankAngle_Vmax(void);
+void triggerSetEndTeeth_Vmax(void);
+
 extern void (*triggerHandler)(void); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(void); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerTertiaryHandler)(void); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
