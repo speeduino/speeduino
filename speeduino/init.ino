@@ -11,6 +11,7 @@
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
+#include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "sensors.h"
 #include "decoders.h"
@@ -1477,6 +1478,7 @@ void setPinMapping(byte boardID)
         pinO2 = A2; //O2 Sensor pin
         pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
         pinLaunch = 34; //Can be overwritten below
+        pinVSS = 35;
         pinSpareTemp2 = A16; //WRONG! Needs updating!!
         pinSpareTemp2 = A17; //WRONG! Needs updating!!
 
