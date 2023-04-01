@@ -589,7 +589,18 @@ void processSerialCommand(void)
     }
 
     case 'E': // receive command button commands
-      (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
+     if (word(serialPayload[1], serialPayload[2]) == TS_CMD_INJ_FT)
+      {
+        word flowTestParams[3];
+        flowTestParams[0] = word(serialPayload[4], serialPayload[3]);
+        flowTestParams[1] = word(serialPayload[6], serialPayload[5]);
+        flowTestParams[2] = word(serialPayload[8], serialPayload[7]);
+        (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]), flowTestParams);
+      }
+      else
+      {
+        (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
+      }
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 

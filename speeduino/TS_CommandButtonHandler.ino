@@ -19,7 +19,8 @@
 static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
 {
   return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_50PC)) 
-      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL))
+      || ((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX));
 }
 
 /**
@@ -391,19 +392,12 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
 
   return true;
 }
-void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
-  if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
-    if(BIT_CHECK(currentStatus.testOutputs, 1)){
-      //Extract parameters
-      FUEL_INJECTOR_FLOW_TEST_PULSES = (unsigned long)(injectorTestParams[0]);
-      FUEL_INJECTOR_FLOW_TEST_ONPW  = (unsigned long)(injectorTestParams[1])*100;
-      FUEL_INJECTOR_FLOW_TEST_OFFPW = (unsigned long)(injectorTestParams[2])*100;
-      //Start test
-      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
-    }
-  }
-}
+
 bool TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
+  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  {
+    return false;
+  }
   if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
     if(BIT_CHECK(currentStatus.testOutputs, 1)){
       //Extract parameters
