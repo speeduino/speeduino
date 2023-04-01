@@ -16,13 +16,24 @@
   #include "acc_mc33810.h"
 #endif
 
+static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
+{
+  return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_50PC)) 
+      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+}
+
 /**
  * @brief 
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-void TS_CommandButtonsHandler(uint16_t buttonCommand)
+bool TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
+  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  {
+    return false;
+  }
+  
   //Special case because making 255 cases for injector deadtime would be tedious
   if((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX)){
     if(BIT_CHECK(currentStatus.testOutputs, 1) && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
@@ -374,8 +385,11 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 #endif
 
     default:
+      return false;
       break;
   }
+
+  return true;
 }
 void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
   if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
@@ -388,4 +402,18 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
       FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
     }
   }
+}
+bool TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
+  if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+    if(BIT_CHECK(currentStatus.testOutputs, 1)){
+      //Extract parameters
+      FUEL_INJECTOR_FLOW_TEST_PULSES = (unsigned long)(injectorTestParams[0]);
+      FUEL_INJECTOR_FLOW_TEST_ONPW  = (unsigned long)(injectorTestParams[1])*100;
+      FUEL_INJECTOR_FLOW_TEST_OFFPW = (unsigned long)(injectorTestParams[2])*100;
+      //Start test
+      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
+      return true;
+    }
+  }
+  return false;
 }

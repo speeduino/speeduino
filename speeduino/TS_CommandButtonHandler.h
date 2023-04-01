@@ -75,5 +75,5 @@
 #define TS_CMD_VSS_RATIO6 39174
 
 /* the maximum id number is 65,535 */
-void TS_CommandButtonsHandler(uint16_t buttonCommand);
-void TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams);
+bool TS_CommandButtonsHandler(uint16_t buttonCommand);
+bool TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams);
