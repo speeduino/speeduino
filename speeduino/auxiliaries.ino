@@ -259,9 +259,7 @@ void initialiseFan(void)
     DISABLE_FAN_TIMER(); //disable FAN timer if available
     if ( configPage2.fanEnable == 2 ) // PWM Fan control
     {
-      #if defined(CORE_TEENSY)
-        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
+      fan_pwm_max_count = timerTicksPerSecondForHalfFrequency(configPage6.fanFreq);
       fan_pwm_value = 0;
     }
   #endif
@@ -409,19 +407,14 @@ void initialiseAuxPWM(void)
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+  boost_pwm_max_count = timerTicksPerSecondForHalfFrequency(configPage6.boostFreq);
 
   if( configPage6.vvtEnabled > 0)
   {
     currentStatus.vvt1Angle = 0;
     currentStatus.vvt2Angle = 0;
 
-    #if defined(CORE_AVR)
-      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY35)
-      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY41)
-      vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming fro TS to allow for up to 512hz
-    #endif
+    vvt_pwm_max_count = timerTicksPerSecondForHalfFrequency(configPage6.vvtFreq);
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
@@ -449,13 +442,7 @@ void initialiseAuxPWM(void)
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
     // config wmi pwm output to use vvt output
-    #if defined(CORE_AVR)
-      vvt_pwm_max_count = 1000000L / (16 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY35)
-      vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY41)
-      vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #endif
+    vvt_pwm_max_count = timerTicksPerSecondForHalfFrequency(configPage6.vvtFreq);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;

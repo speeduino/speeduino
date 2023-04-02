@@ -53,4 +53,6 @@ volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number 
 #endif
 void initialiseTimers(void);
 
+inline unsigned int timerTicksPerSecondForHalfFrequency(byte half_frequency);
+
 #endif // TIMERS_H

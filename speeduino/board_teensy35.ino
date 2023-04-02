@@ -156,11 +156,6 @@ void initBoard()
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM1);
 
-        boost_pwm_max_count = 1000000L / (32 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-
-
     }
 
     /*

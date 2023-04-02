@@ -32,6 +32,8 @@
   void doSystemReset(void);
   void jumpToBootloader(void);
 
+  #define TIMER_RESOLUTION 16
+
   #if defined(TIMER5_MICROS)
     /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
     #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
