@@ -480,7 +480,7 @@ void initialiseAll(void)
         if(configPage10.stagingEnabled == true)
         {
           BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-          channel3InjDegrees = channel1InjDegrees;
+          channel2InjDegrees = channel1InjDegrees;
         }
         break;
 
