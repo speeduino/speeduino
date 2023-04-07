@@ -479,7 +479,7 @@ void initialiseAll(void)
         if(configPage10.stagingEnabled == true)
         {
           BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-          fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+          fuelSchedule2.channelDegrees = fuelSchedule1.channelDegrees;
         }
         break;
 
