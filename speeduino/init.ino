@@ -3505,6 +3505,24 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_HONDA_CBR:
+      triggerSetup_HondaCBR();
+      triggerHandler = triggerPri_HondaCBR;                                
+      triggerSecondaryHandler = triggerSec_HondaCBR;
+      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;       
+
     case DECODER_VMAX:
       triggerSetup_Vmax();
       triggerHandler = triggerPri_Vmax;
@@ -3517,6 +3535,8 @@ void initialiseTriggers(void)
       
       attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
+
+     
 
     default:
       triggerHandler = triggerPri_missingTooth;
