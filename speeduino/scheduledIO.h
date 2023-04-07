@@ -232,22 +232,22 @@ void tachoOutputOff(void);
 #define coil8Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil8Low_DIRECT() : coil8High_DIRECT())
 #define coil8StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil8High_DIRECT() : coil8Low_DIRECT())
 
-#define coil1Charging_MC33810()      coil1High_MC33810()
-#define coil1StopCharging_MC33810()  coil1Low_MC33810()
-#define coil2Charging_MC33810()      coil2High_MC33810()
-#define coil2StopCharging_MC33810()  coil2Low_MC33810()
-#define coil3Charging_MC33810()      coil3High_MC33810()
-#define coil3StopCharging_MC33810()  coil3Low_MC33810()
-#define coil4Charging_MC33810()      coil4High_MC33810()
-#define coil4StopCharging_MC33810()  coil4Low_MC33810()
-#define coil5Charging_MC33810()      coil5High_MC33810()
-#define coil5StopCharging_MC33810()  coil5Low_MC33810()
-#define coil6Charging_MC33810()      coil6High_MC33810()
-#define coil6StopCharging_MC33810()  coil6Low_MC33810()
-#define coil7Charging_MC33810()      coil7High_MC33810()
-#define coil7StopCharging_MC33810()  coil7Low_MC33810()
-#define coil8Charging_MC33810()      coil8High_MC33810()
-#define coil8StopCharging_MC33810()  coil8Low_MC33810()
+#define coil1Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil1Low_MC33810();  } else { coil1High_MC33810(); }
+#define coil1StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil1High_MC33810(); } else { coil1Low_MC33810();  }
+#define coil2Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil2Low_MC33810();  } else { coil2High_MC33810(); }
+#define coil2StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil2High_MC33810(); } else { coil2Low_MC33810();  }
+#define coil3Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil3Low_MC33810();  } else { coil3High_MC33810(); }
+#define coil3StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil3High_MC33810(); } else { coil3Low_MC33810();  }
+#define coil4Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil4Low_MC33810();  } else { coil4High_MC33810(); }
+#define coil4StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil4High_MC33810(); } else { coil4Low_MC33810();  }
+#define coil5Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil5Low_MC33810();  } else { coil5High_MC33810(); }
+#define coil5StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil5High_MC33810(); } else { coil5Low_MC33810();  }
+#define coil6Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil6Low_MC33810();  } else { coil6High_MC33810(); }
+#define coil6StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil6High_MC33810(); } else { coil6Low_MC33810();  }
+#define coil7Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil7Low_MC33810();  } else { coil7High_MC33810(); }
+#define coil7StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil7High_MC33810(); } else { coil7Low_MC33810();  }
+#define coil8Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil8Low_MC33810();  } else { coil8High_MC33810(); }
+#define coil8StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil8High_MC33810(); } else { coil8Low_MC33810();  }
 
 #define coil1Toggle_DIRECT() (*ign1_pin_port ^= ign1_pin_mask )
 #define coil2Toggle_DIRECT() (*ign2_pin_port ^= ign2_pin_mask )

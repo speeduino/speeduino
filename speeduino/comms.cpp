@@ -564,6 +564,15 @@ void processSerialCommand(void)
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
+    case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
+      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
+      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
+      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      
+      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
+      break;
+
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
       (void)memcpy_P(serialPayload, testCommsResponse, sizeof(testCommsResponse) );
       sendSerialPayloadNonBlocking(sizeof(testCommsResponse));

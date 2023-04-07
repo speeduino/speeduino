@@ -1,6 +1,7 @@
 #include "globals.h"
 #include "logger.h"
 #include "errors.h"
+#include "decoders.h"
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
