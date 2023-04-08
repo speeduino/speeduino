@@ -2949,9 +2949,6 @@ void setPinMapping(byte boardID)
       pinMode(pinBaro, INPUT);
     #endif
   #endif
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
   if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
@@ -3130,7 +3127,12 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  //digitalWrite(pinTrigger, HIGH);
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
+
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
   detachInterrupt(triggerInterrupt3);
