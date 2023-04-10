@@ -35,6 +35,7 @@
 #define DECODER_DRZ400            21
 #define DECODER_NGC               22
 #define DECODER_VMAX              23
+#define DECODER_ROVERMEMS		      24
 
 #define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 #define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
@@ -217,6 +218,13 @@ void triggerSec_NGC68(void);
 uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
 
+void triggerSetup_RoverMEMS(void);
+void triggerPri_RoverMEMS(void);
+void triggerSec_RoverMEMS(void);
+uint16_t getRPM_RoverMEMS(void);
+int getCrankAngle_RoverMEMS(void);
+void triggerSetEndTeeth_RoverMEMS(void);
+
 void triggerSetup_Vmax(void);
 void triggerPri_Vmax(void);
 void triggerSec_Vmax(void);
@@ -289,5 +297,12 @@ extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Curre
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM   1
+
+// used by the ROVER MEMS pattern
+#define ID_TOOTH_PATTERN 0 // have we identified teeth to skip for calculating RPM?
+#define SKIP_TOOTH1 1
+#define SKIP_TOOTH2 2
+#define SKIP_TOOTH3 3
+#define SKIP_TOOTH4 4
 
 #endif
