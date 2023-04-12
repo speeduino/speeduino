@@ -4841,21 +4841,21 @@ void triggerSec_HondaCBR(void)
     secondaryToothCount++;
     
     // crank teeth are linked to secondary teeth, check we're at 1 less than trigger teeth
-    if( secondaryToothCount == 1 && toothCurrentCount == (configPage4.triggerTeeth - 1))
+    if( secondaryToothCount == 1 && toothCurrentCount == (uint16_t) (configPage4.triggerTeeth - 1))
     {
       // found the main secondary tooth on the first revolution
       revolutionOne = 1; // revolution 1      
       secondaryToothCount = 0;
       currentStatus.hasSync = true;      
     }
-    else if (secondaryToothCount == 2 && toothCurrentCount == (configPage4.triggerTeeth - 1) )
+    else if (secondaryToothCount == 2 && toothCurrentCount == (uint16_t) (configPage4.triggerTeeth - 1) )
     {
       // found the main secondary tooth on the secondary revolution
       revolutionOne = 0; // Not revolution 1, ie revolution 2
       secondaryToothCount = 0;
       currentStatus.hasSync = true;
     }
-    else if (secondaryToothCount == 1 && toothCurrentCount > (configPage4.triggerTeeth >> 1) &&  toothCurrentCount < (configPage4.triggerTeeth - 1) )
+    else if (secondaryToothCount == 1 && toothCurrentCount > (uint16_t) (configPage4.triggerTeeth >> 1) &&  toothCurrentCount < (uint16_t) (configPage4.triggerTeeth - 1) )
     {
       // found the first secondary tooth on the second revolution, ensure this is close to the correct place.
       // ignore this but don't lose sync
