@@ -4802,33 +4802,11 @@ void triggerPri_HondaCBR(void)
       if ( (toothCurrentCount == 1) || (toothCurrentCount > configPage4.triggerTeeth) )
       {
         toothCurrentCount = 1;
-        switch(secondaryToothCount)
-        {
-          case 1:
-            revolutionOne = 1; // revolution 1
-            toothOneMinusOneTime = toothOneTime;
-            toothOneTime = curTime;
-            currentStatus.startRevolutions++; //Counter
-            if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
-            currentStatus.hasSync = true;
-            break;
-
-          case 2:
-            revolutionOne = 0; // Not revolution 1, ie revolution 2
-            toothOneMinusOneTime = toothOneTime;
-            toothOneTime = curTime;
-            currentStatus.startRevolutions++; //Counter
-            if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed              
-            currentStatus.hasSync = true;
-            break;
-          
-          default:
-            // unkown value, either 0 as we've just started the engine and seen no cam teeth or something has gone wrong.            
-            currentStatus.hasSync = false;
-            currentStatus.syncLossCounter++;
-            break;            
-        }                  
-        secondaryToothCount = 0; //reset tooth counter so can count how many we see in a crank revolution again
+        revolutionOne = !revolutionOne; // swap revolution flag round
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        currentStatus.startRevolutions++; //Counter
+        if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed              
       }
 
       setFilter(curGap); //Recalc the new filter value
@@ -4856,12 +4834,40 @@ void triggerSec_HondaCBR(void)
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 >= triggerSecFilterTime )
   {
-    toothLastSecToothTime = curTime2;
-    secondaryToothCount++;
+    toothLastSecToothTime = curTime2;    
     // Set filter to use the gap on the crank - we don't know if we've seen the cam long gap or short gap so could accidentally filter out a cam tooth accidentally if we use the cam. 
-    // Future improvement would be to more accurately calculate the small tooth cam gap and use that with something like triggerSecFilterTime = revolutionTime >> 1;
+    // Future improvement would be to more accurately calculate the small tooth cam gap
     triggerSecFilterTime = curGap;
-
+    secondaryToothCount++;
+    
+    // crank teeth are linked to secondary teeth, check we're at 1 less than trigger teeth
+    if( secondaryToothCount == 1 && toothCurrentCount == (configPage4.triggerTeeth - 1))
+    {
+      // found the main secondary tooth on the first revolution
+      revolutionOne = 1; // revolution 1      
+      secondaryToothCount = 0;
+      currentStatus.hasSync = true;      
+    }
+    else if (secondaryToothCount == 2 && toothCurrentCount == (configPage4.triggerTeeth - 1) )
+    {
+      // found the main secondary tooth on the secondary revolution
+      revolutionOne = 0; // Not revolution 1, ie revolution 2
+      secondaryToothCount = 0;
+      currentStatus.hasSync = true;
+    }
+    else if (secondaryToothCount == 1 && toothCurrentCount > (configPage4.triggerTeeth >> 1) &&  toothCurrentCount < (configPage4.triggerTeeth - 1) )
+    {
+      // found the first secondary tooth on the second revolution, ensure this is close to the correct place.
+      // ignore this but don't lose sync
+    }
+    else
+    {
+      // we've lost sync. The following settings will reset for either of the two cam pins 180 degrees opposite. If by chance we're on the other pin we'll hit this branch again
+      // in 60 degrees time and will be set correctly.
+      toothCurrentCount = (configPage4.triggerTeeth - 1);
+      secondaryToothCount = 0;
+      currentStatus.hasSync = false;   
+    }   
   } //Trigger filter
 
   if(currentStatus.hasSync == false)
@@ -4869,6 +4875,7 @@ void triggerSec_HondaCBR(void)
     // reset the gap we're using if we haven't got sync so we have a chance of finding sync in case this gap is somehow stupidly large
     // as above, this isn't a great calculation & could be improved with more accurate info on the positioning of the cam tooth
     triggerSecFilterTime = curGap;
+    currentStatus.syncLossCounter++;
   }
 }
 
