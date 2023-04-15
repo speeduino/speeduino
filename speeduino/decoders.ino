@@ -449,12 +449,12 @@ void triggerPri_missingTooth(void)
                   if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) || (configPage4.trigPatternSec == SEC_TRIGGER_POLL) )
                   {
                     currentStatus.hasSync = true;
-                    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
-                    if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+                    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit                    
                   }
                   else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
                 }
                 else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+                if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
 
                 triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
                 toothLastMinusOneToothTime = toothLastToothTime;
@@ -543,13 +543,13 @@ void triggerSec_missingTooth(void)
         secondaryToothCount++;          
         if(secondaryToothCount == 2)
         { 
-          revolutionOne = false; // we're on revolution 2
+          revolutionOne = 1; // sequential revolution reset
           recordVVT1Angle ();         
         }
         else if (secondaryToothCount > 2)
         {
           // lost sync, this is impossible, set we have no cam sync
-          BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+          BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);  
         }          
         //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
         triggerSecFilterTime = curGap2 >> 2; 
