@@ -450,7 +450,7 @@ void triggerPri_missingTooth(void)
                   {
                     currentStatus.hasSync = true;
                     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
-                    if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+                    if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
                   }
                   else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
                 }
@@ -538,44 +538,21 @@ void triggerSec_missingTooth(void)
         break;
 
       case SEC_TRIGGER_TOYOTA_3:
-        //designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. 
-        // v8 - As VVT moves the tooth need to provide a range to work with, targetting the tooth that is around the revolution point. -4 gives the advanced tooth, +2 because the starting point is the start of the next cycle
-        // I4 - 4 cylinder engines based on internet information, the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
-        
-        if (configPage2.nCylinders == 4)
-        {
-          // this code gets triggered on seeing a tooth, if we've seen the third tooth this means we've just had 2 teeth on the second 360 degrees and then gone round to the first 360 again
-          secondaryToothCount++;
-
-          if (secondaryToothCount > 2)
-          {
-            revolutionOne = 0;
-            recordVVT1Angle ();
-            secondaryToothCount =1;
-          }                  
+        // designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. 
+        // the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
+        secondaryToothCount++;          
+        if(secondaryToothCount == 2)
+        { 
+          revolutionOne = false; // we're on revolution 2
+          recordVVT1Angle ();         
         }
-        else // V8
+        else if (secondaryToothCount > 2)
         {
-          if( toothCurrentCount > (triggerActualTeeth -2)  ) //Sequential revolution reset still on the first 360 degrees with VVT movement
-          { 
-            revolutionOne = 0; 
-            secondaryToothCount = 1;
-          } 
-          else if( toothCurrentCount < 4  ) //Sequential revolution reset moved to second 360 degrees with VVT movement
-          { 
-            revolutionOne = 1; 
-            secondaryToothCount = 1;
-          } 
-          else
-          {
-            secondaryToothCount++;
-          }
-          
-          if(secondaryToothCount == 2)
-          { recordVVT1Angle (); }
-          
-        }
-        triggerSecFilterTime = curGap2 >> 2; //Next secondary filter is 25% the current gap
+          // lost sync, this is impossible, set we have no cam sync
+          BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+        }          
+        //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
+        triggerSecFilterTime = curGap2 >> 2; 
         break;
     }
     toothLastSecToothTime = curTime2;
