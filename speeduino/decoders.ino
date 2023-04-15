@@ -554,7 +554,8 @@ void triggerSec_missingTooth(void)
           revolutionOne = 1; // sequential revolution reset
           recordVVT1Angle (); 
 //          #ifdef (CORE_AVR)        
-            thirdToothCount = 65535; // set to equivalent of minus one so that when the system finds the second tooth on VVT2 it increments the counter to 0, ready to find the 'first' tooth and set VVT angles.
+            //thirdToothCount = 65535; // set to equivalent of minus one so that when the system finds the second tooth on VVT2 it increments the counter to 0, ready to find the 'first' tooth and set VVT angles.
+            thirdToothCount = -1; // set to equivalent of minus one so that when the system finds the second tooth on VVT2 it increments the counter to 0, ready to find the 'first' tooth and set VVT angles.
 //          #else
 //            thirdToothCount = 4294967295; // 32 bits processes have third tooth count as a 32 bit number hence the different max used.
 //          #endif
