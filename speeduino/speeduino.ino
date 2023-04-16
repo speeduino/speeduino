@@ -741,6 +741,15 @@ void loop(void)
               }
             #endif
           }
+          else if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+          {
+            PWdivTimerPerDegree = div(currentStatus.PW4, timePerDegree).quot; //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees);
+            #if INJ_CHANNELS >= 6
+              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees);
+              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees);
+            #endif
+          }
           break;
         //4 cylinders
         case 4:
