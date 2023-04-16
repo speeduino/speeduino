@@ -19,6 +19,7 @@
 #include "idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
+#include "gps.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H
 #ifdef SD_LOGGING
@@ -112,6 +113,14 @@ void initialiseAll(void)
     Serial.begin(115200);
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #endif
+
+    #if defined(GPSSerial_AVAILABLE)
+      if (1/*configPage9.enable_gpsSerial == 1*/) //Hardcoded, dunno how/where to add config to memory
+      { 
+        gps.begin(115200); 
+        gpsOnAUX = true;
+      }
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
@@ -351,6 +360,7 @@ void initialiseAll(void)
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseProgrammableIO();
+
 
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)

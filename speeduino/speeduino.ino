@@ -44,6 +44,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "canBroadcast.h"
 #include "SD_logger.h"
 #include "schedule_calcs.h"
+#include "gps.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -119,6 +120,18 @@ void loop(void)
           }
         }
       #endif
+
+      #if defined(GPSSerial_AVAILABLE)
+        if (1/*configPage9.enable_gpsSerial == 1*/) //Hardcoded, dunno how/where to add config to memory
+        {
+          if ( ((mainLoopCount & 31) == 1) or (gps.available() > SERIAL_BUFFER_THRESHOLD) )
+          {
+            if (gps.available() > 0)  { gpsSerialReceive(); }
+          }
+        }
+      #endif
+
+
       #if defined (NATIVE_CAN_AVAILABLE)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
@@ -262,6 +275,15 @@ void loop(void)
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
+
+      if(auxIsEnabled == false)
+      {
+        #if defined(GPSSerial_AVAILABLE)
+          {
+            
+          }
+        #endif
+      }
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -356,7 +378,36 @@ void loop(void)
           { //if current input channel is enabled as analog local pin
             //read analog channel specified
             //currentStatus.canin[13] = (configPage9.Auxinpina[currentStatus.current_caninchannel]&63);  Dev test use only!127
-            currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63));
+            if(AuxinChan<10 || !gpsOnAUX)
+            {
+              currentStatus.canin[currentStatus.current_caninchannel] = readAuxanalog(pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63));
+            }
+            else
+            {
+              #if defined(GPSSerial_AVAILABLE)
+                switch (AuxinChan)
+                {
+                  case 10:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsLat >> 16; //HIGH word
+                    break;
+                  case 11:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsLat & 0xFFFF; //LOW word
+                    break;
+                  case 12:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsLong >> 16; //HIGH word
+                    break;
+                  case 13:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsLong & 0xFFFF; //LOW word
+                    break;
+                  case 14:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsAltitude & 0xFFFF;
+                    break;
+                  case 15:
+                    currentStatus.canin[currentStatus.current_caninchannel] = gpsSpeed & 0xFFFF;
+                    break;
+                }
+              #endif
+            }
           }
           else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
                   || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
@@ -368,6 +419,7 @@ void loop(void)
           } //Channel type
         } //For loop going through each channel
       } //aux channels are enabled
+
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
