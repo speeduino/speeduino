@@ -2900,6 +2900,8 @@ void setPinMapping(byte boardID)
   triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
   triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
+  triggerThird_pin_port = portInputRegister(digitalPinToPort(pinTrigger3));
+  triggerThird_pin_mask = digitalPinToBitMask(pinTrigger3);
   flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
   flex_pin_mask = digitalPinToBitMask(pinFlex);
 
