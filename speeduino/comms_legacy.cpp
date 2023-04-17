@@ -223,9 +223,16 @@ void legacySerialCommand(void)
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
-
+      if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
+      {
+        detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+        attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+      }
+      else
+      {
+        detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+        attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+      }
       Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
       break;
 
@@ -236,8 +243,16 @@ void legacySerialCommand(void)
       detachInterrupt( digitalPinToInterrupt(pinTrigger) );
       attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
 
-      detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-      attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
+      {
+        detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+        attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+      }
+      else
+      {
+        detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+        attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+      }
       break;
 
     case 'L': // List the contents of current page in human readable form
