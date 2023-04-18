@@ -455,6 +455,24 @@ void initialiseAll(void)
     ignition7EndAngle = 0;
     ignition8EndAngle = 0;
 
+    ignitionSchedule1.scheduleFlags = 0;
+    ignitionSchedule2.scheduleFlags = 0;
+    ignitionSchedule3.scheduleFlags = 0;
+    ignitionSchedule4.scheduleFlags = 0;
+    ignitionSchedule5.scheduleFlags = 0;
+    ignitionSchedule6.scheduleFlags = 0;
+    ignitionSchedule7.scheduleFlags = 0;
+    ignitionSchedule8.scheduleFlags = 0;
+    ignitionSchedule1.ignRptCnt = 0;
+    ignitionSchedule2.ignRptCnt = 0;
+    ignitionSchedule3.ignRptCnt = 0;
+    ignitionSchedule4.ignRptCnt = 0;
+    ignitionSchedule5.ignRptCnt = 0;
+    ignitionSchedule6.ignRptCnt = 0;
+    ignitionSchedule7.ignRptCnt = 0;
+    ignitionSchedule8.ignRptCnt = 0;
+    
+
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 

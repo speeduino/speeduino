@@ -614,7 +614,6 @@ extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_IGN_50pc; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 extern byte maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
 
-
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
 
 extern volatile byte TIMER_mask;
@@ -1179,9 +1178,11 @@ struct config9 {
   byte unused10_179;
   byte unused10_180;
   byte unused10_181;
-  byte unused10_182;
-  byte unused10_183;
-  byte unused10_184;
+  byte crankIgnOutRpt : 1;  ///< Add another ignition pulse
+  byte priminScaleEnbl : 1; ///< Enable scale priming pulse
+  byte unused10_182 : 5;
+  byte primingScaleValue;
+  byte ignRptScale;
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
   byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */
