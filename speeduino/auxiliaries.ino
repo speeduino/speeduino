@@ -380,6 +380,29 @@ void fanControl(void)
   }
 }
 
+void fuelPumpControl()
+{
+   if (BIT_CHECK(currentStatus.testOutputs, 1) == false) // Make sure test outputs is not on, otherwise fuel pump request is controlled by that function.
+   {
+     if (engineIsMoving == true) // Engine moving
+     {
+       currentStatus.fuelPumpOn = true;
+       fpOffDelay = 2; //0.2 sec delay for debouncing in case of noisy 
+     }
+     else if(fpPrimed == false) // Engine not running and not primed
+     {
+       if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime) { fpPrimed = true; } //Mark the priming as being completed
+       else { currentStatus.fuelPumpOn = true; } // otherwise turn on the fuel pump
+       fpOffDelay = 0;
+     }
+     else if(fpOffDelay == 0) { currentStatus.fuelPumpOn = false; } // not running and prime completed and off delay done, turn off pump.
+     else { fpOffDelay = fpOffDelay - 1; } // count down off delay.
+   }
+  // Single place to align fuel pump status with actual fuel pump state
+  if (currentStatus.fuelPumpOn == true) { FUEL_PUMP_ON(); }
+  else { FUEL_PUMP_OFF(); }
+}
+
 void initialiseAuxPWM(void)
 {
   boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));

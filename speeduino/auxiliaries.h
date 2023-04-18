@@ -3,6 +3,7 @@
 
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
+
 void initialiseAuxPWM(void);
 void boostControl(void);
 void boostDisable(void);
@@ -15,6 +16,7 @@ void fanControl(void);
 void airConControl(void);
 bool READ_AIRCON_REQUEST(void);
 void wmiControl(void);
+void fuelPumpControl();
 
 static inline void checkAirConCoolantLockout(void);
 static inline void checkAirConTPSLockout(void);
@@ -132,6 +134,8 @@ long vvt_pid_target_angle;
 long vvt2_pid_target_angle;
 long vvt_pid_current_angle;
 long vvt2_pid_current_angle;
+
+byte fpOffDelay;
 
 void boostInterrupt(void);
 void vvtInterrupt(void);

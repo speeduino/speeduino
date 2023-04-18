@@ -53,6 +53,7 @@ uint16_t inj_opentime_uS = 0;
 
 bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
 bool fuelOn = false; /**< The current state of the fuel system (on or off) */
+bool engineIsMoving; /** If the engine is moving, based on changes in trigger inputs */
 
 byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
 byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
@@ -148,8 +149,7 @@ void loop(void)
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
-      FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
+      engineIsMoving = true; // Engine moving.
     }
     else
     {
@@ -175,7 +175,7 @@ void loop(void)
       ignitionCount = 0;
       ignitionOn = false;
       fuelOn = false;
-      if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      engineIsMoving = false;
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
