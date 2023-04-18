@@ -51,6 +51,8 @@ volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
 volatile unsigned long curGap2;
+volatile unsigned long curTime3;
+volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 
@@ -66,6 +68,7 @@ volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) 
 volatile unsigned long toothLastToothRisingTime = 0; //The time (micros()) that the last tooth rose (used by special decoders to determine missing teeth polarity)
 volatile unsigned long toothLastSecToothRisingTime = 0; //The time (micros()) that the last tooth rose on the secondary input (used by special decoders to determine missing teeth polarity)
 volatile unsigned long targetGap2;
+volatile unsigned long targetGap3;
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
@@ -74,9 +77,14 @@ volatile unsigned int secondaryToothCount; //Used for identifying the current se
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
+volatile unsigned int thirdToothCount; //Used for identifying the current third (Usually exhaust cam - used for VVT2) tooth for patterns with multiple secondary teeth
+volatile unsigned long thirdLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
+volatile unsigned long thirdLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
+
 uint16_t triggerActualTeeth;
 volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
+volatile unsigned long triggerThirdFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the Third input
 
 volatile uint8_t decoderState = 0;
 
@@ -133,7 +141,10 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
     {
       compositeLogHistory[toothHistoryIndex] = 0;
       if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
-      if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }
+      if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
+      { if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }}
+      else
+      { if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } }
       if(whichTooth == TOOTH_CAM) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
       if(currentStatus.hasSync == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SYNC); }
 
@@ -207,6 +218,33 @@ void loggerSecondaryISR(void)
     //Composite logger adds an entry regardless of which edge it was
     addToothLogEntry(curGap2, TOOTH_CAM);
   }
+}
+
+/** Interrupt handler for third trigger.
+* As loggerPrimaryISR, but for the third trigger.
+*/
+void loggerTertiaryISR(void)
+{
+  BIT_CLEAR(decoderState, BIT_DECODER_VALID_TRIGGER); //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
+  BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //This value will be set to the return value of the decoder function, indicating whether or not this pulse passed the filters
+  /* 3 checks here:
+  1) If the primary trigger is RISING, then check whether the primary is currently HIGH
+  2) If the primary trigger is FALLING, then check whether the primary is currently LOW
+  3) The secondary trigger is CHANGING
+  If any of these are true, the primary decoder function is called
+  */
+  
+  
+  if( ( (tertiaryTriggerEdge == RISING) && ( READ_THIRD_TRIGGER() == HIGH) ) || ( (tertiaryTriggerEdge == FALLING) && (READ_THIRD_TRIGGER() == LOW) ) || (tertiaryTriggerEdge == CHANGE) )
+  {
+    triggerTertiaryHandler();
+  }
+  //No tooth logger for the secondary input
+  if( (currentStatus.compositeLogEnabled == true) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
+  {
+    //Composite logger adds an entry regardless of which edge it was
+    addToothLogEntry(curGap3, TOOTH_CAM);
+  }  
 }
 
 /** Compute RPM.
@@ -370,6 +408,7 @@ void triggerSetup_missingTooth(void)
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
   secondaryToothCount = 0; 
+  thirdToothCount = 0;
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (configPage4.triggerMissingTeeth + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -548,12 +587,29 @@ void triggerThird_missingTooth(void)
 {
   //Record the VVT2 Angle (the only purpose of the third trigger)
   int16_t curAngle;
-  curAngle = getCrankAngle();
-  while(curAngle > 360) { curAngle -= 360; }
-  curAngle -= configPage4.triggerAngle; //Value at TDC
-  if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-  //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
-  currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
+  curTime3 = micros();
+  curGap3 = curTime3 - toothLastThirdToothTime;
+
+  //Safety check for initial startup
+  if( (toothLastThirdToothTime == 0) )
+  { 
+    curGap3 = 0; 
+    toothLastThirdToothTime = curTime3;
+  }
+
+  if ( curGap3 >= triggerThirdFilterTime )
+  {
+    thirdToothCount++;
+    triggerThirdFilterTime = curGap3 >> 1; //Next third filter is 50% the current gap
+    
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
+    //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
+    currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);
+    toothLastThirdToothTime = curTime3;
+  } // Trigger filter
 }
 
 uint16_t getRPM_missingTooth(void)

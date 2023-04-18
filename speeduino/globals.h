@@ -550,6 +550,8 @@ extern volatile PORT_TYPE *triggerPri_pin_port;
 extern volatile PINMASK_TYPE triggerPri_pin_mask;
 extern volatile PORT_TYPE *triggerSec_pin_port;
 extern volatile PINMASK_TYPE triggerSec_pin_mask;
+extern volatile PORT_TYPE *triggerThird_pin_port;
+extern volatile PINMASK_TYPE triggerThird_pin_mask;
 
 extern byte triggerInterrupt;
 extern byte triggerInterrupt2;

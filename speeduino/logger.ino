@@ -401,8 +401,16 @@ void startCompositeLogger(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+  if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+  }
+  else
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+  }
 }
 
 void stopCompositeLogger(void)
@@ -413,6 +421,14 @@ void stopCompositeLogger(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+  if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+  }
+  else
+  {
+    detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+  }
 }
