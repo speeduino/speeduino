@@ -27,7 +27,7 @@ void test_crankmaths_angletotime_revolution_execute() {
 void test_crankmaths_angletotime_tooth_execute() {
   crankmaths_tooth_testdata *testdata = crankmaths_tooth_testdata_current;
   triggerToothAngle = testdata->triggerToothAngle;
-  toothLastToothTime = toothLastMinusOneToothTime + testdata->toothTime;
+  lastGap = testdata->toothTime;
   TEST_ASSERT_EQUAL(testdata->expected, angleToTime(testdata->angle, CRANKMATH_METHOD_INTERVAL_TOOTH));
 }
 
@@ -76,7 +76,6 @@ void testCrankMaths()
   };
   // The same for all tests
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
-  toothLastMinusOneToothTime = 200000;
 
   for (auto testdata : crankmaths_tooth_testdatas) {
     crankmaths_tooth_testdata_current = &testdata;

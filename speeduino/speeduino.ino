@@ -160,8 +160,8 @@ void loop(void)
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
       toothLastToothTime = 0;
+      lastGap = 0;
       toothLastSecToothTime = 0;
-      //toothLastMinusOneToothTime = 0;
       currentStatus.hasSync = false;
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
@@ -1211,7 +1211,7 @@ void loop(void)
           if(ignition1EndAngle > crankAngle) { uSToEnd = fastDegreesToUS( (ignition1EndAngle - crankAngle) ); }
           else { uSToEnd = fastDegreesToUS( (360 + ignition1EndAngle - crankAngle) ); }
           //*********
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
+          //uSToEnd = ((ignition1EndAngle - crankAngle) * lastGap) / triggerToothAngle;
           //*********
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );

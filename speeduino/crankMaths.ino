@@ -40,7 +40,7 @@ unsigned long angleToTime(int16_t angle, byte method)
         if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
         {
           noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          unsigned long toothTime = lastGap;
           uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
           
@@ -76,7 +76,7 @@ uint16_t timeToAngle(unsigned long time, byte method)
         if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
         {
           noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+          unsigned long toothTime = lastGap;
           uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
           interrupts();
 
@@ -143,14 +143,13 @@ void doCrankSpeedCalcs(void)
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
         noInterrupts();
-        if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
+        if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (lastGap > 0) && (abs(currentStatus.rpmDOT) > 30) )
         {
           //noInterrupts();
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
+          unsigned long tempLastGap = lastGap;
           uint16_t tempTriggerToothAngle = triggerToothAngle;
           interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
+          timePerDegreex16 = (unsigned long)(tempLastGap*16) / tempTriggerToothAngle;
           timePerDegree = timePerDegreex16 / 16;
         }
         else
