@@ -91,9 +91,10 @@ byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
     _addressFLASH = (_sectorFlash*_config.Flash_Sector_Size) + ((addressEEPROM % _config.EEPROM_Bytes_Per_Sector) + 1) * _Flash_Size_Per_EEPROM_Byte;
 
     //reset buffer to all 0xFF
-    for (uint32_t i = 0; i < _Flash_Size_Per_EEPROM_Byte; i++)
+    int *rwPtr = (int *)&_ReadWriteBuffer;
+    for (int i = 0; i < (_Flash_Size_Per_EEPROM_Byte / sizeof(int)); i++)
     {
-        _ReadWriteBuffer[i] = 0xFF;
+        rwPtr[i] = -1; //0xFFFF or 0xFFFFFFFF dependng on register bit count
     }
 
     //read address translation part
@@ -254,11 +255,16 @@ uint16_t FLASH_EEPROM_BaseClass::count(byte* buffer, uint32_t length){
     else if(value == 255) { break; }//Next bytes are 0xFF
     else
     {
+#ifdef __ARM_FEATURE_CLZ
+      count -= (32 - __builtin_clz(value ^ 0xFF));
+#else
       while ((value & 0x01) == 0)
       {
         value >>= 1;
         count--;
       }
+#endif
+      break;
     }
   }
   return count;
