@@ -2841,105 +2841,126 @@ void triggerSetup_Subaru67(void)
 
 void triggerPri_Subaru67(void)
 {
-   curTime = micros();
-   //curGap = curTime - toothLastToothTime;
-   //if ( curGap < triggerFilterTime ) { return; }
-   toothCurrentCount++; //Increment the tooth counter
-   toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
-   BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
+  curTime = micros();
+  curGap = curTime - toothLastToothTime;
+  if ( curGap < triggerFilterTime ) 
+  { return; }
 
-   toothLastMinusOneToothTime = toothLastToothTime;
-   toothLastToothTime = curTime;
+  toothCurrentCount++; //Increment the tooth counter
+  toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
+  BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-   if ( (currentStatus.hasSync == false) || (configPage4.useResync == true) )
-   {
-     if(toothCurrentCount > 12) { toothCurrentCount = toothCurrentCount % 12; } //Because toothCurrentCount is not being reset when hitting tooth 1, we manually loop it here. 
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
 
-     //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
-     switch(secondaryToothCount)
-     {
-        case 0:
-          //If no teeth have passed, we can't do anything
-          break;
+ 
+  if(toothCurrentCount > 13) //can't have more than 12 teeth so have lost sync 
+  {
+    toothCurrentCount = 0; 
+    currentStatus.hasSync = false; 
+    currentStatus.syncLossCounter++;
+  } 
 
-        case 1:
-          //Can't do anything with a single pulse from the cam either (We need either 2 or 3 pulses)
-          secondaryToothCount = 0;
-          break;
+  //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
+  switch(secondaryToothCount)
+  {
+    case 0:
+      //If no teeth have passed, we can't do anything
+      break;
 
-        case 2:
-          toothCurrentCount = 8;
-          //currentStatus.hasSync = true;
-          secondaryToothCount = 0;
-          break;
-
-        case 3:
-          //toothCurrentCount = 2;
-          if( toothCurrentCount == 2)
-          {
-            currentStatus.hasSync = true;
-          }
-          secondaryToothCount = 0;
-          break;
-
-        default:
-          //Almost certainly due to noise or cranking stop/start
-          currentStatus.hasSync = false;
-          BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
-          currentStatus.syncLossCounter++;
-          secondaryToothCount = 0;
-          break;
-
-     }
-   }
-
-   //Check sync again
-   if ( currentStatus.hasSync == true )
-   {
-      //Locked timing during cranking. This is fixed at 10* BTDC.
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
-      {
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoil1Charge(); endCoil3Charge(); }
-        else if( (toothCurrentCount == 4) || (toothCurrentCount == 10) ) { endCoil2Charge(); endCoil4Charge(); }
+    case 1:
+      //Can't do anything with a single pulse from the cam either (We need either 2 or 3 pulses)
+      if(toothCurrentCount == 5 || toothCurrentCount == 11)
+      { currentStatus.hasSync = true; }
+      else
+      { 
+        currentStatus.hasSync = false; 
+        currentStatus.syncLossCounter++;     
+        toothCurrentCount = 5; // we don't know if its 5 or 11, but we'll be right 50% of the time and speed up geting sync 50%
       }
+      secondaryToothCount = 0;
+      break;
 
-      if ( toothCurrentCount > 12 ) //2 complete crank revolutions
-      {
-        toothCurrentCount = 1;
-        toothOneMinusOneTime = toothOneTime;
-        toothOneTime = curTime;
-        currentStatus.startRevolutions++; //Counter
+    case 2:
+      if (toothCurrentCount == 8)  
+      {  currentStatus.hasSync = true; }
+      else
+      { 
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;
+        toothCurrentCount = 8;
+      }          
+      secondaryToothCount = 0;
+      break;
+
+    case 3:      
+      if( toothCurrentCount == 2)
+      {  currentStatus.hasSync = true; }
+      else
+      {  
+        currentStatus.hasSync = false; 
+        currentStatus.syncLossCounter++;
+        toothCurrentCount = 2;
       }
+      secondaryToothCount = 0;
+      break;
 
-      //Set the last angle between teeth for better calc accuracy
-      if(toothCurrentCount == 1) { triggerToothAngle = 55; } //Special case for tooth 1
-      else if(toothCurrentCount == 2) { triggerToothAngle = 93; } //Special case for tooth 2
-      else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
-      BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+    default:
+      //Almost certainly due to noise or cranking stop/start
+      currentStatus.hasSync = false;
+      BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+      currentStatus.syncLossCounter++;
+      secondaryToothCount = 0;
+      break;
+  }
+
+  //Check sync again
+  if ( currentStatus.hasSync == true )
+  {
+    //Locked timing during cranking. This is fixed at 10* BTDC.
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
+    {
+      if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoil1Charge(); endCoil3Charge(); }
+      else if( (toothCurrentCount == 4) || (toothCurrentCount == 10) ) { endCoil2Charge(); endCoil4Charge(); }
+    }
+
+    if ( toothCurrentCount > 12 ) // done 720 degrees so increment rotation
+    {
+      toothCurrentCount = 1;
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+      currentStatus.startRevolutions++; //Counter
+    }
+
+    //Set the last angle between teeth for better calc accuracy
+    if(toothCurrentCount == 1) { triggerToothAngle = 55; } //Special case for tooth 1
+    else if(toothCurrentCount == 2) { triggerToothAngle = 93; } //Special case for tooth 2
+    else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
+    BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
 
 
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    //NEW IGNITION MODE
+    if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+    {
+      int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
+      if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
       {
-        int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
-        {
-          crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+        crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
 
-          //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-6) ); }
-          else { checkPerToothTiming(crankAngle, toothCurrentCount); }
-        }
-        else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+        //Handle non-sequential tooth counts 
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-6) ); }
+        else { checkPerToothTiming(crankAngle, toothCurrentCount); }
       }
-   //Recalc the new filter value
-   //setFilter(curGap);
-   }
+      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+    }
+  //Recalc the new filter value
+  //setFilter(curGap);
+  }
  }
 
 void triggerSec_Subaru67(void)
 {
-  if( (toothSystemCount == 0) || (toothSystemCount == 3) )
+  if( ((toothSystemCount == 0) || (toothSystemCount == 3)) )
   {
     curTime2 = micros();
     curGap2 = curTime2 - toothLastSecToothTime;
@@ -2949,14 +2970,14 @@ void triggerSec_Subaru67(void)
       toothLastSecToothTime = curTime2;
       secondaryToothCount++;
       toothSystemCount = 0;
-
+      
       if(secondaryToothCount > 1)
       {
         //Set filter at 25% of the current speed
         //Note that this can only be set on the 2nd or 3rd cam tooth in each set. 
         triggerSecFilterTime = curGap2 >> 2;
       }
-      else { triggerSecFilterTime = 0; } //Filter disabled
+      else { triggerSecFilterTime = 0; } //Filter disabled  
 
     }
   }
@@ -2967,7 +2988,10 @@ void triggerSec_Subaru67(void)
     { 
       toothSystemCount = 0; 
       secondaryToothCount = 1;
+      currentStatus.hasSync = false; // impossible to have more than 3 crank teeth between cam teeth - must have noise but can't have sync
+      currentStatus.syncLossCounter++;
     }
+    secondaryToothCount = 0;
   }
 
 }
