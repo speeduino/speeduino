@@ -47,41 +47,41 @@ Schedule ignitionSchedule6;
 Schedule ignitionSchedule7;
 Schedule ignitionSchedule8;
 
-void (*inj1StartFunction)();
-void (*inj1EndFunction)();
-void (*inj2StartFunction)();
-void (*inj2EndFunction)();
-void (*inj3StartFunction)();
-void (*inj3EndFunction)();
-void (*inj4StartFunction)();
-void (*inj4EndFunction)();
-void (*inj5StartFunction)();
-void (*inj5EndFunction)();
-void (*inj6StartFunction)();
-void (*inj6EndFunction)();
-void (*inj7StartFunction)();
-void (*inj7EndFunction)();
-void (*inj8StartFunction)();
-void (*inj8EndFunction)();
+void (*inj1StartFunction)(void);
+void (*inj1EndFunction)(void);
+void (*inj2StartFunction)(void);
+void (*inj2EndFunction)(void);
+void (*inj3StartFunction)(void);
+void (*inj3EndFunction)(void);
+void (*inj4StartFunction)(void);
+void (*inj4EndFunction)(void);
+void (*inj5StartFunction)(void);
+void (*inj5EndFunction)(void);
+void (*inj6StartFunction)(void);
+void (*inj6EndFunction)(void);
+void (*inj7StartFunction)(void);
+void (*inj7EndFunction)(void);
+void (*inj8StartFunction)(void);
+void (*inj8EndFunction)(void);
 
-void (*ign1StartFunction)();
-void (*ign1EndFunction)();
-void (*ign2StartFunction)();
-void (*ign2EndFunction)();
-void (*ign3StartFunction)();
-void (*ign3EndFunction)();
-void (*ign4StartFunction)();
-void (*ign4EndFunction)();
-void (*ign5StartFunction)();
-void (*ign5EndFunction)();
-void (*ign6StartFunction)();
-void (*ign6EndFunction)();
-void (*ign7StartFunction)();
-void (*ign7EndFunction)();
-void (*ign8StartFunction)();
-void (*ign8EndFunction)();
+void (*ign1StartFunction)(void);
+void (*ign1EndFunction)(void);
+void (*ign2StartFunction)(void);
+void (*ign2EndFunction)(void);
+void (*ign3StartFunction)(void);
+void (*ign3EndFunction)(void);
+void (*ign4StartFunction)(void);
+void (*ign4EndFunction)(void);
+void (*ign5StartFunction)(void);
+void (*ign5EndFunction)(void);
+void (*ign6StartFunction)(void);
+void (*ign6EndFunction)(void);
+void (*ign7StartFunction)(void);
+void (*ign7EndFunction)(void);
+void (*ign8StartFunction)(void);
+void (*ign8EndFunction)(void);
 
-void initialiseSchedulers()
+void initialiseSchedulers(void)
 {
     //nullSchedule.Status = OFF;
 
@@ -116,10 +116,23 @@ void initialiseSchedulers()
     IGN2_TIMER_ENABLE();
     IGN3_TIMER_ENABLE();
     IGN4_TIMER_ENABLE();
+#if (IGN_CHANNELS >= 5)
     IGN5_TIMER_ENABLE();
     IGN6_TIMER_ENABLE();
     IGN7_TIMER_ENABLE();
     IGN8_TIMER_ENABLE();
+#endif
+
+    FUEL1_TIMER_ENABLE();
+    FUEL2_TIMER_ENABLE();
+    FUEL3_TIMER_ENABLE();
+    FUEL4_TIMER_ENABLE();
+#if (INJ_CHANNELS >= 5)
+    FUEL5_TIMER_ENABLE();
+    FUEL6_TIMER_ENABLE();
+    FUEL7_TIMER_ENABLE();
+    FUEL8_TIMER_ENABLE();
+#endif
 
     ignitionSchedule1.schedulesSet = 0;
     ignitionSchedule2.schedulesSet = 0;
@@ -782,33 +795,33 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
  */
-extern void beginInjectorPriming()
+extern void beginInjectorPriming(void)
 {
   unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( channel1InjEnabled == true ) { setFuelSchedule1(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ1_CMD_BIT) == true ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( channel2InjEnabled == true ) { setFuelSchedule2(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true ) { setFuelSchedule2(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( channel3InjEnabled == true ) { setFuelSchedule3(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true ) { setFuelSchedule3(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( channel4InjEnabled == true ) { setFuelSchedule4(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true ) { setFuelSchedule4(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( channel5InjEnabled == true ) { setFuelSchedule5(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true ) { setFuelSchedule5(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( channel6InjEnabled == true ) { setFuelSchedule6(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true ) { setFuelSchedule6(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( channel7InjEnabled == true) { setFuelSchedule7(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) { setFuelSchedule7(100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( channel8InjEnabled == true ) { setFuelSchedule8(100, primingValue); }
+    if ( BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true ) { setFuelSchedule8(100, primingValue); }
 #endif
   }
 }
@@ -823,9 +836,10 @@ extern void beginInjectorPriming()
 //Timer3A (fuel schedule 1) Compare Vector
 #if (INJ_CHANNELS >= 1)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPA_vect) //fuelSchedules 1 and 5
+//fuelSchedules 1 and 5
+ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule1Interrupt(void)
 #endif
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -860,9 +874,9 @@ static inline void fuelSchedule1Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 2)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect) //fuelSchedule2
+ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule2Interrupt(void)
 #endif
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -895,9 +909,9 @@ static inline void fuelSchedule2Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 3)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect) //fuelSchedule3
+ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule3Interrupt(void)
 #endif
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -930,9 +944,9 @@ static inline void fuelSchedule3Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 4)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect) //fuelSchedule4
+ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule4Interrupt(void)
 #endif
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -965,9 +979,9 @@ static inline void fuelSchedule4Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 5)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //fuelSchedule5
+ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule5Interrupt(void)
 #endif
 {
   if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -998,9 +1012,9 @@ static inline void fuelSchedule5Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 6)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //fuelSchedule6
+ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule6Interrupt(void)
 #endif
 {
   if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1033,9 +1047,9 @@ static inline void fuelSchedule6Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 7)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //fuelSchedule7
+ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule7Interrupt(void)
 #endif
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1068,9 +1082,9 @@ static inline void fuelSchedule7Interrupt() //Most ARM chips can simply call a f
 
 #if (INJ_CHANNELS >= 8)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //fuelSchedule8
+ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
+inline void fuelSchedule8Interrupt(void)
 #endif
 {
   if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
@@ -1103,9 +1117,9 @@ static inline void fuelSchedule8Interrupt() //Most ARM chips can simply call a f
 
 #if IGN_CHANNELS >= 1
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPA_vect) //ignitionSchedule1
+ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule1Interrupt(void)
 #endif
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -1144,9 +1158,9 @@ static inline void ignitionSchedule1Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 2
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //ignitionSchedule2
+ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule2Interrupt(void)
 #endif
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -1185,9 +1199,9 @@ static inline void ignitionSchedule2Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 3
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //ignitionSchedule3
+ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule3Interrupt(void)
 #endif
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -1226,9 +1240,9 @@ static inline void ignitionSchedule3Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 4
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //ignitionSchedule4
+ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule4Interrupt(void)
 #endif
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -1237,7 +1251,7 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
       ignitionSchedule4.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule4.startTime = micros();
       if(ignitionSchedule4.endScheduleSetByDecoder == true) { SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      else { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule4.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule4.Status == RUNNING)
     {
@@ -1267,9 +1281,9 @@ static inline void ignitionSchedule4Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 5
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //ignitionSchedule5
+ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule5Interrupt(void)
 #endif
   {
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -1278,7 +1292,7 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
       ignitionSchedule5.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule5.startTime = micros();
       if(ignitionSchedule5.endScheduleSetByDecoder == true) { SET_COMPARE(IGN5_COMPARE, ignitionSchedule5.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      else { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule5.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule5.Status == RUNNING)
     {
@@ -1308,9 +1322,9 @@ static inline void ignitionSchedule5Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect) //ignitionSchedule6
+ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule6Interrupt(void)
 #endif
   {
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1319,7 +1333,7 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
       ignitionSchedule6.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule6.startTime = micros();
       if(ignitionSchedule6.endScheduleSetByDecoder == true) { SET_COMPARE(IGN6_COMPARE, ignitionSchedule6.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      else { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule6.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule6.Status == RUNNING)
     {
@@ -1349,9 +1363,9 @@ static inline void ignitionSchedule6Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 7
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect) //ignitionSchedule6
+ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule7Interrupt(void)
 #endif
   {
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1360,7 +1374,7 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
       ignitionSchedule7.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule7.startTime = micros();
       if(ignitionSchedule7.endScheduleSetByDecoder == true) { SET_COMPARE(IGN7_COMPARE, ignitionSchedule7.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      else { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule7.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule7.Status == RUNNING)
     {
@@ -1390,9 +1404,9 @@ static inline void ignitionSchedule7Interrupt() //Most ARM chips can simply call
 
 #if IGN_CHANNELS >= 8
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect) //ignitionSchedule8
+ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call a function
+inline void ignitionSchedule8Interrupt(void)
 #endif
   {
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on
@@ -1401,7 +1415,7 @@ static inline void ignitionSchedule8Interrupt() //Most ARM chips can simply call
       ignitionSchedule8.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
       ignitionSchedule8.startTime = micros();
       if(ignitionSchedule8.endScheduleSetByDecoder == true) { SET_COMPARE(IGN8_COMPARE, ignitionSchedule8.endCompare); } //If the decoder has set the end compare value, assign it to the next compare
-      else { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow tha
+      else { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE(ignitionSchedule8.duration) ); } //If the decoder based timing isn't set, doing this here prevents a potential overflow that can occur at low RPMs
     }
     else if (ignitionSchedule8.Status == RUNNING)
     {

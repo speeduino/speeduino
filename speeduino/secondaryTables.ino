@@ -2,7 +2,7 @@
 #include "secondaryTables.h"
 #include "corrections.h"
 
-void calculateSecondaryFuel()
+void calculateSecondaryFuel(void)
 {
   //If the secondary fuel table is in use, also get the VE value from there
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use. 
@@ -76,7 +76,7 @@ void calculateSecondaryFuel()
 }
 
 
-void calculateSecondarySpark()
+void calculateSecondarySpark(void)
 {
   //Same as above but for the secondary ignition table
   BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
@@ -152,6 +152,10 @@ void calculateSecondarySpark()
         currentStatus.advance = currentStatus.advance2;
       }
     }
+
+    //Apply the fixed timing correction manually. This has to be done again here if any of the above conditions are met to prevent any of the seconadary calculations applying instead of fixec timing
+    currentStatus.advance = correctionFixedTiming(currentStatus.advance);
+    currentStatus.advance = correctionCrankingFixedTiming(currentStatus.advance); //This overrides the regular fixed timing, must come last
   }
 }
 
@@ -161,7 +165,7 @@ void calculateSecondarySpark()
  * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
  * @return byte 
  */
-byte getVE2()
+byte getVE2(void)
 {
   byte tempVE = 100;
   if( configPage10.fuel2Algorithm == LOAD_SOURCE_MAP)
@@ -190,7 +194,7 @@ byte getVE2()
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance2()
+byte getAdvance2(void)
 {
   byte tempAdvance = 0;
   if (configPage10.spark2Algorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used

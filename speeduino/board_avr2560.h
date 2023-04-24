@@ -14,6 +14,7 @@
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
+  #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     typedef uint16_t eeprom_address_t;
@@ -26,10 +27,10 @@
   #else
     #define RTC_LIB_H <Time.h>
   #endif
-  void initBoard();
-  uint16_t freeRam();
-  void doSystemReset();
-  void jumpToBootloader();
+  void initBoard(void);
+  uint16_t freeRam(void);
+  void doSystemReset(void);
+  void jumpToBootloader(void);
 
   #if defined(TIMER5_MICROS)
     /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
