@@ -94,9 +94,13 @@ void initialiseAll(void)
       } 
     }
     #endif
-    
+  
+    // Unit tests should be independent of any stored configuration on the board!
+#if !defined(UNIT_TEST)
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
+#endif
+
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
