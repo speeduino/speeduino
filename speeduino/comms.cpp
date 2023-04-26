@@ -460,7 +460,13 @@ void serialReceive(void)
     byte highByte = (byte)Serial.peek();
 
     //Check if the command is legacy using the call/response mechanism
-    if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
+    if(highByte == 'F')
+    {
+      //F command is always allowed as it provides the initial serial protocol version. 
+      legacySerialCommand();
+      return;
+    }
+    else if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS)) )
     {
       //Handle legacy cases here
       legacySerialCommand();
@@ -497,6 +503,7 @@ void serialReceive(void)
         {
           //CRC is correct. Process the command
           processSerialCommand();
+          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Lock out legacy commands until next power cycle
         }
         else {
           //CRC Error. Need to send an error message
@@ -515,6 +522,7 @@ void serialReceive(void)
 
     flushRXbuffer();
     sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
+
   } //Timeout
 }
 
@@ -591,6 +599,17 @@ void processSerialCommand(void)
     case 'E': // receive command button commands
       (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
       sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'f': //Send serial capability details
+      serialPayload[0] = SERIAL_RC_OK;
+      serialPayload[1] = 2; //Serial protocol version
+      serialPayload[2] = highByte(BLOCKING_FACTOR);
+      serialPayload[3] = lowByte(BLOCKING_FACTOR);
+      serialPayload[4] = highByte(TABLE_BLOCKING_FACTOR);
+      serialPayload[5] = lowByte(TABLE_BLOCKING_FACTOR);
+      
+      sendSerialPayloadNonBlocking(6);
       break;
 
     case 'F': // send serial protocol version
@@ -690,6 +709,12 @@ void processSerialCommand(void)
       {
         generateLiveValues(offset, length);
         sendSerialPayloadNonBlocking(length + 1U);
+      }
+      else if(cmd == 0x0f)
+      {
+        //Request for signature
+        (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
+        sendSerialPayloadNonBlocking(sizeof(codeVersion));
       }
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
