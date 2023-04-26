@@ -28,7 +28,6 @@
 #include "table2d.h"
 #include "table3d.h"
 #include <assert.h>
-#include "logger.h"
 #include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)

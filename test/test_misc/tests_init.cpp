@@ -1,7 +1,6 @@
-#include <globals.h>
-#include <init.h>
 #include <unity.h>
-#include <storage.h>
+#include "globals.h"
+#include "init.h"
 #include "tests_init.h"
 
 
@@ -121,7 +120,6 @@ void test_initialisation_outputs_PWM_idle(void)
   configPage6.iacChannels = 1;
   configPage6.iacAlgorithm = 2;
 
-  writeAllConfig(); //Have to save config here to prevent initialiseAll() from overwriting it
   initialiseAll(); //Run the main initialise function
 
   bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
@@ -151,6 +149,10 @@ void test_initialisation_outputs_VVT(void)
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_1), "VVT1");
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), "VVT2");
 }
+
+#if !defined(NOT_A_PIN)
+#define NOT_A_PIN 0
+#endif
 
 uint8_t getPinMode(uint8_t pin)
 {
