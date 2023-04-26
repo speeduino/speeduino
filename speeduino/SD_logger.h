@@ -8,6 +8,7 @@
 #else
   #include "SdFat.h"
 #endif
+#include "logger.h"
 //#include <SdSpiCard.h>
 #include "RingBuf.h"
 
