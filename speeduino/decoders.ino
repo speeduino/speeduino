@@ -4795,7 +4795,7 @@ void triggerSetEndTeeth_Vmax(void)
 */
 void triggerSetup_Renix()
 {
-  if( configPage4.TrigPattern == DECODER_RENIX44)
+  if( configPage2.nCylinders == 4)
   {
     triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
     configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
@@ -4803,7 +4803,7 @@ void triggerSetup_Renix()
     triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
     triggerFilterTime = (1000000 / (MAX_RPM / 60 * 44)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be disgarded as noise
   }
-  else if (configPage4.TrigPattern == DECODER_RENIX66)
+  else if (configPage2.nCylinders == 6)
   {
     triggerToothAngle = 60;
     configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
@@ -4867,8 +4867,8 @@ void triggerPri_Renix()
     {
       toothCurrentCount++;
 
-      if( (configPage4.TrigPattern == DECODER_RENIX66 && toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
-          (configPage4.TrigPattern == DECODER_RENIX44 && toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
+      if( (configPage2.nCylinders == 6 && toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
+          (configPage2.nCylinders == 4 && toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
       {
         toothOneMinusOneTime = toothOneTime;
         toothOneTime = curTime;

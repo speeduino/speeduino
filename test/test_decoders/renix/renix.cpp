@@ -7,7 +7,8 @@
 void test_setup_renix44()
 {
     //Setup a renix 44 tooth wheel
-    configPage4.TrigPattern = DECODER_RENIX44;
+    configPage4.TrigPattern = DECODER_RENIX;
+    configPage2.nCylinders = 4;
     decoderHasSecondary = false;
 
     triggerSetup_Renix();
@@ -16,7 +17,8 @@ void test_setup_renix44()
 void test_setup_renix66()
 {
     //Setup a renix 66 tooth wheel
-    configPage4.TrigPattern = DECODER_RENIX66;
+    configPage4.TrigPattern = DECODER_RENIX;
+    configPage2.nCylinders = 6;
     decoderHasSecondary = false;
 
     triggerSetup_Renix();
