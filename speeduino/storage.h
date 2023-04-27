@@ -120,27 +120,27 @@
  *
  */
 
-void writeAllConfig();
+void writeAllConfig(void);
 void writeConfig(uint8_t pageNum);
 void EEPROMWriteRaw(uint16_t address, uint8_t data);
 uint8_t EEPROMReadRaw(uint16_t address);
-void loadConfig();
-void loadCalibration();
-void writeCalibration();
+void loadConfig(void);
+void loadCalibration(void);
+void writeCalibration(void);
 void writeCalibrationPage(uint8_t pageNum);
-void resetConfigPages();
+void resetConfigPages(void);
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
-byte readLastBaro();
-void storeLastBaro(byte);
-uint8_t readEEPROMVersion();
-void storeEEPROMVersion(uint8_t);
+byte readLastBaro(void);
+void storeLastBaro(byte newValue);
+uint8_t readEEPROMVersion(void);
+void storeEEPROMVersion(byte newVersion);
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
 uint32_t readPageCRC32(uint8_t pageNum);
 void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);
 uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
-uint16_t getEEPROMSize();
-bool isEepromWritePending();
+uint16_t getEEPROMSize(void);
+bool isEepromWritePending(void);
 
 extern uint32_t deferEEPROMWritesUntil;
 
