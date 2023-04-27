@@ -4,16 +4,34 @@
 #include "tests_init.h"
 
 
-void testInitialisation()
+#if !defined(NOT_A_PIN)
+#define NOT_A_PIN 0
+#endif
+
+uint8_t getPinMode(uint8_t pin)
 {
-  RUN_TEST(test_initialisation_complete);
-  RUN_TEST(test_initialisation_ports);
-  RUN_TEST(test_initialisation_outputs_V03);
-  RUN_TEST(test_initialisation_outputs_V04);
-  RUN_TEST(test_initialisation_outputs_MX5_8995);
-  RUN_TEST(test_initialisation_outputs_PWM_idle);
-  RUN_TEST(test_initialisation_outputs_boost);
-  RUN_TEST(test_initialisation_outputs_VVT);
+  uint8_t bit = digitalPinToBitMask(pin);
+  uint8_t port = digitalPinToPort(pin);
+
+  // I don't see an option for mega to return this, but whatever...
+  if (NOT_A_PIN == port) return UNKNOWN_PIN;
+
+  // Is there a bit we can check?
+  if (0 == bit) return UNKNOWN_PIN;
+
+  // Is there only a single bit set?
+  if (bit & (bit - 1)) return UNKNOWN_PIN;
+
+  volatile uint8_t *reg, *out;
+  reg = portModeRegister(port);
+  out = portOutputRegister(port);
+
+  if (*reg & bit)
+    return OUTPUT;
+  else if (*out & bit)
+    return INPUT_PULLUP;
+  else
+    return INPUT;
 }
 
 void test_initialisation_complete(void)
@@ -150,32 +168,14 @@ void test_initialisation_outputs_VVT(void)
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), "VVT2");
 }
 
-#if !defined(NOT_A_PIN)
-#define NOT_A_PIN 0
-#endif
-
-uint8_t getPinMode(uint8_t pin)
+void testInitialisation()
 {
-  uint8_t bit = digitalPinToBitMask(pin);
-  uint8_t port = digitalPinToPort(pin);
-
-  // I don't see an option for mega to return this, but whatever...
-  if (NOT_A_PIN == port) return UNKNOWN_PIN;
-
-  // Is there a bit we can check?
-  if (0 == bit) return UNKNOWN_PIN;
-
-  // Is there only a single bit set?
-  if (bit & (bit - 1)) return UNKNOWN_PIN;
-
-  volatile uint8_t *reg, *out;
-  reg = portModeRegister(port);
-  out = portOutputRegister(port);
-
-  if (*reg & bit)
-    return OUTPUT;
-  else if (*out & bit)
-    return INPUT_PULLUP;
-  else
-    return INPUT;
+  RUN_TEST(test_initialisation_complete);
+  RUN_TEST(test_initialisation_ports);
+  RUN_TEST(test_initialisation_outputs_V03);
+  RUN_TEST(test_initialisation_outputs_V04);
+  RUN_TEST(test_initialisation_outputs_MX5_8995);
+  RUN_TEST(test_initialisation_outputs_PWM_idle);
+  RUN_TEST(test_initialisation_outputs_boost);
+  RUN_TEST(test_initialisation_outputs_VVT);
 }

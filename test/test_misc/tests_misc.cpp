@@ -18,6 +18,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testInitialisation();
+    testFuelScheduleInit();
     testTables();
     testTable2d();
 
