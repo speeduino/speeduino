@@ -125,7 +125,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
-  if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled == true) ) 
+  if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled != false) ) 
   {
     bool valueLogged = false;
     if(currentStatus.toothLogEnabled == true)
@@ -137,14 +137,14 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
         valueLogged = true;
       } 
     }
-    else if(currentStatus.compositeLogEnabled == true)
+    else if(currentStatus.compositeLogEnabled != false)
     {
       compositeLogHistory[toothHistoryIndex] = 0;
       if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
-      if(configPage6.vvtEnabled >0 && configPage10.vvt2Enabled == 1)
-      { if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }}
+      if(currentStatus.compositeLogEnabled == 3)
+      { if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }} 
       else
-      { if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }}      
+      { if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } }
       if(whichTooth == TOOTH_CAM) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
       if(currentStatus.hasSync == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SYNC); }
 
@@ -188,7 +188,7 @@ void loggerPrimaryISR(void)
     //Tooth logger only logs when the edge was correct
     if(validEdge == true) { addToothLogEntry(curGap, TOOTH_CRANK); }
   }
-  else if( (currentStatus.compositeLogEnabled == true) )
+  else if( (currentStatus.compositeLogEnabled != false) )
   {
     //Composite logger adds an entry regardless of which edge it was
     addToothLogEntry(curGap, TOOTH_CRANK);
@@ -213,7 +213,7 @@ void loggerSecondaryISR(void)
     triggerSecondaryHandler();
   }
   //No tooth logger for the secondary input
-  if( (currentStatus.compositeLogEnabled == true) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
+  if( (currentStatus.compositeLogEnabled != false) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
   {
     //Composite logger adds an entry regardless of which edge it was
     addToothLogEntry(curGap2, TOOTH_CAM);
@@ -240,7 +240,7 @@ void loggerTertiaryISR(void)
     triggerTertiaryHandler();
   }
   //No tooth logger for the secondary input
-  if( (currentStatus.compositeLogEnabled == true) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
+  if( (currentStatus.compositeLogEnabled != false) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
   {
     //Composite logger adds an entry regardless of which edge it was
     addToothLogEntry(curGap3, TOOTH_CAM);
@@ -929,7 +929,7 @@ int getCrankAngle_DualWheel(void)
     crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
 
     //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if (tempRevolutionOne) { crankAngle += 360; }
+    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
     if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }

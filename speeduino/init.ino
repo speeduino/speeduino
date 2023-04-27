@@ -11,6 +11,7 @@
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
+#include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "sensors.h"
 #include "decoders.h"
@@ -478,8 +479,8 @@ void initialiseAll(void)
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-          channel3InjDegrees = channel1InjDegrees;
+          BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+          channel2InjDegrees = channel1InjDegrees;
         }
         break;
 
@@ -591,6 +592,24 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+
+        //Check if injector staging is enabled
+        if(configPage10.stagingEnabled == true)
+        {
+          #if INJ_CHANNELS >= 6
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+            BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+
+            channel4InjDegrees = channel1InjDegrees;
+            channel5InjDegrees = channel2InjDegrees;
+            channel6InjDegrees = channel3InjDegrees;
+          #else
+            //Staged output is on channel 4
+            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            channel4InjDegrees = channel1InjDegrees;
+          #endif
+        }
         break;
     case 4:
         channel1IgnDegrees = 0;
@@ -674,8 +693,31 @@ void initialiseAll(void)
           BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
           BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
 
-          channel3InjDegrees = channel1InjDegrees;
-          channel4InjDegrees = channel2InjDegrees;
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              channel5InjDegrees = channel1InjDegrees;
+              channel6InjDegrees = channel2InjDegrees;
+              channel7InjDegrees = channel3InjDegrees;
+              channel8InjDegrees = channel4InjDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              channel5InjDegrees = channel1InjDegrees;
+            #endif
+          }
+          else
+          {
+            channel3InjDegrees = channel1InjDegrees;
+            channel4InjDegrees = channel2InjDegrees;
+          }
         }
 
         BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
@@ -732,6 +774,9 @@ void initialiseAll(void)
           channel5InjDegrees = 576;
 
           BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+    #if INJ_CHANNELS >= 6
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ6_CMD_BIT); }
+    #endif
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -743,6 +788,9 @@ void initialiseAll(void)
         BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+    #if INJ_CHANNELS >= 5
+          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ5_CMD_BIT); }
+    #endif
         break;
     case 6:
         channel1IgnDegrees = 0;
@@ -783,7 +831,7 @@ void initialiseAll(void)
         }
 
     #if INJ_CHANNELS >= 6
-        else if (configPage2.injLayout == INJ_SEQUENTIAL)
+        if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 120;
@@ -799,6 +847,32 @@ void initialiseAll(void)
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
           req_fuel_uS = req_fuel_uS * 2;
+        }
+        else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
+        {
+          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
+          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+
+          if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+          {
+            //Staging with 4 cylinders semi/sequential requires 8 total channels
+            #if INJ_CHANNELS >= 8
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
+              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+
+              channel5InjDegrees = channel1InjDegrees;
+              channel6InjDegrees = channel2InjDegrees;
+              channel7InjDegrees = channel3InjDegrees;
+              channel8InjDegrees = channel4InjDegrees;
+            #else
+              //This is an invalid config as there are not enough outputs to support sequential + staging
+              //Put the staging output to the non-existant channel 5
+              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              channel5InjDegrees = channel1InjDegrees;
+            #endif
+          }
         }
     #endif
 
@@ -1395,6 +1469,32 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
+      #elif defined(CORE_TEENSY41)
+        pinBaro = A4; 
+        pinMAP = A5;
+        pinTPS = A3; //TPS input pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A2; //O2 Sensor pin
+        pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 34; //Can be overwritten below
+        pinVSS = 35;
+        pinSpareTemp2 = A16; //WRONG! Needs updating!!
+        pinSpareTemp2 = A17; //WRONG! Needs updating!!
+
+        pinTrigger = 20; //The CAS pin
+        pinTrigger2 = 21; //The Cam Sensor pin
+
+        pinStepperDir = 34;
+        pinStepperStep = 35;
+        
+        pinCoil1 = 31;
+        pinCoil2 = 32;
+        pinCoil4 = 29;
+        pinCoil3 = 30;
+
+        pinTachOut = 28;
+        pinFan = 27;
       #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -2804,9 +2904,6 @@ void setPinMapping(byte boardID)
       pinMode(pinBaro, INPUT);
     #endif
   #endif
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
   if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
@@ -2902,6 +2999,7 @@ void setPinMapping(byte boardID)
   triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
   triggerThird_pin_port = portInputRegister(digitalPinToPort(pinTrigger3));
   triggerThird_pin_mask = digitalPinToBitMask(pinTrigger3);
+
   flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
   flex_pin_mask = digitalPinToBitMask(pinFlex);
 
@@ -2987,7 +3085,12 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  //digitalWrite(pinTrigger, HIGH);
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
+
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
   detachInterrupt(triggerInterrupt3);
@@ -3440,7 +3543,6 @@ void changeHalfToFullSync(void)
   if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) )
   {
     CRANK_ANGLE_MAX_INJ = 720;
-    maxIgnOutputs = configPage2.nCylinders;
     req_fuel_uS *= 2;
     
     inj1StartFunction = openInjector1;
@@ -3536,7 +3638,6 @@ void changeFullToHalfSync(void)
   if(configPage2.injLayout == INJ_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_INJ = 360;
-    maxIgnOutputs = configPage2.nCylinders / 2;
     req_fuel_uS /= 2;
     switch (configPage2.nCylinders)
     {
