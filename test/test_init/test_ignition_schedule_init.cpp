@@ -6,32 +6,36 @@
 
 static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutputs, uint16_t angle[])
 {
-  char szMsg[32];
+  char msg[32];
 
-  strcpy_P(szMsg, PSTR("CRANK_ANGLE_MAX_IGN"));
-  TEST_ASSERT_EQUAL_INT16_MESSAGE(crankAngle, CRANK_ANGLE_MAX_IGN, szMsg);
-  strcpy_P(szMsg, PSTR("maxIgnOutputs"));
-  TEST_ASSERT_EQUAL_UINT16_MESSAGE(expectedOutputs, maxIgnOutputs, szMsg);
+  strcpy_P(msg, PSTR("CRANK_ANGLE_MAX_IGN"));
+  TEST_ASSERT_EQUAL_INT16_MESSAGE(crankAngle, CRANK_ANGLE_MAX_IGN, msg);
+  strcpy_P(msg, PSTR("maxIgnOutputs"));
+  TEST_ASSERT_EQUAL_UINT16_MESSAGE(expectedOutputs, maxIgnOutputs, msg);
 
-  strcpy_P(szMsg, PSTR("channel1IgnDegrees"));
-  TEST_ASSERT_EQUAL_MESSAGE(angle[0], channel1IgnDegrees, szMsg);
-  strcpy_P(szMsg, PSTR("channel2IgnDegrees"));
-  TEST_ASSERT_EQUAL_MESSAGE(angle[1], channel2IgnDegrees, szMsg);
-  strcpy_P(szMsg, PSTR("channel3IgnDegrees"));
-  TEST_ASSERT_EQUAL_MESSAGE(angle[2], channel3IgnDegrees, szMsg);
-  strcpy_P(szMsg, PSTR("channel4IgnDegrees"));
-  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel4IgnDegrees, szMsg);
+  strcpy_P(msg, PSTR("channel1IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[0], channel1IgnDegrees, msg);
+  strcpy_P(msg, PSTR("channel2IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[1], channel2IgnDegrees, msg);
+  strcpy_P(msg, PSTR("channel3IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[2], channel3IgnDegrees, msg);
+  strcpy_P(msg, PSTR("channel4IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel4IgnDegrees, msg);
 #if IGN_CHANNELS>=5
-  TEST_ASSERT_EQUAL_MESSAGE(angle[4], channel5IgnDegrees, "channel5IgnDegrees");
+  strcpy_P(msg, PSTR("channel5IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel5IgnDegrees, msg);
 #endif
 #if IGN_CHANNELS>=6
-  TEST_ASSERT_EQUAL_MESSAGE(angle[5], channel6IgnDegrees, "channel6IgnDegrees");
+  strcpy_P(msg, PSTR("channel6IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel6IgnDegrees, msg);
 #endif
 #if IGN_CHANNELS>=7
-  TEST_ASSERT_EQUAL_MESSAGE(angle[6], channel7IgnDegrees, "channel7IgnDegrees");
+  strcpy_P(msg, PSTR("channel7IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel7IgnDegrees, msg);
 #endif
 #if IGN_CHANNELS>=8
-  TEST_ASSERT_EQUAL_MESSAGE(angle[7], channel8IgnDegrees, "channel8IgnDegrees");
+  strcpy_P(msg, PSTR("channel8IgnDegrees"));
+  TEST_ASSERT_EQUAL_MESSAGE(angle[3], channel8IgnDegrees, msg);
 #endif 
 }
 
