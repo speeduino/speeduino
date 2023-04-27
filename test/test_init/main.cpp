@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "tests_tables.h"
-#include "test_table2d.h"
+void testInitialisation(void);
+void testFuelScheduleInit(void);
+void testIgnitionScheduleInit(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -16,8 +17,9 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testTables();
-    testTable2d();
+    testInitialisation();
+    testFuelScheduleInit();
+    testIgnitionScheduleInit();
 
     UNITY_END(); // stop unit testing
 }

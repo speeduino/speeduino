@@ -1,8 +1,8 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
-#include "tests_init.h"
 
+#define UNKNOWN_PIN 0xFF
 
 #if !defined(NOT_A_PIN)
 #define NOT_A_PIN 0
