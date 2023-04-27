@@ -218,21 +218,10 @@ void triggerSec_NGC4(void);
 void triggerSec_NGC68(void);
 uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
+
 void triggerSetup_Renix();
 void triggerPrimary_Renix();
-void triggerSec_Renix();
-uint16_t getRPM_Renix();
-int getCrankAngle_Renix();
 void triggerSetEndTeeth_Renix();
-
-
-
-void triggerSetup_NGC();
-void triggerPri_NGC();
-void triggerSec_NGC4();
-void triggerSec_NGC68();
-uint16_t getRPM_NGC();
-void triggerSetEndTeeth_NGC();
 
 void triggerSetup_Vmax(void);
 void triggerPri_Vmax(void);
