@@ -19,7 +19,9 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
+#if defined(CORE_AVR) || defined(CORE_TEENSY)
 #include <util/atomic.h>
+#endif
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
@@ -65,7 +67,10 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //dwell limiter mainly is intended to catch race conditions on port writes when read-modify-write to some other pin may revert the pin state when schedule interrupt occurs between read and write.
   uint8_t currentMillis=(uint8_t)millis();
   if((configPage4.useDwellLim) && (isCrankLocked == false)){
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+    #if defined(CORE_AVR) || defined(CORE_TEENSY)
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) //stm32 do not have atomic.h library but also do not have nested interrupts at the moment, so just goes without it
+    #endif
+    {
     if((uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
     if((uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
     if((uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
