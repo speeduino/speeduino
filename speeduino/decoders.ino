@@ -171,16 +171,6 @@ void loggerPrimaryISR(void)
   {
     triggerHandler();
     validEdge = true;
-
-    
-    currentStatus.vvt1Angle++;
-    if (currentStatus.vvt1Angle > 15000)
-    {
-      currentStatus.vvt1Angle = 0;
-      currentStatus.vvt2Angle = 0;
-    }
-    
-
   }
   if( (currentStatus.toothLogEnabled == true) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
   {
@@ -188,15 +178,6 @@ void loggerPrimaryISR(void)
     if(validEdge == true) 
     { 
       addToothLogEntry(curGap, TOOTH_CRANK);
- 
-      currentStatus.vvt2Angle++;
-      if (currentStatus.vvt2Angle > 15000)
-      {
-        currentStatus.vvt1Angle = 0;
-        currentStatus.vvt2Angle = 0;
-      }
- 
-    
     }
   }
   else if( (currentStatus.compositeLogEnabled == true) )
