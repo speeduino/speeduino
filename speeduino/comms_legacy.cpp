@@ -131,7 +131,7 @@ void legacySerialCommand(void)
       break;
 
     case 'F': // send serial protocol version
-      Serial.print(F("001"));
+      Serial.print(F("002"));
       break;
 
     //The G/g commands are used for bulk reading and writing to the EEPROM directly. This is typically a non-user feature but will be incorporated into SpeedyLoader for anyone programming many boards at once

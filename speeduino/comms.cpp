@@ -460,7 +460,13 @@ void serialReceive(void)
     byte highByte = (byte)Serial.peek();
 
     //Check if the command is legacy using the call/response mechanism
-    if( ((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?') )
+    if(highByte == 'F')
+    {
+      //F command is always allowed as it provides the initial serial protocol version. 
+      legacySerialCommand();
+      return;
+    }
+    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS)) )
     {
       //Handle legacy cases here
       legacySerialCommand();
@@ -497,6 +503,7 @@ void serialReceive(void)
         {
           //CRC is correct. Process the command
           processSerialCommand();
+          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Lock out legacy commands until next power cycle
         }
         else {
           //CRC Error. Need to send an error message
@@ -515,6 +522,7 @@ void serialReceive(void)
 
     flushRXbuffer();
     sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
+
   } //Timeout
 }
 
@@ -591,6 +599,17 @@ void processSerialCommand(void)
     case 'E': // receive command button commands
       (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
       sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'f': //Send serial capability details
+      serialPayload[0] = SERIAL_RC_OK;
+      serialPayload[1] = 2; //Serial protocol version
+      serialPayload[2] = highByte(BLOCKING_FACTOR);
+      serialPayload[3] = lowByte(BLOCKING_FACTOR);
+      serialPayload[4] = highByte(TABLE_BLOCKING_FACTOR);
+      serialPayload[5] = lowByte(TABLE_BLOCKING_FACTOR);
+      
+      sendSerialPayloadNonBlocking(6);
       break;
 
     case 'F': // send serial protocol version
@@ -700,6 +719,12 @@ void processSerialCommand(void)
       {
         generateLiveValues(offset, length);
         sendSerialPayloadNonBlocking(length + 1U);
+      }
+      else if(cmd == 0x0f)
+      {
+        //Request for signature
+        (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
+        sendSerialPayloadNonBlocking(sizeof(codeVersion));
       }
 #ifdef RTC_ENABLED
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
@@ -1012,104 +1037,109 @@ void processSerialCommand(void)
 void sendToothLog(void)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false) //Sanity check. Flagging system means this should always be true
   {
-    uint32_t CRC32_val = 0;
-    if(logItemsTransmitted == 0)
+    //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
+    while(toothHistoryIndex < TOOTH_LOG_SIZE)
     {
-      //Transmit the size of the packet
-      (void)serialWrite((uint16_t)(sizeof(toothHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
-      //Begin new CRC hash
-      const uint8_t returnCode = SERIAL_RC_OK;
-      CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
-
-      //Send the return code
-      writeByteReliableBlocking(returnCode);
+      toothHistory[toothHistoryIndex] = 0;
+      toothHistoryIndex++;
     }
-    
-    for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
-    {
-      //Check whether the tx buffer still has space
-      if(Serial.availableForWrite() < 4) 
-      { 
-        //tx buffer is full. Store the current state so it can be resumed later
-        serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS;
-        return;
-      }
-
-      //Transmit the tooth time
-      uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]);
-      CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
-    }
-    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-    serialStatusFlag = SERIAL_INACTIVE;
-    toothHistoryIndex = 0;
-    logItemsTransmitted = 0;
-
-    //Apply the CRC reflection
-    CRC32_val = ~CRC32_val;
-
-    //Send the CRC
-    (void)serialWrite(CRC32_val);
   }
-  else 
-  { 
-    sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
-    serialStatusFlag = SERIAL_INACTIVE;
-  } 
+
+  uint32_t CRC32_val = 0;
+  if(logItemsTransmitted == 0)
+  {
+    //Transmit the size of the packet
+    (void)serialWrite((uint16_t)(sizeof(toothHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
+    //Begin new CRC hash
+    const uint8_t returnCode = SERIAL_RC_OK;
+    CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
+
+    //Send the return code
+    writeByteReliableBlocking(returnCode);
+  }
+  
+  for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
+  {
+    //Check whether the tx buffer still has space
+    if(Serial.availableForWrite() < 4) 
+    { 
+      //tx buffer is full. Store the current state so it can be resumed later
+      serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS;
+      return;
+    }
+
+    //Transmit the tooth time
+    uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]);
+    CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
+  }
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  serialStatusFlag = SERIAL_INACTIVE;
+  toothHistoryIndex = 0;
+  logItemsTransmitted = 0;
+
+  //Apply the CRC reflection
+  CRC32_val = ~CRC32_val;
+
+  //Send the CRC
+  (void)serialWrite(CRC32_val);
 }
 
 void sendCompositeLog(void)
 {
-  if ( (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) || (serialStatusFlag == SERIAL_TRANSMIT_COMPOSITE_INPROGRESS) ) //Sanity check. Flagging system means this should always be true
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false ) //Sanity check. Flagging system means this should always be true
   {
-    uint32_t CRC32_val = 0;
-    if(logItemsTransmitted == 0)
-    { 
-      //Transmit the size of the packet
-      (void)serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
-      
-      //Begin new CRC hash
-      const uint8_t returnCode = SERIAL_RC_OK;
-      CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
-
-      //Send the return code
-      writeByteReliableBlocking(returnCode);
-    }
-
-    for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
+    //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
+    while(toothHistoryIndex < TOOTH_LOG_SIZE)
     {
-      //Check whether the tx buffer still has space
-      if((uint16_t)Serial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
-      { 
-        //tx buffer is full. Store the current state so it can be resumed later
-        serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS;
-        return;
-      }
-
-      uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
-      CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
-
-      //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
-      writeByteReliableBlocking(compositeLogHistory[logItemsTransmitted]);
-      CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]), false);
+      toothHistory[toothHistoryIndex] = toothHistory[toothHistoryIndex-1]; //Composite logger needs a realistic time value to display correctly. Copy the last value
+      compositeLogHistory[toothHistoryIndex] = 0;
+      toothHistoryIndex++;
     }
-    BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-    toothHistoryIndex = 0;
-    serialStatusFlag = SERIAL_INACTIVE;
-    logItemsTransmitted = 0;
-
-    //Apply the CRC reflection
-    CRC32_val = ~CRC32_val;
-
-    //Send the CRC
-    (void)serialWrite(CRC32_val);
   }
-  else 
+
+  uint32_t CRC32_val = 0;
+  if(logItemsTransmitted == 0)
   { 
-    sendReturnCodeMsg(SERIAL_RC_BUSY_ERR);
-    serialStatusFlag = SERIAL_INACTIVE;    
-  } 
+    //Transmit the size of the packet
+    (void)serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
+    
+    //Begin new CRC hash
+    const uint8_t returnCode = SERIAL_RC_OK;
+    CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
+
+    //Send the return code
+    writeByteReliableBlocking(returnCode);
+  }
+
+  for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
+  {
+    //Check whether the tx buffer still has space
+    if((uint16_t)Serial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
+    { 
+      //tx buffer is full. Store the current state so it can be resumed later
+      serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS;
+      return;
+    }
+
+    uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
+    CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
+
+    //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
+    writeByteReliableBlocking(compositeLogHistory[logItemsTransmitted]);
+    CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]), false);
+  }
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+  serialStatusFlag = SERIAL_INACTIVE;
+  logItemsTransmitted = 0;
+
+  //Apply the CRC reflection
+  CRC32_val = ~CRC32_val;
+
+  //Send the CRC
+  (void)serialWrite(CRC32_val);
 }
 
 #if defined(CORE_AVR)
