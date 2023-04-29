@@ -4758,4 +4758,127 @@ void triggerSetEndTeeth_Vmax(void)
   lastToothCalcAdvance = currentStatus.advance;
 }
 
+
+/** Honda CBR - 2 wheels, one on the crank with no missing teeth, one on the cam with three teeth, two teeth are 180 degrees apart with third tooth just before one of the opposite teeth
+ *  Means if you count 1 tooth in one engine revolution you're on the first part of the cycle 0 to 360 degrees, if you could two you're on the second 360 to 720 degrees
+ * Code developed off dual wheel and left the options to specify crank teeth to give more flexibility for other installations
+
+* @defgroup HondaCBR Honda CBR
+* @{
+*/
+
+/** HondaCBR Setup.
+ * 
+ * */
+void triggerSetup_HondaCBR(void)
+{
+  triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  if(configPage4.TrigSpeed == CAM_SPEED) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
+  toothCurrentCount = 255; //Default value
+  triggerFilterTime = (1000000 / (MAX_RPM / 60 * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
+  triggerSecFilterTime = (1000000 / (MAX_RPM / 60 * 2)) / 2; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
+  MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+}
+
+/** Honda CBR Primary.
+ * 
+ * */
+
+void triggerPri_HondaCBR(void)
+{
+    curTime = micros();
+    curGap = curTime - toothLastToothTime;
+    if ( curGap >= triggerFilterTime )
+    {
+      toothCurrentCount++; //Increment the tooth counter
+      BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+      toothLastMinusOneToothTime = toothLastToothTime;
+      toothLastToothTime = curTime;
+
+      if ( (toothCurrentCount == 1) || (toothCurrentCount > configPage4.triggerTeeth) )
+      {
+        toothCurrentCount = 1;
+        revolutionOne = !revolutionOne; // swap revolution flag round
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        currentStatus.startRevolutions++; //Counter
+        if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed              
+      }
+
+      setFilter(curGap); //Recalc the new filter value
+    
+
+      //NEW IGNITION MODE
+      if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
+      {
+        int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
+        {
+          crankAngle += 360;
+          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+        }
+        else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+      }
+   } //Trigger filter
+}
+/** HondaCBR Secondary.
+ * 
+ * */
+void triggerSec_HondaCBR(void)
+{  
+  curTime2 = micros();
+  curGap2 = curTime2 - toothLastSecToothTime;
+  if ( curGap2 >= triggerSecFilterTime )
+  {
+    toothLastSecToothTime = curTime2;    
+    // Set filter to use the gap on the crank - we don't know if we've seen the cam long gap or short gap so could accidentally filter out a cam tooth accidentally if we use the cam. 
+    // Future improvement would be to more accurately calculate the small tooth cam gap
+    triggerSecFilterTime = curGap;
+    secondaryToothCount++;
+    
+    // crank teeth are linked to secondary teeth, check we're at 1 less than trigger teeth
+    if( secondaryToothCount == 1 && toothCurrentCount == (uint16_t) (configPage4.triggerTeeth - 1))
+    {
+      // found the main secondary tooth on the first revolution
+      revolutionOne = 1; // revolution 1      
+      secondaryToothCount = 0;
+      currentStatus.hasSync = true;      
+    }
+    else if (secondaryToothCount == 2 && toothCurrentCount == (uint16_t) (configPage4.triggerTeeth - 1) )
+    {
+      // found the main secondary tooth on the secondary revolution
+      revolutionOne = 0; // Not revolution 1, ie revolution 2
+      secondaryToothCount = 0;
+      currentStatus.hasSync = true;
+    }
+    else if (secondaryToothCount == 1 && toothCurrentCount > (uint16_t) (configPage4.triggerTeeth >> 1) &&  toothCurrentCount < (uint16_t) (configPage4.triggerTeeth - 1) )
+    {
+      // found the first secondary tooth on the second revolution, ensure this is close to the correct place.
+      // ignore this but don't lose sync
+    }
+    else
+    {
+      // we've lost sync. The following settings will reset for either of the two cam pins 180 degrees opposite. If by chance we're on the other pin we'll hit this branch again
+      // in 60 degrees time and will be set correctly.
+      toothCurrentCount = (configPage4.triggerTeeth - 1);
+      secondaryToothCount = 0;
+      currentStatus.hasSync = false;   
+    }   
+  } //Trigger filter
+
+  if(currentStatus.hasSync == false)
+  {
+    // reset the gap we're using if we haven't got sync so we have a chance of finding sync in case this gap is somehow stupidly large
+    // as above, this isn't a great calculation & could be improved with more accurate info on the positioning of the cam tooth
+    triggerSecFilterTime = curGap;
+    currentStatus.syncLossCounter++;
+  }
+}
+
+
+
 /** @} */
