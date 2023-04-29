@@ -329,7 +329,7 @@ void legacySerialCommand(void)
         Serial.read(); // First byte of the page identifier can be ignored. It's always 0
 
         if(currentStatus.toothLogEnabled == true) { sendToothLog_legacy(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeLogEnabled != false) { sendCompositeLog_legacy(0); }
+        else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog_legacy(0); }
         serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
