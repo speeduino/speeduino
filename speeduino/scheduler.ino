@@ -28,6 +28,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "scheduledIO.h"
 #include "timers.h"
+#include "schedule_calcs.h"
 
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
@@ -142,6 +143,33 @@ void initialiseSchedulers(void)
     ignitionSchedule6.schedulesSet = 0;
     ignitionSchedule7.schedulesSet = 0;
     ignitionSchedule8.schedulesSet = 0;
+
+    ignition1StartAngle = 0;
+    ignition2StartAngle = 0;
+    ignition3StartAngle = 0;
+    ignition4StartAngle = 0;
+    ignition5StartAngle = 0;
+    ignition6StartAngle = 0;
+    ignition7StartAngle = 0;
+    ignition8StartAngle = 0;
+
+    channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+    channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+    channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+    channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+    channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+    channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+    channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+    channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+    
+    channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+    channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+    channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+    channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+    channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+    channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+    channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+    channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */    
 }
 
 /*
