@@ -78,7 +78,9 @@ void initBoard()
     //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    #if defined(PWM_FAN_AVAILABLE)
+      fan_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
+    #endif
 
     //TODO: Configure timers here
 
@@ -289,5 +291,25 @@ time_t getTeensy3Time()
 
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
+
+void setTriggerHysteresis()
+{
+  //Refer to digital.c in the Teensyduino core for the following code
+  //Refer also to Pgs 382 and 950 of the iMXRT1060 Reference Manual
+  const struct digital_pin_bitband_and_config_table_struct *p;
+  const uint32_t padConfig = IOMUXC_PAD_DSE(1) | IOMUXC_PAD_PKE | IOMUXC_PAD_PUE | IOMUXC_PAD_SPEED(0) | IOMUXC_PAD_HYS;
+
+  //Primary trigger
+  p = digital_pin_to_info_PGM + pinTrigger;
+  *(p->reg + 1) &= ~(p->mask); // TODO: atomic
+  *(p->pad) = padConfig;
+  *(p->mux) = 5 | 0x10;
+
+  //Secondary trigger
+  p = digital_pin_to_info_PGM + pinTrigger2;
+  *(p->reg + 1) &= ~(p->mask); // TODO: atomic
+  *(p->pad) = padConfig;
+  *(p->mux) = 5 | 0x10;
+}
 
 #endif

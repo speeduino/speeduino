@@ -50,4 +50,4 @@ inline void __attribute__((always_inline)) calculateIgnitionAngle8(int dwellAngl
 inline uint32_t __attribute__((always_inline)) calculateIgnition1Timeout(int crankAngle);
 inline uint32_t __attribute__((always_inline)) calculateIgnitionNTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
 
-#include "schedule_calcs.inl"
+#include "schedule_calcs.hpp"

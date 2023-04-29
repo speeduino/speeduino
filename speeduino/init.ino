@@ -94,9 +94,13 @@ void initialiseAll(void)
       } 
     }
     #endif
-    
+  
+    // Unit tests should be independent of any stored configuration on the board!
+#if !defined(UNIT_TEST)
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
+#endif
+
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
@@ -110,6 +114,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
+    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
     #endif
@@ -2904,9 +2909,6 @@ void setPinMapping(byte boardID)
       pinMode(pinBaro, INPUT);
     #endif
   #endif
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
   if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
@@ -3085,7 +3087,12 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-  //digitalWrite(pinTrigger, HIGH);
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
+
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
   detachInterrupt(triggerInterrupt3);
