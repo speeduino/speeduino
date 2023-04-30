@@ -219,9 +219,9 @@ void triggerSec_NGC68(void);
 uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
 
-void triggerSetup_Renix();
-void triggerPrimary_Renix();
-void triggerSetEndTeeth_Renix();
+void triggerSetup_Renix(void);
+void triggerPrimary_Renix(void);
+void triggerSetEndTeeth_Renix(void);
 
 void triggerSetup_RoverMEMS(void);
 void triggerPri_RoverMEMS(void);

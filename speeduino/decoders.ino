@@ -47,6 +47,8 @@ uint16_t (*getRPM)(void); ///Pointer to the getRPM function (Gets pointed to the
 int (*getCrankAngle)(void); ///Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
 void (*triggerSetEndTeeth)(void); ///Pointer to the triggerSetEndTeeth function of each decoder
 
+static void triggerRoverMEMSCommon(void);
+
 volatile unsigned long curTime;
 volatile unsigned long curGap;
 volatile unsigned long curTime2;
@@ -4776,7 +4778,7 @@ void triggerSetEndTeeth_Vmax(void)
 * @defgroup dec_renix Renix decoder 
 * @{
 */
-void triggerSetup_Renix()
+void triggerSetup_Renix(void)
 {
   if( configPage2.nCylinders == 4)
   {
@@ -4808,7 +4810,7 @@ void triggerSetup_Renix()
 #define renixSystemLastToothTime         toothLastToothRisingTime
 #define renixSystemLastMinusOneToothTime toothLastSecToothRisingTime
 
-void triggerPri_Renix()
+void triggerPri_Renix(void)
 {
   curTime = micros();
   curGap = curTime - renixSystemLastToothTime;
@@ -4882,7 +4884,7 @@ void triggerPri_Renix()
   } 
 }
 
-void triggerSetEndTeeth_Renix()
+void triggerSetEndTeeth_Renix(void)
 {
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
@@ -5139,7 +5141,7 @@ void triggerPri_RoverMEMS()
 }
 
 
-void triggerRoverMEMSCommon(void)
+static void triggerRoverMEMSCommon(void)
 {
   // pattern 1 isn't unique & if we don't have a cam we need special code to identify if we're tooth 18 or 36 - this allows batch injection but not spark to run
   // as we have to be greater than 18 teeth when using the cam this code also works for that.
