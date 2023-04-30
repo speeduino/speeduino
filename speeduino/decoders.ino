@@ -125,7 +125,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
 {
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
-  if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled != false) ) 
+  if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeLogEnabled > 0) ) 
   {
     bool valueLogged = false;
     if(currentStatus.toothLogEnabled == true)
@@ -145,6 +145,7 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
       { if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }} 
       else
       { if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } }
+
       if(whichTooth == TOOTH_CAM) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
       if(currentStatus.hasSync == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SYNC); }
 
@@ -587,7 +588,7 @@ void triggerSec_missingTooth(void)
         { 
           revolutionOne = 1; // sequential revolution reset
           recordVVT1Angle (); 
-          thirdToothCount = -1; // set to equivalent of minus one so that when the system finds the second tooth on VVT2 it increments the counter to 0, ready to find the 'first' tooth and set VVT angles.
+          thirdToothCount = 0; 
         }
         else if (secondaryToothCount > 2)
         {
@@ -642,7 +643,7 @@ void triggerThird_missingTooth(void)
     else
     {triggerThirdFilterTime = curGap3 >> 1; }//Next third filter is 50% the current gap
 
-    if( thirdToothCount > 1 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the pattern.
+    if( thirdToothCount > 1 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
     {
       curAngle = getCrankAngle();
       while(curAngle > 360) { curAngle -= 360; }
