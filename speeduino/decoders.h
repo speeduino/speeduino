@@ -35,6 +35,8 @@
 #define DECODER_DRZ400            21
 #define DECODER_NGC               22
 #define DECODER_VMAX              23
+#define DECODER_RENIX             24
+
 
 #define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 #define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
@@ -216,6 +218,10 @@ void triggerSec_NGC4(void);
 void triggerSec_NGC68(void);
 uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
+
+void triggerSetup_Renix();
+void triggerPrimary_Renix();
+void triggerSetEndTeeth_Renix();
 
 void triggerSetup_Vmax(void);
 void triggerPri_Vmax(void);
