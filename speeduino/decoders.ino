@@ -489,14 +489,9 @@ void triggerPri_missingTooth(void)
                   else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
                 }
                 else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
-                if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) //Reset the secondary and third tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
+                if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) //Reset the secondary tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
                 { 
                   secondaryToothCount = 0; 
-                  if(configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3)
-                  {
-                    // toyota code needs to handle multiple third teeth so can't be reset here
-                    thirdToothCount = 0;
-                  }
                 } 
 
                 triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
@@ -588,7 +583,6 @@ void triggerSec_missingTooth(void)
         { 
           revolutionOne = 1; // sequential revolution reset
           recordVVT1Angle (); 
-          thirdToothCount = 0; 
         }
         else if (secondaryToothCount > 2)
         {
@@ -643,7 +637,7 @@ void triggerThird_missingTooth(void)
     else
     {triggerThirdFilterTime = curGap3 >> 1; }//Next third filter is 50% the current gap
 
-    if( thirdToothCount > 1 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
+    if( (thirdToothCount > 1 && revolutionOne == 1) || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
     {
       curAngle = getCrankAngle();
       while(curAngle > 360) { curAngle -= 360; }
@@ -651,6 +645,7 @@ void triggerThird_missingTooth(void)
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
       //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
       currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
+      thirdToothCount = 0;
     }
     toothLastThirdToothTime = curTime3;
   } //Trigger filter
