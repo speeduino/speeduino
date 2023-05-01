@@ -38,6 +38,9 @@ void stopCompositeLogger(void);
 void startCompositeLoggerTertiary(void);
 void stopCompositeLoggerTertiary(void);
 
+void startCompositeLoggerCams(void);
+void stopCompositeLoggerCams(void);
+
 
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order

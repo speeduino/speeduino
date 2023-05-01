@@ -682,6 +682,17 @@ void processSerialCommand(void)
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
+    case 'X': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'x': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+
     /*
     * New method for sending page values (MS command equivalent is 'r')
     */

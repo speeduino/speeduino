@@ -291,6 +291,7 @@ extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Curre
 #define CAM_SPEED   1
 
 #define TOOTH_CRANK 0
-#define TOOTH_CAM   1
+#define TOOTH_CAM_SECONDARY 1
+#define TOOTH_CAM_TERTIARY  2
 
 #endif
