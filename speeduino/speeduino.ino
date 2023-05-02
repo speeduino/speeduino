@@ -308,6 +308,7 @@ void loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+        syncSDLog(); //Sync the SD log file to the card 4 times per second. 
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
