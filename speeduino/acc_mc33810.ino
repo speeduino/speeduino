@@ -2,7 +2,7 @@
 #include "globals.h"
 #include <SPI.h>
 
-void initMC33810()
+void initMC33810(void)
 {
     //Set the output states of both ICs to be off to fuel and ignition
     mc33810_1_requestedState = 0;
@@ -14,9 +14,8 @@ void initMC33810()
     pinMode(pinMC33810_2_CS, OUTPUT);
 
     SPI.begin();
-    //These are the 'correct' SPI settings per the datasheet
+    //These are the SPI settings per the datasheet
 	  SPI.beginTransaction(SPISettings(6000000, MSBFIRST, SPI_MODE0)); 
-    //SPI.beginTransaction(SPISettings(1200000, MSBFIRST, SPI_MODE3)); //This doesn't appear to align with the datasheet (In terms of the SPI mode), but appears to work more reliably. More testing needed
 
     //Set the ignition outputs to GPGD mode
     /*

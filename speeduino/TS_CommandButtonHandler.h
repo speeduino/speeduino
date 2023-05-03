@@ -60,6 +60,8 @@
 #define TS_CMD_STM32_REBOOT     12800
 #define TS_CMD_STM32_BOOTLOADER 12801
 
+#define TS_CMD_SD_FORMAT  13057
+
 #define TS_CMD_VSS_60KMH  39168 //0x99x00
 #define TS_CMD_VSS_RATIO1 39169
 #define TS_CMD_VSS_RATIO2 39170
@@ -69,4 +71,4 @@
 #define TS_CMD_VSS_RATIO6 39174
 
 /* the maximum id number is 65,535 */
-void TS_CommandButtonsHandler(uint16_t);
+bool TS_CommandButtonsHandler(uint16_t buttonCommand);
