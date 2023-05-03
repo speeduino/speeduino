@@ -178,8 +178,8 @@ struct Schedule {
   COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
   COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
 
-  volatile byte scheduleFlags;        ///< All flags used in the scheduler
-  volatile byte ignRptCnt;            ///< Number of ignition events occurred
+  volatile uint8_t scheduleFlags : 5; ///< All flags used in the scheduler
+  volatile uint8_t ignRptCnt : 3;     ///< Number of ignition events occurred
 };
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
