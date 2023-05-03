@@ -443,3 +443,31 @@ void stopCompositeLoggerTertiary(void)
   detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
 }
+
+
+void startCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = 4;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+}
+
+void stopCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = false;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+}

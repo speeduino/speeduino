@@ -119,9 +119,9 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 /** Add tooth log entry to toothHistory (array).
  * Enabled by (either) currentStatus.toothLogEnabled and currentStatus.compositeTriggerUsed.
  * @param toothTime - Tooth Time
- * @param whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
+ * @param whichTooth - 0 for Primary (Crank), 2 for Secondary (Cam) 3 for Tertiary (Cam)
  */
-static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
+static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
 {
   if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
   //High speed tooth logging history
@@ -140,13 +140,38 @@ static inline void addToothLogEntry(unsigned long toothTime, bool whichTooth)
     else if(currentStatus.compositeTriggerUsed > 0)
     {
       compositeLogHistory[toothHistoryIndex] = 0;
-      if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
-      if(currentStatus.compositeTriggerUsed == 3)
-      { if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }} 
+      if(currentStatus.compositeTriggerUsed == 4)
+      {
+        // we want to display both cams so swap the values round to display primary as cam1 and secondary as cam2, include the crank in the data as the third output
+        if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
+        if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); }
+        if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_THIRD); }
+        if(whichTooth > TOOTH_CAM_SECONDARY) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
+      }
       else
-      { if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } }
-      if(whichTooth == TOOTH_CAM) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
+      {
+        // we want to display crank and one of the cams
+        if(READ_PRI_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_PRI); }
+        if(currentStatus.compositeTriggerUsed == 3)
+        { 
+          // display cam2 and also log data for cam 1
+          if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } // only the COMPOSITE_LOG_SEC value is visualised hence the swapping of the data
+          if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_THIRD); } 
+        } 
+        else
+        { 
+          // display cam1 and also log data for cam 2 - this is the historic composite view
+          if(READ_SEC_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SEC); } 
+          if(READ_THIRD_TRIGGER() == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_THIRD); }
+        }
+        if(whichTooth > TOOTH_CRANK) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_TRIG); }
+      }  
       if(currentStatus.hasSync == true) { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_LOG_SYNC); }
+
+      if(revolutionOne == 1)
+      { BIT_SET(compositeLogHistory[toothHistoryIndex], COMPOSITE_ENGINE_CYCLE);}
+      else
+      { BIT_CLEAR(compositeLogHistory[toothHistoryIndex], COMPOSITE_ENGINE_CYCLE);}
 
       toothHistory[toothHistoryIndex] = micros();
       valueLogged = true;
@@ -216,7 +241,7 @@ void loggerSecondaryISR(void)
   if( (currentStatus.compositeTriggerUsed > 0) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
   {
     //Composite logger adds an entry regardless of which edge it was
-    addToothLogEntry(curGap2, TOOTH_CAM);
+    addToothLogEntry(curGap2, TOOTH_CAM_SECONDARY);
   }
 }
 
@@ -243,7 +268,7 @@ void loggerTertiaryISR(void)
   if( (currentStatus.compositeTriggerUsed > 0) && (BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER)) )
   {
     //Composite logger adds an entry regardless of which edge it was
-    addToothLogEntry(curGap3, TOOTH_CAM);
+    addToothLogEntry(curGap3, TOOTH_CAM_TERTIARY);
   }  
 }
 
@@ -1512,7 +1537,7 @@ void triggerSec_4G63(void)
   {
     toothLastSecToothTime = curTime2;
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
-    //addToothLogEntry(curGap, TOOTH_CAM);
+    //addToothLogEntry(curGap, TOOTH_CAM_SECONDARY);
 
     triggerSecFilterTime = curGap2 >> 1; //Basic 50% filter for the secondary reading
     //More aggressive options:

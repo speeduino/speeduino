@@ -215,6 +215,15 @@ void legacySerialCommand(void)
       stopCompositeLoggerTertiary();
       break;      
 
+    case 'X': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerCams();
+      Serial.write(1); //TS needs an acknowledgement that this was received. I don't know if this is the correct response, but it seems to work
+      break;
+
+    case 'x': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerCams();
+      break;  
+
     case 'P': // set the current page
       //This is a legacy function and is no longer used by TunerStudio. It is maintained for compatibility with other systems
       //A 2nd byte of data is required after the 'P' specifying the new page number.
