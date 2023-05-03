@@ -28,7 +28,6 @@
 #include "table2d.h"
 #include "table3d.h"
 #include <assert.h>
-#include "logger.h"
 #include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -228,7 +227,7 @@
 #define BIT_STATUS4_BURNPENDING   4
 #define BIT_STATUS4_STAGING_ACTIVE 5
 #define BIT_STATUS4_COMMS_COMPAT  6
-#define BIT_STATUS4_UNUSED8       7
+#define BIT_STATUS4_ALLOW_LEGACY_COMMS       7
 
 #define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
 #define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
@@ -287,6 +286,7 @@
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
+#define SEC_TRIGGER_5_3_2   3
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -422,15 +422,6 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing
 
 #define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
-
-#ifndef CORE_TEENSY41
-  #define FUEL_PUMP_ON() *pump_pin_port |= (pump_pin_mask)
-  #define FUEL_PUMP_OFF() *pump_pin_port &= ~(pump_pin_mask)
-#else
-  //Special compatibility case for TEENSY 41 (for now)
-  #define FUEL_PUMP_ON() digitalWrite(pinFuelPump, HIGH);
-  #define FUEL_PUMP_OFF() digitalWrite(pinFuelPump, LOW);
-#endif
 
 #define LOGGER_CSV_SEPARATOR_SEMICOLON  0
 #define LOGGER_CSV_SEPARATOR_COMMA      1
@@ -919,7 +910,7 @@ struct config2 {
   byte canVAGCluster : 1;
   byte enableCluster1 : 1;
   byte enableCluster2 : 1;
-  byte unusedClusterBits : 4;
+  byte vssAuxCh : 4;
 
   byte decelAmount;
 
@@ -1143,7 +1134,10 @@ struct config9 {
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_67;
+  
+  byte caninputEndianess:1;
+  //byte unused:2
+  //...
   byte unused10_68;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];

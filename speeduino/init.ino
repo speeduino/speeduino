@@ -94,9 +94,13 @@ void initialiseAll(void)
       } 
     }
     #endif
-    
+  
+    // Unit tests should be independent of any stored configuration on the board!
+#if !defined(UNIT_TEST)
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
+#endif
+
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
@@ -110,6 +114,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
+    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
     #if defined(CANSerial_AVAILABLE)
       if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
     #endif
@@ -3468,6 +3473,26 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
 
       break;
+	  
+	case DECODER_ROVERMEMS:
+      //Rover MEMs - covers multiple flywheel trigger combinations.
+      triggerSetup_RoverMEMS();
+      triggerHandler = triggerPri_RoverMEMS;
+      getRPM = getRPM_RoverMEMS;
+      triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
+            
+      triggerSecondaryHandler = triggerSec_RoverMEMS; 
+      getCrankAngle = getCrankAngle_missingTooth;   
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;   
+	  
 
     case DECODER_DRZ400:
       triggerSetup_DRZ400();
@@ -3522,6 +3547,23 @@ void initialiseTriggers(void)
       
       attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
+
+    case DECODER_RENIX:
+      //Renault 44 tooth decoder
+      triggerSetup_Renix();
+      triggerHandler = triggerPri_Renix;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt 
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;
