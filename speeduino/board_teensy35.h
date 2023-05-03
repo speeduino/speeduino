@@ -16,6 +16,7 @@
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+  #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
@@ -32,7 +33,7 @@
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   #define PWM_FAN_AVAILABLE
-  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbidden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -116,7 +117,7 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   #define ENABLE_BOOST_TIMER()  FTM1_C0SC |= FTM_CSC_CHIE
   #define DISABLE_BOOST_TIMER() FTM1_C0SC &= ~FTM_CSC_CHIE

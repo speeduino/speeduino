@@ -17,15 +17,17 @@ A full copy of the license may be found in the projects root directory
 #include "corrections.h"
 #include "pages.h"
 #include "decoders.h"
+#include "auxiliaries.h"
+#include "utilities.h"
 
 /** Init all ADC conversions by setting resolutions, etc.
  */
-void initialiseADC()
+void initialiseADC(void)
 {
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 
   #if defined(ANALOG_ISR)
-    //This sets the ADC (Analog to Digitial Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
+    //This sets the ADC (Analog to Digital Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
     //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
     //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers
@@ -50,7 +52,7 @@ void initialiseADC()
     BIT_SET(ADCSRA,ADSC); //Start conversion
 
   #else
-    //This sets the ADC (Analog to Digitial Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
+    //This sets the ADC (Analog to Digital Converter) to run at 1Mhz, greatly reducing analog read times (MAP/TPS) when using the standard analogRead() function
     //1Mhz is the fastest speed permitted by the CPU without affecting accuracy
     //Please see chapter 11 of 'Practical Arduino' (books.google.com.au/books?id=HsTxON1L6D4C&printsec=frontcover#v=onepage&q&f=false) for more detail
      BIT_SET(ADCSRA,ADPS2);
@@ -79,7 +81,7 @@ void initialiseADC()
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)  
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 2)))  
     {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-      byte pinNumber = (configPage9.Auxinpina[currentStatus.current_caninchannel]&127);
+      byte pinNumber = pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63);
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
@@ -96,8 +98,8 @@ void initialiseADC()
     else if ((((configPage9.enable_secondarySerial == 1) || ((configPage9.enable_intcan == 1) && (configPage9.intcan_available == 1))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 12)
             || (((configPage9.enable_secondarySerial == 0) && ( (configPage9.enable_intcan == 1) && (configPage9.intcan_available == 0) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)
             || (((configPage9.enable_secondarySerial == 0) && (configPage9.enable_intcan == 0)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3) == 3)))
-    {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) wih &12 and caninput_selxa(bits 0:1) with &3
-       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&127);
+    {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
+       byte pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&63) + 1;
        if( pinIsUsed(pinNumber) )
        {
          //Do nothing here as the pin is already in use.
@@ -131,7 +133,7 @@ void initialiseADC()
   vssIndex = 0;
 }
 
-static inline void validateMAP()
+static inline void validateMAP(void)
 {
   //Error checks
   if(currentStatus.MAP < VALID_MAP_MIN)
@@ -157,7 +159,7 @@ static inline void validateMAP()
   }
 }
 
-static inline void instanteneousMAPReading()
+static inline void instanteneousMAPReading(void)
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
   MAPlast = currentStatus.MAP;
@@ -201,7 +203,7 @@ static inline void instanteneousMAPReading()
 
 }
 
-static inline void readMAP()
+static inline void readMAP(void)
 {
   unsigned int tempReading;
   //MAP Sampling system
@@ -215,7 +217,7 @@ static inline void readMAP()
     case 1:
       //Average of a cycle
 
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) ) //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
       {
         if( (MAPcurRev == currentStatus.startRevolutions) || ( (MAPcurRev+1) == currentStatus.startRevolutions) ) //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
         {
@@ -252,7 +254,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Reaching here means that the last cycle has completed and the MAP value should be calculated
           //Sanity check
           if( (MAPrunningValue != 0) && (MAPcount != 0) )
           {
@@ -314,7 +316,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the last cylce has completed and the MAP value should be calculated
+          //Reaching here means that the last cycle has completed and the MAP value should be calculated
 
           //Update the calculation times and last value. These are used by the MAP based Accel enrich
           MAPlast = currentStatus.MAP;
@@ -338,7 +340,7 @@ static inline void readMAP()
 
     case 3:
       //Average of an ignition event
-      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && (currentStatus.hasSync == true) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
+      if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.startRevolutions > 1) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
       {
         if( (MAPcurRev == ignitionCount) ) //Watch for a change in the ignition counter to determine whether we're still on the same event
         {
@@ -360,7 +362,7 @@ static inline void readMAP()
         }
         else
         {
-          //Reaching here means that the  next ignition event has occured and the MAP value should be calculated
+          //Reaching here means that the  next ignition event has occurred and the MAP value should be calculated
           //Sanity check
           if( (MAPrunningValue != 0) && (MAPcount != 0) && (MAPcurRev < ignitionCount) )
           {
@@ -397,8 +399,7 @@ static inline void readMAP()
 
 void readTPS(bool useFilter)
 {
-  TPSlast = currentStatus.TPS;
-  TPSlast_time = TPS_time;
+  currentStatus.TPSlast = currentStatus.TPS;
   #if defined(ANALOG_ISR)
     byte tempTPS = fastMap1023toX(AnChannel[pinTPS-A0], 255); //Get the current raw TPS ADC value and map it into a byte
   #else
@@ -439,7 +440,6 @@ void readTPS(bool useFilter)
     else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
   }
   else { currentStatus.CTPSActive = 0; }
-  TPS_time = micros();
 }
 
 void readCLT(bool useFilter)
@@ -459,7 +459,7 @@ void readCLT(bool useFilter)
   currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
-void readIAT()
+void readIAT(void)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
@@ -473,7 +473,7 @@ void readIAT()
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
 }
 
-void readBaro()
+void readBaro(void)
 {
   if ( configPage6.useExtBaro != 0 )
   {
@@ -524,7 +524,7 @@ void readBaro()
   }
 }
 
-void readO2()
+void readO2(void)
 {
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0)
@@ -549,7 +549,7 @@ void readO2()
   
 }
 
-void readO2_2()
+void readO2_2(void)
 {
   //Second O2 currently disabled as its not being used
   //Get the current O2 value.
@@ -565,7 +565,7 @@ void readO2_2()
   currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
 }
 
-void readBat()
+void readBat(void)
 {
   int tempReading;
   #if defined(ANALOG_ISR)
@@ -584,10 +584,10 @@ void readBat()
 
   //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
   //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
-  //Should that happen, we retrigger the fuel pump priming and idle homing (If using a stepper)
+  //Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
   if( (currentStatus.battery10 < 55) && (tempReading > 70) && (currentStatus.RPM == 0) )
   {
-    //Reprime the fuel pump
+    //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
     fpPrimed = false;
     FUEL_PUMP_ON();
@@ -595,7 +595,7 @@ void readBat()
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
     {
-      initialiseIdle();
+      initialiseIdle(true);
     }
   }
 
@@ -624,7 +624,7 @@ uint32_t vssGetPulseGap(byte historyIndex)
   return tempGap;
 }
 
-uint16_t getSpeed()
+uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
   // Get VSS from CAN, Serial or Analog by using Aux input channels.
@@ -667,7 +667,7 @@ uint16_t getSpeed()
   return tempSpeed;
 }
 
-byte getGear()
+byte getGear(void)
 {
   byte tempGear = 0; //Unknown gear
   if(currentStatus.vss > 0)
@@ -675,7 +675,7 @@ byte getGear()
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multipled by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
@@ -688,7 +688,7 @@ byte getGear()
   return tempGear;
 }
 
-byte getFuelPressure()
+byte getFuelPressure(void)
 {
   int16_t tempFuelPressure = 0;
   uint16_t tempReading;
@@ -709,7 +709,7 @@ byte getFuelPressure()
   return (byte)tempFuelPressure;
 }
 
-byte getOilPressure()
+byte getOilPressure(void)
 {
   int16_t tempOilPressure = 0;
   uint16_t tempReading;
@@ -736,7 +736,7 @@ byte getOilPressure()
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second
  */
-void flexPulse()
+void flexPulse(void)
 {
   if(READ_FLEX() == true)
   {
@@ -754,7 +754,7 @@ void flexPulse()
  * The interrupt function for pulses from a knock conditioner / controller
  * 
  */
-void knockPulse()
+void knockPulse(void)
 {
   //Check if this the start of a knock. 
   if(knockCounter == 0)
@@ -771,7 +771,7 @@ void knockPulse()
  * @brief The ISR function for VSS pulses
  * 
  */
-void vssPulse()
+void vssPulse(void)
 {
   //TODO: Add basic filtering here
   vssIndex++;

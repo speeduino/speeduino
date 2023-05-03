@@ -18,7 +18,7 @@ static inline table3d_dim_t find_bin_max(
   table3d_dim_t maxElement,     // Axis index of the element with the highest value (at the other end of the array)
   table3d_dim_t lastBinMax)     // The last result from this call - used to speed up searches
 {
-  // Direction to search (1 coventional, -1 to go backwards from pAxis)
+  // Direction to search (1 conventional, -1 to go backwards from pAxis)
   int8_t stride = maxElement>minElement ? 1 : -1;
   // It's quicker to increment/adjust this pointer than to repeatedly 
   // index the array - minimum 2%, often >5%
@@ -82,7 +82,7 @@ static inline table3d_dim_t find_bin_max(
 
 table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
-  return find_bin_max(value, pAxis, 0, size-1, lastBin);
+  return find_bin_max(value, pAxis, size-1, 0, lastBin);
 }
 
 table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
@@ -96,8 +96,8 @@ table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, tabl
 
 // An unsigned fixed point number type with 1 integer bit & 8 fractional bits.
 // See https://en.wikipedia.org/wiki/Q_(number_format).
-// This is specialized for the number range 0..1 - a generic fixed point
-// class would miss some important optimizations. Specifically, we can avoid
+// This is specialised for the number range 0..1 - a generic fixed point
+// class would miss some important optimisations. Specifically, we can avoid
 // type promotion during multiplication.
 typedef uint16_t QU1X8_t;
 static constexpr uint8_t QU1X8_INTEGER_SHIFT = 8;
@@ -114,7 +114,7 @@ inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
     // The overflow can only happen when *both* the X & Y inputs
     // are at the edge of a bin. 
     //
-    // This is a rare condition, so most of the time we can use 16-bit mutiplication and gain performance
+    // This is a rare condition, so most of the time we can use 16-bit multiplication and gain performance
     if (a==QU1X8_ONE && b==QU1X8_ONE)
     {
         return QU1X8_ONE;
@@ -138,7 +138,7 @@ static inline QU1X8_t compute_bin_position(table3d_axis_t value, const table3d_d
   // Since we can have bins of any width, we need to use 
   // 24.8 fixed point to avoid overflow
   uint32_t p = (uint32_t)(value - binMinValue) << QU1X8_INTEGER_SHIFT;
-  // But since we are computing the ratio (0 to 1), p is guarenteed to be
+  // But since we are computing the ratio (0 to 1), p is guaranteed to be
   // less than binWidth and thus the division below will result in a value
   // <=1. So we can reduce the data type from 24.8 (uint32_t) to 1.8 (uint16_t)
   return p / binWidth;  
@@ -185,11 +185,13 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
               C          D
     */
     table3d_dim_t rowMax = pValueCache->lastYBinMax * axisSize;
-    table3d_dim_t rowMin = (pValueCache->lastYBinMax+1) * axisSize;
-    table3d_value_t A = pValues[rowMax + pValueCache->lastXBinMax-1];
-    table3d_value_t B = pValues[rowMax + pValueCache->lastXBinMax];
-    table3d_value_t C = pValues[rowMin + pValueCache->lastXBinMax-1];
-    table3d_value_t D = pValues[rowMin + pValueCache->lastXBinMax];
+    table3d_dim_t rowMin = rowMax + axisSize;
+    table3d_dim_t colMax = axisSize - pValueCache->lastXBinMax - 1;
+    table3d_dim_t colMin = colMax - 1;
+    table3d_value_t A = pValues[rowMax + colMin];
+    table3d_value_t B = pValues[rowMax + colMax];
+    table3d_value_t C = pValues[rowMin + colMin];
+    table3d_value_t D = pValues[rowMin + colMax];
 
     //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
     if( (A == B) && (A == C) && (A == D) ) { pValueCache->lastOutput = A; }
@@ -197,7 +199,7 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
     {
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, 1, pXAxis);
+      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, -1, pXAxis);
       const QU1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBinMax, -1, pYAxis);
 
       const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);

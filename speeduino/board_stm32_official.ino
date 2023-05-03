@@ -30,7 +30,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
       SPIClass SPI_for_flash(PB15, PB14, PB13);
     #endif
  
-    //windbond W25Q16 SPI flash EEPROM emulation
+    //winbond W25Q16 SPI flash EEPROM emulation
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
     Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
@@ -94,8 +94,11 @@ STM32RTC& rtc = STM32RTC::getInstance();
     * Real Time clock for datalogging/time stamping
     */
     #ifdef RTC_ENABLED
-      rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialize external clock for RTC. That is the only clock running of VBAT
-      rtc.begin(); // initialize RTC 24H format
+      //Check if RTC time has been set earlier. If yes, RTC will use LSE_CLOCK. If not, default LSI_CLOCK is used, to prevent hanging on boot.
+      if (rtc.isTimeSet()) {
+        rtc.setClockSource(STM32RTC::LSE_CLOCK); //Initialise external clock for RTC if clock is set. That is the only clock running of VBAT
+      }
+      rtc.begin(); // initialise RTC 24H format
     #endif
     /*
     ***********************************************************************************************************
@@ -142,11 +145,11 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
     /*
     ***********************************************************************************************************
-    * Auxilliaries
+    * Auxiliaries
     */
     //2uS resolution Min 8Hz, Max 5KHz
 
-    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
+    boost_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
     fan_pwm_max_count = 1000000L / (TIMER_RESOLUTION * configPage6.fanFreq * 2); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
 
@@ -278,34 +281,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
-    Timer1.resume();
-    DISABLE_BOOST_TIMER();  //Make sure it is disabled. It's is enabled by default on the library
-    DISABLE_VVT_TIMER();    //Make sure it is disabled. It's is enabled by default on the library
-    IDLE_TIMER_DISABLE();   //Make sure it is disabled. It's is enabled by default on the library
-    Timer2.resume();
-    IGN1_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN2_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN3_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN4_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    Timer3.resume();
-    FUEL1_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL2_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL3_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL4_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    #if (IGN_CHANNELS >= 5)
-    Timer4.resume();
-    IGN5_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN6_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN7_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    IGN8_TIMER_DISABLE(); //Make sure it is disabled. It's is enabled by default on the library
-    #endif
-    #if (INJ_CHANNELS >= 5)
-    Timer5.resume();
-    FUEL5_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL6_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL7_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    FUEL8_TIMER_DISABLE();  //Make sure it is disabled. It's is enabled by default on the library
-    #endif
+
   }
 
   uint16_t freeRam()

@@ -52,10 +52,7 @@ unsigned long EMAPrunningValue; //As above but for EMAP
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
-byte TPSlast; /**< The previous TPS reading */
-unsigned long TPS_time; //The time the TPS sample was taken
-unsigned long TPSlast_time; //The time the previous TPS sample was taken
-byte MAPlast; /**< The previous MAP reading */
+uint16_t MAPlast; /**< The previous MAP reading */
 unsigned long MAP_time; //The time the MAP sample was taken
 unsigned long MAPlast_time; //The time the previous MAP sample was taken
 volatile unsigned long vssTimes[VSS_SAMPLES] = {0};
@@ -74,26 +71,26 @@ byte cltErrorCount = 0;
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 
-static inline void instanteneousMAPReading() __attribute__((always_inline));
-static inline void readMAP() __attribute__((always_inline));
-static inline void validateMAP();
-void initialiseADC();
-void readTPS(bool=true); //Allows the option to override the use of the filter
-void readO2_2();
-void flexPulse();
-uint32_t vssGetPulseGap(byte);
-void vssPulse();
-uint16_t getSpeed();
-byte getGear();
-byte getFuelPressure();
-byte getOilPressure();
+static inline void instanteneousMAPReading(void) __attribute__((always_inline));
+static inline void readMAP(void) __attribute__((always_inline));
+static inline void validateMAP(void);
+void initialiseADC(void);
+void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
+void readO2_2(void);
+void flexPulse(void);
+uint32_t vssGetPulseGap(byte toothHistoryIndex);
+void vssPulse(void);
+uint16_t getSpeed(void);
+byte getGear(void);
+byte getFuelPressure(void);
+byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
-void readCLT(bool=true); //Allows the option to override the use of the filter
-void readIAT();
-void readO2();
-void readBat();
-void readBaro();
+void readCLT(bool useFilter=true); //Allows the option to override the use of the filter
+void readIAT(void);
+void readO2(void);
+void readBat(void);
+void readBaro(void);
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];
