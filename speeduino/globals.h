@@ -905,7 +905,7 @@ struct config2 {
   byte canVAGCluster : 1;
   byte enableCluster1 : 1;
   byte enableCluster2 : 1;
-  byte unusedClusterBits : 4;
+  byte vssAuxCh : 4;
 
   byte decelAmount;
 
