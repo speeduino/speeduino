@@ -67,45 +67,45 @@
   #define IGN7_COMPARE  <register here>
   #define IGN8_COMPARE  <register here>
 
-  #define FUEL1_TIMER_ENABLE() <macro here>
-  #define FUEL2_TIMER_ENABLE() <macro here>
-  #define FUEL3_TIMER_ENABLE() <macro here>
-  #define FUEL4_TIMER_ENABLE() <macro here>
+  static void FUEL1_TIMER_ENABLE() { <macro here>; }
+  static void FUEL2_TIMER_ENABLE() { <macro here>; }
+  static void FUEL3_TIMER_ENABLE() { <macro here>; }
+  static void FUEL4_TIMER_ENABLE() { <macro here>; }
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_TIMER_ENABLE() <macro here>
-  #define FUEL6_TIMER_ENABLE() <macro here>
-  #define FUEL7_TIMER_ENABLE() <macro here>
-  #define FUEL8_TIMER_ENABLE() <macro here>
+  static void FUEL5_TIMER_ENABLE() { <macro here>; }
+  static void FUEL6_TIMER_ENABLE() { <macro here>; }
+  static void FUEL7_TIMER_ENABLE() { <macro here>; }
+  static void FUEL8_TIMER_ENABLE() { <macro here>; }
 
-  #define FUEL1_TIMER_DISABLE() <macro here>
-  #define FUEL2_TIMER_DISABLE() <macro here>
-  #define FUEL3_TIMER_DISABLE() <macro here>
-  #define FUEL4_TIMER_DISABLE() <macro here>
+  static void FUEL1_TIMER_DISABLE() { <macro here>; }
+  static void FUEL2_TIMER_DISABLE() { <macro here>; }
+  static void FUEL3_TIMER_DISABLE() { <macro here>; }
+  static void FUEL4_TIMER_DISABLE() { <macro here>; }
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_TIMER_DISABLE() <macro here>
-  #define FUEL6_TIMER_DISABLE() <macro here>
-  #define FUEL7_TIMER_DISABLE() <macro here>
-  #define FUEL8_TIMER_DISABLE() <macro here>
+  static void FUEL5_TIMER_DISABLE() { <macro here>; }
+  static void FUEL6_TIMER_DISABLE() { <macro here>; }
+  static void FUEL7_TIMER_DISABLE() { <macro here>; }
+  static void FUEL8_TIMER_DISABLE() { <macro here>; }
 
-  #define IGN1_TIMER_ENABLE() <macro here>
-  #define IGN2_TIMER_ENABLE() <macro here>
-  #define IGN3_TIMER_ENABLE() <macro here>
-  #define IGN4_TIMER_ENABLE() <macro here>
+  static void IGN1_TIMER_ENABLE() { <macro here>; }
+  static void IGN2_TIMER_ENABLE() { <macro here>; }
+  static void IGN3_TIMER_ENABLE() { <macro here>; }
+  static void IGN4_TIMER_ENABLE() { <macro here>; }
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_TIMER_ENABLE() <macro here>
-  #define IGN6_TIMER_ENABLE() <macro here>
-  #define IGN7_TIMER_ENABLE() <macro here>
-  #define IGN8_TIMER_ENABLE() <macro here>
+  static void IGN5_TIMER_ENABLE() { <macro here>; }
+  static void IGN6_TIMER_ENABLE() { <macro here>; }
+  static void IGN7_TIMER_ENABLE() { <macro here>; }
+  static void IGN8_TIMER_ENABLE() { <macro here>; }
 
-  #define IGN1_TIMER_DISABLE() <macro here>
-  #define IGN2_TIMER_DISABLE() <macro here>
-  #define IGN3_TIMER_DISABLE() <macro here>
-  #define IGN4_TIMER_DISABLE() <macro here>
+  static void IGN1_TIMER_DISABLE() { <macro here>; }
+  static void IGN2_TIMER_DISABLE() { <macro here>; }
+  static void IGN3_TIMER_DISABLE() { <macro here>; }
+  static void IGN4_TIMER_DISABLE() { <macro here>; }
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_TIMER_DISABLE() <macro here>
-  #define IGN6_TIMER_DISABLE() <macro here>
-  #define IGN7_TIMER_DISABLE() <macro here>
-  #define IGN8_TIMER_DISABLE() <macro here>
+  static void IGN5_TIMER_DISABLE() { <macro here>; }
+  static void IGN6_TIMER_DISABLE() { <macro here>; }
+  static void IGN7_TIMER_DISABLE() { <macro here>; }
+  static void IGN8_TIMER_DISABLE() { <macro here>; }
 
   
   #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
