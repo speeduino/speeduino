@@ -111,16 +111,15 @@ void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16
       injectorEndAngle += CRANK_ANGLE_MAX_INJ; //calculate into the next cycle
     } 
   endTimeout=(injectorEndAngle - crankAngle) * (unsigned long)timePerDegree;
-  
+  //endTimeout=angleToTime((injectorEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
+  noInterrupts(); // make sure start and end values are updated simultaneously and that schedule do not change state 
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
     if((endTimeout < MAX_TIMER_PERIOD) && (endTimeout > duration + INJECTION_REFRESH_TRESHOLD)) //Need to check that the timeout doesn't exceed the overflow, also allow for fixed safety between setting the schedule and running it
-    {      
-      noInterrupts(); // make sure start and end values are updated simultaneously
+    {          
       targetSchedule->endCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout)); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)   
       targetSchedule->setCompare(targetSchedule->endCompare - (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(duration))); // set pulse start Compare value
       targetSchedule->Status = PENDING; //Turn this schedule on
-      interrupts(); 
       targetSchedule->timerEnable();
     }
   }
@@ -128,17 +127,23 @@ void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16
   {
     //If the schedule is already running, we can set the next schedule so it is ready to go
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+    interrupts();
     injectorEndAngle += CRANK_ANGLE_MAX_INJ;
     endTimeout=(injectorEndAngle - crankAngle) * (unsigned long)timePerDegree;
-      if((endTimeout < MAX_TIMER_PERIOD) && (endTimeout > duration + INJECTION_REFRESH_TRESHOLD)&&((COMPARE_TYPE)(targetSchedule->endCompare-targetSchedule->getCounter())>uS_TO_TIMER_COMPARE(INJECTION_REFRESH_TRESHOLD)))
+    //endTimeout=angleToTime((injectorEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
+    noInterrupts();
+      if(endTimeout >= MAX_TIMER_PERIOD/2) //use half of the maximum period here because next schedule is really only used at high RPM
       {
-      noInterrupts();
-      targetSchedule->nextEndCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout));
-      targetSchedule->nextStartCompare = targetSchedule->nextEndCompare - (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(duration));      
-      targetSchedule->hasNextSchedule = true;
-      interrupts();
+        targetSchedule->hasNextSchedule = false;
+      }
+      else if ((endTimeout > duration + INJECTION_REFRESH_TRESHOLD)&&((COMPARE_TYPE)(targetSchedule->endCompare-targetSchedule->getCounter()) > (COMPARE_TYPE)uS_TO_TIMER_COMPARE(INJECTION_REFRESH_TRESHOLD)))
+      {
+        targetSchedule->nextEndCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout));
+        targetSchedule->nextStartCompare = targetSchedule->nextEndCompare - (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(duration));      
+        targetSchedule->hasNextSchedule = true;      
       }
   }
+  interrupts();
 }
 
 //separate function for setting the fuel schedules at priming
