@@ -692,10 +692,6 @@ void processSerialCommand(void)
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> VVTImprovements
     /*
     * New method for sending page values (MS command equivalent is 'r')
     */
