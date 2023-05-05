@@ -123,12 +123,13 @@ void loop(void)
       #if defined (NATIVE_CAN_AVAILABLE)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
-          {
+          {            
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
             {
               can_Command();
+              readAuxCanBus();
               //Can0.read(inMsg);
               //currentStatus.canin[12] = inMsg.buf[5];
               //currentStatus.canin[13] = inMsg.id;
@@ -308,6 +309,7 @@ void loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+        syncSDLog(); //Sync the SD log file to the card 4 times per second. 
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
