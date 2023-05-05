@@ -251,10 +251,13 @@
 #define IAT_CALIBRATION_PAGE  1U
 #define CLT_CALIBRATION_PAGE  0U
 
+// note the sequence of these defines which refernce the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
-#define COMPOSITE_LOG_TRIG 2
-#define COMPOSITE_LOG_SYNC 3
+#define COMPOSITE_LOG_THIRD 2 
+#define COMPOSITE_LOG_TRIG 3
+#define COMPOSITE_LOG_SYNC 4
+#define COMPOSITE_ENGINE_CYCLE 5
 
 #define EGO_TYPE_OFF      0
 #define EGO_TYPE_NARROW   1
@@ -283,7 +286,8 @@
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
-#define SEC_TRIGGER_TOYOTA_3 3
+#define SEC_TRIGGER_5_3_2   3
+#define SEC_TRIGGER_TOYOTA  4
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -723,7 +727,7 @@ struct statuses {
   byte knockRetard;
   bool knockActive;
   bool toothLogEnabled;
-  byte compositeLogEnabled; // false means composite logger disabled, 2 means use secondary input (1st cam) 3 means use tertiary input (2nd cam) 4 means log both cams together
+  byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
   int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
@@ -907,7 +911,7 @@ struct config2 {
   byte canVAGCluster : 1;
   byte enableCluster1 : 1;
   byte enableCluster2 : 1;
-  byte unusedClusterBits : 4;
+  byte vssAuxCh : 4;
 
   byte decelAmount;
 
@@ -1131,7 +1135,10 @@ struct config9 {
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_67;
+  
+  byte caninputEndianess:1;
+  //byte unused:2
+  //...
   byte unused10_68;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];

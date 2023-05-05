@@ -123,12 +123,13 @@ void loop(void)
       #if defined (NATIVE_CAN_AVAILABLE)
           //currentStatus.canin[12] = configPage9.enable_intcan;
           if (configPage9.enable_intcan == 1) // use internal can module
-          {
+          {            
             //check local can module
             // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
             while (Can0.read(inMsg) ) 
             {
               can_Command();
+              readAuxCanBus();
               //Can0.read(inMsg);
               //currentStatus.canin[12] = inMsg.buf[5];
               //currentStatus.canin[13] = inMsg.id;
@@ -187,7 +188,7 @@ void loop(void)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
-      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeLogEnabled == false) ) { initialiseTriggers(); }
+      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { initialiseTriggers(); }
 
       VVT1_PIN_LOW();
       VVT2_PIN_LOW();
@@ -308,6 +309,7 @@ void loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+        syncSDLog(); //Sync the SD log file to the card 4 times per second. 
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();

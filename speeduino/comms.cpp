@@ -692,7 +692,10 @@ void processSerialCommand(void)
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> VVTImprovements
     /*
     * New method for sending page values (MS command equivalent is 'r')
     */
@@ -868,7 +871,7 @@ void processSerialCommand(void)
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       logItemsTransmitted = 0;
       if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled != false) { sendCompositeLog(); }
+      else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog(); }
       else { /* MISRA no-op */ }
       break;
 

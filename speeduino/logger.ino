@@ -366,7 +366,7 @@ bool is2ByteEntry(uint8_t key)
 void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
-  currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+  currentStatus.compositeTriggerUsed = 0; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
 
@@ -392,7 +392,7 @@ void stopToothLogger(void)
 
 void startCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = 2;
+  currentStatus.compositeTriggerUsed = 2;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
@@ -407,7 +407,7 @@ void startCompositeLogger(void)
 
 void stopCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = false;
+  currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -419,7 +419,7 @@ void stopCompositeLogger(void)
 
 void startCompositeLoggerTertiary(void)
 {
-  currentStatus.compositeLogEnabled = 3;
+  currentStatus.compositeTriggerUsed = 3;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
@@ -434,7 +434,7 @@ void startCompositeLoggerTertiary(void)
 
 void stopCompositeLoggerTertiary(void)
 {
-  currentStatus.compositeLogEnabled = false;
+  currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -447,7 +447,7 @@ void stopCompositeLoggerTertiary(void)
 
 void startCompositeLoggerCams(void)
 {
-  currentStatus.compositeLogEnabled = 4;
+  currentStatus.compositeTriggerUsed = 4;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
@@ -462,7 +462,7 @@ void startCompositeLoggerCams(void)
 
 void stopCompositeLoggerCams(void)
 {
-  currentStatus.compositeLogEnabled = false;
+  currentStatus.compositeTriggerUsed = false;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger2) );

@@ -627,10 +627,20 @@ uint32_t vssGetPulseGap(byte historyIndex)
 uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
-
+  // Get VSS from CAN, Serial or Analog by using Aux input channels.
   if(configPage2.vssMode == 1)
   {
-    //VSS mode 1 is (Will be) CAN
+    // Direct reading from Aux channel
+    if (configPage2.vssPulsesPerKm == 0)
+    {
+      tempSpeed = currentStatus.canin[configPage2.vssAuxCh];
+    }
+    // Adjust the reading by dividing it by set amount.
+    else
+    {
+      tempSpeed = (currentStatus.canin[configPage2.vssAuxCh] / configPage2.vssPulsesPerKm);
+    }
+    tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
   // Interrupt driven mode
   else if(configPage2.vssMode > 1)
