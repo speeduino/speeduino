@@ -170,6 +170,40 @@ void initialiseSchedulers(void)
     channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
     channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
     channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */    
+
+    inj1StartFunction = nullCallback;
+    inj1EndFunction = nullCallback;
+    inj2StartFunction = nullCallback;
+    inj2EndFunction = nullCallback;
+    inj3StartFunction = nullCallback;
+    inj3EndFunction = nullCallback;
+    inj4StartFunction = nullCallback;
+    inj4EndFunction = nullCallback;
+    inj5StartFunction = nullCallback;
+    inj5EndFunction = nullCallback;
+    inj6StartFunction = nullCallback;
+    inj6EndFunction = nullCallback;
+    inj7StartFunction = nullCallback;
+    inj7EndFunction = nullCallback;
+    inj8StartFunction = nullCallback;
+    inj8EndFunction = nullCallback;
+
+    ign1StartFunction = nullCallback;
+    ign1EndFunction = nullCallback;
+    ign2StartFunction = nullCallback;
+    ign2EndFunction = nullCallback;
+    ign3StartFunction = nullCallback;
+    ign3EndFunction = nullCallback;
+    ign4StartFunction = nullCallback;
+    ign4EndFunction = nullCallback;
+    ign5StartFunction = nullCallback;
+    ign5EndFunction = nullCallback;
+    ign6StartFunction = nullCallback;
+    ign6EndFunction = nullCallback;
+    ign7StartFunction = nullCallback;
+    ign7EndFunction = nullCallback;
+    ign8StartFunction = nullCallback;
+    ign8EndFunction = nullCallback;
 }
 
 /*
