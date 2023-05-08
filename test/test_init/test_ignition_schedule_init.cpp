@@ -4,6 +4,7 @@
 #include "init.h"
 #include "schedule_calcs.h"
 #include "scheduledIO.h"
+#include "..\test_utils.h"
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, void (*startFunction)(void), void (*endFunction)(void))
 {
@@ -203,11 +204,11 @@ static void test_ignition_schedule_8_cylinder(void)
 
 void testIgnitionScheduleInit()
 {
-    RUN_TEST(test_ignition_schedule_1_cylinder);
-    RUN_TEST(test_ignition_schedule_2_cylinder);
-    RUN_TEST(test_ignition_schedule_3_cylinder);
-    RUN_TEST(test_ignition_schedule_4_cylinder);
-    RUN_TEST(test_ignition_schedule_5_cylinder);
-    RUN_TEST(test_ignition_schedule_6_cylinder);
-    RUN_TEST(test_ignition_schedule_8_cylinder);
+    RUN_TEST_P(test_ignition_schedule_1_cylinder);
+    RUN_TEST_P(test_ignition_schedule_2_cylinder);
+    RUN_TEST_P(test_ignition_schedule_3_cylinder);
+    RUN_TEST_P(test_ignition_schedule_4_cylinder);
+    RUN_TEST_P(test_ignition_schedule_5_cylinder);
+    RUN_TEST_P(test_ignition_schedule_6_cylinder);
+    RUN_TEST_P(test_ignition_schedule_8_cylinder);
 }

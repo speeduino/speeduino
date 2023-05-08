@@ -4,6 +4,7 @@
 #include "init.h"
 #include "schedule_calcs.h"
 #include "scheduledIO.h"
+#include "..\test_utils.h"
 
 extern uint16_t req_fuel_uS;
 
@@ -621,15 +622,15 @@ void test_fuel_schedule_8_cylinder_4stroke(void)
 
 void testFuelScheduleInit()
 {
-    RUN_TEST(test_fuel_schedule_1_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_1_cylinder_2stroke);
-    RUN_TEST(test_fuel_schedule_2_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_2_cylinder_2stroke);
-    RUN_TEST(test_fuel_schedule_3_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_3_cylinder_2stroke);
-    RUN_TEST(test_fuel_schedule_4_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_4_cylinder_2stroke);
-    RUN_TEST(test_fuel_schedule_5_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_6_cylinder_4stroke);
-    RUN_TEST(test_fuel_schedule_8_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_1_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_1_cylinder_2stroke);
+    RUN_TEST_P(test_fuel_schedule_2_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_2_cylinder_2stroke);
+    RUN_TEST_P(test_fuel_schedule_3_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_3_cylinder_2stroke);
+    RUN_TEST_P(test_fuel_schedule_4_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_4_cylinder_2stroke);
+    RUN_TEST_P(test_fuel_schedule_5_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_6_cylinder_4stroke);
+    RUN_TEST_P(test_fuel_schedule_8_cylinder_4stroke);
 }
