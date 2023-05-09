@@ -719,6 +719,109 @@ void run_8_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder8_stroke4_seq_no_stage);
 }
 
+static constexpr uint16_t zeroAngles[] = {0,0,0,0,0,0,0,0};
+
+static void cylinder_1_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 1;
+  configPage2.divider = 1;
+
+  initialiseAll(); //Run the main initialise function
+
+  const bool enabled[] = {true, false, false, false, false, false, false, false};
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);  
+}
+
+static void cylinder_2_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 2;
+  configPage2.divider = 2;
+
+  initialiseAll(); //Run the main initialise function
+
+  const bool enabled[] = {true, true, false, false, false, false, false, false};
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void cylinder_3_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 3;
+  configPage2.divider = 3;
+
+  initialiseAll(); //Run the main initialise function
+
+  const bool enabled[] = {true, true, true, false, false, false, false, false};
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void cylinder_4_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 4;
+  configPage2.divider = 4;
+
+  initialiseAll(); //Run the main initialise function
+
+  const bool enabled[] = {true, true, false, false, false, false, false, false};
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void cylinder_5_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 5;
+  configPage2.divider = 5;
+
+  initialiseAll(); //Run the main initialise function
+
+#if INJ_CHANNELS>=5  
+  const bool enabled[] = {true, true, true, true, true, false, false, false};
+#else
+  const bool enabled[] = {true, true, true, true, false, false, false, false};
+#endif
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void cylinder_6_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 6;
+  configPage2.divider = 6;
+
+  initialiseAll(); //Run the main initialise function
+
+  const bool enabled[] = {true, true, true, false, false, false, false, false};
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void cylinder_8_NoinjTiming_paired(void) {
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 8;
+  configPage2.divider = 8;
+
+  initialiseAll(); //Run the main initialise function
+
+#if INJ_CHANNELS>=8  
+  const bool enabled[] = {true, true, true, true, true, true, true, true};
+#else
+  const bool enabled[] = {true, true, true, true, false, false, false, false};
+#endif
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+}
+
+static void run_no_inj_timing_tests(void)
+{
+  configPage2.strokes = FOUR_STROKE;
+  configPage2.engineType = EVEN_FIRE;
+  configPage2.injTiming = false;
+  configPage2.reqFuel = reqFuel;
+  configPage10.stagingEnabled = false;
+
+  RUN_TEST_P(cylinder_1_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_2_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_3_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_4_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_5_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_6_NoinjTiming_paired);
+  RUN_TEST_P(cylinder_8_NoinjTiming_paired);
+}
 
 void testFuelScheduleInit()
 {
@@ -733,4 +836,6 @@ void testFuelScheduleInit()
   run_5_cylinder_4stroke_tests();
   run_6_cylinder_4stroke_tests();
   run_8_cylinder_4stroke_tests();
+
+  run_no_inj_timing_tests();
 }
