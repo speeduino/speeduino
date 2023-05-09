@@ -56,9 +56,10 @@ static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle,
 #endif 
 }
 
-static void cylinder1_stroke4_seq_no_stage(void)
+static void cylinder1_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
@@ -66,9 +67,10 @@ static void cylinder1_stroke4_seq_no_stage(void)
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 }
 
-static void cylinder1_stroke4_semiseq_no_stage(void)
+static void cylinder1_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
@@ -76,9 +78,10 @@ static void cylinder1_stroke4_semiseq_no_stage(void)
   assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
 }
 
-static void cylinder1_stroke4_seq_with_stage(void)
+static void cylinder1_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
@@ -86,9 +89,10 @@ static void cylinder1_stroke4_seq_with_stage(void)
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder1_stroke4_semiseq_with_stage(void)
+static void cylinder1_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
@@ -101,54 +105,57 @@ static void run_1_cylinder_4stroke_tests(void)
   configPage2.nCylinders = 1;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
-  configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel; 
   configPage2.divider = 1;
 
-  RUN_TEST_P(cylinder1_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder1_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder1_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder1_stroke4_semiseq_with_stage);
+  RUN_TEST_P(cylinder1_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder1_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder1_stroke4_seq_staged);
+  RUN_TEST_P(cylinder1_stroke4_semiseq_staged);
 }
 
-static void cylinder1_stroke2_seq_no_stage(void)
+static void cylinder1_stroke2_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
   const bool enabled[] = {true, false, false, false, false, false, false, false};
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, reqFuel * 100U, enabled, angle);  
-  }
+}
 
-static void cylinder1_stroke2_semiseq_no_stage(void)
+static void cylinder1_stroke2_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder1_stroke2_seq_with_stage(void)
+static void cylinder1_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder1_stroke2_semiseq_with_stage(void)
-  {
+static void cylinder1_stroke2_semiseq_staged(void)
+{
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-    assert_fuel_schedules(360U, reqFuel * 100U, enabled, angle);  
+  const bool enabled[] = {true, true, false, false, false, false, false, false};
+  const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+  assert_fuel_schedules(360U, reqFuel * 100U, enabled, angle);  
 }
 
 static void run_1_cylinder_2stroke_tests(void)
@@ -156,49 +163,52 @@ static void run_1_cylinder_2stroke_tests(void)
   configPage2.nCylinders = 1;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
-  configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 1;
 
-  RUN_TEST_P(cylinder1_stroke2_seq_no_stage);
-  RUN_TEST_P(cylinder1_stroke2_semiseq_no_stage);
-  RUN_TEST_P(cylinder1_stroke2_seq_with_stage);
-  RUN_TEST_P(cylinder1_stroke2_semiseq_with_stage);
+  RUN_TEST_P(cylinder1_stroke2_seq_nostage);
+  RUN_TEST_P(cylinder1_stroke2_semiseq_nostage);
+  RUN_TEST_P(cylinder1_stroke2_seq_staged);
+  RUN_TEST_P(cylinder1_stroke2_semiseq_staged);
 }
 
-static void cylinder2_stroke4_seq_no_stage(void)
+static void cylinder2_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke4_semiseq_no_stage(void)
+static void cylinder2_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke4_seq_with_stage(void)
+static void cylinder2_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke4_semiseq_with_stage(void)
+static void cylinder2_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
@@ -211,50 +221,53 @@ static void run_2_cylinder_4stroke_tests(void)
   configPage2.nCylinders = 2;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
-  configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 1;
 
-  RUN_TEST_P(cylinder2_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder2_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder2_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder2_stroke4_semiseq_with_stage);
+  RUN_TEST_P(cylinder2_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder2_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder2_stroke4_seq_staged);
+  RUN_TEST_P(cylinder2_stroke4_semiseq_staged);
 }
 
 
-static void cylinder2_stroke2_seq_no_stage(void)
+static void cylinder2_stroke2_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke2_semiseq_no_stage(void)
+static void cylinder2_stroke2_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke2_seq_with_stage(void)
+static void cylinder2_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder2_stroke2_semiseq_with_stage(void)
+static void cylinder2_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
@@ -267,39 +280,41 @@ static void run_2_cylinder_2stroke_tests(void)
   configPage2.nCylinders = 2;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
-  configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 1;
 
-  RUN_TEST_P(cylinder2_stroke2_seq_no_stage);
-  RUN_TEST_P(cylinder2_stroke2_semiseq_no_stage);
-  RUN_TEST_P(cylinder2_stroke2_seq_with_stage);
-  RUN_TEST_P(cylinder2_stroke2_semiseq_with_stage);
+  RUN_TEST_P(cylinder2_stroke2_seq_nostage);
+  RUN_TEST_P(cylinder2_stroke2_semiseq_nostage);
+  RUN_TEST_P(cylinder2_stroke2_seq_staged);
+  RUN_TEST_P(cylinder2_stroke2_semiseq_staged);
 }
 
-static void cylinder3_stroke4_seq_no_stage(void)
+static void cylinder3_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
 	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
-  }
+}
 
-static void cylinder3_stroke4_semiseq_no_stage(void)
+static void cylinder3_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
 	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
   assert_fuel_schedules(240U, reqFuel * 50U, enabled, angle);
-  }
+}
 
-static void cylinder3_stroke4_seq_with_stage(void)
+static void cylinder3_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.injTiming = true;
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
@@ -311,9 +326,9 @@ static void cylinder3_stroke4_seq_with_stage(void)
 	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 #endif
-  }
+}
 
-static void cylinder3_stroke4_semiseq_with_stage(void)
+static void cylinder3_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -334,17 +349,16 @@ static void run_3_cylinder_4stroke_tests(void)
   configPage2.nCylinders = 3;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
-  configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 1;
 
-  RUN_TEST_P(cylinder3_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder3_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder3_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder3_stroke4_semiseq_with_stage);
+  RUN_TEST_P(cylinder3_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder3_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder3_stroke4_seq_staged);
+  RUN_TEST_P(cylinder3_stroke4_semiseq_staged);
 }
 
-static void cylinder3_stroke2_seq_no_stage(void)
+static void cylinder3_stroke2_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -354,7 +368,7 @@ static void cylinder3_stroke2_seq_no_stage(void)
   assert_fuel_schedules(120U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder3_stroke2_semiseq_no_stage(void)
+static void cylinder3_stroke2_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -364,7 +378,7 @@ static void cylinder3_stroke2_semiseq_no_stage(void)
   assert_fuel_schedules(120U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder3_stroke2_seq_with_stage(void)
+static void cylinder3_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -380,7 +394,7 @@ static void cylinder3_stroke2_seq_with_stage(void)
 #endif
   }
 
-static void cylinder3_stroke2_semiseq_with_stage(void)
+static void cylinder3_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -405,13 +419,13 @@ static void run_3_cylinder_2stroke_tests(void)
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 1;
  
-  RUN_TEST_P(cylinder3_stroke2_seq_no_stage);
-  RUN_TEST_P(cylinder3_stroke2_semiseq_no_stage);
-  RUN_TEST_P(cylinder3_stroke2_seq_with_stage);
-  RUN_TEST_P(cylinder3_stroke2_semiseq_with_stage);
+  RUN_TEST_P(cylinder3_stroke2_seq_nostage);
+  RUN_TEST_P(cylinder3_stroke2_semiseq_nostage);
+  RUN_TEST_P(cylinder3_stroke2_seq_staged);
+  RUN_TEST_P(cylinder3_stroke2_semiseq_staged);
 }
 
-static void cylinder4_stroke4_seq_no_stage(void)
+static void cylinder4_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -421,7 +435,7 @@ static void cylinder4_stroke4_seq_no_stage(void)
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder4_stroke4_semiseq_no_stage(void)
+static void cylinder4_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -431,7 +445,7 @@ static void cylinder4_stroke4_semiseq_no_stage(void)
   assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-static void cylinder4_stroke4_seq_with_stage(void)
+static void cylinder4_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -451,7 +465,7 @@ static void cylinder4_stroke4_seq_with_stage(void)
 #endif
   }
 
-static void cylinder4_stroke4_semiseq_with_stage(void)  
+static void cylinder4_stroke4_semiseq_staged(void)  
 {
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
@@ -470,13 +484,13 @@ void run_4_cylinder_4stroke_tests(void)
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 2;
 
-  RUN_TEST_P(cylinder4_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder4_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder4_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder4_stroke4_semiseq_with_stage);  
+  RUN_TEST_P(cylinder4_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder4_stroke4_seq_staged);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_staged);  
 }
 
-static void cylinder4_stroke2_seq_no_stage(void)
+static void cylinder4_stroke2_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -486,7 +500,7 @@ static void cylinder4_stroke2_seq_no_stage(void)
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder4_stroke2_semiseq_no_stage(void)
+static void cylinder4_stroke2_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -496,7 +510,7 @@ static void cylinder4_stroke2_semiseq_no_stage(void)
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
   }
 
-static void cylinder4_stroke2_seq_with_stage(void)
+static void cylinder4_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -516,7 +530,7 @@ static void cylinder4_stroke2_seq_with_stage(void)
 #endif
   }
 
-static void cylinder4_stroke2_semiseq_with_stage(void)
+static void cylinder4_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
@@ -535,13 +549,13 @@ void run_4_cylinder_2stroke_tests(void)
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 2;
 
-  RUN_TEST_P(cylinder4_stroke2_seq_no_stage);
-  RUN_TEST_P(cylinder4_stroke2_semiseq_no_stage);
-  RUN_TEST_P(cylinder4_stroke2_seq_with_stage);
-  RUN_TEST_P(cylinder4_stroke2_semiseq_with_stage);  
+  RUN_TEST_P(cylinder4_stroke2_seq_nostage);
+  RUN_TEST_P(cylinder4_stroke2_semiseq_nostage);
+  RUN_TEST_P(cylinder4_stroke2_seq_staged);
+  RUN_TEST_P(cylinder4_stroke2_semiseq_staged);  
 }
 
-static void cylinder5_stroke4_seq_no_stage(void)
+static void cylinder5_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -558,7 +572,7 @@ static void cylinder5_stroke4_seq_no_stage(void)
   }
 
 
-static void cylinder5_stroke4_semiseq_no_stage(void)
+static void cylinder5_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -568,7 +582,7 @@ static void cylinder5_stroke4_semiseq_no_stage(void)
   assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
   }
 
-static void cylinder5_stroke4_seq_with_stage(void)
+static void cylinder5_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -584,7 +598,7 @@ static void cylinder5_stroke4_seq_with_stage(void)
 #endif
   }
 
-static void cylinder5_stroke4_semiseq_with_stage(void) 
+static void cylinder5_stroke4_semiseq_staged(void) 
 {
   configPage2.injLayout = INJ_PAIRED;
   configPage10.stagingEnabled = true;
@@ -609,13 +623,13 @@ void run_5_cylinder_4stroke_tests(void)
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 5;
 
-  RUN_TEST_P(cylinder5_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder5_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder5_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder5_stroke4_semiseq_with_stage); 
+  RUN_TEST_P(cylinder5_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder5_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder5_stroke4_seq_staged);
+  RUN_TEST_P(cylinder5_stroke4_semiseq_staged); 
 }
 
-static void cylinder6_stroke4_seq_no_stage(void)
+static void cylinder6_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -631,7 +645,7 @@ static void cylinder6_stroke4_seq_no_stage(void)
 #endif
   }
 
-static void cylinder6_stroke4_semiseq_no_stage(void)
+static void cylinder6_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -641,7 +655,7 @@ static void cylinder6_stroke4_semiseq_no_stage(void)
   assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
   }
 
-static void cylinder6_stroke4_seq_with_stage(void)
+static void cylinder6_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -658,7 +672,7 @@ static void cylinder6_stroke4_seq_with_stage(void)
   }
 
 
-static void cylinder6_stroke4_semiseq_with_stage(void)
+static void cylinder6_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = true;
@@ -683,13 +697,13 @@ void run_6_cylinder_4stroke_tests(void)
   configPage2.reqFuel = reqFuel;
   configPage2.divider = 6;
 
-  RUN_TEST_P(cylinder6_stroke4_seq_no_stage);
-  RUN_TEST_P(cylinder6_stroke4_semiseq_no_stage);
-  RUN_TEST_P(cylinder6_stroke4_seq_with_stage);
-  RUN_TEST_P(cylinder6_stroke4_semiseq_with_stage); 
+  RUN_TEST_P(cylinder6_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder6_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder6_stroke4_seq_staged);
+  RUN_TEST_P(cylinder6_stroke4_semiseq_staged); 
 }
 
-static void cylinder8_stroke4_seq_no_stage(void)
+static void cylinder8_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
@@ -716,7 +730,7 @@ void run_8_cylinder_4stroke_tests(void)
 
   // Staging not supported on 8 cylinders
 
-  RUN_TEST_P(cylinder8_stroke4_seq_no_stage);
+  RUN_TEST_P(cylinder8_stroke4_seq_nostage);
 }
 
 static constexpr uint16_t zeroAngles[] = {0,0,0,0,0,0,0,0};
@@ -823,6 +837,55 @@ static void run_no_inj_timing_tests(void)
   RUN_TEST_P(cylinder_8_NoinjTiming_paired);
 }
 
+static void cylinder_2_oddfire(void)
+{
+  configPage2.injLayout = INJ_PAIRED;
+  configPage2.nCylinders = 2;
+  configPage2.divider = 2;
+
+  initialiseAll(); //Run the main initialise function
+
+	const bool enabled[] = {true, true, false, false, false, false, false, false};
+	const uint16_t angle[] = {0,13,0,0,0,0,0,0};
+  Serial.println(configPage2.engineType);
+  assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
+}
+
+static void run_oddfire_tests()
+{
+  configPage2.strokes = FOUR_STROKE;
+  configPage2.engineType = ODD_FIRE;
+  configPage2.injTiming = true;
+  configPage2.reqFuel = reqFuel;
+  configPage10.stagingEnabled = false;
+  configPage2.oddfire2 = 13;
+  configPage2.oddfire3 = 111;
+  configPage2.oddfire4 = 217;
+
+  // Oddfire only affects 2 cylinder configurations
+  configPage2.nCylinders = 1;
+  configPage2.divider = 1;
+  RUN_TEST_P(cylinder1_stroke4_seq_nostage);
+
+  RUN_TEST_P(cylinder_2_oddfire);
+
+  configPage2.nCylinders = 3;
+  configPage2.divider = 1;
+  RUN_TEST_P(cylinder3_stroke4_seq_nostage);
+  configPage2.nCylinders = 4;
+  configPage2.divider = 2;
+  RUN_TEST_P(cylinder4_stroke4_seq_nostage);
+  configPage2.nCylinders = 5;
+  configPage2.divider = 5;
+  RUN_TEST_P(cylinder5_stroke4_seq_nostage);
+  configPage2.nCylinders = 6;
+  configPage2.divider = 6;
+  RUN_TEST_P(cylinder6_stroke4_seq_nostage);
+  configPage2.nCylinders = 8;
+  configPage2.divider = 8;
+  RUN_TEST_P(cylinder8_stroke4_seq_nostage);
+}
+
 void testFuelScheduleInit()
 {
   run_1_cylinder_4stroke_tests();
@@ -838,4 +901,6 @@ void testFuelScheduleInit()
   run_8_cylinder_4stroke_tests();
 
   run_no_inj_timing_tests();
+
+  run_oddfire_tests();
 }
