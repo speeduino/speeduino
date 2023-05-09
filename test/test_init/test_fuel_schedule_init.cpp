@@ -437,8 +437,8 @@ static void cylinder4_stroke4_seq_with_stage(void)
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=8
-	const bool enabled[] = {true, true, true, true, true, true, true, true;
-	static const uint16_t angles[] PROGMEM = e[] = {0,180,360,540,0,180,36;
+	const bool enabled[] = {true, true, true, true, true, true, true, true};
+	const uint16_t angle[] = {0,180,360,540,0,180,36};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 #elif INJ_CHANNELS >= 5
 	const bool enabled[] = {true, true, true, true, true, false, false, false};
@@ -502,7 +502,7 @@ static void cylinder4_stroke2_seq_with_stage(void)
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=8
-	const bool enabled[] = {true, true, true, true, true, true, true, true;
+	const bool enabled[] = {true, true, true, true, true, true, true, true};
 	const uint16_t angle[] = {0,180,0,0,0,180,0,0};
   assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
 #elif INJ_CHANNELS >= 5
@@ -622,7 +622,7 @@ static void cylinder6_stroke4_seq_no_stage(void)
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
-	static const uint16_t angles[] PROGMEM = = {0,120,240,360,480,600,0,;
+	const uint16_t angle[] = {0,120,240,360,480,600,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 #else
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
@@ -648,7 +648,7 @@ static void cylinder6_stroke4_seq_with_stage(void)
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
-	static const uint16_t angles[] PROGMEM = = {0,120,240,360,480,600,0,;
+	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 #else
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
@@ -664,8 +664,8 @@ static void cylinder6_stroke4_semiseq_with_stage(void)
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
-	const bool enabled[] = {true, true, true, true, true, true, true, true;
-	static const uint16_t angles[] PROGMEM = = {0,120,240,0,0,120,240,;
+	const bool enabled[] = {true, true, true, true, true, true, true, true};
+	const uint16_t angle[] = {0,120,240,0,0,120,240,0};
   assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
 #else
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
@@ -695,8 +695,8 @@ static void cylinder8_stroke4_seq_no_stage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
-	const bool enabled[] = {true, true, true, true, true, true, true, true;
-	static const uint16_t angles[] PROGMEM = e[] = {0,90,180,270,360,450,5;
+	const bool enabled[] = {true, true, true, true, true, true, true, true};
+	const uint16_t angle[] = {0,90,180,270,360,450,5};
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
 #else
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
