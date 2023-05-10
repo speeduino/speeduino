@@ -21,7 +21,7 @@ byte correctionBatVoltage(void); //Battery voltage correction
 byte correctionIATDensity(void); //Inlet temp density correction
 byte correctionBaro(void); //Barometric pressure correction
 byte correctionLaunch(void); //Launch control correction
-byte correctionDFCO(); //Decelleration fuel cutoff
+byte correctionDFCO(void); //Decelleration fuel cutoff
 
 
 int8_t correctionsIgn(int8_t advance);

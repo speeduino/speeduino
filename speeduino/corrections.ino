@@ -842,7 +842,7 @@ int8_t correctionWMITiming(int8_t advance)
  */
 int8_t correctionIATretard(int8_t advance)
 {
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT) - 15;
+  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
 
   return advance - advanceIATadjust;
 }
