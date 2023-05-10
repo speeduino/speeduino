@@ -24,7 +24,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
   #include <avr/wdt.h>
 #endif
 
-void initialiseTimers()
+void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop33ms = 0;
@@ -32,16 +32,17 @@ void initialiseTimers()
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
-  tachoOutputFlag = DEACTIVE;
+  tachoOutputFlag = TACHO_INACTIVE;
 }
 
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
 #if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //This MUST be no block. Turning NO_BLOCK off messes with timing accuracy
+//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
+ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
 #else
-void oneMSInterval() //Most ARM chips can simply call a function
+void oneMSInterval(void) //Most ARM chips can simply call a function
 #endif
 {
   ms_counter++;
@@ -69,8 +70,28 @@ void oneMSInterval() //Most ARM chips can simply call a function
   if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign7EndFunction(); ignitionSchedule7.Status = OFF; } }
   if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ign8EndFunction(); ignitionSchedule8.Status = OFF; } }
 
+  //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
+
+  // See if we're in power-on sweep mode
+  if( tachoSweepEnabled )
+  {
+    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    else 
+    {
+      // Ramp the needle smoothly to the max over the SWEEP_RAMP time
+      if( ms_counter < TACHO_SWEEP_RAMP_MS ) { tachoSweepAccum += map(ms_counter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoSweepIncr); }
+      else                                   { tachoSweepAccum += tachoSweepIncr;                                             }
+             
+      // Each time it rolls over, it's time to pulse the Tach
+      if( tachoSweepAccum >= MS_PER_SEC ) 
+      {  
+        tachoOutputFlag = READY;
+        tachoSweepAccum -= MS_PER_SEC;
+      }
+    }
+  }
+
   //Tacho output check. This code will not do anything if tacho pulse duration is fixed to coil dwell.
-  //Tacho is flagged as being ready for a pulse by the ignition outputs.
   if(tachoOutputFlag == READY)
   {
     //Check for half speed tacho
@@ -84,7 +105,7 @@ void oneMSInterval() //Most ARM chips can simply call a function
     else
     {
       //Don't run on this pulse (Half speed tacho)
-      tachoOutputFlag = DEACTIVE;
+      tachoOutputFlag = TACHO_INACTIVE;
     }
     tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
@@ -94,12 +115,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
     if((uint8_t)ms_counter == tachoEndTime)
     {
       TACHO_PULSE_HIGH();
-      tachoOutputFlag = DEACTIVE;
+      tachoOutputFlag = TACHO_INACTIVE;
     }
-  }
-  // Tacho sweep
-  
-
+  }  
 
   //30Hz loop
   if (loop33ms == 33)
@@ -161,9 +179,9 @@ void oneMSInterval() //Most ARM chips can simply call a function
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
-    //If the engine is running or cranking, we need ot update the run time counter.
+    //If the engine is running or cranking, we need to update the run time counter.
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
-    { //NOTE - There is a potential for a ~1sec gap between engine crank starting and ths runSec number being incremented. This may delay ASE!
+    { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
@@ -271,4 +289,3 @@ void oneMSInterval() //Most ARM chips can simply call a function
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
 #endif
 }
-

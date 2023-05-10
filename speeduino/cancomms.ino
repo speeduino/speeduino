@@ -46,7 +46,7 @@ bool canCmdPending = false;
   HardwareSerial &CANSerial = Serial2;
 #endif
 
-void secondserial_Command()
+void secondserial_Command(void)
 {
   #if defined(CANSerial_AVAILABLE)
   if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
@@ -73,7 +73,7 @@ void secondserial_Command()
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
             if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
                {
-                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
                    {
                     Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
                    }
@@ -229,7 +229,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[19] = currentStatus.afrTarget;
   fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[22] = (uint8_t)(currentStatus.tpsDOT / 10); //TPS DOT
   fullStatus[23] = currentStatus.advance;
   fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
@@ -313,7 +313,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[89] = highByte(currentStatus.injAngle); 
   fullStatus[90] = currentStatus.idleLoad;
   fullStatus[91] = currentStatus.CLIdleTarget; //closed loop idle target
-  fullStatus[92] = currentStatus.mapDOT; //rate of change of the map 
+  fullStatus[92] = (uint8_t)(currentStatus.mapDOT / 10); //rate of change of the map 
   fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
   fullStatus[94] = currentStatus.vvt1TargetAngle;
   fullStatus[95] = currentStatus.vvt1Duty;
@@ -343,6 +343,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
   fullStatus[120] = highByte(currentStatus.EMAP);
   fullStatus[121] = currentStatus.fanDuty;
+  fullStatus[122] = currentStatus.airConStatus;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -361,7 +362,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 }
 
-void can_Command()
+void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)
@@ -423,7 +424,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
+        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
         CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
         CANSerial.write(highByte(sourcecanAddress) );
@@ -805,5 +806,36 @@ if (PIDmode == 0x01)
           outMsg.buf[7] =  0x00;
       }
     }
+}
+
+void readAuxCanBus()
+{
+  for (int i = 0; i < 16; i++)
+  {
+    if (inMsg.id == (configPage9.caninput_source_can_address[i] + 0x100)) //Filters frame ID
+    {
+
+      if (!BIT_CHECK(configPage9.caninput_source_num_bytes, i))
+      {
+        // Gets the one-byte value from the Data Field.
+        currentStatus.canin[i] = inMsg.buf[configPage9.caninput_source_start_byte[i]];
+      }
+
+      else
+      {
+
+        if (configPage9.caninputEndianess == 1)
+        {
+          //Gets the two-byte value from the Data Field in Litlle Endian.
+          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]]) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1] << 8));
+        }
+        else
+        {
+          //Gets the two-byte value from the Data Field in Big Endian.
+          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]] << 8) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1]));
+        }
+      }
+    }
+  }
 }
 #endif

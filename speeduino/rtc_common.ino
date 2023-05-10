@@ -114,6 +114,12 @@ void rtc_setTime(byte second, byte minute, byte hour, byte day, byte month, uint
     setTime(hour, minute, second, day, month, year);
     Teensy3Clock.set(now());
   #elif defined(CORE_STM32)
+    //If RTC time has not been set earlier (no battery etc.) we need to stop the RTC and restart it with LSE_CLOCK to have accurate RTC.
+    if (!rtc.isTimeSet()) {
+      rtc.end();
+      rtc.setClockSource(STM32RTC::LSE_CLOCK);
+      rtc.begin();
+    }
     rtc.setTime(hour, minute, second);
     //year in stm32 rtc is a byte. so subtract year 2000 to fit
     rtc.setDate(day, month, (year-2000));

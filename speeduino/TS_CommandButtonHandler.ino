@@ -15,13 +15,24 @@
   #include "acc_mc33810.h"
 #endif
 
+static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
+{
+  return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_50PC)) 
+      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+}
+
 /**
  * @brief 
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-void TS_CommandButtonsHandler(uint16_t buttonCommand)
+bool TS_CommandButtonsHandler(uint16_t buttonCommand)
 {
+  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  {
+    return false;
+  }
+  
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
@@ -281,13 +292,23 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
     //VSS Calibration routines
     case TS_CMD_VSS_60KMH:
       {
-        //Calibrate the actual pulses per distance
-        uint32_t calibrationGap = vssGetPulseGap(0);
-        if( calibrationGap > 0 )
+        if(configPage2.vssMode == 1)
         {
-          configPage2.vssPulsesPerKm = 60000000UL / calibrationGap;
+          //Calculate the ratio of VSS reading from Aux input and actual VSS (assuming that actual VSS is really 60km/h).
+          configPage2.vssPulsesPerKm = (currentStatus.canin[configPage2.vssAuxCh] / 60);
           writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
           BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        }
+        else
+        {
+          //Calibrate the actual pulses per distance
+          uint32_t calibrationGap = vssGetPulseGap(0);
+          if( calibrationGap > 0 )
+          {
+            configPage2.vssPulsesPerKm = 60000000UL / calibrationGap;
+            writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+            BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+          }
         }
       }
       break;
@@ -363,6 +384,9 @@ void TS_CommandButtonsHandler(uint16_t buttonCommand)
 #endif
 
     default:
+      return false;
       break;
   }
+
+  return true;
 }
