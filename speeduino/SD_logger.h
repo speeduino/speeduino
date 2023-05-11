@@ -70,6 +70,7 @@ void writeSDLogEntry();
 void writetSDLogHeader();
 void beginSDLogging();
 void endSDLogging();
+void syncSDLog();
 void setTS_SD_status();
 void formatExFat();
 void deleteLogFile(char, char, char, char);

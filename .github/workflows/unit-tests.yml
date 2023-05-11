@@ -53,7 +53,7 @@ jobs:
           avatarUrl: https://avatars.githubusercontent.com/u/9919?v=4&size=48
           username: GitHub
           description: 'Unit Tests FAILED :warning:'
-          details: "***Author:** ${github.event.pusher.name} \n
-            **Commit URL:** ${{ github.event.head_commit.message }} \n
-            **Commit Message:** ${github.event.head_commit.message}"
+          details: "**Author:** ${{ github.event.pusher.name }} \n
+            **Commit URL:** ${{ github.event.head_commit.url }} \n
+            **Commit Message:** ${{ github.event.head_commit.message }}"
           webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

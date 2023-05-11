@@ -283,6 +283,7 @@
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
+#define SEC_TRIGGER_5_3_2   3
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -780,7 +781,7 @@ struct config2 {
   byte reqFuel;       //24
   byte divider;
   byte injTiming : 1; ///< Injector timing (aka. injector staging) 0=simultaneous, 1=alternating
-  byte multiplyMAP_old : 1;
+  byte crkngAddCLTAdv : 1;
   byte includeAFR : 1; //< Enable AFR compensation ? (See also @ref config2.incorporateAFR)
   byte hardCutType : 1;
   byte ignAlgorithm : 3;
@@ -904,7 +905,7 @@ struct config2 {
   byte canVAGCluster : 1;
   byte enableCluster1 : 1;
   byte enableCluster2 : 1;
-  byte unusedClusterBits : 4;
+  byte vssAuxCh : 4;
 
   byte decelAmount;
 
@@ -1128,7 +1129,10 @@ struct config9 {
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)
   uint16_t caninput_source_num_bytes;     //u16 bit status of the number of bytes length 1 or 2
-  byte unused10_67;
+  
+  byte caninputEndianess:1;
+  //byte unused:2
+  //...
   byte unused10_68;
   byte enable_candata_out : 1;
   byte canoutput_sel[8];
