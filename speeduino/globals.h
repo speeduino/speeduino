@@ -1471,8 +1471,16 @@ struct config15 {
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
   
-  //Bytes 98-255
-  byte Unused15_98_255[158];
+  //Bytes 98-175
+  byte Unused15_98_175[77];
+  
+  /* USER DEVELOPMENT SPACE in page 15
+  *  These last 80 bytes of memory are a user reserved area of page 15 to allow users space to develop their own code and functions in the spirit of 
+  *  always allowing user customisation in speeduino. It should never be used by the main branch release as this will break user customised features 
+  *  developed outside the main branch. 
+  *  80 bytes was chosen as the size of one 8bit 8x8 table with axes.
+  */
+  byte UserDevArea_175_255[80]; 
 
 #if defined(CORE_AVR)
   };
