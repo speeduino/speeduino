@@ -1043,17 +1043,74 @@ void triggerSetEndTeeth_BasicDistributor(void)
   int tempEndAngle = (ignition1EndAngle - configPage4.triggerAngle);
   tempEndAngle = ignitionLimits((tempEndAngle));
 
+  switch(configPage2.nCylinders)
+  {
+    case 4:
+      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 1;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+      }
+      break;
+    case 3: //Shared with 6 cylinder
+    case 6:
+      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 3;
+        ignition3EndTooth = 1;
+      }
+      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 3;
+        ignition2EndTooth = 1;
+        ignition3EndTooth = 2;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+        ignition3EndTooth = 3;
+      }
+      break;
+    case 8:
+      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 3;
+        ignition3EndTooth = 4;
+        ignition4EndTooth = 1;
+      }
+      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
+      {
+        ignition1EndTooth = 3;
+        ignition2EndTooth = 4;
+        ignition3EndTooth = 1;
+        ignition4EndTooth = 2;
+      }
+      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 4;
+        ignition2EndTooth = 1;
+        ignition3EndTooth = 2;
+        ignition4EndTooth = 3;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+        ignition3EndTooth = 3;
+        ignition4EndTooth = 4;
+      }
+      break;
+  }
   
-  if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
-  {
-    ignition1EndTooth = 2;
-    ignition2EndTooth = 1;
-  }
-  else
-  {
-    ignition1EndTooth = 1;
-    ignition2EndTooth = 2;
-  }
+
 
 
   lastToothCalcAdvance = currentStatus.advance;
