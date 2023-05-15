@@ -799,13 +799,12 @@ void initialiseAll()
         channel4IgnDegrees = 270;
         maxIgnOutputs = 4;
 
-    #if IGN_CHANNELS >= 1
+
         if( (configPage4.sparkMode == IGN_MODE_SINGLE))
         {
-        maxIgnOutputs = 1;
-        CRANK_ANGLE_MAX_IGN = 90;
+          maxIgnOutputs = 4;
+          CRANK_ANGLE_MAX_IGN = 360;
         }
-    #endif
 
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
