@@ -4,7 +4,7 @@
 #include "init.h"
 #include "schedule_calcs.h"
 #include "scheduledIO.h"
-#include "..\test_utils.h"
+#include "../test_utils.h"
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
 {

@@ -1,7 +1,7 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
-#include "..\test_utils.h"
+#include "../test_utils.h"
 
 #define UNKNOWN_PIN 0xFF
 
