@@ -1,6 +1,7 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
+#include "..\test_utils.h"
 
 #define UNKNOWN_PIN 0xFF
 
@@ -220,12 +221,12 @@ void test_initialisation_outputs_VVT(void)
 
 void testInitialisation()
 {
-  RUN_TEST(test_initialisation_complete);
-  RUN_TEST(test_initialisation_ports);
-  RUN_TEST(test_initialisation_outputs_V03);
-  RUN_TEST(test_initialisation_outputs_V04);
-  RUN_TEST(test_initialisation_outputs_MX5_8995);
-  RUN_TEST(test_initialisation_outputs_PWM_idle);
-  RUN_TEST(test_initialisation_outputs_boost);
-  RUN_TEST(test_initialisation_outputs_VVT);
+  RUN_TEST_P(test_initialisation_complete);
+  RUN_TEST_P(test_initialisation_ports);
+  RUN_TEST_P(test_initialisation_outputs_V03);
+  RUN_TEST_P(test_initialisation_outputs_V04);
+  RUN_TEST_P(test_initialisation_outputs_MX5_8995);
+  RUN_TEST_P(test_initialisation_outputs_PWM_idle);
+  RUN_TEST_P(test_initialisation_outputs_boost);
+  RUN_TEST_P(test_initialisation_outputs_VVT);
 }
