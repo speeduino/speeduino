@@ -672,6 +672,26 @@ void processSerialCommand(void)
       break;
     }  
 
+    case 'O': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerTertiary();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'o': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerTertiary();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'X': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'x': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
     /*
     * New method for sending page values (MS command equivalent is 'r')
     */
@@ -847,7 +867,7 @@ void processSerialCommand(void)
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       logItemsTransmitted = 0;
       if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+      else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog(); }
       else { /* MISRA no-op */ }
       break;
 

@@ -366,7 +366,7 @@ bool is2ByteEntry(uint8_t key)
 void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
-  currentStatus.compositeLogEnabled = false; //Safety first (Should never be required)
+  currentStatus.compositeTriggerUsed = 0; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
 
@@ -392,7 +392,7 @@ void stopToothLogger(void)
 
 void startCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = true;
+  currentStatus.compositeTriggerUsed = 2;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
   toothHistoryIndex = 0;
@@ -407,7 +407,7 @@ void startCompositeLogger(void)
 
 void stopCompositeLogger(void)
 {
-  currentStatus.compositeLogEnabled = false;
+  currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -415,4 +415,59 @@ void stopCompositeLogger(void)
 
   detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
   attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+}
+
+void startCompositeLoggerTertiary(void)
+{
+  currentStatus.compositeTriggerUsed = 3;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), loggerPrimaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+}
+
+void stopCompositeLoggerTertiary(void)
+{
+  currentStatus.compositeTriggerUsed = 0;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+}
+
+
+void startCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = 4;
+  currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  toothHistoryIndex = 0;
+
+  //Disconnect the standard interrupt and add the logger version
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), loggerSecondaryISR, CHANGE );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), loggerTertiaryISR, CHANGE );
+}
+
+void stopCompositeLoggerCams(void)
+{
+  currentStatus.compositeTriggerUsed = false;
+
+  //Disconnect the logger interrupts and attach the normal ones
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
 }
