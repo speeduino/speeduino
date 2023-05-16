@@ -696,6 +696,9 @@ void doUpdates(void)
     //Oil Pressure protection delay added. Set to 0 to match existing behaviour
     configPage10.oilPressureProtTime = 0;
 
+    //Option to power stepper motor constantly was added. Default to previous behaviour
+    configPage9.iacStepperPower = 0;
+
     writeAllConfig();
     storeEEPROMVersion(21);
   }
