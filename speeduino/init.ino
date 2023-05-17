@@ -3129,7 +3129,7 @@ void initialiseTriggers(void)
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS.
-      if( (configPage2.vssMode > 1) && (pinVSS == pinTrigger2) && !BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY) )
+      if( VSS_USES_RPM2() )
       {
         //Secondary trigger input can safely be used for VSS
         attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
