@@ -428,6 +428,9 @@ void initialiseAll(void)
     noInterrupts();
     initialiseTriggers();
 
+    //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS. This MUST be run after the initialiseTriggers() function
+    if( VSS_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING); } //Secondary trigger input can safely be used for VSS
+
     //End crank trigger interrupt attachment
     if(configPage2.strokes == FOUR_STROKE)
     {
@@ -898,6 +901,7 @@ void initialiseAll(void)
           maxIgnOutputs = 4;
           CRANK_ANGLE_MAX_IGN = 360;
         }
+    
 
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -1312,6 +1316,7 @@ void initialiseAll(void)
     
     initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
+
 }
 /** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
@@ -3113,9 +3118,6 @@ void initialiseTriggers(void)
       triggerSecondaryHandler = triggerSec_missingTooth;
       triggerTertiaryHandler = triggerThird_missingTooth;
       
-      if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) ) { BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY); }
-      else { BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); }
-      
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
@@ -3128,24 +3130,10 @@ void initialiseTriggers(void)
       else { tertiaryTriggerEdge = FALLING; }
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS.
-      if( VSS_USES_RPM2() )
-      {
-        //Secondary trigger input can safely be used for VSS
-        attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
-      }
-      else
-      {
-        attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-      }
+
+      if(BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY)) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
       if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
 
-      /*
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); }
-      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
-      if(configPage4.TrigEdgeSec == 0) { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, RISING); }
-      else { attachInterrupt(triggerInterrupt2, triggerSec_missingTooth, FALLING); }
-      */
       break;
 
     case DECODER_BASIC_DISTRIBUTOR:
@@ -3166,7 +3154,6 @@ void initialiseTriggers(void)
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_DualWheel;
       triggerSecondaryHandler = triggerSec_DualWheel;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3200,7 +3187,6 @@ void initialiseTriggers(void)
       triggerSetup_4G63();
       triggerHandler = triggerPri_4G63;
       triggerSecondaryHandler = triggerSec_4G63;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_4G63;
       getCrankAngle = getCrankAngle_4G63;
       triggerSetEndTeeth = triggerSetEndTeeth_4G63;
@@ -3216,7 +3202,6 @@ void initialiseTriggers(void)
       triggerSetup_24X();
       triggerHandler = triggerPri_24X;
       triggerSecondaryHandler = triggerSec_24X;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_24X;
       getCrankAngle = getCrankAngle_24X;
       triggerSetEndTeeth = triggerSetEndTeeth_24X;
@@ -3233,7 +3218,6 @@ void initialiseTriggers(void)
       triggerSetup_Jeep2000();
       triggerHandler = triggerPri_Jeep2000;
       triggerSecondaryHandler = triggerSec_Jeep2000;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Jeep2000;
       getCrankAngle = getCrankAngle_Jeep2000;
       triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
@@ -3250,7 +3234,6 @@ void initialiseTriggers(void)
       triggerSetup_Audi135();
       triggerHandler = triggerPri_Audi135;
       triggerSecondaryHandler = triggerSec_Audi135;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Audi135;
       getCrankAngle = getCrankAngle_Audi135;
       triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
@@ -3267,7 +3250,6 @@ void initialiseTriggers(void)
       triggerSetup_HondaD17();
       triggerHandler = triggerPri_HondaD17;
       triggerSecondaryHandler = triggerSec_HondaD17;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_HondaD17;
       getCrankAngle = getCrankAngle_HondaD17;
       triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
@@ -3284,7 +3266,6 @@ void initialiseTriggers(void)
       triggerSetup_Miata9905();
       triggerHandler = triggerPri_Miata9905;
       triggerSecondaryHandler = triggerSec_Miata9905;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Miata9905;
       getCrankAngle = getCrankAngle_Miata9905;
       triggerSetEndTeeth = triggerSetEndTeeth_Miata9905;
@@ -3303,7 +3284,6 @@ void initialiseTriggers(void)
       triggerSetup_MazdaAU();
       triggerHandler = triggerPri_MazdaAU;
       triggerSecondaryHandler = triggerSec_MazdaAU;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_MazdaAU;
       getCrankAngle = getCrankAngle_MazdaAU;
       triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
@@ -3320,7 +3300,6 @@ void initialiseTriggers(void)
       triggerSetup_non360();
       triggerHandler = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
       triggerSecondaryHandler = triggerSec_DualWheel; //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_non360;
       getCrankAngle = getCrankAngle_non360;
       triggerSetEndTeeth = triggerSetEndTeeth_non360;
@@ -3337,7 +3316,6 @@ void initialiseTriggers(void)
       triggerSetup_Nissan360();
       triggerHandler = triggerPri_Nissan360;
       triggerSecondaryHandler = triggerSec_Nissan360;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Nissan360;
       getCrankAngle = getCrankAngle_Nissan360;
       triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
@@ -3354,7 +3332,6 @@ void initialiseTriggers(void)
       triggerSetup_Subaru67();
       triggerHandler = triggerPri_Subaru67;
       triggerSecondaryHandler = triggerSec_Subaru67;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_Subaru67;
       getCrankAngle = getCrankAngle_Subaru67;
       triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
@@ -3398,7 +3375,6 @@ void initialiseTriggers(void)
       triggerSetup_ThirtySixMinus222();
       triggerHandler = triggerPri_ThirtySixMinus222;
       triggerSecondaryHandler = triggerSec_ThirtySixMinus222;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_ThirtySixMinus222;
       getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
       triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
@@ -3421,7 +3397,6 @@ void initialiseTriggers(void)
       triggerSetup_420a();
       triggerHandler = triggerPri_420a;
       triggerSecondaryHandler = triggerSec_420a;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_420a;
       getCrankAngle = getCrankAngle_420a;
       triggerSetEndTeeth = triggerSetEndTeeth_420a;
@@ -3439,7 +3414,6 @@ void initialiseTriggers(void)
       triggerSetup_DualWheel();
       triggerHandler = triggerPri_Webber;
       triggerSecondaryHandler = triggerSec_Webber;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3458,7 +3432,6 @@ void initialiseTriggers(void)
       triggerSetup_FordST170();
       triggerHandler = triggerPri_missingTooth;
       triggerSecondaryHandler = triggerSec_FordST170;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_FordST170;
       getCrankAngle = getCrankAngle_FordST170;
       triggerSetEndTeeth = triggerSetEndTeeth_FordST170;
@@ -3473,31 +3446,10 @@ void initialiseTriggers(void)
 
       break;
 	  
-	case DECODER_ROVERMEMS:
-      //Rover MEMs - covers multiple flywheel trigger combinations.
-      triggerSetup_RoverMEMS();
-      triggerHandler = triggerPri_RoverMEMS;
-      getRPM = getRPM_RoverMEMS;
-      triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
-            
-      triggerSecondaryHandler = triggerSec_RoverMEMS; 
-      getCrankAngle = getCrankAngle_missingTooth;   
-
-      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { primaryTriggerEdge = FALLING; }
-      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
-      else { secondaryTriggerEdge = FALLING; }
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-      break;   
-	  
-
     case DECODER_DRZ400:
       triggerSetup_DRZ400();
       triggerHandler = triggerPri_DualWheel;
       triggerSecondaryHandler = triggerSec_DRZ400;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_DualWheel;
       getCrankAngle = getCrankAngle_DualWheel;
       triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
@@ -3515,7 +3467,6 @@ void initialiseTriggers(void)
       //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
       triggerHandler = triggerPri_NGC;
-      BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
       getRPM = getRPM_NGC;
       getCrankAngle = getCrankAngle_missingTooth;
       triggerSetEndTeeth = triggerSetEndTeeth_NGC;
@@ -3562,6 +3513,25 @@ void initialiseTriggers(void)
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
+
+    case DECODER_ROVERMEMS:
+      //Rover MEMs - covers multiple flywheel trigger combinations.
+      triggerSetup_RoverMEMS();
+      triggerHandler = triggerPri_RoverMEMS;
+      getRPM = getRPM_RoverMEMS;
+      triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
+            
+      triggerSecondaryHandler = triggerSec_RoverMEMS; 
+      getCrankAngle = getCrankAngle_missingTooth;   
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;   
 
 
     default:
