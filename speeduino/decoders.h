@@ -6,9 +6,11 @@
 #if defined(CORE_AVR)
   #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
   #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
+  #define READ_THIRD_TRIGGER() ((*triggerThird_pin_port & triggerThird_pin_mask) ? true : false)
 #else
   #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
+  #define READ_THIRD_TRIGGER() digitalRead(pinTrigger3)  
 #endif
 
 #define DECODER_MISSING_TOOTH     0
@@ -63,6 +65,7 @@ extern bool decoderHasFixedCrankingTiming;
 
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
+void loggerTertiaryISR(void);
 
 //All of the below are the 6 required functions for each decoder / pattern
 void triggerSetup_missingTooth(void);
@@ -220,7 +223,7 @@ uint16_t getRPM_NGC(void);
 void triggerSetEndTeeth_NGC(void);
 
 void triggerSetup_Renix(void);
-void triggerPrimary_Renix(void);
+void triggerPri_Renix(void);
 void triggerSetEndTeeth_Renix(void);
 
 void triggerSetup_RoverMEMS(void);
@@ -301,7 +304,8 @@ extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Curre
 #define CAM_SPEED   1
 
 #define TOOTH_CRANK 0
-#define TOOTH_CAM   1
+#define TOOTH_CAM_SECONDARY 1
+#define TOOTH_CAM_TERTIARY  2
 
 // used by the ROVER MEMS pattern
 #define ID_TOOTH_PATTERN 0 // have we identified teeth to skip for calculating RPM?
