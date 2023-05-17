@@ -71,7 +71,7 @@ void setup(void)
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     unsigned long pw1percent = 100 + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
-    if (pw1percent != 100) { return div100(pw1percent * currentPW); }
+    if (pw1percent != 100) { return div100(uint32_t(pw1percent * currentPW)); }
     return currentPW;
 }
 
