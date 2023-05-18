@@ -665,12 +665,10 @@ void triggerThird_missingTooth(void)
   if ( curGap3 >= triggerThirdFilterTime )
   {
     thirdToothCount++;
-    if(configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3)
-    {triggerThirdFilterTime = curGap3 >> 2; }//Next third filter is 25% the current gap
-    else
-    {triggerThirdFilterTime = curGap3 >> 1; }//Next third filter is 50% the current gap
+    triggerThirdFilterTime = curGap3 >> 2; //Next third filter is 25% the current gap
+    
 
-    if( (thirdToothCount == 1 && revolutionOne == 1) || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
+    if( thirdToothCount == 2 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
     {
       curAngle = getCrankAngle();
       while(curAngle > 360) { curAngle -= 360; }
