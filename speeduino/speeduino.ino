@@ -199,7 +199,11 @@ void loop(void)
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();  
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
+      readMAP();
+    }
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
