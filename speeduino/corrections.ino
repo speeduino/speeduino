@@ -946,6 +946,14 @@ uint16_t correctionsDwell(uint16_t dwell)
   currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
   if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
 
+  if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1) )
+  {
+    int16_t error = tempDwell - currentStatus.actualDwell;
+    if(error > (tempDwell / 2)) { error += error; }
+    if(error > 0) { tempDwell += error; }
+
+  }
+
   //Dwell limiter
   uint16_t dwellPerRevolution = tempDwell + sparkDur_uS;
   int8_t pulsesPerRevolution = 1;
@@ -963,5 +971,8 @@ uint16_t correctionsDwell(uint16_t dwell)
     uint16_t adjustedSparkDur = (sparkDur_uS * revolutionTime) / dwellPerRevolution;
     tempDwell = (revolutionTime / pulsesPerRevolution) - adjustedSparkDur;
   }
+
+  if(currentStatus.actualDwell == 0) { currentStatus.actualDwell = tempDwell; } //Initialise the actualDwell value if this is the first time being called
+
   return tempDwell;
 }
