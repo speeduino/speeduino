@@ -946,12 +946,13 @@ uint16_t correctionsDwell(uint16_t dwell)
   currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
   if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
 
+  //Dwell correction is a basic closed loop to keep the dwell time consistent even when adjusting its end time for the per tooth timing
   if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1) )
   {
     int16_t error = tempDwell - currentStatus.actualDwell;
-    if(error > (tempDwell / 2)) { error += error; }
+    if(tempDwell > INT16_MAX) { tempDwell = INT16_MAX; } //Prevent overflow when casting to signed int
+    if(error > ((int16_t)tempDwell / 2)) { error += error; } //Double correction amount if actual dwell is less than 50% of the requested dwell
     if(error > 0) { tempDwell += error; }
-
   }
 
   //Dwell limiter
