@@ -352,7 +352,7 @@ void legacySerialCommand()
       break;
 
     case 'S': // send code version
-      Serial.print(F("Speeduino 202207.1"));
+      Serial.print(F("Speeduino 202207.2"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
