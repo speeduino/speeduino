@@ -108,6 +108,7 @@ void initialiseAll(void)
     
     initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
+    
   #ifdef SD_LOGGING
     initRTC();
     initSD();
@@ -281,7 +282,7 @@ void initialiseAll(void)
     o2CalibrationTable.xSize = 32;
     o2CalibrationTable.values = o2Calibration_values;
     o2CalibrationTable.axisX = o2Calibration_bins;
-
+    
     //Setup the calibration tables
     loadCalibration();
 
@@ -1480,6 +1481,7 @@ void setPinMapping(byte boardID)
         pinCoil3 = 30;
         pinO2 = A22;
       #elif defined(CORE_TEENSY41)
+        //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
         pinBaro = A4; 
         pinMAP = A5;
         pinTPS = A3; //TPS input pin
@@ -1494,6 +1496,7 @@ void setPinMapping(byte boardID)
 
         pinTrigger = 20; //The CAS pin
         pinTrigger2 = 21; //The Cam Sensor pin
+        pinTrigger3 = 23;
 
         pinStepperDir = 34;
         pinStepperStep = 35;
@@ -1505,6 +1508,10 @@ void setPinMapping(byte boardID)
 
         pinTachOut = 28;
         pinFan = 27;
+        pinFuelPump = 33;
+        pinWMIEmpty = 34;
+        pinWMIIndicator = 35;
+        pinWMIEnabled = 36;
       #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -2309,6 +2316,11 @@ void setPinMapping(byte boardID)
       pinFan = 25; //Pin for the fan output
       pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
+      //CS pin number is now set in a compile flag. 
+      // #ifdef USE_SPI_EEPROM
+      //   pinSPIFlash_CS = 6;
+      // #endif
+
       #if defined(CORE_TEENSY35)
         pinTPS = A22; //TPS input pin
         pinIAT = A19; //IAT sensor pin
@@ -2323,7 +2335,33 @@ void setPinMapping(byte boardID)
         pinCLT = A15; //CLS sensor pin
         pinO2 = A16; //O2 Sensor pin
         pinBat = A3; //Battery reference voltage pin. Needs Alpha4+
-        pinLaunch = 34; //Can be overwritten below
+
+        //New pins for the actual T4.1 version of the Dropbear
+        pinBaro = A4; 
+        pinMAP = A5;
+        pinTPS = A3; //TPS input pin
+        pinIAT = A0; //IAT sensor pin
+        pinCLT = A1; //CLS sensor pin
+        pinO2 = A2; //O2 Sensor pin
+        pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pinLaunch = 36;
+        pinFlex = 37; // Flex sensor
+        pinSpareTemp1 = A16; 
+        pinSpareTemp2 = A17;
+
+        pinTrigger = 20; //The CAS pin
+        pinTrigger2 = 21; //The Cam Sensor pin
+
+        pinFuelPump = 5; //Fuel pump output
+        pinTachOut = 8; //Tacho output pin
+
+        pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
+
+        //CS pin number is now set in a compile flag. 
+        // #ifdef USE_SPI_EEPROM
+        //   pinSPIFlash_CS = 33;
+        // #endif
+
       #endif
 
         pinMC33810_1_CS = 10;
@@ -2348,10 +2386,7 @@ void setPinMapping(byte boardID)
       MC33810_BIT_IGN7 = 6;
       MC33810_BIT_IGN8 = 7;
 
-      //CS pin number is now set in a compile flag. 
-      // #ifdef USE_SPI_EEPROM
-      //   pinSPIFlash_CS = 6;
-      // #endif
+
 
       #endif
       break;
