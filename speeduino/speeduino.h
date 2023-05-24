@@ -13,6 +13,8 @@
 #define SPEEDUINO_H
 //#include "globals.h"
 
+#define CRANK_RUN_HYSTER    15
+
 void setup(void);
 void loop(void);
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);

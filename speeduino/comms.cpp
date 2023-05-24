@@ -672,6 +672,26 @@ void processSerialCommand(void)
       break;
     }  
 
+    case 'O': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerTertiary();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'o': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerTertiary();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'X': //Start the composite logger 2nd cam (teritary)
+      startCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
+    case 'x': //Stop the composite logger 2nd cam (tertiary)
+      stopCompositeLoggerCams();
+      sendReturnCodeMsg(SERIAL_RC_OK);
+      break;
+
     /*
     * New method for sending page values (MS command equivalent is 'r')
     */
@@ -847,7 +867,7 @@ void processSerialCommand(void)
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       logItemsTransmitted = 0;
       if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeLogEnabled == true) { sendCompositeLog(); }
+      else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog(); }
       else { /* MISRA no-op */ }
       break;
 
@@ -1027,7 +1047,7 @@ void processSerialCommand(void)
 void sendToothLog(void)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false) //Sanity check. Flagging system means this should always be true
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false) 
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
@@ -1078,7 +1098,7 @@ void sendToothLog(void)
 
 void sendCompositeLog(void)
 {
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false ) //Sanity check. Flagging system means this should always be true
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false )
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
