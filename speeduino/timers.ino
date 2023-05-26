@@ -74,16 +74,16 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     #endif
     {
     if((uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
-    if((uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
-    if((uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
-    if((uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
-    if((uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
+    if((maxIgnOutputs >= 2) && (uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
+    if((maxIgnOutputs >= 3) &&(uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
+    if((maxIgnOutputs >= 4) &&(uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
+    if((maxIgnOutputs >= 5) &&(uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
     #if IGN_CHANNELS >= 6
-    if((uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
+    if((maxIgnOutputs >= 6) &&(uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
     #if IGN_CHANNELS >= 7
-    if((uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
+    if((maxIgnOutputs >= 7) &&(uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
     #if IGN_CHANNELS >= 8
-    if((uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
+    if((maxIgnOutputs >= 8) &&(uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
     #endif    
     #endif
     #endif

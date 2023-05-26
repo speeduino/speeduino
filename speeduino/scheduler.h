@@ -43,6 +43,8 @@ void beginInjectorPriming(void);
 void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int ignitionEndAngle, unsigned long duration);
 void setIgnitionSchedule(struct Schedule *ignitionSchedule); //overload function for starting schedule(dwell) immediately, this is used in the fixed cranking ignition
 void setIgnitionSchedule(struct Schedule *ignitionSchedule,uint16_t dwell);
+void refreshRunningIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, int ignitionEndAngle);
+void refreshIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, int ignitionEndAngle);
 
 void ignitionScheduleInterrupt(struct Schedule *ignitionSchedule);
 void fuelScheduleInterrupt(struct Schedule *fuelSchedule);
@@ -106,6 +108,7 @@ enum ScheduleStatus : uint8_t {OFF, PENDING, RUNNING}; //The statuses that a sch
 struct Schedule {  
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, RUNNING
  
+  volatile COMPARE_TYPE startCompare; // counter value when current schedule was started, used in the schedule refresh for dwell limits
   volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
 
   volatile COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)

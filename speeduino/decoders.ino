@@ -359,50 +359,50 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   {
     if ( (currentTooth == ignition1EndTooth) )
     {
-      if( (ignitionSchedule1.Status == RUNNING) ) { SET_COMPARE(IGN1_COMPARE, IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); }
+      if(ignitionSchedule1.Status == RUNNING){refreshRunningIgnitionSchedule(&ignitionSchedule1,crankAngle,ignition1EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule1,crankAngle,ignition1EndAngle);}
     }
     else if ( (currentTooth == ignition2EndTooth) )
     {
-      if( (ignitionSchedule2.Status == RUNNING) ) { SET_COMPARE(IGN2_COMPARE, IGN2_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition2EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule2.endCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition2EndAngle - crankAngle) ) ) ); }
+      if(ignitionSchedule1.Status == RUNNING){refreshRunningIgnitionSchedule(&ignitionSchedule2,crankAngle,ignition2EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule2,crankAngle,ignition2EndAngle);}
     }
     else if ( (currentTooth == ignition3EndTooth) )
     {
-      if( (ignitionSchedule3.Status == RUNNING) ) { SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition3EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule3.endCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition3EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule3.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule3,crankAngle,ignition3EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule3,crankAngle,ignition3EndAngle);}
     }
     else if ( (currentTooth == ignition4EndTooth) )
     {
-      if( (ignitionSchedule4.Status == RUNNING) ) { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule4.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule4,crankAngle,ignition4EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule4,crankAngle,ignition4EndAngle);}
     }
 #if IGN_CHANNELS >= 5
     else if ( (currentTooth == ignition5EndTooth) )
     {
-      if( (ignitionSchedule5.Status == RUNNING) ) { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition5EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule5.endCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition5EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule5.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule5,crankAngle,ignition5EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule5,crankAngle,ignition5EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 6
     else if ( (currentTooth == ignition6EndTooth) )
     {
-      if( (ignitionSchedule6.Status == RUNNING) ) { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition6EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule6.endCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition6EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule6.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule6,crankAngle,ignition6EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule6,crankAngle,ignition6EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 7
     else if ( (currentTooth == ignition7EndTooth) )
     {
-      if( (ignitionSchedule7.Status == RUNNING) ) { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition7EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule7.endCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition7EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule7.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule7,crankAngle,ignition7EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule7,crankAngle,ignition7EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 8
     else if ( (currentTooth == ignition8EndTooth) )
     {
-      if( (ignitionSchedule8.Status == RUNNING) ) { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule8.endCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ); }
+      if( (ignitionSchedule8.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule8,crankAngle,ignition8EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule8,crankAngle,ignition8EndAngle);}
     }
 #endif
   }

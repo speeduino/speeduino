@@ -175,8 +175,9 @@ void setIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, 
     if((endTimeout < MAX_TIMER_PERIOD) && (endTimeout > duration + IGNITION_REFRESH_THRESHOLD)) //Need to check that the timeout doesn't exceed the overflow, also allow for fixed 230us safety between setting the schedule and running it
     {      
       noInterrupts(); // make sure start and end values are updated simultaneously
-      targetSchedule->endCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout)); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)   
-      targetSchedule->setCompare(targetSchedule->endCompare - (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(duration))); // previously startCompare
+      targetSchedule->endCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout)); //calculate and prepare the end compare value. As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)   
+      targetSchedule->startCompare =targetSchedule->endCompare - (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(duration)); //calculate the start value, this needs to be stored only for applying dwell range limits when refreshing
+      targetSchedule->setCompare(targetSchedule->startCompare); // apply the start value
       targetSchedule->Status = PENDING; //Turn this schedule on
       interrupts(); 
       targetSchedule->timerEnable();
@@ -215,6 +216,86 @@ void setIgnitionSchedule(struct Schedule *ignitionSchedule,uint16_t dwell)
              ignitionSchedule->setCompare(ignitionSchedule->getCounter()+ (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(dwell)));
              ignitionSchedule->Status=RUNNING;
              ignitionSchedule->timerEnable();
+}
+
+//function for refreshing already running schedule, this is used in the per tooth ignition in some decoders(in the trigger interrupt!)
+void refreshRunningIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, int ignitionEndAngle)
+{
+    //calculate remaining angle
+    int angleToEnd =ignitionEndAngle-crankAngle;
+
+    //apply ignition limits    
+    ( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
+
+    //convert to time scale (fastDegreesToUS)
+    int timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
+    if(timeToEnd < IGNITION_REFRESH_THRESHOLD || (timeToEnd > MAX_TIMER_PERIOD)){
+      return; //abort mission when there is not enough time
+    }
+    //convert to timer ticks scale
+    COMPARE_TYPE newEndCompare = targetSchedule->getCounter()+ uS_TO_TIMER_COMPARE(timeToEnd);
+
+    //apply dwell limits
+    //do not lower dwell more than 1/4 of commanded dwell, this is to retain good spark during starting and acceleration
+    if(COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) < (uS_TO_TIMER_COMPARE(currentStatus.dwell*3/4)))
+    {      
+      targetSchedule->setCompare(targetSchedule->startCompare + (uS_TO_TIMER_COMPARE(currentStatus.dwell)*3/4));
+    }
+    //also do not extend beyond dwell limit value 
+    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000))))
+    {
+      targetSchedule->setCompare(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000));
+    }
+    //or cap at 2x commanded dwell for now, when limit is not specified or exeeded, but some dwell error correction is requested
+    else if(configPage4.dwellErrCorrect==true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(currentStatus.dwell*2))))
+    {
+      targetSchedule->setCompare(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(currentStatus.dwell*2));
+    }
+    else //normal case without limiters
+    {
+      targetSchedule->setCompare(newEndCompare);
+    }
+    return;
+}
+
+//this is to refresh ignition schedule that has not yet been started. Used in the perToothIgnition(in the trigger interrupt!).
+//Refreshes only ignition end time, start time is unaffected (This way is faster).
+void refreshIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, int ignitionEndAngle){
+  //calculate remaining angle
+  int angleToEnd =ignitionEndAngle-crankAngle;
+
+  //apply ignition limits    
+  ( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
+
+  //convert to time scale (fastDegreesToUS)
+  int timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
+
+  if(timeToEnd < MAX_TIMER_PERIOD) //Need to check that the timeout doesn't exceed the overflow
+  {
+    //convert to timer ticks scale
+    COMPARE_TYPE newEndCompare = targetSchedule->getCounter()+ COMPARE_TYPE(uS_TO_TIMER_COMPARE(timeToEnd)); 
+    //apply dwell limits
+    //do not lower dwell more than 1/4 of commanded dwell, this is to retain good spark during starting and acceleration
+    if(COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) < (uS_TO_TIMER_COMPARE(currentStatus.dwell*3/4)))
+    {      
+      targetSchedule->endCompare=(targetSchedule->startCompare + (uS_TO_TIMER_COMPARE(currentStatus.dwell)*3/4));
+    }
+    //also do not extend beyond dwell limit value 
+    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000))))
+    {
+      targetSchedule->endCompare=(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000));
+    }
+    //or cap at 2x commanded dwell for now, when limit is not specified or exeeded, but some dwell error correction is requested
+    else if(configPage4.dwellErrCorrect==true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(currentStatus.dwell*2))))
+    {
+      targetSchedule->endCompare=(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(currentStatus.dwell*2));
+    }
+    else //normal case without limiters
+    {
+      targetSchedule->endCompare = targetSchedule->getCounter() + (uS_TO_TIMER_COMPARE(timeToEnd)); //calculate and prepare the end compare value. As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)   
+    }
+  }
+  return;
 }
 
 extern void beginInjectorPriming(void)
