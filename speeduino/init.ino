@@ -3632,7 +3632,8 @@ void initialiseTriggers(void)
 void changeHalfToFullSync(void)
 {
   //Need to do another check for injLayout as this function can be called from ignition
-  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) )
+  noInterrupts();
+  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && fuelSchedule1.Status!=RUNNING && fuelSchedule2.Status!=RUNNING && fuelSchedule3.Status!=RUNNING && fuelSchedule4.Status!=RUNNING)
   {
     CRANK_ANGLE_MAX_INJ = 720;
     req_fuel_uS *= 2;
@@ -3687,6 +3688,7 @@ void changeHalfToFullSync(void)
 
     }
   }
+  interrupts();
 
   //Need to do another check for sparkMode as this function can be called from injection
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) )
