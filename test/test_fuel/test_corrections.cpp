@@ -5,8 +5,8 @@
 #include "test_corrections.h"
 #include "init.h"
 #include "sensors.h"
-#include "speeduino.h"
 #include "sensors_map_structs.h"
+#include "pw_calcs.h"
 
 extern void construct2dTables(void);
 

@@ -5,7 +5,6 @@
 #include "init.h"
 #include "storage.h"
 #include "updates.h"
-#include "speeduino.h"
 #include "timers.h"
 #include "comms.h"
 #include "comms_secondary.h"

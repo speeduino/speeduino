@@ -25,10 +25,10 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 
 #include "globals.h"
 #include "corrections.h"
-#include "speeduino.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
+#include "pw_calcs.h"
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
