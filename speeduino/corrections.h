@@ -21,7 +21,7 @@ byte correctionBatVoltage(void); //Battery voltage correction
 byte correctionIATDensity(void); //Inlet temp density correction
 byte correctionBaro(void); //Barometric pressure correction
 byte correctionLaunch(void); //Launch control correction
-bool correctionDFCO(void); //Decelleration fuel cutoff
+byte correctionDFCO(void); //Decelleration fuel cutoff
 
 
 int8_t correctionsIgn(int8_t advance);
@@ -31,6 +31,7 @@ int8_t correctionFlexTiming(int8_t advance);
 int8_t correctionWMITiming(int8_t advance);
 int8_t correctionIATretard(int8_t advance);
 int8_t correctionCLTadvance(int8_t advance);
+int8_t correctionDFCOEntryExit(int8_t);
 int8_t correctionIdleAdvance(int8_t advance);
 int8_t correctionSoftRevLimit(int8_t advance);
 int8_t correctionNitrous(int8_t advance);
@@ -49,8 +50,13 @@ extern byte lastKnockCount;
 extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 extern uint8_t aseTaper;
-extern uint8_t dfcoTaper;
 extern uint8_t idleAdvTaper;
 extern uint8_t crankingEnrichTaper;
+
+#define DFCO_OFF 0
+#define DFCO_ENABLE_DELAY 1
+#define DFCO_RAMP_IN 2
+#define DFCO_ACTIVE 3
+#define DFCO_RAMP_OUT 4
 
 #endif // CORRECTIONS_H

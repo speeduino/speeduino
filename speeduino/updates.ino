@@ -329,9 +329,10 @@ void doUpdates(void)
     configPage2.injAngRPM[2] = 45;
     configPage2.injAngRPM[3] = 65;
 
-    //Introduced a DFCO delay option. Default it to 0
-    configPage2.dfcoDelay = 0;
-    //Introduced a minimum temperature for DFCO. Default it to 40C
+    //Introdced a DFCO delay option. Default it to 0
+    configPage2.dfcoStartDelay = 0;
+    //Introdced a minimum temperature for DFCO. Default it to 40C
+
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
     //Update flex fuel ignition config values for 40 degrees offset
