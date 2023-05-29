@@ -2,8 +2,20 @@
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
-uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0; 
+
+/** @name Staging
+ * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
+ * 
+ * Eg:
+ *  - Pri injectors are 250cc
+ *  - Sec injectors are 500cc
+ *  - Total injector capacity = 750cc
+ * 
+ *  - stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+ *  - stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+*/
+static uint16_t stagedPriReqFuelPct = 0;
+static uint16_t stagedSecReqFuelPct = 0; 
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
@@ -12,6 +24,28 @@ static struct libdivide::libdivide_u32_t libdiv_u32_nsquirts;
 
 void initialisePWCalcs(void)
 {
+  if(configPage10.stagingEnabled == true)
+  {
+    uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
+    /*
+        These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
+        Eg:
+        Pri injectors are 250cc
+        Sec injectors are 500cc
+        Total injector capacity = 750cc
+
+        stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
+        stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
+    */
+    stagedPriReqFuelPct = (100 * totalInjector) / configPage10.stagedInjSizePri;
+    stagedSecReqFuelPct = (100 * totalInjector) / configPage10.stagedInjSizeSec;
+  }
+  else
+  {
+    stagedPriReqFuelPct = 0;
+    stagedSecReqFuelPct = 0;
+  }
+
 #ifdef USE_LIBDIVIDE
   libdiv_u32_nsquirts = libdivide::libdivide_u32_gen(currentStatus.nSquirts);
 #endif    
@@ -160,11 +194,11 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit)
   {
     //Scale the 'full' pulsewidth by each of the injector capacities
     primaryPW -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint32_t tempPW1 = div100((uint32_t)primaryPW * staged_req_fuel_mult_pri);
+    uint32_t tempPW1 = div100((uint32_t)primaryPW * stagedPriReqFuelPct);
 
     if(configPage10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint32_t tempPW3 = div100((uint32_t)primaryPW * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+      uint32_t tempPW3 = div100((uint32_t)primaryPW * stagedSecReqFuelPct); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
       uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
       primaryPW = div100((100U - stagingSplit) * tempPW1);
@@ -185,7 +219,7 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit)
       {
         uint32_t extraPW = tempPW1 - pwLimit + inj_opentime_uS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
         primaryPW = pwLimit;
-        secondaryPW = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        secondaryPW = udiv_32_16(extraPW * stagedSecReqFuelPct, stagedPriReqFuelPct); //Convert the 'left over' fuel amount from primary injector scaling to secondary
         secondaryPW += inj_opentime_uS;
       }
       else 
