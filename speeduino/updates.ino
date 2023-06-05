@@ -16,7 +16,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    21
+  #define CURRENT_DATA_VERSION    22
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -675,7 +675,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 20)
   {
-    //202210
+    //202305
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
 
@@ -701,6 +701,14 @@ void doUpdates(void)
 
     writeAllConfig();
     storeEEPROMVersion(21);
+  }
+
+  if(readEEPROMVersion() == 21)
+  {
+    //202306
+
+    writeAllConfig();
+    storeEEPROMVersion(22);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
