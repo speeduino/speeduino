@@ -14,7 +14,7 @@
 #include "updates.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
-void doUpdates()
+void doUpdates(void)
 {
   #define CURRENT_DATA_VERSION    21
   //Only the latest update for small flash devices must be retained
@@ -427,7 +427,7 @@ void doUpdates()
     configPage13.outputPin[7] = 0;
 
     //New multiply MAP option added. Set new option to be the same as old
-    configPage2.multiplyMAP = configPage2.multiplyMAP_old;
+    configPage2.multiplyMAP = configPage2.crkngAddCLTAdv;
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
@@ -677,10 +677,26 @@ void doUpdates()
     //202210
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
+
+    configPage2.decelAmount = 100; //Default decel fuel amount is 100%, so no change in fueling in decel as before.
+    //full status structure has been changed. Update programmable outputs settings to match.
+    for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
+    {
+      if ((configPage13.firstDataIn[y] > 22) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.firstDataIn[y] > 92) && (configPage13.firstDataIn[y] < 240)) {configPage13.firstDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 22) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+      if ((configPage13.secondDataIn[y] > 92) && (configPage13.secondDataIn[y] < 240)) {configPage13.secondDataIn[y]++;}
+    }
     
     //AC Control (configPage15)
     //Set A/C default values - these line up with the ini file defaults
     configPage15.airConEnable = 0;
+
+    //Oil Pressure protection delay added. Set to 0 to match existing behaviour
+    configPage10.oilPressureProtTime = 0;
+
+    //Option to power stepper motor constantly was added. Default to previous behaviour
+    configPage9.iacStepperPower = 0;
 
     writeAllConfig();
     storeEEPROMVersion(21);
