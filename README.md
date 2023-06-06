@@ -7,7 +7,7 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/noisymime/speeduino/build-firmware.yml?label=Build%20Status&branch=master)](https://github.com/noisymime/speeduino/actions/workflows/build-firmware.yml)
 [![Unit Tests](https://img.shields.io/github/actions/workflow/status/noisymime/speeduino/unit-tests.yml?label=Unit%20Tests&branch=master)](https://github.com/noisymime/speeduino/actions/workflows/unit-tests.yml)
 [![Open Bounties](https://img.shields.io/bountysource/team/speeduino/activity.svg)](https://www.bountysource.com/teams/speeduino)
-[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202207.1.svg)](https://github.com/noisymime/speeduino/compare/202207.1...master)
+[![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202305.svg)](https://github.com/noisymime/speeduino/compare/202305...master)
 ![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/noisymime/d8a449a3f6d3307dab457431512502f9/raw/misra_results.json)
 [![https://img.shields.io/discord/879495735912071269 ](https://img.shields.io/discord/879495735912071269?label=Discord&logo=Discord)](https://discord.gg/YWCEexaNDe)
 

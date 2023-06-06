@@ -46,6 +46,10 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
+#define DWELL_AVERAGE_ALPHA 30
+#define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
+//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
+
 extern void (*inj1StartFunction)(void);
 extern void (*inj1EndFunction)(void);
 extern void (*inj2StartFunction)(void);

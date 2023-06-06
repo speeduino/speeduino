@@ -1559,7 +1559,7 @@ void triggerSec_BasicDistributor(void) { return; } //Not required
 uint16_t getRPM_BasicDistributor(void)
 {
   uint16_t tempRPM;
-  if( currentStatus.RPM < currentStatus.crankRPM)
+  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
   { 
     tempRPM = crankingGetRPM(triggerActualTeeth, 720);
   } 

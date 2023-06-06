@@ -199,7 +199,11 @@ void loop(void)
 
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readMAP();  
+    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
+      readMAP();
+    }
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
@@ -433,14 +437,17 @@ void loop(void)
         }
         else
         {  
-          //Sets the engine cranking bit, clears the engine running bit
-          BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
-          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
-          currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-          if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+          if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) || (currentStatus.RPM < (currentStatus.crankRPM - CRANK_RUN_HYSTER)) )
+          {
+            //Sets the engine cranking bit, clears the engine running bit
+            BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+            BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
+            currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
+            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
 
-          //Check whether the user has selected to disable to the fan during cranking
-          if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
+            //Check whether the user has selected to disable to the fan during cranking
+            if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
+          }
         }
       //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
