@@ -259,6 +259,12 @@ void initialiseAll(void)
     fanPWMTable.values = configPage9.PWMFanDuty;
     fanPWMTable.axisX = configPage6.fanPWMBins;
 
+    rollingCutTable.valueSize = SIZE_BYTE;
+    rollingCutTable.axisSize = SIZE_SIGNED_BYTE; //X axis is SIGNED for this table. 
+    rollingCutTable.xSize = 4;
+    rollingCutTable.values = configPage15.rollingProtCutPercent;
+    rollingCutTable.axisX = configPage15.rollingProtRPMDelta;
+
     wmiAdvTable.valueSize = SIZE_BYTE;
     wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     wmiAdvTable.xSize = 6;
@@ -449,7 +455,6 @@ void initialiseAll(void)
 
     //Calculate the number of degrees between cylinders
     //Set some default values. These will be updated below if required.
-    CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
 
@@ -540,24 +545,24 @@ void initialiseAll(void)
         maxIgnOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
-        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
-        if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
-        {
-          channel2IgnDegrees = 240;
-          channel3IgnDegrees = 480;
+          //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
+          if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
+          {
+            channel2IgnDegrees = 240;
+            channel3IgnDegrees = 480;
 
-          CRANK_ANGLE_MAX_IGN = 720;
+            CRANK_ANGLE_MAX_IGN = 720;
+          }
+          else
+          {
+            channel2IgnDegrees = 120;
+            channel3IgnDegrees = 240;
+          }
         }
         else
         {
-          channel2IgnDegrees = 120;
-          channel3IgnDegrees = 240;
-        }
-        }
-        else
-        {
-        channel2IgnDegrees = configPage2.oddfire2;
-        channel3IgnDegrees = configPage2.oddfire3;
+          channel2IgnDegrees = configPage2.oddfire2;
+          channel3IgnDegrees = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -976,9 +981,6 @@ void initialiseAll(void)
         break;
     }
 
-    if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
-    else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
-    else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
     currentStatus.status3 |= currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
     
     //Special case:
@@ -986,7 +988,7 @@ void initialiseAll(void)
     //This is ONLY the case on 4 stroke systems
     if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
     {
-      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720; }
     }
     
     switch(configPage2.injLayout)

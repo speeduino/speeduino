@@ -52,11 +52,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
 
-bool ignitionOn = false; /**< The current state of the ignition system (on or off) */
-bool fuelOn = false; /**< The current state of the fuel system (on or off) */
+uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
+uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 
-byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
-byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
+//byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
+//byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
@@ -175,8 +175,8 @@ void loop(void)
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;
-      ignitionOn = false;
-      fuelOn = false;
+      ignitionChannelsOn = 0;
+      fuelChannelsOn = 0;
       if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
@@ -423,7 +423,6 @@ void loop(void)
     //Main loop runs within this clause
     if ((currentStatus.hasSync || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) && (currentStatus.RPM > 0))
     {
-        if(currentStatus.startRevolutions >= configPage4.StgCycles)  { ignitionOn = true; fuelOn = true; } //Enable the fuel and ignition, assuming staging revolutions are complete
         //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
@@ -987,61 +986,102 @@ void loop(void)
       // }
       
       //Check for any of the engine protections or rev limiters being turned on
-      if(checkEngineProtect() || currentStatus.launchingHard || currentStatus.flatShiftingHard)
+      int16_t maxAllowedRPM = configPage4.HardRevLim; //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. Use RPM hard limit as the default as it's the highest that is ever permitted
+      //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
+      checkRevLimit();
+      if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }
+      if ( (currentStatus.launchingHard == true) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
+      if ( (currentStatus.flatShiftingHard == true) && (configPage6.flatSArm < maxAllowedRPM) ) { maxAllowedRPM = configPage6.flatSArm; }
+      maxAllowedRPM = maxAllowedRPM * 100; //All of the above limits are divided by 100, convert back to RPM
+    
+      if( (configPage2.hardCutType == HARD_CUT_FULL) && (currentStatus.RPM > maxAllowedRPM) )
       {
-        if( (currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM) || currentStatus.launchingHard || currentStatus.flatShiftingHard) //Ugly, but the launch/flat shift check needs to be here as well to prevent these limiters not happening when under the the Engine Protection min rpm
+        //Full hard cut turns outputs off completely. 
+        switch(configPage6.engineProtectType)
         {
-          if( (configPage2.hardCutType == HARD_CUT_FULL) || (configPage6.engineProtectType == PROTECT_CUT_FUEL) ) 
-          { 
-            //Full hard cut turns outputs off completely. Note that hard cut is ALWAYS used on fuel cut only. 
-            switch(configPage6.engineProtectType)
+          case PROTECT_CUT_OFF:
+            //Make sure all channels are turned on
+            ignitionChannelsOn = 0xFF;
+            fuelChannelsOn = 0xFF;
+            currentStatus.engineProtectStatus = 0;
+            break;
+          case PROTECT_CUT_IGN:
+            ignitionChannelsOn = 0;
+            break;
+          case PROTECT_CUT_FUEL:
+            fuelChannelsOn = 0;
+            break;
+          case PROTECT_CUT_BOTH:
+            ignitionChannelsOn = 0;
+            fuelChannelsOn = 0;
+            break;
+          default:
+            ignitionChannelsOn = 0;
+            fuelChannelsOn = 0;
+            break;
+        }
+      } //Hard cut check
+      else if( (configPage2.hardCutType == HARD_CUT_ROLLING) && (currentStatus.RPM > (maxAllowedRPM + (configPage15.rollingProtRPMDelta[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+      { 
+        uint8_t revolutionsToCut = 1;
+        if(configPage2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
+        //if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+
+        if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
+        if (currentStatus.startRevolutions > (rollingCutLastRev + revolutionsToCut) )
+        { 
+          uint8_t cutPercent = 0;
+          int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
+          if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
+          else { cutPercent = table2D_getValue(&rollingCutTable, (rpmDelta / 10) ); } //
+
+          //max(maxIgnOutputs, maxInjOutputs)
+          for(uint8_t x=0; x<8; x++)
+          {  
+            if( (configPage6.engineProtectType != PROTECT_CUT_OFF) && ( (cutPercent == 100) || (random1to100() < cutPercent) ) )
             {
-              case PROTECT_CUT_OFF:
-                ignitionOn = true;
-                fuelOn = true;
-                currentStatus.engineProtectStatus = 0;
-                break;
-              case PROTECT_CUT_IGN:
-                ignitionOn = false;
-                break;
-              case PROTECT_CUT_FUEL:
-                fuelOn = false;
-                break;
-              case PROTECT_CUT_BOTH:
-                ignitionOn = false;
-                fuelOn = false;
-                break;
-              default:
-                ignitionOn = false;
-                fuelOn = false;
-                break;
+              switch(configPage6.engineProtectType)
+              {
+                case PROTECT_CUT_IGN:
+                  BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
+                  break;
+                case PROTECT_CUT_FUEL:
+                  BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  break;
+                case PROTECT_CUT_BOTH:
+                  BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
+                  BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  break;
+                default:
+                  BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
+                  BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  break;
+              }
+            }
+            else
+            {
+              BIT_SET(ignitionChannelsOn, x); //Turn on this ignition channel
+              BIT_SET(fuelChannelsOn, x); //Turn on this fuel channel
             }
           }
-          else 
-          { 
-            //if(rollingCutCounter >= 2) //Vary this number to change the intensity of the roll. The higher the number, the closer is it to full cut
-            if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //
-            if (currentStatus.startRevolutions > (rollingCutLastRev+1) )
-            { 
-              //Rolls through each of the active ignition channels based on how many revolutions have taken place
-              //curRollingCut = ( (currentStatus.startRevolutions / 2) % maxIgnOutputs) + 1;
-              curRollingCut = 0;
-              rollingCutCounter += 1;
-              if(rollingCutCounter > (maxIgnOutputs-1)) { rollingCutCounter = 0; }
-              BIT_SET(curRollingCut, rollingCutCounter);
+          rollingCutLastRev = currentStatus.startRevolutions;
+        }
+      } //Rolling cut check
+      else
+      {
+        currentStatus.engineProtectStatus = 0;
+        //No engine protection active, so turn all the channels on
+        if(currentStatus.startRevolutions >= configPage4.StgCycles)
+        { 
+          //Enable the fuel and ignition, assuming staging revolutions are complete 
+          ignitionChannelsOn = 0xff; 
+          fuelChannelsOn = 0xff; 
+        } 
+      }
 
-              ignitionOn = true;
-              rollingCutLastRev = currentStatus.startRevolutions;
-              //curRollingCut = 0;
-            }
-          } //Hard/Rolling cut check
-        } //RPM Check
-        else { currentStatus.engineProtectStatus = 0; } //Force all engine protection flags to be off as we're below the minimum RPM
-      } //Protection active check
-      else { curRollingCut = 0; } //Disables the rolling hard cut
 
 #if INJ_CHANNELS >= 1
-      if (fuelOn && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
+      if( (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
       {
         if(currentStatus.PW1 >= inj_opentime_uS)
         {
@@ -1187,7 +1227,7 @@ void loop(void)
       }
       else { fixedCrankingOverride = 0; }
 
-      if(ignitionOn)
+      if(ignitionChannelsOn > 0)
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
@@ -1196,7 +1236,7 @@ void loop(void)
 
 #if IGN_CHANNELS >= 1
         uint32_t timeOut = calculateIgnition1Timeout(crankAngle);
-        if ( (timeOut > 0U) && (!BIT_CHECK(curRollingCut, IGN1_CMD_BIT)) )
+        if ( (timeOut > 0U) && (BIT_CHECK(ignitionChannelsOn, IGN1_CMD_BIT)) )
         {
           
           setIgnitionSchedule1(ign1StartFunction,
@@ -1233,7 +1273,7 @@ void loop(void)
         {
             unsigned long ignition2StartTime = calculateIgnitionNTimeout(ignitionSchedule2, ignition2StartAngle, channel2IgnDegrees, crankAngle);
 
-            if ( (ignition2StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN2_CMD_BIT)) )
+            if ( (ignition2StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN2_CMD_BIT)) )
             {
               setIgnitionSchedule2(ign2StartFunction,
                         ignition2StartTime,
@@ -1249,7 +1289,7 @@ void loop(void)
         {
             unsigned long ignition3StartTime = calculateIgnitionNTimeout(ignitionSchedule3, ignition3StartAngle, channel3IgnDegrees, crankAngle);
 
-            if ( (ignition3StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN3_CMD_BIT)) )
+            if ( (ignition3StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN3_CMD_BIT)) )
             {
               setIgnitionSchedule3(ign3StartFunction,
                         ignition3StartTime,
@@ -1265,7 +1305,7 @@ void loop(void)
         {
             unsigned long ignition4StartTime = calculateIgnitionNTimeout(ignitionSchedule4, ignition4StartAngle, channel4IgnDegrees, crankAngle);
 
-            if ( (ignition4StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN4_CMD_BIT)) )
+            if ( (ignition4StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN4_CMD_BIT)) )
             {
               setIgnitionSchedule4(ign4StartFunction,
                         ignition4StartTime,
@@ -1281,7 +1321,7 @@ void loop(void)
         {
             unsigned long ignition5StartTime = calculateIgnitionNTimeout(ignitionSchedule5, ignition5StartAngle, channel5IgnDegrees, crankAngle);
 
-            if ( (ignition5StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN5_CMD_BIT)) )
+            if ( (ignition5StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN5_CMD_BIT)) )
             {
               setIgnitionSchedule5(ign5StartFunction,
                         ignition5StartTime,
@@ -1297,7 +1337,7 @@ void loop(void)
         {
             unsigned long ignition6StartTime = calculateIgnitionNTimeout(ignitionSchedule6, ignition6StartAngle, channel6IgnDegrees, crankAngle);
 
-            if ( (ignition6StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN6_CMD_BIT)) )
+            if ( (ignition6StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN6_CMD_BIT)) )
             {
               setIgnitionSchedule6(ign6StartFunction,
                         ignition6StartTime,
@@ -1313,7 +1353,7 @@ void loop(void)
         {
             unsigned long ignition7StartTime = calculateIgnitionNTimeout(ignitionSchedule7, ignition7StartAngle, channel7IgnDegrees, crankAngle);
 
-            if ( (ignition7StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN7_CMD_BIT)) )
+            if ( (ignition7StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN7_CMD_BIT)) )
             {
               setIgnitionSchedule7(ign7StartFunction,
                         ignition7StartTime,
@@ -1329,7 +1369,7 @@ void loop(void)
         {
             unsigned long ignition8StartTime = calculateIgnitionNTimeout(ignitionSchedule8, ignition8StartAngle, channel8IgnDegrees, crankAngle);
 
-            if ( (ignition8StartTime > 0) && (!BIT_CHECK(curRollingCut, IGN8_CMD_BIT)) )
+            if ( (ignition8StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN8_CMD_BIT)) )
             {
               setIgnitionSchedule8(ign8StartFunction,
                         ignition8StartTime,

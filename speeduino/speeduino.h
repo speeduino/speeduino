@@ -24,13 +24,6 @@ byte getAdvance1(void);
 extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
 
-extern bool ignitionOn; /**< The current state of the ignition system (on or off) */
-extern bool fuelOn; /**< The current state of the fuel system (on or off) */
-
-extern byte curRollingCut; /**< Rolling rev limiter, current ignition channel being cut */
-extern byte rollingCutCounter; /**< how many times (revolutions) the ignition has been cut in a row */
-extern uint32_t rollingCutLastRev; /**< Tracks whether we're on the same or a different rev for the rolling cut */
-
 /** @name Staging
  * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
  * 

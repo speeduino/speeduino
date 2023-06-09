@@ -707,6 +707,16 @@ void doUpdates(void)
   {
     //202306
 
+    //Rolling cut curve added. Default values
+    configPage15.rollingProtRPMDelta[0]   = -30;
+    configPage15.rollingProtRPMDelta[1]   = -20;
+    configPage15.rollingProtRPMDelta[2]   = -10;
+    configPage15.rollingProtRPMDelta[3]   = -5;
+    configPage15.rollingProtCutPercent[0] = 50;
+    configPage15.rollingProtCutPercent[1] = 65;
+    configPage15.rollingProtCutPercent[2] = 80;
+    configPage15.rollingProtCutPercent[3] = 95;
+
     writeAllConfig();
     storeEEPROMVersion(22);
   }
