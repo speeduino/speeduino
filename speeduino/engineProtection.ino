@@ -7,7 +7,7 @@ byte oilProtStartTime = 0;
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkRevLimit() || checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }

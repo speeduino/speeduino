@@ -156,6 +156,8 @@
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
 #define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
 
+#define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
+
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
@@ -497,6 +499,7 @@ extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
+extern struct table2D rollingCutTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -592,8 +595,7 @@ extern volatile uint16_t ignitionCount; /**< The count of ignition events that h
   extern byte secondaryTriggerEdge;
   extern byte tertiaryTriggerEdge;
 #endif
-extern int CRANK_ANGLE_MAX;
-extern int16_t CRANK_ANGLE_MAX_IGN;
+extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10;     /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
@@ -1366,7 +1368,7 @@ struct config10 {
 
   byte oilPressureProtTime;
 
-  byte unused11_191_191; //Bytes 187-191
+  byte unused11_191_191;
 
 #if defined(CORE_AVR)
   };
@@ -1472,9 +1474,12 @@ struct config15 {
   byte airConUnused4 : 2;
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
+
+  int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
+  byte rollingProtCutPercent[4];
   
   //Bytes 98-255
-  byte Unused15_98_255[158];
+  byte Unused15_98_255[150];
 
 #if defined(CORE_AVR)
   };
