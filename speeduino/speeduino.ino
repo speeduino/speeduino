@@ -961,7 +961,7 @@ void loop(void)
 
       
       //Check for any of the engine protections or rev limiters being turned on
-      int16_t maxAllowedRPM = configPage4.HardRevLim; //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. Use RPM hard limit as the default as it's the highest that is ever permitted
+      uint16_t maxAllowedRPM = configPage4.HardRevLim; //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. Use RPM hard limit as the default as it's the highest that is ever permitted
       //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
       checkRevLimit();
       if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }

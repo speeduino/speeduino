@@ -225,10 +225,10 @@ void refreshRunningIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t c
     int angleToEnd =ignitionEndAngle-crankAngle;
 
     //apply ignition limits    
-    ( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
+    angleToEnd= ( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
 
     //convert to time scale (fastDegreesToUS)
-    int timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
+    unsigned long timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
     if(timeToEnd < IGNITION_REFRESH_THRESHOLD || (timeToEnd > MAX_TIMER_PERIOD)){
       return; //abort mission when there is not enough time
     }
@@ -242,7 +242,7 @@ void refreshRunningIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t c
       targetSchedule->setCompare(targetSchedule->startCompare + (uS_TO_TIMER_COMPARE(currentStatus.dwell)*3/4));
     }
     //also do not extend beyond dwell limit value 
-    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000))))
+    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE((uint32_t)((uint8_t)configPage4.dwellLimit*1000))))) // dwellLimit cast to unsigned needed here to avoid problems and compiler warning
     {
       targetSchedule->setCompare(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000));
     }
@@ -265,10 +265,10 @@ void refreshIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAng
   int angleToEnd =ignitionEndAngle-crankAngle;
 
   //apply ignition limits    
-  ( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
+  angleToEnd=( (((int16_t)(angleToEnd)) >= CRANK_ANGLE_MAX_IGN) ? ((angleToEnd) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angleToEnd) < 0) ? ((angleToEnd) + CRANK_ANGLE_MAX_IGN) : (angleToEnd)) );
 
   //convert to time scale (fastDegreesToUS)
-  int timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
+  unsigned long timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
 
   if(timeToEnd < MAX_TIMER_PERIOD) //Need to check that the timeout doesn't exceed the overflow
   {
@@ -281,9 +281,9 @@ void refreshIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAng
       targetSchedule->endCompare=(targetSchedule->startCompare + (uS_TO_TIMER_COMPARE(currentStatus.dwell)*3/4));
     }
     //also do not extend beyond dwell limit value 
-    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000))))
+    else if(configPage4.useDwellLim == true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE((uint32_t)((uint8_t)configPage4.dwellLimit*1000)))))  // dwellLimit cast to unsigned needed here to avoid problems and compiler warning
     {
-      targetSchedule->endCompare=(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(configPage4.dwellLimit*1000));
+      targetSchedule->endCompare=(targetSchedule->startCompare + uS_TO_TIMER_COMPARE(uint32_t((uint8_t)configPage4.dwellLimit*1000)));
     }
     //or cap at 2x commanded dwell for now, when limit is not specified or exeeded, but some dwell error correction is requested
     else if(configPage4.dwellErrCorrect==true && (COMPARE_TYPE(newEndCompare-targetSchedule->startCompare) > (uS_TO_TIMER_COMPARE(currentStatus.dwell*2))))
