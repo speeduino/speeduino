@@ -59,7 +59,7 @@ void test_accuracy_duration_inj(void)
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/;
     while(targetSchedule->Status == RUNNING) /*Wait*/;
-    if(MAX_TIMER_PERIOD>testdata->expected){
+    if(MAX_TIMER_PERIOD>testdata->expected && (testdata->expected > (INJECTION_REFRESH_TRESHOLD+DURATION))){
         TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
     }
     else    //special case when duration is longer than injection timer allows, in this case shedule should not have been started

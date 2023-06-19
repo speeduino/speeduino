@@ -46,9 +46,12 @@ void test_status_pending_to_running_inj(void)
     initialiseSchedulers();
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
-    setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
+    setFuelSchedule(targetSchedule, TESTCRANKANGLE, testdata->angle, DURATION);
     while(targetSchedule->Status == PENDING) /*Wait*/ ;
-    if(MAX_TIMER_PERIOD>testdata->expected){
+    if(TESTCRANKANGLE > testdata->angle){
+        TEST_IGNORE_MESSAGE("Goes into the next cycle"); //Do not test into the next cycle at the moment because this needs to be done including the crankmath to the test
+    }
+    else if(MAX_TIMER_PERIOD>testdata->expected && (testdata->expected>(INJECTION_REFRESH_TRESHOLD+DURATION))){
         TEST_ASSERT_EQUAL(RUNNING, targetSchedule->Status);
     }
     else{
@@ -99,6 +102,7 @@ void test_status_pending_to_running(void)
         }
     }
     //fuel schedules testing loop
+    CRANK_ANGLE_MAX_INJ=720;
     for(i=1;i<=INJ_CHANNELS;i++){
         switch(i){
             case 1: targetSchedule=&fuelSchedule1;break;

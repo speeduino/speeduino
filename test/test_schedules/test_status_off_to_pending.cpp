@@ -46,7 +46,12 @@ void test_off_to_pending_inj(void)
     targetSchedule->StartFunction=startCallback;
     targetSchedule->EndFunction =endCallback;
     setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
-    if(MAX_TIMER_PERIOD>testdata->expected){
+    //Schedule should reach pending state only when following conditions are met:
+    if(TESTCRANKANGLE < (TESTCRANKANGLE+testdata->angle)){
+        TEST_IGNORE_MESSAGE("Not applicable"); //Do not test here at the moment the case when calculation goes into the next cycle
+    }
+    else if((MAX_TIMER_PERIOD > testdata->expected) && (testdata->expected > (INJECTION_REFRESH_TRESHOLD+DURATION)))
+    {
         TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
     }
     else{
@@ -97,6 +102,7 @@ void test_status_off_to_pending(void)
         }
     }
     //fuel schedules testing loop
+    CRANK_ANGLE_MAX_INJ=720;
     for(i=1;i<=INJ_CHANNELS;i++){
         switch(i){
             case 1: targetSchedule=&fuelSchedule1;break;

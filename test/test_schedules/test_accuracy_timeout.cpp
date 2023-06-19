@@ -58,7 +58,7 @@ void test_accuracy_timeout_inj(void)
     while(targetSchedule->Status == PENDING) /*Wait*/;
     while(targetSchedule->Status == RUNNING) /*Wait*/;
     end_time = micros();
-    if(MAX_TIMER_PERIOD>testdata->expected){
+    if(MAX_TIMER_PERIOD>testdata->expected && (testdata->expected > (INJECTION_REFRESH_TRESHOLD+DURATION))){
         TEST_ASSERT_UINT32_WITHIN(DELTA_FOR_INJ, testdata->expected, end_time - start_time);
     }
     else{
