@@ -1969,7 +1969,10 @@ void triggerPri_Jeep2000(void)
 }
 void triggerSec_Jeep2000(void)
 {
-  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  if(toothCurrentCount > 11) // The cam signal should only happen after primary tooth 12 (or 13, at startup). So this is a cheap way to filter cam signal noise 
+  {
+    toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  }
   return;
 }
 
