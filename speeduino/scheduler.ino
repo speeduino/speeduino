@@ -439,7 +439,7 @@ void fuelScheduleInterrupt(struct Schedule *fuelSchedule)
     if(fuelSchedule->hasNextSchedule == true)
     {
       //check for possible overlap
-      if((fuelSchedule->nextEndCompare-fuelSchedule->nextStartCompare)+ uS_TO_TIMER_COMPARE(INJECTION_OVERLAP_TRESHOLD)>=(fuelSchedule->nextEndCompare-fuelSchedule->endCompare)) 
+      if((COMPARE_TYPE)(fuelSchedule->nextEndCompare-fuelSchedule->nextStartCompare)+ (COMPARE_TYPE)uS_TO_TIMER_COMPARE(INJECTION_OVERLAP_TRESHOLD)>=(COMPARE_TYPE)(fuelSchedule->nextEndCompare-fuelSchedule->endCompare)) 
       {
         fuelSchedule->setCompare(fuelSchedule->nextEndCompare);
         fuelSchedule->endCompare = fuelSchedule->nextEndCompare;
