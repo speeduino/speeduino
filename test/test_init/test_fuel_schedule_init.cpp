@@ -17,8 +17,11 @@ static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t
 
   sprintf_P(msg, PSTR("channel%" PRIu8 "InjDegrees.isEnabled"), cmdBit+1);
   TEST_ASSERT_EQUAL_MESSAGE(enabled, BIT_CHECK(channelInjEnabled, cmdBit), msg);
-  sprintf_P(msg, PSTR("channe%" PRIu8 "InjDegrees"), cmdBit+1);
-  TEST_ASSERT_EQUAL_MESSAGE(angle, channelInjDegrees, msg);
+  if(BIT_CHECK(channelInjEnabled, cmdBit)) //only test for angle if this channel is enabled, does not matter what angles there are for inactive channels.
+  {
+    sprintf_P(msg, PSTR("channe%" PRIu8 "InjDegrees"), cmdBit+1);
+    TEST_ASSERT_EQUAL_MESSAGE(angle, channelInjDegrees, msg);
+  }
   sprintf_P(msg, PSTR("inj%" PRIu8 "StartFunction"), cmdBit+1);
   TEST_ASSERT_TRUE_MESSAGE(!enabled || (startFunction!=nullCallback), msg);
   sprintf_P(msg, PSTR("inj%" PRIu8 "EndFunction"), cmdBit+1);
