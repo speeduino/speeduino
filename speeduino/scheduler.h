@@ -20,7 +20,7 @@ This means that the precision of the scheduler is:
 ## Features
 
 This differs from most other schedulers in that its calls are non-recurring (ie when you schedule an event at a certain time and once it has occurred,
-it will not reoccur unless you explicitely ask/re-register for it).
+it will not reoccur unless you explicitly ask/re-register for it).
 Each timer can have only 1 callback associated with it at any given time. If you call the setCallback function a 2nd time,
 the original schedule will be overwritten and not occur.
 
@@ -46,48 +46,48 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
-extern void (*inj1StartFunction)();
-extern void (*inj1EndFunction)();
-extern void (*inj2StartFunction)();
-extern void (*inj2EndFunction)();
-extern void (*inj3StartFunction)();
-extern void (*inj3EndFunction)();
-extern void (*inj4StartFunction)();
-extern void (*inj4EndFunction)();
-extern void (*inj5StartFunction)();
-extern void (*inj5EndFunction)();
-extern void (*inj6StartFunction)();
-extern void (*inj6EndFunction)();
-extern void (*inj7StartFunction)();
-extern void (*inj7EndFunction)();
-extern void (*inj8StartFunction)();
-extern void (*inj8EndFunction)();
+extern void (*inj1StartFunction)(void);
+extern void (*inj1EndFunction)(void);
+extern void (*inj2StartFunction)(void);
+extern void (*inj2EndFunction)(void);
+extern void (*inj3StartFunction)(void);
+extern void (*inj3EndFunction)(void);
+extern void (*inj4StartFunction)(void);
+extern void (*inj4EndFunction)(void);
+extern void (*inj5StartFunction)(void);
+extern void (*inj5EndFunction)(void);
+extern void (*inj6StartFunction)(void);
+extern void (*inj6EndFunction)(void);
+extern void (*inj7StartFunction)(void);
+extern void (*inj7EndFunction)(void);
+extern void (*inj8StartFunction)(void);
+extern void (*inj8EndFunction)(void);
 
 /** @name IgnitionCallbacks
  * These are the (global) function pointers that get called to begin and end the ignition coil charging.
  * They are required for the various spark output modes.
  * @{
 */
-extern void (*ign1StartFunction)();
-extern void (*ign1EndFunction)();
-extern void (*ign2StartFunction)();
-extern void (*ign2EndFunction)();
-extern void (*ign3StartFunction)();
-extern void (*ign3EndFunction)();
-extern void (*ign4StartFunction)();
-extern void (*ign4EndFunction)();
-extern void (*ign5StartFunction)();
-extern void (*ign5EndFunction)();
-extern void (*ign6StartFunction)();
-extern void (*ign6EndFunction)();
-extern void (*ign7StartFunction)();
-extern void (*ign7EndFunction)();
-extern void (*ign8StartFunction)();
-extern void (*ign8EndFunction)();
+extern void (*ign1StartFunction)(void);
+extern void (*ign1EndFunction)(void);
+extern void (*ign2StartFunction)(void);
+extern void (*ign2EndFunction)(void);
+extern void (*ign3StartFunction)(void);
+extern void (*ign3EndFunction)(void);
+extern void (*ign4StartFunction)(void);
+extern void (*ign4EndFunction)(void);
+extern void (*ign5StartFunction)(void);
+extern void (*ign5EndFunction)(void);
+extern void (*ign6StartFunction)(void);
+extern void (*ign6EndFunction)(void);
+extern void (*ign7StartFunction)(void);
+extern void (*ign7EndFunction)(void);
+extern void (*ign8StartFunction)(void);
+extern void (*ign8EndFunction)(void);
 /** @} */
 
-void initialiseSchedulers();
-void beginInjectorPriming();
+void initialiseSchedulers(void);
+void beginInjectorPriming(void);
 void setFuelSchedule1(unsigned long timeout, unsigned long duration);
 void setFuelSchedule2(unsigned long timeout, unsigned long duration);
 void setFuelSchedule3(unsigned long timeout, unsigned long duration);
@@ -108,47 +108,47 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 
 inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
 
-//The ARM cores use seprate functions for their ISRs
+//The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  static inline void fuelSchedule1Interrupt();
-  static inline void fuelSchedule2Interrupt();
-  static inline void fuelSchedule3Interrupt();
-  static inline void fuelSchedule4Interrupt();
+  static inline void fuelSchedule1Interrupt(void);
+  static inline void fuelSchedule2Interrupt(void);
+  static inline void fuelSchedule3Interrupt(void);
+  static inline void fuelSchedule4Interrupt(void);
 #if (INJ_CHANNELS >= 5)
-  static inline void fuelSchedule5Interrupt();
+  static inline void fuelSchedule5Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 6)
-  static inline void fuelSchedule6Interrupt();
+  static inline void fuelSchedule6Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 7)
-  static inline void fuelSchedule7Interrupt();
+  static inline void fuelSchedule7Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 8)
-  static inline void fuelSchedule8Interrupt();
+  static inline void fuelSchedule8Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 1)
-  static inline void ignitionSchedule1Interrupt();
+  static inline void ignitionSchedule1Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 2)
-  static inline void ignitionSchedule2Interrupt();
+  static inline void ignitionSchedule2Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 3)
-  static inline void ignitionSchedule3Interrupt();
+  static inline void ignitionSchedule3Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 4)
-  static inline void ignitionSchedule4Interrupt();
+  static inline void ignitionSchedule4Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 5)
-  static inline void ignitionSchedule5Interrupt();
+  static inline void ignitionSchedule5Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 6)
-  static inline void ignitionSchedule6Interrupt();
+  static inline void ignitionSchedule6Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 7)
-  static inline void ignitionSchedule7Interrupt();
+  static inline void ignitionSchedule7Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 8)
-  static inline void ignitionSchedule8Interrupt();
+  static inline void ignitionSchedule8Interrupt(void);
 #endif
 #endif
 /** Schedule statuses.
@@ -254,7 +254,7 @@ static inline COMPARE_TYPE setQueue(volatile Schedule *queue[], Schedule *schedu
 
 
   //Sort the queues. Both queues are kept in sync.
-  //This implementes a sorting networking based on the Bose-Nelson sorting network
+  //This implements a sorting networking based on the Bose-Nelson sorting network
   //See: pages.ripco.net/~jgamble/nw.html
   #define SWAP(x,y) if(tmpQueue[y] < tmpQueue[x]) { unsigned int tmp = tmpQueue[x]; tmpQueue[x] = tmpQueue[y]; tmpQueue[y] = tmp; volatile Schedule *tmpS = queue[x]; queue[x] = queue[y]; queue[y] = tmpS; }
   /*SWAP(0, 1); */ //Likely not needed

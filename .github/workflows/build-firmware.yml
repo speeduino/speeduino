@@ -12,33 +12,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Cache pip
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
     - name: Cache PlatformIO
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.platformio
         key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
 
     - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
 
-    - name: Run PlatformIO
-      run: platformio run -e teensy35 -e teensy36 -e teensy41 -e black_F407VE -e megaatmega2561 -e megaatmega2560
+    - name: Build test atmel
+      run: platformio run -e megaatmega2560 -e megaatmega2561
+
+    - name: Build test teensy
+      run: platformio run -e teensy35 -e teensy36 -e teensy41
+
+    - name: Build test STM32
+      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
 
     - name: Upload to Speeduino server
-      if: github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         WEB_PWD: ${{ secrets.WEB_PWD }}
       run: |
@@ -51,7 +57,7 @@ jobs:
           
     - name: Slack Notification (Passed)
       uses: rtCamp/action-slack-notify@v2
-      if: success() && github.event_name != 'pull_request'
+      if: success() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
@@ -63,7 +69,7 @@ jobs:
     
     - name: Slack Notification (Failed)
       uses: rtCamp/action-slack-notify@v2
-      if: failure() && github.event_name != 'pull_request'
+      if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
       env:
         SLACK_CHANNEL: git
         SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'

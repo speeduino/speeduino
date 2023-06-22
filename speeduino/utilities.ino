@@ -13,6 +13,9 @@
 #include "decoders.h"
 #include "comms.h"
 #include "logger.h"
+#include "scheduler.h"
+#include "scheduledIO.h"
+#include "speeduino.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
 uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
@@ -88,7 +91,7 @@ byte pinTranslateAnalog(byte rawPin)
 }
 
 
-void setResetControlPinState()
+void setResetControlPinState(void)
 {
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
 
@@ -114,9 +117,8 @@ void setResetControlPinState()
   }
 }
 
-
 //*********************************************************************************************************************************************************************************
-void initialiseProgrammableIO()
+void initialiseProgrammableIO(void)
 {
   uint8_t outputPin;
   for (uint8_t y = 0; y < sizeof(configPage13.outputPin); y++)
@@ -147,7 +149,7 @@ void initialiseProgrammableIO()
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-void checkProgrammableIO()
+void checkProgrammableIO(void)
 {
   int16_t data, data2;
   uint8_t dataRequested;
@@ -258,17 +260,19 @@ void checkProgrammableIO()
 int16_t ProgrammableIOGetData(uint16_t index)
 {
   int16_t result;
-  uint8_t x;
   if ( index < LOG_ENTRY_SIZE )
   {
-    
-    for(x = 0; x<sizeof(fsIntIndex); x++)
+    /*
+    for(uint8_t x = 0; x<sizeof(fsIntIndex); x++)
     {
       // Stop at desired field
       if (pgm_read_byte(&(fsIntIndex[x])) == index) { break; }
     }
     if (x >= sizeof(fsIntIndex)) { result = getTSLogEntry(index); } // 8-bit, coerce to 16 bit result
     else { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); } // Assemble 2 bytes to word of 16 bit result
+    */
+    if(is2ByteEntry(index)) { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); }
+    else { result = getTSLogEntry(index); }
     
 
     //Special cases for temperatures

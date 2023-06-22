@@ -9,7 +9,7 @@ can_comms was originally contributed by Darren Siepka
 secondserial_command is called when a command is received from the secondary serial port
 It parses the command and calls the relevant function.
 
-can_command is called when a command is recieved by the onboard/attached canbus module
+can_command is called when a command is received by the onboard/attached canbus module
 It parses the command and calls the relevant function.
 
 sendcancommand is called when a command is to be sent either to serial3 
@@ -26,7 +26,7 @@ uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
 uint8_t cancmdfail = 0;     //command fail yes/no
 uint8_t canlisten = 0;
-uint8_t Lbuffer[8];         //8 byte buffer to store incomng can data
+uint8_t Lbuffer[8];         //8 byte buffer to store incoming can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
 bool canCmdPending = false;
@@ -46,7 +46,7 @@ bool canCmdPending = false;
   HardwareSerial &CANSerial = Serial2;
 #endif
 
-void secondserial_Command()
+void secondserial_Command(void)
 {
   #if defined(CANSerial_AVAILABLE)
   if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
@@ -73,7 +73,7 @@ void secondserial_Command()
             Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
             if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
                {
-                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you cant have a 2 byte value starting at byte 7(8 on the list)
+                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
                    {
                     Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
                    }
@@ -210,7 +210,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[0] = currentStatus.secl; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
   fullStatus[1] = currentStatus.status1; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
   fullStatus[2] = currentStatus.engine; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
-  fullStatus[3] = (byte)(divu100(currentStatus.dwell)); //Dwell in ms * 10
+  fullStatus[3] = (byte)div100(currentStatus.dwell); //Dwell in ms * 10
   fullStatus[4] = lowByte(currentStatus.MAP); //2 bytes for MAP
   fullStatus[5] = highByte(currentStatus.MAP);
   fullStatus[6] = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //mat
@@ -229,7 +229,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[19] = currentStatus.afrTarget;
   fullStatus[20] = lowByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
   fullStatus[21] = highByte(currentStatus.PW1); //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-  fullStatus[22] = currentStatus.tpsDOT; //TPS DOT
+  fullStatus[22] = (uint8_t)(currentStatus.tpsDOT / 10); //TPS DOT
   fullStatus[23] = currentStatus.advance;
   fullStatus[24] = currentStatus.TPS; // TPS (0% to 100%)
   //Need to split the int loopsPerSecond value into 2 bytes
@@ -311,9 +311,9 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[87] = highByte(currentStatus.ignLoad);
   fullStatus[88] = lowByte(currentStatus.injAngle); 
   fullStatus[89] = highByte(currentStatus.injAngle); 
-  fullStatus[90] = currentStatus.idleDuty;
+  fullStatus[90] = currentStatus.idleLoad;
   fullStatus[91] = currentStatus.CLIdleTarget; //closed loop idle target
-  fullStatus[92] = currentStatus.mapDOT; //rate of change of the map 
+  fullStatus[92] = (uint8_t)(currentStatus.mapDOT / 10); //rate of change of the map 
   fullStatus[93] = (int8_t)currentStatus.vvt1Angle;
   fullStatus[94] = currentStatus.vvt1TargetAngle;
   fullStatus[95] = currentStatus.vvt1Duty;
@@ -343,6 +343,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
   fullStatus[119] = lowByte(currentStatus.EMAP); //2 bytes for EMAP
   fullStatus[120] = highByte(currentStatus.EMAP);
   fullStatus[121] = currentStatus.fanDuty;
+  fullStatus[122] = currentStatus.airConStatus;
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -361,7 +362,7 @@ void sendcanValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portTy
 
 }
 
-void can_Command()
+void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
  #if defined (NATIVE_CAN_AVAILABLE)
@@ -423,7 +424,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whos value is sent next
+        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
         CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
         CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
         CANSerial.write(highByte(sourcecanAddress) );
@@ -789,7 +790,21 @@ if (PIDmode == 0x01)
                  outMsg.buf[6] =  0x00;                                               // C
                  outMsg.buf[7] =  0x00;                                               // D
             }
-       }     
+       }
+     // this allows to get any value out of current status array.
+     else if (requestedPIDhigh == 0x78)
+       {
+          int16_t tempValue;
+          tempValue = ProgrammableIOGetData(requestedPIDlow);
+          outMsg.buf[0] =  0x06;                 // sending 6 bytes
+          outMsg.buf[1] =  0x62;                 // Same as query, except that 40h is added to the mode value. So:62h = custom mode
+          outMsg.buf[2] =  requestedPIDlow;      // PID code
+          outMsg.buf[3] =  0x78;                 // PID code
+          outMsg.buf[4] =  lowByte(tempValue);   // A
+          outMsg.buf[5] =  highByte(tempValue);  // B
+          outMsg.buf[6] =  0x00; 
+          outMsg.buf[7] =  0x00;
+      }
     }
 }
 #endif
