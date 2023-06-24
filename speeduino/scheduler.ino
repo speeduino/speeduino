@@ -120,17 +120,17 @@ New generic function.
 */
 void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16_t injectorEndAngle, unsigned long duration)
 {
-  unsigned long endTimeout;
+  uint32_t endTimeout;
 
   while (injectorEndAngle <= crankAngle)   
     { 
       injectorEndAngle += CRANK_ANGLE_MAX_INJ; //calculate into the next cycle
-    } 
-  endTimeout=(injectorEndAngle - crankAngle) * (unsigned long)timePerDegree;
+    }   
   //endTimeout=angleToTime((injectorEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
   noInterrupts(); // make sure start and end values are updated simultaneously and that schedule do not change state 
   if(targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
+    endTimeout=(injectorEndAngle - crankAngle) * (uint32_t)timePerDegree;
     if((endTimeout < MAX_TIMER_PERIOD) && (endTimeout > duration + INJECTION_REFRESH_TRESHOLD)) //Need to check that the timeout doesn't exceed the overflow, also allow for fixed safety between setting the schedule and running it
     {          
       targetSchedule->endCompare = targetSchedule->getCounter() + (COMPARE_TYPE)(uS_TO_TIMER_COMPARE(endTimeout)); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)   
@@ -145,7 +145,7 @@ void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     interrupts();
     injectorEndAngle += CRANK_ANGLE_MAX_INJ;
-    endTimeout=(injectorEndAngle - crankAngle) * (unsigned long)timePerDegree;
+    endTimeout=(injectorEndAngle - crankAngle) * (uint32_t)timePerDegree;
     //endTimeout=angleToTime((injectorEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
     noInterrupts();
       if(endTimeout >= MAX_TIMER_PERIOD/2) //use half of the maximum period here because next schedule is really only used at high RPM
@@ -180,14 +180,13 @@ void setFuelSchedule (struct Schedule *targetSchedule, unsigned long duration)
 //New generic function
 void setIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t crankAngle, int ignitionEndAngle, unsigned long duration)
 {
-  unsigned long endTimeout;
+  uint32_t endTimeout;
 
   while (ignitionEndAngle <= crankAngle)   { ignitionEndAngle += CRANK_ANGLE_MAX_IGN; } //calculate into the next cycle
-  //endTimeout=(ignitionEndAngle - crankAngle) * (unsigned long)timePerDegree;
-  endTimeout= angleToTime((ignitionEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
-  
+  //endTimeout=(ignitionEndAngle - crankAngle) * (unsigned long)timePerDegree;  
   if (targetSchedule->Status != RUNNING) //Check that we're not already part way through a schedule
   {
+    endTimeout= angleToTime((ignitionEndAngle - crankAngle), CRANKMATH_METHOD_INTERVAL_REV);
     if((endTimeout < MAX_TIMER_PERIOD) && (endTimeout > duration + IGNITION_REFRESH_THRESHOLD)) //Need to check that the timeout doesn't exceed the overflow, also allow for fixed 230us safety between setting the schedule and running it
     {      
       noInterrupts(); // make sure start and end values are updated simultaneously
@@ -245,7 +244,7 @@ void refreshRunningIgnitionSchedule(struct Schedule *targetSchedule ,  int16_t c
 
     //convert to time scale (fastDegreesToUS)
     unsigned long timeToEnd = ((angleToEnd) * (unsigned long)timePerDegreex16) >> 4;
-    if(timeToEnd < IGNITION_REFRESH_THRESHOLD || (timeToEnd > MAX_TIMER_PERIOD)){
+    if(timeToEnd < IGNITION_REFRESH_THRESHOLD || (timeToEnd >= MAX_TIMER_PERIOD)){
       return; //abort mission when there is not enough time
     }
     //convert to timer ticks scale
