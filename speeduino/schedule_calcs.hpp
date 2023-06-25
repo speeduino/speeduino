@@ -6,11 +6,21 @@
 
 inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t injChannelDegrees, uint16_t injAngle)
 {
+  // 0<=injAngle<=720°
+  // 0<=injChannelDegrees<=720°
+  // 0<pwDegrees<=??? (could be many crank rotations in the worst case!)
+  // 45<=CRANK_ANGLE_MAX_INJ<=720
+  // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
+
   uint16_t startAngle = injAngle + injChannelDegrees;
-  if (startAngle>pwDegrees) {
-    return startAngle - pwDegrees;
-  } 
-  return (startAngle + CRANK_ANGLE_MAX_INJ) - pwDegrees;
+  // Avoid underflow
+  while (startAngle<pwDegrees) { startAngle = startAngle + CRANK_ANGLE_MAX_INJ; }
+  // Guarenteed to be >=0.
+  startAngle = startAngle - pwDegrees;
+  // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
+  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - CRANK_ANGLE_MAX_INJ; }
+
+  return startAngle;
 }
 
 inline uint32_t _calculateInjectorTimeout(const FuelSchedule &schedule, uint16_t openAngle, uint16_t crankAngle) {
