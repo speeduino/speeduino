@@ -319,27 +319,27 @@ extern void beginInjectorPriming(void)
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( BIT_CHECK(channelInjEnabled, INJ1_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule1, primingValue); }
+    if ( maxInjOutputs >= 1 ) { setFuelSchedule(&fuelSchedule1, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule2, primingValue); }
+    if ( maxInjOutputs >= 2 ) { setFuelSchedule(&fuelSchedule2, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule3, primingValue); }
+    if ( maxInjOutputs >= 3 ) { setFuelSchedule(&fuelSchedule3, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule4, primingValue); }
+    if ( maxInjOutputs >= 4 ) { setFuelSchedule(&fuelSchedule4, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule5, primingValue); }
+    if ( maxInjOutputs >= 5 ) { setFuelSchedule(&fuelSchedule5, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule6, primingValue); }
+    if ( maxInjOutputs >= 6 ) { setFuelSchedule(&fuelSchedule6, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) { setFuelSchedule(&fuelSchedule7, primingValue); }
+    if ( maxInjOutputs >= 7 ) { setFuelSchedule(&fuelSchedule7, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true ) { setFuelSchedule(&fuelSchedule8, primingValue); }
+    if ( maxInjOutputs >= 8 ) { setFuelSchedule(&fuelSchedule8, primingValue); }
 #endif
   }
 }

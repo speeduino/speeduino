@@ -506,193 +506,7 @@ void loop(void)
       //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
-      //Calculate staging pulsewidths if used
-      //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-      if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (currentStatus.PW1 > inj_opentime_uS) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
-      {
-        //Scale the 'full' pulsewidth by each of the injector capacities
-        currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-        uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
-
-        if(configPage10.stagingMode == STAGING_MODE_TABLE)
-        {
-          uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
-
-          byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
-          currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
-          currentStatus.PW1 += inj_opentime_uS; 
-
-          //PW2 is used temporarily to hold the secondary injector pulsewidth. It will be assigned to the correct channel below
-          if(stagingSplit > 0) 
-          { 
-            BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
-            currentStatus.PW2 = (stagingSplit * tempPW3) / 100; 
-            currentStatus.PW2 += inj_opentime_uS;
-          }
-          else
-          {
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag
-            currentStatus.PW2 = 0; 
-          }
-        }
-        else if(configPage10.stagingMode == STAGING_MODE_AUTO)
-        {
-          currentStatus.PW1 = tempPW1;
-          //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
-          //If they exceed their limit, the extra duty is passed to the secondaries
-          if(tempPW1 > pwLimit)
-          {
-            BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
-            uint32_t extraPW = tempPW1 - pwLimit + inj_opentime_uS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-            currentStatus.PW1 = pwLimit;
-            currentStatus.PW2 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
-            currentStatus.PW2 += inj_opentime_uS;
-          }
-          else 
-          {
-            //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
-            //Secondary PW is simply set to 0 
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag 
-            currentStatus.PW2 = 0; 
-          } 
-        }
-
-        //Allocate the primary and secondary pulse widths based on the fuel configuration
-        switch (configPage2.nCylinders) 
-        {
-          case 1:
-            //Nothing required for 1 cylinder, channels are correct already
-            break;
-          case 2:
-            //Prmaary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
-            currentStatus.PW3 = currentStatus.PW2;
-            currentStatus.PW4 = currentStatus.PW2;
-            currentStatus.PW2 = currentStatus.PW1;
-            break;
-          case 3:
-            //6 channels required for 'normal' 3 cylinder staging support
-            #if INJ_CHANNELS >= 6
-              //Primary pulsewidth on channels 1, 2 and 3, secondary on channels 4, 5 and 6
-              currentStatus.PW4 = currentStatus.PW2;
-              currentStatus.PW5 = currentStatus.PW2;
-              currentStatus.PW6 = currentStatus.PW2;
-            #else
-              //If there are not enough channels, then primary pulsewidth is on channels 1, 2 and 3, secondary on channel 4
-              currentStatus.PW4 = currentStatus.PW2;
-            #endif
-            currentStatus.PW2 = currentStatus.PW1;
-            currentStatus.PW3 = currentStatus.PW1;
-            break;
-          case 4:
-            if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
-            {
-              //Staging with 4 cylinders semi/sequential requires 8 total channels
-              #if INJ_CHANNELS >= 8
-                currentStatus.PW5 = currentStatus.PW2;
-                currentStatus.PW6 = currentStatus.PW2;
-                currentStatus.PW7 = currentStatus.PW2;
-                currentStatus.PW8 = currentStatus.PW2;
-
-                currentStatus.PW2 = currentStatus.PW1;
-                currentStatus.PW3 = currentStatus.PW1;
-                currentStatus.PW4 = currentStatus.PW1;
-              #else
-                //This is an invalid config as there are not enough outputs to support sequential + staging
-                //Put the staging output to the non-existant channel 5
-                BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-                #if INJ_CHANNELS >= 5
-                fuelSchedule5.channelDegrees=fuelSchedule1.channelDegrees;
-                #endif
-              #endif
-            }
-            else
-            {
-              currentStatus.PW3 = currentStatus.PW2;
-              currentStatus.PW4 = currentStatus.PW2;
-              currentStatus.PW2 = currentStatus.PW1;
-            }
-            break;
-            
-          case 5:
-            //No easily supportable 5 cylinder staging option unless there are at least 5 channels
-            #if INJ_CHANNELS >= 5
-              if (configPage2.injLayout != INJ_SEQUENTIAL)
-              {
-                currentStatus.PW5 = currentStatus.PW2;
-              }
-              #if INJ_CHANNELS >= 6
-                currentStatus.PW6 = currentStatus.PW2;
-              #endif
-            #endif
-            
-              currentStatus.PW2 = currentStatus.PW1;
-              currentStatus.PW3 = currentStatus.PW1;
-              currentStatus.PW4 = currentStatus.PW1;
-            break;
-
-          case 6:
-            #if INJ_CHANNELS >= 6
-              //8 cylinder staging only if not sequential
-              if (configPage2.injLayout != INJ_SEQUENTIAL)
-              {
-                currentStatus.PW4 = currentStatus.PW2;
-                currentStatus.PW5 = currentStatus.PW2;
-                currentStatus.PW6 = currentStatus.PW2;
-              }
-              #if INJ_CHANNELS >= 8
-              else
-                {
-                  //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
-                  currentStatus.PW7 = currentStatus.PW2;
-                  currentStatus.PW8 = currentStatus.PW2;
-
-                  currentStatus.PW4 = currentStatus.PW1;
-                  currentStatus.PW5 = currentStatus.PW1;
-                  currentStatus.PW6 = currentStatus.PW1;
-                }
-              #endif
-            #endif
-            currentStatus.PW2 = currentStatus.PW1;
-            currentStatus.PW3 = currentStatus.PW1;
-            break;
-
-          case 8:
-            #if INJ_CHANNELS >= 8
-              //8 cylinder staging only if not sequential
-              if (configPage2.injLayout != INJ_SEQUENTIAL)
-              {
-                currentStatus.PW5 = currentStatus.PW2;
-                currentStatus.PW6 = currentStatus.PW2;
-                currentStatus.PW7 = currentStatus.PW2;
-                currentStatus.PW8 = currentStatus.PW2;
-              }
-            #endif
-            currentStatus.PW2 = currentStatus.PW1;
-            currentStatus.PW3 = currentStatus.PW1;
-            currentStatus.PW4 = currentStatus.PW1;
-            break;
-
-          default:
-            //Assume 4 cylinder non-seq for default
-            currentStatus.PW3 = currentStatus.PW2;
-            currentStatus.PW4 = currentStatus.PW2;
-            currentStatus.PW2 = currentStatus.PW1;
-            break;
-        }
-      }
-      else { BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); } //Clear the staging active flag
-
-      if( BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == false)
-      { 
-        //If staging is off, all the pulse widths are set the same (Sequential and other adjustments may be made below)
-        currentStatus.PW2 = currentStatus.PW1;
-        currentStatus.PW3 = currentStatus.PW1;
-        currentStatus.PW4 = currentStatus.PW1;
-        currentStatus.PW5 = currentStatus.PW1;
-        currentStatus.PW6 = currentStatus.PW1;
-        currentStatus.PW7 = currentStatus.PW1;
-        currentStatus.PW8 = currentStatus.PW1;
-      }
+      calculateStaging(pwLimit);
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
@@ -1065,49 +879,49 @@ void loop(void)
 #endif
 
 #if INJ_CHANNELS >= 2
-        if( (BIT_CHECK(channelInjEnabled, INJ2_CMD_BIT) == true) && (currentStatus.PW2 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule2, crankAngle, injector2EndAngle, (unsigned long)currentStatus.PW2);    
         }
 #endif
 
 #if INJ_CHANNELS >= 3
-        if( (BIT_CHECK(channelInjEnabled, INJ3_CMD_BIT) == true) && (currentStatus.PW3 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule3, crankAngle, injector3EndAngle, (unsigned long)currentStatus.PW3);  
         }
 #endif
 
 #if INJ_CHANNELS >= 4
-        if( (BIT_CHECK(channelInjEnabled, INJ4_CMD_BIT) == true) && (currentStatus.PW4 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule4, crankAngle, injector4EndAngle, (unsigned long)currentStatus.PW4);  
         }
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (BIT_CHECK(channelInjEnabled, INJ5_CMD_BIT) == true) && (currentStatus.PW5 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule5, crankAngle, injector5EndAngle, (unsigned long)currentStatus.PW5);  
         }
 #endif
 
 #if INJ_CHANNELS >= 6
-        if( (BIT_CHECK(channelInjEnabled, INJ6_CMD_BIT) == true) && (currentStatus.PW6 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule6, crankAngle, injector6EndAngle, (unsigned long)currentStatus.PW6);  
         }
 #endif
 
 #if INJ_CHANNELS >= 7
-        if( (BIT_CHECK(channelInjEnabled, INJ7_CMD_BIT) == true) && (currentStatus.PW7 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule7, crankAngle, injector7EndAngle, (unsigned long)currentStatus.PW7);  
         }
 #endif
 
 #if INJ_CHANNELS >= 8
-        if( (BIT_CHECK(channelInjEnabled, INJ8_CMD_BIT) == true) && (currentStatus.PW8 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) )
         {
           setFuelSchedule(&fuelSchedule8, crankAngle, injector8EndAngle, (unsigned long)currentStatus.PW8);
         }
@@ -1483,4 +1297,200 @@ void calculateIgnitionAngles()
     default:
       break;
   }
+}
+
+void calculateStaging(uint32_t pwLimit)
+{
+  //Calculate staging pulsewidths if used
+  //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+  if( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY) && (currentStatus.PW1 > inj_opentime_uS) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+  {
+    //Scale the 'full' pulsewidth by each of the injector capacities
+    currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
+    uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
+
+    if(configPage10.stagingMode == STAGING_MODE_TABLE)
+    {
+      uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+
+      byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
+      currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
+      currentStatus.PW1 += inj_opentime_uS; 
+
+      //PW2 is used temporarily to hold the secondary injector pulsewidth. It will be assigned to the correct channel below
+      if(stagingSplit > 0) 
+      { 
+        BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
+        currentStatus.PW2 = (stagingSplit * tempPW3) / 100; 
+        currentStatus.PW2 += inj_opentime_uS;
+      }
+      else
+      {
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag
+        currentStatus.PW2 = 0; 
+      }
+    }
+    else if(configPage10.stagingMode == STAGING_MODE_AUTO)
+    {
+      currentStatus.PW1 = tempPW1;
+      //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
+      //If they exceed their limit, the extra duty is passed to the secondaries
+      if(tempPW1 > pwLimit)
+      {
+        BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
+        uint32_t extraPW = tempPW1 - pwLimit + inj_opentime_uS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+        currentStatus.PW1 = pwLimit;
+        currentStatus.PW2 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        currentStatus.PW2 += inj_opentime_uS;
+      }
+      else 
+      {
+        //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
+        //Secondary PW is simply set to 0 
+        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag 
+        currentStatus.PW2 = 0; 
+      } 
+    }
+
+    //Allocate the primary and secondary pulse widths based on the fuel configuration
+    switch (configPage2.nCylinders) 
+    {
+      case 1:
+        //Nothing required for 1 cylinder, channels are correct already
+        break;
+      case 2:
+        //Primary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
+        currentStatus.PW3 = currentStatus.PW2;
+        currentStatus.PW4 = currentStatus.PW2;
+        currentStatus.PW2 = currentStatus.PW1;
+        break;
+      case 3:
+        //6 channels required for 'normal' 3 cylinder staging support
+        #if INJ_CHANNELS >= 6
+          //Primary pulsewidth on channels 1, 2 and 3, secondary on channels 4, 5 and 6
+          currentStatus.PW4 = currentStatus.PW2;
+          currentStatus.PW5 = currentStatus.PW2;
+          currentStatus.PW6 = currentStatus.PW2;
+        #else
+          //If there are not enough channels, then primary pulsewidth is on channels 1, 2 and 3, secondary on channel 4
+          currentStatus.PW4 = currentStatus.PW2;
+        #endif
+        currentStatus.PW2 = currentStatus.PW1;
+        currentStatus.PW3 = currentStatus.PW1;
+        break;
+      case 4:
+        if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
+        {
+          //Staging with 4 cylinders semi/sequential requires 8 total channels
+          #if INJ_CHANNELS >= 8
+            currentStatus.PW5 = currentStatus.PW2;
+            currentStatus.PW6 = currentStatus.PW2;
+            currentStatus.PW7 = currentStatus.PW2;
+            currentStatus.PW8 = currentStatus.PW2;
+
+            currentStatus.PW2 = currentStatus.PW1;
+            currentStatus.PW3 = currentStatus.PW1;
+            currentStatus.PW4 = currentStatus.PW1;
+          #else
+            //This is an invalid config as there are not enough outputs to support sequential + staging
+            //Put the staging output to the non-existant channel 5
+            currentStatus.PW5 = currentStatus.PW2;
+          #endif
+        }
+        else
+        {
+          currentStatus.PW3 = currentStatus.PW2;
+          currentStatus.PW4 = currentStatus.PW2;
+          currentStatus.PW2 = currentStatus.PW1;
+        }
+        break;
+        
+      case 5:
+        //No easily supportable 5 cylinder staging option unless there are at least 5 channels
+        #if INJ_CHANNELS >= 5
+          if (configPage2.injLayout != INJ_SEQUENTIAL)
+          {
+            currentStatus.PW5 = currentStatus.PW2;
+          }
+          #if INJ_CHANNELS >= 6
+            currentStatus.PW6 = currentStatus.PW2;
+          #endif
+        #endif
+        
+          currentStatus.PW2 = currentStatus.PW1;
+          currentStatus.PW3 = currentStatus.PW1;
+          currentStatus.PW4 = currentStatus.PW1;
+        break;
+
+      case 6:
+        #if INJ_CHANNELS >= 6
+          //8 cylinder staging only if not sequential
+          if (configPage2.injLayout != INJ_SEQUENTIAL)
+          {
+            currentStatus.PW4 = currentStatus.PW2;
+            currentStatus.PW5 = currentStatus.PW2;
+            currentStatus.PW6 = currentStatus.PW2;
+          }
+          #if INJ_CHANNELS >= 8
+          else
+            {
+              //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
+              currentStatus.PW7 = currentStatus.PW2;
+              currentStatus.PW8 = currentStatus.PW2;
+
+              currentStatus.PW4 = currentStatus.PW1;
+              currentStatus.PW5 = currentStatus.PW1;
+              currentStatus.PW6 = currentStatus.PW1;
+            }
+          #endif
+        #endif
+        currentStatus.PW2 = currentStatus.PW1;
+        currentStatus.PW3 = currentStatus.PW1;
+        break;
+
+      case 8:
+        #if INJ_CHANNELS >= 8
+          //8 cylinder staging only if not sequential
+          if (configPage2.injLayout != INJ_SEQUENTIAL)
+          {
+            currentStatus.PW5 = currentStatus.PW2;
+            currentStatus.PW6 = currentStatus.PW2;
+            currentStatus.PW7 = currentStatus.PW2;
+            currentStatus.PW8 = currentStatus.PW2;
+          }
+        #endif
+        currentStatus.PW2 = currentStatus.PW1;
+        currentStatus.PW3 = currentStatus.PW1;
+        currentStatus.PW4 = currentStatus.PW1;
+        break;
+
+      default:
+        //Assume 4 cylinder non-seq for default
+        currentStatus.PW3 = currentStatus.PW2;
+        currentStatus.PW4 = currentStatus.PW2;
+        currentStatus.PW2 = currentStatus.PW1;
+        break;
+    }
+  }
+  else 
+  { 
+    if(maxInjOutputs >= 2) { currentStatus.PW2 = currentStatus.PW1; }
+    else { currentStatus.PW2 = 0; }
+    if(maxInjOutputs >= 3) { currentStatus.PW3 = currentStatus.PW1; }
+    else { currentStatus.PW3 = 0; }
+    if(maxInjOutputs >= 4) { currentStatus.PW4 = currentStatus.PW1; }
+    else { currentStatus.PW4 = 0; }
+    if(maxInjOutputs >= 5) { currentStatus.PW5 = currentStatus.PW1; }
+    else { currentStatus.PW5 = 0; }
+    if(maxInjOutputs >= 6) { currentStatus.PW6 = currentStatus.PW1; }
+    else { currentStatus.PW6 = 0; }
+    if(maxInjOutputs >= 7) { currentStatus.PW7 = currentStatus.PW1; }
+    else { currentStatus.PW7 = 0; }
+    if(maxInjOutputs >= 8) { currentStatus.PW8 = currentStatus.PW1; }
+    else { currentStatus.PW8 = 0; }
+
+    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag
+    
+  } 
+
 }

@@ -20,6 +20,7 @@ void loop(void);
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 byte getVE1(void);
 byte getAdvance1(void);
+void calculateStaging(uint32_t);
 
 uint16_t calculateInjectorEndAngle(int16_t injChannelDegrees);
 int calculateIgnitionAngle(int channelIgnDegrees);
