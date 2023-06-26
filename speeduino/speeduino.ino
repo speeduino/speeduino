@@ -870,63 +870,60 @@ void loop(void)
 
 
 #if INJ_CHANNELS >= 1
-      if( (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) && !BIT_CHECK(currentStatus.status1, BIT_STATUS1_BOOSTCUT))
-      {
-        if(currentStatus.PW1 >= inj_opentime_uS)
+      if( (maxInjOutputs >= 1) && (currentStatus.PW1 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule1, crankAngle, injector1EndAngle, (unsigned long)currentStatus.PW1);          
         }
 #endif
 
 #if INJ_CHANNELS >= 2
-        if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule2, crankAngle, injector2EndAngle, (unsigned long)currentStatus.PW2);    
         }
 #endif
 
 #if INJ_CHANNELS >= 3
-        if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule3, crankAngle, injector3EndAngle, (unsigned long)currentStatus.PW3);  
         }
 #endif
 
 #if INJ_CHANNELS >= 4
-        if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule4, crankAngle, injector4EndAngle, (unsigned long)currentStatus.PW4);  
         }
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule5, crankAngle, injector5EndAngle, (unsigned long)currentStatus.PW5);  
         }
 #endif
 
 #if INJ_CHANNELS >= 6
-        if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule6, crankAngle, injector6EndAngle, (unsigned long)currentStatus.PW6);  
         }
 #endif
 
 #if INJ_CHANNELS >= 7
-        if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule7, crankAngle, injector7EndAngle, (unsigned long)currentStatus.PW7);  
         }
 #endif
 
 #if INJ_CHANNELS >= 8
-        if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) )
+        if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
         {
           setFuelSchedule(&fuelSchedule8, crankAngle, injector8EndAngle, (unsigned long)currentStatus.PW8);
         }
 #endif
-      }
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition
