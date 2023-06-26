@@ -638,9 +638,6 @@ void loop(void)
           break;
         //6 cylinders
         case 6:
-          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
           
@@ -690,12 +687,6 @@ void loop(void)
           break;
         //8 cylinders
         case 8:
-        /*
-          injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-          injector4StartAngle = calculateInjector4StartAngle(PWdivTimerPerDegree);
-          */
-
           injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
           injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
           injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
@@ -1017,7 +1008,7 @@ void loop(void)
           }
         }
 #endif
-      }
+
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
       //Same as above, except for ignition
