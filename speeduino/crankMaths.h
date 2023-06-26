@@ -1,8 +1,6 @@
 #ifndef CRANKMATHS_H
 #define CRANKMATHS_H
 
-#include "maths.h"
-
 #define CRANKMATH_METHOD_INTERVAL_DEFAULT  0
 #define CRANKMATH_METHOD_INTERVAL_REV      1
 #define CRANKMATH_METHOD_INTERVAL_TOOTH    2
@@ -19,10 +17,7 @@
 #define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 
-unsigned long angleToTime(uint16_t angle, byte method);
-inline unsigned long angleToTimeIntervalRev(uint16_t angle) {
-    return div360(angle * revolutionTime);
-}
+unsigned long angleToTime(int16_t angle, byte method);
 uint16_t timeToAngle(unsigned long time, byte method);
 void doCrankSpeedCalcs(void);
 
