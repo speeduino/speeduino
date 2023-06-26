@@ -135,75 +135,110 @@ void initialiseSchedulers(void)
     FUEL8_TIMER_ENABLE();
 #endif
 
-    ignitionSchedule1.schedulesSet = 0;
-    ignitionSchedule2.schedulesSet = 0;
-    ignitionSchedule3.schedulesSet = 0;
-    ignitionSchedule4.schedulesSet = 0;
-    ignitionSchedule5.schedulesSet = 0;
-    ignitionSchedule6.schedulesSet = 0;
-    ignitionSchedule7.schedulesSet = 0;
-    ignitionSchedule8.schedulesSet = 0;
+  ignitionSchedule1.schedulesSet = 0;
+  ignitionSchedule2.schedulesSet = 0;
+  ignitionSchedule3.schedulesSet = 0;
+  ignitionSchedule4.schedulesSet = 0;
+  ignitionSchedule5.schedulesSet = 0;
+  ignitionSchedule6.schedulesSet = 0;
+  ignitionSchedule7.schedulesSet = 0;
+  ignitionSchedule8.schedulesSet = 0;
 
-    ignition1StartAngle = 0;
-    ignition2StartAngle = 0;
-    ignition3StartAngle = 0;
-    ignition4StartAngle = 0;
-    ignition5StartAngle = 0;
-    ignition6StartAngle = 0;
-    ignition7StartAngle = 0;
-    ignition8StartAngle = 0;
+  inj1StartFunction = nullCallback;
+  inj1EndFunction = nullCallback;
+  inj2StartFunction = nullCallback;
+  inj2EndFunction = nullCallback;
+  inj3StartFunction = nullCallback;
+  inj3EndFunction = nullCallback;
+  inj4StartFunction = nullCallback;
+  inj4EndFunction = nullCallback;
+#if INJ_CHANNELS>=5
+  inj5StartFunction = nullCallback;
+  inj5EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=6
+  inj6StartFunction = nullCallback;
+  inj6EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=7
+  inj7StartFunction = nullCallback;
+  inj7EndFunction = nullCallback;
+#endif
+#if INJ_CHANNELS>=8
+  inj8StartFunction = nullCallback;
+  inj8EndFunction = nullCallback;
+#endif
 
-    channel1IgnDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-    channel2IgnDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-    channel3IgnDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-    channel4IgnDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-    channel5IgnDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-    channel6IgnDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-    channel7IgnDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-    channel8IgnDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
-    
-    channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-    channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-    channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-    channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-    channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-    channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-    channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-    channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */    
+  ign1StartFunction = nullCallback;
+  ign1EndFunction = nullCallback;
+  ignition1StartAngle=0;
+  ignition1EndAngle=0;
+  channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
 
-    inj1StartFunction = nullCallback;
-    inj1EndFunction = nullCallback;
-    inj2StartFunction = nullCallback;
-    inj2EndFunction = nullCallback;
-    inj3StartFunction = nullCallback;
-    inj3EndFunction = nullCallback;
-    inj4StartFunction = nullCallback;
-    inj4EndFunction = nullCallback;
-    inj5StartFunction = nullCallback;
-    inj5EndFunction = nullCallback;
-    inj6StartFunction = nullCallback;
-    inj6EndFunction = nullCallback;
-    inj7StartFunction = nullCallback;
-    inj7EndFunction = nullCallback;
-    inj8StartFunction = nullCallback;
-    inj8EndFunction = nullCallback;
+  ign2StartFunction = nullCallback;
+  ign2EndFunction = nullCallback;
+  ignition2StartAngle=0;
+  ignition2EndAngle=0;
+  channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 
-    ign1StartFunction = nullCallback;
-    ign1EndFunction = nullCallback;
-    ign2StartFunction = nullCallback;
-    ign2EndFunction = nullCallback;
-    ign3StartFunction = nullCallback;
-    ign3EndFunction = nullCallback;
-    ign4StartFunction = nullCallback;
-    ign4EndFunction = nullCallback;
-    ign5StartFunction = nullCallback;
-    ign5EndFunction = nullCallback;
-    ign6StartFunction = nullCallback;
-    ign6EndFunction = nullCallback;
-    ign7StartFunction = nullCallback;
-    ign7EndFunction = nullCallback;
-    ign8StartFunction = nullCallback;
-    ign8EndFunction = nullCallback;
+  ign3StartFunction = nullCallback;
+  ign3EndFunction = nullCallback;
+  ignition3StartAngle=0;
+  ignition3EndAngle=0;
+  channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+
+  ign4StartFunction = nullCallback;
+  ign4EndFunction = nullCallback;
+  ignition4StartAngle=0;
+  ignition4EndAngle=0;
+  channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+
+#if (IGN_CHANNELS >= 5)
+  ign5StartFunction = nullCallback;
+  ign5EndFunction = nullCallback;
+  ignition5StartAngle=0;
+  ignition5EndAngle=0;
+  channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 6)
+  ign6StartFunction = nullCallback;
+  ign6EndFunction = nullCallback;
+  ignition6StartAngle=0;
+  ignition6EndAngle=0;
+  channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 7)
+  ign7StartFunction = nullCallback;
+  ign7EndFunction = nullCallback;
+  ignition7StartAngle=0;
+  ignition7EndAngle=0;
+  channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+#if (IGN_CHANNELS >= 8)
+  ign8StartFunction = nullCallback;
+  ign8EndFunction = nullCallback;
+  ignition8StartAngle=0;
+  ignition8EndAngle=0;
+  channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+#endif
+
+	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+	channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+	channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+	channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+#if (INJ_CHANNELS >= 5)
+	channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 6)
+	channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 7)
+	channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 8)
+	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+#endif
+
 }
 
 /*
