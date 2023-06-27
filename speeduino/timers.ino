@@ -58,6 +58,12 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
+static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
+  //Check first whether each spark output is currently on. Only check it's dwell time if it is
+  if ((schedule.Status == RUNNING) && (schedule.startTime < targetOverdwellTime)) { 
+    schedule.pEndCallback(); schedule.Status = OFF; 
+  }
+}
 
 //Timer2 Overflow Interrupt Vector, called when the timer overflows.
 //Executes every ~1ms.
@@ -78,27 +84,25 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   loop250ms++;
   loopSec++;
 
-  unsigned long targetOverdwellTime;
-
   //Overdwell check
-  targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
+  uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
-
-  if(ignitionSchedule1.Status == RUNNING) { if( (ignitionSchedule1.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule1.pEndCallback(); ignitionSchedule1.Status = OFF; } }
-  if(ignitionSchedule2.Status == RUNNING) { if( (ignitionSchedule2.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule2.pEndCallback(); ignitionSchedule2.Status = OFF; } }
-  if(ignitionSchedule3.Status == RUNNING) { if( (ignitionSchedule3.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule3.pEndCallback(); ignitionSchedule3.Status = OFF; } }
-  if(ignitionSchedule4.Status == RUNNING) { if( (ignitionSchedule4.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule4.pEndCallback(); ignitionSchedule4.Status = OFF; } }
-  if(ignitionSchedule5.Status == RUNNING) { if( (ignitionSchedule5.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule5.pEndCallback(); ignitionSchedule5.Status = OFF; } }
+  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) {
+    applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
+    applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
+    applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
+    applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
+    applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
 #if IGN_CHANNELS >= 6
-  if(ignitionSchedule6.Status == RUNNING) { if( (ignitionSchedule6.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule6.pEndCallback(); ignitionSchedule6.Status = OFF; } }
+    applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 7
-  if(ignitionSchedule7.Status == RUNNING) { if( (ignitionSchedule7.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule7.pEndCallback(); ignitionSchedule7.Status = OFF; } }
+    applyOverDwellCheck(ignitionSchedule7, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 8
-  if(ignitionSchedule8.Status == RUNNING) { if( (ignitionSchedule8.startTime < targetOverdwellTime) && (configPage4.useDwellLim) && (isCrankLocked != true) ) { ignitionSchedule8.pEndCallback(); ignitionSchedule8.Status = OFF; } }
+    applyOverDwellCheck(ignitionSchedule8, targetOverdwellTime);
 #endif
+  }
 
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
