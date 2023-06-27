@@ -8,6 +8,7 @@ void testCorrections()
 {
   test_corrections_WUE();
   test_corrections_dfco();
+  test_corrections_TAE(); //TPS based accel enrichment corrections
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
   RUN_TEST(test_corrections_ASE); //Not written yet
@@ -140,7 +141,7 @@ void setup_DFCO_on()
   correctionDFCO();
   dfcoTaper = 20;
 }
-
+//**********************************************************************************************************************
 void test_corrections_dfco_on(void)
 {
   //Test under ideal conditions that DFCO goes active
@@ -185,6 +186,11 @@ void test_corrections_dfco()
   RUN_TEST(test_corrections_dfco_off_TPS);
   RUN_TEST(test_corrections_dfco_off_delay);
 }
+//**********************************************************************************************************************
+//Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
+void test_corrections_TAE_setup()
+{
+  configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
   configPage4.taeValues[0] = 70;
   configPage4.taeValues[1] = 103; 

@@ -491,7 +491,7 @@ void doUpdates(void)
     configPage10.TrigEdgeThrd = 0;
 
     //Old use as On/Off selection is removed, so change VVT mode to On/Off based on that
-    if(configPage6.unused_bit == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
+    if(configPage6.tachoMode == 1) { configPage6.vvtMode = VVT_MODE_ONOFF; }
 
     //Closed loop VVT improvements. Set safety limits to max/min working values and filter to minimum.
     configPage10.vvtCLMinAng = 0;
@@ -619,6 +619,7 @@ void doUpdates(void)
     }
 
     configPage9.hardRevMode = 1; //Set hard rev limiter to Fixed mode
+    configPage6.tachoMode = 0;
 
     //CAN broadcast introduced
     configPage2.canBMWCluster = 0;

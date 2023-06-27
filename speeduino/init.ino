@@ -1953,6 +1953,7 @@ void setPinMapping(byte boardID)
       pinTrigger3 = 20; //The Cam sensor 2 pin
       pinTPS = A2;//TPS input pin
       pinMAP = A3; //MAP sensor pin
+      pinEMAP = A15; //EMAP sensor pin
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
@@ -1974,6 +1975,11 @@ void setPinMapping(byte boardID)
       pinFlex = 2; // Flex sensor
       pinResetControl = 43; //Reset control output
       pinVSS = 3; //VSS input pin
+      pinWMIEmpty = 31; //(placeholder)
+      pinWMIIndicator = 33; //(placeholder)
+      pinWMIEnabled = 35; //(placeholder)
+      pinIdleUp = 37; //(placeholder)
+      pinCTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
       pinInjector1 = PB15; //Output pin injector 1
       pinInjector2 = PB14; //Output pin injector 2
@@ -1995,6 +2001,7 @@ void setPinMapping(byte boardID)
       pinTrigger2 = PD4; //The Cam Sensor pin
       pinTPS = PA2;//TPS input pin
       pinMAP = PA3; //MAP sensor pin
+      pinEMAP = PC5; //EMAP sensor pin
       pinIAT = PA0; //IAT sensor pin
       pinCLT = PA1; //CLS sensor pin
       pinO2 = PB0; //O2 Sensor pin
@@ -2016,6 +2023,11 @@ void setPinMapping(byte boardID)
       pinFlex = PD7; // Flex sensor
       pinResetControl = PB7; //Reset control output
       pinVSS = PB6; //VSS input pin
+      pinWMIEmpty = PD15; //(placeholder)
+      pinWMIIndicator = PD13; //(placeholder)
+      pinWMIEnabled = PE15; //(placeholder)
+      pinIdleUp = PE14; //(placeholder)
+      pinCTPS = PA6; //(placeholder)
      #endif
       break;
 
@@ -2375,6 +2387,52 @@ void setPinMapping(byte boardID)
       MC33810_BIT_IGN8 = 7;
 
 
+
+      #endif
+      break;
+
+    case 56:
+      #if defined(CORE_TEENSY)
+      //Pin mappings for the Bear Cub (Teensy 4.1)
+      pinInjector1 = 6;
+      pinInjector2 = 7;
+      pinInjector3 = 9;
+      pinInjector4 = 8;
+      pinInjector5 = 0; //Not used
+      pinCoil1 = 2;
+      pinCoil2 = 3;
+      pinCoil3 = 4;
+      pinCoil4 = 5;
+
+      pinTrigger = 20; //The CAS pin
+      pinTrigger2 = 21; //The Cam Sensor pin
+      pinFlex = 37; // Flex sensor
+      pinMAP = A5; //MAP sensor pin
+      pinBaro = A4; //Baro sensor pin
+      pinBat = A15; //Battery reference voltage pin
+      pinTPS = A3; //TPS input pin
+      pinIAT = A0; //IAT sensor pin
+      pinCLT = A1; //CLS sensor pin
+      pinO2 = A2; //O2 Sensor pin
+      pinLaunch = 36;
+
+      pinSpareTemp1 = A16; //spare Analog input 1
+      pinSpareTemp2 = A17; //spare Analog input 2
+      pinTachOut = 38; //Tacho output pin
+      pinIdle1 = 27; //Single wire idle control
+      pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
+      pinFuelPump = 10; //Fuel pump output
+      pinVVT_1 = 28; //Default VVT output
+      pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pinStepperStep = 31; //Step pin for DRV8825 driver
+      pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinBoost = 24; //Boost control
+      pinSpareLOut1 = 29; //low current output spare1
+      pinSpareLOut2 = 26; //low current output spare2
+      pinSpareLOut3 = 28; //low current output spare3
+      pinSpareLOut4 = 29; //low current output spare4
+      pinFan = 25; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
       #endif
       break;
@@ -3128,13 +3186,13 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
-    case DECODER_DUAL_WHEEL:
+    case 2:
       triggerSetup_DualWheel();
-      triggerHandler = triggerPri_DualWheel_v2;
-      triggerSecondaryHandler = triggerSec_DualWheel_v2;
-      getCrankAngle = getCrankAngle_DualWheel;
-      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel_v2;
+      triggerHandler = triggerPri_DualWheel;
+      triggerSecondaryHandler = triggerSec_DualWheel;
       getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
 
       if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
       else { primaryTriggerEdge = FALLING; }
