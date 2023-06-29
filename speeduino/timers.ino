@@ -73,17 +73,17 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) //stm32 do not have atomic.h library but also do not have nested interrupts at the moment, so just goes without it
     #endif
     {
-    if((uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
-    if((maxIgnOutputs >= 2) && (uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
-    if((maxIgnOutputs >= 3) &&(uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
-    if((maxIgnOutputs >= 4) &&(uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
-    if((maxIgnOutputs >= 5) &&(uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
+    if((ignitionSchedule1.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule1.startTime) > configPage4.dwellLimit) { ignitionSchedule1.EndFunction(); }//casts needed here for overflow proof optimal comparison(dissassembly listing confirmed)
+    if((ignitionSchedule2.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule2.startTime) > configPage4.dwellLimit) { ignitionSchedule2.EndFunction(); } 
+    if((ignitionSchedule3.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule3.startTime) > configPage4.dwellLimit) { ignitionSchedule3.EndFunction(); } 
+    if((ignitionSchedule4.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule4.startTime) > configPage4.dwellLimit) { ignitionSchedule4.EndFunction(); } 
+    if((ignitionSchedule5.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule5.startTime) > configPage4.dwellLimit) { ignitionSchedule5.EndFunction(); }
     #if IGN_CHANNELS >= 6
-    if((maxIgnOutputs >= 6) &&(uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
+    if((ignitionSchedule6.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule6.startTime) > configPage4.dwellLimit) { ignitionSchedule6.EndFunction(); } 
     #if IGN_CHANNELS >= 7
-    if((maxIgnOutputs >= 7) &&(uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
+    if((ignitionSchedule7.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule7.startTime) > configPage4.dwellLimit) { ignitionSchedule7.EndFunction(); } 
     #if IGN_CHANNELS >= 8
-    if((maxIgnOutputs >= 8) &&(uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
+    if((ignitionSchedule8.Status ==RUNNING) && (uint8_t)(currentMillis-ignitionSchedule8.startTime) > configPage4.dwellLimit) { ignitionSchedule8.EndFunction(); } 
     #endif    
     #endif
     #endif
