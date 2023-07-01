@@ -170,6 +170,40 @@ void initialiseSchedulers(void)
     channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
     channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
     channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */    
+
+    inj1StartFunction = nullCallback;
+    inj1EndFunction = nullCallback;
+    inj2StartFunction = nullCallback;
+    inj2EndFunction = nullCallback;
+    inj3StartFunction = nullCallback;
+    inj3EndFunction = nullCallback;
+    inj4StartFunction = nullCallback;
+    inj4EndFunction = nullCallback;
+    inj5StartFunction = nullCallback;
+    inj5EndFunction = nullCallback;
+    inj6StartFunction = nullCallback;
+    inj6EndFunction = nullCallback;
+    inj7StartFunction = nullCallback;
+    inj7EndFunction = nullCallback;
+    inj8StartFunction = nullCallback;
+    inj8EndFunction = nullCallback;
+
+    ign1StartFunction = nullCallback;
+    ign1EndFunction = nullCallback;
+    ign2StartFunction = nullCallback;
+    ign2EndFunction = nullCallback;
+    ign3StartFunction = nullCallback;
+    ign3EndFunction = nullCallback;
+    ign4StartFunction = nullCallback;
+    ign4EndFunction = nullCallback;
+    ign5StartFunction = nullCallback;
+    ign5EndFunction = nullCallback;
+    ign6StartFunction = nullCallback;
+    ign6EndFunction = nullCallback;
+    ign7StartFunction = nullCallback;
+    ign7EndFunction = nullCallback;
+    ign8StartFunction = nullCallback;
+    ign8EndFunction = nullCallback;
 }
 
 /*
@@ -1165,6 +1199,7 @@ inline void ignitionSchedule1Interrupt(void)
       ignitionSchedule1.schedulesSet = 0;
       ignitionSchedule1.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule1.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule1.hasNextSchedule == true)
@@ -1206,6 +1241,7 @@ inline void ignitionSchedule2Interrupt(void)
       ignitionSchedule2.schedulesSet = 0;
       ignitionSchedule2.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule2.startTime) );
       
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule2.hasNextSchedule == true)
@@ -1247,6 +1283,7 @@ inline void ignitionSchedule3Interrupt(void)
        ignitionSchedule3.schedulesSet = 0;
        ignitionSchedule3.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
+       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule3.startTime) );
 
        //If there is a next schedule queued up, activate it
        if(ignitionSchedule3.hasNextSchedule == true)
@@ -1288,6 +1325,7 @@ inline void ignitionSchedule4Interrupt(void)
        ignitionSchedule4.schedulesSet = 0;
        ignitionSchedule4.endScheduleSetByDecoder = false;
        ignitionCount += 1; //Increment the ignition counter
+       currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule4.startTime) );
 
        //If there is a next schedule queued up, activate it
        if(ignitionSchedule4.hasNextSchedule == true)
@@ -1329,6 +1367,7 @@ inline void ignitionSchedule5Interrupt(void)
       ignitionSchedule5.schedulesSet = 0;
       ignitionSchedule5.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule5.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule5.hasNextSchedule == true)
@@ -1370,6 +1409,7 @@ inline void ignitionSchedule6Interrupt(void)
       ignitionSchedule6.schedulesSet = 0;
       ignitionSchedule6.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule6.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule6.hasNextSchedule == true)
@@ -1411,6 +1451,7 @@ inline void ignitionSchedule7Interrupt(void)
       ignitionSchedule7.schedulesSet = 0;
       ignitionSchedule7.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule7.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule7.hasNextSchedule == true)
@@ -1452,6 +1493,7 @@ inline void ignitionSchedule8Interrupt(void)
       ignitionSchedule8.schedulesSet = 0;
       ignitionSchedule8.endScheduleSetByDecoder = false;
       ignitionCount += 1; //Increment the ignition counter
+      currentStatus.actualDwell = DWELL_AVERAGE( (micros() - ignitionSchedule8.startTime) );
 
       //If there is a next schedule queued up, activate it
       if(ignitionSchedule8.hasNextSchedule == true)

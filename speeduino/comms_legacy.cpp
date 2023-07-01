@@ -222,8 +222,7 @@ void legacySerialCommand(void)
 
     case 'x': //Stop the composite logger 2nd cam (tertiary)
       stopCompositeLoggerCams();
-      break;      
-
+      break;  
 
     case 'P': // set the current page
       //This is a legacy function and is no longer used by TunerStudio. It is maintained for compatibility with other systems
@@ -285,8 +284,8 @@ void legacySerialCommand(void)
       break;
 
     case 'Q': // send code version
-      //Serial.print(F("speeduino 202207"));
-      Serial.print(F("speeduino 202210-dev"));
+      Serial.print(F("speeduino 202305"));
+      //Serial.print(F("speeduino 202210-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -318,8 +317,8 @@ void legacySerialCommand(void)
       break;
 
     case 'S': // send code version
-      //Serial.print(F("Speeduino 2022.07"));
-      Serial.print(F("Speeduino 2022.10-dev"));
+      Serial.print(F("Speeduino 2023.05"));
+      //Serial.print(F("Speeduino 2022.10-dev"));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 

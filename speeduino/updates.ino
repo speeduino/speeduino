@@ -427,7 +427,7 @@ void doUpdates(void)
     configPage13.outputPin[7] = 0;
 
     //New multiply MAP option added. Set new option to be the same as old
-    configPage2.multiplyMAP = configPage2.multiplyMAP_old;
+    configPage2.multiplyMAP = configPage2.crkngAddCLTAdv;
     //New AE option added to allow for PW added in addition to existing PW multiply
     configPage2.aeApplyMode = 0; //Set the AE mode to Multiply
 
@@ -695,6 +695,9 @@ void doUpdates(void)
 
     //Oil Pressure protection delay added. Set to 0 to match existing behaviour
     configPage10.oilPressureProtTime = 0;
+
+    //Option to power stepper motor constantly was added. Default to previous behaviour
+    configPage9.iacStepperPower = 0;
 
     writeAllConfig();
     storeEEPROMVersion(21);
