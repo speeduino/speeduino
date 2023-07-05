@@ -11,7 +11,6 @@
 #include "sensors.h"
 #include "storage.h"
 #include "SD_logger.h"
-#include "scheduler.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -37,12 +36,12 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
   
   //Special case because making 255 cases for injector deadtime would be tedious
   if((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX)){
-    if(BIT_CHECK(currentStatus.testOutputs, 1) && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+    if(BIT_CHECK(currentStatus.testOutputs, 1) && !injectorFTActive){
       unsigned long injectorRunTime = ((buttonCommand & 0x00FF) * 100); //Stored in uS
-      FUEL_INJECTOR_FLOW_TEST_PULSES = 5;
-      FUEL_INJECTOR_FLOW_TEST_ONPW = injectorRunTime;
-      FUEL_INJECTOR_FLOW_TEST_OFFPW = ((MAX_TIMER_PERIOD-1) - injectorRunTime);
-      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
+      injectorFTPulses = 5;
+      injectorFTOnPW = injectorRunTime;
+      injectorFTOffPW = ((MAX_TIMER_PERIOD-1) - injectorRunTime);
+      injectorFTActive = true;
     }
   }
   switch (buttonCommand)
@@ -408,14 +407,14 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
   {
     return false;
   }
-  if(buttonCommand == TS_CMD_INJ_FT && !FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+  if(buttonCommand == TS_CMD_INJ_FT && !injectorFTActive){
     if(BIT_CHECK(currentStatus.testOutputs, 1)){
       //Extract parameters
-      FUEL_INJECTOR_FLOW_TEST_PULSES = (unsigned long)(injectorTestParams[0]);
-      FUEL_INJECTOR_FLOW_TEST_ONPW  = (unsigned long)(injectorTestParams[1])*100;
-      FUEL_INJECTOR_FLOW_TEST_OFFPW = (unsigned long)(injectorTestParams[2])*100;
+      injectorFTPulses = (unsigned long)(injectorTestParams[0]);
+      injectorFTOnPW  = (unsigned long)(injectorTestParams[1])*100;
+      injectorFTOffPW = (unsigned long)(injectorTestParams[2])*100;
       //Start test
-      FUEL_INJECTOR_FLOW_TEST_ACTIVE = true;
+      injectorFTActive = true;
       return true;
     }
   }

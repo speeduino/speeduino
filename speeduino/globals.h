@@ -599,10 +599,10 @@ extern byte resetControl; ///< resetControl needs to be here (as global) because
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
-extern uint16_t FUEL_INJECTOR_FLOW_TEST_PULSES;
-extern unsigned long FUEL_INJECTOR_FLOW_TEST_ONPW;
-extern unsigned long FUEL_INJECTOR_FLOW_TEST_OFFPW;
-extern bool FUEL_INJECTOR_FLOW_TEST_ACTIVE;
+extern uint16_t injectorFTPulses;
+extern unsigned long injectorFTOnPW;
+extern unsigned long injectorFTOffPW;
+extern bool injectorFTActive;
 
 //These functions all do checks on a pin to determine if it is already in use by another (higher importance) function
 #define pinIsInjector(pin)  ( ((pin) == pinInjector1) || ((pin) == pinInjector2) || ((pin) == pinInjector3) || ((pin) == pinInjector4) || ((pin) == pinInjector5) || ((pin) == pinInjector6) || ((pin) == pinInjector7) || ((pin) == pinInjector8) )

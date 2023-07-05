@@ -107,19 +107,19 @@ void loop(void)
       }
 
       //Check for fuel injector flow test. Requires no engine rotation for safety.
-      if(currentStatus.RPM == 0 && FUEL_INJECTOR_FLOW_TEST_ACTIVE){
+      if(currentStatus.RPM == 0 && injectorFTActive){
         //If there is pulses left to send
-        if(FUEL_INJECTOR_FLOW_TEST_PULSES > 0){
+        if(injectorFTPulses > 0){
           //If the current schedule is off
            if (fuelSchedule1.Status == OFF) {
             //Set the scheduled pulse
-            setFuelSchedule1(FUEL_INJECTOR_FLOW_TEST_OFFPW, FUEL_INJECTOR_FLOW_TEST_ONPW);
+            setFuelSchedule1(injectorFTOffPW, injectorFTOnPW);
             //Decrement remaining pulses
-            FUEL_INJECTOR_FLOW_TEST_PULSES--;
+            injectorFTPulses--;
           }
-        } else if(FUEL_INJECTOR_FLOW_TEST_PULSES == 0 && fuelSchedule1.Status == OFF){ //If out of pulses and done with current/next pulse
+        } else if(injectorFTPulses == 0 && fuelSchedule1.Status == OFF){ //If out of pulses and done with current/next pulse
           //Disable the test
-          FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+          injectorFTActive = false;
           //Safety check
           closeInjector1();
         }

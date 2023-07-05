@@ -106,10 +106,10 @@ volatile PINMASK_TYPE triggerSec_pin_mask;
 volatile PORT_TYPE *triggerThird_pin_port;
 volatile PINMASK_TYPE triggerThird_pin_mask;
 
-uint16_t FUEL_INJECTOR_FLOW_TEST_PULSES = 0;
-unsigned long FUEL_INJECTOR_FLOW_TEST_ONPW = 0;
-unsigned long FUEL_INJECTOR_FLOW_TEST_OFFPW = 0;
-bool FUEL_INJECTOR_FLOW_TEST_ACTIVE = false;
+uint16_t injectorFTPulses = 0;
+unsigned long injectorFTOnPW = 0;
+unsigned long injectorFTOffPW = 0;
+bool injectorFTActive = false;
 
 //These are variables used across multiple files
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
