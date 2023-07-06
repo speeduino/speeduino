@@ -52,9 +52,6 @@ uint16_t inj_opentime_uS = 0;
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
-
-//byte curRollingCut = 0; /**< Rolling rev limiter, current ignition channel being cut */
-//byte rollingCutCounter = 0; /**< how many times (revolutions) the ignition has been cut in a row */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
@@ -775,9 +772,8 @@ void loop(void)
 
       
       //Check for any of the engine protections or rev limiters being turned on
-      uint16_t maxAllowedRPM = configPage4.HardRevLim; //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. Use RPM hard limit as the default as it's the highest that is ever permitted
+      uint16_t maxAllowedRPM = checkRevLimit(); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
       //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
-      checkRevLimit();
       if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }
       if ( (currentStatus.launchingHard == true) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
       if ( (currentStatus.flatShiftingHard == true) && (configPage6.flatSArm < maxAllowedRPM) ) { maxAllowedRPM = configPage6.flatSArm; }
@@ -817,15 +813,14 @@ void loop(void)
         //if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
         if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
-        if (currentStatus.startRevolutions > (rollingCutLastRev + revolutionsToCut) )
+        if (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut) )
         { 
           uint8_t cutPercent = 0;
           int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
           if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
           else { cutPercent = table2D_getValue(&rollingCutTable, (rpmDelta / 10) ); } //
 
-          //max(maxIgnOutputs, maxInjOutputs)
-          for(uint8_t x=0; x<8; x++)
+          for(uint8_t x=0; x<max(maxIgnOutputs, maxInjOutputs); x++)
           {  
             if( (configPage6.engineProtectType != PROTECT_CUT_OFF) && ( (cutPercent == 100) || (random1to100() < cutPercent) ) )
             {
