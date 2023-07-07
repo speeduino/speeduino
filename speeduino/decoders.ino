@@ -519,24 +519,26 @@ void triggerPri_missingTooth(void)
         else { targetGap =((lastGap) * configPage4.triggerMissingTeeth); } //Multiply by 2 (Checks for a gap 2x greater than the last one)
         if ( (curGap > targetGap)  )// || (toothCurrentCount > triggerActualTeeth)
         {
-          //Missing tooth detected
-          //setFilter(lastGap);//re calc filters, can not use the gap with missing tooth
-          //if(triggerFilterTime==0){triggerFilterTime=10U;} //set min value            
-          //toothOneMinusOneTime=toothOneTime;
-          //toothOneTime=toothLastToothTime;
-          //check if we have fallen out of sync
-          if( (toothCurrentCount != triggerActualTeeth+1) && (currentStatus.hasSync == true)) 
+          //Missing tooth detected          
+          if( (toothCurrentCount != triggerActualTeeth+1) && (currentStatus.hasSync == true)) //check if we have fallen out of sync
           { 
               //This occurs when we're at tooth #1, but haven't seen all the other teeth.Or seen too many of them. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
               //currentStatus.hasSync = false;
               //BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //No sync at all, so also clear HalfSync bit.
               currentStatus.syncLossCounter++;
-              //currentStatus.startRevolutions = 1;
           }
           toothCurrentCount = 1;
           toothHistory[1]=toothLastToothTime;
-          revolutionOne = !revolutionOne;//Flip sequential revolution tracker if poll level is not used
-
+          if (configPage4.trigPatternSec == SEC_TRIGGER_POLL) // at tooth one check if the cam sensor is high or low in poll level mode
+          {
+            if (configPage4.PollLevelPolarity == READ_SEC_TRIGGER()) { revolutionOne = 1; }
+            else { revolutionOne = 0; }
+            currentStatus.hasSync = true;
+            BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+          }
+          else //poll level is not used
+          {
+            revolutionOne = !revolutionOne; //Flip sequential revolution tracker if poll level is not used
             //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
             if( ((secondaryToothCount > 0)&&(curTime-toothLastSecToothTime < 1000000UL)) || (configPage4.TrigSpeed == CAM_SPEED))
             {
@@ -550,14 +552,13 @@ void triggerPri_missingTooth(void)
               BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);
               secondaryToothCount = 0;
             }
-
+          }
           if((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC))
           {
               currentStatus.startRevolutions++; //Counter
               if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
           }
-          //triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-        
+          //triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state        
         }
         else{} //was not missing tooth (Regular (non-missing) tooth)
       }
