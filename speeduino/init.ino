@@ -3641,28 +3641,37 @@ void changeHalfToFullSync(void)
     {
     case 4:
       ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign1EndFunction = endCoil1Charge;
       ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign2EndFunction = endCoil2Charge;
       break;
 
     case 6:
       ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign1EndFunction = endCoil1Charge;
       ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign2EndFunction = endCoil2Charge;
       ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign3EndFunction = endCoil3Charge;
       break;
 
     case 8:
       ign1StartFunction = beginCoil1Charge;
+      ign1EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign1EndFunction = endCoil1Charge;
       ign2StartFunction = beginCoil2Charge;
+      ign2EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign2EndFunction = endCoil2Charge;
       ign3StartFunction = beginCoil3Charge;
+      ign3EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign3EndFunction = endCoil3Charge;
       ign4StartFunction = beginCoil4Charge;
+      ign4EndFunction();//run the old end function to avoid possibility of some outputs sticking ON
       ign4EndFunction = endCoil4Charge;
       break;
 
