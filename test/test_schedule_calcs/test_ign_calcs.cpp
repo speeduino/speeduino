@@ -591,8 +591,8 @@ void test_rotary_channel_calcs(void)
     const int16_t (*pStart)[5] = &test_data[0];
     const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
 
-    int16_t endAngle, startAngle;
-    int16_t local[5];
+    int endAngle, startAngle;
+    int local[5];
     while (pStart!=pEnd)
     {
         memcpy_P(local, pStart, sizeof(local));
