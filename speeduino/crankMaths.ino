@@ -139,6 +139,11 @@ void doCrankSpeedCalcs(void)
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
       }
+      else if (configPage4.TrigPattern == DECODER_MISSING_TOOTH)
+      {
+        //for Missing Tooth decoder timePerDegreex16 caclulation is done in the getRPM() function together with RPM calculation. This is for reducing computational load.
+        timePerDegree = timePerDegreex16 / 16;
+      } 
       else
       {
         //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
