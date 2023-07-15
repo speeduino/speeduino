@@ -299,7 +299,11 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
       revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
       if(degreesOver == 720) { revolutionTime = revolutionTime / 2; }
-      tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+      if (revolutionTime<UINT16_MAX) {
+        tempRPM = udiv_32_16(US_IN_MINUTE, revolutionTime);
+      } else {
+        tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+      }
       if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
     }
   }
