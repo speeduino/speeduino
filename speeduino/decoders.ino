@@ -284,15 +284,7 @@ static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0);
 }
 
-/** Compute RPM.
-* As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
-* @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
-* @return RPM
-*/
-static inline uint16_t stdGetRPM(uint16_t degreesOver)
-{
-  uint16_t tempRPM = 0;
-
+static inline bool UpdateRevolutionTime(uint16_t degreesOver) {
   if(  HasAnySync(currentStatus) && !IsCranking(currentStatus)
     && (toothOneTime>0) 
     && (toothOneMinusOneTime>0))
@@ -301,12 +293,32 @@ static inline uint16_t stdGetRPM(uint16_t degreesOver)
     revolutionTime = (toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
     interrupts();
     if(degreesOver == 720) { revolutionTime = revolutionTime / 2; }
-    if (revolutionTime<UINT16_MAX) {
-      tempRPM = udiv_32_16(US_IN_MINUTE, revolutionTime);
-    } else {
-      tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
-    }
-    return min(tempRPM, MAX_RPM); //Sanity check
+    return true;
+  }
+  return false;  
+}
+
+static inline uint16_t clampRpm(uint16_t rpm) {
+    return rpm>=MAX_RPM ? currentStatus.RPM : rpm;
+}
+
+static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
+  if (revTime<UINT16_MAX) {
+    return clampRpm(udiv_32_16(US_IN_MINUTE, revTime));
+  } else {
+    return clampRpm(US_IN_MINUTE / revTime); //Calc RPM based on last full revolution time (Faster as /)
+  }
+}
+
+/** Compute RPM.
+* As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
+* @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
+* @return RPM
+*/
+static inline uint16_t stdGetRPM(uint16_t degreesOver)
+{
+  if (UpdateRevolutionTime(degreesOver)) {
+    return RpmFromRevolutionTimeUs(revolutionTime);
   }
 
   return 0U;
@@ -334,7 +346,6 @@ For a missing tooth wheel, this is the number if the tooth had NOT been missing 
 */
 static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
-  uint16_t tempRPM = 0;
   if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) )
   {
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
@@ -343,12 +354,11 @@ static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
       revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth;
       interrupts();
       if(degreesOver == 720) { revolutionTime = revolutionTime / 2; }
-      tempRPM = (US_IN_MINUTE / revolutionTime);
-      if( tempRPM >= MAX_RPM ) { tempRPM = currentStatus.RPM; } //Sanity check. This can prevent spiking caused by noise on individual teeth. The new RPM should never be above 4x the cranking setting value (Remembering that this function is only called is the current RPM is less than the cranking setting)
+      return RpmFromRevolutionTimeUs(revolutionTime);
     }
   }
 
-  return tempRPM;
+  return 0U;
 }
 
 /**
@@ -2916,8 +2926,7 @@ uint16_t getRPM_Nissan360(void)
       revolutionTime = (toothOneTime - toothOneMinusOneTime) >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
     }
-    tempRPM = (US_IN_MINUTE / revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
-    if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
+    tempRPM = RpmFromRevolutionTimeUs(revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
     MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   }
   else { tempRPM = 0; }
@@ -3370,8 +3379,7 @@ uint16_t getRPM_Daihatsu(void)
         noInterrupts();
         revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1);
         interrupts();
-        tempRPM = (US_IN_MINUTE / revolutionTime);
-        if(tempRPM >= MAX_RPM) { tempRPM = currentStatus.RPM; } //Sanity check
+        tempRPM = RpmFromRevolutionTimeUs(revolutionTime);
       } //is tooth #2
     }
     else { tempRPM = 0; } //No sync
