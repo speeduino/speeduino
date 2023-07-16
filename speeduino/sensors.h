@@ -47,9 +47,9 @@ volatile unsigned long flexPulseWidth;
 volatile byte knockCounter = 0;
 volatile uint16_t knockAngle;
 
-unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-unsigned long EMAPrunningValue; //As above but for EMAP
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+uint32_t MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+uint32_t EMAPrunningValue; //As above but for EMAP
+uint16_t MAPcount; //Number of samples taken in the current MAP cycle
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 bool auxIsEnabled;
 uint16_t MAPlast; /**< The previous MAP reading */
