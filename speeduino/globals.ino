@@ -6,7 +6,6 @@
 const char TSfirmwareVersion[] PROGMEM = "Speeduino";
 
 const byte data_structure_version = 2; //This identifies the data structure when reading / writing. (outdated ?)
-FastCRC32 CRC32;
 
 struct table3d16RpmLoad fuelTable; ///< 16x16 fuel map
 struct table3d16RpmLoad fuelTable2; ///< 16x16 fuel map
@@ -103,16 +102,11 @@ volatile PORT_TYPE *triggerPri_pin_port;
 volatile PINMASK_TYPE triggerPri_pin_mask;
 volatile PORT_TYPE *triggerSec_pin_port;
 volatile PINMASK_TYPE triggerSec_pin_mask;
+volatile PORT_TYPE *triggerThird_pin_port;
+volatile PINMASK_TYPE triggerThird_pin_mask;
 
 /// These need to be here as they are used in both speeduino.ino and scheduler.ino
-bool channel1InjEnabled = true;
-bool channel2InjEnabled = false;
-bool channel3InjEnabled = false;
-bool channel4InjEnabled = false;
-bool channel5InjEnabled = false;
-bool channel6InjEnabled = false;
-bool channel7InjEnabled = false;
-bool channel8InjEnabled = false;
+byte channelInjEnabled = 0;
 
 int ignition1EndAngle = 0;
 int ignition2EndAngle = 0;
@@ -250,6 +244,9 @@ byte pinSDEnable;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;
 #endif
+byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
+byte pinAirConFan;    // Stand-alone air conditioning fan output (See: auxiliaries.ino)
+byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
@@ -316,7 +313,9 @@ inline bool pinIsOutput(byte pin)
   || ((pin == pinStepperEnable) && isIdleSteper)
   || ((pin == pinStepperStep) && isIdleSteper)
   || ((pin == pinStepperDir) && isIdleSteper)
-  || (pin == pinTachOut) )
+  || (pin == pinTachOut)
+  || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }
