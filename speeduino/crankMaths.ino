@@ -6,8 +6,7 @@
 
 volatile uint16_t timePerDegree;
 volatile uint16_t timePerDegreex16;
-volatile uint16_t degreesPeruSx2048;
-volatile unsigned long degreesPeruSx32768;
+volatile uint16_t degreesPeruSx32768;
 
 //These are only part of the experimental 2nd deriv calcs
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
@@ -67,7 +66,6 @@ uint16_t timeToAngle(unsigned long time, byte method)
     if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
     {
         //A last interval method of calculating angle that does not take into account any acceleration. The interval used is the time taken to complete the last full revolution
-        //degreesPeruSx2048 is the number of degrees the crank moves per uS. This value is almost always <1uS, so it is multiplied by 2048. This allows an angle calculation with only a multiply and a bitshift without any appreciable drop in accuracy
         returnAngle = fastTimeToAngle(time); 
     }
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
@@ -137,7 +135,6 @@ void doCrankSpeedCalcs(void)
         }
 
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
-          timePerDegree = timePerDegreex16 / 16;
       }
       else
       {
@@ -150,8 +147,7 @@ void doCrankSpeedCalcs(void)
           unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
           uint16_t tempTriggerToothAngle = triggerToothAngle;
           interrupts();
-          timePerDegreex16 = udiv_32_16((tempToothLastToothTime - tempToothLastMinusOneToothTime)*16, tempTriggerToothAngle);
-          timePerDegree = timePerDegreex16 / 16;
+          timePerDegreex16 = udiv_32_16((tempToothLastToothTime - tempToothLastMinusOneToothTime)*16UL, tempTriggerToothAngle);
         }
         else
         {
@@ -159,10 +155,9 @@ void doCrankSpeedCalcs(void)
           interrupts();
           //Take into account any likely acceleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          timePerDegreex16 = udiv_32_16( 2666656L, currentStatus.RPM); //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
-          timePerDegree = timePerDegreex16 / 16;
+          timePerDegreex16 = udiv_32_16( US_PER_DEG_PER_RPM*16U, max(MIN_RPM, currentStatus.RPM)); //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
         }
       }
-      degreesPeruSx2048 = 2048 / timePerDegree;
-      degreesPeruSx32768 = 524288 / timePerDegreex16;
+      degreesPeruSx32768 = udiv_32_16(32768UL * 16UL, timePerDegreex16);
+      timePerDegree = timePerDegreex16 / 16U;
 }
