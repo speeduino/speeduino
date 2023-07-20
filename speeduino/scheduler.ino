@@ -608,8 +608,9 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
+      noInterrupts();
       ignitionSchedule1.startCompare = IGN1_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
       if(ignitionSchedule1.endScheduleSetByDecoder == false) { ignitionSchedule1.endCompare = ignitionSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
       SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.startCompare);
@@ -621,7 +622,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
@@ -659,8 +660,9 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
+      noInterrupts();
       ignitionSchedule2.startCompare = IGN2_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
       if(ignitionSchedule2.endScheduleSetByDecoder == false) { ignitionSchedule2.endCompare = ignitionSchedule2.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
       SET_COMPARE(IGN2_COMPARE, ignitionSchedule2.startCompare);
@@ -672,7 +674,7 @@ void setIgnitionSchedule2(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) &&  (currentStatus.TPS < configPage4.floodClear))
     {
@@ -696,8 +698,9 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
+      noInterrupts();
       ignitionSchedule3.startCompare = IGN3_COUNTER + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
       if(ignitionSchedule3.endScheduleSetByDecoder == false) { ignitionSchedule3.endCompare = ignitionSchedule3.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
       SET_COMPARE(IGN3_COMPARE, ignitionSchedule3.startCompare);
@@ -709,7 +712,7 @@ void setIgnitionSchedule3(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
@@ -733,8 +736,9 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
-    noInterrupts();
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
+      noInterrupts();
       ignitionSchedule4.startCompare = IGN4_COUNTER + timeout_timer_compare;
       if(ignitionSchedule4.endScheduleSetByDecoder == false) { ignitionSchedule4.endCompare = ignitionSchedule4.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
       SET_COMPARE(IGN4_COMPARE, ignitionSchedule4.startCompare);
@@ -746,7 +750,7 @@ void setIgnitionSchedule4(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
@@ -770,6 +774,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
       noInterrupts();
       ignitionSchedule5.startCompare = IGN5_COUNTER + timeout_timer_compare;
@@ -783,7 +788,7 @@ void setIgnitionSchedule5(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
@@ -807,6 +812,8 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
+
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
       noInterrupts();
       ignitionSchedule6.startCompare = IGN6_COUNTER + timeout_timer_compare;
@@ -820,7 +827,7 @@ void setIgnitionSchedule6(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
@@ -844,6 +851,7 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
       noInterrupts();
       ignitionSchedule7.startCompare = IGN7_COUNTER + timeout_timer_compare;
@@ -857,7 +865,7 @@ void setIgnitionSchedule7(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) &&  (currentStatus.TPS < configPage4.floodClear))
     {
@@ -881,6 +889,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
     else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
+    // If doing floodClear do not set ignition schedule
     if  (currentStatus.TPS < configPage4.floodClear){ 
       noInterrupts();
       ignitionSchedule8.startCompare = IGN8_COUNTER + timeout_timer_compare;
@@ -894,7 +903,7 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
   }
   else
   {
-    //If the schedule is already running, we can set the next schedule so it is ready to go
+    //If the schedule is already running, we can set the next schedule so it is ready to go, unless we are doing floodClear
     //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
     if ((timeout < MAX_TIMER_PERIOD) && (currentStatus.TPS < configPage4.floodClear))
     {
