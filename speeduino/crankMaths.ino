@@ -155,7 +155,7 @@ void doCrankSpeedCalcs(void)
           interrupts();
           //Take into account any likely acceleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          timePerDegreex16 = udiv_32_16( US_PER_DEG_PER_RPM*16U, max(MIN_RPM, currentStatus.RPM)); //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
+          timePerDegreex16 = udiv_32_16( US_PER_DEG_PER_RPM*16U, max((uint16_t)MIN_RPM, currentStatus.RPM)); //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
         }
       }
       degreesPeruSx32768 = udiv_32_16(32768UL * 16UL, timePerDegreex16);
