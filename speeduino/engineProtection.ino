@@ -105,10 +105,10 @@ byte checkOilPressureLimit(void)
       if(currentStatus.oilPressure < oilLimit)
       {
         //Check if this is the first time we've been below the limit
-        if(oilProtStartTime == 0) { oilProtStartTime = (millis() / 100); }
+        if(oilProtStartTime == 0) { oilProtStartTime = div100(millis()); }
 
         /* Check if countdown has reached its target, if so then instruct to cut */
-        if( (uint8_t(millis()/100) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
+        if( (uint8_t(div100(millis())) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
         {
           BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
           oilProtectActive = 1;

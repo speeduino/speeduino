@@ -67,7 +67,7 @@ void setup(void)
 
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
-    unsigned long pw1percent = 100 + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
+    uint32_t pw1percent = 100 + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
     if (pw1percent != 100) { return div100(uint32_t(pw1percent * currentPW)); }
     return currentPW;
 }
@@ -141,7 +141,7 @@ void loop(void)
     }
 
     currentLoopTime = micros_safe();
-    unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
@@ -468,8 +468,12 @@ void loop(void)
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
       //Handle multiple squirts per rev
-      if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
-      else { pwLimit = pwLimit / currentStatus.nSquirts; }
+      // This requires 32-bit division, which is very slow on Mega 2560.
+      // So only divide if necessary - nSquirts is often only 1.
+      if (currentStatus.nSquirts!=1) {
+        if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
+        else { pwLimit = pwLimit / currentStatus.nSquirts; }
+      }
       //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
@@ -1224,18 +1228,18 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   //iCorrections = divu100((corrections << bitShift));
 
 
-  unsigned long intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (unsigned long)iMAP) >> 7; }
+  uint32_t intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
+  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (uint32_t)iMAP) >> 7; }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;  
+    intermediate = (intermediate * (uint32_t)iAFR) >> 7;  
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    intermediate = (intermediate * (unsigned long)iAFR) >> 7;
+    intermediate = (intermediate * (uint32_t)iAFR) >> 7;
   }
   
-  intermediate = (intermediate * (unsigned long)iCorrections) >> bitShift;
+  intermediate = (intermediate * (uint32_t)iCorrections) >> bitShift;
   if (intermediate != 0)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
@@ -1246,7 +1250,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
       //AE Adds % of req_fuel
       if ( configPage2.aeApplyMode == AE_MODE_ADDER )
         {
-          intermediate += ( ((unsigned long)REQ_FUEL) * (currentStatus.AEamount - 100) ) / 100;
+          intermediate += div100(((uint32_t)REQ_FUEL) * (currentStatus.AEamount - 100U));
         }
     }
 
@@ -1438,21 +1442,21 @@ void calculateStaging(uint32_t pwLimit)
   {
     //Scale the 'full' pulsewidth by each of the injector capacities
     currentStatus.PW1 -= inj_opentime_uS; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint32_t tempPW1 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
+    uint32_t tempPW1 = (((uint32_t)currentStatus.PW1 * staged_req_fuel_mult_pri) / 100);
 
     if(configPage10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint32_t tempPW3 = (((unsigned long)currentStatus.PW1 * staged_req_fuel_mult_sec) / 100); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+      uint32_t tempPW3 = div100((uint32_t)currentStatus.PW1 * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
-      byte stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
-      currentStatus.PW1 = ((100 - stagingSplit) * tempPW1) / 100;
+      uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
+      currentStatus.PW1 = div100((100U - stagingSplit) * tempPW1);
       currentStatus.PW1 += inj_opentime_uS; 
 
       //PW2 is used temporarily to hold the secondary injector pulsewidth. It will be assigned to the correct channel below
       if(stagingSplit > 0) 
       { 
         BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
-        currentStatus.PW2 = (stagingSplit * tempPW3) / 100; 
+        currentStatus.PW2 = div100(stagingSplit * tempPW3); 
         currentStatus.PW2 += inj_opentime_uS;
       }
       else
@@ -1471,7 +1475,7 @@ void calculateStaging(uint32_t pwLimit)
         BIT_SET(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Set the staging active flag
         uint32_t extraPW = tempPW1 - pwLimit + inj_opentime_uS; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
         currentStatus.PW1 = pwLimit;
-        currentStatus.PW2 = ((extraPW * staged_req_fuel_mult_sec) / staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        currentStatus.PW2 = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
         currentStatus.PW2 += inj_opentime_uS;
       }
       else 
