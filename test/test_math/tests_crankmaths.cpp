@@ -21,14 +21,14 @@ struct crankmaths_tooth_testdata {
 void test_crankmaths_angletotime_revolution_execute() {
   crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
   revolutionTime = testdata->revolutionTime;
-  TEST_ASSERT_EQUAL(testdata->expected, angleToTime(testdata->angle, CRANKMATH_METHOD_INTERVAL_REV));
+  TEST_ASSERT_EQUAL(testdata->expected, angleToTimeIntervalRev(testdata->angle));
 }
 
 void test_crankmaths_angletotime_tooth_execute() {
   crankmaths_tooth_testdata *testdata = crankmaths_tooth_testdata_current;
   triggerToothAngle = testdata->triggerToothAngle;
   toothLastToothTime = toothLastMinusOneToothTime + testdata->toothTime;
-  TEST_ASSERT_EQUAL(testdata->expected, angleToTime(testdata->angle, CRANKMATH_METHOD_INTERVAL_TOOTH));
+  TEST_ASSERT_EQUAL(testdata->expected, angleToTimeIntervalTooth(testdata->angle));
 }
 
 void testCrankMaths()
