@@ -13,24 +13,6 @@ void doCrankSpeedCalcs(void);
 /** @brief Absolute minimum RPM that the crank math (& therefore all of Speeduino) can be used with */
 #define MIN_RPM ((US_PER_DEG_PER_RPM/(UINT16_MAX/16UL))+1UL)
 
-/** @brief uS per degree at current RPM in UQ12.4 fixed point
- *
- * @note 
- * The use of a x16 value gives accuracy down to 0.1 of a degree and can provide
- * noticeably better timing results on low resolution triggers.
- * 
- * Using 16 bits means there is a hard lower bound of 41 RPM in the system:
- *   41 RPM == 4065.04 us per degree == 650440 UQ12.4
- *   (40 RPM==66666 UQ12.4)
- */
-extern volatile uint16_t timePerDegreex16;
-
-/** @brief Degrees per uS in UQ0.16 fixed point.
- * 
- * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
- */
-extern volatile uint16_t degreesPeruSx32768;
-
 /**
  * @name Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
@@ -43,14 +25,10 @@ extern volatile uint16_t degreesPeruSx32768;
  * 
  * Inverse of timeToAngleDegPerMicroSec
 */
-static inline uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
-    return ((uint32_t)angle * (uint32_t)timePerDegreex16) >> 4UL;
-}
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
 
 /** @brief Converts based on the time the last full crank revolution took */
-static inline uint32_t angleToTimeIntervalRev(uint16_t angle) {
-    return div360((uint32_t)angle * revolutionTime);
-}
+uint32_t angleToTimeIntervalRev(uint16_t angle);
 
 /** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
  * 
@@ -71,9 +49,7 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle);
  * 
  * Inverse of angleToTimeMicroSecPerDegree
 */
-static inline uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
-    return (time * (uint32_t)degreesPeruSx32768) >> 15UL;
-}
+uint16_t timeToAngleDegPerMicroSec(uint32_t time);
 
 /** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
  * 

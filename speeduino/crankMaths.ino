@@ -4,8 +4,23 @@
 #include "timers.h"
 #include "maths.h"
 
-volatile uint16_t timePerDegreex16;
-volatile uint16_t degreesPeruSx32768;
+/** @brief uS per degree at current RPM in UQ12.4 fixed point
+ *
+ * @note 
+ * The use of a x16 value gives accuracy down to 0.1 of a degree and can provide
+ * noticeably better timing results on low resolution triggers.
+ * 
+ * Using 16 bits means there is a hard lower bound of 41 RPM in the system:
+ *   41 RPM == 4065.04 us per degree == 650440 UQ12.4
+ *   (40 RPM==66666 UQ12.4)
+ */
+static volatile uint16_t timePerDegreex16;
+
+/** @brief Degrees per uS in UQ0.16 fixed point.
+ * 
+ * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
+ */
+static volatile uint16_t degreesPeruSx32768;
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -14,6 +29,14 @@ volatile uint16_t degreesPeruSx32768;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 #endif
+
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
+    return ((uint32_t)angle * (uint32_t)timePerDegreex16) >> 4UL;
+}
+
+uint32_t angleToTimeIntervalRev(uint16_t angle) {
+    return div360((uint32_t)angle * revolutionTime);
+}
 
 uint32_t angleToTimeIntervalTooth(uint16_t angle) {
   noInterrupts();
@@ -30,6 +53,10 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
     interrupts();
     return angleToTimeIntervalRev(angle); 
   }
+}
+
+uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
+    return (time * (uint32_t)degreesPeruSx32768) >> 15UL;
 }
 
 
@@ -99,7 +126,6 @@ void doCrankSpeedCalcs(void)
         noInterrupts();
         if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
         {
-          //noInterrupts();
           unsigned long tempToothLastToothTime = toothLastToothTime;
           unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
           uint16_t tempTriggerToothAngle = triggerToothAngle;
