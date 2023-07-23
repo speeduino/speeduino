@@ -4,7 +4,6 @@
 #include "timers.h"
 #include "maths.h"
 
-volatile uint16_t timePerDegree;
 volatile uint16_t timePerDegreex16;
 volatile uint16_t degreesPeruSx32768;
 
@@ -117,5 +116,4 @@ void doCrankSpeedCalcs(void)
         }
       }
       degreesPeruSx32768 = udiv_32_16(32768UL * 16UL, timePerDegreex16);
-      timePerDegree = timePerDegreex16 / 16U;
 }
