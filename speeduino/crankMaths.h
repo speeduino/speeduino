@@ -16,6 +16,9 @@ void doCrankSpeedCalcs(void);
 /**
  * @name Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
+ * 
+ * Based on angle of [0,720] and min/max RPM, result ranges from
+ * 9 (MAX_RPM, 1 deg) to 2926828 (MIN_RPM, 720 deg)
  *
  * @param angle Angle in degrees
  * @return Time interval in uS
@@ -27,7 +30,10 @@ void doCrankSpeedCalcs(void);
 */
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
 
-/** @brief Converts based on the time the last full crank revolution took */
+/** @brief Converts based on the time the last full crank revolution took 
+ * 
+ * Much slower than angleToTimeMicroSecPerDegree but also more accurate
+*/
 uint32_t angleToTimeIntervalRev(uint16_t angle);
 
 /** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
