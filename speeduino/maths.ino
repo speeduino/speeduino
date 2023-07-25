@@ -2,12 +2,8 @@
 #include <stdlib.h>
 
 #ifdef USE_LIBDIVIDE
-#include "src/libdivide/constant_fast_div.h"
-
 // Constants used for libdivide. Using predefined constants saves flash and RAM (.bss)
 // versus calling the libdivide generator functions (E.g. libdivide_s32_gen)
-const libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = S16_MAGIC(100), .more = S16_MORE(100) };
-const libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = U16_MAGIC(100), .more = U16_MORE(100) };
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
 const libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
 const libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
