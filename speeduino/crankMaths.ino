@@ -1,15 +1,8 @@
 #include "globals.h"
 #include "crankMaths.h"
 #include "decoders.h"
-#include "timers.h"
-#include "maths.h"
-
-/** @brief Degrees per uS in UQ0.16 fixed point.
- * 
- * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
- */
-typedef uint16_t UQ0X16_t;
-static UQ0X16_t degreesPeruSx32768;
+// #include "timers.h"
+// #include "maths.h"
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -41,7 +34,7 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
 }
 
 uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
-    return (time * (uint32_t)degreesPeruSx32768) >> 15UL;
+    return (time * (uint32_t)degreesPerMicro1x15) >> 15UL;
 }
 
 
@@ -64,7 +57,7 @@ uint16_t timeToAngleIntervalTooth(uint32_t time)
     }
 }
 
-void doCrankSpeedCalcs(void)
+/*void doCrankSpeedCalcs(void)
 {
      //********************************************************
       //How fast are we going? Need to know how long (uS) it will take to get from one tooth to the next. We then use that to estimate how far we are between the last tooth and the next one
@@ -106,5 +99,4 @@ void doCrankSpeedCalcs(void)
       }
       else
 #endif
-      degreesPeruSx32768 = (32768UL << 8) / timePerDegree24x8;
-}
+}*/

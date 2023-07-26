@@ -3,8 +3,6 @@
 
 #include "maths.h"
 
-void doCrankSpeedCalcs(void);
-
 #define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 /** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */

@@ -20,7 +20,7 @@ struct crankmaths_tooth_testdata {
 
 void test_crankmaths_angletotime_revolution_execute() {
   crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
-  revolutionTime = testdata->revolutionTime;
+  timePerDegree24x8 = div360(testdata->revolutionTime << 8UL);
   TEST_ASSERT_EQUAL(testdata->expected, angleToTimeMicroSecPerDegree(testdata->angle));
 }
 
@@ -39,13 +39,13 @@ void testCrankMaths()
   const crankmaths_rev_testdata crankmaths_rev_testdatas[] = {
     { .rpm = 50,    .revolutionTime = 1200000, .angle = 0,   .expected = 0 },
     { .rpm = 50,    .revolutionTime = 1200000, .angle = 25,  .expected = 83333 }, // 83333,3333
-    { .rpm = 50,    .revolutionTime = 1200000, .angle = 720, .expected = 2400000 },
+    { .rpm = 50,    .revolutionTime = 1200000, .angle = 720, .expected = 2399999 },
     { .rpm = 2500,  .revolutionTime = 24000,   .angle = 0,   .expected = 0 },
     { .rpm = 2500,  .revolutionTime = 24000,   .angle = 25,  .expected = 1666 }, // 1666,6666
-    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 720, .expected = 48000 },
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 720, .expected = 47998 },
     { .rpm = 20000, .revolutionTime = 3000,    .angle = 0,   .expected = 0 },
     { .rpm = 20000, .revolutionTime = 3000,    .angle = 25,  .expected = 208 }, // 208,3333
-    { .rpm = 20000, .revolutionTime = 3000,    .angle = 720, .expected = 6000 }
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 720, .expected = 5999 }
   };
 
   for (auto testdata : crankmaths_rev_testdatas) {

@@ -94,6 +94,7 @@ volatile unsigned long triggerThirdFilterTime; // The shortest time (in uS) that
 volatile uint8_t decoderState = 0;
 
 UQ24X8_t timePerDegree24x8;
+UQ0X16_t degreesPerMicro1x15;
 
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
@@ -286,11 +287,17 @@ static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0);
 }
 
-static inline void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver) {
+#if defined(UNIT_TEST)
+void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+#else
+static inline void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+#endif
+{
   uint32_t oldTime = revolutionTime;
   revolutionTime = degreesOver == 720 ? revTime/2 : revTime;
   if (oldTime!=revolutionTime) {
-    timePerDegree24x8 = div360(revolutionTime << 8UL);
+    timePerDegree24x8 = div360(revolutionTime << 8UL)+1;
+    degreesPerMicro1x15 = ((360UL << 15UL) / revolutionTime)+1;
   }  
 }
 
