@@ -21,7 +21,7 @@ struct crankmaths_tooth_testdata {
 void test_crankmaths_angletotime_revolution_execute() {
   crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
   revolutionTime = testdata->revolutionTime;
-  TEST_ASSERT_EQUAL(testdata->expected, angleToTimeIntervalRev(testdata->angle));
+  TEST_ASSERT_EQUAL(testdata->expected, angleToTimeMicroSecPerDegree(testdata->angle));
 }
 
 void test_crankmaths_angletotime_tooth_execute() {

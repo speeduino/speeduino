@@ -285,6 +285,10 @@ extern unsigned long lastCrankAngleCalc;
 extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
+/** @brief uS per degree at current RPM in UQ24.8 fixed point */
+typedef uint32_t UQ24X8_t;
+extern UQ24X8_t timePerDegree24x8;
+
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;
 extern uint16_t ignition3EndTooth;

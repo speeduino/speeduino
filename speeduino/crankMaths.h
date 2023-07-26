@@ -30,12 +30,6 @@ void doCrankSpeedCalcs(void);
 */
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
 
-/** @brief Converts based on the time the last full crank revolution took 
- * 
- * Much slower than angleToTimeMicroSecPerDegree but also more accurate
-*/
-uint32_t angleToTimeIntervalRev(uint16_t angle);
-
 /** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
  * 
  * Inverse of timeToAngleIntervalTooth
