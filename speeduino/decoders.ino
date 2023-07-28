@@ -941,7 +941,7 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(int ignitionAng
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempToothAngle / triggerToothAngle;
+  tempEndTooth = tempEndTooth / triggerToothAngle;
 #endif
   if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
   if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
@@ -4270,7 +4270,7 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(int ignition
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempToothAngle / triggerToothAngle;
+  tempEndTooth = tempEndTooth / triggerToothAngle;
 #endif  
   tempEndTooth = tempEndTooth - 1;
   if(tempEndTooth > (36 + toothAdder)) { tempEndTooth -= (36 + toothAdder); }
@@ -4645,7 +4645,7 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(int ignitionAngle,
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempToothAngle / triggerToothAngle;
+  tempEndTooth = tempEndTooth / triggerToothAngle;
 #endif  
   tempEndTooth = tempEndTooth - 1;
   if(tempEndTooth < 1) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
@@ -5000,7 +5000,7 @@ static uint16_t __attribute__((noinline))  calcEndTeeth_Renix(int ignitionAngle,
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempToothAngle / triggerToothAngle;
+  tempEndTooth = tempEndTooth / triggerToothAngle;
 #endif  
   tempEndTooth = tempEndTooth - 1;
   if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
