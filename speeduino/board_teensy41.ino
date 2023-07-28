@@ -320,49 +320,49 @@ void TMR4_isr(void)
 void FLEXPWM1_0_isr(void)
 {
   bool interrupt1 = ( FLEXPWM1_SM0STS & FLEXPWM_SMSTS_CMPF(1<<0) );
-  if(interrupt1) { FLEXPWM1_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); knockSchedule1Interrupt(); }
+  if(interrupt1) { FLEXPWM1_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); /*knockSchedule1Interrupt();*/ }
 }
 
 void FLEXPWM1_1_isr(void)
 {
   bool interrupt1 = ( FLEXPWM1_SM1STS & FLEXPWM_SMSTS_CMPF(1<<1) );
-  if(interrupt1) { FLEXPWM1_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); knockSchedule2Interrupt(); }
+  if(interrupt1) { FLEXPWM1_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); /*knockSchedule2Interrupt();*/ }
 }
 
 void FLEXPWM1_2_isr(void)
 {
   bool interrupt1 = ( FLEXPWM1_SM2STS & FLEXPWM_SMSTS_CMPF(1<<2) );
-  if(interrupt1) { FLEXPWM1_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); knockSchedule3Interrupt(); }
+  if(interrupt1) { FLEXPWM1_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); /*knockSchedule3Interrupt();*/ }
 }
 
 void FLEXPWM1_3_isr(void)
 {
   bool interrupt1 = ( FLEXPWM1_SM3STS & FLEXPWM_SMSTS_CMPF(1<<3) );
-  if(interrupt1) { FLEXPWM1_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); knockSchedule4Interrupt(); }
+  if(interrupt1) { FLEXPWM1_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); /*knockSchedule4Interrupt();*/ }
 }
 
 void FLEXPWM2_0_isr(void)
 {
   bool interrupt1 = ( FLEXPWM2_SM0STS & FLEXPWM_SMSTS_CMPF(1<<0) );
-  if(interrupt1) { FLEXPWM2_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); knockSchedule5Interrupt(); }
+  if(interrupt1) { FLEXPWM2_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); /*knockSchedule5Interrupt();*/ }
 }
 
 void FLEXPWM2_1_isr(void)
 {
   bool interrupt1 = ( FLEXPWM2_SM1STS & FLEXPWM_SMSTS_CMPF(1<<1) );
-  if(interrupt1) { FLEXPWM2_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); knockSchedule6Interrupt(); }
+  if(interrupt1) { FLEXPWM2_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); /*knockSchedule6Interrupt();*/ }
 }
 
 void FLEXPWM2_2_isr(void)
 {
   bool interrupt1 = ( FLEXPWM2_SM2STS & FLEXPWM_SMSTS_CMPF(1<<2) );
-  if(interrupt1) { FLEXPWM2_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); knockSchedule7Interrupt(); }
+  if(interrupt1) { FLEXPWM2_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); /*knockSchedule7Interrupt();*/ }
 }
 
 void FLEXPWM2_3_isr(void)
 {
   bool interrupt1 = ( FLEXPWM2_SM3STS & FLEXPWM_SMSTS_CMPF(1<<3) );
-  if(interrupt1) { FLEXPWM2_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); knockSchedule8Interrupt(); }
+  if(interrupt1) { FLEXPWM2_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); /*knockSchedule8Interrupt();*/ }
 }
 
 uint16_t freeRam()
