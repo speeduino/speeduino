@@ -175,10 +175,13 @@ void loop(void)
     }
 
     currentLoopTime = micros_safe();
+    bool crankCalcs = false;
     uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
+      crankCalcs = BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED);
+      BIT_CLEAR(decoderState, BIT_DECODER_REVTIMECHANGED);
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       FUEL_PUMP_ON();
@@ -495,7 +498,7 @@ void loop(void)
 
       // If the revolution time hasn't changed since the last time
       // then we can re-use the previous pulse widths.
-      if (BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED)) {
+      if (crankCalcs) {
         //Check that the duty cycle of the chosen pulsewidth isn't too high.
         uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
         if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
@@ -732,7 +735,7 @@ void loop(void)
 
       // If the revolution time hasn't changed since the last time
       // then we can re-use the previous ignition angles.
-      if (BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED)) {
+      if (crankCalcs) {
         int dwellAngle = timeToAngleDegPerMicroSec(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
         calculateIgnitionAngles(dwellAngle);
 

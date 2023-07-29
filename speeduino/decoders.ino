@@ -291,30 +291,31 @@ static inline bool IsCranking(const statuses &status) {
 }
 
 #if defined(UNIT_TEST)
-void SetRevolutionTime(uint32_t revTime)
+bool SetRevolutionTime(uint32_t revTime)
 #else
-static __attribute__((noinline)) void SetRevolutionTime(uint32_t revTime)
+static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 #endif
 {
-  BIT_WRITE(decoderState, BIT_DECODER_REVTIMECHANGED, revTime!=revolutionTime);
-  if (BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED)) {
+  if (revTime!=revolutionTime) {
+    BIT_SET(decoderState, BIT_DECODER_REVTIMECHANGED);
     revolutionTime = revTime;
     timePerDegree24x8 = div360(revolutionTime << 8UL)+1;
     degreesPerMicro1x15 = ((360UL << 15UL) / revolutionTime)+1;
+    return true;
   }  
+  return false;
 }
 
 static bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
-  BIT_CLEAR(decoderState, BIT_DECODER_REVTIMECHANGED);
   noInterrupts();
-  if(  HasAnySync(currentStatus) && !IsCranking(currentStatus)
-    && (toothOneTime>0) 
-    && (toothOneMinusOneTime>0))
-  {
-    SetRevolutionTime((toothOneTime - toothOneMinusOneTime) / (degreesOver==720U ? 2U : 1U)); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-  }
+  bool updatedRevTime = HasAnySync(currentStatus) 
+    && !IsCranking(currentStatus)
+    && (toothOneMinusOneTime!=0L)
+    && (toothOneTime>toothOneMinusOneTime) 
+    //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) / (degreesOver==720U ? 2U : 1U)); 
   interrupts();
-  return BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED);  
+  return updatedRevTime;  
 }
 
 static inline uint16_t clampRpm(uint16_t rpm) {
