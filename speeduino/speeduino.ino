@@ -57,22 +57,46 @@ uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0;   
+uint16_t staged_req_fuel_mult_sec = 0;
+
+// Forward declaration
+void calculateIgnitionAngles(int dwellAngle);
+
 #ifndef UNIT_TEST // Scope guard for unit testing
+
+static uint16_t injector1StartAngle = 0;
+static uint16_t injector2StartAngle = 0;
+static uint16_t injector3StartAngle = 0;
+static uint16_t injector4StartAngle = 0;
+#if INJ_CHANNELS >= 5
+static uint16_t injector5StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 6
+static uint16_t injector6StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 7
+static uint16_t injector7StartAngle = 0;
+#endif
+#if INJ_CHANNELS >= 8
+static uint16_t injector8StartAngle = 0;
+#endif
+
+static uint16_t primaryPW;
+
 void setup(void)
 {
   initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
 
-inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
+uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     uint8_t pwPercent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
     if (pwPercent != 100U) { return percentage(pwPercent, currentPW); }
     return currentPW;
 }
 
-void __attribute__((warning("-no-implicit-fallthrough"))) applyFuelTrims(void) {
+void applyFuelTrims(void) {
   if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) ) { 
     switch (configPage2.nCylinders) {
     case 8:
@@ -124,6 +148,252 @@ static uint16_t applyNitrous(uint16_t pulseWidth) {
     pulseWidth = applyNitrousStage(pulseWidth, configPage10.n2o_stage2);
   }
   return pulseWidth;
+}
+
+static uint16_t getPwLimit(void) {
+  //Check that the duty cycle of the chosen pulsewidth isn't too high.
+  uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
+
+  //Handle multiple squirts per rev
+  // This requires 32-bit division, which is very slow on Mega 2560.
+  // So only divide if necessary - nSquirts is often only 1.
+  if (currentStatus.nSquirts!=1) {
+    pwLimit = pwLimit / currentStatus.nSquirts;
+  }
+
+  return pwLimit;
+}
+
+static uint16_t getDwell(void) {
+  // Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
+  uint16_t dwell = 0;
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
+    dwell = configPage4.dwellCrank * 100U; //use cranking dwell
+  }
+  else if ( configPage2.useDwellMap == true )
+  {
+    dwell = get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100U; //use running dwell from map
+  }
+  else
+  {
+    dwell = configPage4.dwellRun * 100U; //use fixed running dwell
+  }
+
+  return correctionsDwell(dwell);
+}
+
+static void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle) {
+  injector1StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+
+  //Repeat the above for each cylinder
+  switch (configPage2.nCylinders)
+  {
+    //Single cylinder
+    case 1:
+      //The only thing that needs to be done for single cylinder is to check for staging. 
+      if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+      {
+        pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW2); //Need to redo this for PW2 as it will be dramatically different to PW1 when staging
+        //injector3StartAngle = calculateInjector3StartAngle(pwAngle);
+        injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+      }
+      break;
+    //2 cylinders
+    case 2:
+      //injector2StartAngle = calculateInjector2StartAngle(pwAngle);
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+      {
+        pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+        injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+        injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+
+        injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+        if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
+      }
+      break;
+    //3 cylinders
+    case 3:
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+      
+      if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
+      {
+        #if INJ_CHANNELS >= 6
+          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+          {
+            pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW4 as it will be dramatically different to PW1 when staging
+            injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+            injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+            injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+          }
+        #endif
+      }
+      else if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+      {
+        pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+        injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+        #if INJ_CHANNELS >= 6
+          injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+          injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+        #endif
+      }
+      break;
+    //4 cylinders
+    case 4:
+      //injector2StartAngle = calculateInjector2StartAngle(pwAngle);
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+
+      if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+      {
+        if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
+        injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+        injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+        #if INJ_CHANNELS >= 8
+          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+          {
+            pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW5 as it will be dramatically different to PW1 when staging
+            injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+            injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+            injector7StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+            injector8StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+          }
+        #endif
+      }
+      else if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+      {
+        pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+        injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+        injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      }
+      else
+      {
+        if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+      }
+      break;
+    //5 cylinders
+    case 5:
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+      injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+      #if INJ_CHANNELS >= 5
+        injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel5InjDegrees, injAngle);
+      #endif
+
+      //Staging is possible by using the 6th channel if available
+      #if INJ_CHANNELS >= 6
+        if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+        {
+          pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW6);
+          injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel6InjDegrees, injAngle);
+        }
+      #endif
+
+      break;
+    //6 cylinders
+    case 6:
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+      
+      #if INJ_CHANNELS >= 6
+        if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+        {
+          if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
+          injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+          injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel5InjDegrees, injAngle);
+          injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel6InjDegrees, injAngle);
+
+          //Staging is possible with sequential on 8 channel boards by using outputs 7 + 8 for the staged injectors
+          #if INJ_CHANNELS >= 8
+            if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+            {
+              pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
+              injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+              injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+              injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+            }
+          #endif
+        }
+        else
+        {
+          if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+
+          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+          {
+            pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
+            injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+            injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+            injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle); 
+          }
+        }
+      #endif
+      break;
+    //8 cylinders
+    case 8:
+      injector2StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+      injector3StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+      injector4StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+
+      #if INJ_CHANNELS >= 8
+        if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+        {
+          if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
+
+          injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel5InjDegrees, injAngle);
+          injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel6InjDegrees, injAngle);
+          injector7StartAngle = calculateInjectorStartAngle(pwAngle, channel7InjDegrees, injAngle);
+          injector8StartAngle = calculateInjectorStartAngle(pwAngle, channel8InjDegrees, injAngle);
+        }
+        else
+        {
+          if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
+
+          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
+          {
+            pwAngle = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            injector5StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
+            injector6StartAngle = calculateInjectorStartAngle(pwAngle, channel2InjDegrees, injAngle);
+            injector7StartAngle = calculateInjectorStartAngle(pwAngle, channel3InjDegrees, injAngle);
+            injector8StartAngle = calculateInjectorStartAngle(pwAngle, channel4InjDegrees, injAngle);
+          }
+        }
+
+      #endif
+      break;
+
+    //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
+    default:
+      break;
+  }
+}
+
+#define BIT_LOOP_CRANKCALCS_CHANGED 0
+#define BIT_LOOP_ADVANCE_CHANGED    1
+#define BIT_LOOP_DWELL_CHANGED      2
+#define BIT_LOOP_PW_CHANGED         3
+#define BIT_LOOP_INJANGLE_CHANGED   4
+
+static bool recalcIgnitionScedules(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
+}
+
+static bool recalcInjectionSchedules(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED);
+}
+
+static bool testAndSwap(uint16_t &value, uint16_t newValue) {
+  if (value!=newValue) {
+    value = newValue;
+    return true;
+  }
+  return false;
 }
 
 /** Speeduino main loop.
@@ -195,12 +465,12 @@ void loop(void)
     }
 
     currentLoopTime = micros_safe();
-    bool crankCalcs = false;
+    byte changeTracker = 0U;
     uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
-      crankCalcs = BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED);
+      BIT_WRITE(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED, BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED));
       BIT_CLEAR(decoderState, BIT_DECODER_REVTIMECHANGED);
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
@@ -439,11 +709,14 @@ void loop(void)
     currentStatus.VE1 = getVE1();
     currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
 
+    int8_t oldAdvance = currentStatus.advance;
     currentStatus.advance1 = getAdvance1();
     currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
 
     calculateSecondaryFuel();
     calculateSecondarySpark();
+
+    BIT_WRITE(changeTracker, BIT_LOOP_ADVANCE_CHANGED, oldAdvance!=currentStatus.advance);
 
     //Always check for sync
     //Main loop runs within this clause
@@ -481,38 +754,20 @@ void loop(void)
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS));
+      BIT_WRITE(changeTracker, BIT_LOOP_PW_CHANGED, 
+                    testAndSwap(primaryPW,
+                    applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS))));
 
-      int injector1StartAngle = 0;
-      uint16_t injector2StartAngle = 0;
-      uint16_t injector3StartAngle = 0;
-      uint16_t injector4StartAngle = 0;
-      #if INJ_CHANNELS >= 5
-      uint16_t injector5StartAngle = 0;
-      #endif
-      #if INJ_CHANNELS >= 6
-      uint16_t injector6StartAngle = 0;
-      #endif
-      #if INJ_CHANNELS >= 7
-      uint16_t injector7StartAngle = 0;
-      #endif
-      #if INJ_CHANNELS >= 8
-      uint16_t injector8StartAngle = 0;
-      #endif
+      BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
+                testAndSwap(currentStatus.injAngle, table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
 
       // If the revolution time hasn't changed since the last time
       // then we can re-use the previous pulse widths.
-      if (crankCalcs) {
-        //Check that the duty cycle of the chosen pulsewidth isn't too high.
-        uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-        if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
+      if (recalcInjectionSchedules(changeTracker)) {
+        currentStatus.PW1 = primaryPW;
 
-        //Handle multiple squirts per rev
-        // This requires 32-bit division, which is very slow on Mega 2560.
-        // So only divide if necessary - nSquirts is often only 1.
-        if (currentStatus.nSquirts!=1) {
-          pwLimit = pwLimit / currentStatus.nSquirts;
-        }
+        //Check that the duty cycle of the chosen pulsewidth isn't too high.
+        uint32_t pwLimit = getPwLimit();
         
         //Apply the pwLimit if staging is disabled and engine is not cranking
         if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { 
@@ -523,229 +778,28 @@ void loop(void)
 
         calculateStaging(pwLimit);
 
+        //***********************************************************************************************
+        //BEGIN INJECTION TIMING
         applyFuelTrims();
-      }
 
-      //***********************************************************************************************
-      //BEGIN INJECTION TIMING
-      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-      unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
-
-      injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-
-      //Repeat the above for each cylinder
-      switch (configPage2.nCylinders)
-      {
-        //Single cylinder
-        case 1:
-          //The only thing that needs to be done for single cylinder is to check for staging. 
-          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-          {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW2); //Need to redo this for PW2 as it will be dramatically different to PW1 when staging
-            //injector3StartAngle = calculateInjector3StartAngle(PWdivTimerPerDegree);
-            injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-          }
-          break;
-        //2 cylinders
-        case 2:
-          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-          {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-
-            injector4StartAngle = injector3StartAngle + (CRANK_ANGLE_MAX_INJ / 2); //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-            if(injector4StartAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { injector4StartAngle -= CRANK_ANGLE_MAX_INJ; }
-          }
-          break;
-        //3 cylinders
-        case 3:
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-          
-          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
-          {
-            #if INJ_CHANNELS >= 6
-              if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-              {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW4 as it will be dramatically different to PW1 when staging
-                injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-                injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-                injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-              }
-            #endif
-          }
-          else if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-          {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-            #if INJ_CHANNELS >= 6
-              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-            #endif
-          }
-          break;
-        //4 cylinders
-        case 4:
-          //injector2StartAngle = calculateInjector2StartAngle(PWdivTimerPerDegree);
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-
-          if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
-          {
-            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
-
-            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-            #if INJ_CHANNELS >= 8
-              if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-              {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW5 as it will be dramatically different to PW1 when staging
-                injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-                injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-                injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-                injector8StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-              }
-            #endif
-          }
-          else if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-          {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-            injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-            injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          }
-          else
-          {
-            if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
-          }
-          break;
-        //5 cylinders
-        case 5:
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-          injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-          #if INJ_CHANNELS >= 5
-            injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees, currentStatus.injAngle);
-          #endif
-
-          //Staging is possible by using the 6th channel if available
-          #if INJ_CHANNELS >= 6
-            if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-            {
-              PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
-              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees, currentStatus.injAngle);
-            }
-          #endif
-
-          break;
-        //6 cylinders
-        case 6:
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-          
-          #if INJ_CHANNELS >= 6
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
-            {
-              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
-
-              injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees, currentStatus.injAngle);
-              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees, currentStatus.injAngle);
-
-              //Staging is possible with sequential on 8 channel boards by using outputs 7 + 8 for the staged injectors
-              #if INJ_CHANNELS >= 8
-                if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-                {
-                  PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
-                  injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-                  injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-                  injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-                }
-              #endif
-            }
-            else
-            {
-              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
-
-              if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-              {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for staging PW as it will be dramatically different to PW1 when staging
-                injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-                injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-                injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle); 
-              }
-            }
-          #endif
-          break;
-        //8 cylinders
-        case 8:
-          injector2StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-          injector3StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-          injector4StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-
-          #if INJ_CHANNELS >= 8
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
-            {
-              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(); }
-
-              injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel5InjDegrees, currentStatus.injAngle);
-              injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel6InjDegrees, currentStatus.injAngle);
-              injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel7InjDegrees, currentStatus.injAngle);
-              injector8StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel8InjDegrees, currentStatus.injAngle);
-            }
-            else
-            {
-              if( BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(); }
-
-              if( (configPage10.stagingEnabled == true) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE) == true) )
-              {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
-                injector5StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
-                injector6StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
-                injector7StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
-                injector8StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
-              }
-            }
-
-          #endif
-          break;
-
-        //Will hit the default case on 1 cylinder or >8 cylinders. Do nothing in these cases
-        default:
-          break;
+        calculateInjectionAngles(timeToAngleDegPerMicroSec(currentStatus.PW1), currentStatus.injAngle);
       }
 
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS
 
       //Set dwell
-      //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
-        currentStatus.dwell =  (configPage4.dwellCrank * 100); //use cranking dwell
-      }
-      else 
-      {
-        if ( configPage2.useDwellMap == true )
-        {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100); //use running dwell from map
-        }
-        else
-        {
-          currentStatus.dwell =  (configPage4.dwellRun * 100); //use fixed running dwell
-        }
-      }
-      currentStatus.dwell = correctionsDwell(currentStatus.dwell);
+      BIT_WRITE(changeTracker, BIT_LOOP_DWELL_CHANGED, 
+                testAndSwap(currentStatus.dwell, getDwell()));
 
       // If the revolution time hasn't changed since the last time
-      // then we can re-use the previous ignition angles.
-      if (crankCalcs) {
-        int dwellAngle = timeToAngleDegPerMicroSec(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
-        calculateIgnitionAngles(dwellAngle);
+      // then we can re-use the previous ignition angles unless dwell has changed
+      if (recalcIgnitionScedules(changeTracker)) {
+        //Convert the dwell time to dwell angle based on the current engine speed
+        calculateIgnitionAngles(timeToAngleDegPerMicroSec(currentStatus.dwell));
 
         //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
-        //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
-        //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
+        //This only needs to be run if the ignition angles have changed
         if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
       }
 
