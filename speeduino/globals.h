@@ -642,7 +642,7 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
-  int dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
+  uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
   volatile int16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */
   byte battery10;     /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
@@ -1186,6 +1186,14 @@ struct config9 {
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
 
+struct nitrous_stage_settings {
+  byte minRPM; //Byte 81
+  byte maxRPM; //Byte 82
+  byte adderMin; //Byte 83
+  byte adderMax; //Byte 84
+  byte retard; //Byte 85  
+};
+
 /** Page 10 - No specific purpose. Created initially for the cranking enrich curve.
 192 bytes long.
 See ini file for further info (Config Page 11 in the ini).
@@ -1230,20 +1238,12 @@ struct config10 {
   byte n2o_stage1_pin : 6;
   byte n2o_pin_polarity : 1;
   byte n2o_stage1_unused : 1;
-  byte n2o_stage1_minRPM; //Byte 81
-  byte n2o_stage1_maxRPM; //Byte 82
-  byte n2o_stage1_adderMin; //Byte 83
-  byte n2o_stage1_adderMax; //Byte 84
-  byte n2o_stage1_retard; //Byte 85
+  nitrous_stage_settings n2o_stage1;
 
   //Byte 86
   byte n2o_stage2_pin : 6;
   byte n2o_stage2_unused : 2;
-  byte n2o_stage2_minRPM; //Byte 87
-  byte n2o_stage2_maxRPM; //Byte 88
-  byte n2o_stage2_adderMin; //Byte 89
-  byte n2o_stage2_adderMax; //Byte 90
-  byte n2o_stage2_retard; //Byte 91
+  nitrous_stage_settings n2o_stage2;
 
   //Byte 92
   byte knock_mode : 2;
