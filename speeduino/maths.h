@@ -3,8 +3,6 @@
 
 #include <limits.h>
 
-unsigned long percentage(uint8_t x, unsigned long y);
-unsigned long halfPercentage(uint8_t x, unsigned long y);
 uint8_t random1to100(void);
 
 #ifdef USE_LIBDIVIDE
@@ -77,14 +75,23 @@ static inline uint32_t div360(uint32_t n) {
 #endif
 }
 
+//Return x percent of y
+//This is a relatively fast approximation of a percentage value.
+static inline uint32_t percentage(uint8_t x, uint32_t y) {
+    return div100(y * (uint32_t)x);
+}
+
+uint32_t halfPercentage(uint8_t x, uint32_t y);
+
+
 #define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
 #define IS_INTEGER(d) ((d) == (int32_t)(d))
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-#define fastMap1023toX(x, out_max) ( ((unsigned long)(x) * (out_max)) >> 10)
+#define fastMap1023toX(x, out_max) ( ((uint32_t)(x) * (out_max)) >> 10)
 //This is a new version that allows for out_min
-#define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)(x) * ((out_max)-(out_min))) >> 10 ) + (out_min))
+#define fastMap10Bit(x, out_min, out_max) ( ( ((uint32_t)(x) * ((out_max)-(out_min))) >> 10 ) + (out_min))
 
 /**
  * @brief Optimised division: uint32_t/uint16_t => uint16_t

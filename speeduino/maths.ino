@@ -11,13 +11,6 @@ const libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more =
 const libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
 #endif
 
-//Return x percent of y
-//This is a relatively fast approximation of a percentage value.
-unsigned long percentage(uint8_t x, unsigned long y)
-{
-  return div100(y * x);
-}
-
 //Same as above, but 0.5% accuracy
 unsigned long halfPercentage(uint8_t x, unsigned long y)
 {
