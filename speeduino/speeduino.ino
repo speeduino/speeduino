@@ -89,14 +89,14 @@ void setup(void)
   initialiseAll();
 }
 
-uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
+static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     uint8_t pwPercent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
     if (pwPercent != 100U) { return percentage(pwPercent, currentPW); }
     return currentPW;
 }
 
-void applyFuelTrims(void) {
+static inline void applyFuelTrims(void) {
   if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) ) { 
     switch (configPage2.nCylinders) {
     case 8:
@@ -130,14 +130,14 @@ void applyFuelTrims(void) {
   }
 }
 
-static uint16_t applyNitrousStage(uint16_t pulseWidth, const nitrous_stage_settings &stage) {
+static inline uint16_t applyNitrousStage(uint16_t pulseWidth, const nitrous_stage_settings &stage) {
   int16_t adderRange = (stage.maxRPM - stage.minRPM) * 100;
   int16_t adderPercent = ((currentStatus.RPM - (stage.minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
   adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
   return pulseWidth + (stage.adderMax + percentage(adderPercent, (stage.adderMin - stage.adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
 }
 
-static uint16_t applyNitrous(uint16_t pulseWidth) {
+static inline uint16_t applyNitrous(uint16_t pulseWidth) {
   //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
   if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
   { 
@@ -150,7 +150,7 @@ static uint16_t applyNitrous(uint16_t pulseWidth) {
   return pulseWidth;
 }
 
-static uint16_t getPwLimit(void) {
+static inline uint16_t getPwLimit(void) {
   //Check that the duty cycle of the chosen pulsewidth isn't too high.
   uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
@@ -165,7 +165,7 @@ static uint16_t getPwLimit(void) {
   return pwLimit;
 }
 
-static uint16_t getDwell(void) {
+static inline uint16_t getDwell(void) {
   // Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
   uint16_t dwell = 0;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
@@ -183,7 +183,7 @@ static uint16_t getDwell(void) {
   return correctionsDwell(dwell);
 }
 
-static void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle) {
+static inline void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle) {
   injector1StartAngle = calculateInjectorStartAngle(pwAngle, channel1InjDegrees, injAngle);
 
   //Repeat the above for each cylinder
@@ -376,19 +376,19 @@ static void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle) {
 #define BIT_LOOP_PW_CHANGED         3
 #define BIT_LOOP_INJANGLE_CHANGED   4
 
-static bool recalcIgnitionScedules(byte changeTracker) {
+static inline bool recalcIgnitionScedules(byte changeTracker) {
   return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
 }
 
-static bool recalcInjectionSchedules(byte changeTracker) {
+static inline bool recalcInjectionSchedules(byte changeTracker) {
   return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED);
 }
 
-static bool testAndSwap(uint16_t &value, uint16_t newValue) {
+static inline bool testAndSwap(uint16_t &value, uint16_t newValue) {
   if (value!=newValue) {
     value = newValue;
     return true;
@@ -412,7 +412,16 @@ static bool testAndSwap(uint16_t &value, uint16_t newValue) {
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop(void)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+// Sometimes loop() is inlined by LTO & sometimes not
+// When not inlined, there is a huge difference in stack usage: 60+ bytes
+// That eats into available RAM.
+// Adding __attribute__((always_inline)) forces the LTO process to inline.
+//
+// Since the function is declared in an Arduino header, we can't change
+// it to inline, so we need to suppress the resulting warning.
+void __attribute__((always_inline)) loop(void)
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -1245,6 +1254,8 @@ void loop(void)
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
 } //loop()
+#pragma GCC diagnostic pop
+
 #endif //Unit test guard
 
 /**
