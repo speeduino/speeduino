@@ -216,32 +216,7 @@ void loop(void)
           }
       #endif     
 
-      //Check for launching/flat shift (clutch) can be done around here too
-      previousClutchTrigger = clutchTrigger;
-      //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
-      if(configPage6.flatSEnable || configPage6.launchEnabled){
-        if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
-        else { clutchTrigger = !digitalRead(pinLaunch); }
-      }
-
-      if(previousClutchTrigger != clutchTrigger) { currentStatus.clutchEngagedRPM = currentStatus.RPM; }
-
-      if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchHardLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
-      { 
-        //HardCut rev limit for 2-step launch control.
-        currentStatus.launchingHard = true; 
-        BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
-      } 
-      else 
-      { 
-        //FLag launch as being off
-        currentStatus.launchingHard = false; 
-        BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
-
-        //If launch is not active, check whether flat shift should be active
-        if(configPage6.flatSEnable && clutchTrigger && (currentStatus.RPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > currentStatus.clutchEngagedRPM) ) { currentStatus.flatShiftingHard = true; }
-        else { currentStatus.flatShiftingHard = false; }
-      }
+      checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
@@ -794,8 +769,8 @@ void loop(void)
       //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
       if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }
       if ( (currentStatus.launchingHard == true) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
-      if ( (currentStatus.flatShiftingHard == true) && (configPage6.flatSArm < maxAllowedRPM) ) { maxAllowedRPM = configPage6.flatSArm; }
       maxAllowedRPM = maxAllowedRPM * 100; //All of the above limits are divided by 100, convert back to RPM
+      if ( (currentStatus.flatShiftingHard == true) && (currentStatus.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = currentStatus.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
     
       if( (configPage2.hardCutType == HARD_CUT_FULL) && (currentStatus.RPM > maxAllowedRPM) )
       {
@@ -831,12 +806,13 @@ void loop(void)
         //if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
         if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
-        if (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut) )
+        if ( (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (currentStatus.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cure, otherwise check if the required number of revolutions have passed since the last cut
         { 
           uint8_t cutPercent = 0;
           int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
           if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
           else { cutPercent = table2D_getValue(&rollingCutTable, (rpmDelta / 10) ); } //
+          
 
           for(uint8_t x=0; x<max(maxIgnOutputs, maxInjOutputs); x++)
           {  
@@ -1648,4 +1624,51 @@ void calculateStaging(uint32_t pwLimit)
     
   } 
 
+}
+
+void checkLaunchAndFlatShift()
+{
+  //Check for launching/flat shift (clutch) based on the current and previous clutch states
+  previousClutchTrigger = clutchTrigger;
+  //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
+  if(configPage6.flatSEnable || configPage6.launchEnabled)
+  {
+    if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
+    else { clutchTrigger = !digitalRead(pinLaunch); }
+  }
+  if(clutchTrigger && (previousClutchTrigger != clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
+
+  //Default flags to off
+  currentStatus.launchingHard = false; 
+  BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+  currentStatus.flatShiftingHard = false;
+
+  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+  { 
+    //Check whether RPM is above the launch limit
+    uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
+    if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+
+    if(currentStatus.RPM > launchRPMLimit)
+    {
+      //HardCut rev limit for 2-step launch control.
+      currentStatus.launchingHard = true; 
+      BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+    }
+  } 
+  else 
+  { 
+    //If launch is not active, check whether flat shift should be active
+    if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM >= ((unsigned int)(configPage6.flatSArm * 100)) ) ) 
+    { 
+      uint16_t flatRPMLimit = currentStatus.clutchEngagedRPM;
+      if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { flatRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+
+      if(currentStatus.RPM > flatRPMLimit)
+      {
+        //Flat shift rev limit
+        currentStatus.flatShiftingHard = true;
+      }
+    }
+  }
 }
