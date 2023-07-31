@@ -731,6 +731,38 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
+  int knockWindowTime; /**< Knock measurement window duration in uS */
+#if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+  uint8_t knockTC;
+  byte knock1;
+  byte knock2;
+  byte knock3;
+  byte knock4;
+  byte knock1A;
+  byte knock2A;
+  byte knock3A;
+  byte knock4A;
+  byte knock1B;
+  byte knock2B;
+  byte knock3B;
+  byte knock4B;
+  byte knock1C;
+  byte knock2C;
+  byte knock3C;
+  byte knock4C;
+  byte knock1D;
+  byte knock2D;
+  byte knock3D;
+  byte knock4D;
+  volatile byte KNOCK; ///< Status bits (See BIT_KNOCK_* defines on tpic8101.h file)
+  volatile byte KNOCK2; ///< Status bits (See BIT_KNOCK2_* defines on tpic8101.h file)
+  uint8_t knockFreqBin;
+  uint8_t knockFreqBinA;
+  uint8_t knockFreqBinB;
+  uint8_t knockFreqBinC;
+  uint8_t knockFreqBinD;
+  uint8_t knockGainBin;
+#endif
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1466,8 +1498,21 @@ struct config15 {
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
-  //Bytes 98-255
-  byte Unused15_98_255[150];
+  //Bytes 106-112
+  uint8_t knockStart;
+  uint8_t knockWindow;
+  byte knockFreqA : 6;
+  byte unused15_108_6_7 : 2;
+  byte knockGain : 6;
+  byte unused15_109_6_7 : 2;
+  byte knockFreqB : 6;
+  byte unused15_110_6_7 : 2;
+  byte knockFreqC : 6;
+  byte unused15_111_6_7 : 2;
+  byte knockFreqD : 6;
+  byte unused15_112_6_7 : 2;
+  //Bytes 113-255
+  byte Unused15_113_255[143];
 
 #if defined(CORE_AVR)
   };
@@ -1550,6 +1595,8 @@ extern byte pinWMIIndicator; // No water indicator bulb
 extern byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid
 extern byte pinMC33810_1_CS;
 extern byte pinMC33810_2_CS;
+extern byte pinTPIC8101_CS;
+extern byte pinTPIC8101_INT;
 extern byte pinSDEnable; //Input for manually enabling SD logging
 #ifdef USE_SPI_EEPROM
   extern byte pinSPIFlash_CS;
