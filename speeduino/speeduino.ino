@@ -375,6 +375,7 @@ static inline void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle)
 #define BIT_LOOP_DWELL_CHANGED      2
 #define BIT_LOOP_PW_CHANGED         3
 #define BIT_LOOP_INJANGLE_CHANGED   4
+#define BIT_LOOP_RPM_CHANGED        5
 
 static inline bool recalcIgnitionScedules(byte changeTracker) {
   return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
@@ -478,10 +479,10 @@ void __attribute__((always_inline)) loop(void)
     uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      BIT_WRITE(changeTracker, BIT_LOOP_RPM_CHANGED, testAndSwap(currentStatus.RPM, getRPM())); // Note getRPM() might set BIT_DECODER_REVTIMECHANGED
       BIT_WRITE(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED, BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED));
       BIT_CLEAR(decoderState, BIT_DECODER_REVTIMECHANGED);
-      currentStatus.RPM = currentStatus.longRPM;
+      currentStatus.longRPM = currentStatus.RPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
