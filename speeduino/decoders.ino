@@ -312,7 +312,7 @@ static bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
     && (toothOneMinusOneTime!=0L)
     && (toothOneTime>toothOneMinusOneTime) 
     //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-    && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) / (degreesOver==720U ? 2U : 1U)); 
+    && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> (degreesOver==720U ? 1U : 0U)); 
   interrupts();
   return updatedRevTime;  
 }
@@ -370,7 +370,7 @@ static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, uint16_t de
     if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
       noInterrupts();
-      SetRevolutionTime(((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth) / (degreesOver==720U ? 2 : 1));
+      SetRevolutionTime(((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth) >> (degreesOver==720U ? 1U : 0U));
       interrupts();
       return RpmFromRevolutionTimeUs(revolutionTime);
     }
