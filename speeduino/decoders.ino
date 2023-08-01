@@ -101,7 +101,6 @@ volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse p
 byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 unsigned long elapsedTime;
 unsigned long lastCrankAngleCalc;
-int16_t lastToothCalcAdvance = 99; //Invalid value here forces calculation of this on first main loop
 unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
 uint16_t ignition1EndTooth = 0;
@@ -773,8 +772,6 @@ void triggerSetEndTeeth_missingTooth(void)
 #if IGN_CHANNELS >= 8
   ignition8EndTooth = calcEndTeeth_missingTooth(ignition8EndAngle, toothAdder);
 #endif
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -974,9 +971,6 @@ void triggerSetEndTeeth_DualWheel(void)
 #if IGN_CHANNELS >= 8
   ignition8EndTooth = calcEndTeeth_DualWheel(ignition8EndAngle, toothAdder);
 #endif
-
-  lastToothCalcAdvance = currentStatus.advance;
-
 }
 /** @} */
 
@@ -1178,11 +1172,6 @@ void triggerSetEndTeeth_BasicDistributor(void)
       }
       break;
   }
-  
-
-
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -1305,9 +1294,6 @@ int getCrankAngle_GM7X(void)
 
 void triggerSetEndTeeth_GM7X(void)
 {
-
-  lastToothCalcAdvance = currentStatus.advance;
-
   if(currentStatus.advance < 18 ) 
   { 
     ignition1EndTooth = 7;
@@ -1753,9 +1739,6 @@ void triggerSetEndTeeth_4G63(void)
       ignition4EndTooth = 2; //Not used
     }
   }
-
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -1879,9 +1862,6 @@ int getCrankAngle_24X(void)
 
 void triggerSetEndTeeth_24X(void)
 {
-
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -1989,8 +1969,6 @@ int getCrankAngle_Jeep2000(void)
 
 void triggerSetEndTeeth_Jeep2000(void)
 {
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -2112,7 +2090,6 @@ int getCrankAngle_Audi135(void)
 
 void triggerSetEndTeeth_Audi135(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 /** Honda D17 (1.7 liter 4 cyl SOHC).
@@ -2211,7 +2188,6 @@ int getCrankAngle_HondaD17(void)
 
 void triggerSetEndTeeth_HondaD17(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 
 /** @} */
@@ -2485,8 +2461,6 @@ void triggerSetEndTeeth_Miata9905(void)
       ignition4EndTooth = 3; //Not used
     }
   }
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -2638,7 +2612,6 @@ int getCrankAngle_MazdaAU(void)
 
 void triggerSetEndTeeth_MazdaAU(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -2713,7 +2686,6 @@ int getCrankAngle_non360(void)
 
 void triggerSetEndTeeth_non360(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -2940,8 +2912,6 @@ void triggerSetEndTeeth_Nissan360(void)
   else { ignition3EndTooth = ( (ignition3EndAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
   if((ignition4EndAngle - offset_teeth) > configPage4.triggerAngle) { ignition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; }
   else { ignition4EndTooth = ( (ignition4EndAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; }
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -3215,8 +3185,6 @@ void triggerSetEndTeeth_Subaru67(void)
       //ignition4EndTooth = 10;
     }
   }
-  
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -3381,7 +3349,6 @@ int getCrankAngle_Daihatsu(void)
 
 void triggerSetEndTeeth_Daihatsu(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -3520,7 +3487,6 @@ int getCrankAngle_Harley(void)
 
 void triggerSetEndTeeth_Harley(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -3707,9 +3673,6 @@ void triggerSetEndTeeth_ThirtySixMinus222(void)
     else if(currentStatus.advance < 40) { ignition3EndTooth = 20; }
     else { ignition3EndTooth = 19; }
   } 
-  
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -3838,9 +3801,6 @@ void triggerSetEndTeeth_ThirtySixMinus21(void)
 {
   ignition1EndTooth = 10; 
   ignition2EndTooth = 28; // Arbitrarily picked  at 180°.
- 
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -4026,8 +3986,6 @@ void triggerSetEndTeeth_420a(void)
     ignition3EndTooth = 8;
     ignition4EndTooth = 12;  
   }
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -4291,8 +4249,6 @@ void triggerSetEndTeeth_FordST170(void)
   ignition4EndTooth = calcSetEndTeeth_FordST170(ignition4EndAngle, toothAdder);
 
   // Removed ign channels >4 as an ST170 engine is a 4 cylinder
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
@@ -4676,8 +4632,6 @@ void triggerSetEndTeeth_NGC(void)
   ignition7EndTooth = calcSetEndTeeth_NGC(ignition7EndAngle, toothAdder);
   ignition8EndTooth = calcSetEndTeeth_NGC(ignition8EndAngle, toothAdder);
   #endif
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 
 /** Yamaha Vmax 1990+ with 6 uneven teeth, triggering on the wide lobe.
@@ -4870,7 +4824,6 @@ int getCrankAngle_Vmax(void)
 
 void triggerSetEndTeeth_Vmax(void)
 {
-  lastToothCalcAdvance = currentStatus.advance;
 }
 
 /** @} */
@@ -5034,8 +4987,6 @@ void triggerSetEndTeeth_Renix(void)
 #if IGN_CHANNELS >= 8
   ignition8EndTooth = calcEndTeeth_Renix(ignition8EndAngle, toothAdder);
 #endif
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 
 /** @} */
@@ -5441,9 +5392,6 @@ void triggerSetEndTeeth_RoverMEMS()
   ignition2EndTooth = tempIgnitionEndTooth[2];
   ignition3EndTooth = tempIgnitionEndTooth[3];
   ignition4EndTooth = tempIgnitionEndTooth[4];
-
-  lastToothCalcAdvance = currentStatus.advance;
-
 }
 /** @} */
 /** @} */
