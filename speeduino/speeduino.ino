@@ -1341,7 +1341,7 @@ byte getVE1(void)
   else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.fuelLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
   }
   else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
   tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -1371,7 +1371,7 @@ byte getAdvance1(void)
   else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.ignLoad = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.ignLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
   }
   tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
   tempAdvance = correctionsIgn(tempAdvance);
