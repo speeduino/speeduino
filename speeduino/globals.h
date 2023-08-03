@@ -154,7 +154,7 @@
 #define BIT_CLEAR(a,b) ((a) &= ~(1U<<(b)))
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
-#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
+#define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : BIT_CLEAR((var), (pos)))
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
