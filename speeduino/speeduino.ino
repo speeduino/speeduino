@@ -370,12 +370,12 @@ static inline void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle)
   }
 }
 
-#define BIT_LOOP_CRANKCALCS_CHANGED 0
-#define BIT_LOOP_ADVANCE_CHANGED    1
-#define BIT_LOOP_DWELL_CHANGED      2
-#define BIT_LOOP_PW_CHANGED         3
-#define BIT_LOOP_INJANGLE_CHANGED   4
-#define BIT_LOOP_RPM_CHANGED        5
+#define BIT_LOOP_CRANKCALCS_CHANGED 0U
+#define BIT_LOOP_ADVANCE_CHANGED    1U
+#define BIT_LOOP_DWELL_CHANGED      2U
+#define BIT_LOOP_PW_CHANGED         3U
+#define BIT_LOOP_INJANGLE_CHANGED   4U
+#define BIT_LOOP_RPM_CHANGED        5U
 
 static inline bool recalcIgnitionScedules(byte changeTracker) {
   return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
@@ -768,8 +768,10 @@ void __attribute__((always_inline)) loop(void)
                     testAndSwap(primaryPW,
                     applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS))));
 
-      BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
-                testAndSwap(currentStatus.injAngle, table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
+      if (BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED)) {
+        BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
+                  testAndSwap(currentStatus.injAngle, table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
+      }
 
       // For performance reasons, skip recalculating injection schedules if possible
       if (recalcInjectionSchedules(changeTracker)) {
