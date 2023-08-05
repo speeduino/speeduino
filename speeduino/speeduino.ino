@@ -817,7 +817,7 @@ void __attribute__((always_inline)) loop(void)
 
       // For performance reasons, skip recalculating injection schedules if possible
       if (recalcInjectionSchedules(changeTracker)) {
-        calculateStaging(primaryPW, getPwLimit());
+        setPulseWidths(primaryPW, getPwLimit());
 
         applyFuelTrims();
 
@@ -1476,7 +1476,7 @@ void calculateIgnitionAngles(int dwellAngle)
   }
 }
 
-void calculateStaging(uint16_t primaryPW, uint16_t pwLimit)
+void setPulseWidths(uint16_t primaryPW, uint16_t pwLimit)
 {
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag
 
