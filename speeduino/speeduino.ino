@@ -72,6 +72,26 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
     return currentPW;
 }
 
+static uint16_t applyNitrousStage(uint16_t pulseWidth, const nitrous_stage_settings &stage) {
+  int16_t adderRange = (stage.maxRPM - stage.minRPM) * 100;
+  int16_t adderPercent = ((currentStatus.RPM - (stage.minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
+  adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
+  return pulseWidth + (stage.adderMax + percentage(adderPercent, (stage.adderMin - stage.adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
+}
+
+static uint16_t applyNitrous(uint16_t pulseWidth) {
+  //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
+  if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+  { 
+    pulseWidth = applyNitrousStage(pulseWidth, configPage10.n2o_stage1);
+  }
+  if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+  {
+    pulseWidth = applyNitrousStage(pulseWidth, configPage10.n2o_stage2);
+  }
+  return pulseWidth;
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -427,23 +447,7 @@ void loop(void)
       //Calculate an injector pulsewidth from the VE
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-
-      //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
-      if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
-      { 
-        int16_t adderRange = (configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM) * 100;
-        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage1_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
-        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
-        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
-      }
-      if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
-      {
-        int16_t adderRange = (configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM) * 100;
-        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage2_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
-        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
-        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
-      }
+      currentStatus.PW1 = applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS));
 
       int injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
@@ -1323,8 +1327,6 @@ byte getAdvance1(void)
  */
 void calculateIgnitionAngles(int dwellAngle)
 {
-  
-
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)
   {
