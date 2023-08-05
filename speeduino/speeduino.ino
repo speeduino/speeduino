@@ -169,6 +169,24 @@ uint16_t getPwLimit(void) {
   return pwLimit / currentStatus.nSquirts; 
 }
 
+static uint16_t getDwell(void) {
+  // Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
+  uint16_t dwell = 0;
+  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
+    dwell = configPage4.dwellCrank * 100U; //use cranking dwell
+  }
+  else if ( configPage2.useDwellMap == true )
+  {
+    dwell = get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100U; //use running dwell from map
+  }
+  else
+  {
+    dwell = configPage4.dwellRun * 100U; //use fixed running dwell
+  }
+
+  return correctionsDwell(dwell);
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -742,22 +760,7 @@ void loop(void)
       //| BEGIN IGNITION CALCULATIONS
 
       //Set dwell
-      //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
-      if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
-        currentStatus.dwell =  (configPage4.dwellCrank * 100); //use cranking dwell
-      }
-      else 
-      {
-        if ( configPage2.useDwellMap == true )
-        {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100); //use running dwell from map
-        }
-        else
-        {
-          currentStatus.dwell =  (configPage4.dwellRun * 100); //use fixed running dwell
-        }
-      }
-      currentStatus.dwell = correctionsDwell(currentStatus.dwell);
+      currentStatus.dwell = getDwell();
 
       int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
