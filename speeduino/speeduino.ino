@@ -128,6 +128,38 @@ static uint16_t applyNitrous(uint16_t pulseWidth) {
   return pulseWidth;
 }
 
+
+/**
+ * @brief Set Volumetric Efficiency (VE)
+ * 
+ * Initial lookup from primary VE table, possibly overriden by secondary VE table.
+ * Sets currentStatus.VE, currentStatus.VE1, currentStatus.VE2, currentStatus.fuelLoad
+ */
+void setVE(void)
+{
+  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
+  currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+  currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
+
+  calculateSecondaryFuel();
+}
+
+/**
+ * @brief Set ignition advance
+ * 
+ * Initial lookup from primary spark table, possibly overriden by secondary spark table.
+ * Sets currentStatus.advance, currentStatus.advance1, currentStatus.advance2, currentStatus.ignLoad
+ */
+void setAdvance(void)
+{
+  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
+  currentStatus.advance1 = correctionsIgn(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
+  //Set the final advance value to be advance 1 as a default. This may be changed in the section below
+  currentStatus.advance = currentStatus.advance1;
+
+  calculateSecondarySpark();
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -438,14 +470,8 @@ void loop(void)
 
     
     //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
-    currentStatus.VE1 = getVE1();
-    currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
-
-    currentStatus.advance1 = getAdvance1();
-    currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
-
-    calculateSecondaryFuel();
-    calculateSecondarySpark();
+    setVE();
+    setAdvance();
 
     //Always check for sync
     //Main loop runs within this clause
@@ -1257,33 +1283,6 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
     }
   }
   return (unsigned int)(intermediate);
-}
-
-/** Lookup the current VE value from the primary 3D fuel map.
- * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
- * 
- * @return byte The current VE value
- */
-byte getVE1(void)
-{
-  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
-  byte tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-
-  return tempVE;
-}
-
-/** Lookup the ignition advance from 3D ignition table.
- * The values used to look this up will be RPM and whatever load source the user has configured.
- * 
- * @return byte The current target advance value in degrees
- */
-byte getAdvance1(void)
-{
-  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
-  byte tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
-
-  return tempAdvance;
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
