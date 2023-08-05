@@ -19,7 +19,7 @@ void setup(void);
 void loop(void);
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 void setPulseWidths(uint16_t primaryPW, uint16_t pwLimit);
-void checkLaunchAndFlatShift();
+void checkLaunchAndFlatShift(void);
 
 extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */

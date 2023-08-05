@@ -127,7 +127,7 @@ byte setVE(byte changeTracker)
 byte setAdvance(byte changeTracker)
 {
   BIT_WRITE(changeTracker, BIT_LOOP_IGNLOAD_CHANGED, testAndSwap(currentStatus.ignLoad, getLoad(configPage2.ignAlgorithm, currentStatus)));
-  currentStatus.advance1 = correctionsIgn(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
+  currentStatus.advance1 = correctionsIgn((int8_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
   //Set the final advance value to be advance 1 as a default. This may be changed in the section below
   BIT_WRITE(changeTracker, BIT_LOOP_ADVANCE_CHANGED, testAndSwap(currentStatus.advance, currentStatus.advance1));
 
@@ -174,7 +174,7 @@ static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLo
 }
 
 static inline void applyFuelTrims(void) {
-  if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) ) { 
+  if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0U) ) { 
     switch (configPage2.nCylinders) {
     case 8:
 #if INJ_CHANNELS >= 8
@@ -230,12 +230,12 @@ static inline uint16_t applyNitrous(uint16_t pulseWidth) {
 static inline uint16_t getPwLimit(void) {
   //Check that the duty cycle of the chosen pulsewidth isn't too high.
   uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-  if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
+  if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2U; }
 
   //Handle multiple squirts per rev
   // This requires 32-bit division, which is very slow on Mega 2560.
   // So only divide if necessary - nSquirts is often only 1.
-  if (currentStatus.nSquirts!=1) {
+  if (currentStatus.nSquirts!=1U) {
     pwLimit = pwLimit / currentStatus.nSquirts;
   }
 
@@ -1664,7 +1664,7 @@ void setPulseWidths(uint16_t primaryPW, uint16_t pwLimit)
   }
 }
 
-void checkLaunchAndFlatShift()
+void checkLaunchAndFlatShift(void)
 {
   //Check for launching/flat shift (clutch) based on the current and previous clutch states
   previousClutchTrigger = clutchTrigger;

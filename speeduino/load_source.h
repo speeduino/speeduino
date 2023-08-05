@@ -33,8 +33,9 @@ static inline int16_t getLoad(LoadSource algorithm, const statuses &current) {
   else if (algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    return ((int16_t)current.MAP * 100U) / current.EMAP;
+    return ((int16_t)current.MAP * 100) / current.EMAP;
+  } else {
+    // LOAD_SOURCE_MAP (the default). Aka Speed Density
+    return (int16_t)current.MAP;
   }
-  // LOAD_SOURCE_MAP (the default). Aka Speed Density
-  return current.MAP;
 }
