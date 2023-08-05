@@ -63,6 +63,84 @@ uint16_t staged_req_fuel_mult_sec = 0;
 // Forward declaration
 void calculateIgnitionAngles(int dwellAngle);
 
+#define BIT_LOOP_CRANKCALCS_CHANGED 0U
+#define BIT_LOOP_ADVANCE_CHANGED    1U
+#define BIT_LOOP_DWELL_CHANGED      2U
+#define BIT_LOOP_PW_CHANGED         3U
+#define BIT_LOOP_INJANGLE_CHANGED   4U
+#define BIT_LOOP_RPM_CHANGED        5U
+#define BIT_LOOP_FUELLOAD_CHANGED   6U
+#define BIT_LOOP_IGNLOAD_CHANGED    7U
+
+static inline bool recalcIgnitionScedules(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
+}
+
+static inline bool recalcInjectionSchedules(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED) 
+      || BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED);
+}
+
+// #define testAndSwap(value, newValue) ( { bool changed = (value)!=(newValue); (value)=(newValue); changed; } )
+
+template <typename _INT>
+static inline bool testAndSwap(_INT &value, _INT newValue) {
+  bool result = value!=newValue;
+  value = newValue;
+  return result;
+}
+
+/**
+ * @brief Set Volumetric Efficiency (VE)
+ * 
+ * Initial lookup from primary VE table, possibly overriden by secondary VE table.
+ * Sets currentStatus.VE, currentStatus.VE1, currentStatus.VE2, currentStatus.fuelLoad
+ * 
+ * @param changeTracker Bit map of relevant data change flags
+ * @return Modified change tracker
+ */
+byte setVE(byte changeTracker)
+{
+  BIT_WRITE(changeTracker, BIT_LOOP_FUELLOAD_CHANGED, testAndSwap(currentStatus.fuelLoad, getLoad(configPage2.fuelAlgorithm, currentStatus)));
+  if (BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED) || BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED)) {
+    currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+    currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
+  }
+
+  calculateSecondaryFuel();
+
+  return changeTracker;
+}
+
+/**
+ * @brief Set ignition advance
+ * 
+ * Initial lookup from primary spark table, possibly overriden by secondary spark table.
+ * Sets currentStatus.advance, currentStatus.advance1, currentStatus.advance2, currentStatus.ignLoad
+ * 
+ * @param changeTracker Bit map of relevant data change flags
+ * @return Modified change tracker
+ */
+byte setAdvance(byte changeTracker)
+{
+  BIT_WRITE(changeTracker, BIT_LOOP_IGNLOAD_CHANGED, testAndSwap(currentStatus.ignLoad, getLoad(configPage2.ignAlgorithm, currentStatus)));
+  currentStatus.advance1 = correctionsIgn(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
+  //Set the final advance value to be advance 1 as a default. This may be changed in the section below
+  BIT_WRITE(changeTracker, BIT_LOOP_ADVANCE_CHANGED, testAndSwap(currentStatus.advance, currentStatus.advance1));
+
+  calculateSecondarySpark();
+
+  if (BIT_CHECK(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE)) {
+    BIT_SET(changeTracker, BIT_LOOP_ADVANCE_CHANGED);
+  }
+  return changeTracker;
+}
+
 #ifndef UNIT_TEST // Scope guard for unit testing
 
 static uint16_t injector1StartAngle = 0;
@@ -369,33 +447,6 @@ static inline void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle)
     default:
       break;
   }
-}
-
-#define BIT_LOOP_CRANKCALCS_CHANGED 0U
-#define BIT_LOOP_ADVANCE_CHANGED    1U
-#define BIT_LOOP_DWELL_CHANGED      2U
-#define BIT_LOOP_PW_CHANGED         3U
-#define BIT_LOOP_INJANGLE_CHANGED   4U
-#define BIT_LOOP_RPM_CHANGED        5U
-
-static inline bool recalcIgnitionScedules(byte changeTracker) {
-  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
-}
-
-static inline bool recalcInjectionSchedules(byte changeTracker) {
-  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED);
-}
-
-static inline bool testAndSwap(uint16_t &value, uint16_t newValue) {
-  if (value!=newValue) {
-    value = newValue;
-    return true;
-  }
-  return false;
 }
 
 /** Speeduino main loop.
@@ -714,20 +765,10 @@ void __attribute__((always_inline)) loop(void)
     {
       idleControl(); //Run idlecontrol every loop for stepper idle.
     }
-
     
     //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
-    currentStatus.VE1 = getVE1();
-    currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
-
-    int8_t oldAdvance = currentStatus.advance;
-    currentStatus.advance1 = getAdvance1();
-    currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
-
-    calculateSecondaryFuel();
-    calculateSecondarySpark();
-
-    BIT_WRITE(changeTracker, BIT_LOOP_ADVANCE_CHANGED, oldAdvance!=currentStatus.advance);
+    changeTracker = setAdvance(changeTracker);
+    changeTracker = setVE(changeTracker);
 
     //Always check for sync
     //Main loop runs within this clause
@@ -771,7 +812,7 @@ void __attribute__((always_inline)) loop(void)
 
       if (BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED)) {
         BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
-                  testAndSwap(currentStatus.injAngle, table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
+                  testAndSwap(currentStatus.injAngle, (uint16_t)table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
       }
 
       // For performance reasons, skip recalculating injection schedules if possible
@@ -1323,32 +1364,6 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   return (unsigned int)(intermediate);
 }
 
-/** Lookup the current VE value from the primary 3D fuel map.
- * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
- * 
- * @return byte The current VE value
- */
-byte getVE1(void)
-{
-  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
-  byte tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-
-  return tempVE;
-}
-
-/** Lookup the ignition advance from 3D ignition table.
- * The values used to look this up will be RPM and whatever load source the user has configured.
- * 
- * @return byte The current target advance value in degrees
- */
-byte getAdvance1(void)
-{
-  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
-  byte tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
-
-  return tempAdvance;
-}
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
  * both start and end angles are calculated for each channel.
