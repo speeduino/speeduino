@@ -73,7 +73,6 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
     return currentPW;
 }
 
-
 void applyFuelTrims(void) {
   if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) && (configPage10.stagingEnabled == false)) { 
     switch (configPage2.nCylinders) {
@@ -128,7 +127,6 @@ static uint16_t applyNitrous(uint16_t pulseWidth) {
   return pulseWidth;
 }
 
-
 /**
  * @brief Set Volumetric Efficiency (VE)
  * 
@@ -158,6 +156,17 @@ void setAdvance(void)
   currentStatus.advance = currentStatus.advance1;
 
   calculateSecondarySpark();
+}
+
+uint16_t getPwLimit(void) {
+  uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  
+  if (configPage2.strokes == FOUR_STROKE) { 
+    pwLimit = pwLimit * 2;
+  } 
+  
+  // Handle multiple squirts per rev
+  return pwLimit / currentStatus.nSquirts; 
 }
 
 /** Speeduino main loop.
@@ -532,12 +541,7 @@ void loop(void)
       doCrankSpeedCalcs(); //In crankMaths.ino
 
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-      //Handle multiple squirts per rev
-      if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2 / currentStatus.nSquirts; } 
-      else { pwLimit = pwLimit / currentStatus.nSquirts; }
-      //Apply the pwLimit if staging is disabled and engine is not cranking
-      if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
+      uint32_t pwLimit = getPwLimit();
 
       calculateStaging(pwLimit);
 
@@ -1571,6 +1575,11 @@ void calculateStaging(uint32_t pwLimit)
   }
   else 
   { 
+    //Apply the pwLimit if staging is disabled and engine is not cranking
+    if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (currentStatus.PW1 > pwLimit)) { 
+      currentStatus.PW1 = pwLimit;
+    }
+
     if(maxInjOutputs >= 2) { currentStatus.PW2 = currentStatus.PW1; }
     else { currentStatus.PW2 = 0; }
     if(maxInjOutputs >= 3) { currentStatus.PW3 = currentStatus.PW1; }
