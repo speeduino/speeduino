@@ -61,9 +61,9 @@ uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;
 
 // Forward declaration
-void calculateIgnitionAngles(int dwellAngle);
+void calculateIgnitionAngles(uint16_t dwellMicros);
 
-#define BIT_LOOP_CRANKCALCS_CHANGED 0U
+#define BIT_LOOP_UNUSED             0U
 #define BIT_LOOP_ADVANCE_CHANGED    1U
 #define BIT_LOOP_DWELL_CHANGED      2U
 #define BIT_LOOP_PW_CHANGED         3U
@@ -72,18 +72,16 @@ void calculateIgnitionAngles(int dwellAngle);
 #define BIT_LOOP_FUELLOAD_CHANGED   6U
 #define BIT_LOOP_IGNLOAD_CHANGED    7U
 
-static inline bool recalcIgnitionScedules(byte changeTracker) {
-  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
+static inline bool recalcIgnitionAngles(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
 }
 
 static inline bool recalcInjectionSchedules(byte changeTracker) {
-  return BIT_CHECK(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
+  return BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
       || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED)
-      || BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED) 
-      || BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED);
+      || BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED) // Fuel trim uses RPM
+      || BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED); // Fuel trim uses fuel load
 }
 
 // #define testAndSwap(value, newValue) ( { bool changed = (value)!=(newValue); (value)=(newValue); changed; } )
@@ -531,9 +529,7 @@ void __attribute__((always_inline)) loop(void)
     uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
-      BIT_WRITE(changeTracker, BIT_LOOP_RPM_CHANGED, testAndSwap(currentStatus.RPM, getRPM())); // Note getRPM() might set BIT_DECODER_REVTIMECHANGED
-      BIT_WRITE(changeTracker, BIT_LOOP_CRANKCALCS_CHANGED, BIT_CHECK(decoderState, BIT_DECODER_REVTIMECHANGED));
-      BIT_CLEAR(decoderState, BIT_DECODER_REVTIMECHANGED);
+      BIT_WRITE(changeTracker, BIT_LOOP_RPM_CHANGED, testAndSwap(currentStatus.RPM, getRPM()));
       currentStatus.longRPM = currentStatus.RPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       FUEL_PUMP_ON();
@@ -832,9 +828,9 @@ void __attribute__((always_inline)) loop(void)
                 testAndSwap(currentStatus.dwell, getDwell()));
 
       // For performance reasons, skip recalculating ignition schedules if possible
-      if (recalcIgnitionScedules(changeTracker)) {
+      if (recalcIgnitionAngles(changeTracker)) {
         //Convert the dwell time to dwell angle based on the current engine speed
-        calculateIgnitionAngles(timeToAngleDegPerMicroSec(currentStatus.dwell));
+        calculateIgnitionAngles(currentStatus.dwell);
 
         //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
         //This only needs to be run if the ignition angles have changed
@@ -1369,8 +1365,10 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-void calculateIgnitionAngles(int dwellAngle)
+void calculateIgnitionAngles(uint16_t dwellMicros)
 {
+  uint16_t dwellAngle = timeToAngleDegPerMicroSec(dwellMicros);
+
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)
   {

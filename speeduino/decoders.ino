@@ -296,7 +296,6 @@ static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 #endif
 {
   if (revTime!=revolutionTime) {
-    BIT_SET(decoderState, BIT_DECODER_REVTIMECHANGED);
     revolutionTime = revTime;
     timePerDegree24x8 = div360(revolutionTime << 8UL)+1;
     degreesPerMicro1x15 = ((360UL << 15UL) / revolutionTime)+1;

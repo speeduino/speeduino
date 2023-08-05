@@ -42,7 +42,7 @@
 
 #define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 #define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
-#define BIT_DECODER_REVTIMECHANGED      2 //Whether or not getRPM() resulted in a change in crank speed
+#define BIT_DECODER_UNUSED1             2
 #define BIT_DECODER_HAS_SECONDARY       3 //Whether or not the decoder supports fixed cranking timing
 #define BIT_DECODER_HAS_FIXED_CRANKING  4
 #define BIT_DECODER_VALID_TRIGGER       5 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
