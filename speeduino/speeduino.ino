@@ -127,19 +127,51 @@ static uint16_t applyNitrous(uint16_t pulseWidth) {
   return pulseWidth;
 }
 
+#define BIT_LOOP_ADVANCE_CHANGED    0U
+#define BIT_LOOP_DWELL_CHANGED      1U
+#define BIT_LOOP_PW_CHANGED         2U
+#define BIT_LOOP_INJANGLE_CHANGED   3U
+#define BIT_LOOP_RPM_CHANGED        4U
+#define BIT_LOOP_FUELLOAD_CHANGED   5U
+#define BIT_LOOP_IGNLOAD_CHANGED    6U
+
+static inline bool recalcIgnitionAngles(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_ADVANCE_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_DWELL_CHANGED);
+}
+
+static inline bool recalcInjectionSchedules(byte changeTracker) {
+  return BIT_CHECK(changeTracker, BIT_LOOP_PW_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_INJANGLE_CHANGED)
+      || BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED) // Fuel trim uses RPM
+      || BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED); // Fuel trim uses fuel load
+}
+
+template <typename _INT>
+static inline bool testAndSwap(_INT &value, _INT newValue) {
+  bool result = value!=newValue;
+  value = newValue;
+  return result;
+}
+
 /**
  * @brief Set Volumetric Efficiency (VE)
  * 
  * Initial lookup from primary VE table, possibly overriden by secondary VE table.
  * Sets currentStatus.VE, currentStatus.VE1, currentStatus.VE2, currentStatus.fuelLoad
+ * 
+ * @param changeTracker Bit map of relevant data change flags
+ * @return Modified change tracker
  */
-void setVE(void)
+byte setVE(byte changeTracker)
 {
-  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
+  BIT_WRITE(changeTracker, BIT_LOOP_FUELLOAD_CHANGED, testAndSwap(currentStatus.fuelLoad, getLoad(configPage2.fuelAlgorithm, currentStatus)));
   currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
   currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
 
   calculateSecondaryFuel();
+
+  return changeTracker;
 }
 
 /**
@@ -147,15 +179,23 @@ void setVE(void)
  * 
  * Initial lookup from primary spark table, possibly overriden by secondary spark table.
  * Sets currentStatus.advance, currentStatus.advance1, currentStatus.advance2, currentStatus.ignLoad
+ * 
+ * @param changeTracker Bit map of relevant data change flags
+ * @return Modified change tracker
  */
-void setAdvance(void)
+byte setAdvance(byte changeTracker)
 {
-  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
+  BIT_WRITE(changeTracker, BIT_LOOP_IGNLOAD_CHANGED, testAndSwap(currentStatus.ignLoad, getLoad(configPage2.ignAlgorithm, currentStatus)));
   currentStatus.advance1 = correctionsIgn(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
   //Set the final advance value to be advance 1 as a default. This may be changed in the section below
-  currentStatus.advance = currentStatus.advance1;
+  BIT_WRITE(changeTracker, BIT_LOOP_ADVANCE_CHANGED, testAndSwap(currentStatus.advance, currentStatus.advance1));
 
   calculateSecondarySpark();
+
+  if (BIT_CHECK(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE)) {
+    BIT_SET(changeTracker, BIT_LOOP_ADVANCE_CHANGED);
+  }
+  return changeTracker;
 }
 
 uint16_t getPwLimit(void) {
@@ -257,10 +297,11 @@ void loop(void)
 
     currentLoopTime = micros_safe();
     unsigned long timeToLastTooth = (currentLoopTime - toothLastToothTime);
+    byte changeTracker;
     if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
-      currentStatus.RPM = currentStatus.longRPM;
+      BIT_WRITE(changeTracker, BIT_LOOP_RPM_CHANGED, testAndSwap(currentStatus.RPM, getRPM()));
+      currentStatus.longRPM = currentStatus.RPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true; //Not sure if this is needed.
@@ -494,11 +535,10 @@ void loop(void)
     {
       idleControl(); //Run idlecontrol every loop for stepper idle.
     }
-
     
     //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
-    setVE();
-    setAdvance();
+    changeTracker = setVE(changeTracker);
+    changeTracker = setAdvance(changeTracker);
 
     //Always check for sync
     //Main loop runs within this clause
@@ -538,11 +578,24 @@ void loop(void)
 
       currentStatus.PW1 = applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS));
 
-      int injector1StartAngle = 0;
+      //Check that the duty cycle of the chosen pulsewidth isn't too high.
+      uint32_t pwLimit = getPwLimit();
+
+      calculateStaging(pwLimit);
+
+      //***********************************************************************************************
+      //BEGIN INJECTION TIMING
+      doCrankSpeedCalcs(); //In crankMaths.ino
+
+      BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
+                  testAndSwap(currentStatus.injAngle, (uint16_t)table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
+
+      unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
+
+      uint16_t injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
       uint16_t injector3StartAngle = 0;
       uint16_t injector4StartAngle = 0;
-
       #if INJ_CHANNELS >= 5
       uint16_t injector5StartAngle = 0;
       #endif
@@ -555,18 +608,6 @@ void loop(void)
       #if INJ_CHANNELS >= 8
       uint16_t injector8StartAngle = 0;
       #endif
-
-      doCrankSpeedCalcs(); //In crankMaths.ino
-
-      //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint32_t pwLimit = getPwLimit();
-
-      calculateStaging(pwLimit);
-
-      //***********************************************************************************************
-      //BEGIN INJECTION TIMING
-      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-      unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
 
@@ -760,7 +801,7 @@ void loop(void)
       //| BEGIN IGNITION CALCULATIONS
 
       //Set dwell
-      currentStatus.dwell = getDwell();
+      BIT_WRITE(changeTracker, BIT_LOOP_DWELL_CHANGED, testAndSwap(currentStatus.dwell, getDwell()));      
 
       int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
