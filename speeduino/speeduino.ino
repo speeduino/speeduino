@@ -170,9 +170,11 @@ static inline bool testAndSwap(_INT &value, _INT newValue) {
 static inline byte setVE(byte changeTracker)
 {
   BIT_WRITE(changeTracker, BIT_LOOP_FUELLOAD_CHANGED, testAndSwap(currentStatus.fuelLoad, getLoad(configPage2.fuelAlgorithm, currentStatus)));
-  currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-  currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
-
+  if (BIT_CHECK(changeTracker, BIT_LOOP_FUELLOAD_CHANGED) || BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED)) {
+    currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+    currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
+  }
+  
   calculateSecondaryFuel();
 
   return changeTracker;
@@ -584,14 +586,19 @@ void loop(void)
                   testAndSwap(primaryPulseWidth,
                    applyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS))));
 
-      calculateStaging(primaryPulseWidth, getPwLimit());
+      // For performance reasons, skip recalculating injection schedules if possible
+      if (recalcInjectionSchedules(changeTracker)) {
+        calculateStaging(primaryPulseWidth, getPwLimit());
+      }
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       doCrankSpeedCalcs(); //In crankMaths.ino
 
+      if (BIT_CHECK(changeTracker, BIT_LOOP_RPM_CHANGED)) {
       BIT_WRITE(changeTracker, BIT_LOOP_INJANGLE_CHANGED,
                   testAndSwap(currentStatus.injAngle, (uint16_t)table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100)));
+      }
 
       unsigned int PWdivTimerPerDegree = div(currentStatus.PW1, timePerDegree).quot; //How many crank degrees the calculated PW will take at the current speed
 
@@ -806,14 +813,17 @@ void loop(void)
       //Set dwell
       BIT_WRITE(changeTracker, BIT_LOOP_DWELL_CHANGED, testAndSwap(currentStatus.dwell, getDwell()));      
 
-      int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
+      // For performance reasons, skip recalculating ignition schedules if possible
+      if (recalcIgnitionAngles(changeTracker)) {
+        int dwellAngle = timeToAngle(currentStatus.dwell, CRANKMATH_METHOD_INTERVAL_REV); //Convert the dwell time to dwell angle based on the current engine speed
 
-      calculateIgnitionAngles(dwellAngle);
+        calculateIgnitionAngles(dwellAngle);
 
-      //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
-      //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
-      //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+        //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
+        //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
+        //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
+        if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
