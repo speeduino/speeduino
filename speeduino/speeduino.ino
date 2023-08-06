@@ -456,7 +456,16 @@ static inline void calculateInjectionAngles(uint16_t pwAngle, uint16_t injAngle)
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop(void)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+// Sometimes loop() is inlined by LTO & sometimes not
+// When not inlined, there is a huge difference in stack usage: 60+ bytes
+// That eats into available RAM.
+// Adding __attribute__((always_inline)) forces the LTO process to inline.
+//
+// Since the function is declared in an Arduino header, we can't change
+// it to inline, so we need to suppress the resulting warning.
+void __attribute__((always_inline)) loop(void)
 {
       mainLoopCount++;
       LOOP_TIMER = TIMER_mask;
@@ -1272,6 +1281,9 @@ void loop(void)
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
 } //loop()
+
+#pragma GCC diagnostic pop
+
 #endif //Unit test guard
 
 /**
