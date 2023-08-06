@@ -60,14 +60,14 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 
-inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
+static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     unsigned long pw1percent = 100 + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
     if (pw1percent != 100) { return div100(uint32_t(pw1percent * currentPW)); }
     return currentPW;
 }
 
-void applyFuelTrims(void) {
+static inline void applyFuelTrims(void) {
   if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) && (configPage10.stagingEnabled == false)) { 
     switch (configPage2.nCylinders) {
     case 8:
@@ -111,14 +111,14 @@ void setup(void)
   initialiseAll();
 }
 
-static uint16_t applyNitrousStage(uint16_t pulseWidth, const nitrous_stage_settings &stage) {
+static inline uint16_t applyNitrousStage(uint16_t pulseWidth, const nitrous_stage_settings &stage) {
   int16_t adderRange = (stage.maxRPM - stage.minRPM) * 100;
   int16_t adderPercent = ((currentStatus.RPM - (stage.minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
   adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
   return pulseWidth + (stage.adderMax + percentage(adderPercent, (stage.adderMin - stage.adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
 }
 
-static uint16_t applyNitrous(uint16_t pulseWidth) {
+static inline uint16_t applyNitrous(uint16_t pulseWidth) {
   //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
   if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
   { 
@@ -167,7 +167,7 @@ static inline bool testAndSwap(_INT &value, _INT newValue) {
  * @param changeTracker Bit map of relevant data change flags
  * @return Modified change tracker
  */
-byte setVE(byte changeTracker)
+static inline byte setVE(byte changeTracker)
 {
   BIT_WRITE(changeTracker, BIT_LOOP_FUELLOAD_CHANGED, testAndSwap(currentStatus.fuelLoad, getLoad(configPage2.fuelAlgorithm, currentStatus)));
   currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
@@ -187,7 +187,7 @@ byte setVE(byte changeTracker)
  * @param changeTracker Bit map of relevant data change flags
  * @return Modified change tracker
  */
-byte setAdvance(byte changeTracker)
+static inline byte setAdvance(byte changeTracker)
 {
   BIT_WRITE(changeTracker, BIT_LOOP_IGNLOAD_CHANGED, testAndSwap(currentStatus.ignLoad, getLoad(configPage2.ignAlgorithm, currentStatus)));
   currentStatus.advance1 = correctionsIgn(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION); //As above, but for ignition advance
@@ -202,7 +202,7 @@ byte setAdvance(byte changeTracker)
   return changeTracker;
 }
 
-uint16_t getPwLimit(void) {
+static inline uint16_t getPwLimit(void) {
   uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   
   if (configPage2.strokes == FOUR_STROKE) { 
@@ -213,7 +213,7 @@ uint16_t getPwLimit(void) {
   return pwLimit / currentStatus.nSquirts; 
 }
 
-static uint16_t getDwell(void) {
+static inline uint16_t getDwell(void) {
   // Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
   uint16_t dwell = 0;
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
