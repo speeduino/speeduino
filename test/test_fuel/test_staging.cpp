@@ -46,7 +46,7 @@ void test_Staging_Off(void)
   configPage10.stagingEnabled = false;
 
   //90% duty cycle at 6000rpm
-  calculateStaging(1000U, 9000U);
+  setPulseWidths(1000U, 9000U);
   TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
 }
 
@@ -59,7 +59,7 @@ void test_Staging_4cyl_Auto_Inactive(void)
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
 
-  calculateStaging(3000, 9000); //90% duty cycle at 6000rpm
+  setPulseWidths(3000, 9000); //90% duty cycle at 6000rpm
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
   //PW1/2 should be (PW - openTime) * staged_req_fuel_mult_pri = (3000 - 1000) * 3.0 = 6000
   TEST_ASSERT_EQUAL(6000, currentStatus.PW1);
@@ -82,7 +82,7 @@ void test_Staging_4cyl_Table_Inactive(void)
   //For this test it doesn't matter what the X and Y axis are, as the table is all 0 values
   for(byte x=0; x<64; x++) { stagingTable.values.values[x] = 0; }
 
-  calculateStaging(3000, 9000); //90% duty cycle at 6000rpm
+  setPulseWidths(3000, 9000); //90% duty cycle at 6000rpm
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
   //PW1/2 should be (PW - openTime) * staged_req_fuel_mult_pri = (3000 - 1000) * 3.0 = 6000
   TEST_ASSERT_EQUAL(7000, currentStatus.PW1);
@@ -101,7 +101,7 @@ void test_Staging_4cyl_Auto_50pct(void)
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
 
-  calculateStaging(9000, 9000); //90% duty cycle at 6000rpm
+  setPulseWidths(9000, 9000); //90% duty cycle at 6000rpm
 
   //PW 1 and 2 should be maxed out at the pwLimit, 3 and 4 should be based on their relative size
   TEST_ASSERT_EQUAL(9000, currentStatus.PW1); //PW1/2 run at maximum available limit
@@ -120,7 +120,7 @@ void test_Staging_4cyl_Auto_33pct(void)
   configPage10.stagingEnabled = true;
   configPage10.stagingMode = STAGING_MODE_AUTO;
   
-  calculateStaging(7000, 9000); //90% duty cycle at 6000rpm
+  setPulseWidths(7000, 9000); //90% duty cycle at 6000rpm
   
   //PW 1 and 2 should be maxed out at the pwLimit, 3 and 4 should be based on their relative size
   TEST_ASSERT_EQUAL(9000, currentStatus.PW1); //PW1/2 run at maximum available limit
@@ -148,7 +148,7 @@ void test_Staging_4cyl_Table_50pct(void)
   currentStatus.RPM += 1;
   currentStatus.fuelLoad += 1;
 
-  calculateStaging(3000, 9000); //90% duty cycle at 6000rpm
+  setPulseWidths(3000, 9000); //90% duty cycle at 6000rpm
 
   TEST_ASSERT_EQUAL(4000, currentStatus.PW1);
   TEST_ASSERT_EQUAL(4000, currentStatus.PW2);

@@ -174,7 +174,7 @@ static inline byte setVE(byte changeTracker)
     currentStatus.VE1 = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
     currentStatus.VE = currentStatus.VE1; //Set the final VE value to be VE 1 as a default. This may be changed in the section below
   }
-  
+
   calculateSecondaryFuel();
 
   return changeTracker;
@@ -588,7 +588,7 @@ void loop(void)
 
       // For performance reasons, skip recalculating injection schedules if possible
       if (recalcInjectionSchedules(changeTracker)) {
-        calculateStaging(primaryPulseWidth, getPwLimit());
+        setPulseWidths(primaryPulseWidth, getPwLimit());
       }
 
       //***********************************************************************************************
@@ -1457,7 +1457,7 @@ void calculateIgnitionAngles(int dwellAngle)
   }
 }
 
-void calculateStaging(uint16_t primaryPW, uint16_t pwLimit)
+void setPulseWidths(uint16_t primaryPW, uint16_t pwLimit)
 {
   BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag
 
