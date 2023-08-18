@@ -1837,6 +1837,47 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 11:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+        //Pin mappings for STM32F411 BLACKPILL ECULAB
+        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+        //PB2 can't be used as input because is BOOT pin
+        pinInjector1 = PB13; //Output pin injector 1 is on
+        pinInjector2 = PB14; //Output pin injector 2 is on
+        pinInjector3 = PB15; //Output pin injector 3 is on
+        pinInjector4 = PA8; //Output pin injector 4 is on
+        pinInjector5 = PA9; //Output pin injector 5 is on - disable to use bluetooth
+        pinInjector6 = PA10; //Output pin injector 6 is on - disable to use bluetooth
+        pinCoil1 = PA15; //Pin for coil 1
+        pinCoil2 = PB3; //Pin for coil 2
+        pinCoil3 = PB4; //Pin for coil 3
+        pinCoil4 = PB5; //Pin for coil 4
+        pinTPS = A0;//TPS input pin
+        pinMAP = A1; //MAP sensor pin
+        pinIAT = A2; //IAT sensor pin
+        pinCLT = A3; //CLS sensor pin
+        pinO2 = A4; //O2 Sensor pin
+        pinBat = A5; //Battery reference voltage pin
+        pinBaro = A6; //Baro sensor
+        pinSpareTemp1 = A7; //spare Analog input 1
+        pinSpareTemp2 = A8; //spare Analog input 2
+        pinTachOut = PB6; //Tacho output pin
+        pinIdle1 = PB7; //Single wire idle control
+        pinIdle2 = PB8; //2 wire idle control
+        pinBoost = PB9; //Boost control
+        pinFuelPump = PA13; //Fuel pump output
+        pinFan = PA14; //Pin for the fan output
+        pinVVT_1 = PB1; //Default VVT output
+        pinSpareLOut1 = PB10; //low current output spare1
+        //external interrupt enabled pins
+        pinLaunch = PC13; //Clutch switch input
+        pinFlex = PB12; // Flex sensor (Must be external interrupt enabled)
+        pinTrigger = PC14; //The CAS pin also led pin so bad idea
+        pinTrigger2 = PC15; //The Cam Sensor pin
+
+      #endif
+       break;
+
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
