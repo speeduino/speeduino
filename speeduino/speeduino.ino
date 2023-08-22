@@ -803,7 +803,7 @@ void loop(void)
       { 
         uint8_t revolutionsToCut = 1;
         if(configPage2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
-        //if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
         if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
         if ( (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (currentStatus.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cure, otherwise check if the required number of revolutions have passed since the last cut
@@ -816,19 +816,28 @@ void loop(void)
 
           for(uint8_t x=0; x<max(maxIgnOutputs, maxInjOutputs); x++)
           {  
-            if( (configPage6.engineProtectType != PROTECT_CUT_OFF) && ( (cutPercent == 100) || (random1to100() < cutPercent) ) )
+            if( (cutPercent == 100) || (random1to100() < cutPercent) )
             {
               switch(configPage6.engineProtectType)
               {
+                case PROTECT_CUT_OFF:
+                  //Make sure all channels are turned on
+                  ignitionChannelsOn = 0xFF;
+                  fuelChannelsOn = 0xFF;
+                  break;
                 case PROTECT_CUT_IGN:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
+                  disablePendingIgnSchedule(x);
                   break;
                 case PROTECT_CUT_FUEL:
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  disablePendingFuelSchedule(x);
                   break;
                 case PROTECT_CUT_BOTH:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
+                  disablePendingFuelSchedule(x);
+                  disablePendingIgnSchedule(x);
                   break;
                 default:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
@@ -838,6 +847,13 @@ void loop(void)
             }
             else
             {
+              /*
+              //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+              if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
+                  (BIT_CHECK(fuelChannelsOn, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+                  (configPage6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
+                )
+                */
               BIT_SET(ignitionChannelsOn, x); //Turn on this ignition channel
               BIT_SET(fuelChannelsOn, x); //Turn on this fuel channel
             }
