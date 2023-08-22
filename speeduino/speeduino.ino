@@ -53,6 +53,7 @@ uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by Tune
 uint16_t inj_opentime_uS = 0;
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
+uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
@@ -847,18 +848,29 @@ void loop(void)
             }
             else
             {
-              /*
+              //Turn fuel and ignition channels on
+
               //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
               if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
                   (BIT_CHECK(fuelChannelsOn, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
                   (configPage6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
                 )
-                */
-              BIT_SET(ignitionChannelsOn, x); //Turn on this ignition channel
+              { BIT_SET(ignitionChannelsPending, x); } //Set this ignition channel as pending
+              else { BIT_SET(ignitionChannelsOn, x); } //Turn on this ignition channel
+                
+              
               BIT_SET(fuelChannelsOn, x); //Turn on this fuel channel
             }
           }
           rollingCutLastRev = currentStatus.startRevolutions;
+        }
+
+        //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+        //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+        if( (ignitionChannelsPending > 0) && (currentStatus.startRevolutions >= (rollingCutLastRev + 2)))
+        {
+          ignitionChannelsOn = fuelChannelsOn;
+          ignitionChannelsPending = 0;
         }
       } //Rolling cut check
       else
