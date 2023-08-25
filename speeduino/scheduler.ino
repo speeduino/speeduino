@@ -1552,28 +1552,28 @@ void disablePendingFuelSchedule(byte channel)
 {
   switch(channel)
   {
-    case 1:
+    case 0:
       if(fuelSchedule1.Status == PENDING) { fuelSchedule1.Status = OFF; }
       break;
-    case 2:
+    case 1:
       if(fuelSchedule2.Status == PENDING) { fuelSchedule2.Status = OFF; }
       break;
-    case 3: 
+    case 2: 
       if(fuelSchedule3.Status == PENDING) { fuelSchedule3.Status = OFF; }
       break;
-    case 4:
+    case 3:
       if(fuelSchedule4.Status == PENDING) { fuelSchedule4.Status = OFF; }
       break;
-    case 5:
+    case 4:
       if(fuelSchedule5.Status == PENDING) { fuelSchedule5.Status = OFF; }
       break;
-    case 6:
+    case 5:
       if(fuelSchedule6.Status == PENDING) { fuelSchedule6.Status = OFF; }
       break;
-    case 7:
+    case 6:
       if(fuelSchedule7.Status == PENDING) { fuelSchedule7.Status = OFF; }
       break;
-    case 8:
+    case 7:
       if(fuelSchedule8.Status == PENDING) { fuelSchedule8.Status = OFF; }
       break;
   }
@@ -1582,28 +1582,28 @@ void disablePendingIgnSchedule(byte channel)
 {
   switch(channel)
   {
-    case 1:
+    case 0:
       if(ignitionSchedule1.Status == PENDING) { ignitionSchedule1.Status = OFF; }
       break;
-    case 2:
+    case 1:
       if(ignitionSchedule2.Status == PENDING) { ignitionSchedule2.Status = OFF; }
       break;
-    case 3: 
+    case 2: 
       if(ignitionSchedule3.Status == PENDING) { ignitionSchedule3.Status = OFF; }
       break;
-    case 4:
+    case 3:
       if(ignitionSchedule4.Status == PENDING) { ignitionSchedule4.Status = OFF; }
       break;
-    case 5:
+    case 4:
       if(ignitionSchedule5.Status == PENDING) { ignitionSchedule5.Status = OFF; }
       break;
-    case 6:
+    case 5:
       if(ignitionSchedule6.Status == PENDING) { ignitionSchedule6.Status = OFF; }
       break;
-    case 7:
+    case 6:
       if(ignitionSchedule7.Status == PENDING) { ignitionSchedule7.Status = OFF; }
       break;
-    case 8:
+    case 7:
       if(ignitionSchedule8.Status == PENDING) { ignitionSchedule8.Status = OFF; }
       break;
   }
