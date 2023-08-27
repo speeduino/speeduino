@@ -52,6 +52,8 @@ void fuelScheduleInterrupt(struct Schedule *fuelSchedule);
 void setFuelSchedule (struct Schedule *targetSchedule, unsigned long duration);
 void setFuelSchedule (struct Schedule *targetSchedule, int16_t crankAngle, int16_t injectorEndAngle, unsigned long duration);
 
+void disablePendingFuelSchedule(byte channel);
+void disablePendingIgnSchedule(byte channel);
 
 //The ARM cores use seprate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
