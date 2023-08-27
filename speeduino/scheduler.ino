@@ -619,20 +619,29 @@ void disablePendingFuelSchedule(byte channel)
     case 3:
       if(fuelSchedule4.Status == PENDING) { fuelSchedule4.Status = OFF; }
       break;
+#if (INJ_CHANNELS >= 5)      
     case 4:
       if(fuelSchedule5.Status == PENDING) { fuelSchedule5.Status = OFF; }
       break;
+#endif
+#if (INJ_CHANNELS >= 6)      
     case 5:
       if(fuelSchedule6.Status == PENDING) { fuelSchedule6.Status = OFF; }
       break;
+#endif
+#if (INJ_CHANNELS >= 7)      
     case 6:
       if(fuelSchedule7.Status == PENDING) { fuelSchedule7.Status = OFF; }
       break;
+#endif
+#if (INJ_CHANNELS >= 8)      
     case 7:
       if(fuelSchedule8.Status == PENDING) { fuelSchedule8.Status = OFF; }
       break;
+#endif
   }
 }
+
 void disablePendingIgnSchedule(byte channel)
 {
   switch(channel)
@@ -652,14 +661,20 @@ void disablePendingIgnSchedule(byte channel)
     case 4:
       if(ignitionSchedule5.Status == PENDING) { ignitionSchedule5.Status = OFF; }
       break;
+#if IGN_CHANNELS >= 6      
     case 5:
       if(ignitionSchedule6.Status == PENDING) { ignitionSchedule6.Status = OFF; }
       break;
+#endif
+#if IGN_CHANNELS >= 7
     case 6:
       if(ignitionSchedule7.Status == PENDING) { ignitionSchedule7.Status = OFF; }
       break;
+#endif
+#if IGN_CHANNELS >= 8
     case 7:
       if(ignitionSchedule8.Status == PENDING) { ignitionSchedule8.Status = OFF; }
       break;
+#endif
   }
 }
