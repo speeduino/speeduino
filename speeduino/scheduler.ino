@@ -405,7 +405,7 @@ void fuelScheduleInterrupt(struct Schedule *fuelSchedule)
       {
         fuelSchedule->setCompare(fuelSchedule->nextEndCompare);
         fuelSchedule->endCompare = fuelSchedule->nextEndCompare;
-        fuelSchedule->Status = RUNNING;
+//        fuelSchedule->Status = RUNNING;
         fuelSchedule->hasNextSchedule = false;
       }
       else //no overlap
