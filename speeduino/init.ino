@@ -352,7 +352,6 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseSchedulers();
     //initialiseDisplay();
     initialiseIdle(true);
     initialiseFan();

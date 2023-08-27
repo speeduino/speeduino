@@ -62,59 +62,6 @@ Ign7 ignitionSchedule7;
 Ign8 ignitionSchedule8;
 #endif
 
-void initialiseSchedulers(void)
-{
-    //nullSchedule.Status = OFF;    
-    fuelSchedule1.Status = OFF;    
-    fuelSchedule2.Status = OFF;    
-    fuelSchedule3.Status = OFF;
-    fuelSchedule4.Status = OFF;
-    fuelSchedule1.channelDegrees=0;
-    fuelSchedule2.channelDegrees=0;
-    fuelSchedule3.channelDegrees=0;
-    fuelSchedule4.channelDegrees=0;      
-    #if (INJ_CHANNELS >= 5)
-    fuelSchedule5.Status = OFF;
-    fuelSchedule5.channelDegrees=0;
-    #endif 
-    #if (INJ_CHANNELS >= 6)
-    fuelSchedule6.Status = OFF;
-    fuelSchedule6.channelDegrees=0;
-    #endif
-    #if (INJ_CHANNELS >= 7)
-    fuelSchedule7.Status = OFF;
-    fuelSchedule7.channelDegrees=0;
-    #endif
-    #if (INJ_CHANNELS >= 8)
-    fuelSchedule8.Status = OFF;
-    fuelSchedule8.channelDegrees=0;
-    #endif      
-    
-    ignitionSchedule1.Status = OFF;  
-    ignitionSchedule2.Status = OFF; 
-    ignitionSchedule3.Status = OFF; 
-    ignitionSchedule4.Status = OFF;
-    ignitionSchedule5.Status = OFF;
-    ignitionSchedule1.channelDegrees = 0; 
-    ignitionSchedule2.channelDegrees = 0; 
-    ignitionSchedule3.channelDegrees = 0; 
-    ignitionSchedule4.channelDegrees = 0; 
-    ignitionSchedule5.channelDegrees = 0;     
-    #if IGN_CHANNELS >= 6
-    ignitionSchedule6.Status = OFF;
-    ignitionSchedule6.channelDegrees = 0;  
-    #endif
-    #if IGN_CHANNELS >= 7
-    ignitionSchedule7.Status = OFF;
-    ignitionSchedule7.channelDegrees = 0; 
-    #endif
-    #if IGN_CHANNELS >= 8
-    ignitionSchedule8.Status = OFF;
-    ignitionSchedule8.channelDegrees = 0;  
-    #endif   
-
-}
-
 /*
 New generic function.
 */

@@ -37,7 +37,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define INJECTION_REFRESH_TRESHOLD  1600U //Time in us that the refresh functions will check to ensure there is enough time before changing the start or end compare
 #define INJECTION_OVERLAP_TRESHOLD  96U //Time in us, basically minimum injector off time that is allowed.(default 96)
 
-void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
 void setIgnitionSchedule(struct Schedule *ignitionSchedule , int16_t crankAngle,int ignitionEndAngle, unsigned long duration);
@@ -129,6 +128,11 @@ struct Schedule {
 
   uint8_t startTime; /**[ms]this is used in owerdwell protection, not really needed for internal working of the schedulers 
                      *only use uint8_t here assuming dwell limit is always way smaller than 255ms, this speeds up things on atmega, also saves some ram*/
+  Schedule(){
+      //set some initial values
+      Status = OFF;
+      channelDegrees = 0;
+  }
 };
 
 struct Ign1: Schedule //Derived ignitionSchedule structs with  channel specific override functions
