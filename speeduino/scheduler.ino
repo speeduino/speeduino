@@ -552,6 +552,7 @@ void ignitionScheduleInterrupt(struct Schedule *targetSchedule) // common functi
 
 void disablePendingFuelSchedule(byte channel)
 {
+  noInterrupts();
   switch(channel)
   {
     case 0:
@@ -587,10 +588,12 @@ void disablePendingFuelSchedule(byte channel)
       break;
 #endif
   }
+  interrupts();
 }
 
 void disablePendingIgnSchedule(byte channel)
 {
+  noInterrupts();
   switch(channel)
   {
     case 0:
@@ -624,4 +627,5 @@ void disablePendingIgnSchedule(byte channel)
       break;
 #endif
   }
+  interrupts();
 }

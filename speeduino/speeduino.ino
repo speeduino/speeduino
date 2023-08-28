@@ -789,7 +789,7 @@ void loop(void)
         if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) || (configPage2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
         if(rollingCutLastRev == 0) { rollingCutLastRev = currentStatus.startRevolutions; } //First time check
-        if ( (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (currentStatus.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cure, otherwise check if the required number of revolutions have passed since the last cut
+        if ( (currentStatus.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (currentStatus.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
         { 
           uint8_t cutPercent = 0;
           int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
@@ -849,7 +849,7 @@ void loop(void)
 
         //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
         //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
-        if( (ignitionChannelsPending > 0) && (currentStatus.startRevolutions >= (rollingCutLastRev + 2)))
+        if( (ignitionChannelsPending > 0) && (currentStatus.startRevolutions >= (rollingCutLastRev + 2)) )
         {
           ignitionChannelsOn = fuelChannelsOn;
           ignitionChannelsPending = 0;
