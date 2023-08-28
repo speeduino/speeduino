@@ -1550,6 +1550,7 @@ inline void ignitionSchedule8Interrupt(void)
 
 void disablePendingFuelSchedule(byte channel)
 {
+  noInterrupts();
   switch(channel)
   {
     case 0:
@@ -1577,9 +1578,11 @@ void disablePendingFuelSchedule(byte channel)
       if(fuelSchedule8.Status == PENDING) { fuelSchedule8.Status = OFF; }
       break;
   }
+  interrupts();
 }
 void disablePendingIgnSchedule(byte channel)
 {
+  noInterrupts();
   switch(channel)
   {
     case 0:
@@ -1607,4 +1610,5 @@ void disablePendingIgnSchedule(byte channel)
       if(ignitionSchedule8.Status == PENDING) { ignitionSchedule8.Status = OFF; }
       break;
   }
+  interrupts();
 }
