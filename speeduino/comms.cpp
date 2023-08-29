@@ -63,10 +63,10 @@ void sendCompositeLog(void);
  */
 constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
-//constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','2','1','0','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-//constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '2', '.', '1', '0', '-', 'd', 'e', 'v'};
-constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','0','5'} ; //Note no null terminator in array and statu variable at the start
-constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '0', '5'};
+constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','0','6','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '0', '6', '-', 'd', 'e', 'v'};
+//constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','0','5'} ; //Note no null terminator in array and statu variable at the start
+//constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '0', '5'};
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 //!@}
 
@@ -362,13 +362,6 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
   // First pass through the loop, we need to INITIALIZE the CRC
   pCrcCalc pCrcFun = offset==0U ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
   uint32_t calibrationCRC = 0U;
-//Check if this is the final chunk of calibration data
-#ifdef CORE_STM32
-  //STM32 requires TS to send 16 x 64 bytes chunk rather than 4 x 256 bytes. 
-  bool finalBlock = offset == (64U*15U);
-#else
-  bool finalBlock = offset == (256U*3U);
-#endif
 
   //Read through the current chunk (Should be 256 bytes long)
   // Note there are 2 loops here: 
@@ -389,9 +382,10 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     // Subsequent passes through the loop, we need to UPDATE the CRC
     pCrcFun = &FastCRC32::crc32_upd;
   }
-
-  if(finalBlock) 
+ 
+  if( offset >= 1023 ) 
   {
+    //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
     storeCalibrationCRC32(O2_CALIBRATION_PAGE, ~calibrationCRC);
     writeCalibrationPage(O2_CALIBRATION_PAGE);
   }
