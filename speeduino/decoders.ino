@@ -5579,8 +5579,9 @@ void triggerSetup_SuzukiK6A(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   triggerActualTeeth = 7;
   toothCurrentCount = 1;
+  curGap = curGap2 = curGap3 = 0;
 
-  if(initialisationComplete == false) { secondaryToothCount = 0; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
+  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   else { toothLastToothTime = 0; }
   toothLastMinusOneToothTime = 0;
 
@@ -5616,17 +5617,21 @@ void triggerSetup_SuzukiK6A(void)
 
 void triggerPri_SuzukiK6A(void)
 {
-  curTime = micros();
+  curTime = micros();  
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-  {
-    
+  {    
+
+
+    toothCurrentCount++;
     BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     // now to figure out if its a normal tooth or the extra sync tooth
-    // pattern is normally small tooth, big tooth, small tooth, big tooth. The extra tooth breaks the pattern go it goes, big tooth, small tooth, small tooth
-    if ( (  curGap < (curTime - toothLastToothTime) ) && 
-         ( (curTime - toothLastToothTime) < (toothLastToothTime - toothLastMinusOneToothTime)) )
+    // pattern is normally small tooth, big tooth, small tooth, big tooth. The extra tooth breaks the pattern go it goes, big tooth (curGap3), small tooth(curGap2), small tooth(curGap)
+    // reuse curGap2 and curGap3 (from secondary and Tertiary decoders) to store previous tooth sizes as not needed in this decoder.
+    
+    if ( (  curGap <= curGap2 ) && 
+         ( curGap2 <= curGap3 ) )
     {
       // cur Gap is smaller than last gap & last gap is smaller than gap before that - means we must be on sync tooth
       toothCurrentCount = 3; // set tooth counter to correct tooth
@@ -5634,40 +5639,62 @@ void triggerPri_SuzukiK6A(void)
     }    
     else
     {
-      toothCurrentCount++;
+      if( (toothCurrentCount == (triggerActualTeeth + 1)) )
+      {
+        // seen enough teeth to have a revolution of the crank
+        toothCurrentCount = 1; //Reset the counter
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        //currentStatus.hasSync = true;
+        currentStatus.startRevolutions = currentStatus.startRevolutions + 2; // increment for 2 revs as we do 720 degrees on the the crank       
+      }
+      else if (toothCurrentCount > (triggerActualTeeth + 1))
+      {
+        // Lost sync
+        currentStatus.hasSync = false; 
+        currentStatus.syncLossCounter++;
+        triggerFilterTime = 0;
+        toothCurrentCount=0;
+      }
+
+
+
 
       // check gaps match with tooth to check we have sync - ignore sync tooth in calc
       switch (toothCurrentCount)
       {
-        case 1:
+        case 2:      
         case 5:
         case 7:
-          // large gap followed by the current gap being smaller = sync
-          if (curGap > (toothLastToothTime - toothLastMinusOneToothTime))
+          // small gap followed by the current gap being bigger = syncloss
+          if (curGap > curGap2)
           { 
             currentStatus.hasSync = false; 
             currentStatus.syncLossCounter++;
             triggerFilterTime = 0;
-          }
+            toothCurrentCount=2;
+          }          
           break;
 
-        case 2:
+        case 1:
         case 4:
         case 6:
-          // small gap followed by the current gap being larger = sync
-          if (curGap < (toothLastToothTime - toothLastMinusOneToothTime))
+
+          // Large gap followed by the current gap being smaller = syncloss
+          if (curGap < curGap2)
           { 
             currentStatus.hasSync = false; 
             currentStatus.syncLossCounter++;
             triggerFilterTime = 0;
+            toothCurrentCount=1;
           }
           break;
       }
 
+      // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left seperate to keep code clearer as its doing only one function at once
+      // % of filter are not based on previous tooth size but expected next tooth size
       if (currentStatus.hasSync == true )
       {
-        // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left seperate to keep code clearer as its doing only one function at once
-        // % of filter are not based on previous tooth size but expected next tooth size
         switch (toothCurrentCount)
         {
           case 2:
@@ -5713,7 +5740,7 @@ void triggerPri_SuzukiK6A(void)
             break;
 
           case 6:
-          case 8:
+          case 8: // equivalent of tooth 1 except we've not done rotation code yet so its 8
             // 170 degree tooth
             triggerToothAngle = 170;
             switch (configPage4.triggerFilter)
@@ -5754,17 +5781,8 @@ void triggerPri_SuzukiK6A(void)
             break;
                     
         }
-
-        if( (toothCurrentCount == (triggerActualTeeth + 1)) )
-        {
-          // seen enough teeth to have a revolution of the crank
-          toothCurrentCount = 1; //Reset the counter
-          toothOneMinusOneTime = toothOneTime;
-          toothOneTime = curTime;
-          //currentStatus.hasSync = true;
-          currentStatus.startRevolutions = currentStatus.startRevolutions + 2; // increment for 2 revs as we do 720 degrees on the the crank       
-        }
-        if(    (configPage2.perToothIgn == true) 
+        
+        if(  (configPage2.perToothIgn == true) 
           && (configPage4.triggerAngle == 0) 
           && (currentStatus.advance > 0) )
         {
@@ -5774,28 +5792,30 @@ void triggerPri_SuzukiK6A(void)
           if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
           else { checkPerToothTiming(crankAngle, toothCurrentCount); }
         }
-      } //Has sync
-    } // normal tooth
 
+        // Low RPM file the coil directly to get the engine started
+        if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) && (currentStatus.hasSync == true) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
+        {
+          switch (toothCurrentCount)
+          {
+            case 2:
+              endCoil2Charge();
+              break;
+            case 5:
+              endCoil1Charge();
+              break;
+            case 7:
+              endCoil3Charge();
+              break;
+          }
+        }
+
+      } // has sync
+    } // normal tooth
+    curGap3 = curGap2;
+    curGap2 = curGap;
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
-
-    // Low RPM file the coil directly to get the engine started
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) && (currentStatus.hasSync == true) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-    {
-      switch (toothCurrentCount)
-      {
-        case 2:
-          endCoil2Charge();
-          break;
-        case 5:
-          endCoil1Charge();
-          break;
-        case 7:
-          endCoil3Charge();
-          break;
-      }
-    }
   } //Trigger filter
 
 }
@@ -5852,7 +5872,7 @@ int getCrankAngle_SuzukiK6A(void)
       lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
       interrupts();
 
-      crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+      crankAngle = toothAngles[(tempToothCurrentCount)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
       //Estimate the number of degrees travelled since the last tooth}
       elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
