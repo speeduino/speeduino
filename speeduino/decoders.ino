@@ -5693,6 +5693,7 @@ void triggerPri_SuzukiK6A(void)
 
       // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left seperate to keep code clearer as its doing only one function at once
       // % of filter are not based on previous tooth size but expected next tooth size
+      // triggerToothAngle is the size of the prevous tooth not the future tooth
       if (currentStatus.hasSync == true )
       {
         switch (toothCurrentCount)
@@ -5794,7 +5795,7 @@ void triggerPri_SuzukiK6A(void)
         }
 
         // Low RPM file the coil directly to get the engine started
-        if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) && (currentStatus.hasSync == true) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
+/*        if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) && (currentStatus.hasSync == true) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
         {
           switch (toothCurrentCount)
           {
@@ -5807,8 +5808,9 @@ void triggerPri_SuzukiK6A(void)
             case 7:
               endCoil3Charge();
               break;
-          }
+          }          
         }
+*/        
 
       } // has sync
     } // normal tooth
@@ -5827,35 +5829,18 @@ void triggerSec_SuzukiK6A(void)
 
 uint16_t getRPM_SuzukiK6A(void)
 {
-  //Cranking code needs working out. This is currently a cut and paste of Miata9905 which has teeth at 70 and 110 degrees. This will not work for k6a
+  //Cranking code needs working out. 
 
-  uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) && (currentStatus.hasSync == true) )
-  {
-    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
-    else
-    {
-      int tempToothAngle;
-      unsigned long toothTime;
-      noInterrupts();
-      tempToothAngle = triggerToothAngle;
-      toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
-      interrupts();
-      toothTime = toothTime * 36;
-      tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
-      revolutionTime = (10UL * toothTime) / tempToothAngle;
-      MAX_STALL_TIME = 366667UL; // 50RPM
-    }
-  }
-  else
-  {
-    tempRPM = stdGetRPM(720);
-    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-    if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-  }
+  uint16_t tempRPM;
+
+  tempRPM = stdGetRPM(720);
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
   return tempRPM;
 }
+
+
 
 int getCrankAngle_SuzukiK6A(void)
 {
@@ -5885,6 +5870,10 @@ int getCrankAngle_SuzukiK6A(void)
 
     return crankAngle;
 }
+
+
+
+
 
 
 // Assumes no advance greater than 48 degrees.
