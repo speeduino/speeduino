@@ -1,6 +1,8 @@
 #include "globals.h"
 #include "secondaryTables.h"
 #include "corrections.h"
+#include "speeduino.h"
+#include "table2d.h"
 
 void calculateSecondaryFuel(void)
 {
@@ -70,6 +72,15 @@ void calculateSecondaryFuel(void)
         BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
         currentStatus.VE2 = getVE2();
         currentStatus.VE = currentStatus.VE2;
+      }
+    }
+    else if(configPage10.fuel2Mode == FUEL2_MODE_FLEX) {
+      if(configPage2.flexEnabled > 0 && currentStatus.ethanolPct > 0)
+      {
+        BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use.
+        int t2FuelBias = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+        currentStatus.VE2 = getVE2();
+        currentStatus.VE = biasedAverage(t2FuelBias, currentStatus.VE1, currentStatus.VE2); //calculate biased average between VE1 and VE2 based on specified bias at current ETH%
       }
     }
   }
@@ -152,7 +163,15 @@ void calculateSecondarySpark(void)
         currentStatus.advance = currentStatus.advance2;
       }
     }
-
+    else if(configPage10.spark2Mode == SPARK2_MODE_FLEX) {
+      if(configPage2.flexEnabled > 0 && currentStatus.ethanolPct > 0)
+      {
+        BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use.
+        int t2SparkBias = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
+        currentStatus.advance2 = getAdvance2();
+        currentStatus.advance = biasedAverage(t2SparkBias, currentStatus.advance1, currentStatus.advance2); //calculate biased average between Adv1 and Adv2 based on specified bias at current ETH%
+      }
+    }
     //Apply the fixed timing correction manually. This has to be done again here if any of the above conditions are met to prevent any of the seconadary calculations applying instead of fixec timing
     currentStatus.advance = correctionFixedTiming(currentStatus.advance);
     currentStatus.advance = correctionCrankingFixedTiming(currentStatus.advance); //This overrides the regular fixed timing, must come last
@@ -218,4 +237,32 @@ byte getAdvance2(void)
   tempAdvance = correctionsIgn(tempAdvance);
 
   return tempAdvance;
+}
+
+/**
+ * @brief Performs a calculation of the biased average between two table values based on the specified bias at the current ETH% 
+ * @param val2bias the bias or weight toward val2, usually looked up from a table
+ * @param val1 first value, usually looked up from a table; ex) VE1, Adv1
+ * @param val2 second value, usually looked up from a table; ex) VE2, Adv2
+ * @return byte the current VE or the target advance value in degrees
+*/
+byte biasedAverage(int val2bias, byte val1, byte val2) 
+{
+  //Trying to accomplish without floats, sometimes truncates the 2 rightmost bits, not sure if this is okay:
+  //return (100 - t2Bias)/100 * val1 + t2Bias/100 * val2;
+  if (val2bias == 0) 
+  {
+    return val1;
+  }
+
+  uint16_t term1 = 100; //could make this 12800 right off the bat rather than bitshifting later
+  uint16_t term2; //could get rid of this and free a little memory if we make term1 + term2 calculations all inline
+  byte bitshift = 7;
+
+  term1 = term1 << bitshift;
+  val2bias = ((unsigned int)val2bias << bitshift);
+  term1 = (term1 - val2bias) * val1;
+  term2 = val2bias/100 * val2;
+
+  return (term1 + term2) >> bitshift;
 }
