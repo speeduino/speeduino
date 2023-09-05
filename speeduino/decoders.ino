@@ -5595,13 +5595,13 @@ void triggerSetup_SuzukiK6A(void)
   // nb as you can edit the trigger offset using rising or falling edge setup below is irrelevant as you can adjust via the trigger ofset to cover the difference.
 
 // not using toothAngles[0] as i'm hoping it makes logic easier
-  toothAngles[1] = 0;   // Start of Cylinder 2, end of cylinder 3 
-  toothAngles[2] = 70;  //   
-  toothAngles[3] = 105; // Additional sync tooth
-  toothAngles[4] = 240; // end of cylinder 2, start of cylinder 1
-  toothAngles[5] = toothAngles[2] + 240; // 
-  toothAngles[6] = toothAngles[4] + 240; // end of cylinder 1, start of cylinder 3
-  toothAngles[7] = toothAngles[2] + 480; // 
+  toothAngles[1] = 0;                     // 0 / 170 Start of Cylinder 2, end of cylinder 3 
+  toothAngles[2] = 70;                    // 70  
+  toothAngles[3] = 105;                   // 35 Additional sync tooth
+  toothAngles[4] = 240;                   // 135 end of cylinder 2, start of cylinder 1
+  toothAngles[5] = toothAngles[2] + 240;  // (310) 70
+  toothAngles[6] = toothAngles[4] + 240;  // (480) 170 end of cylinder 1, start of cylinder 3
+  toothAngles[7] = toothAngles[2] + 480;  // (550) 70 
 
 
   
@@ -5876,7 +5876,7 @@ int getCrankAngle_SuzukiK6A(void)
 
 
 
-// Assumes no advance greater than 48 degrees.
+// Assumes no advance greater than 48 degrees. Trigers on the tooth before the ignition event
 void triggerSetEndTeeth_SuzukiK6A(void)
 {
       ignition1EndTooth = 4;
