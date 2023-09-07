@@ -113,10 +113,10 @@ void doUpdates(void)
     configPage10.flexBoostAdj[0]  = (int8_t)configPage2.aeColdPct;
 
     configPage10.flexFuelBins[0] = 0;
-    configPage10.flexFuelAdj[0]  = configPage2.idleUpPin;
+    configPage10.flexFuelBias[0]  = configPage2.idleUpPin;
 
     configPage10.flexAdvBins[0] = 0;
-    configPage10.flexAdvAdj[0]  = configPage2.aeTaperMin;
+    configPage10.flexAdvBias[0]  = configPage2.aeTaperMin;
 
     for (uint8_t x = 1; x < 6; x++)
     {
@@ -128,11 +128,11 @@ void doUpdates(void)
       int16_t boostAdder = (((configPage2.aeColdTaperMin - (int8_t)configPage2.aeColdPct) * pct) / 100) + (int8_t)configPage2.aeColdPct;
       configPage10.flexBoostAdj[x] = boostAdder;
 
-      uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
-      configPage10.flexFuelAdj[x] = fuelAdder;
+      //uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
+      configPage10.flexFuelBias[x] = pct; // = fuelAdder; <-- Changed to pct for new flex system
 
-      uint8_t advanceAdder = (((configPage2.aeTaperMax - configPage2.aeTaperMin) * pct) / 100) + configPage2.aeTaperMin;
-      configPage10.flexAdvAdj[x] = advanceAdder;
+      //uint8_t advanceAdder = (((configPage2.aeTaperMax - configPage2.aeTaperMin) * pct) / 100) + configPage2.aeTaperMin;
+      configPage10.flexAdvBias[x] = pct; // = advanceAdder; <-- Changed to pct for new flex system
     }
 
     writeAllConfig();
@@ -335,10 +335,10 @@ void doUpdates(void)
     configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
 
     //Update flex fuel ignition config values for 40 degrees offset
-    for (int i=0; i<6; i++)
-    {
-      configPage10.flexAdvAdj[i] += 40;
-    }
+    // for (int i=0; i<6; i++)
+    // {
+    //   configPage10.flexAdvBias[i] += 40; //Commented out during change to new flex system. Not sure what to change this to.
+    // }
     
     //AE cold modifier added. Default to sane values
     configPage2.aeColdPct = 100;
