@@ -3,6 +3,7 @@
 #include "corrections.h"
 #include "speeduino.h"
 #include "table2d.h"
+#include <cmath>
 
 void calculateSecondaryFuel(void)
 {
@@ -246,23 +247,24 @@ byte getAdvance2(void)
  * @param val2 second value, usually looked up from a table; ex) VE2, Adv2
  * @return byte the current VE or the target advance value in degrees
 */
-byte biasedAverage(int val2bias, byte val1, byte val2) 
+byte biasedAverage(int val2Bias, byte val1, byte val2) 
 {
   //Trying to accomplish without floats, sometimes truncates the 2 rightmost bits, not sure if this is okay:
   //return (100 - t2Bias)/100 * val1 + t2Bias/100 * val2;
-  if (val2bias == 0) 
+  if (val2Bias == 0) 
   {
     return val1;
   }
+  
+  else if (val2Bias == 100)
+  {
+    return val2;
+  }
 
-  uint16_t term1 = 100; //could make this 12800 right off the bat rather than bitshifting later
-  uint16_t term2; //could get rid of this and free a little memory if we make term1 + term2 calculations all inline
-  byte bitshift = 7;
+	uint16_t result = round((1 - bias/100.0) * val1 + bias/100.0 * val2); //used the round function, but could use floor(num + 0.5) if desired
+  
+	if (result > 255)
+		result = 255;
 
-  term1 = term1 << bitshift;
-  val2bias = ((unsigned int)val2bias << bitshift);
-  term1 = (term1 - val2bias) * val1;
-  term2 = val2bias/100 * val2;
-
-  return (term1 + term2) >> bitshift;
+	return result;
 }
