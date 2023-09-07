@@ -103,10 +103,10 @@ void test_corrections_closedloop(void)
 {
 
 }
-void test_corrections_flex(void)
-{
+// void test_corrections_flex(void)
+// {
 
-}
+// }
 void test_corrections_bat(void)
 {
 
