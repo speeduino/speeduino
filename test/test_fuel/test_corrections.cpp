@@ -2,6 +2,7 @@
 #include <corrections.h>
 #include <unity.h>
 #include "test_corrections.h"
+#include <secondaryTables.h>
 
 
 void testCorrections()
@@ -9,6 +10,7 @@ void testCorrections()
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
+  RUN_TEST(test_corrections_flex);
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
   RUN_TEST(test_corrections_ASE); //Not written yet
@@ -103,10 +105,18 @@ void test_corrections_closedloop(void)
 {
 
 }
-// void test_corrections_flex(void)
-// {
 
-// }
+void test_corrections_flex(void)
+{
+  TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1
+  TEST_ASSERT_EQUAL(200, biasedAverage(100, 100, 200)); //100 bias, should return val2
+
+  TEST_ASSERT_EQUAL(150, biasedAverage(50, 100, 200)); //should return 50% val1 + 50% val2
+  TEST_ASSERT_EQUAL(150, biasedAverage(200, 50, 100));
+  TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
+
+  TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
+}
 void test_corrections_bat(void)
 {
 
