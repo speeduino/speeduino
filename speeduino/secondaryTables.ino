@@ -81,6 +81,7 @@ void calculateSecondaryFuel(void)
         int t2FuelBias = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
         currentStatus.VE2 = getVE2();
         currentStatus.VE = biasedAverage(t2FuelBias, currentStatus.VE1, currentStatus.VE2); //calculate biased average between VE1 and VE2 based on specified bias at current ETH%
+        currentStatus.flexCorrection = currentStatus.VE - currentStatus.VE1;
       }
     }
   }
@@ -170,6 +171,7 @@ void calculateSecondarySpark(void)
         int t2SparkBias = table2D_getValue(&flexAdvTable, currentStatus.ethanolPct);
         currentStatus.advance2 = getAdvance2();
         currentStatus.advance = biasedAverage(t2SparkBias, currentStatus.advance1, currentStatus.advance2); //calculate biased average between Adv1 and Adv2 based on specified bias at current ETH%
+        currentStatus.flexIgnCorrection = currentStatus.advance - currentStatus.advance1;
       }
     }
     //Apply the fixed timing correction manually. This has to be done again here if any of the above conditions are met to prevent any of the seconadary calculations applying instead of fixec timing

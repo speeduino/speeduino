@@ -58,6 +58,7 @@ void initialiseCorrections(void)
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  currentStatus.flexCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
@@ -112,8 +113,8 @@ uint16_t correctionsFuel(void)
   currentStatus.baroCorrection = correctionBaro();
   if (currentStatus.baroCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.baroCorrection); }
 
-  currentStatus.flexCorrection = correctionFlex();
-  if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
+  // currentStatus.flexCorrection = correctionFlex(); <-- Commented out during change to new flex system
+  // if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
 
   currentStatus.fuelTempCorrection = correctionFuelTemp();
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.fuelTempCorrection); }
@@ -148,7 +149,7 @@ static inline byte correctionsFuel_new(void)
   currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
   currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
   currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
+  //currentStatus.flexCorrection = correctionFlex(); numCorrections++; <-- Commented out during change to new flex system
   currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
@@ -162,7 +163,6 @@ static inline byte correctionsFuel_new(void)
                   + currentStatus.batCorrection \
                   + currentStatus.iatCorrection \
                   + currentStatus.baroCorrection \
-                  + currentStatus.flexCorrection \
                   + currentStatus.launchCorrection;
   return (sumCorrections);
 
@@ -691,7 +691,7 @@ byte correctionAFRClosedLoop(void)
 int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
-  advance = correctionFlexTiming(base_advance);
+  //advance = correctionFlexTiming(base_advance); <-- Commented out during change to new flex system
   advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
