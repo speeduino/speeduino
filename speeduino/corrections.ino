@@ -692,7 +692,7 @@ int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
   //advance = correctionFlexTiming(base_advance); <-- Commented out during change to new flex system
-  advance = correctionWMITiming(advance);
+  advance = correctionWMITiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
   advance = correctionIdleAdvance(advance);
