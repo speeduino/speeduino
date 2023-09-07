@@ -3,7 +3,6 @@
 #include "corrections.h"
 #include "speeduino.h"
 #include "table2d.h"
-#include <cmath>
 
 void calculateSecondaryFuel(void)
 {
@@ -249,8 +248,7 @@ byte getAdvance2(void)
 */
 byte biasedAverage(int val2Bias, byte val1, byte val2) 
 {
-  //Trying to accomplish without floats, sometimes truncates the 2 rightmost bits, not sure if this is okay:
-  //return (100 - t2Bias)/100 * val1 + t2Bias/100 * val2;
+  //calculation to return (1 - t2Bias/100) * val1 + t2Bias/100 * val2;
   if (val2Bias == 0) 
   {
     return val1;
@@ -261,8 +259,8 @@ byte biasedAverage(int val2Bias, byte val1, byte val2)
     return val2;
   }
 
-	uint16_t result = round((1 - bias/100.0) * val1 + bias/100.0 * val2); //used the round function, but could use floor(num + 0.5) if desired
-  
+	uint16_t result = ((100 - val2Bias) * val1 + val2Bias * val2 + 50)/100; //adding 50, dividing by 100, then truncating to int works the same as rounding
+
 	if (result > 255)
 		result = 255;
 
