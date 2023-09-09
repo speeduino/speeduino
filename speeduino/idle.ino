@@ -592,7 +592,11 @@ void idleControl(void)
     
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
-        if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
+
+        //This keep idle valve open using the OL table value when TPS or RPM is bigger than the hysteresis value or when DFCO (like a simple dashpot). And even resets the PID integral. Is for preventing RPM dips when coming back to idle from part throttle or even WOT
+        if ( (currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) ) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
+        {
+          idle_pid_target_value = FeedForwardTerm;
           idlePID.ResetIntegeral();
         }
         
@@ -711,32 +715,34 @@ void idleControl(void)
               idleTaper++;
               idle_pid_target_value = FeedForwardTerm;
             }
+            //Standard running in OLCL
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
             {
-              //Standard running
-              FeedForwardTerm = (table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3)<<2; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-              //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Hysteresis (coming back from high rpm with throttle closed) 
-              if (((currentStatus.RPM - idle_cl_target_rpm) > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
-              {
-                idlePID.ResetIntegeral();
-              }
+              //Read the OL table as feedforward term and offset temps by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+              FeedForwardTerm = (table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3)<<2;
             }
+            //Standard running in CL
             else { FeedForwardTerm = idle_pid_target_value; }
           }
-
-          PID_computed = idlePID.Compute(true, FeedForwardTerm);
-
-          //If DFCO conditions are met keep output from changing
-          if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue
-          || ((configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) && (idleTaper < configPage2.idleTaperTime)) )
-          {
-            idle_pid_target_value = FeedForwardTerm;
-          }
-          idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
-
-          // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
         }
+
+        //Check if we are using OLCL option for then we use dashpot
+        if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL){
+         //This keep idle valve open using the OL table value when TPS or RPM is bigger than the hysteresis value or when DFCO (like a simple dashpot). And even resets the PID integral. Is for preventing RPM dips when coming back to idle from part throttle or even WOT
+         if ( (currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) ) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
+         {
+           idle_pid_target_value = FeedForwardTerm;
+           idlePID.ResetIntegeral();
+         }
+        }
+
+        PID_computed = idlePID.Compute(true, FeedForwardTerm);
+
+        idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
+
+        // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
+        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+        
         
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
         
