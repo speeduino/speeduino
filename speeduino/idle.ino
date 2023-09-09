@@ -596,7 +596,7 @@ void idleControl(void)
         //This keep idle valve open using the OL table value when TPS or RPM is bigger than the hysteresis value or when DFCO (like a simple dashpot). And even resets the PID integral. Is for preventing RPM dips when coming back to idle from part throttle or even WOT
         if ( (currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) ) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
         {
-          idle_pid_target_value = FeedForwardTerm;
+          //idle_pid_target_value = FeedForwardTerm;
           idlePID.ResetIntegeral();
         }
         
