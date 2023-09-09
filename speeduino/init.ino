@@ -413,6 +413,7 @@ void initialiseAll(void)
     //currentStatus.seclx10 = 0;
     currentStatus.startRevolutions = 0;
     currentStatus.syncLossCounter = 0;
+    currentStatus.triggerFilterDiscardCounter = 0;
     currentStatus.flatShiftingHard = false;
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)

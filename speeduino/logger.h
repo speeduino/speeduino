@@ -13,8 +13,8 @@
 #include "globals.h" // Needed for FPU_MAX_SIZE
 
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      125 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   125 /**< The size of the live data packet used by the SD card.*/
+  #define LOG_ENTRY_SIZE      127 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
 #else
   #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/

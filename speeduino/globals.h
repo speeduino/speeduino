@@ -731,6 +731,7 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
+  byte triggerFilterDiscardCounter; // count the number of times the primary trigger filter was failed the filter check.
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
