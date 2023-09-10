@@ -241,6 +241,15 @@
 #define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
 #define BIT_AIRCON_UNUSED8        7
 
+#define BIT_CEL_ACTIVE  0 // Check engine light is active true / false
+#define BIT_CEL_WATER   1 // issue with water temp
+#define BIT_CEL_AIR     2 // issue with air temp
+#define BIT_CEL_TPS     3 // issue with TPS
+#define BIT_CEL_MAP     4 // issue with MAP sensors (onboard OR external)
+#define BIT_CEL_UNUSED1 5
+#define BIT_CEL_UNUSED2 6
+#define BIT_CEL_UNUSED3 7
+
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
@@ -731,6 +740,7 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
+  byte statusCheckEngineLight;
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1130,8 +1140,22 @@ struct config9 {
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-  byte unused10_110;
-  byte unused10_111;
+
+  // byte 110
+  byte celEnabled            :1;  // byte 0 - check if feature is required
+  byte celLightWithFPPrime   :1;  // byte 1 - Light up the CEL light when FP primes
+  byte celPin                :6;  // byte 2 to 7 pin that the Check Engine Light uses to go high to indicate a problem
+
+  // byte 111
+  byte celCheckWater   :1;  // byte 0 - check if water temperature is sensible
+  byte celCheckAir     :1;  // byte 1  - check if air temperature is sensible
+  byte celCheckTPS     :1;  // byte 2  - check if tps reading is sensible
+  byte celCheckMAP     :1;  // byte 3  - check if map reading is sensible
+  byte celCheckUnused1 :1;  // byte 4  - reserved for future checks
+  byte celCheckUnused2 :1;  // byte 5  - reserved for future checks
+  byte celCheckUnused3 :1;  // byte 6  - reserved for future checks
+  byte celCheckUnused4 :1;  // byte 7  - reserved for future checks
+  
   byte unused10_112;
   byte unused10_113;
   byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
