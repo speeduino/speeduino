@@ -702,55 +702,54 @@ void idleControl(void)
         {
           if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) )
           {
+            //Read the RPM target from the table to be use in the pid
             idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-            if( idleTaper < configPage2.idleTaperTime )
+            
+            if(configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) //Read the OL table as feedforward term for the pid if we are using OC+CL
+            {
+              FeedForwardTerm = (table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3)<<2; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+            }
+            else { FeedForwardTerm == idle_pid_target_value; } //If we are not using OC+CL we use CL for the pid
+            
+            PID_computed = idlePID.Compute(true, FeedForwardTerm); //Compute the pid + feedforwardterm
+
+            if(PID_computed == true) { idleStepper.targetIdleStep = idle_pid_target_value>>2; } //Check if the pid is done calculeting and then sets the valve steps
+
+            if( idleTaper < configPage2.idleTaperTime ) //Tapering between cranking and pid
             {
               uint16_t minValue = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3;
               if( idle_pid_target_value < minValue<<2 ) { idle_pid_target_value = minValue<<2; }
               uint16_t maxValue = idle_pid_target_value>>2;
-              if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL ) { maxValue = table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; }
-
-              //Tapering between cranking IAC value and running
-              FeedForwardTerm = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              idleStepper.targetIdleStep = map(idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue);
               idleTaper++;
-              idle_pid_target_value = FeedForwardTerm;
             }
-            //Standard running in OLCL
-            else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
+            else
             {
-              //Read the OL table as feedforward term and offset temps by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-              FeedForwardTerm = (table2D_getValue(&iacStepTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3)<<2;
+              //Check if we are using OL+CL option for then we use dashpot
+              if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
+              {
+                 //This keep idle valve open using the OL table value when TPS or RPM is bigger than the hysteresis value or when DFCO (like a simple dashpot). And even resets the PID integral. Is for preventing RPM dips when coming back to idle from part throttle or even WOT
+                if ( (currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) ) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
+                {
+                  idleStepper.targetIdleStep = FeedForwardTerm>>2;
+                  idlePID.ResetIntegeral();
+                }
+              }
+
+              // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
+              if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+
+              if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+
+              //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+              if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+              {
+                idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+              }
             }
-            //Standard running in CL
-            else { FeedForwardTerm = idle_pid_target_value; }
           }
         }
 
-        //Check if we are using OLCL option for then we use dashpot
-        if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL){
-         //This keep idle valve open using the OL table value when TPS or RPM is bigger than the hysteresis value or when DFCO (like a simple dashpot). And even resets the PID integral. Is for preventing RPM dips when coming back to idle from part throttle or even WOT
-         if ( (currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) ) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
-         {
-           idle_pid_target_value = FeedForwardTerm;
-           idlePID.ResetIntegeral();
-         }
-        }
-
-        PID_computed = idlePID.Compute(true, FeedForwardTerm);
-
-        idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
-
-        // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
-        
-        
-        if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
-        
-        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-        {
-          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-        }
         doStep();
 
         if( ( (uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
