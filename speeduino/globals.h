@@ -241,14 +241,18 @@
 #define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
 #define BIT_AIRCON_UNUSED8        7
 
-#define BIT_CEL_ACTIVE  0 // Check engine light is active true / false
-#define BIT_CEL_WATER   1 // issue with water temp
-#define BIT_CEL_AIR     2 // issue with air temp
+#define BIT_CEL_ENABLED  0 // Check engine light feature is required
+#define BIT_CEL_LIGHT_ON_STARTUP 1 // do we light up the CEL light as speeduino powers up to prove its working
+
+#define BIT_CEL_ACTIVE  0 // Check Engine Light general warning (also lit if one of the following is lit)
+#define BIT_CEL_TEMP    1 // issue with temperature reading (water, air)
+#define BIT_CEL_TBC     2 // issue with To be decided
 #define BIT_CEL_TPS     3 // issue with TPS
 #define BIT_CEL_MAP     4 // issue with MAP sensors (onboard OR external)
-#define BIT_CEL_UNUSED1 5
-#define BIT_CEL_UNUSED2 6
-#define BIT_CEL_UNUSED3 7
+#define BIT_CEL_BATTERY 5 // issue with battery 
+#define BIT_CEL_O2      6 // issue with o2 readings
+#define BIT_CEL_STARTUP 7 // used to track if we've just started speeduino for the start up light in the status structure
+#define BIT_CEL_INVERTED 7 // used to track if we need to invert the output in the engine tune configPage9
 
 #define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
@@ -550,6 +554,9 @@ extern volatile PINMASK_TYPE tach_pin_mask;
 extern volatile PORT_TYPE *pump_pin_port;
 extern volatile PINMASK_TYPE pump_pin_mask;
 
+extern volatile PORT_TYPE *cel_pin_port;
+extern volatile PINMASK_TYPE cel_pin_mask;
+
 extern volatile PORT_TYPE *flex_pin_port;
 extern volatile PINMASK_TYPE flex_pin_mask;
 
@@ -740,7 +747,7 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
-  byte statusCheckEngineLight;
+  byte checkEngineLight;
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1143,20 +1150,29 @@ struct config9 {
 
   // byte 110
   byte celEnabled            :1;  // byte 0 - check if feature is required
-  byte celLightWithFPPrime   :1;  // byte 1 - Light up the CEL light when FP primes
+  byte celLightOnStartUp     :1;  // byte 1 - Light up the CEL light on start up for 4 seconds
   byte celPin                :6;  // byte 2 to 7 pin that the Check Engine Light uses to go high to indicate a problem
 
   // byte 111
-  byte celCheckWater   :1;  // byte 0 - check if water temperature is sensible
-  byte celCheckAir     :1;  // byte 1  - check if air temperature is sensible
-  byte celCheckTPS     :1;  // byte 2  - check if tps reading is sensible
-  byte celCheckMAP     :1;  // byte 3  - check if map reading is sensible
-  byte celCheckUnused1 :1;  // byte 4  - reserved for future checks
-  byte celCheckUnused2 :1;  // byte 5  - reserved for future checks
-  byte celCheckUnused3 :1;  // byte 6  - reserved for future checks
-  byte celCheckUnused4 :1;  // byte 7  - reserved for future checks
+  byte celDoNotUse1    :1;  // byte 0  - blocked out due to sharing defines, in status data field this is used to track if its the end of the light on start up phase
+  byte celCheckTemp    :1;  // byte 1  - check if water temperature is sensible
+  byte celCheckTBC     :1;  // byte 2  - check if air temperature is sensible
+  byte celCheckTPS     :1;  // byte 3  - check if tps reading is sensible
+  byte celCheckMAP     :1;  // byte 4  - check if map reading is sensible
+  byte celCheckBattery :1;  // byte 5  - check if battery reading is sensible
+  byte celCheckO2      :1;  // byte 6  - check if o2 reading is senible
+  byte celInverted     :1;  // byte 7  - Invert CEL output light
   
-  byte unused10_112;
+ // byte 112
+  byte celReserved0    :1;  // Byte 0 - reserved for future expansion
+  byte celReserved1    :1;  // Byte 0 - reserved for future expansion
+  byte celReserved2    :1;  // Byte 2 - reserved for future expansion
+  byte celReserved3    :1;  // Byte 3 - reserved for future expansion
+  byte celReserved4    :1;  // Byte 4 - reserved for future expansion
+  byte celReserved5    :1;  // Byte 5 - reserved for future expansion
+  byte celReserved6    :1;  // Byte 6 - reserved for future expansion
+  byte celReserved7    :1;  // Byte 7 - reserved for future expansion
+
   byte unused10_113;
   byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
   uint16_t true_address;            //speeduino 11bit can address
@@ -1532,6 +1548,7 @@ extern byte pinBat; //Battery voltage pin
 extern byte pinDisplayReset; // OLED reset pin
 extern byte pinTachOut; //Tacho output
 extern byte pinFuelPump; //Fuel pump on/off
+extern byte pinCEL; // Check Engine Light pin On/Off
 extern byte pinIdle1; //Single wire idle control
 extern byte pinIdle2; //2 wire idle control (Not currently used)
 extern byte pinIdleUp; //Input for triggering Idle Up

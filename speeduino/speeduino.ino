@@ -368,6 +368,9 @@ void loop(void)
         } 
       }
 
+      CheckEngineLight();
+
+      
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
       #endif

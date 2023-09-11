@@ -47,6 +47,11 @@ static inline void checkAirConRPMLockout(void);
 #define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
 #define FUEL_PUMP_ON()          (digitalWrite(pinFuelPump, HIGH))
 #define FUEL_PUMP_OFF()         (digitalWrite(pinFuelPump, LOW))
+#define CEL_PIN_HIGH()          (digitalWrite(pinCEL, HIGH))
+#define CEL_PIN_LOW()           (digitalWrite(pinCEL, LOW))
+
+#define CEL_ON()                { ((configPage9.celInvert) ? CEL_PIN_LOW() : CEL_PIN_HIGH()); }
+#define CEL_OFF()               { ((configPage6.celInvert) ? CEL_PIN_HIGH() : CEL_PIN_LOW()); }
 
 #define AIRCON_ON()             { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
 #define AIRCON_OFF()            { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
@@ -68,6 +73,13 @@ static inline void checkAirConRPMLockout(void);
 #define N2O_STAGE2_PIN_HIGH()   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
 #define FUEL_PUMP_ON()          ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { *pump_pin_port |= (pump_pin_mask);     }
 #define FUEL_PUMP_OFF()         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { *pump_pin_port &= ~(pump_pin_mask);    }
+
+#define CEL_PIN_ON()             *cel_pin_port |= (cel_pin_mask) 
+#define CEL_PIN_OFF()            *cel_pin_port &= ~(cel_pin_mask)
+
+#define CEL_ON()                ((configPage9.celInverted) ? CEL_PIN_OFF() : CEL_PIN_ON())
+#define CEL_OFF()               ((configPage9.celInverted) ? CEL_PIN_ON() : CEL_PIN_OFF())
+
 
 //Note the below macros cannot use ATOMIC_BLOCK(ATOMIC_RESTORESTATE) as they are called from within ternary operators. The ATOMIC_BLOCK wrapped is instead placed around the ternary call below
 #define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)

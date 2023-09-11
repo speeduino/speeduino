@@ -171,7 +171,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 124: statusValue = currentStatus.airConStatus; break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
-    case 127: statusValue = currentStatus.statusCheckEngineLight; break;
+    case 127: statusValue = currentStatus.checkEngineLight; break;
   }
 
   return statusValue;
