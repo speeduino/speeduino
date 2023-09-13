@@ -200,11 +200,7 @@ static inline void instanteneousMAPReading(void)
       currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
     }
     else 
-    { 
-      // check engine light code
-      if( configPage9.celCheckMAP == true && configPage9.celEnabled == true)
-      { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_MAP);}
-    }
+    { mapErrorCount++; }
 
     currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
     if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
@@ -459,12 +455,12 @@ void readTPS(bool useFilter)
   }
 
   // do checks for Check Engine Light
-  if( configPage9.celCheckTPS == true && configPage9.celEnabled == true)
+  if( configPage9.celCheckLoad == true && configPage9.celEnabled == true)
   {
     if(currentStatus.tpsADC < (((configPage2.tpsMin - 5) > 0) ? configPage2.tpsMin-5 : configPage2.tpsMin) ) // gives a little room for noise
-    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_TPS);}
+    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_LOAD);}
     else if(currentStatus.tpsADC > (((configPage2.tpsMax+5)> 255) ? configPage2.tpsMax : configPage2.tpsMax) )  // gives a little room for noise
-    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_TPS);}
+    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_LOAD);}
   }
 
   //Check whether the closed throttle position sensor is active
@@ -574,6 +570,15 @@ void readO2(void)
     currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
     //currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
+
+    // do checks for Check Engine Light
+    if( configPage9.celCheckO2 == true && configPage9.celEnabled == true)
+    {
+      Serial3.print("02 Raw "); Serial3.println(tempReading);
+
+      if(tempReading == 0 || tempReading == 255 ) // each sensor has different ranges, combined with different fuels having different ranges so can't do specific AFR values
+      { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_O2);}      
+    }
   }
   else
   {
@@ -754,9 +759,9 @@ byte getOilPressure(void)
     tempReading = analogRead(pinOilPressure);
     tempReading = analogRead(pinOilPressure);
 
-
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
     tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
+
     //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
     if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.

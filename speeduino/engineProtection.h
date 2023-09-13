@@ -7,3 +7,4 @@ byte checkRevLimit(void);
 byte checkBoostLimit(void);
 byte checkOilPressureLimit(void);
 byte checkAFRLimit(void);
+void checkEngineLight(void);

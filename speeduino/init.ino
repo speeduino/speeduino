@@ -366,13 +366,15 @@ void initialiseAll(void)
 
     if(configPage9.celEnabled == true && configPage9.celLightOnStartUp == true) // start the Check Engine Light
     {
-      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_ACTIVE);
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
       if(configPage9.celCheckTemp == true)
       { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
-      if(configPage9.celCheckTPS == true)
-      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TPS); }
-      if(configPage9.celCheckMAP == true)
-      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_MAP); }
+      if(configPage9.celCheckLoad == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_LOAD); }
+      if(configPage9.celCheckTBC1 == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC1); }
+      if(configPage9.celCheckTBC2 == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC2); }
       if(configPage9.celCheckBattery == true)
       { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_BATTERY); }
       if(configPage9.celCheckO2 == true)

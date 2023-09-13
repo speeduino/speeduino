@@ -229,14 +229,14 @@ void CheckEngineLight (void)
     // Check Engine Light is enabled, need to turn off the light a few seconds after starting ECU, 
     // then check for a condition that would trigger the light being on and enable it if required
     // this does mean ever 255 seconds the light resets currently - need extra logic to enable after the first 4 seconds the light to latch on till engine reset
-    if (configPage9.celLightOnStartUp == true && currentStatus.secl == 4 && BIT_CHECK (currentStatus.checkEngineLight,BIT_CEL_STARTUP) == true)
+    if (configPage9.celLightOnStartUp == true && currentStatus.secl == 5 && BIT_CHECK (currentStatus.checkEngineLight,BIT_CEL_STARTUP) == true)
     {
       // turn off all lights
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_ACTIVE);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TPS);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_MAP);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_LOAD);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC1);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC2);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_BATTERY);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_O2);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_STARTUP); // only used to restrict access to this function on very first startup of the engine otherwise function called every loop
@@ -245,61 +245,51 @@ void CheckEngineLight (void)
 
     if (configPage9.celCheckTemp == true)
     {
-      if (currentStatus.cltADC == 0 || currentStatus.coolant < -20 || currentStatus.coolant > 120) 
+      if (currentStatus.cltADC == 0 || currentStatus.coolant < -20 || currentStatus.coolant > 120 ||
+          currentStatus.iatADC == 0 || currentStatus.IAT < -20 || currentStatus.IAT > 80)       
       { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
     }
     else
     { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
 
-    if (configPage9.celCheckTemp == true)
+    if (configPage9.celCheckLoad == true)
     {
-      Serial3.print ("Air Raw "); Serial3.print(currentStatus.iatADC);
-      Serial3.print (" Air Temp "); Serial3.println(currentStatus.IAT);
-      if (currentStatus.iatADC == 0 || currentStatus.IAT < -20 || currentStatus.IAT > 90) 
-      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
-    }
-    else
-    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
-
-    // TPS checks done in readTPS in sensors.ino
-    // MAP checks done in readTPS in sensors.ino
-    // Battery - Not sure how to checks, perhaps see if we're outside of the range catered for by injector voltage correction?
-    // Tuner studio has hard coded  batlow < 11.8 &  bathigh >  15
-    // O2 - checks to be done in readO2 in sensors.ino - perhaps check if value outside of calibration range?
-
-    if (configPage9.celCheckTPS == true)
-    {
-      Serial3.print (" RAW TPS"); Serial3.print(currentStatus.tpsADC);
-      Serial3.print (" TPS "); Serial3.println(currentStatus.TPS);
-    }
-    else
-    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TPS); }
-
-    if (configPage9.celCheckMAP == true)
-    {
-      Serial3.print (" RAW MAP"); Serial3.print(currentStatus.mapADC);
-      Serial3.print (" MAP "); Serial3.println(currentStatus.MAP);
+      // TPS set within readTPS function in sensors.ino
       if(mapErrorCount > 0)
       {
         mapErrorCount = 0;
-        BIT_SET(currentStatus.checkEngineLight, BIT_CEL_MAP);
+        BIT_SET(currentStatus.checkEngineLight, BIT_CEL_LOAD);
       }
     }
     else
-    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_MAP); }
+    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_LOAD); }
 
+    if (configPage9.celCheckTBC1 == true)
+    {
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC1);
+    }
+    else
+    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC1); }
+
+    if (configPage9.celCheckTBC2 == true)
+    {
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC2);
+    }
+    else
+    { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC2); }
+
+
+    // Battery - Not sure how to checks, perhaps see if we're outside of the range catered for by injector voltage correction?
+    // Tuner studio has hard coded  batlow < 11.8 &  bathigh >  15 which is the initial version
     if (configPage9.celCheckBattery == true)
     {
-      Serial3.print ("Battery Raw "); Serial3.print(currentStatus.batADC);
-      Serial3.print (" Volts "); Serial3.println(currentStatus.battery10);
-
-
       if(currentStatus.battery10 < 118 || currentStatus.battery10 > 150) // range defined in tuner studio as the levels to warn on 11.8v and 15v
       { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_BATTERY); }          
     }
     else
     { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_BATTERY); }
 
+    // O2 - checks to be done in readO2 in sensors.ino - perhaps check if value outside of calibration range?
     if (configPage9.celCheckO2 == true)
     {
       Serial3.print ("O2 Raw "); Serial3.print(currentStatus.O2ADC);
@@ -315,20 +305,28 @@ void CheckEngineLight (void)
     if (currentStatus.checkEngineLight != 0)
     {
       // at least one CEL light is set to set the main light
-      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_ACTIVE);
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
       CEL_ON(); // turn check engine light pin on
     }
 
   }
   else
   { 
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_ACTIVE);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TPS);
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_MAP);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_LOAD);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC1);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC2);      
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_BATTERY);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_O2);
       CEL_OFF(); // turn check engine light pin off
   }
 }
+
+#define BIT_CEL_GENERAL  0 // Check Engine Light general warning (also lit if one of the following is lit)
+#define BIT_CEL_TEMP    1 // issue with temperature reading (water, air)
+#define BIT_CEL_LOAD    2 // issue with Load TPS or MAP
+#define BIT_CEL_TBC1    3 // issue with to be confirmed
+#define BIT_CEL_TBC2    4 // issue with to be confirmed
+#define BIT_CEL_BATTERY 5 // issue with battery 
+#define BIT_CEL_O2      6 // issue with o2 readings
