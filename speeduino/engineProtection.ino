@@ -292,9 +292,6 @@ void CheckEngineLight (void)
     // O2 - checks to be done in readO2 in sensors.ino - perhaps check if value outside of calibration range?
     if (configPage9.celCheckO2 == true)
     {
-      Serial3.print ("O2 Raw "); Serial3.print(currentStatus.O2ADC);
-      Serial3.print (" O2 "); Serial3.println(currentStatus.O2);
-
       if (currentStatus.O2ADC == 0 || currentStatus.O2ADC == 255)
       { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_O2); }
     }
@@ -322,11 +319,3 @@ void CheckEngineLight (void)
       CEL_OFF(); // turn check engine light pin off
   }
 }
-
-#define BIT_CEL_GENERAL  0 // Check Engine Light general warning (also lit if one of the following is lit)
-#define BIT_CEL_TEMP    1 // issue with temperature reading (water, air)
-#define BIT_CEL_LOAD    2 // issue with Load TPS or MAP
-#define BIT_CEL_TBC1    3 // issue with to be confirmed
-#define BIT_CEL_TBC2    4 // issue with to be confirmed
-#define BIT_CEL_BATTERY 5 // issue with battery 
-#define BIT_CEL_O2      6 // issue with o2 readings
