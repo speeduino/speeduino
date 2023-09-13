@@ -1162,7 +1162,7 @@ struct config9 {
   byte hardRevMode : 2;
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
-  byte unused10_179;
+  byte dfcoMAPThresh; // DFCO Map Threshold. Needs to be multiplied by 2 to have a correct value.
   byte unused10_180;
   byte unused10_181;
   byte unused10_182;
