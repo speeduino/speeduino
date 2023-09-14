@@ -574,8 +574,6 @@ void readO2(void)
     // do checks for Check Engine Light
     if( configPage9.celCheckO2 == true && configPage9.celEnabled == true)
     {
-      Serial3.print("02 Raw "); Serial3.println(tempReading);
-
       if(tempReading == 0 || tempReading == 255 ) // each sensor has different ranges, combined with different fuels having different ranges so can't do specific AFR values
       { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_O2);}      
     }
