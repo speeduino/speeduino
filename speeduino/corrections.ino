@@ -113,8 +113,8 @@ uint16_t correctionsFuel(void)
   currentStatus.baroCorrection = correctionBaro();
   if (currentStatus.baroCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.baroCorrection); }
 
-  // currentStatus.flexCorrection = correctionFlex(); <-- Commented out during change to new flex system
-  // if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
+  //currentStatus.flexCorrection = correctionFlex(); //<-- Commented out during change to new flex system
+  //if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
 
   currentStatus.fuelTempCorrection = correctionFuelTemp();
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.fuelTempCorrection); }
