@@ -5698,61 +5698,20 @@ void triggerPri_SuzukiK6A(void)
       {
         switch (toothCurrentCount)
         {
-          case 2:
-          case 5:
-          case 7:
-            // 70 degree tooth
-            triggerToothAngle = 70;
-            switch (configPage4.triggerFilter)
-            {
-              case 1: // 25 %
-                triggerFilterTime = curGap>>1;
-                break;
-              case 2: // 50 %
-                triggerFilterTime = curGap;
-                break;
-              case 3: // 75 %
-                triggerFilterTime = curGap + (curGap>>1);
-                break;
-              default:
-                triggerFilterTime = 0;
-                break;
-            }
-            break;
-
-          case 4:
-            // 135 degre tooth
-            triggerToothAngle = 135;
-            switch (configPage4.triggerFilter)
-            {
-              case 1: // 25 %
-                triggerFilterTime = curGap>>3;
-                break;
-              case 2: // 50 %
-                triggerFilterTime = curGap>>2;
-                break;
-              case 3: // 75 %
-                triggerFilterTime = (curGap>>2) + (curGap>>3);
-                break;
-              default:
-                triggerFilterTime = 0;
-                break;
-            }          
-            break;
-
+          case 1:
           case 6:
           case 8: // equivalent of tooth 1 except we've not done rotation code yet so its 8
-            // 170 degree tooth
+            // 170 degree tooth, next tooth is 70
             triggerToothAngle = 170;
             switch (configPage4.triggerFilter)
             {
-              case 1: // 25 %
+              case 1: // 25 % 17 degrees
                 triggerFilterTime = curGap>>3;
                 break;
-              case 2: // 50 %
+              case 2: // 50 % 35 degrees
                 triggerFilterTime = (curGap>>3) + (curGap>>4);
                 break;
-              case 3: // 75 %
+              case 3: // 75 % 52 degrees
                 triggerFilterTime = (curGap>>2) + (curGap>>4);
                 break;
               default:
@@ -5761,18 +5720,39 @@ void triggerPri_SuzukiK6A(void)
             }          
             break;
 
+
+          case 2:
+            // 70 degrees, next tooth is 35
+            triggerToothAngle = 70;
+            switch (configPage4.triggerFilter)
+            {
+              case 1: // 25 % 8 degrees
+                triggerFilterTime = curGap>>3;
+                break;
+              case 2: // 50 % 17 degrees
+                triggerFilterTime = curGap>>2;
+                break;
+              case 3: // 75 % 25 degrees
+                triggerFilterTime = (curGap>>2) + (curGap>>3);
+                break;
+              default:
+                triggerFilterTime = 0;
+                break;
+            }
+            break;
+
           case 3:
-            // sync tooth
+            // sync tooth, next tooth is 135
             triggerToothAngle = 35;
             switch (configPage4.triggerFilter)
             {
-              case 1: // 25 %
+              case 1: // 25 % 33 degrees
                 triggerFilterTime = curGap;
                 break;
-              case 2: // 50 %
+              case 2: // 50 % 67 degrees
                 triggerFilterTime = curGap * 2;
                 break;
-              case 3: // 75 %
+              case 3: // 75 % 100 degrees
                 triggerFilterTime = curGap * 3;
                 break;
               default:
@@ -5780,7 +5760,48 @@ void triggerPri_SuzukiK6A(void)
                 break;
             }
             break;
-                    
+
+          case 4:
+            // 135 degre tooth, next tooth is 70
+            triggerToothAngle = 135;
+            switch (configPage4.triggerFilter)
+            {
+              case 1: // 25 % 17 degrees
+                triggerFilterTime = curGap>>3;
+                break;
+              case 2: // 50 % 35 degrees
+                triggerFilterTime = curGap>>2;
+                break;
+              case 3: // 75 % 52 degrees
+                triggerFilterTime = (curGap>>2) + (curGap>>3);
+                break;
+              default:
+                triggerFilterTime = 0;
+                break;
+            }          
+            break;
+
+          case 5:
+          case 7:
+            // 70 degree tooth, next tooth is 170
+            triggerToothAngle = 70;
+            switch (configPage4.triggerFilter)
+            {
+              case 1: // 25 % 42 degrees
+                triggerFilterTime = (curGap>>1) + (curGap>>3);
+                break;
+              case 2: // 50 % 85 degrees
+                triggerFilterTime = curGap + (curGap>>2);
+                break;
+              case 3: // 75 % 127 degrees
+                triggerFilterTime = curGap + (curGap>>1) + (curGap>>2);
+                break;
+              default:
+                triggerFilterTime = 0;
+                break;
+            }
+            break;
+
         }
         
         if(  (configPage2.perToothIgn == true) 
@@ -5793,24 +5814,6 @@ void triggerPri_SuzukiK6A(void)
           if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
           else { checkPerToothTiming(crankAngle, toothCurrentCount); }
         }
-
-        // Low RPM file the coil directly to get the engine started
-/*        if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) && (currentStatus.hasSync == true) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-        {
-          switch (toothCurrentCount)
-          {
-            case 2:
-              endCoil2Charge();
-              break;
-            case 5:
-              endCoil1Charge();
-              break;
-            case 7:
-              endCoil3Charge();
-              break;
-          }          
-        }
-*/        
 
       } // has sync
     } // normal tooth
