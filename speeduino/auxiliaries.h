@@ -50,8 +50,8 @@ static inline void checkAirConRPMLockout(void);
 #define CEL_PIN_HIGH()          (digitalWrite(pinCEL, HIGH))
 #define CEL_PIN_LOW()           (digitalWrite(pinCEL, LOW))
 
-#define CEL_ON()                { ((configPage9.celInvert) ? CEL_PIN_LOW() : CEL_PIN_HIGH()); }
-#define CEL_OFF()               { ((configPage6.celInvert) ? CEL_PIN_HIGH() : CEL_PIN_LOW()); }
+#define CEL_ON()                { ((configPage9.celInverted) ? CEL_PIN_LOW() : CEL_PIN_HIGH()); }
+#define CEL_OFF()               { ((configPage6.celInverted) ? CEL_PIN_HIGH() : CEL_PIN_LOW()); }
 
 #define AIRCON_ON()             { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
 #define AIRCON_OFF()            { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
