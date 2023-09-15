@@ -288,7 +288,7 @@ extern HardwareTimer Timer11;
 #endif
 #endif
 
-#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
+#if ((STM32_CORE_VERSION_MINOR<=8) && (STM32_CORE_VERSION_MAJOR==1)) 
 void oneMSInterval(HardwareTimer*);
 void boostInterrupt(HardwareTimer*);
 void fuelSchedule1Interrupt(HardwareTimer*);

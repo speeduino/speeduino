@@ -7,9 +7,9 @@ byte oilProtStartTime = 0;
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit())
   {
-    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
+    if(currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM) { protectActive = 1; }
   }
 
   return protectActive;
@@ -17,33 +17,33 @@ byte checkEngineProtect(void)
 
 byte checkRevLimit(void)
 {
-  //Hardcut RPM limit
-  byte currentLimitRPM = 255; //Default to no limit (In case PROTECT_CUT_OFF is selected)
+  // Hardcut RPM limit
+  byte currentLimitRPM = 255; // Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF)
   {
     if(configPage9.hardRevMode == HARD_REV_FIXED)
     {
       currentLimitRPM = configPage4.HardRevLim;
-      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
-      { 
-        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+      if((currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)))
+      {
+        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); // Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-      } 
+      }
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
     }
-    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
+    else if(configPage9.hardRevMode == HARD_REV_COOLANT)
     {
       currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); // Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-      } 
+      }
     }
   }
 
@@ -57,9 +57,10 @@ byte checkBoostLimit(void)
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
-    //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-    if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF)
+  {
+    // Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
+    if((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2))) // The boost limit is divided by 2 to allow a limit up to 511kPa
     {
       boostLimitActive = 1;
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
@@ -94,28 +95,27 @@ byte checkBoostLimit(void)
 byte checkOilPressureLimit(void)
 {
   byte oilProtectActive = 0;
-  bool alreadyActive = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
+  bool alreadyActive    = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
+  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); // Will be set true below if required
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF)
   {
-    if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
+    if((configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true))
     {
       byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
       if(currentStatus.oilPressure < oilLimit)
       {
-        //Check if this is the first time we've been below the limit
+        // Check if this is the first time we've been below the limit
         if(oilProtStartTime == 0) { oilProtStartTime = (millis() / 100); }
 
         /* Check if countdown has reached its target, if so then instruct to cut */
-        if( (uint8_t(millis()/100) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
+        if((uint8_t(millis() / 100) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime))) || (alreadyActive > 0))
         {
           BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
           oilProtectActive = 1;
         }
-        
       }
-      else { oilProtStartTime = 0; } //Reset the timer
+      else { oilProtStartTime = 0; } // Reset the timer
     }
   }
 
@@ -124,11 +124,11 @@ byte checkOilPressureLimit(void)
 
 byte checkAFRLimit(void)
 {
-  static bool checkAFRLimitActive = false;
-  static bool afrProtectCountEnabled = false;
-  static unsigned long afrProtectCount = 0;
-  static constexpr char X2_MULTIPLIER = 2;
-  static constexpr char X100_MULTIPLIER = 100;
+  static bool           checkAFRLimitActive    = false;
+  static bool           afrProtectCountEnabled = false;
+  static unsigned long  afrProtectCount        = 0;
+  static constexpr char X2_MULTIPLIER          = 2;
+  static constexpr char X100_MULTIPLIER        = 100;
 
   /*
     To use this function, a wideband sensor is required.
@@ -136,7 +136,7 @@ byte checkAFRLimit(void)
     First of all, check whether engine protection is enabled,
     thereafter check whether AFR protection is enabled and at last
     if wideband sensor is used.
-    
+
     After confirmation, the following conditions has to be met:
     - MAP above x kPa
     - RPM above x
@@ -161,7 +161,8 @@ byte checkAFRLimit(void)
     - whether AFR protection is enabled
     - whether wideband sensor is used
   */
-  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE) {
+  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE)
+  {
     /* Conditions */
     bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
     bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
@@ -176,42 +177,42 @@ byte checkAFRLimit(void)
     bool afrCondition;
     switch(configPage9.afrProtectEnabled)
     {
-      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break; /* Fixed value */
+      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break;                             /* Fixed value */
       case 2: afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
-      default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
+      default: afrCondition = false;                                                                                                  /* Unknown mode. Shouldn't even get here */
     }
 
     /* Check if conditions above are fulfilled */
-    if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
+    if(mapCondition && rpmCondition && tpsCondition && afrCondition)
     {
       /* All conditions fulfilled - start counter for 'protection delay' */
-      if(!afrProtectCountEnabled) 
+      if(!afrProtectCountEnabled)
       {
         afrProtectCountEnabled = true;
-        afrProtectCount = millis();
+        afrProtectCount        = millis();
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
+      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER)))
       {
         checkAFRLimitActive = true;
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
       }
-    } 
-    else 
+    }
+    else
     {
       /* Conditions have presumably changed - deactivate and reset counter */
-      if(afrProtectCountEnabled) 
+      if(afrProtectCountEnabled)
       {
         afrProtectCountEnabled = false;
-        afrProtectCount = 0;
+        afrProtectCount        = 0;
       }
     }
 
     /* Check if condition for reactivation is fulfilled */
-    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) 
+    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS))
     {
-      checkAFRLimitActive = false;
+      checkAFRLimitActive    = false;
       afrProtectCountEnabled = false;
       BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
     }
@@ -219,4 +220,3 @@ byte checkAFRLimit(void)
 
   return checkAFRLimitActive;
 }
-
