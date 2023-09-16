@@ -10,6 +10,7 @@ void testCorrections()
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
+  test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
@@ -89,14 +90,154 @@ void test_corrections_WUE(void)
   RUN_TEST(test_corrections_WUE_active_value);
   RUN_TEST(test_corrections_WUE_inactive_value);
 }
+
 void test_corrections_cranking(void)
 {
 
 }
+
+void set_ASE_tables(void)
+{
+  //set duration table
+  ((uint8_t*)ASECountTable.axisX)[0] = 0;
+  ((uint8_t*)ASECountTable.axisX)[1] = 40;
+  ((uint8_t*)ASECountTable.axisX)[2] = 120;
+  ((uint8_t*)ASECountTable.axisX)[3] = 180;
+
+  ((uint8_t*)ASECountTable.values)[0] = 16;
+  ((uint8_t*)ASECountTable.values)[1] = 12;
+  ((uint8_t*)ASECountTable.values)[2] = 3;
+  ((uint8_t*)ASECountTable.values)[3] = 1;
+
+  //set primary correction amount table
+  ((uint8_t*)ASETable.axisX)[0] = 0;
+  ((uint8_t*)ASETable.axisX)[1] = 40;
+  ((uint8_t*)ASETable.axisX)[2] = 120;
+  ((uint8_t*)ASETable.axisX)[3] = 180;
+
+  ((uint8_t*)ASETable.values)[0] = 100;
+  ((uint8_t*)ASETable.values)[1] = 40;
+  ((uint8_t*)ASETable.values)[2] = 20;
+  ((uint8_t*)ASETable.values)[3] = 5;
+
+  //set secondary correction table
+  ((uint8_t*)ASETable2.axisX)[0] = 0;
+  ((uint8_t*)ASETable2.axisX)[1] = 40;
+  ((uint8_t*)ASETable2.axisX)[2] = 120;
+  ((uint8_t*)ASETable2.axisX)[3] = 180;
+
+  ((uint8_t*)ASETable2.values)[0] = 600;
+  ((uint8_t*)ASETable2.values)[1] = 400;
+  ((uint8_t*)ASETable2.values)[2] = 50;
+  ((uint8_t*)ASETable2.values)[3] = 20;
+}
+void test_corrections_ASE_inactive(void)
+{
+  //test condition: already running while warm
+  currentStatus.coolant = 200;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 255;
+  configPage2.flexEnabled = 0;
+  configPage2.aseTaperTime = 1;
+  aseTaper = 2;
+
+  set_ASE_tables();
+
+  correctionASE();
+
+  TEST_ASSERT_BIT_LOW(BIT_ENGINE_ASE, currentStatus.engine);
+}
+void test_corrections_ASE_inactive_value(void)
+{
+  //test condition: already running while warm
+  currentStatus.coolant = 200;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 255;
+  configPage2.flexEnabled = 0;
+  configPage2.aseTaperTime = 1;
+  aseTaper = 2;
+
+  set_ASE_tables();
+
+  TEST_ASSERT_EQUAL(100, correctionASE());
+}
+void test_corrections_ASE_inactive_flex_value(void)
+{
+  //test condition: already running while warm
+  currentStatus.coolant = 200;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 255;
+  configPage2.flexEnabled = 1;
+  configPage2.aseTaperTime = 1;
+  aseTaper = 2;
+
+  set_ASE_tables();
+  set_flex_tables();
+
+  TEST_ASSERT_EQUAL(100, correctionASE());
+}
+void test_corrections_ASE_active(void)
+{
+  //test condition: cold start
+  currentStatus.coolant = 50;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = 0;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  set_ASE_tables();
+
+  correctionASE();
+
+  TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ASE, currentStatus.engine);
+}
+void test_corrections_ASE_active_value(void)
+{
+  //test condition: cold start
+  currentStatus.coolant = 0;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = 0;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  set_ASE_tables();
+
+  TEST_ASSERT_EQUAL(200, correctionASE());
+}
+void test_corrections_ASE_active_flex_value(void)
+{
+  //test condition: cold start
+  currentStatus.coolant = 0;
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = 1;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+  currentStatus.ethanolPct = 40;
+
+  set_ASE_tables();
+  set_flex_tables();
+
+  TEST_ASSERT_EQUAL(335, correctionASE());
+}
 void test_corrections_ASE(void)
 {
-
+  RUN_TEST(test_corrections_ASE_active);
+  RUN_TEST(test_corrections_ASE_inactive);
+  RUN_TEST(test_corrections_ASE_active_value);
+  RUN_TEST(test_corrections_ASE_inactive_value);
+  RUN_TEST(test_corrections_ASE_active_flex_value);
+  RUN_TEST(test_corrections_ASE_inactive_flex_value);
 }
+
 void test_corrections_floodclear(void)
 {
 
@@ -106,6 +247,38 @@ void test_corrections_closedloop(void)
 
 }
 
+void set_flex_tables()
+{
+  //set flex fuel table
+  ((uint8_t*)flexFuelTable.axisX)[0] = 0;
+  ((uint8_t*)flexFuelTable.axisX)[1] = 20;
+  ((uint8_t*)flexFuelTable.axisX)[2] = 40;
+  ((uint8_t*)flexFuelTable.axisX)[3] = 60;
+  ((uint8_t*)flexFuelTable.axisX)[4] = 85;
+  ((uint8_t*)flexFuelTable.axisX)[5] = 100;
+
+  ((uint8_t*)flexFuelTable.values)[0] = 0;
+  ((uint8_t*)flexFuelTable.values)[1] = 24;
+  ((uint8_t*)flexFuelTable.values)[2] = 47;
+  ((uint8_t*)flexFuelTable.values)[3] = 70;
+  ((uint8_t*)flexFuelTable.values)[4] = 100;
+  ((uint8_t*)flexFuelTable.values)[5] = 110;
+
+  //set flex ignition table
+  ((uint8_t*)flexAdvTable.axisX)[0] = 0;
+  ((uint8_t*)flexAdvTable.axisX)[1] = 20;
+  ((uint8_t*)flexAdvTable.axisX)[2] = 40;
+  ((uint8_t*)flexAdvTable.axisX)[3] = 60;
+  ((uint8_t*)flexAdvTable.axisX)[4] = 85;
+  ((uint8_t*)flexAdvTable.axisX)[5] = 100;
+
+  ((uint8_t*)flexAdvTable.values)[0] = 0;
+  ((uint8_t*)flexAdvTable.values)[1] = 23;
+  ((uint8_t*)flexAdvTable.values)[2] = 46;
+  ((uint8_t*)flexAdvTable.values)[3] = 69;
+  ((uint8_t*)flexAdvTable.values)[4] = 100;
+  ((uint8_t*)flexAdvTable.values)[5] = 120;
+}
 void test_corrections_flex(void)
 {
   TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1
@@ -116,7 +289,10 @@ void test_corrections_flex(void)
   TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
 
   TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
+
+
 }
+
 void test_corrections_bat(void)
 {
 

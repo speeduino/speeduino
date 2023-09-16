@@ -194,6 +194,10 @@ void doUpdates(void)
     configPage2.asePct[1] = configPage2.aeColdTaperMin;
     configPage2.asePct[2] = configPage2.aeColdTaperMin;
     configPage2.asePct[3] = configPage2.aeColdTaperMin;
+    configPage2.asePct2[0] = configPage2.aeColdTaperMin;
+    configPage2.asePct2[1] = configPage2.aeColdTaperMin;
+    configPage2.asePct2[2] = configPage2.aeColdTaperMin;
+    configPage2.asePct2[3] = configPage2.aeColdTaperMin;
     //ASE duration is set to 10s for all coolant values
     configPage2.aseCount[0] = 10;
     configPage2.aseCount[1] = 10;
