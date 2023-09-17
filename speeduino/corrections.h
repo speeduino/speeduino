@@ -11,7 +11,8 @@ void initialiseCorrections(void);
 uint16_t correctionsFuel(void);
 byte correctionWUE(void); //Warmup enrichment
 uint16_t correctionCranking(void); //Cranking enrichment
-byte correctionASE(void); //After Start Enrichment
+uint16_t getASETableValue(void);
+uint16_t correctionASE(void); //After Start Enrichment
 uint16_t correctionAccel(void); //Acceleration Enrichment
 byte correctionFloodClear(void); //Check for flood clear on cranking
 byte correctionAFRClosedLoop(void); //Closed loop AFR adjustment

@@ -30,6 +30,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+#include "secondaryTables.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
@@ -58,6 +59,7 @@ void initialiseCorrections(void)
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  currentStatus.flexCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
@@ -112,8 +114,8 @@ uint16_t correctionsFuel(void)
   currentStatus.baroCorrection = correctionBaro();
   if (currentStatus.baroCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.baroCorrection); }
 
-  currentStatus.flexCorrection = correctionFlex();
-  if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
+  //currentStatus.flexCorrection = correctionFlex(); //<-- Commented out during change to new flex system
+  //if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
 
   currentStatus.fuelTempCorrection = correctionFuelTemp();
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.fuelTempCorrection); }
@@ -148,7 +150,7 @@ static inline byte correctionsFuel_new(void)
   currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
   currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
   currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
+  //currentStatus.flexCorrection = correctionFlex(); numCorrections++; <-- Commented out during change to new flex system
   currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
@@ -162,7 +164,6 @@ static inline byte correctionsFuel_new(void)
                   + currentStatus.batCorrection \
                   + currentStatus.iatCorrection \
                   + currentStatus.baroCorrection \
-                  + currentStatus.flexCorrection \
                   + currentStatus.launchCorrection;
   return (sumCorrections);
 
@@ -219,15 +220,36 @@ uint16_t correctionCranking(void)
   return crankingValue;
 }
 
+/* @brief computes the ASE value, able to blend secondary table for flex fueling
+*  @return the ASE value, now a uint16_t rather than a byte because ethanol may 
+*     require ASE > 255 in extreme cold, according to @pazi88
+*/
+uint16_t getASETableValue()
+{
+  uint16_t ASETableValue;
+  byte ASETableValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled)
+  {
+    uint16_t ASETableValue2 = table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(ASETableValue1), ASETableValue2);
+  }
+  else
+  {
+    ASETableValue = ASETableValue1;
+  }
+  
+  return ASETableValue;
+}
+
 /** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
- * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
+ * @return uint16_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */   
-byte correctionASE(void)
+uint16_t correctionASE(void)
 {
-  int16_t ASEValue = currentStatus.ASEValue;
+  uint16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
@@ -238,7 +260,7 @@ byte correctionASE(void)
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        ASEValue = 100 + getASETableValue();
         aseTaper = 0;
       }
       else
@@ -246,7 +268,7 @@ byte correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASETableValue(), 0);
           aseTaper++;
         }
         else
@@ -257,9 +279,9 @@ byte correctionASE(void)
       }
       
       //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
-      if(ASEValue < 0) { ASEValue = 0; }
-      ASEValue = (byte)ASEValue;
+      if(!configPage2.flexEnabled && ASEValue > 255) { ASEValue = 255; }
+      else if (ASEValue > 1200) { ASEValue = 1200; } //arbitrary limit, not sure what to make this
+      else if(ASEValue < 0) { ASEValue = 0; }
     }
   }
   else
@@ -691,8 +713,8 @@ byte correctionAFRClosedLoop(void)
 int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
-  advance = correctionFlexTiming(base_advance);
-  advance = correctionWMITiming(advance);
+  //advance = correctionFlexTiming(base_advance); <-- Commented out during change to new flex system
+  advance = correctionWMITiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
   advance = correctionIdleAdvance(advance);

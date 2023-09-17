@@ -141,6 +141,11 @@ void initialiseAll(void)
     ASETable.xSize = 4;
     ASETable.values = configPage2.asePct;
     ASETable.axisX = configPage2.aseBins;
+    ASETable2.valueSize = SIZE_BYTE * 2;
+    ASETable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    ASETable2.xSize = 4;
+    ASETable2.values = configPage2.asePct2;
+    ASETable2.axisX = configPage2.aseBins;
     ASECountTable.valueSize = SIZE_BYTE;
     ASECountTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASECountTable.xSize = 4;
@@ -211,12 +216,12 @@ void initialiseAll(void)
     flexFuelTable.valueSize = SIZE_BYTE;
     flexFuelTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     flexFuelTable.xSize = 6;
-    flexFuelTable.values = configPage10.flexFuelAdj;
+    flexFuelTable.values = configPage10.flexFuelBias;
     flexFuelTable.axisX = configPage10.flexFuelBins;
     flexAdvTable.valueSize = SIZE_BYTE;
     flexAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     flexAdvTable.xSize = 6;
-    flexAdvTable.values = configPage10.flexAdvAdj;
+    flexAdvTable.values = configPage10.flexAdvBias;
     flexAdvTable.axisX = configPage10.flexAdvBins;
     flexBoostTable.valueSize = SIZE_INT;
     flexBoostTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins (NOTE THIS IS DIFFERENT TO THE VALUES!!)

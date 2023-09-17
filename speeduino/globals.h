@@ -344,12 +344,14 @@
 #define FUEL2_MODE_ADD      2
 #define FUEL2_MODE_CONDITIONAL_SWITCH   3
 #define FUEL2_MODE_INPUT_SWITCH 4
+#define FUEL2_MODE_FLEX 5
 
 #define SPARK2_MODE_OFF      0
 #define SPARK2_MODE_MULTIPLY 1
 #define SPARK2_MODE_ADD      2
 #define SPARK2_MODE_CONDITIONAL_SWITCH   3
 #define SPARK2_MODE_INPUT_SWITCH 4
+#define SPARK2_MODE_FLEX 5
 
 #define FUEL2_CONDITION_RPM 0
 #define FUEL2_CONDITION_MAP 1
@@ -476,6 +478,7 @@ extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
+extern struct table2D ASETable2; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
@@ -841,6 +844,7 @@ struct config2 {
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
+  uint16_t asePct2[4];           ///< Afterstart enrichment values (%)
   byte aseCount[4];         ///< Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4];          ///< Afterstart enrichment temperatures (x-axis) for (target) enrichment values
   byte primePulse[4];//Priming pulsewidth values (mS, copied to @ref PrimingPulseTable)
@@ -1208,9 +1212,9 @@ struct config10 {
   uint8_t flexBoostBins[6]; //Bytes 33-38
   int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
+  uint8_t flexFuelBias[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
   uint8_t flexAdvBins[6]; //Bytes 63-68
-  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
+  uint8_t flexAdvBias[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
                             //Bytes 69-74
 
