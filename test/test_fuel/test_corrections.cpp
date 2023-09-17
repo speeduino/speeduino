@@ -29,6 +29,7 @@ void test_corrections_WUE_active(void)
 {
   //Check for WUE being active
   currentStatus.coolant = 0;
+  configPage2.flexEnabled = false;
   ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
@@ -38,6 +39,7 @@ void test_corrections_WUE_inactive(void)
 {
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
+  configPage2.flexEnabled = false;
   ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
   correctionWUE();
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
@@ -47,6 +49,7 @@ void test_corrections_WUE_inactive_value(void)
 {
   //Check for WUE being set to the final row of the WUE curve if the coolant is above the max WUE temp
   currentStatus.coolant = 200;
+  configPage2.flexEnabled = false;
   ((uint8_t*)WUETable.axisX)[9] = 100;
   ((uint8_t*)WUETable.values)[9] = 123; //Use a value other than 100 here to ensure we are using the non-default value
 
@@ -60,6 +63,7 @@ void test_corrections_WUE_active_value(void)
 {
   //Check for WUE being made active and returning a correct interpolated value
   currentStatus.coolant = 80;
+  configPage2.flexEnabled = false;
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   ((uint8_t*)WUETable.axisX)[0] = 0;
   ((uint8_t*)WUETable.axisX)[1] = 0;
@@ -82,12 +86,57 @@ void test_corrections_WUE_active_value(void)
   TEST_ASSERT_EQUAL(125, correctionWUE() );
 }
 
+void test_corrections_WUE_active_flex_value(void)
+{
+  //Check for WUE being made active and returning a correct interpolated value
+  currentStatus.coolant = 80;
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+  //Set some fake values in the table axis. Target value will fall between points 6 and 7
+  ((uint8_t*)WUETable.axisX)[0] = 0;
+  ((uint8_t*)WUETable.axisX)[1] = 0;
+  ((uint8_t*)WUETable.axisX)[2] = 0;
+  ((uint8_t*)WUETable.axisX)[3] = 0;
+  ((uint8_t*)WUETable.axisX)[4] = 0;
+  ((uint8_t*)WUETable.axisX)[5] = 0;
+  ((uint8_t*)WUETable.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable.axisX)[0] = 0;
+  
+  ((uint8_t*)WUETable2.axisX)[1] = 0;
+  ((uint8_t*)WUETable2.axisX)[2] = 0;
+  ((uint8_t*)WUETable2.axisX)[3] = 0;
+  ((uint8_t*)WUETable2.axisX)[4] = 0;
+  ((uint8_t*)WUETable2.axisX)[5] = 0;
+  ((uint8_t*)WUETable2.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable2.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable2.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)WUETable2.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+
+  ((uint8_t*)WUETable.values)[6] = 120;
+  ((uint8_t*)WUETable.values)[7] = 130;
+  ((uint8_t*)WUETable2.values)[6] = 200;
+  ((uint8_t*)WUETable2.values)[7] = 240;
+
+  set_flex_tables();
+
+  //Force invalidate the cache
+  WUETable.cacheTime = currentStatus.secl - 1;
+  WUETable2.cacheTime = currentStatus.secl - 1;
+
+  //Value should be (1 - 0.7)125 + (0.7)220 = ~192
+  TEST_ASSERT_EQUAL(192, correctionWUE() );
+}
+
 void test_corrections_WUE(void)
 {
   RUN_TEST(test_corrections_WUE_active);
   RUN_TEST(test_corrections_WUE_inactive);
   RUN_TEST(test_corrections_WUE_active_value);
   RUN_TEST(test_corrections_WUE_inactive_value);
+  RUN_TEST(test_corrections_WUE_active_flex_value);
 }
 void test_corrections_cranking(void)
 {
@@ -106,6 +155,38 @@ void test_corrections_closedloop(void)
 
 }
 
+void set_flex_tables()
+{
+  //set flex fuel table
+  ((uint8_t*)flexFuelTable.axisX)[0] = 0;
+  ((uint8_t*)flexFuelTable.axisX)[1] = 20;
+  ((uint8_t*)flexFuelTable.axisX)[2] = 40;
+  ((uint8_t*)flexFuelTable.axisX)[3] = 60;
+  ((uint8_t*)flexFuelTable.axisX)[4] = 85;
+  ((uint8_t*)flexFuelTable.axisX)[5] = 100;
+
+  ((uint8_t*)flexFuelTable.values)[0] = 0;
+  ((uint8_t*)flexFuelTable.values)[1] = 24;
+  ((uint8_t*)flexFuelTable.values)[2] = 47;
+  ((uint8_t*)flexFuelTable.values)[3] = 70;
+  ((uint8_t*)flexFuelTable.values)[4] = 100;
+  ((uint8_t*)flexFuelTable.values)[5] = 110;
+
+  //set flex ignition table
+  ((uint8_t*)flexAdvTable.axisX)[0] = 0;
+  ((uint8_t*)flexAdvTable.axisX)[1] = 20;
+  ((uint8_t*)flexAdvTable.axisX)[2] = 40;
+  ((uint8_t*)flexAdvTable.axisX)[3] = 60;
+  ((uint8_t*)flexAdvTable.axisX)[4] = 85;
+  ((uint8_t*)flexAdvTable.axisX)[5] = 100;
+
+  ((uint8_t*)flexAdvTable.values)[0] = 0;
+  ((uint8_t*)flexAdvTable.values)[1] = 23;
+  ((uint8_t*)flexAdvTable.values)[2] = 46;
+  ((uint8_t*)flexAdvTable.values)[3] = 69;
+  ((uint8_t*)flexAdvTable.values)[4] = 100;
+  ((uint8_t*)flexAdvTable.values)[5] = 120;
+}
 void test_corrections_flex(void)
 {
   TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1

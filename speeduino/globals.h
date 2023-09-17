@@ -477,6 +477,7 @@ extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D WUETable2; //10 bin Flex Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
@@ -754,6 +755,7 @@ struct config2 {
   byte aeApplyMode : 1; ///< Acceleration enrichment calc mode: 0 = Multiply | 1 = Add (AE_MODE_ADDER)
   byte multiplyMAP : 2; ///< MAP value processing: 0 = off, 1 = div by currentStatus.baro, 2 = div by 100 (to gain usable value)
   byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
+  byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2)
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
   byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)

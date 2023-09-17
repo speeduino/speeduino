@@ -29,6 +29,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
+#include "secondaryTables.h"
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
@@ -168,6 +169,27 @@ static inline byte correctionsFuel_new(void)
 
 }
 
+/**
+* @brief fetches WUE value if flex disabled, calculates blended table value if flex enabled
+* @return WUE value 
+*/
+byte getWUEValue(void)
+{
+  byte WUEValue;
+  byte WUETableValue1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled)
+  {
+    byte WUETableValue2 = table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    WUEValue = biasedAverage(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), WUETableValue1, WUETableValue2);
+  }
+  else
+  {
+    WUEValue = WUETableValue1;
+  }
+
+  return WUEValue;
+}
+
 /** Warm Up Enrichment (WUE) corrections.
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
@@ -185,7 +207,7 @@ byte correctionWUE(void)
   else
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    WUEValue = getWUEValue();
   }
 
   return WUEValue;
