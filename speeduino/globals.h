@@ -478,7 +478,6 @@ extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
-extern struct table2D ASETable2; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
@@ -844,7 +843,6 @@ struct config2 {
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
-  uint16_t asePct2[4];           ///< Afterstart enrichment values (%)
   byte aseCount[4];         ///< Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4];          ///< Afterstart enrichment temperatures (x-axis) for (target) enrichment values
   byte primePulse[4];//Priming pulsewidth values (mS, copied to @ref PrimingPulseTable)

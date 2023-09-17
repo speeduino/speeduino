@@ -30,7 +30,6 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
-#include "secondaryTables.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
@@ -220,36 +219,15 @@ uint16_t correctionCranking(void)
   return crankingValue;
 }
 
-/* @brief computes the ASE value, able to blend secondary table for flex fueling
-*  @return the ASE value, now a uint16_t rather than a byte because ethanol may 
-*     require ASE > 255 in extreme cold, according to @pazi88
-*/
-uint16_t getASETableValue()
-{
-  uint16_t ASETableValue;
-  byte ASETableValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-  if (configPage2.flexEnabled)
-  {
-    uint16_t ASETableValue2 = table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(ASETableValue1), ASETableValue2);
-  }
-  else
-  {
-    ASETableValue = ASETableValue1;
-  }
-  
-  return ASETableValue;
-}
-
 /** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
- * @return uint16_t The After Start Enrichment modifier as a %. 100% = No modification. 
+ * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */   
-uint16_t correctionASE(void)
+byte correctionASE(void)
 {
-  uint16_t ASEValue = currentStatus.ASEValue;
+  int16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
@@ -260,7 +238,7 @@ uint16_t correctionASE(void)
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + getASETableValue();
+        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
         aseTaper = 0;
       }
       else
@@ -268,7 +246,7 @@ uint16_t correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASETableValue(), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
           aseTaper++;
         }
         else
@@ -279,9 +257,9 @@ uint16_t correctionASE(void)
       }
       
       //Safety checks
-      if(!configPage2.flexEnabled && ASEValue > 255) { ASEValue = 255; }
-      else if (ASEValue > 1200) { ASEValue = 1200; } //arbitrary limit, not sure what to make this
-      else if(ASEValue < 0) { ASEValue = 0; }
+      if(ASEValue > 255) { ASEValue = 255; }
+      if(ASEValue < 0) { ASEValue = 0; }
+      ASEValue = (byte)ASEValue;
     }
   }
   else
