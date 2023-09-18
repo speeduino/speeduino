@@ -481,6 +481,7 @@ extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
+extern struct table2D crankingEnrichTable2; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
@@ -1467,9 +1468,14 @@ struct config15 {
 
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
+
+  //Secondary corrections tables
+  //Bytes 106-124
+  byte crankingEnrichValues2[4]; //Bytes 4-7
   
   //Bytes 98-255
   byte Unused15_98_255[150];
+  
 
 #if defined(CORE_AVR)
   };

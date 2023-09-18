@@ -30,6 +30,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "maths.h"
 #include "sensors.h"
 #include "src/PID_v1/PID_v1.h"
+#include "secondaryTables.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
@@ -191,6 +192,23 @@ byte correctionWUE(void)
   return WUEValue;
 }
 
+uint16_t getCrankingValue(void)
+{
+  uint16_t crankingValue;
+  uint16_t crankingValue1 = 5 * table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 5 to get range of 0 - 1275%
+  if (configPage2.flexEnabled)
+  {
+    uint16_t crankingValue2 = 10 * table2D_getValue(&crankingEnrichTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550%
+    crankingValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), crankingValue1, crankingValue2);
+  }
+  else
+  {
+    crankingValue = crankingValue1;
+  }
+
+  return crankingValue;
+}
+
 /** Cranking Enrichment corrections.
 Additional fuel % to be added when the engine is cranking
 */
@@ -200,16 +218,14 @@ uint16_t correctionCranking(void)
   //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingValue = getCrankingValue();
     crankingEnrichTaper = 0;
   }
   
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
   else if ( crankingEnrichTaper < configPage10.crankingEnrichTaper )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingValue = getCrankingValue();
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
