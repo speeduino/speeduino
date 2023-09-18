@@ -718,7 +718,7 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  byte ASEValue;
+  uint16_t ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
@@ -844,7 +844,6 @@ struct config2 {
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
   byte asePct[4];           ///< Afterstart enrichment values (%)
-  uint16_t asePct2[4];           ///< Afterstart enrichment values (%)
   byte aseCount[4];         ///< Afterstart enrichment cycles. This is the number of ignition cycles that the afterstart enrichment % lasts for
   byte aseBins[4];          ///< Afterstart enrichment temperatures (x-axis) for (target) enrichment values
   byte primePulse[4];//Priming pulsewidth values (mS, copied to @ref PrimingPulseTable)
@@ -1467,9 +1466,13 @@ struct config15 {
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
 
+  //Bytes 98-105
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
-  
+
+  //Bytes 106-123
+  uint16_t asePct2[4];           ///< Afterstart enrichment values 2 (%)
+
   //Bytes 98-255
   byte Unused15_98_255[150];
 

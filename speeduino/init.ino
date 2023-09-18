@@ -144,7 +144,7 @@ void initialiseAll(void)
     ASETable2.valueSize = SIZE_BYTE * 2;
     ASETable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASETable2.xSize = 4;
-    ASETable2.values = configPage2.asePct2;
+    ASETable2.values = configPage15.asePct2;
     ASETable2.axisX = configPage2.aseBins;
     ASECountTable.valueSize = SIZE_BYTE;
     ASECountTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins

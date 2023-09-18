@@ -230,7 +230,7 @@ uint16_t getASETableValue()
   byte ASETableValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if (configPage2.flexEnabled)
   {
-    uint16_t ASETableValue2 = table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    uint16_t ASETableValue2 = 5 * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
     ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(ASETableValue1), ASETableValue2);
   }
   else
