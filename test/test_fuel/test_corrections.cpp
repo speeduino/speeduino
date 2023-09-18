@@ -126,10 +126,10 @@ void set_ASE_tables(void)
   ((uint8_t*)ASETable2.axisX)[2] = 120;
   ((uint8_t*)ASETable2.axisX)[3] = 180;
 
-  ((uint8_t*)ASETable2.values)[0] = 600;
-  ((uint8_t*)ASETable2.values)[1] = 400;
-  ((uint8_t*)ASETable2.values)[2] = 50;
-  ((uint8_t*)ASETable2.values)[3] = 20;
+  ((uint8_t*)ASETable2.values)[0] = 600/5;
+  ((uint8_t*)ASETable2.values)[1] = 400/5;
+  ((uint8_t*)ASETable2.values)[2] = 50/5;
+  ((uint8_t*)ASETable2.values)[3] = 20/5;
 }
 void test_corrections_ASE_inactive(void)
 {
