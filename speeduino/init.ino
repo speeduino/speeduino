@@ -139,7 +139,7 @@ void initialiseAll(void)
     WUETable2.valueSize = SIZE_BYTE; //Set this table to use byte values
     WUETable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     WUETable2.xSize = 10;
-    WUETable2.values = configPage2.wueValues2;
+    WUETable2.values = configPage15.wueValues2;
     WUETable2.axisX = configPage4.wueBins;
     ASETable.valueSize = SIZE_BYTE;
     ASETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
