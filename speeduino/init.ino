@@ -151,6 +151,11 @@ void initialiseAll(void)
     PrimingPulseTable.xSize = 4;
     PrimingPulseTable.values = configPage2.primePulse;
     PrimingPulseTable.axisX = configPage2.primeBins;
+    PrimingPulseTable2.valueSize = SIZE_BYTE;
+    PrimingPulseTable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    PrimingPulseTable2.xSize = 4;
+    PrimingPulseTable2.values = configPage15.primePulse2;
+    PrimingPulseTable2.axisX = configPage2.primeBins;
     crankingEnrichTable.valueSize = SIZE_BYTE;
     crankingEnrichTable.axisSize = SIZE_BYTE;
     crankingEnrichTable.xSize = 4;

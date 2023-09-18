@@ -480,6 +480,7 @@ extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
+extern struct table2D PrimingPulseTable2; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
@@ -1468,6 +1469,9 @@ struct config15 {
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
+  //Bytes 106-127
+  byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
+
   //Bytes 98-255
   byte Unused15_98_255[150];
 
