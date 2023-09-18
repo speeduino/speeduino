@@ -946,7 +946,18 @@ void processSerialCommand(void)
             SDcurrentDirChunk = word(serialPayload[7], serialPayload[8]);
             sendReturnCodeMsg(SERIAL_RC_OK);
           }
-          else if((SD_arg1 == SD_WRITE_SEC_ARG1) && (SD_arg2 == SD_WRITE_SEC_ARG2))
+          else if((SD_arg1 == SD_WRITE_READ_SEC_ARG1) && (SD_arg2 == SD_WRITE_READ_SEC_ARG2))
+          {
+            //Read sector Init? Unsure what this is meant to do however it is sent at the beginning of a Card Format request and requires an OK response
+            //Provided the sector being requested is x0 x0 x0 x0, we treat this as a SD Card format request
+            if( (serialPayload[7] == 0) && (serialPayload[8] == 0) && (serialPayload[9] == 0) && (serialPayload[10] == 0) )
+            {
+              //SD Card format request
+              formatExFat();
+            }
+            sendReturnCodeMsg(SERIAL_RC_OK);
+          }
+          else if((SD_arg1 == SD_WRITE_WRITE_SEC_ARG1) && (SD_arg2 == SD_WRITE_WRITE_SEC_ARG2))
           {
             //SD write sector command
           }
