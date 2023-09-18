@@ -917,7 +917,7 @@ extern void beginInjectorPriming(void)
   unsigned long primingValue = getPrimingPulse();
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
-    primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+    primingValue = primingValue * 1000 / 2; //value in TS is in mS and scaled by 0.5 when stored. Need to convert to uS then divide by 2 to account for scale
     if ( maxInjOutputs >= 1 ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
     if ( maxInjOutputs >= 2 ) { setFuelSchedule2(100, primingValue); }
