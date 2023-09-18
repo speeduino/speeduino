@@ -117,8 +117,8 @@ void test_corrections_WUE_active_flex_value(void)
 
   ((uint8_t*)WUETable.values)[6] = 120;
   ((uint8_t*)WUETable.values)[7] = 130;
-  ((uint8_t*)WUETable2.values)[6] = 200;
-  ((uint8_t*)WUETable2.values)[7] = 240;
+  ((uint8_t*)WUETable2.values)[6] = 200/10;
+  ((uint8_t*)WUETable2.values)[7] = 240/10;
 
   set_flex_tables();
 
