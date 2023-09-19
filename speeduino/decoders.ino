@@ -39,7 +39,6 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "crankMaths.h"
 #include "timers.h"
-#include "schedule_calcs.h"
 
 void (*triggerHandler)(void); ///Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondaryHandler)(void); ///Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -360,50 +359,50 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   {
     if ( (currentTooth == ignition1EndTooth) )
     {
-      if( (ignitionSchedule1.Status == RUNNING) ) { SET_COMPARE(IGN1_COMPARE, IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition1EndAngle - crankAngle) ) ) ); ignitionSchedule1.endScheduleSetByDecoder = true; }
+      if(ignitionSchedule1.Status == RUNNING){refreshRunningIgnitionSchedule(&ignitionSchedule1,crankAngle,ignition1EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule1,crankAngle,ignition1EndAngle);}
     }
     else if ( (currentTooth == ignition2EndTooth) )
     {
-      if( (ignitionSchedule2.Status == RUNNING) ) { SET_COMPARE(IGN2_COMPARE, IGN2_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition2EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule2.endCompare = IGN2_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition2EndAngle - crankAngle) ) ) ); ignitionSchedule2.endScheduleSetByDecoder = true; }
+      if(ignitionSchedule1.Status == RUNNING){refreshRunningIgnitionSchedule(&ignitionSchedule2,crankAngle,ignition2EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule2,crankAngle,ignition2EndAngle);}
     }
     else if ( (currentTooth == ignition3EndTooth) )
     {
-      if( (ignitionSchedule3.Status == RUNNING) ) { SET_COMPARE(IGN3_COMPARE, IGN3_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition3EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule3.endCompare = IGN3_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition3EndAngle - crankAngle) ) ) ); ignitionSchedule3.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule3.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule3,crankAngle,ignition3EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule3,crankAngle,ignition3EndAngle);}
     }
     else if ( (currentTooth == ignition4EndTooth) )
     {
-      if( (ignitionSchedule4.Status == RUNNING) ) { SET_COMPARE(IGN4_COMPARE, IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule4.endCompare = IGN4_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition4EndAngle - crankAngle) ) ) ); ignitionSchedule4.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule4.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule4,crankAngle,ignition4EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule4,crankAngle,ignition4EndAngle);}
     }
 #if IGN_CHANNELS >= 5
     else if ( (currentTooth == ignition5EndTooth) )
     {
-      if( (ignitionSchedule5.Status == RUNNING) ) { SET_COMPARE(IGN5_COMPARE, IGN5_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition5EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule5.endCompare = IGN5_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition5EndAngle - crankAngle) ) ) ); ignitionSchedule5.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule5.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule5,crankAngle,ignition5EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule5,crankAngle,ignition5EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 6
     else if ( (currentTooth == ignition6EndTooth) )
     {
-      if( (ignitionSchedule6.Status == RUNNING) ) { SET_COMPARE(IGN6_COMPARE, IGN6_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition6EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule6.endCompare = IGN6_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition6EndAngle - crankAngle) ) ) ); ignitionSchedule6.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule6.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule6,crankAngle,ignition6EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule6,crankAngle,ignition6EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 7
     else if ( (currentTooth == ignition7EndTooth) )
     {
-      if( (ignitionSchedule7.Status == RUNNING) ) { SET_COMPARE(IGN7_COMPARE, IGN7_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition7EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule7.endCompare = IGN7_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition7EndAngle - crankAngle) ) ) ); ignitionSchedule7.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule7.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule7,crankAngle,ignition7EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule7,crankAngle,ignition7EndAngle);}
     }
 #endif
 #if IGN_CHANNELS >= 8
     else if ( (currentTooth == ignition8EndTooth) )
     {
-      if( (ignitionSchedule8.Status == RUNNING) ) { SET_COMPARE(IGN8_COMPARE, IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ) ); }
-      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { ignitionSchedule8.endCompare = IGN8_COUNTER + uS_TO_TIMER_COMPARE( fastDegreesToUS( ignitionLimits( (ignition8EndAngle - crankAngle) ) ) ); ignitionSchedule8.endScheduleSetByDecoder = true; }
+      if( (ignitionSchedule8.Status == RUNNING) ) {refreshRunningIgnitionSchedule(&ignitionSchedule8,crankAngle,ignition8EndAngle);}
+      else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) {refreshIgnitionSchedule(&ignitionSchedule8,crankAngle,ignition8EndAngle);}
     }
 #endif
   }
@@ -1063,13 +1062,12 @@ void triggerPri_BasicDistributor(void)
 
     if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
     {
-      endCoil1Charge();
-      endCoil2Charge();
-      endCoil3Charge();
-      endCoil4Charge();
+      setIgnitionSchedule(&ignitionSchedule1);
+      setIgnitionSchedule(&ignitionSchedule2);
+      setIgnitionSchedule(&ignitionSchedule3);
+      setIgnitionSchedule(&ignitionSchedule4);
     }
-
-    if(configPage2.perToothIgn == true)
+    else if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits((crankAngle));
@@ -1433,14 +1431,18 @@ void triggerPri_4G63(void)
         if(configPage2.nCylinders == 4)
         {
           //This operates in forced wasted spark mode during cranking to align with crank teeth
-          if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
-          else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
+          if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) {
+            setIgnitionSchedule(&ignitionSchedule1);
+            setIgnitionSchedule(&ignitionSchedule3);
+            }
+          else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) {
+            setIgnitionSchedule(&ignitionSchedule2); setIgnitionSchedule(&ignitionSchedule4); }
         }
         else if(configPage2.nCylinders == 6)
         {
-          if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoil1Charge(); }
-          else if( (toothCurrentCount == 3) || (toothCurrentCount == 9) ) { endCoil2Charge(); }
-          else if( (toothCurrentCount == 5) || (toothCurrentCount == 11) ) { endCoil3Charge(); }
+          if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) {setIgnitionSchedule(&ignitionSchedule1); }
+          else if( (toothCurrentCount == 3) || (toothCurrentCount == 9) ) {setIgnitionSchedule(&ignitionSchedule2); }
+          else if( (toothCurrentCount == 5) || (toothCurrentCount == 11) ) {setIgnitionSchedule(&ignitionSchedule3); }
         }
       }
 
@@ -2360,10 +2362,10 @@ void triggerPri_Miata9905(void)
 
     //if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
     if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-    {
-      if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoil1Charge(); endCoil3Charge(); }
-      else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { endCoil2Charge(); endCoil4Charge(); }
-    }
+      {
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { setIgnitionSchedule(&ignitionSchedule1); setIgnitionSchedule(&ignitionSchedule3); }
+        else if( (toothCurrentCount == 3) || (toothCurrentCount == 7) ) { setIgnitionSchedule(&ignitionSchedule2); setIgnitionSchedule(&ignitionSchedule4); }
+      }
     secondaryToothCount = 0;
   } //Trigger filter
 
@@ -2559,8 +2561,8 @@ void triggerPri_MazdaAU(void)
       // Locked cranking timing is available, fixed at 12* BTDC
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock )
       {
-        if( toothCurrentCount == 1 ) { endCoil1Charge(); }
-        else if( toothCurrentCount == 3 ) { endCoil2Charge(); }
+        if( toothCurrentCount == 1 ) { setIgnitionSchedule(&ignitionSchedule1); }
+        else if( toothCurrentCount == 3 ) { setIgnitionSchedule(&ignitionSchedule2); }
       }
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
@@ -3313,10 +3315,10 @@ void triggerPri_Daihatsu(void)
       if ( configPage4.ignCranklock && BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
       {
         //This locks the cranking timing to 0 degrees BTDC (All the triggers allow for)
-        if(toothCurrentCount == 1) { endCoil1Charge(); }
-        else if(toothCurrentCount == 2) { endCoil2Charge(); }
-        else if(toothCurrentCount == 3) { endCoil3Charge(); }
-        else if(toothCurrentCount == 4) { endCoil4Charge(); }
+        if(toothCurrentCount == 1) { setIgnitionSchedule(&ignitionSchedule1); }
+        else if(toothCurrentCount == 2) { setIgnitionSchedule(&ignitionSchedule2); }
+        else if(toothCurrentCount == 3) { setIgnitionSchedule(&ignitionSchedule3); }
+        else if(toothCurrentCount == 4) { setIgnitionSchedule(&ignitionSchedule4); }
       }
     }
     else //NO SYNC

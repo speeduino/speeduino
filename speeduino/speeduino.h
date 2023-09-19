@@ -23,6 +23,12 @@ byte getAdvance1(void);
 void calculateStaging(uint32_t);
 void checkLaunchAndFlatShift();
 
+uint16_t calculateInjectorEndAngle(int16_t injChannelDegrees);
+int calculateIgnitionAngle(int channelIgnDegrees);
+void calculateIgnitionAngle3(int rotarySplitDegrees);
+void calculateIgnitionAngle4(int rotarySplitDegrees);
+void calculateIgnitionAngles();
+
 extern uint16_t req_fuel_uS; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
 

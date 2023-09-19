@@ -1,176 +1,131 @@
 
 #include <Arduino.h>
 #include <unity.h>
-
+#include "globals.h"
+#include "crankMaths.h"
 #include "scheduler.h"
+#include "scheduledIO.h"
 
-#define TIMEOUT 1000
+#define TESTCRANKANGLE 0
 #define DURATION 1000
 
-static void emptyCallback(void) {  }
+struct crankmaths_rev_testdata {
+  uint16_t rpm;
+  unsigned long revolutionTime;
+  int16_t angle;
+  unsigned long expected;  
+}static *timeout_testdata_current;
 
-void test_status_off_to_pending_inj1(void)
+static Schedule *targetSchedule;
+static void startCallback(void) { }
+static void endCallback(void) {}
+
+//test for ignition schedule reaching 'PENDING' state after activation
+void test_off_to_pending_ign(void)
 {
+    crankmaths_rev_testdata *testdata = timeout_testdata_current;
+    revolutionTime = testdata->revolutionTime;
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule1.Status);
+    targetSchedule->StartFunction=startCallback;
+    targetSchedule->EndFunction =endCallback;
+    setIgnitionSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
+    if(MAX_TIMER_PERIOD>testdata->expected){
+        TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
-
-void test_status_off_to_pending_inj2(void)
+//test for fuel injection schedule reaching 'PENDING' state after activation
+void test_off_to_pending_inj(void)
 {
+    crankmaths_rev_testdata *testdata = timeout_testdata_current;
+    revolutionTime = testdata->revolutionTime;
+    timePerDegree=revolutionTime/360; //fuelschedules use timePerDegree, lets see if it passes the accuracy test!
     initialiseSchedulers();
-    setFuelSchedule2(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule2.Status);
+    targetSchedule->StartFunction=startCallback;
+    targetSchedule->EndFunction =endCallback;
+    setFuelSchedule(targetSchedule, TESTCRANKANGLE, TESTCRANKANGLE+testdata->angle, DURATION);
+    //Schedule should reach pending state only when following conditions are met:
+    if(TESTCRANKANGLE < (TESTCRANKANGLE+testdata->angle)){
+        TEST_IGNORE_MESSAGE("Not applicable"); //Do not test here at the moment the case when calculation goes into the next cycle
+    }
+    else if((MAX_TIMER_PERIOD > testdata->expected) && (testdata->expected > (INJECTION_REFRESH_TRESHOLD+DURATION)))
+    {
+        TEST_ASSERT_EQUAL(PENDING, targetSchedule->Status);
+    }
+    else{
+        TEST_ASSERT_EQUAL(ScheduleStatus::OFF, targetSchedule->Status);
+    }
 }
-
-void test_status_off_to_pending_inj3(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule3(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule3.Status);
-}
-
-void test_status_off_to_pending_inj4(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule4(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule4.Status);
-}
-
-#if INJ_CHANNELS >= 5
-void test_status_off_to_pending_inj5(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule5(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule5.Status);
-}
-#endif
-
-#if INJ_CHANNELS >= 6
-void test_status_off_to_pending_inj6(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule6(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule6.Status);
-}
-#endif
-
-#if INJ_CHANNELS >= 7
-void test_status_off_to_pending_inj7(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule7(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule7.Status);
-}
-#endif
-
-#if INJ_CHANNELS >= 8
-void test_status_off_to_pending_inj8(void)
-{
-    initialiseSchedulers();
-    setFuelSchedule8(TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(PENDING, fuelSchedule8.Status);
-}
-#endif
-
-
-void test_status_off_to_pending_ign1(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule1.Status);
-}
-
-void test_status_off_to_pending_ign2(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule2.Status);
-}
-
-void test_status_off_to_pending_ign3(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule3.Status);
-}
-
-void test_status_off_to_pending_ign4(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule4.Status);
-}
-
-#if IGN_CHANNELS >= 5
-void test_status_off_to_pending_ign5(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule5.Status);
-}
-#endif
-
-#if IGN_CHANNELS >= 6
-void test_status_off_to_pending_ign6(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule6.Status);
-}
-#endif
-
-#if IGN_CHANNELS >= 7
-void test_status_off_to_pending_ign7(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule7.Status);
-}
-#endif
-
-#if IGN_CHANNELS >= 8
-void test_status_off_to_pending_ign8(void)
-{
-    initialiseSchedulers();
-    setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
-    TEST_ASSERT_EQUAL(PENDING, ignitionSchedule8.Status);
-}
-#endif
 
 void test_status_off_to_pending(void)
 {
-    RUN_TEST(test_status_off_to_pending_inj1);
-    RUN_TEST(test_status_off_to_pending_inj2);
-    RUN_TEST(test_status_off_to_pending_inj3);
-    RUN_TEST(test_status_off_to_pending_inj4);
-#if INJ_CHANNELS >= 5
-    RUN_TEST(test_status_off_to_pending_inj5);
-#endif
-#if INJ_CHANNELS >= 6
-    RUN_TEST(test_status_off_to_pending_inj6);
-#endif
-#if INJ_CHANNELS >= 7
-    RUN_TEST(test_status_off_to_pending_inj7);
-#endif
-#if INJ_CHANNELS >= 8
-    RUN_TEST(test_status_off_to_pending_inj8);
-#endif
+  const byte testNameLength = 200;
+  char testName[testNameLength];
+    uint8_t i;  
 
-    RUN_TEST(test_status_off_to_pending_ign1);
-    RUN_TEST(test_status_off_to_pending_ign2);
-    RUN_TEST(test_status_off_to_pending_ign3);
-    RUN_TEST(test_status_off_to_pending_ign4);
-#if IGN_CHANNELS >= 5    
-    RUN_TEST(test_status_off_to_pending_ign5);
-#endif
-#if IGN_CHANNELS >= 6
-    RUN_TEST(test_status_off_to_pending_ign6);
-#endif
-#if IGN_CHANNELS >= 7
-    RUN_TEST(test_status_off_to_pending_ign7);
-#endif
-#if IGN_CHANNELS >= 8
-    RUN_TEST(test_status_off_to_pending_ign8);
-#endif
+  const crankmaths_rev_testdata crankmaths_rev_testdatas[] = {
+    { .rpm = 50,    .revolutionTime = 1200000, .angle = 1,   .expected = 3333 },//3333,3333
+    { .rpm = 50,    .revolutionTime = 1200000, .angle = 25,  .expected = 83333 }, // 83333,3333
+    { .rpm = 50,    .revolutionTime = 1200000, .angle = 75, .expected = 250000 },//max timing is 262140uS for schedules, longer times do not activate the scheduler!
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 0,   .expected = 48000 },
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 25,  .expected = 1666 }, // 1666,6666
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 720, .expected = 48000 },
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 0,   .expected = 6000 },
+    //{ .rpm = 20000, .revolutionTime = 3000,    .angle = 25,  .expected = 208 }, // 208,3333 //everything that is under DURATION+IGNITION_REFRESH_THRESHOLD will fail!
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 180,  .expected = 1500 },
+    { .rpm = 20000, .revolutionTime = 3000,    .angle = 720, .expected = 6000 }
+  };
+    CRANK_ANGLE_MAX_IGN=720;
+    for(i=1;i<=IGN_CHANNELS;i++){
+        switch(i){
+            case 1: targetSchedule=&ignitionSchedule1;break;
+            case 2: targetSchedule=&ignitionSchedule2;break;
+            case 3: targetSchedule=&ignitionSchedule3;break;
+            case 4: targetSchedule=&ignitionSchedule4;break;
+            case 5: targetSchedule=&ignitionSchedule5;break;
+            #if IGN_CHANNELS >= 6
+            case 6: targetSchedule=&ignitionSchedule6;break;
+            #if IGN_CHANNELS >= 7
+            case 7: targetSchedule=&ignitionSchedule7;break;
+            #if IGN_CHANNELS >= 8
+            case 8: targetSchedule=&ignitionSchedule8;break;
+            #endif
+            #endif
+            #endif
+        }
+        for (auto testdata : crankmaths_rev_testdatas) {
+            timeout_testdata_current = &testdata;
+            snprintf(testName, testNameLength, "test_off_to_pending_inj%u/%urpm/%uangle",i, testdata.rpm, testdata.angle);
+            UnityDefaultTestRun(test_off_to_pending_ign, testName, __LINE__);
+        }
+    }
+    //fuel schedules testing loop
+    CRANK_ANGLE_MAX_INJ=720;
+    for(i=1;i<=INJ_CHANNELS;i++){
+        switch(i){
+            case 1: targetSchedule=&fuelSchedule1;break;
+            case 2: targetSchedule=&fuelSchedule2;break;
+            case 3: targetSchedule=&fuelSchedule3;break;
+            case 4: targetSchedule=&fuelSchedule4;break;
+            #if (INJ_CHANNELS >= 5)
+            case 5: targetSchedule=&fuelSchedule5;break;
+            #if INJ_CHANNELS >= 6
+            case 6: targetSchedule=&fuelSchedule6;break;
+            #if INJ_CHANNELS >= 7
+            case 7: targetSchedule=&fuelSchedule7;break;
+            #if INJ_CHANNELS >= 8
+            case 8: targetSchedule=&fuelSchedule8;break;
+            #endif
+            #endif
+            #endif
+            #endif
+        }
+        for (auto testdata : crankmaths_rev_testdatas) {
+            timeout_testdata_current = &testdata;
+            snprintf(testName, testNameLength, "test_off_to_pending_inj%u/%urpm/%uangle",i, testdata.rpm, testdata.angle);
+            UnityDefaultTestRun(test_off_to_pending_inj, testName, __LINE__);
+        }
+    }
 }

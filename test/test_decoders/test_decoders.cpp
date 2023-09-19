@@ -16,7 +16,7 @@ void setup()
 
     // NOTE!!! Wait for >2 secs
     // if board doesn't support software reset via Serial.DTR/RTS
-    delay(2000);
+    delay(4000);
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 

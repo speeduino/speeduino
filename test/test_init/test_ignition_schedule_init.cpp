@@ -2,8 +2,8 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
-#include "schedule_calcs.h"
 #include "scheduledIO.h"
+#include "scheduler.h"
 #include "../test_utils.h"
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
@@ -27,21 +27,21 @@ static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutp
   strcpy_P(msg, PSTR("maxIgnOutputs"));
   TEST_ASSERT_EQUAL_UINT16_MESSAGE(expectedOutputs, maxIgnOutputs, msg);
 
-  assert_ignition_channel(angle[0], 0, channel1IgnDegrees, ign1StartFunction, ign1EndFunction);
-  assert_ignition_channel(angle[1], 1, channel2IgnDegrees, ign2StartFunction, ign2EndFunction);
-  assert_ignition_channel(angle[2], 2, channel3IgnDegrees, ign3StartFunction, ign3EndFunction);
-  assert_ignition_channel(angle[3], 3, channel4IgnDegrees, ign4StartFunction, ign4EndFunction);
+  assert_ignition_channel(angle[0], 0, ignitionSchedule1.channelDegrees, ignitionSchedule1.StartFunction, ignitionSchedule1.EndFunction);
+  assert_ignition_channel(angle[1], 1, ignitionSchedule2.channelDegrees, ignitionSchedule2.StartFunction, ignitionSchedule2.EndFunction);
+  assert_ignition_channel(angle[2], 2, ignitionSchedule3.channelDegrees, ignitionSchedule3.StartFunction, ignitionSchedule3.EndFunction);
+  assert_ignition_channel(angle[3], 3, ignitionSchedule4.channelDegrees, ignitionSchedule4.StartFunction, ignitionSchedule4.EndFunction);
 #if IGN_CHANNELS>=5
-  assert_ignition_channel(angle[4], 4, channel5IgnDegrees, ign5StartFunction, ign5EndFunction);
+  assert_ignition_channel(angle[4], 4, ignitionSchedule5.channelDegrees, ignitionSchedule5.StartFunction, ignitionSchedule5.EndFunction);
 #endif
 #if IGN_CHANNELS>=6
-  assert_ignition_channel(angle[5], 5, channel6IgnDegrees, ign6StartFunction, ign6EndFunction);
+  assert_ignition_channel(angle[5], 5, ignitionSchedule6.channelDegrees, ignitionSchedule6.StartFunction, ignitionSchedule6.EndFunction);
 #endif
 #if IGN_CHANNELS>=7
-  assert_ignition_channel(angle[6], 6, channel7IgnDegrees, ign7StartFunction, ign7EndFunction);
+  assert_ignition_channel(angle[6], 6, ignitionSchedule7.channelDegrees, ignitionSchedule7.StartFunction, ignitionSchedule7.EndFunction);
 #endif
 #if IGN_CHANNELS>=8
-  assert_ignition_channel(angle[7], 7, channel8IgnDegrees, ign8StartFunction, ign8EndFunction);
+  assert_ignition_channel(angle[7], 7, ignitionSchedule8.channelDegrees, ignitionSchedule8.StartFunction, ignitionSchedule8.EndFunction);
 #endif 
 }
 

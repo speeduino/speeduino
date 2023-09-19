@@ -25,13 +25,13 @@ int rpmDelta;
 * 3) Closed loop error correction (Alpha-beta filter) 
 * 4) 2nd derivative prediction (Speed + acceleration)
 */
-unsigned long angleToTime(uint16_t angle, byte method)
+unsigned long angleToTime(int16_t angle, byte method)
 {
     unsigned long returnTime = 0;
 
     if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
     {
-        returnTime = angleToTimeIntervalRev(angle);
+        returnTime = div360(angle * revolutionTime);
         //returnTime = angle * (unsigned long)timePerDegree;
     }
     else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
