@@ -18,7 +18,8 @@
 static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
 {
   return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_50PC)) 
-      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL))
+      || ((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX));
 }
 
 /**
@@ -33,6 +34,16 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     return false;
   }
   
+  //Special case because making 255 cases for injector deadtime would be tedious
+  if((buttonCommand >= TS_CMD_INJ_DT_MIN) && (buttonCommand <= TS_CMD_INJ_DT_MAX)){
+    if(BIT_CHECK(currentStatus.testOutputs, 1) && !injectorFTActive){
+      unsigned long injectorRunTime = ((buttonCommand & 0x00FF) * 100); //Stored in uS
+      injectorFTPulses = 5;
+      injectorFTOnPW = injectorRunTime;
+      injectorFTOffPW = ((MAX_TIMER_PERIOD-1) - injectorRunTime);
+      injectorFTActive = true;
+    }
+  }
   switch (buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
@@ -389,4 +400,23 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
   }
 
   return true;
+}
+
+bool TS_CommandButtonsHandler(uint16_t buttonCommand, word *injectorTestParams){
+  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  {
+    return false;
+  }
+  if(buttonCommand == TS_CMD_INJ_FT && !injectorFTActive){
+    if(BIT_CHECK(currentStatus.testOutputs, 1)){
+      //Extract parameters
+      injectorFTPulses = (unsigned long)(injectorTestParams[0]);
+      injectorFTOnPW  = (unsigned long)(injectorTestParams[1])*100;
+      injectorFTOffPW = (unsigned long)(injectorTestParams[2])*100;
+      //Start test
+      injectorFTActive = true;
+      return true;
+    }
+  }
+  return false;
 }

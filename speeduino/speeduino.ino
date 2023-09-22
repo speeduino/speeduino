@@ -107,6 +107,25 @@ void loop(void)
         serialReceive();
       }
 
+      //Check for fuel injector flow test. Requires no engine rotation for safety.
+      if(currentStatus.RPM == 0 && injectorFTActive){
+        //If there is pulses left to send
+        if(injectorFTPulses > 0){
+          //If the current schedule is off
+           if (fuelSchedule1.Status == OFF) {
+            //Set the scheduled pulse
+            setFuelSchedule1(injectorFTOffPW, injectorFTOnPW);
+            //Decrement remaining pulses
+            injectorFTPulses--;
+          }
+        } else if(injectorFTPulses == 0 && fuelSchedule1.Status == OFF){ //If out of pulses and done with current/next pulse
+          //Disable the test
+          injectorFTActive = false;
+          //Safety check
+          closeInjector1();
+        }
+      }
+
       //Check for any CAN comms requiring action 
       #if defined(CANSerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.

@@ -106,6 +106,11 @@ volatile PINMASK_TYPE triggerSec_pin_mask;
 volatile PORT_TYPE *triggerThird_pin_port;
 volatile PINMASK_TYPE triggerThird_pin_mask;
 
+uint16_t injectorFTPulses = 0;
+unsigned long injectorFTOnPW = 0;
+unsigned long injectorFTOffPW = 0;
+bool injectorFTActive = false;
+
 //These are variables used across multiple files
 bool initialisationComplete = false; ///< Tracks whether the setup() function has run completely (true = has run)
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
