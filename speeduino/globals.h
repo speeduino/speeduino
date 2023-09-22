@@ -1474,7 +1474,7 @@ struct config15 {
   byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2)
 
   //Bytes 98-255
-  byte Unused15_98_255[150];
+  byte Unused15_98_255[130];
 
 #if defined(CORE_AVR)
   };
