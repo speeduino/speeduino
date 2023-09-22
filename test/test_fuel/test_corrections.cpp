@@ -94,7 +94,7 @@ void test_corrections_WUE(void)
 void set_cranking_tables(void)
 {
   //set mock values for cranking tables. Scale is accounted for
-  ((uint8_t*)crankingEnrichTable.axisX)[0] = 0;
+  ((uint8_t*)crankingEnrichTable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
@@ -103,7 +103,7 @@ void set_cranking_tables(void)
   ((uint8_t*)crankingEnrichTable.values)[2] = 140/5;
   ((uint8_t*)crankingEnrichTable.values)[3] = 120/5;
 
-  ((uint8_t*)crankingEnrichTable2.axisX)[0] = 0;
+  ((uint8_t*)crankingEnrichTable2.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable2.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable2.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)crankingEnrichTable2.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
@@ -115,7 +115,7 @@ void set_cranking_tables(void)
 
 void test_corrections_cranking_active_value(void)
 {
-  //Check for WUE being made active and returning a correct interpolated value
+  //Check for cranking returning a correct interpolated value
   currentStatus.coolant = 90;
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = false;
@@ -129,25 +129,27 @@ void test_corrections_cranking_active_value(void)
 }
 void test_corrections_cranking_inactive_value(void)
 {
-  //Check for WUE being made active and returning a correct interpolated value
+  //Check for cranking to return 100 when not active
   currentStatus.coolant = 80;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = false;
+  crankingEnrichTaper = 5;
+  configPage10.crankingEnrichTaper = 3;
   set_cranking_tables();
 
   //Force invalidate the cache
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
   
   //Value should be 100 when crankingEnrich is inactive
-  TEST_ASSERT_EQUAL(100, correctionWUE() );
+  TEST_ASSERT_EQUAL(100, correctionCranking() );
 }
 void test_corrections_cranking_active_flex_value(void)
 {
-  //Check for WUE being made active and returning a correct interpolated value
-  currentStatus.coolant = 80;
+  //Check for cranking returning the proper flex correction
+  currentStatus.coolant = 60;
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = true;
-  currentStatus.ethanolPct = 60;
+  currentStatus.ethanolPct = 40;
   set_cranking_tables();
   set_flex_tables();
 
@@ -155,16 +157,18 @@ void test_corrections_cranking_active_flex_value(void)
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
   crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
   
-  //Value should be (1 - 0.7)165 + (0.7)325 = 277
-  TEST_ASSERT_EQUAL(277, correctionWUE() );
+  //Value should be (1 - 0.47)190 + (0.47)400 = 
+  TEST_ASSERT_EQUAL(289, correctionCranking() );
 }
 void test_corrections_cranking_inactive_flex_value(void)
 {
-  //Check for WUE being made active and returning a correct interpolated value
+  //Check for cranking to return 100 when inactive and flex is on
   currentStatus.coolant = 80;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 60;
+  crankingEnrichTaper = 5;
+  configPage10.crankingEnrichTaper = 3;
   set_cranking_tables();
   set_flex_tables();
   //Force invalidate the cache
@@ -172,7 +176,7 @@ void test_corrections_cranking_inactive_flex_value(void)
   crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
 
   //Value should be 100 when crankingEnrich is inactive
-  TEST_ASSERT_EQUAL(100, correctionWUE() );
+  TEST_ASSERT_EQUAL(100, correctionCranking() );
 }
 void test_corrections_cranking(void)
 {

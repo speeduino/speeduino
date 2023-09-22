@@ -1474,7 +1474,7 @@ struct config15 {
   byte crankingEnrichValues2[4]; //Bytes 4-7
   
   //Bytes 98-255
-  byte Unused15_98_255[150];
+  byte Unused15_98_255[126];
   
 
 #if defined(CORE_AVR)
