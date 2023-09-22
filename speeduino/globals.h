@@ -1474,7 +1474,7 @@ struct config15 {
   uint16_t asePct2[4];           ///< Afterstart enrichment values 2 (%)
 
   //Bytes 98-255
-  byte Unused15_98_255[150];
+  byte Unused15_98_255[130];
 
 #if defined(CORE_AVR)
   };

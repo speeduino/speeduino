@@ -99,10 +99,10 @@ void test_corrections_cranking(void)
 void set_ASE_tables(void)
 {
   //set duration table
-  ((uint8_t*)ASECountTable.axisX)[0] = 0;
-  ((uint8_t*)ASECountTable.axisX)[1] = 40;
-  ((uint8_t*)ASECountTable.axisX)[2] = 120;
-  ((uint8_t*)ASECountTable.axisX)[3] = 180;
+  ((uint8_t*)ASECountTable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASECountTable.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASECountTable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASECountTable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
 
   ((uint8_t*)ASECountTable.values)[0] = 16;
   ((uint8_t*)ASECountTable.values)[1] = 12;
@@ -110,10 +110,10 @@ void set_ASE_tables(void)
   ((uint8_t*)ASECountTable.values)[3] = 1;
 
   //set primary correction amount table
-  ((uint8_t*)ASETable.axisX)[0] = 0;
-  ((uint8_t*)ASETable.axisX)[1] = 40;
-  ((uint8_t*)ASETable.axisX)[2] = 120;
-  ((uint8_t*)ASETable.axisX)[3] = 180;
+  ((uint8_t*)ASETable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
 
   ((uint8_t*)ASETable.values)[0] = 100;
   ((uint8_t*)ASETable.values)[1] = 40;
@@ -121,10 +121,10 @@ void set_ASE_tables(void)
   ((uint8_t*)ASETable.values)[3] = 5;
 
   //set secondary correction table
-  ((uint8_t*)ASETable2.axisX)[0] = 0;
-  ((uint8_t*)ASETable2.axisX)[1] = 40;
-  ((uint8_t*)ASETable2.axisX)[2] = 120;
-  ((uint8_t*)ASETable2.axisX)[3] = 180;
+  ((uint8_t*)ASETable2.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable2.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable2.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
+  ((uint8_t*)ASETable2.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
 
   ((uint8_t*)ASETable2.values)[0] = 600/5;
   ((uint8_t*)ASETable2.values)[1] = 400/5;
@@ -209,6 +209,9 @@ void test_corrections_ASE_active_value(void)
 
   set_ASE_tables();
 
+  ASETable.cacheTime = currentStatus.secl - 1;
+  
+  //Should be 100 + 100 = 200
   TEST_ASSERT_EQUAL(200, correctionASE());
 }
 void test_corrections_ASE_active_flex_value(void)
@@ -218,7 +221,7 @@ void test_corrections_ASE_active_flex_value(void)
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
   currentStatus.runSecs = 1;
-  configPage2.flexEnabled = 1;
+  configPage2.flexEnabled = true;
   configPage2.aseTaperTime = 3;
   aseTaper = 0;
   currentStatus.ethanolPct = 40;
@@ -226,7 +229,11 @@ void test_corrections_ASE_active_flex_value(void)
   set_ASE_tables();
   set_flex_tables();
 
-  TEST_ASSERT_EQUAL(335, correctionASE());
+  ASETable.cacheTime = currentStatus.secl - 1;
+  ASETable2.cacheTime = currentStatus.secl - 1;
+
+  //Should be 100 + (1 - 0.47)100 + (0.47)600 = 435
+  TEST_ASSERT_EQUAL(435, correctionASE());
 }
 void test_corrections_ASE(void)
 {
