@@ -717,7 +717,7 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  byte ASEValue;
+  uint16_t ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
@@ -1465,11 +1465,15 @@ struct config15 {
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
 
+  //Bytes 98-105
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
-  
+
+  //Bytes 106-123
+  uint16_t asePct2[4];           ///< Afterstart enrichment values 2 (%)
+
   //Bytes 98-255
-  byte Unused15_98_255[150];
+  byte Unused15_98_255[130];
 
 #if defined(CORE_AVR)
   };
