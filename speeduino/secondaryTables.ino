@@ -274,7 +274,7 @@ byte biasedAverage(int val2Bias, byte val1, byte val2)
  * @param val2bias the bias or weight toward val2, usually looked up from a table
  * @param val1 first value, usually looked up from a table; ex) VE1, Adv1
  * @param val2 second value, usually looked up from a table; ex) VE2, Adv2
- * @return byte the current VE or the target advance value in degrees
+ * @return uint16_t the interpolated average result
 */
 uint16_t biasedAverage_uint16(int val2Bias, uint16_t val1, uint16_t val2) 
 {
@@ -284,6 +284,24 @@ uint16_t biasedAverage_uint16(int val2Bias, uint16_t val1, uint16_t val2)
     return val1;
   }
   
+  else if (val2Bias == 100)
+  {
+    return val2;
+  }
+
+	uint16_t result = ((100 - val2Bias) * val1 + val2Bias * val2 + 50)/100; //adding 50, dividing by 100, then truncating to int works the same as rounding
+
+	return result;
+}
+
+uint16_t biasedAverage_uint16(int val2Bias, uint16_t val1, uint16_t val2) 
+{
+  //calculation to return (1 - t2Bias/100) * val1 + t2Bias/100 * val2;
+  if (val2Bias == 0) 
+  {
+    return val1;
+  }
+
   else if (val2Bias == 100)
   {
     return val2;

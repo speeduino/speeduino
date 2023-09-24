@@ -29,6 +29,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
+#include "secondaryTables.h"
 #include "src/PID_v1/PID_v1.h"
 #include "secondaryTables.h"
 
@@ -169,12 +170,33 @@ static inline byte correctionsFuel_new(void)
 
 }
 
+/**
+* @brief fetches WUE value if flex disabled, calculates blended table value if flex enabled
+* @return WUE value 
+*/
+uint16_t getWUEValue(void)
+{
+  uint16_t WUEValue;
+  byte WUETableValue1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled)
+  {
+    uint16_t WUETableValue2 = 10 * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
+    WUEValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), WUETableValue1, WUETableValue2);
+  }
+  else
+  {
+    WUEValue = WUETableValue1;
+  }
+
+  return WUEValue;
+}
+
 /** Warm Up Enrichment (WUE) corrections.
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionWUE(void)
+uint16_t correctionWUE(void)
 {
-  byte WUEValue;
+  uint16_t WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
   if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
@@ -186,7 +208,7 @@ byte correctionWUE(void)
   else
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    WUEValue = getWUEValue();
   }
 
   return WUEValue;

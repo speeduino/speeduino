@@ -9,7 +9,7 @@ All functions in the gamma file return
 
 void initialiseCorrections(void);
 uint16_t correctionsFuel(void);
-byte correctionWUE(void); //Warmup enrichment
+uint16_t correctionWUE(void); //Warmup enrichment
 uint16_t correctionCranking(void); //Cranking enrichment
 uint16_t getASETableValue(void);
 uint16_t correctionASE(void); //After Start Enrichment
