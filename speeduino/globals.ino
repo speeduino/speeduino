@@ -32,6 +32,7 @@ struct table2D maeTable;
 struct table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 struct table2D WUETable2; ///< 10 bin Warm Up Enrichment map 2 (2D)
 struct table2D ASETable; ///< 4 bin After Start Enrichment map (2D)
+struct table2D ASETable2; ///< 4 bin After Start Enrichment map (2D)
 struct table2D ASECountTable; ///< 4 bin After Start duration map (2D)
 struct table2D PrimingPulseTable; ///< 4 bin Priming pulsewidth map (2D)
 struct table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)

@@ -11,6 +11,7 @@ void testCorrections()
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
   test_corrections_cranking();
+  test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
@@ -228,93 +229,6 @@ void test_corrections_cranking_inactive_flex_value(void)
   TEST_ASSERT_EQUAL(100, correctionCranking() );
 }
 
-void set_cranking_tables(void)
-{
-  //set mock values for cranking tables. Scale is accounted for
-  ((uint8_t*)crankingEnrichTable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.values)[0] = 225/5;
-  ((uint8_t*)crankingEnrichTable.values)[1] = 190/5;
-  ((uint8_t*)crankingEnrichTable.values)[2] = 140/5;
-  ((uint8_t*)crankingEnrichTable.values)[3] = 120/5;
-
-  ((uint8_t*)crankingEnrichTable2.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.values)[0] = 1600/10;
-  ((uint8_t*)crankingEnrichTable2.values)[1] = 400/10;
-  ((uint8_t*)crankingEnrichTable2.values)[2] = 250/10;
-  ((uint8_t*)crankingEnrichTable2.values)[3] = 130/10;
-}
-
-void test_corrections_cranking_active_value(void)
-{
-  //Check for cranking returning a correct interpolated value
-  currentStatus.coolant = 90;
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
-  configPage2.flexEnabled = false;
-  set_cranking_tables();
-
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  
-  //Value should be midway between 190 and 140 = 165
-  TEST_ASSERT_EQUAL(165, correctionCranking() );
-}
-void test_corrections_cranking_inactive_value(void)
-{
-  //Check for cranking to return 100 when not active
-  currentStatus.coolant = 80;
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
-  configPage2.flexEnabled = false;
-  crankingEnrichTaper = 5;
-  configPage10.crankingEnrichTaper = 3;
-  set_cranking_tables();
-
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  
-  //Value should be 100 when crankingEnrich is inactive
-  TEST_ASSERT_EQUAL(100, correctionCranking() );
-}
-void test_corrections_cranking_active_flex_value(void)
-{
-  //Check for cranking returning the proper flex correction
-  currentStatus.coolant = 60;
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
-  configPage2.flexEnabled = true;
-  currentStatus.ethanolPct = 40;
-  set_cranking_tables();
-  set_flex_tables();
-
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
-  
-  //Value should be (1 - 0.47)190 + (0.47)400 = 
-  TEST_ASSERT_EQUAL(289, correctionCranking() );
-}
-void test_corrections_cranking_inactive_flex_value(void)
-{
-  //Check for cranking to return 100 when inactive and flex is on
-  currentStatus.coolant = 80;
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
-  configPage2.flexEnabled = true;
-  currentStatus.ethanolPct = 60;
-  crankingEnrichTaper = 5;
-  configPage10.crankingEnrichTaper = 3;
-  set_cranking_tables();
-  set_flex_tables();
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
-
-  //Value should be 100 when crankingEnrich is inactive
-  TEST_ASSERT_EQUAL(100, correctionCranking() );
-}
 void test_corrections_cranking(void)
 {
   RUN_TEST(test_corrections_cranking_active_value);
@@ -462,11 +376,16 @@ void test_corrections_ASE_active_flex_value(void)
   //Should be 100 + (1 - 0.47)100 + (0.47)600 = 435
   TEST_ASSERT_EQUAL(435, correctionASE());
 }
-
 void test_corrections_ASE(void)
 {
-
+  RUN_TEST(test_corrections_ASE_active);
+  RUN_TEST(test_corrections_ASE_inactive);
+  RUN_TEST(test_corrections_ASE_active_value);
+  RUN_TEST(test_corrections_ASE_inactive_value);
+  RUN_TEST(test_corrections_ASE_active_flex_value);
+  RUN_TEST(test_corrections_ASE_inactive_flex_value);
 }
+
 void test_corrections_floodclear(void)
 {
 
@@ -508,38 +427,7 @@ void set_flex_tables()
   ((uint8_t*)flexAdvTable.values)[4] = 100;
   ((uint8_t*)flexAdvTable.values)[5] = 120;
 }
-void set_flex_tables()
-{
-  //set flex fuel table
-  ((uint8_t*)flexFuelTable.axisX)[0] = 0;
-  ((uint8_t*)flexFuelTable.axisX)[1] = 20;
-  ((uint8_t*)flexFuelTable.axisX)[2] = 40;
-  ((uint8_t*)flexFuelTable.axisX)[3] = 60;
-  ((uint8_t*)flexFuelTable.axisX)[4] = 85;
-  ((uint8_t*)flexFuelTable.axisX)[5] = 100;
 
-  ((uint8_t*)flexFuelTable.values)[0] = 0;
-  ((uint8_t*)flexFuelTable.values)[1] = 24;
-  ((uint8_t*)flexFuelTable.values)[2] = 47;
-  ((uint8_t*)flexFuelTable.values)[3] = 70;
-  ((uint8_t*)flexFuelTable.values)[4] = 100;
-  ((uint8_t*)flexFuelTable.values)[5] = 110;
-
-  //set flex ignition table
-  ((uint8_t*)flexAdvTable.axisX)[0] = 0;
-  ((uint8_t*)flexAdvTable.axisX)[1] = 20;
-  ((uint8_t*)flexAdvTable.axisX)[2] = 40;
-  ((uint8_t*)flexAdvTable.axisX)[3] = 60;
-  ((uint8_t*)flexAdvTable.axisX)[4] = 85;
-  ((uint8_t*)flexAdvTable.axisX)[5] = 100;
-
-  ((uint8_t*)flexAdvTable.values)[0] = 0;
-  ((uint8_t*)flexAdvTable.values)[1] = 23;
-  ((uint8_t*)flexAdvTable.values)[2] = 46;
-  ((uint8_t*)flexAdvTable.values)[3] = 69;
-  ((uint8_t*)flexAdvTable.values)[4] = 100;
-  ((uint8_t*)flexAdvTable.values)[5] = 120;
-}
 void test_corrections_flex(void)
 {
   TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1
@@ -550,7 +438,10 @@ void test_corrections_flex(void)
   TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
 
   TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
+
+
 }
+
 void test_corrections_bat(void)
 {
 

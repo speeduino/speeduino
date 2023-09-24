@@ -282,11 +282,11 @@ uint16_t getASETableValue()
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
- * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
+ * @return uint16_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */   
-byte correctionASE(void)
+uint16_t correctionASE(void)
 {
-  int16_t ASEValue = currentStatus.ASEValue;
+  uint16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
@@ -297,7 +297,7 @@ byte correctionASE(void)
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        ASEValue = 100 + getASETableValue();
         aseTaper = 0;
       }
       else
@@ -305,7 +305,7 @@ byte correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASETableValue(), 0);
           aseTaper++;
         }
         else
@@ -316,9 +316,9 @@ byte correctionASE(void)
       }
       
       //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
-      if(ASEValue < 0) { ASEValue = 0; }
-      ASEValue = (byte)ASEValue;
+      if(!configPage2.flexEnabled && ASEValue > 255) { ASEValue = 255; }
+      else if (ASEValue > 1200) { ASEValue = 1200; } //arbitrary limit, not sure what to make this
+      else if(ASEValue < 0) { ASEValue = 0; }
     }
   }
   else
