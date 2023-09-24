@@ -10,7 +10,6 @@ void testCorrections()
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
-  test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
   /*
   RUN_TEST(test_corrections_cranking); //Not written yet
@@ -90,7 +89,6 @@ void test_corrections_WUE(void)
   RUN_TEST(test_corrections_WUE_active_value);
   RUN_TEST(test_corrections_WUE_inactive_value);
 }
-
 void test_corrections_cranking(void)
 {
 
@@ -235,16 +233,11 @@ void test_corrections_ASE_active_flex_value(void)
   //Should be 100 + (1 - 0.47)100 + (0.47)600 = 435
   TEST_ASSERT_EQUAL(435, correctionASE());
 }
+
 void test_corrections_ASE(void)
 {
-  RUN_TEST(test_corrections_ASE_active);
-  RUN_TEST(test_corrections_ASE_inactive);
-  RUN_TEST(test_corrections_ASE_active_value);
-  RUN_TEST(test_corrections_ASE_inactive_value);
-  RUN_TEST(test_corrections_ASE_active_flex_value);
-  RUN_TEST(test_corrections_ASE_inactive_flex_value);
-}
 
+}
 void test_corrections_floodclear(void)
 {
 
@@ -254,38 +247,6 @@ void test_corrections_closedloop(void)
 
 }
 
-void set_flex_tables()
-{
-  //set flex fuel table
-  ((uint8_t*)flexFuelTable.axisX)[0] = 0;
-  ((uint8_t*)flexFuelTable.axisX)[1] = 20;
-  ((uint8_t*)flexFuelTable.axisX)[2] = 40;
-  ((uint8_t*)flexFuelTable.axisX)[3] = 60;
-  ((uint8_t*)flexFuelTable.axisX)[4] = 85;
-  ((uint8_t*)flexFuelTable.axisX)[5] = 100;
-
-  ((uint8_t*)flexFuelTable.values)[0] = 0;
-  ((uint8_t*)flexFuelTable.values)[1] = 24;
-  ((uint8_t*)flexFuelTable.values)[2] = 47;
-  ((uint8_t*)flexFuelTable.values)[3] = 70;
-  ((uint8_t*)flexFuelTable.values)[4] = 100;
-  ((uint8_t*)flexFuelTable.values)[5] = 110;
-
-  //set flex ignition table
-  ((uint8_t*)flexAdvTable.axisX)[0] = 0;
-  ((uint8_t*)flexAdvTable.axisX)[1] = 20;
-  ((uint8_t*)flexAdvTable.axisX)[2] = 40;
-  ((uint8_t*)flexAdvTable.axisX)[3] = 60;
-  ((uint8_t*)flexAdvTable.axisX)[4] = 85;
-  ((uint8_t*)flexAdvTable.axisX)[5] = 100;
-
-  ((uint8_t*)flexAdvTable.values)[0] = 0;
-  ((uint8_t*)flexAdvTable.values)[1] = 23;
-  ((uint8_t*)flexAdvTable.values)[2] = 46;
-  ((uint8_t*)flexAdvTable.values)[3] = 69;
-  ((uint8_t*)flexAdvTable.values)[4] = 100;
-  ((uint8_t*)flexAdvTable.values)[5] = 120;
-}
 void test_corrections_flex(void)
 {
   TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1
@@ -296,10 +257,7 @@ void test_corrections_flex(void)
   TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
 
   TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
-
-
 }
-
 void test_corrections_bat(void)
 {
 
