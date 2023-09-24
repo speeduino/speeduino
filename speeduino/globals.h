@@ -477,6 +477,7 @@ extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D WUETable2; //10 bin Flex Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
@@ -654,7 +655,7 @@ struct statuses {
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount;    /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
-  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  uint16_t wueCorrection; /**< The amount of warmup enrichment currently being applied */
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
   byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
@@ -1468,9 +1469,10 @@ struct config15 {
   //Bytes 98-105
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
-
+  
   //Bytes 106-123
-  uint16_t asePct2[4];           ///< Afterstart enrichment values 2 (%)
+  byte asePct2[4];           ///< Afterstart enrichment values 2 (%)
+  byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2
 
   //Bytes 98-255
   byte Unused15_98_255[130];
