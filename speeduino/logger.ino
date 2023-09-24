@@ -3,6 +3,8 @@
 #include "errors.h"
 #include "decoders.h"
 #include "init.h"
+#include "maths.h"
+#include "utilities.h"
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
@@ -340,31 +342,24 @@ float getReadableFloatLogEntry(uint16_t logIndex)
  */
 bool is2ByteEntry(uint8_t key)
 {
-  bool isFound = false;
-  unsigned int mid, bot;
-  uint16_t array_size = sizeof(fsIntIndex);
+  // This array indicates which index values from the log are 2 byte values
+  // This array MUST remain in ascending order
+  // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
+  static constexpr byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 125 };
 
-  if (array_size > 0)
-  {
-    bot = 0;
-    mid = array_size;
+  unsigned int bot = 0U;
+  unsigned int mid = _countof(fsIntIndex);
   
-    while (mid > 1)
-    {  
-      if (key >= pgm_read_byte( &fsIntIndex[bot + mid / 2]) )
-      {
-        bot += mid++ / 2;
-      }
-      mid /= 2;
-    }
-  
-    if (key == pgm_read_byte(&fsIntIndex[bot]) )
+  while (mid > 1U)
+  {  
+    if (key >= pgm_read_byte( &fsIntIndex[bot + mid / 2U]) )
     {
-      isFound = true;
+      bot += mid++ / 2U;
     }
+    mid /= 2U;
   }
 
-  return isFound;
+  return key == pgm_read_byte(&fsIntIndex[bot]);
 }
 
 void startToothLogger(void)
