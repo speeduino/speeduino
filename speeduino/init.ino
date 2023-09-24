@@ -136,11 +136,21 @@ void initialiseAll(void)
     WUETable.xSize = 10;
     WUETable.values = configPage2.wueValues;
     WUETable.axisX = configPage4.wueBins;
+    WUETable2.valueSize = SIZE_BYTE; //Set this table to use byte values
+    WUETable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    WUETable2.xSize = 10;
+    WUETable2.values = configPage15.wueValues2;
+    WUETable2.axisX = configPage4.wueBins;
     ASETable.valueSize = SIZE_BYTE;
     ASETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASETable.xSize = 4;
     ASETable.values = configPage2.asePct;
     ASETable.axisX = configPage2.aseBins;
+    ASETable2.valueSize = SIZE_BYTE;
+    ASETable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    ASETable2.xSize = 4;
+    ASETable2.values = configPage15.asePct2;
+    ASETable2.axisX = configPage2.aseBins;
     ASECountTable.valueSize = SIZE_BYTE;
     ASECountTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     ASECountTable.xSize = 4;
@@ -161,6 +171,11 @@ void initialiseAll(void)
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
     crankingEnrichTable.axisX = configPage10.crankingEnrichBins;
+    crankingEnrichTable2.valueSize = SIZE_BYTE;
+    crankingEnrichTable2.axisSize = SIZE_BYTE;
+    crankingEnrichTable2.xSize = 4;
+    crankingEnrichTable2.values = configPage15.crankingEnrichValues2;
+    crankingEnrichTable2.axisX = configPage10.crankingEnrichBins;
 
     dwellVCorrectionTable.valueSize = SIZE_BYTE;
     dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
