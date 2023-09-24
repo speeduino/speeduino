@@ -241,6 +241,27 @@ uint16_t correctionCranking(void)
   return crankingValue;
 }
 
+/* @brief computes the ASE value, able to blend secondary table for flex fueling
+*  @return the ASE value, now a uint16_t rather than a byte because ethanol may 
+*     require ASE > 255 in extreme cold, according to @pazi88
+*/
+uint16_t getASETableValue()
+{
+  uint16_t ASETableValue;
+  byte ASETableValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled)
+  {
+    uint16_t ASETableValue2 = 5 * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
+    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(ASETableValue1), ASETableValue2);
+  }
+  else
+  {
+    ASETableValue = ASETableValue1;
+  }
+  
+  return ASETableValue;
+}
+
 /** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).

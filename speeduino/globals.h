@@ -718,7 +718,7 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  byte ASEValue;
+  uint16_t ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
@@ -1471,7 +1471,8 @@ struct config15 {
   byte rollingProtCutPercent[4];
   
   //Bytes 106-123
-  byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2)
+  byte asePct2[4];           ///< Afterstart enrichment values 2 (%)
+  byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2
 
   //Bytes 98-255
   byte Unused15_98_255[130];
