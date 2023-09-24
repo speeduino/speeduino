@@ -4,6 +4,7 @@ void test_corrections_cranking(void);
 void test_corrections_ASE(void);
 void test_corrections_floodclear(void);
 void test_corrections_closedloop(void);
+void set_flex_tables(void);
 void test_corrections_flex(void);
 void test_corrections_bat(void);
 void test_corrections_iatdensity(void);
