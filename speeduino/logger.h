@@ -19,7 +19,7 @@
 
 byte getTSLogEntry(uint16_t byteNum);
 int16_t getReadableLogEntry(uint16_t logIndex);
-#if FPU_MAX_SIZE >= 32
+#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
   float getReadableFloatLogEntry(uint16_t logIndex);
 #endif
 bool is2ByteEntry(uint8_t key);
