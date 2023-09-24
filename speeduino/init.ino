@@ -166,6 +166,11 @@ void initialiseAll(void)
     crankingEnrichTable.xSize = 4;
     crankingEnrichTable.values = configPage10.crankingEnrichValues;
     crankingEnrichTable.axisX = configPage10.crankingEnrichBins;
+    crankingEnrichTable2.valueSize = SIZE_BYTE;
+    crankingEnrichTable2.axisSize = SIZE_BYTE;
+    crankingEnrichTable2.xSize = 4;
+    crankingEnrichTable2.values = configPage15.crankingEnrichValues2;
+    crankingEnrichTable2.axisX = configPage10.crankingEnrichBins;
 
     dwellVCorrectionTable.valueSize = SIZE_BYTE;
     dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
