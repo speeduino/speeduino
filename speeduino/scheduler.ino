@@ -56,14 +56,22 @@ void (*inj3StartFunction)(void);
 void (*inj3EndFunction)(void);
 void (*inj4StartFunction)(void);
 void (*inj4EndFunction)(void);
+#if (INJ_CHANNELS >= 5)
 void (*inj5StartFunction)(void);
 void (*inj5EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 6)
 void (*inj6StartFunction)(void);
 void (*inj6EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 7)
 void (*inj7StartFunction)(void);
 void (*inj7EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 8)
 void (*inj8StartFunction)(void);
 void (*inj8EndFunction)(void);
+#endif
 
 void (*ign1StartFunction)(void);
 void (*ign1EndFunction)(void);
