@@ -558,7 +558,8 @@ void processSerialCommand(void)
   {
 
     case 'A': // send x bytes of realtime values
-      generateLiveValues(0, LOG_ENTRY_SIZE); 
+      //generateLiveValues(0, LOG_ENTRY_SIZE); 
+      generateLiveValues(0, 122); //Workaround for RealDash until they move to new comms mode
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
