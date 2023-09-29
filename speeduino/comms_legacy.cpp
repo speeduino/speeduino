@@ -1006,7 +1006,7 @@ namespace {
     Serial.println();
   }
 
-  void print_x_axis(const void *pTable, table_type_t key)
+  void print_x_axis(void *pTable, table_type_t key)
   {
     Serial.print(F("    "));
 
@@ -1020,7 +1020,7 @@ namespace {
     }
   }
 
-  void serial_print_3dtable(const void *pTable, table_type_t key)
+  void serial_print_3dtable(void *pTable, table_type_t key)
   {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);

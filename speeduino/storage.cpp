@@ -132,7 +132,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 }
 
 
-static inline write_location writeTable(const void *pTable, table_type_t key, write_location location)
+static inline write_location writeTable(void *pTable, table_type_t key, write_location location)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
@@ -395,7 +395,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 }
 
 
-static inline eeprom_address_t loadTable(const void *pTable, table_type_t key, eeprom_address_t address)
+static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_address_t address)
 {
   return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 

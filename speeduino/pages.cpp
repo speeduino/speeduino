@@ -31,17 +31,17 @@ constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288
 // calling context.
 
 template <class table_t>
-inline constexpr uint16_t get_table_value_end()
+static inline constexpr uint16_t get_table_value_end(void)
 {
   return table_t::xaxis_t::length*table_t::yaxis_t::length;
 }
 template <class table_t>
-inline constexpr uint16_t get_table_axisx_end()
+static inline constexpr uint16_t get_table_axisx_end(void)
 {
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-inline constexpr uint16_t get_table_axisy_end(const table_t *)
+static inline constexpr uint16_t get_table_axisy_end(const table_t *)
 {
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
 }
@@ -73,7 +73,7 @@ public:
   }
 
   // Getter
-  inline byte operator*() const 
+  inline byte operator*(void) const 
   { 
     switch (get_table_location())
     {
@@ -110,17 +110,17 @@ public:
 
 private: 
 
-  inline byte& get_value_value() const
+  inline byte& get_value_value(void) const
   {
     return _pTable->values.value_at((uint8_t)_table_offset);
   }
 
-  inline table3d_axis_t& get_xaxis_value() const
+  inline table3d_axis_t& get_xaxis_value(void) const
   {
     return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
   }
 
-  inline table3d_axis_t& get_yaxis_value() const
+  inline table3d_axis_t& get_yaxis_value(void) const
   {
     return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
   }
@@ -129,7 +129,7 @@ private:
       table_location_values, table_location_xaxis, table_location_yaxis 
   };
   
-  inline table_location get_table_location() const
+  inline table_location get_table_location(void) const
   {
     if (_table_offset<get_table_value_end<table_t>())
     {
@@ -157,7 +157,8 @@ inline byte get_table_value(page_iterator_t &entity, uint16_t offset)
 {
   #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
       return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, entity.pData, (offset-entity.start));  
+  #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start));  
 }
 
 inline byte get_value(page_iterator_t &entity, uint16_t offset)
@@ -177,7 +178,8 @@ inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_v
 {
   #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
       offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, entity.pData, (offset-entity.start), new_value);  
+  #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start), new_value);  
 }
 
 inline void set_value(page_iterator_t &entity, byte value, uint16_t offset)
