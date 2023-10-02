@@ -318,7 +318,7 @@ uint16_t correctionASE(void)
       //Safety checks
       if(!configPage2.flexEnabled && ASEValue > 255) { ASEValue = 255; }
       else if (ASEValue > 1200) { ASEValue = 1200; } //arbitrary limit, not sure what to make this
-      else if(ASEValue < 0) { ASEValue = 0; }
+      //else if(ASEValue < 0) { ASEValue = 0; } //This was here before, but causes a warning now that aseCorrection is an unsigned 16
     }
   }
   else
