@@ -259,6 +259,12 @@ void initialiseAll(void)
     fanPWMTable.values = configPage9.PWMFanDuty;
     fanPWMTable.axisX = configPage6.fanPWMBins;
 
+    rollingCutTable.valueSize = SIZE_BYTE;
+    rollingCutTable.axisSize = SIZE_SIGNED_BYTE; //X axis is SIGNED for this table. 
+    rollingCutTable.xSize = 4;
+    rollingCutTable.values = configPage15.rollingProtCutPercent;
+    rollingCutTable.axisX = configPage15.rollingProtRPMDelta;
+
     wmiAdvTable.valueSize = SIZE_BYTE;
     wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     wmiAdvTable.xSize = 6;
@@ -444,26 +450,33 @@ void initialiseAll(void)
     currentLoopTime = micros_safe();
     mainLoopCount = 0;
 
-    currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
+    if(configPage2.divider == 0) { currentStatus.nSquirts = 2; } //Safety check.
+    else { currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; } //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
     if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
 
     //Calculate the number of degrees between cylinders
     //Set some default values. These will be updated below if required.
-    CRANK_ANGLE_MAX = 720;
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
 
-    channelInjEnabled = 0; // Disable all injectors
-    BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
+    maxInjOutputs = 1; // Disable all injectors expect channel 1
 
     ignition1EndAngle = 0;
     ignition2EndAngle = 0;
     ignition3EndAngle = 0;
     ignition4EndAngle = 0;
+#if IGN_CHANNELS >= 5
     ignition5EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 6
     ignition6EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 7
     ignition7EndAngle = 0;
+#endif
+#if IGN_CHANNELS >= 8
     ignition8EndAngle = 0;
+#endif
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -473,6 +486,7 @@ void initialiseAll(void)
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 1;
+        maxInjOutputs = 1;
 
         //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -484,12 +498,10 @@ void initialiseAll(void)
           req_fuel_uS = req_fuel_uS * 2;
         }
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
+          maxInjOutputs = 2;
           channel2InjDegrees = channel1InjDegrees;
         }
         break;
@@ -498,6 +510,7 @@ void initialiseAll(void)
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2;
+        maxInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
@@ -520,14 +533,10 @@ void initialiseAll(void)
           channel2InjDegrees = 0; 
         }
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          maxInjOutputs = 4;
 
           channel3InjDegrees = channel1InjDegrees;
           channel4InjDegrees = channel2InjDegrees;
@@ -538,30 +547,31 @@ void initialiseAll(void)
     case 3:
         channel1IgnDegrees = 0;
         maxIgnOutputs = 3;
+        maxInjOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
-        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
-        if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
-        {
-          channel2IgnDegrees = 240;
-          channel3IgnDegrees = 480;
+          //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
+          if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
+          {
+            channel2IgnDegrees = 240;
+            channel3IgnDegrees = 480;
 
-          CRANK_ANGLE_MAX_IGN = 720;
+            CRANK_ANGLE_MAX_IGN = 720;
+          }
+          else
+          {
+            channel2IgnDegrees = 120;
+            channel3IgnDegrees = 240;
+          }
         }
         else
         {
-          channel2IgnDegrees = 120;
-          channel3IgnDegrees = 240;
-        }
-        }
-        else
-        {
-        channel2IgnDegrees = configPage2.oddfire2;
-        channel3IgnDegrees = configPage2.oddfire3;
+          channel2IgnDegrees = configPage2.oddfire2;
+          channel3IgnDegrees = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
-        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
+        if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
           channel1InjDegrees = 0;
           channel2InjDegrees = 120;
@@ -584,12 +594,23 @@ void initialiseAll(void)
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 240;
-          channel3InjDegrees = 480;
-          CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
+
+          if(configPage2.strokes == TWO_STROKE)
+          {
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 120;
+            channel3InjDegrees = 240;
+            CRANK_ANGLE_MAX_INJ = 360;
+          }
+          else
+          {
+            req_fuel_uS = req_fuel_uS * 2;
+            channel1InjDegrees = 0;
+            channel2InjDegrees = 240;
+            channel3InjDegrees = 480;
+            CRANK_ANGLE_MAX_INJ = 720;
+          }
         }
         else
         {
@@ -599,24 +620,18 @@ void initialiseAll(void)
           channel3InjDegrees = 240;
         }
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
           #if INJ_CHANNELS >= 6
-            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
-            BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-            BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+            maxInjOutputs = 6;
 
             channel4InjDegrees = channel1InjDegrees;
             channel5InjDegrees = channel2InjDegrees;
             channel6InjDegrees = channel3InjDegrees;
           #else
             //Staged output is on channel 4
-            BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+            maxInjOutputs = 4;
             channel4InjDegrees = channel1InjDegrees;
           #endif
         }
@@ -625,6 +640,7 @@ void initialiseAll(void)
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
         maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
+        maxInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
@@ -679,8 +695,7 @@ void initialiseAll(void)
           channel3InjDegrees = 360;
           channel4InjDegrees = 540;
 
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          maxInjOutputs = 4;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -689,28 +704,19 @@ void initialiseAll(void)
         else
         {
           //Should never happen, but default values
-          BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
-          BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
-          BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
-          BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
-          BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
-          BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
+          maxInjOutputs = 2;
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          maxInjOutputs = 4;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
             //Staging with 4 cylinders semi/sequential requires 8 total channels
             #if INJ_CHANNELS >= 8
-              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+              maxInjOutputs = 8;
 
               channel5InjDegrees = channel1InjDegrees;
               channel6InjDegrees = channel2InjDegrees;
@@ -719,8 +725,10 @@ void initialiseAll(void)
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existant channel 5
-              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
+              #if (INJ_CHANNELS >= 5)
+              maxInjOutputs = 5;
               channel5InjDegrees = channel1InjDegrees;
+              #endif
             #endif
           }
           else
@@ -730,8 +738,6 @@ void initialiseAll(void)
           }
         }
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
         break;
     case 5:
         channel1IgnDegrees = 0;
@@ -740,6 +746,7 @@ void initialiseAll(void)
         channel4IgnDegrees = 216;
         channel5IgnDegrees = 288;
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
+        maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -761,7 +768,9 @@ void initialiseAll(void)
             channel2InjDegrees = 0;
             channel3InjDegrees = 0;
             channel4InjDegrees = 0;
+#if (INJ_CHANNELS >= 5)
             channel5InjDegrees = 0; 
+#endif
           }
           else
           {
@@ -769,7 +778,9 @@ void initialiseAll(void)
             channel2InjDegrees = 72;
             channel3InjDegrees = 144;
             channel4InjDegrees = 216;
+#if (INJ_CHANNELS >= 5)
             channel5InjDegrees = 288;
+#endif
 
             //Divide by currentStatus.nSquirts ?
           }
@@ -783,10 +794,7 @@ void initialiseAll(void)
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
 
-          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-    #if INJ_CHANNELS >= 6
-          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ6_CMD_BIT); }
-    #endif
+          maxInjOutputs = 5;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -794,12 +802,8 @@ void initialiseAll(void)
         }
     #endif
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
-    #if INJ_CHANNELS >= 5
-          if(configPage10.stagingEnabled == true) { BIT_SET(channelInjEnabled, INJ5_CMD_BIT); }
+    #if INJ_CHANNELS >= 6
+          if(configPage10.stagingEnabled == true) { maxInjOutputs = 6; }
     #endif
         break;
     case 6:
@@ -807,6 +811,7 @@ void initialiseAll(void)
         channel2IgnDegrees = 120;
         channel3IgnDegrees = 240;
         maxIgnOutputs = 3;
+        maxInjOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -850,9 +855,7 @@ void initialiseAll(void)
           channel5InjDegrees = 480;
           channel6InjDegrees = 600;
 
-          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+          maxInjOutputs = 6;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -860,17 +863,13 @@ void initialiseAll(void)
         }
         else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
         {
-          BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+          maxInjOutputs = 6;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
-            //Staging with 4 cylinders semi/sequential requires 8 total channels
-            #if INJ_CHANNELS >= 8
-              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
-              BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+            //Staging with 6 cylinders semi/sequential requires 7 total channels
+            #if INJ_CHANNELS >= 7
+              maxInjOutputs = 7;
 
               channel5InjDegrees = channel1InjDegrees;
               channel6InjDegrees = channel2InjDegrees;
@@ -878,17 +877,13 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 5
-              BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-              channel5InjDegrees = channel1InjDegrees;
+              //Put the staging output to the non-existant channel 7
+              maxInjOutputs = 7;
+              channel7InjDegrees = channel1InjDegrees;
             #endif
           }
         }
     #endif
-
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
         break;
     case 8:
         channel1IgnDegrees = 0;
@@ -896,6 +891,7 @@ void initialiseAll(void)
         channel3IgnDegrees = 180;
         channel4IgnDegrees = 270;
         maxIgnOutputs = 4;
+        maxInjOutputs = 4;
 
 
         if( (configPage4.sparkMode == IGN_MODE_SINGLE))
@@ -954,10 +950,7 @@ void initialiseAll(void)
           channel7InjDegrees = 540;
           channel8InjDegrees = 630;
 
-          BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
-          BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+          maxInjOutputs = 8;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -965,10 +958,6 @@ void initialiseAll(void)
         }
     #endif
 
-        BIT_SET(channelInjEnabled, INJ1_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ2_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
         break;
     default: //Handle this better!!!
         channel1InjDegrees = 0;
@@ -976,9 +965,6 @@ void initialiseAll(void)
         break;
     }
 
-    if(CRANK_ANGLE_MAX_IGN == CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; } //If both the injector max and ignition max angles are the same, make the overall system max this value
-    else if (CRANK_ANGLE_MAX_IGN > CRANK_ANGLE_MAX_INJ) { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_IGN; }
-    else { CRANK_ANGLE_MAX = CRANK_ANGLE_MAX_INJ; }
     currentStatus.status3 |= currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
     
     //Special case:
@@ -986,7 +972,7 @@ void initialiseAll(void)
     //This is ONLY the case on 4 stroke systems
     if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
     {
-      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX = 720; }
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720; }
     }
     
     switch(configPage2.injLayout)
@@ -3426,6 +3412,20 @@ void initialiseTriggers(void)
 
     case DECODER_36_2_1:
       //36-2-1
+      triggerSetup_ThirtySixMinus21();
+      triggerHandler = triggerPri_ThirtySixMinus21;
+      triggerSecondaryHandler = triggerSec_missingTooth;
+      getRPM = getRPM_ThirtySixMinus21;
+      getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_420A:
@@ -3614,21 +3614,15 @@ void changeHalfToFullSync(void)
     switch (configPage2.nCylinders)
     {
       case 4:
-        BIT_SET(channelInjEnabled, INJ3_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
+        maxInjOutputs = 4;
         break;
             
       case 6:
-        BIT_SET(channelInjEnabled, INJ4_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
+        maxInjOutputs = 6;
         break;
 
       case 8:
-        BIT_SET(channelInjEnabled, INJ5_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ6_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ7_CMD_BIT);
-        BIT_SET(channelInjEnabled, INJ8_CMD_BIT);
+        maxInjOutputs = 8;
         break;
 
       default:
@@ -3706,8 +3700,7 @@ void changeFullToHalfSync(void)
           inj2StartFunction = openInjector2and3;
           inj2EndFunction = closeInjector2and3;
         }
-        BIT_CLEAR(channelInjEnabled, INJ3_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
+        maxInjOutputs = 2;
         break;
             
       case 6:
@@ -3717,9 +3710,7 @@ void changeFullToHalfSync(void)
         inj2EndFunction = closeInjector2and5;
         inj3StartFunction = openInjector3and6;
         inj3EndFunction = closeInjector3and6;
-        BIT_CLEAR(channelInjEnabled, INJ4_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
+        maxInjOutputs = 3;
         break;
 
       case 8:
@@ -3731,10 +3722,7 @@ void changeFullToHalfSync(void)
         inj3EndFunction = closeInjector3and7;
         inj4StartFunction = openInjector4and8;
         inj4EndFunction = closeInjector4and8;
-        BIT_CLEAR(channelInjEnabled, INJ5_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ6_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ7_CMD_BIT);
-        BIT_CLEAR(channelInjEnabled, INJ8_CMD_BIT);
+        maxInjOutputs = 4;
         break;
     }
   }

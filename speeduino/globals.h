@@ -156,6 +156,8 @@
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
 #define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : bitClear((var), (pos)))
 
+#define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
+
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MS_IN_MINUTE 60000
@@ -498,6 +500,7 @@ extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
+extern struct table2D rollingCutTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -553,27 +556,6 @@ extern byte triggerInterrupt;
 extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
 
-//These need to be here as they are used in both speeduino.ino and scheduler.ino
-extern byte channelInjEnabled;
-
-extern int ignition1EndAngle;
-extern int ignition2EndAngle;
-extern int ignition3EndAngle;
-extern int ignition4EndAngle;
-extern int ignition5EndAngle;
-extern int ignition6EndAngle;
-extern int ignition7EndAngle;
-extern int ignition8EndAngle;
-
-extern int ignition1StartAngle;
-extern int ignition2StartAngle;
-extern int ignition3StartAngle;
-extern int ignition4StartAngle;
-extern int ignition5StartAngle;
-extern int ignition6StartAngle;
-extern int ignition7StartAngle;
-extern int ignition8StartAngle;
-
 extern bool initialisationComplete; //Tracks whether the setup() function has run completely
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
@@ -601,7 +583,6 @@ extern volatile uint16_t ignitionCount; /**< The count of ignition events that h
   extern byte secondaryTriggerEdge;
   extern byte tertiaryTriggerEdge;
 #endif
-extern int CRANK_ANGLE_MAX;
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
@@ -610,7 +591,8 @@ extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_INJ_50pc; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_50pc; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
-extern byte maxIgnOutputs; /**< Used for rolling rev limiter to indicate how many total ignition channels should currently be firing */
+extern byte maxIgnOutputs;            /**< Number of ignition outputs being used by the current tune configuration */
+extern byte maxInjOutputs;            /**< Number of injection outputs being used by the current tune configuration */
 
 
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
@@ -1375,7 +1357,7 @@ struct config10 {
 
   byte oilPressureProtTime;
 
-  byte unused11_191_191; //Bytes 187-191
+  byte unused11_191_191;
 
 #if defined(CORE_AVR)
   };
@@ -1481,9 +1463,12 @@ struct config15 {
   byte airConUnused4 : 2;
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
+
+  int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
+  byte rollingProtCutPercent[4];
   
   //Bytes 98-255
-  byte Unused15_98_255[158];
+  byte Unused15_98_255[150];
 
 #if defined(CORE_AVR)
   };

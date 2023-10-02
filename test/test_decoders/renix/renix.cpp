@@ -2,7 +2,7 @@
 #include <globals.h>
 #include <unity.h>
 #include "renix.h"
-
+#include "schedule_calcs.h"
 
 void test_setup_renix44()
 {
