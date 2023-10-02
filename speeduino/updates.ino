@@ -718,7 +718,7 @@ void doUpdates(void)
     configPage15.rollingProtCutPercent[3] = 95;
 
     // DFCO Map Threshold added
-    configPage9.dfcoMAPThresh = 10; //Default value of 10 is igual to 20 kpa, because the value is multiply by 2
+    configPage9.dfcoMAPThresh = 50; //Default value of 50 is igual to 100 kpa, because the value is multiply by 2
 
     writeAllConfig();
     storeEEPROMVersion(22);
