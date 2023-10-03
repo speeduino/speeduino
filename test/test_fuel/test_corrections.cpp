@@ -438,8 +438,6 @@ void test_corrections_flex(void)
   TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
 
   TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
-
-
 }
 
 void test_corrections_bat(void)
