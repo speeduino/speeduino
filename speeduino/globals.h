@@ -1484,8 +1484,8 @@ struct config15 {
   byte crankingEnrichValues2[4];
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
 
-  //Bytes 98-255
-  byte Unused15_98_255[126];
+  //Bytes 128-255
+  byte Unused15_128_255[127];
   
 
 #if defined(CORE_AVR)
