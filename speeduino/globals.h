@@ -1163,12 +1163,13 @@ struct config9 {
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
 
+  byte unused10_179;
   byte dfcoTaperTime;
   byte dfcoTaperFuel;
   byte dfcoTaperAdvance;
   byte dfcoTaperEnable : 1;
-  byte unused10_182 : 6;
-  byte unused10_183;
+  byte unused10_183 : 6;
+
   byte unused10_184;
 
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
