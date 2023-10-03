@@ -658,7 +658,7 @@ struct statuses {
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount;    /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
-  uint16_t wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  byte wueCorrection1; /**< The current warmup enrichment value from WUE Table 1*/
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
   byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
@@ -721,7 +721,7 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  uint16_t ASEValue;
+  byte ASEValue1; /**< The current afterstart enrichment value from ASE Table 1*/
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
@@ -737,6 +737,10 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
+  uint16_t wueCorrection; /**< The total amount of warmup enrichment currently being applied*/
+  uint16_t wueCorrection2; /**< The current warmup enrichment value from WUE Table 2*/
+  uint16_t ASEValue; /**< The total amount of afterstart enrichment currently being applied*/
+  uint16_t ASEValue2; /**< The current afterstart enrichment value from ASE Table 2*/
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.

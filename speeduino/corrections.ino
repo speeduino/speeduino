@@ -177,15 +177,15 @@ static inline byte correctionsFuel_new(void)
 uint16_t getWUEValue(void)
 {
   uint16_t WUEValue;
-  byte WUETableValue1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  currentStatus.wueCorrection1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if (configPage2.flexEnabled)
   {
-    uint16_t WUETableValue2 = 10 * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
-    WUEValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), WUETableValue1, WUETableValue2);
+    currentStatus.wueCorrection2 = 10 * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
+    WUEValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.wueCorrection1), currentStatus.wueCorrection2);
   }
   else
   {
-    WUEValue = WUETableValue1;
+    WUEValue = currentStatus.wueCorrection1;
   }
 
   return WUEValue;
@@ -264,15 +264,15 @@ uint16_t correctionCranking(void)
 uint16_t getASETableValue()
 {
   uint16_t ASETableValue;
-  byte ASETableValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  currentStatus.ASEValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
   if (configPage2.flexEnabled)
   {
-    uint16_t ASETableValue2 = 5 * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
-    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(ASETableValue1), ASETableValue2);
+    currentStatus.ASEValue2 = 5 * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
+    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.ASEValue1), currentStatus.ASEValue2);
   }
   else
   {
-    ASETableValue = ASETableValue1;
+    ASETableValue = currentStatus.ASEValue1;
   }
   
   return ASETableValue;
