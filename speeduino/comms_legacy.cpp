@@ -66,7 +66,8 @@ void legacySerialCommand(void)
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
+      //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
+      sendValues(0, 122, 0x31, 0);   //send values to serial0. Fixed value of 122 is a workaround for RealDash until a better solution is implemented
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time

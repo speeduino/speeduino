@@ -38,20 +38,35 @@ mkdir -p "$out_folder"
 
 cppcheck_parameters=( --inline-suppr
                       --language=c++
+                      --enable=warning
+                      --enable=information
+                      --enable=performance
+                      --enable=portability
+                      --enable=style
                       --addon="$script_folder/misra.json"
                       --suppressions-list="$script_folder/suppressions.txt"
+                      --suppress=unusedFunction:*
+                      --suppress=missingInclude:*
+                      --suppress=missingIncludeSystem:*
+                      --suppress=unmatchedSuppression:*
+                      --suppress=cstyleCast:*
                       --platform=avr8
                       --cppcheck-build-dir="$out_folder"
                       -j "$num_cores"
                       -DCORE_AVR=1
                       -D__AVR_ATmega2560__
+                      -DARDUINO_AVR_MEGA2560 
+                      -DF_CPU=16000000L 
+                      -DARDUINO_ARCH_AVR 
+                      -DARDUINO=10808 
+                      -DAVR=1
                       # This is defined in the AVR headers, which aren't included.
                       # cppcheck will not do type checking on unknown types.
                       # It's used a lot and it's unsigned, which can trigger a lot
                       # of type mismatch violations.
                       -Dbyte=uint8_t
                       # All violations from included libraries (*src* folders) are ignored
-                      --suppress="*:*src*"
+                      --suppress="*:$source_folder/src/*"
                       # No libdivide - analysis takes too long
                       -UUSE_LIBDIVIDE
                       # Don't parse the /src folder
