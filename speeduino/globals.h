@@ -446,6 +446,12 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define LOGGER_FILENAMING_DATETIME      1
 #define LOGGER_FILENAMING_SEQENTIAL     2
 
+#define WUETABLE2_VALUE_SCALE             10
+#define CRANKINGENRICHTABLE_VALUE_SCALE   5
+#define CRANKINGENRICHTABLE2_VALUE_SCALE  10
+#define ASETABLE2_VALUE_SCALE             5
+#define PRIMINGPULSETABLE_VALUE_SCALE     2 //NOTE: Values are divided by this scale factor rather than multiplied like the others
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?

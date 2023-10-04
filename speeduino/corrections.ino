@@ -178,9 +178,9 @@ uint16_t getWUEValue(void)
 {
   uint16_t WUEValue;
   currentStatus.wueCorrection1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-  if (configPage2.flexEnabled)
+  if (configPage2.flexEnabled == 1)
   {
-    currentStatus.wueCorrection2 = 10 * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
+    currentStatus.wueCorrection2 = WUETABLE2_VALUE_SCALE * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
     WUEValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.wueCorrection1), currentStatus.wueCorrection2);
   }
   else
@@ -217,10 +217,10 @@ uint16_t correctionWUE(void)
 uint16_t getCrankingValue(void)
 {
   uint16_t crankingValue;
-  uint16_t crankingValue1 = 5 * table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 5 to get range of 0 - 1275%
-  if (configPage2.flexEnabled)
+  uint16_t crankingValue1 = CRANKINGENRICHTABLE_VALUE_SCALE * table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 5 to get range of 0 - 1275%
+  if (configPage2.flexEnabled == 1)
   {
-    uint16_t crankingValue2 = 10 * table2D_getValue(&crankingEnrichTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550%
+    uint16_t crankingValue2 = CRANKINGENRICHTABLE2_VALUE_SCALE * table2D_getValue(&crankingEnrichTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550%
     crankingValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), crankingValue1, crankingValue2);
   }
   else
@@ -261,19 +261,22 @@ uint16_t correctionCranking(void)
 *  @return the ASE value, now a uint16_t rather than a byte because ethanol may 
 *     require ASE > 255 in extreme cold, according to @pazi88
 */
-uint16_t getASETableValue()
+uint16_t getASEValue()
 {
   uint16_t ASETableValue;
   currentStatus.ASEValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-  if (configPage2.flexEnabled)
+  if (configPage2.flexEnabled == 1)
   {
-    currentStatus.ASEValue2 = 5 * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
+    currentStatus.ASEValue2 = ASETABLE2_VALUE_SCALE * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
     ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.ASEValue1), currentStatus.ASEValue2);
+    currentStatus.ASEValue2 += 100; //Add 100 for logging readability
   }
   else
   {
     ASETableValue = currentStatus.ASEValue1;
   }
+
+  currentStatus.ASEValue1 += 100; //Add 100 for logging readability
   
   return ASETableValue;
 }
@@ -297,7 +300,7 @@ uint16_t correctionASE(void)
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + getASETableValue();
+        ASEValue = 100 + getASEValue();
         aseTaper = 0;
       }
       else
@@ -305,7 +308,7 @@ uint16_t correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASETableValue(), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASEValue(), 0);
           aseTaper++;
         }
         else

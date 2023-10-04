@@ -3,7 +3,7 @@
 #include <unity.h>
 #include "test_corrections.h"
 #include <secondaryTables.h>
-
+#include "fuel_tables_setup.h"
 
 void testCorrections()
 {
@@ -78,8 +78,8 @@ void test_corrections_WUE_active_value(void)
   ((uint8_t*)WUETable.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
 
-  ((uint8_t*)WUETable.values)[6] = 120;
-  ((uint8_t*)WUETable.values)[7] = 130;
+  ((uint8_t*)WUETable.values)[6] = 130;
+  ((uint8_t*)WUETable.values)[7] = 120;
 
   //Force invalidate the cache
   WUETable.cacheTime = currentStatus.secl - 1;
@@ -117,12 +117,12 @@ void test_corrections_WUE_active_flex_value(void)
   ((uint8_t*)WUETable2.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
   ((uint8_t*)WUETable2.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
 
-  ((uint8_t*)WUETable.values)[6] = 120;
-  ((uint8_t*)WUETable.values)[7] = 130;
-  ((uint8_t*)WUETable2.values)[6] = 200/10;
-  ((uint8_t*)WUETable2.values)[7] = 240/10;
+  ((uint8_t*)WUETable.values)[6] = 130;
+  ((uint8_t*)WUETable.values)[7] = 120;
+  ((uint8_t*)WUETable2.values)[6] = 240/10;
+  ((uint8_t*)WUETable2.values)[7] = 200/10;
 
-  set_flex_tables();
+  test_fuel_set_flex_tables();
 
   //Force invalidate the cache
   WUETable.cacheTime = currentStatus.secl - 1;
@@ -141,35 +141,13 @@ void test_corrections_WUE(void)
   RUN_TEST(test_corrections_WUE_active_flex_value);
 }
 
-void set_cranking_tables(void)
-{
-  //set mock values for cranking tables. Scale is accounted for
-  ((uint8_t*)crankingEnrichTable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable.values)[0] = 225/5;
-  ((uint8_t*)crankingEnrichTable.values)[1] = 190/5;
-  ((uint8_t*)crankingEnrichTable.values)[2] = 140/5;
-  ((uint8_t*)crankingEnrichTable.values)[3] = 120/5;
-
-  ((uint8_t*)crankingEnrichTable2.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[1] = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)crankingEnrichTable2.values)[0] = 1600/10;
-  ((uint8_t*)crankingEnrichTable2.values)[1] = 400/10;
-  ((uint8_t*)crankingEnrichTable2.values)[2] = 250/10;
-  ((uint8_t*)crankingEnrichTable2.values)[3] = 130/10;
-}
-
 void test_corrections_cranking_active_value(void)
 {
   //Check for cranking returning a correct interpolated value
   currentStatus.coolant = 90;
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = false;
-  set_cranking_tables();
+  test_fuel_set_cranking_tables();
 
   //Force invalidate the cache
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
@@ -185,7 +163,7 @@ void test_corrections_cranking_inactive_value(void)
   configPage2.flexEnabled = false;
   crankingEnrichTaper = 5;
   configPage10.crankingEnrichTaper = 3;
-  set_cranking_tables();
+  test_fuel_set_cranking_tables();
 
   //Force invalidate the cache
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
@@ -200,8 +178,8 @@ void test_corrections_cranking_active_flex_value(void)
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 40;
-  set_cranking_tables();
-  set_flex_tables();
+  test_fuel_set_cranking_tables();
+  test_fuel_set_flex_tables();
 
   //Force invalidate the cache
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
@@ -219,8 +197,8 @@ void test_corrections_cranking_inactive_flex_value(void)
   currentStatus.ethanolPct = 60;
   crankingEnrichTaper = 5;
   configPage10.crankingEnrichTaper = 3;
-  set_cranking_tables();
-  set_flex_tables();
+  test_fuel_set_cranking_tables();
+  test_fuel_set_flex_tables();
   //Force invalidate the cache
   crankingEnrichTable.cacheTime = currentStatus.secl - 1;
   crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
@@ -228,7 +206,6 @@ void test_corrections_cranking_inactive_flex_value(void)
   //Value should be 100 when crankingEnrich is inactive
   TEST_ASSERT_EQUAL(100, correctionCranking() );
 }
-
 void test_corrections_cranking(void)
 {
   RUN_TEST(test_corrections_cranking_active_value);
@@ -237,41 +214,6 @@ void test_corrections_cranking(void)
   RUN_TEST(test_corrections_cranking_inactive_flex_value);
 }
 
-void set_ASE_tables(void)
-{
-  //set duration table
-  ((uint8_t*)ASECountTable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASECountTable.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASECountTable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASECountTable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-
-  ((uint8_t*)ASECountTable.values)[0] = 16;
-  ((uint8_t*)ASECountTable.values)[1] = 12;
-  ((uint8_t*)ASECountTable.values)[2] = 3;
-  ((uint8_t*)ASECountTable.values)[3] = 1;
-
-  //set primary correction amount table
-  ((uint8_t*)ASETable.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-
-  ((uint8_t*)ASETable.values)[0] = 100;
-  ((uint8_t*)ASETable.values)[1] = 40;
-  ((uint8_t*)ASETable.values)[2] = 20;
-  ((uint8_t*)ASETable.values)[3] = 5;
-
-  //set secondary correction table
-  ((uint8_t*)ASETable2.axisX)[0] = 0 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable2.axisX)[1] = 40 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable2.axisX)[2] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)ASETable2.axisX)[3] = 180 + CALIBRATION_TEMPERATURE_OFFSET;
-
-  ((uint8_t*)ASETable2.values)[0] = 600/5;
-  ((uint8_t*)ASETable2.values)[1] = 400/5;
-  ((uint8_t*)ASETable2.values)[2] = 50/5;
-  ((uint8_t*)ASETable2.values)[3] = 20/5;
-}
 void test_corrections_ASE_inactive(void)
 {
   //test condition: already running while warm
@@ -283,7 +225,7 @@ void test_corrections_ASE_inactive(void)
   configPage2.aseTaperTime = 1;
   aseTaper = 2;
 
-  set_ASE_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
 
   correctionASE();
 
@@ -300,7 +242,7 @@ void test_corrections_ASE_inactive_value(void)
   configPage2.aseTaperTime = 1;
   aseTaper = 2;
 
-  set_ASE_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
 
   TEST_ASSERT_EQUAL(100, correctionASE());
 }
@@ -315,8 +257,8 @@ void test_corrections_ASE_inactive_flex_value(void)
   configPage2.aseTaperTime = 1;
   aseTaper = 2;
 
-  set_ASE_tables();
-  set_flex_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
+  test_fuel_set_flex_tables();
 
   TEST_ASSERT_EQUAL(100, correctionASE());
 }
@@ -331,7 +273,7 @@ void test_corrections_ASE_active(void)
   configPage2.aseTaperTime = 3;
   aseTaper = 0;
 
-  set_ASE_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
 
   correctionASE();
 
@@ -348,7 +290,7 @@ void test_corrections_ASE_active_value(void)
   configPage2.aseTaperTime = 3;
   aseTaper = 0;
 
-  set_ASE_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
 
   ASETable.cacheTime = currentStatus.secl - 1;
   
@@ -367,8 +309,8 @@ void test_corrections_ASE_active_flex_value(void)
   aseTaper = 0;
   currentStatus.ethanolPct = 40;
 
-  set_ASE_tables();
-  set_flex_tables();
+  test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
+  test_fuel_set_flex_tables();
 
   ASETable.cacheTime = currentStatus.secl - 1;
   ASETable2.cacheTime = currentStatus.secl - 1;
@@ -393,39 +335,6 @@ void test_corrections_floodclear(void)
 void test_corrections_closedloop(void)
 {
 
-}
-
-void set_flex_tables()
-{
-  //set flex fuel table
-  ((uint8_t*)flexFuelTable.axisX)[0] = 0;
-  ((uint8_t*)flexFuelTable.axisX)[1] = 20;
-  ((uint8_t*)flexFuelTable.axisX)[2] = 40;
-  ((uint8_t*)flexFuelTable.axisX)[3] = 60;
-  ((uint8_t*)flexFuelTable.axisX)[4] = 85;
-  ((uint8_t*)flexFuelTable.axisX)[5] = 100;
-
-  ((uint8_t*)flexFuelTable.values)[0] = 0;
-  ((uint8_t*)flexFuelTable.values)[1] = 24;
-  ((uint8_t*)flexFuelTable.values)[2] = 47;
-  ((uint8_t*)flexFuelTable.values)[3] = 70;
-  ((uint8_t*)flexFuelTable.values)[4] = 100;
-  ((uint8_t*)flexFuelTable.values)[5] = 110;
-
-  //set flex ignition table
-  ((uint8_t*)flexAdvTable.axisX)[0] = 0;
-  ((uint8_t*)flexAdvTable.axisX)[1] = 20;
-  ((uint8_t*)flexAdvTable.axisX)[2] = 40;
-  ((uint8_t*)flexAdvTable.axisX)[3] = 60;
-  ((uint8_t*)flexAdvTable.axisX)[4] = 85;
-  ((uint8_t*)flexAdvTable.axisX)[5] = 100;
-
-  ((uint8_t*)flexAdvTable.values)[0] = 0;
-  ((uint8_t*)flexAdvTable.values)[1] = 23;
-  ((uint8_t*)flexAdvTable.values)[2] = 46;
-  ((uint8_t*)flexAdvTable.values)[3] = 69;
-  ((uint8_t*)flexAdvTable.values)[4] = 100;
-  ((uint8_t*)flexAdvTable.values)[5] = 120;
 }
 
 void test_corrections_flex(void)
@@ -457,6 +366,8 @@ void test_corrections_launch(void)
 
 }
 
+
+//**********************************************************************************************************************
 void setup_DFCO_on()
 {
   //Sets all the required conditions to have the DFCO be active
@@ -474,7 +385,6 @@ void setup_DFCO_on()
   correctionDFCO();
   dfcoTaper = 20;
 }
-//**********************************************************************************************************************
 void test_corrections_dfco_on(void)
 {
   //Test under ideal conditions that DFCO goes active
@@ -520,40 +430,10 @@ void test_corrections_dfco()
   RUN_TEST(test_corrections_dfco_off_delay);
 }
 //**********************************************************************************************************************
-//Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
-void test_corrections_TAE_setup()
-{
-  configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
-
-  configPage4.taeValues[0] = 70;
-  configPage4.taeValues[1] = 103; 
-  configPage4.taeValues[2] = 124;
-  configPage4.taeValues[3] = 136; 
-
-  //Note: These values are divided by 10
-  configPage4.taeBins[0] = 0;
-  configPage4.taeBins[1] = 8; 
-  configPage4.taeBins[2] = 22;
-  configPage4.taeBins[3] = 97; 
-  
-  configPage2.taeThresh = 0;
-  configPage2.taeMinChange = 0;
-
-  //Divided by 100
-  configPage2.aeTaperMin = 10; //1000
-  configPage2.aeTaperMax = 50; //5000
-	
-	//Set the coolant to be above the warmup AE taper
-	configPage2.aeColdTaperMax = 60;
-	configPage2.aeColdTaperMin = 0;
-	currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
-
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Make sure AE is turned off
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC); //Make sure AE is turned off
-}
-
 void test_corrections_TAE_no_rpm_taper()
 {
+  test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
+
   //Disable the taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
@@ -571,6 +451,7 @@ void test_corrections_TAE_no_rpm_taper()
 
 void test_corrections_TAE_50pc_rpm_taper()
 {
+  test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
   //RPM is 50% of the way through the taper range
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -588,6 +469,8 @@ void test_corrections_TAE_50pc_rpm_taper()
 
 void test_corrections_TAE_110pc_rpm_taper()
 {
+  test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
+
   //RPM is 110% of the way through the taper range, which should result in no additional AE
   currentStatus.RPM = 5400;
   configPage2.aeTaperMin = 10; //1000
@@ -605,6 +488,7 @@ void test_corrections_TAE_110pc_rpm_taper()
 
 void test_corrections_TAE_under_threshold()
 {
+  test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -623,6 +507,8 @@ void test_corrections_TAE_under_threshold()
 
 void test_corrections_TAE_50pc_warmup_taper()
 {
+  test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
+
   //Disable the RPM taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
@@ -647,18 +533,9 @@ void test_corrections_TAE_50pc_warmup_taper()
 
 void test_corrections_TAE()
 {
-  test_corrections_TAE_setup();
-
-
   RUN_TEST(test_corrections_TAE_no_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_50pc_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_110pc_rpm_taper);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_under_threshold);
-	BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC); //Flag must be cleared between tests
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
-	
-	
 }

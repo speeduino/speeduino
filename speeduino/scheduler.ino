@@ -895,7 +895,7 @@ byte getPrimingPulse(void)
   byte primingValue;
   byte primingValue1 = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
 
-  if (configPage2.flexEnabled)
+  if (configPage2.flexEnabled == 1)
   {
     byte primingValue2 = table2D_getValue(&PrimingPulseTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
     primingValue = biasedAverage(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), primingValue1, primingValue2);
@@ -917,7 +917,7 @@ extern void beginInjectorPriming(void)
   unsigned long primingValue = getPrimingPulse();
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
-    primingValue = primingValue * 1000 / 2; //value in TS is in mS and scaled by 0.5 when stored. Need to convert to uS then divide by 2 to account for scale
+    primingValue = primingValue * 1000 / PRIMINGPULSETABLE_VALUE_SCALE; //value in TS is in mS and scaled by 0.5 when stored. Need to convert to uS then divide by 2 to account for scale
     if ( maxInjOutputs >= 1 ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
     if ( maxInjOutputs >= 2 ) { setFuelSchedule2(100, primingValue); }
