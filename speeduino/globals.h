@@ -1286,8 +1286,8 @@ struct config10 {
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
   int16_t vvtCL0DutyAng; //Bytes 130-131
-  uint8_t vvtCLMinAng; //Byte 132
-  uint8_t vvtCLMaxAng; //Byte 133
+  int8_t vvtCLMinAng; //Byte 132
+  int8_t vvtCLMaxAng; //Byte 133
 
   byte crankingEnrichTaper; //Byte 134
 

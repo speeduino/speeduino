@@ -759,7 +759,7 @@ void vvtControl(void)
 
         // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
         // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-        if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
+        if ( currentStatus.vvt1Angle <=  (int16_t(configPage10.vvtCLMinAng)*2) || currentStatus.vvt1Angle > int16_t(configPage10.vvtCLMaxAng*2) )
         {
           currentStatus.vvt1Duty = 0;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
@@ -798,7 +798,7 @@ void vvtControl(void)
 
           // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
           // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-          if ( currentStatus.vvt2Angle <= configPage10.vvtCLMinAng || currentStatus.vvt2Angle > configPage10.vvtCLMaxAng )
+          if ( currentStatus.vvt2Angle <= int16_t(configPage10.vvtCLMinAng*2) || currentStatus.vvt2Angle > int16_t(configPage10.vvtCLMaxAng*2) )
           {
             currentStatus.vvt2Duty = 0;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
