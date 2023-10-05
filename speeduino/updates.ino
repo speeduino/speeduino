@@ -717,6 +717,9 @@ void doUpdates(void)
     configPage15.rollingProtCutPercent[2] = 80;
     configPage15.rollingProtCutPercent[3] = 95;
 
+    //DFCO Hyster was mlutipled by 2 to allow a range of 0-500. Existing values must be halved
+    configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
+
     writeAllConfig();
     storeEEPROMVersion(22);
   }
