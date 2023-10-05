@@ -127,7 +127,9 @@ uint16_t correctionsFuel(void)
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
-  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
+  
+  if (configPage2.flexEnabled == 0 && sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
+  else if (configPage2.flexEnabled == 1 && sumCorrections > 10000) { sumCorrections = 10000; } //Limit is increased when using flex fuel. Not quite sure what to set this at
   return (uint16_t)sumCorrections;
 }
 
@@ -632,17 +634,20 @@ bool correctionDFCO(void)
 
 /** Flex fuel adjustment to vary fuel based on ethanol content.
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
+ * 
+ * !!!NO LONGER USED UNDER NEW FLEX SYSTEM!!!
+ * 
 */
-byte correctionFlex(void)
-{
-  byte flexValue = 100;
-
-  if (configPage2.flexEnabled == 1)
-  {
-    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
-  }
-  return flexValue;
-}
+// byte correctionFlex(void)
+// {
+//   byte flexValue = 100;
+//
+//   if (configPage2.flexEnabled == 1)
+//   {
+//     flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+//   }
+//   return flexValue;
+// }
 
 /*
  * Fuel temperature adjustment to vary fuel based on fuel temperature reading

@@ -13,12 +13,10 @@ void testCorrections()
   test_corrections_cranking();
   test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
+  test_corrections_integration();
   /*
-  RUN_TEST(test_corrections_cranking); //Not written yet
-  RUN_TEST(test_corrections_ASE); //Not written yet
   RUN_TEST(test_corrections_floodclear); //Not written yet
   RUN_TEST(test_corrections_closedloop); //Not written yet
-  RUN_TEST(test_corrections_flex); //Not written yet
   RUN_TEST(test_corrections_bat); //Not written yet
   RUN_TEST(test_corrections_iatdensity); //Not written yet
   RUN_TEST(test_corrections_baro); //Not written yet
@@ -32,106 +30,57 @@ void test_corrections_WUE_active(void)
   //Check for WUE being active
   currentStatus.coolant = 0;
   configPage2.flexEnabled = false;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
+
+  test_fuel_set_WUE_tables();
   correctionWUE();
+
   TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
-
 void test_corrections_WUE_inactive(void)
 {
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
   configPage2.flexEnabled = false;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET; //Set a WUE end value of 120
+
+  test_fuel_set_WUE_tables();
   correctionWUE();
+
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
 }
-
 void test_corrections_WUE_inactive_value(void)
 {
   //Check for WUE being set to the final row of the WUE curve if the coolant is above the max WUE temp
   currentStatus.coolant = 200;
   configPage2.flexEnabled = false;
-  ((uint8_t*)WUETable.axisX)[9] = 100;
-  ((uint8_t*)WUETable.values)[9] = 123; //Use a value other than 100 here to ensure we are using the non-default value
 
-  //Force invalidate the cache
-  WUETable.cacheTime = currentStatus.secl - 1;
+  test_fuel_set_WUE_tables();
   
   TEST_ASSERT_EQUAL(123, correctionWUE() );
 }
-
 void test_corrections_WUE_active_value(void)
 {
   //Check for WUE being made active and returning a correct interpolated value
   currentStatus.coolant = 80;
   configPage2.flexEnabled = false;
-  //Set some fake values in the table axis. Target value will fall between points 6 and 7
-  ((uint8_t*)WUETable.axisX)[0] = 0;
-  ((uint8_t*)WUETable.axisX)[1] = 0;
-  ((uint8_t*)WUETable.axisX)[2] = 0;
-  ((uint8_t*)WUETable.axisX)[3] = 0;
-  ((uint8_t*)WUETable.axisX)[4] = 0;
-  ((uint8_t*)WUETable.axisX)[5] = 0;
-  ((uint8_t*)WUETable.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-
-  ((uint8_t*)WUETable.values)[6] = 130;
-  ((uint8_t*)WUETable.values)[7] = 120;
-
-  //Force invalidate the cache
-  WUETable.cacheTime = currentStatus.secl - 1;
+  
+  test_fuel_set_WUE_tables();
   
   //Value should be midway between 120 and 130 = 125
   TEST_ASSERT_EQUAL(125, correctionWUE() );
 }
-
 void test_corrections_WUE_active_flex_value(void)
 {
   //Check for WUE being made active and returning a correct interpolated value
   currentStatus.coolant = 80;
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 60;
-  //Set some fake values in the table axis. Target value will fall between points 6 and 7
-  ((uint8_t*)WUETable.axisX)[0] = 0;
-  ((uint8_t*)WUETable.axisX)[1] = 0;
-  ((uint8_t*)WUETable.axisX)[2] = 0;
-  ((uint8_t*)WUETable.axisX)[3] = 0;
-  ((uint8_t*)WUETable.axisX)[4] = 0;
-  ((uint8_t*)WUETable.axisX)[5] = 0;
-  ((uint8_t*)WUETable.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable.axisX)[0] = 0;
-  
-  ((uint8_t*)WUETable2.axisX)[1] = 0;
-  ((uint8_t*)WUETable2.axisX)[2] = 0;
-  ((uint8_t*)WUETable2.axisX)[3] = 0;
-  ((uint8_t*)WUETable2.axisX)[4] = 0;
-  ((uint8_t*)WUETable2.axisX)[5] = 0;
-  ((uint8_t*)WUETable2.axisX)[6] = 70 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable2.axisX)[7] = 90 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable2.axisX)[8] = 100 + CALIBRATION_TEMPERATURE_OFFSET;
-  ((uint8_t*)WUETable2.axisX)[9] = 120 + CALIBRATION_TEMPERATURE_OFFSET;
 
-  ((uint8_t*)WUETable.values)[6] = 130;
-  ((uint8_t*)WUETable.values)[7] = 120;
-  ((uint8_t*)WUETable2.values)[6] = 240/10;
-  ((uint8_t*)WUETable2.values)[7] = 200/10;
-
+  test_fuel_set_WUE_tables();
   test_fuel_set_flex_tables();
-
-  //Force invalidate the cache
-  WUETable.cacheTime = currentStatus.secl - 1;
-  WUETable2.cacheTime = currentStatus.secl - 1;
 
   //Value should be (1 - 0.7)125 + (0.7)220 = ~192
   TEST_ASSERT_EQUAL(192, correctionWUE() );
 }
-
 void test_corrections_WUE(void)
 {
   RUN_TEST(test_corrections_WUE_active);
@@ -147,10 +96,8 @@ void test_corrections_cranking_active_value(void)
   currentStatus.coolant = 90;
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = false;
-  test_fuel_set_cranking_tables();
 
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
+  test_fuel_set_cranking_tables();
   
   //Value should be midway between 190 and 140 = 165
   TEST_ASSERT_EQUAL(165, correctionCranking() );
@@ -163,10 +110,8 @@ void test_corrections_cranking_inactive_value(void)
   configPage2.flexEnabled = false;
   crankingEnrichTaper = 5;
   configPage10.crankingEnrichTaper = 3;
-  test_fuel_set_cranking_tables();
 
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
+  test_fuel_set_cranking_tables();
   
   //Value should be 100 when crankingEnrich is inactive
   TEST_ASSERT_EQUAL(100, correctionCranking() );
@@ -178,12 +123,9 @@ void test_corrections_cranking_active_flex_value(void)
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 40;
+
   test_fuel_set_cranking_tables();
   test_fuel_set_flex_tables();
-
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
   
   //Value should be (1 - 0.47)190 + (0.47)400 = 
   TEST_ASSERT_EQUAL(289, correctionCranking() );
@@ -197,11 +139,9 @@ void test_corrections_cranking_inactive_flex_value(void)
   currentStatus.ethanolPct = 60;
   crankingEnrichTaper = 5;
   configPage10.crankingEnrichTaper = 3;
+
   test_fuel_set_cranking_tables();
   test_fuel_set_flex_tables();
-  //Force invalidate the cache
-  crankingEnrichTable.cacheTime = currentStatus.secl - 1;
-  crankingEnrichTable2.cacheTime = currentStatus.secl - 1;
 
   //Value should be 100 when crankingEnrich is inactive
   TEST_ASSERT_EQUAL(100, correctionCranking() );
@@ -291,8 +231,6 @@ void test_corrections_ASE_active_value(void)
   aseTaper = 0;
 
   test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
-
-  ASETable.cacheTime = currentStatus.secl - 1;
   
   //Should be 100 + 100 = 200
   TEST_ASSERT_EQUAL(200, correctionASE());
@@ -312,11 +250,8 @@ void test_corrections_ASE_active_flex_value(void)
   test_fuel_set_ASE_tables(); //included in each test so that each test can be run in isolation
   test_fuel_set_flex_tables();
 
-  ASETable.cacheTime = currentStatus.secl - 1;
-  ASETable2.cacheTime = currentStatus.secl - 1;
-
-  //Should be 100 + (1 - 0.47)100 + (0.47)600 = 435
-  TEST_ASSERT_EQUAL(435, correctionASE());
+  //Should be 100 + (1 - 0.47)100 + (0.47)1000 = 623
+  TEST_ASSERT_EQUAL(623, correctionASE());
 }
 void test_corrections_ASE(void)
 {
@@ -452,6 +387,7 @@ void test_corrections_TAE_no_rpm_taper()
 void test_corrections_TAE_50pc_rpm_taper()
 {
   test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
+
   //RPM is 50% of the way through the taper range
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -489,6 +425,7 @@ void test_corrections_TAE_110pc_rpm_taper()
 void test_corrections_TAE_under_threshold()
 {
   test_corrections_TAE_setup(); //included in each test so that each test can be run in isolation
+  
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
   currentStatus.RPM = 3000;
   configPage2.aeTaperMin = 10; //1000
@@ -538,4 +475,436 @@ void test_corrections_TAE()
   RUN_TEST(test_corrections_TAE_110pc_rpm_taper);
   RUN_TEST(test_corrections_TAE_under_threshold);
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
+}
+
+/***********************************************************************
+ * INTEGRATION TESTS *
+ ***********************************************************************/
+void test_corrections_disable_AE(void)
+{
+  configPage2.aeMode = AE_MODE_TPS;
+  currentStatus.TPS = 0;
+  currentStatus.TPSlast = 0;
+}
+void test_corrections_disable_bat_correction(void)
+{
+  test_fuel_set_bat_correction_table();
+  currentStatus.battery10 = 132; //100% correction, no change
+}
+void test_corrections_disable_IAT_correction(void)
+{
+  test_fuel_set_IAT_density_table();
+  currentStatus.IAT = 75; //100% correction, no change
+}
+void test_corrections_disable_baro_correction(void)
+{
+  test_fuel_set_baro_table();
+  currentStatus.baro = 100; //100% correction, no change
+}
+void test_corrections_disable_launch_correction(void)
+{
+  currentStatus.launchingHard = 0;
+  currentStatus.launchingSoft = 0;
+}
+void test_corrections_disable_fuel_temp_correction(void)
+{
+  test_fuel_set_fuel_temp_correction_table();
+  currentStatus.fuelTemp = 100;
+}
+void test_corrections_disable_closed_loop(void)
+{
+  configPage6.egoType = 0;
+  configPage2.incorporateAFR = false;
+}
+
+void test_corrections_cranking_and_WUE_active_value_extreme_cold(void)
+{
+  //0 degrees cold start
+  currentStatus.coolant = 0;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK); //ASE is disabled when cranking
+  configPage2.flexEnabled = false;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+
+  //Cranking value should be 225, WUE value should be 200, gammaE = 100 * 2.25 * 2 = 550
+  TEST_ASSERT_EQUAL(550, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_value_extreme_cold(void)
+{
+  //0 degrees cold start
+  currentStatus.coolant = 0;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = false;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+
+  //ASE value should be 200, WUE value should be 200, gammaE = 100 * 2 * 2 = 400
+  TEST_ASSERT_EQUAL(400, correctionsFuel());
+}
+
+void test_corrections_cranking_and_WUE_active_flex_value_extreme_cold(void)
+{
+  //0 degrees cold start
+  currentStatus.coolant = 0;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+
+  /* 
+  ** Cranking value should be (1 - 0.7)225 + (0.7)800 = ~628
+  ** WUE value should be (1 - 0.7)200 + (0.7)400 = 340
+  ** gammaE = 100 * 6.28 * 3.40 = 2135
+  */
+  TEST_ASSERT_EQUAL(2135, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_flex_value_extreme_cold(void)
+{
+  //0 degrees cold start
+  currentStatus.coolant = 0;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+  
+  /* 
+  ** ASE value should be 100 + (1 - 0.7)100 + (0.7)1000 = 830
+  ** WUE value should be (1 - 0.7)200 + (0.7)400 = 340
+  ** gammaE = 100 * 8.30 * 3.40 = 2135
+  */
+  TEST_ASSERT_EQUAL(2822, correctionsFuel());
+}
+
+void test_corrections_cranking_and_WUE_active_value_mild_cold(void)
+{
+  //60 degrees cold start
+  currentStatus.coolant = 60;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage2.flexEnabled = false;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+
+  //Cranking value should be 190, WUE value should be 140, gammaE = 100 * 1.90 * 1.40 = 266
+  TEST_ASSERT_EQUAL(266, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_value_mild_cold(void)
+{
+  //60 degrees cold start
+  currentStatus.coolant = 60;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = false;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+  
+  //ASE value should be 140, WUE value should be 140, gammaE = 100 * 1.4 * 1.4 = 196
+  TEST_ASSERT_EQUAL(196, correctionsFuel());
+}
+
+void test_corrections_cranking_and_WUE_active_flex_value_mild_cold(void)
+{
+  //60 degrees cold start
+  currentStatus.coolant = 60;
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+
+  /* 
+  ** Cranking value should be (1 - 0.7)190 + (0.7)400 = 337
+  ** WUE value should be (1 - 0.7)140 + (0.7)275 = 235
+  ** gammaE = 100 * 3.37 * 2.35 = 792
+  */
+  TEST_ASSERT_EQUAL(792, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_flex_value_mild_cold(void)
+{
+  //60 degrees cold start
+  currentStatus.coolant = 60;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+  
+  /* 
+  ** ASE value should be 100 + (1 - 0.7)40 + (0.7)400 = 392
+  ** WUE value should be (1 - 0.7)140 + (0.7)275 = 235
+  ** gammaE = 100 * 3.92 * 2.35 = 921
+  */
+  TEST_ASSERT_EQUAL(921, correctionsFuel());
+}
+
+void test_corrections_cranking_and_WUE_active_value_warm(void)
+{
+  //180 degrees start
+  currentStatus.coolant = 180;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage2.flexEnabled = false;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+
+  //Cranking value should be 120, WUE value should be 100, gammaE = 100 * 1.2 * 1 = 120
+  TEST_ASSERT_EQUAL(120, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_value_warm(void)
+{
+  //180 degrees start
+  currentStatus.coolant = 180;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = false;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+
+  //ASE value should be 105, WUE value should be 100, gammaE = 100 * 1.05 * 1 = 105
+  TEST_ASSERT_EQUAL(105, correctionsFuel());
+}
+
+void test_corrections_cranking_and_WUE_active_flex_value_warm(void)
+{
+  //180 degrees start
+  currentStatus.coolant = 180;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+
+  test_fuel_set_cranking_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+
+  /* 
+  ** Cranking value should be (1 - 0.7)120 + (0.7)130 = 127
+  ** WUE value should be (1 - 0.7)100 + (0.7)100 = 100
+  ** gammaE = 100 * 1.27 * 1 = 127
+  */
+  TEST_ASSERT_EQUAL(127, correctionsFuel());
+}
+
+void test_corrections_WUE_and_ASE_active_flex_value_warm(void)
+{
+  //180 degrees start
+  currentStatus.coolant = 180;
+
+  //set conditions to trigger only cranking and WUE
+  test_corrections_disable_AE();
+  configPage4.floodClear = 90; //should be disabled since TPS is set above
+  test_corrections_disable_bat_correction();
+  test_corrections_disable_IAT_correction();
+  test_corrections_disable_baro_correction();
+  configPage2.dfcoEnabled = 0;
+  test_corrections_disable_launch_correction();
+  test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
+
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.runSecs = 1;
+  configPage2.flexEnabled = true;
+  currentStatus.ethanolPct = 60;
+  configPage2.aseTaperTime = 3;
+  aseTaper = 0;
+
+  test_fuel_set_ASE_tables();
+  test_fuel_set_WUE_tables();
+  test_fuel_set_flex_tables();
+  
+  /* 
+  ** ASE value should be 100 + (1 - 0.7)5 + (0.7)20 = 116
+  ** WUE value should be (1 - 0.7)100 + (0.7)100 = 100
+  ** gammaE = 100 * 1.16 * 1 = 116
+  */
+  TEST_ASSERT_EQUAL(116, correctionsFuel());
+}
+
+void test_corrections_integration(void)
+{
+  RUN_TEST(test_corrections_cranking_and_WUE_active_value_extreme_cold);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_value_extreme_cold);
+  RUN_TEST(test_corrections_cranking_and_WUE_active_flex_value_extreme_cold);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_flex_value_extreme_cold);
+
+  RUN_TEST(test_corrections_cranking_and_WUE_active_value_mild_cold);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_value_mild_cold);
+  RUN_TEST(test_corrections_cranking_and_WUE_active_flex_value_mild_cold);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_flex_value_mild_cold);
+
+  RUN_TEST(test_corrections_cranking_and_WUE_active_value_warm);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_value_warm);
+  RUN_TEST(test_corrections_cranking_and_WUE_active_flex_value_warm);
+  RUN_TEST(test_corrections_WUE_and_ASE_active_flex_value_warm);
 }
