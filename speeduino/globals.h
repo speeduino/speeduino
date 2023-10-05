@@ -163,6 +163,9 @@
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
 
+#define SERIAL_PORT_PRIMARY   0
+#define SERIAL_PORT_SECONDARY 3
+
 //Define the load algorithm
 #define LOAD_SOURCE_MAP         0
 #define LOAD_SOURCE_TPS         1
@@ -1115,6 +1118,9 @@ struct config9 {
   byte enable_secondarySerial:1;            //enable secondary serial
   byte intcan_available:1;                     //enable internal can module
   byte enable_intcan:1;
+  byte secondarySerialProtocol:3;            //protocol for secondary serial. 0=Generic, 1=CAN, 2=msDroid, 3=Real Dash
+  byte unused9_0:2;
+
   byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
   uint8_t caninput_source_start_byte[16];     //u08 [15] array holds the start byte number(value of 0-7)

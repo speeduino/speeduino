@@ -719,6 +719,8 @@ void doUpdates(void)
 
     // DFCO Map Threshold added
     configPage9.dfcoMAPThresh = 100; //Default value of 100 is egual to 200 kpa, because the value is multiply by 2, this is a high value to not brake old tunes
+    //DFCO Hyster was mlutipled by 2 to allow a range of 0-500. Existing values must be halved
+    configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
 
     writeAllConfig();
     storeEEPROMVersion(22);

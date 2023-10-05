@@ -33,6 +33,7 @@ static int valueOffset; /**< The memory offset within a given page for a value t
 byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
+SerialStatus serialSecondaryStatusFlag;
 
 
 static bool isMap(void) {
@@ -66,30 +67,17 @@ void legacySerialCommand(void)
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
+      sendValues(0, LOG_ENTRY_SIZE, 0x31, Serial, serialStatusFlag);   //send values to serial0
+      firstCommsRequest = false;
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
-      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-
-      if (Serial.available() >= 2)
-      {
-        Serial.read(); //Ignore the first table value, it's always 0
-        writeConfig(Serial.read());
-        serialStatusFlag = SERIAL_INACTIVE;
-      }
+      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
     case 'B': // AS above but for the serial compatibility mode. 
-      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-
-      if (Serial.available() >= 2)
-      {
-        Serial.read(); //Ignore the first table value, it's always 0
-        writeConfig(Serial.read());
-        serialStatusFlag = SERIAL_INACTIVE;
-      }
+      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -284,8 +272,7 @@ void legacySerialCommand(void)
       break;
 
     case 'Q': // send code version
-      //Serial.print(F("speeduino 202305"));
-      Serial.print(F("speeduino 202306-dev"));
+      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -307,7 +294,7 @@ void legacySerialCommand(void)
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          sendValues(offset, length, cmd, 0);
+          sendValues(offset, length, cmd, Serial, serialStatusFlag);
         }
         else
         {
@@ -317,8 +304,7 @@ void legacySerialCommand(void)
       break;
 
     case 'S': // send code version
-      //Serial.print(F("Speeduino 2023.05"));
-      Serial.print(F("Speeduino 2023.06-dev"));
+      legacySerialHandler(currentCommand, Serial, serialStatusFlag); //Send the bootloader capabilities
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -548,8 +534,123 @@ void legacySerialCommand(void)
       break;
 
     default:
-      Serial.println(F("Err: Unknown cmd"));
+      //Serial.println(F("Err: Unknown cmd"));
+      //while(Serial.available() && Serial.peek()!='A') { Serial.read(); }
       serialStatusFlag = SERIAL_INACTIVE;
+      break;
+  }
+}
+
+void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
+{
+  switch (cmd)
+  {
+
+    case 'b': // New EEPROM burn command to only burn a single page at a time
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if (targetPort.available() >= 2)
+      {
+        targetPort.read(); //Ignore the first table value, it's always 0
+        writeConfig(targetPort.read());
+        targetStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'B': // AS above but for the serial compatibility mode. 
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if (targetPort.available() >= 2)
+      {
+        targetPort.read(); //Ignore the first table value, it's always 0
+        writeConfig(targetPort.read());
+        targetStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'd':
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if (targetPort.available() >= 2)
+      {
+        targetPort.read(); //Ignore the first byte value, it's always 0
+        uint32_t CRC32_val = calculatePageCRC32( targetPort.read() );
+        
+        //Split the 4 bytes of the CRC32 value into individual bytes and send
+        targetPort.write( ((CRC32_val >> 24) & 255) );
+        targetPort.write( ((CRC32_val >> 16) & 255) );
+        targetPort.write( ((CRC32_val >> 8) & 255) );
+        targetPort.write( (CRC32_val & 255) );
+        
+        targetStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'p':
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      //6 bytes required:
+      //2 - Page identifier
+      //2 - offset
+      //2 - Length
+      if(targetPort.available() >= 6)
+      {
+        byte offset1, offset2, length1, length2;
+        int length;
+        byte tempPage;
+
+        targetPort.read(); // First byte of the page identifier can be ignored. It's always 0
+        tempPage = targetPort.read();
+        //currentPage = 1;
+        offset1 = targetPort.read();
+        offset2 = targetPort.read();
+        valueOffset = word(offset2, offset1);
+        length1 = targetPort.read();
+        length2 = targetPort.read();
+        length = word(length2, length1);
+        for(int i = 0; i < length; i++)
+        {
+          targetPort.write( getPageValue(tempPage, valueOffset + i) );
+        }
+
+        targetStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'Q': // send code version
+      targetPort.print(F("speeduino 202306-dev"));
+      break;
+
+    case 'r': //New format for the optimised OutputChannels
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+      byte cmd;
+      if (targetPort.available() >= 6)
+      {
+        targetPort.read(); //Read the $tsCanId
+        cmd = targetPort.read(); // read the command
+
+        uint16_t offset, length;
+        byte tmp;
+        tmp = targetPort.read();
+        offset = word(targetPort.read(), tmp);
+        tmp = targetPort.read();
+        length = word(targetPort.read(), tmp);
+
+        targetStatusFlag = SERIAL_INACTIVE;
+
+        if(cmd == 0x30) //Send output channels command 0x30 is 48dec
+        {
+          sendValues(offset, length, cmd, targetPort, targetStatusFlag);
+        }
+        else
+        {
+          //No other r/ commands are supported in legacy mode
+        }
+      }
+      break;
+
+    case 'S': // send code version
+      targetPort.print(F("Speeduino 2023.06-dev"));
       break;
   }
 }
@@ -559,29 +660,38 @@ void legacySerialCommand(void)
  * @param offset - Start field number
  * @param packetLength - Length of actual message (after possible ack/confirm headers)
  * @param cmd - ??? - Will be used as some kind of ack on CANSerial
- * @param portNum - Port number (0=Serial, 3=CANSerial)
+ * @param targetPort - The HardwareSerial device that will be transmitted to
+ * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
 {  
-  serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
-
-  if (portNum == 3)
+  #if defined(CANSerial_AVAILABLE)
+  if (&targetPort == &CANSerial)
   {
     //CAN serial
-    #if defined(USE_SERIAL3)
-      if (cmd == 30)
-      {
-        CANSerial.write("r");         //confirm cmd type
-        CANSerial.write(cmd);
-      }
-      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
-    #else
-      UNUSED(cmd);
-    #endif
+    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
+    {
+        if (cmd == 0x30) 
+        {
+          CANSerial.write("r");         //confirm cmd type
+          CANSerial.write(cmd);
+        }
+        else if (cmd == 0x31)
+        {
+          CANSerial.write("A");         // confirm command type   
+        }
+        else if (cmd == 0x32)
+        {
+          CANSerial.write("n");                       // confirm command type
+          CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+          CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+        }
+    }  
   }
   else
+  #endif
   {
     if(firstCommsRequest) 
     { 
@@ -590,17 +700,24 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     }
   }
 
+  //
+  targetStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   for(byte x=0; x<packetLength; x++)
   {
-    if (portNum == 0) { Serial.write(getTSLogEntry(offset+x)); }
-    #if defined(CANSerial_AVAILABLE)
-      else if (portNum == 3){ CANSerial.write(getTSLogEntry(offset+x)); }
-    #endif
+    bool bufferFull = false;
+
+    targetPort.write(getTSLogEntry(offset+x));
+
+    if( (&targetPort == &Serial) || (configPage9.secondarySerialProtocol != SECONDARY_SERIAL_PROTO_REALDASH) ) 
+    { 
+      //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
+      if(targetPort.availableForWrite() < 1) { bufferFull = true; }
+    }
 
     //Check whether the tx buffer still has space
-    if(Serial.availableForWrite() < 1) 
+    if(bufferFull == true) 
     { 
       //tx buffer is full. Store the current state so it can be resumed later
       logItemsTransmitted = offset + x + 1;
@@ -609,9 +726,12 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     }
     
   }
-  serialStatusFlag = SERIAL_INACTIVE;
+
+  targetStatusFlag = SERIAL_INACTIVE;
+  while(targetPort.available()) { targetPort.read(); }
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+
 }
 
 void sendValuesLegacy(void)
