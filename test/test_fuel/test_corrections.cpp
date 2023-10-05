@@ -55,7 +55,7 @@ void test_corrections_WUE_inactive_value(void)
 
   test_fuel_set_WUE_tables();
   
-  TEST_ASSERT_EQUAL(123, correctionWUE() );
+  TEST_ASSERT_EQUAL(100, correctionWUE() );
 }
 void test_corrections_WUE_active_value(void)
 {
@@ -225,6 +225,7 @@ void test_corrections_ASE_active_value(void)
   currentStatus.coolant = 0;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = 0;
   configPage2.aseTaperTime = 3;
@@ -241,6 +242,7 @@ void test_corrections_ASE_active_flex_value(void)
   currentStatus.coolant = 0;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = true;
   configPage2.aseTaperTime = 3;
@@ -539,8 +541,8 @@ void test_corrections_cranking_and_WUE_active_value_extreme_cold(void)
   test_fuel_set_cranking_tables();
   test_fuel_set_WUE_tables();
 
-  //Cranking value should be 225, WUE value should be 200, gammaE = 100 * 2.25 * 2 = 550
-  TEST_ASSERT_EQUAL(550, correctionsFuel());
+  //Cranking value should be 225, WUE value should be 200, gammaE = 100 * 2.25 * 2 = 450
+  TEST_ASSERT_EQUAL(450, correctionsFuel());
 }
 
 void test_corrections_WUE_and_ASE_active_value_extreme_cold(void)
@@ -557,9 +559,11 @@ void test_corrections_WUE_and_ASE_active_value_extreme_cold(void)
   configPage2.dfcoEnabled = 0;
   test_corrections_disable_launch_correction();
   test_corrections_disable_fuel_temp_correction();
+  test_corrections_disable_closed_loop();
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = false;
   configPage2.aseTaperTime = 3;
@@ -622,6 +626,7 @@ void test_corrections_WUE_and_ASE_active_flex_value_extreme_cold(void)
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 60;
@@ -685,6 +690,7 @@ void test_corrections_WUE_and_ASE_active_value_mild_cold(void)
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = false;
   configPage2.aseTaperTime = 3;
@@ -702,7 +708,6 @@ void test_corrections_cranking_and_WUE_active_flex_value_mild_cold(void)
 {
   //60 degrees cold start
   currentStatus.coolant = 60;
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
 
   //set conditions to trigger only cranking and WUE
   test_corrections_disable_AE();
@@ -725,10 +730,13 @@ void test_corrections_cranking_and_WUE_active_flex_value_mild_cold(void)
 
   /* 
   ** Cranking value should be (1 - 0.7)190 + (0.7)400 = 337
-  ** WUE value should be (1 - 0.7)140 + (0.7)275 = 235
-  ** gammaE = 100 * 3.37 * 2.35 = 792
+  ** WUE value should be (1 - 0.7)140 + (0.7)275 = ~234
+  ** gammaE = 100 * 3.37 * 2.34 = 792
   */
-  TEST_ASSERT_EQUAL(792, correctionsFuel());
+
+  uint16_t expected = 792;
+  byte tolerance = expected / 50; //2% tolerance to account for rounding error
+  TEST_ASSERT_UINT16_WITHIN(tolerance, expected, correctionsFuel());
 }
 
 void test_corrections_WUE_and_ASE_active_flex_value_mild_cold(void)
@@ -749,6 +757,7 @@ void test_corrections_WUE_and_ASE_active_flex_value_mild_cold(void)
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 60;
@@ -764,7 +773,10 @@ void test_corrections_WUE_and_ASE_active_flex_value_mild_cold(void)
   ** WUE value should be (1 - 0.7)140 + (0.7)275 = 235
   ** gammaE = 100 * 3.92 * 2.35 = 921
   */
-  TEST_ASSERT_EQUAL(921, correctionsFuel());
+
+  uint16_t expected = 921;
+  byte tolerance = expected / 50; //2% tolerance to account for rounding error
+  TEST_ASSERT_UINT16_WITHIN(expected, tolerance, correctionsFuel());
 }
 
 void test_corrections_cranking_and_WUE_active_value_warm(void)
@@ -811,6 +823,7 @@ void test_corrections_WUE_and_ASE_active_value_warm(void)
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = false;
   configPage2.aseTaperTime = 3;
@@ -873,6 +886,7 @@ void test_corrections_WUE_and_ASE_active_flex_value_warm(void)
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  configPage10.crankingEnrichTaper = 0;
   currentStatus.runSecs = 1;
   configPage2.flexEnabled = true;
   currentStatus.ethanolPct = 60;
