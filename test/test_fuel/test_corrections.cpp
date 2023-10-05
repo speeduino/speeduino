@@ -13,9 +13,8 @@ void testCorrections()
   test_corrections_cranking();
   test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
-  test_corrections_integration();
+  test_corrections_floodclear();
   /*
-  RUN_TEST(test_corrections_floodclear); //Not written yet
   RUN_TEST(test_corrections_closedloop); //Not written yet
   RUN_TEST(test_corrections_bat); //Not written yet
   RUN_TEST(test_corrections_iatdensity); //Not written yet
@@ -23,8 +22,9 @@ void testCorrections()
   RUN_TEST(test_corrections_launch); //Not written yet
   RUN_TEST(test_corrections_dfco); //Not written yet
   */
+  test_corrections_integration();
 }
-
+//**********************************************************************************************************************
 void test_corrections_WUE_active(void)
 {
   //Check for WUE being active
@@ -89,7 +89,7 @@ void test_corrections_WUE(void)
   RUN_TEST(test_corrections_WUE_inactive_value);
   RUN_TEST(test_corrections_WUE_active_flex_value);
 }
-
+//**********************************************************************************************************************
 void test_corrections_cranking_active_value(void)
 {
   //Check for cranking returning a correct interpolated value
@@ -153,7 +153,7 @@ void test_corrections_cranking(void)
   RUN_TEST(test_corrections_cranking_active_flex_value);
   RUN_TEST(test_corrections_cranking_inactive_flex_value);
 }
-
+//**********************************************************************************************************************
 void test_corrections_ASE_inactive(void)
 {
   //test condition: already running while warm
@@ -264,46 +264,86 @@ void test_corrections_ASE(void)
   RUN_TEST(test_corrections_ASE_active_flex_value);
   RUN_TEST(test_corrections_ASE_inactive_flex_value);
 }
+//**********************************************************************************************************************
+void test_corrections_floodclear_inactive_cranking(void)
+{
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = 0;
 
+  TEST_ASSERT_EQUAL(100, correctionFloodClear());
+}
+void test_corrections_floodclear_active_cranking(void)
+{
+  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = 100;
+
+  TEST_ASSERT_EQUAL(0, correctionFloodClear());
+}
+void test_corrections_floodclear_inactive_running(void)
+{
+  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  BIT_SET(currentStatus.engine, BIT_ENGINE_RUN);
+  configPage4.floodClear = 90;
+  currentStatus.TPS = 100;
+
+  TEST_ASSERT_EQUAL(100, correctionFloodClear());
+}
 void test_corrections_floodclear(void)
 {
+  RUN_TEST(test_corrections_floodclear_inactive_cranking);
+  RUN_TEST(test_corrections_floodclear_active_cranking);
+  RUN_TEST(test_corrections_floodclear_inactive_running);
 
 }
+//**********************************************************************************************************************
 void test_corrections_closedloop(void)
 {
 
 }
-
+//**********************************************************************************************************************
 void test_corrections_flex(void)
 {
   TEST_ASSERT_EQUAL(100, biasedAverage(0, 100, 200)); //0 bias, should return val1
   TEST_ASSERT_EQUAL(200, biasedAverage(100, 100, 200)); //100 bias, should return val2
-
   TEST_ASSERT_EQUAL(150, biasedAverage(50, 100, 200)); //should return 50% val1 + 50% val2
   TEST_ASSERT_EQUAL(150, biasedAverage(200, 50, 100));
   TEST_ASSERT_EQUAL(125, biasedAverage(150, 50, 100));
-
   TEST_ASSERT_EQUAL(255, biasedAverage(200, 100, 200)); //should return 255 for calculations that exceed 255
-}
 
+  TEST_ASSERT_EQUAL(100, biasedAverage_uint16(0, 100, 200)); //0 bias, should return val1
+  TEST_ASSERT_EQUAL(200, biasedAverage_uint16(100, 100, 200)); //100 bias, should return val2
+  TEST_ASSERT_EQUAL(150, biasedAverage_uint16(50, 100, 200)); //should return 50% val1 + 50% val2
+  TEST_ASSERT_EQUAL(150, biasedAverage_uint16(200, 50, 100));
+  TEST_ASSERT_EQUAL(125, biasedAverage_uint16(150, 50, 100));
+
+  TEST_ASSERT_EQUAL(1000, biasedAverage_uint16(0, 1000, 2000)); //0 bias, should return val1
+  TEST_ASSERT_EQUAL(2000, biasedAverage_uint16(100, 1000, 2000)); //100 bias, should return val2
+  TEST_ASSERT_EQUAL(1500, biasedAverage_uint16(50, 1000, 2000)); //should return 50% val1 + 50% val2
+  TEST_ASSERT_EQUAL(600, biasedAverage_uint16(200, 200, 400));
+  TEST_ASSERT_EQUAL(600, biasedAverage_uint16(150, 300, 500));
+}
+//**********************************************************************************************************************
 void test_corrections_bat(void)
 {
 
 }
+//**********************************************************************************************************************
 void test_corrections_iatdensity(void)
 {
 
 }
+//**********************************************************************************************************************
 void test_corrections_baro(void)
 {
 
 }
+//**********************************************************************************************************************
 void test_corrections_launch(void)
 {
 
 }
-
-
 //**********************************************************************************************************************
 void setup_DFCO_on()
 {
@@ -479,9 +519,9 @@ void test_corrections_TAE()
   RUN_TEST(test_corrections_TAE_50pc_warmup_taper);
 }
 
-/***********************************************************************
+/***********************************************************************************************************************
  * INTEGRATION TESTS *
- ***********************************************************************/
+ ***********************************************************************************************************************/
 void test_corrections_disable_AE(void)
 {
   configPage2.aeMode = AE_MODE_TPS;
