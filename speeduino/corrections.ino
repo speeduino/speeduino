@@ -554,9 +554,7 @@ bool correctionDFCO(void)
     }
     else 
     {
-
       if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) && (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ) && ( currentStatus.MAP < ( configPage9.dfcoMAPThresh * 2 ) ) )
-
       {
         if( dfcoTaper < configPage2.dfcoDelay )
         {
