@@ -140,6 +140,23 @@ void initBoard()
     TMR2_LOAD3 = 0; /* Reset load register */
     TMR2_CTRL3 |= TMR_CTRL_PCS(0b1111); //Set the prescaler to 128
     TMR2_CTRL3 |= TMR_CTRL_CM(1); //Start the timer
+    //FLEXPWM1 - Knk 1-4
+    //0
+    FLEXPWM1_SM0CTRL = 0;
+    FLEXPWM1_SM0CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM1_SM0CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //1
+    FLEXPWM1_SM1CTRL = 0;
+    FLEXPWM1_SM1CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM1_SM1CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //2
+    FLEXPWM1_SM2CTRL = 0;
+    FLEXPWM1_SM2CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM1_SM2CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //3
+    FLEXPWM1_SM3CTRL = 0;
+    FLEXPWM1_SM3CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM1_SM3CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
     //TMR3 - Fuel 5-8
     //0
     TMR3_CTRL0 = 0;
@@ -190,6 +207,23 @@ void initBoard()
     TMR4_LOAD3 = 0; /* Reset load register */
     TMR4_CTRL3 |= TMR_CTRL_PCS(0b1111); //Set the prescaler to 128
     TMR4_CTRL3 |= TMR_CTRL_CM(1); //Start the timer
+    //FLEXPWM2 - Knk 5-8
+    //0
+    FLEXPWM2_SM0CTRL = 0;
+    FLEXPWM2_SM0CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM2_SM0CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //1
+    FLEXPWM2_SM1CTRL = 0;
+    FLEXPWM2_SM1CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM2_SM1CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //2
+    FLEXPWM2_SM2CTRL = 0;
+    FLEXPWM2_SM2CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM2_SM2CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
+    //3
+    FLEXPWM2_SM3CTRL = 0;
+    FLEXPWM2_SM3CTRL |= FLEXPWM_SMCTRL_FULL;
+    FLEXPWM2_SM3CTRL |= FLEXPWM_SMCTRL_PRSC(0b111); //128 prescaler
 
     attachInterruptVector(IRQ_QTIMER1, TMR1_isr);
     NVIC_ENABLE_IRQ(IRQ_QTIMER1);
@@ -199,6 +233,22 @@ void initBoard()
     NVIC_ENABLE_IRQ(IRQ_QTIMER3);
     attachInterruptVector(IRQ_QTIMER4, TMR4_isr);
     NVIC_ENABLE_IRQ(IRQ_QTIMER4);
+    attachInterruptVector(IRQ_FLEXPWM1_0, FLEXPWM1_0_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM1_0);
+    attachInterruptVector(IRQ_FLEXPWM1_1, FLEXPWM1_1_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM1_1);
+    attachInterruptVector(IRQ_FLEXPWM1_2, FLEXPWM1_2_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM1_2);
+    attachInterruptVector(IRQ_FLEXPWM1_3, FLEXPWM1_3_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM1_3);
+    attachInterruptVector(IRQ_FLEXPWM2_0, FLEXPWM2_0_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM2_0);
+    attachInterruptVector(IRQ_FLEXPWM2_1, FLEXPWM2_1_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM2_1);
+    attachInterruptVector(IRQ_FLEXPWM2_2, FLEXPWM2_2_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM2_2);
+    attachInterruptVector(IRQ_FLEXPWM2_3, FLEXPWM2_3_isr);
+    NVIC_ENABLE_IRQ(IRQ_FLEXPWM2_3);
 }
 
 void PIT_isr()
@@ -265,6 +315,54 @@ void TMR4_isr(void)
   else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule6Interrupt(); }
   else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule7Interrupt(); }
   else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule8Interrupt(); }
+}
+
+void FLEXPWM1_0_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM1_SM0STS & FLEXPWM_SMSTS_CMPF(1<<0) );
+  if(interrupt1) { FLEXPWM1_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); /*knockSchedule1Interrupt();*/ }
+}
+
+void FLEXPWM1_1_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM1_SM1STS & FLEXPWM_SMSTS_CMPF(1<<1) );
+  if(interrupt1) { FLEXPWM1_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); /*knockSchedule2Interrupt();*/ }
+}
+
+void FLEXPWM1_2_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM1_SM2STS & FLEXPWM_SMSTS_CMPF(1<<2) );
+  if(interrupt1) { FLEXPWM1_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); /*knockSchedule3Interrupt();*/ }
+}
+
+void FLEXPWM1_3_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM1_SM3STS & FLEXPWM_SMSTS_CMPF(1<<3) );
+  if(interrupt1) { FLEXPWM1_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); /*knockSchedule4Interrupt();*/ }
+}
+
+void FLEXPWM2_0_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM2_SM0STS & FLEXPWM_SMSTS_CMPF(1<<0) );
+  if(interrupt1) { FLEXPWM2_SM0STS |= FLEXPWM_SMSTS_CMPF(1<<0); /*knockSchedule5Interrupt();*/ }
+}
+
+void FLEXPWM2_1_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM2_SM1STS & FLEXPWM_SMSTS_CMPF(1<<1) );
+  if(interrupt1) { FLEXPWM2_SM1STS |= FLEXPWM_SMSTS_CMPF(1<<1); /*knockSchedule6Interrupt();*/ }
+}
+
+void FLEXPWM2_2_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM2_SM2STS & FLEXPWM_SMSTS_CMPF(1<<2) );
+  if(interrupt1) { FLEXPWM2_SM2STS |= FLEXPWM_SMSTS_CMPF(1<<2); /*knockSchedule7Interrupt();*/ }
+}
+
+void FLEXPWM2_3_isr(void)
+{
+  bool interrupt1 = ( FLEXPWM2_SM3STS & FLEXPWM_SMSTS_CMPF(1<<3) );
+  if(interrupt1) { FLEXPWM2_SM3STS |= FLEXPWM_SMSTS_CMPF(1<<3); /*knockSchedule8Interrupt();*/ }
 }
 
 uint16_t freeRam()

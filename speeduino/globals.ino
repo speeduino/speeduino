@@ -228,6 +228,8 @@ byte pinWMIIndicator; // No water indicator bulb
 byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid 
 byte pinMC33810_1_CS;
 byte pinMC33810_2_CS;
+byte pinTPIC8101_CS;
+byte pinTPIC8101_INT;
 byte pinSDEnable;
 #ifdef USE_SPI_EEPROM
   byte pinSPIFlash_CS;

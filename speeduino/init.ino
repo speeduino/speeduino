@@ -19,6 +19,7 @@
 #include "idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
+#include "tpic8101.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include EEPROM_LIB_H
 #ifdef SD_LOGGING
@@ -1498,6 +1499,8 @@ void setPinMapping(byte boardID)
         pinWMIEmpty = 34;
         pinWMIIndicator = 35;
         pinWMIEnabled = 36;
+        pinTPIC8101_CS = 51; //Testing
+        pinTPIC8101_INT = 52; //Testing
       #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -2342,6 +2345,8 @@ void setPinMapping(byte boardID)
         pinTachOut = 8; //Tacho output pin
 
         pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
+        pinTPIC8101_CS = 51; //Testing
+        pinTPIC8101_INT = 52; //Testing
 
         //CS pin number is now set in a compile flag. 
         // #ifdef USE_SPI_EEPROM
@@ -2901,6 +2906,14 @@ void setPinMapping(byte boardID)
 
     initMC33810();
   }
+  
+#if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+  tpic8101_cs_pin_port = portOutputRegister(digitalPinToPort(pinTPIC8101_CS));
+  tpic8101_cs_pin_mask = digitalPinToBitMask(pinTPIC8101_CS);
+  tpic8101_int_hold_pin_port = portOutputRegister(digitalPinToPort(pinTPIC8101_INT));
+  tpic8101_int_hold_pin_mask = digitalPinToBitMask(pinTPIC8101_INT);
+  initTPIC8101();
+#endif
 
 //CS pin number is now set in a compile flag. 
 // #ifdef USE_SPI_EEPROM
