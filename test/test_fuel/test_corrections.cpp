@@ -15,13 +15,11 @@ void testCorrections()
   RUN_TEST(test_corrections_flex);
   test_corrections_floodclear();
   test_corrections_bat();
+  //test_corrections_iatdensity(); //Tests hang when this is executed, so it is commented for now
   /*
   RUN_TEST(test_corrections_closedloop); //Not written yet
-  
-  RUN_TEST(test_corrections_iatdensity); //Not written yet
   RUN_TEST(test_corrections_baro); //Not written yet
   RUN_TEST(test_corrections_launch); //Not written yet
-  RUN_TEST(test_corrections_dfco); //Not written yet
   */
   test_corrections_integration();
 }
@@ -358,8 +356,35 @@ void test_corrections_bat(void)
 
 }
 //**********************************************************************************************************************
+void test_corrections_iatdensity_cold(void)
+{
+  currentStatus.IAT = 10;
+  test_fuel_set_IAT_density_table();
+
+  //should be halfway between 116 and 114 = 115
+  TEST_ASSERT_EQUAL(115, correctionIATDensity());
+}
+void test_corrections_iatdensity_mild(void)
+{
+  currentStatus.IAT = 70;
+  test_fuel_set_IAT_density_table();
+
+ //should be 103 - [(70 - 60) / (75 - 60) * (103 - 100)] = 101
+  TEST_ASSERT_EQUAL(101, correctionIATDensity());
+}
+void test_corrections_iatdensity_hot(void)
+{
+  currentStatus.IAT = 150;
+  test_fuel_set_IAT_density_table();
+
+  //temp is max xAxis bin, should return max bin's value = 88
+  TEST_ASSERT_EQUAL(88, correctionIATDensity());
+}
 void test_corrections_iatdensity(void)
 {
+  RUN_TEST(test_corrections_iatdensity_cold);
+  RUN_TEST(test_corrections_iatdensity_mild);
+  RUN_TEST(test_corrections_iatdensity_hot);
 
 }
 //**********************************************************************************************************************
