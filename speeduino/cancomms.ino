@@ -22,8 +22,9 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "utilities.h"
 #include "comms_legacy.h"
 #include "logger.h"
+#include "page_crc.h"
 
-uint8_t currentsecondserialCommand;
+uint8_t currentSecondaryCommand;
 uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
 uint8_t nCanretry = 0;      //no of retrys
 uint8_t cancmdfail = 0;     //command fail yes/no
@@ -31,7 +32,6 @@ uint8_t canlisten = 0;
 uint8_t Lbuffer[8];         //8 byte buffer to store incoming can data
 uint8_t Gdata[9];
 uint8_t Glow, Ghigh;
-bool canCmdPending = false;
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
   HardwareSerial &CANSerial = Serial3;
@@ -51,21 +51,35 @@ bool canCmdPending = false;
 void secondserial_Command(void)
 {
   #if defined(CANSerial_AVAILABLE)
-  if (! canCmdPending) {  currentsecondserialCommand = CANSerial.read();  }
+  if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = CANSerial.read(); }
 
-  switch (currentsecondserialCommand)
+  switch (currentSecondaryCommand)
   {
     case 'A': 
-        // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
-        //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
-        sendValues(0, CAN_PACKET_SIZE, 0x31, SERIAL_PORT_SECONDARY); //send values to serial3
-        break;
+      // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
+      //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
+      sendValues(0, CAN_PACKET_SIZE, 0x31, CANSerial); //send values to serial3
+      break;
+
+    case 'b': // New EEPROM burn command to only burn a single page at a time
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      break;
+
+    case 'B': // AS above but for the serial compatibility mode. 
+      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      break;
+
+    case 'd': // Send a CRC32 hash of a given page
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      break;
 
     case 'G': // this is the reply command sent by the Can interface
-       byte destcaninchannel;
+      serialSecondaryStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+      byte destcaninchannel;
       if (CANSerial.available() >= 9)
       {
-        canCmdPending = false;
+        serialSecondaryStatusFlag = SERIAL_INACTIVE;
         cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
         destcaninchannel = CANSerial.read();  // the input channel that requested the data value
         if (cancmdfail != 0)
@@ -94,12 +108,7 @@ void secondserial_Command(void)
         else{}  //continue as command request failed and/or data/device was not available
 
       }
-      else
-      {
-        canCmdPending = true;
-      }
-      
-        break;
+      break;
 
     case 'k':   //placeholder for new can interface (toucan etc) commands
 
@@ -128,37 +137,19 @@ void secondserial_Command(void)
         break;
 
     case 'n': // sends the bytes of realtime values from the NEW CAN list
-        sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, SERIAL_PORT_SECONDARY); //send values to serial3
-        break;
+      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, CANSerial); //send values to serial3
+      break;
+
+    case 'p':
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      break;
+
+    case 'Q': // send code version
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+       break;
 
     case 'r': //New format for the optimised OutputChannels over CAN
-      byte Cmd;
-      if (CANSerial.available() >= 6)
-      {
-        CANSerial.read(); //Read the $tsCanId
-        Cmd = CANSerial.read();
-
-        uint16_t offset, length;
-        if( (Cmd == 0x30) || ( (Cmd >= 0x40) && (Cmd <0x50) ) ) //Send output channels command 0x30 is 48dec, 0x40(64dec)-0x4F(79dec) are external can request
-        {
-          byte tmp;
-          tmp = CANSerial.read();
-          offset = word(CANSerial.read(), tmp);
-          tmp = CANSerial.read();
-          length = word(CANSerial.read(), tmp);
-          sendValues(offset, length,Cmd, SERIAL_PORT_SECONDARY);
-          canCmdPending = false;
-          //Serial.print(Cmd);
-        }
-        else
-        {
-          //No other r/ commands should be called
-        }
-      }
-      else
-      {
-        canCmdPending = true;
-      }
+      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
       break;
 
     case 's': // send the "a" stream code version
@@ -166,17 +157,10 @@ void secondserial_Command(void)
       break;
 
     case 'S': // send code version
-      CANSerial.print(F("Speeduino 2019.08-ser"));
-      break;
+      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_MSDROID) { legacySerialHandler('Q', CANSerial, serialSecondaryStatusFlag); } //Note 'Q', this is a workaround for msDroid
+      else { legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag); }
       
-    case 'Q': // send code version
-       //for (unsigned int revn = 0; revn < sizeof( TSfirmwareVersion) - 1; revn++)
-       for (unsigned int revn = 0; revn < 10 - 1; revn++)
-       {
-         CANSerial.write( TSfirmwareVersion[revn]);
-       }
-       //Serial3.print("speeduino 201609-dev");
-       break;
+      break;
 
     case 'Z': //dev use
        break;
