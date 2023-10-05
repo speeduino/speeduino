@@ -33,6 +33,7 @@ static int valueOffset; /**< The memory offset within a given page for a value t
 byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
+SerialStatus serialSecondaryStatusFlag;
 
 
 static bool isMap(void) {
@@ -66,8 +67,8 @@ void legacySerialCommand(void)
       break;
 
     case 'A': // send x bytes of realtime values
-      //sendValues(0, LOG_ENTRY_SIZE, 0x31, 0);   //send values to serial0
-      sendValues(0, 122, 0x31, 0);   //send values to serial0. Fixed value of 122 is a workaround for RealDash until a better solution is implemented
+      sendValues(0, LOG_ENTRY_SIZE, 0x31, SERIAL_PORT_PRIMARY);   //send values to serial0
+      firstCommsRequest = false;
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
@@ -308,7 +309,7 @@ void legacySerialCommand(void)
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          sendValues(offset, length, cmd, 0);
+          sendValues(offset, length, cmd, SERIAL_PORT_PRIMARY);
         }
         else
         {
@@ -549,7 +550,8 @@ void legacySerialCommand(void)
       break;
 
     default:
-      Serial.println(F("Err: Unknown cmd"));
+      //Serial.println(F("Err: Unknown cmd"));
+      //while(Serial.available() && Serial.peek()!='A') { Serial.read(); }
       serialStatusFlag = SERIAL_INACTIVE;
       break;
   }
@@ -566,24 +568,31 @@ void legacySerialCommand(void)
  */
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
 {  
-  serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
-
-  if (portNum == 3)
+  if (portNum == SERIAL_PORT_SECONDARY)
   {
+    serialSecondaryStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
     //CAN serial
-    #if defined(USE_SERIAL3)
-      if (cmd == 30)
+    #if defined(CANSerial_AVAILABLE)
+      if (cmd == 0x30) 
       {
         CANSerial.write("r");         //confirm cmd type
         CANSerial.write(cmd);
       }
-      else if (cmd == 31) { CANSerial.write("A"); }        //confirm cmd type
-    #else
-      UNUSED(cmd);
-    #endif
+      else if (cmd == 0x31)
+      {
+        CANSerial.write("A");         // confirm command type   
+      }
+      else if (cmd == 0x32)
+      {
+        CANSerial.write("n");                       // confirm command type
+        CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+        CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+      }
+    #endif   
   }
   else
   {
+    serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
     if(firstCommsRequest) 
     { 
       firstCommsRequest = false;
@@ -591,17 +600,28 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     }
   }
 
+  //
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   for(byte x=0; x<packetLength; x++)
   {
-    if (portNum == 0) { Serial.write(getTSLogEntry(offset+x)); }
+    bool bufferFull = false;
+
+    if (portNum == SERIAL_PORT_PRIMARY)
+    { 
+      Serial.write(getTSLogEntry(offset+x)); 
+      if(Serial.availableForWrite() < 1) { bufferFull = true; }
+    }
     #if defined(CANSerial_AVAILABLE)
-      else if (portNum == 3){ CANSerial.write(getTSLogEntry(offset+x)); }
+    else if (portNum == SERIAL_PORT_SECONDARY)
+    { 
+      CANSerial.write(getTSLogEntry(offset+x)); 
+      //if(CANSerial.availableForWrite() < 1) { bufferFull = true; } //Real Dash does not like data requests being broken up into multiple sends, so this must be disabled for now. 
+    }
     #endif
 
     //Check whether the tx buffer still has space
-    if(Serial.availableForWrite() < 1) 
+    if(bufferFull == true) 
     { 
       //tx buffer is full. Store the current state so it can be resumed later
       logItemsTransmitted = offset + x + 1;
@@ -610,9 +630,20 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum)
     }
     
   }
-  serialStatusFlag = SERIAL_INACTIVE;
-  // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+
+  if (portNum == SERIAL_PORT_PRIMARY)
+  {
+    serialStatusFlag = SERIAL_INACTIVE;
+    while(Serial.available()) { Serial.read(); }
+    // Reset any flags that are being used to trigger page refreshes
+    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+  }
+  else if(portNum == SERIAL_PORT_SECONDARY)
+  {
+    serialSecondaryStatusFlag = SERIAL_INACTIVE;
+  }
+  
+
 }
 
 void sendValuesLegacy(void)

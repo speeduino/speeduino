@@ -41,6 +41,7 @@ enum SerialStatus {
 };
 /** @brief Current status of serial comms. */
 extern SerialStatus serialStatusFlag;
+extern SerialStatus serialSecondaryStatusFlag;
 
 /**
  * @brief Is a serial write in progress?

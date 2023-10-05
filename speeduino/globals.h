@@ -163,6 +163,9 @@
 #define MS_IN_MINUTE 60000
 #define US_IN_MINUTE 60000000
 
+#define SERIAL_PORT_PRIMARY   0
+#define SERIAL_PORT_SECONDARY 3
+
 //Define the load algorithm
 #define LOAD_SOURCE_MAP         0
 #define LOAD_SOURCE_TPS         1
