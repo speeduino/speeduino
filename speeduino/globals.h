@@ -446,7 +446,7 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define LOGGER_FILENAMING_DATETIME      1
 #define LOGGER_FILENAMING_SEQENTIAL     2
 
-#define WUETABLE2_VALUE_SCALE             10
+#define WUETABLE2_VALUE_SCALE             5
 #define CRANKINGENRICHTABLE_VALUE_SCALE   5
 #define CRANKINGENRICHTABLE2_VALUE_SCALE  10
 #define ASETABLE2_VALUE_SCALE             5
