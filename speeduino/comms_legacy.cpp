@@ -67,7 +67,7 @@ void legacySerialCommand(void)
       break;
 
     case 'A': // send x bytes of realtime values
-      sendValues(0, LOG_ENTRY_SIZE, 0x31, Serial);   //send values to serial0
+      sendValues(0, LOG_ENTRY_SIZE, 0x31, Serial, serialStatusFlag);   //send values to serial0
       firstCommsRequest = false;
       break;
 
@@ -294,7 +294,7 @@ void legacySerialCommand(void)
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          sendValues(offset, length, cmd, Serial);
+          sendValues(offset, length, cmd, Serial, serialStatusFlag);
         }
         else
         {
@@ -640,7 +640,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          sendValues(offset, length, cmd, targetPort);
+          sendValues(offset, length, cmd, targetPort, targetStatusFlag);
         }
         else
         {
@@ -660,19 +660,19 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * @param offset - Start field number
  * @param packetLength - Length of actual message (after possible ack/confirm headers)
  * @param cmd - ??? - Will be used as some kind of ack on CANSerial
- * @param portNum - Port number (0=Serial, 3=CANSerial)
+ * @param targetPort - The HardwareSerial device that will be transmitted to
+ * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
 {  
+  #if defined(CANSerial_AVAILABLE)
   if (&targetPort == &CANSerial)
   {
-    serialSecondaryStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
     //CAN serial
     if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
-      #if defined(CANSerial_AVAILABLE)
         if (cmd == 0x30) 
         {
           CANSerial.write("r");         //confirm cmd type
@@ -688,12 +688,11 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
           CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
           CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
         }
-      #endif
     }  
   }
   else
+  #endif
   {
-    serialStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
     if(firstCommsRequest) 
     { 
       firstCommsRequest = false;
@@ -702,6 +701,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   }
 
   //
+  targetStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
   currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   for(byte x=0; x<packetLength; x++)
@@ -727,17 +727,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
     
   }
 
-  if (&targetPort == &Serial)
-  {
-    serialStatusFlag = SERIAL_INACTIVE;
-    while(Serial.available()) { Serial.read(); }
-    // Reset any flags that are being used to trigger page refreshes
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-  }
-  else if(&targetPort == &CANSerial)
-  {
-    serialSecondaryStatusFlag = SERIAL_INACTIVE;
-  }
+  targetStatusFlag = SERIAL_INACTIVE;
+  while(targetPort.available()) { targetPort.read(); }
+  // Reset any flags that are being used to trigger page refreshes
+  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
 
 }
 

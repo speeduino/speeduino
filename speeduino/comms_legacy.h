@@ -75,7 +75,7 @@ extern byte inProgressLength;
 
 void legacySerialCommand(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
 void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag);
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort);
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag);
 void sendValuesLegacy(void);
 void sendPage(void);
 void sendPageASCII(void);

@@ -527,7 +527,7 @@ void serialTransmit(void)
   switch (serialStatusFlag)
   {
     case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
-      sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, Serial);
+      sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, Serial, serialStatusFlag);
       break;
 
     case SERIAL_TRANSMIT_TOOTH_INPROGRESS:

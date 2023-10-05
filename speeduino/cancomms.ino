@@ -58,7 +58,7 @@ void secondserial_Command(void)
     case 'A': 
       // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
       //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
-      sendValues(0, CAN_PACKET_SIZE, 0x31, CANSerial); //send values to serial3
+      sendValues(0, CAN_PACKET_SIZE, 0x31, CANSerial, serialSecondaryStatusFlag); //send values to serial3
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
@@ -137,7 +137,7 @@ void secondserial_Command(void)
         break;
 
     case 'n': // sends the bytes of realtime values from the NEW CAN list
-      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, CANSerial); //send values to serial3
+      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, CANSerial, serialSecondaryStatusFlag); //send values to serial3
       break;
 
     case 'p':
