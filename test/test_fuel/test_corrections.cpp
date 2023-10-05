@@ -14,9 +14,10 @@ void testCorrections()
   test_corrections_ASE();
   RUN_TEST(test_corrections_flex);
   test_corrections_floodclear();
+  test_corrections_bat();
   /*
   RUN_TEST(test_corrections_closedloop); //Not written yet
-  RUN_TEST(test_corrections_bat); //Not written yet
+  
   RUN_TEST(test_corrections_iatdensity); //Not written yet
   RUN_TEST(test_corrections_baro); //Not written yet
   RUN_TEST(test_corrections_launch); //Not written yet
@@ -325,8 +326,35 @@ void test_corrections_flex(void)
   TEST_ASSERT_EQUAL(600, biasedAverage_uint16(150, 300, 500));
 }
 //**********************************************************************************************************************
+void test_corrections_bat_low_voltage(void)
+{
+  currentStatus.battery10 = 88;
+  test_fuel_set_bat_correction_table();
+
+  //should be halfway between 196 and 152 = 174
+  TEST_ASSERT_EQUAL(174, correctionBatVoltage()); 
+}
+void test_corrections_bat_normal_voltage(void)
+{
+  currentStatus.battery10 = 138;
+  test_fuel_set_bat_correction_table();
+
+  //should be halfway between 100 and 90 = 95
+  TEST_ASSERT_EQUAL(95, correctionBatVoltage()); 
+}
+void test_corrections_bat_high_voltage(void)
+{
+  currentStatus.battery10 = 154;
+  test_fuel_set_bat_correction_table();
+
+  //should be 90 - [(154 - 144) / (160 - 144) * (90 - 80)] = ~84
+  TEST_ASSERT_EQUAL(84, correctionBatVoltage()); 
+}
 void test_corrections_bat(void)
 {
+  RUN_TEST(test_corrections_bat_low_voltage);
+  RUN_TEST(test_corrections_bat_normal_voltage);
+  RUN_TEST(test_corrections_bat_high_voltage);
 
 }
 //**********************************************************************************************************************
