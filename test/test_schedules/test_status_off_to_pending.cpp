@@ -138,6 +138,87 @@ void test_status_off_to_pending_ign8(void)
 }
 #endif
 
+//Tests for validating the floodClear procedure
+void test_status_off_to_pending_ign1_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule1(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule1.Status);
+}
+
+void test_status_off_to_pending_ign2_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule2(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule2.Status);
+}
+
+void test_status_off_to_pending_ign3_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule3(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule3.Status);
+}
+
+void test_status_off_to_pending_ign4_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule4(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule4.Status);
+}
+
+#if IGN_CHANNELS >= 5
+void test_status_off_to_pending_ign5_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule5(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule5.Status);
+}
+#endif
+
+#if IGN_CHANNELS >= 6
+void test_status_off_to_pending_ign6_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule6(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule6.Status);
+}
+#endif
+
+#if IGN_CHANNELS >= 7
+void test_status_off_to_pending_ign7_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule7(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule7.Status);
+}
+#endif
+
+#if IGN_CHANNELS >= 8
+void test_status_off_to_pending_ign8_flood(void)
+{
+    initialiseSchedulers();
+    currentStatus.engine = BIT_ENGINE_CRANK;
+    currentStatus.TPS = configPage4.floodClear + 1;
+    setIgnitionSchedule8(emptyCallback, TIMEOUT, DURATION, emptyCallback);
+    TEST_ASSERT_EQUAL(OFF, ignitionSchedule8.Status);
+}
+#endif
+
 void test_status_off_to_pending(void)
 {
     RUN_TEST(test_status_off_to_pending_inj1);
@@ -161,16 +242,24 @@ void test_status_off_to_pending(void)
     RUN_TEST(test_status_off_to_pending_ign2);
     RUN_TEST(test_status_off_to_pending_ign3);
     RUN_TEST(test_status_off_to_pending_ign4);
+    RUN_TEST(test_status_off_to_pending_ign1_flood);
+    RUN_TEST(test_status_off_to_pending_ign2_flood);
+    RUN_TEST(test_status_off_to_pending_ign3_flood);
+    RUN_TEST(test_status_off_to_pending_ign4_flood);
 #if IGN_CHANNELS >= 5    
     RUN_TEST(test_status_off_to_pending_ign5);
+    RUN_TEST(test_status_off_to_pending_ign5_flood);
 #endif
 #if IGN_CHANNELS >= 6
     RUN_TEST(test_status_off_to_pending_ign6);
+    RUN_TEST(test_status_off_to_pending_ign6_flood);
 #endif
 #if IGN_CHANNELS >= 7
     RUN_TEST(test_status_off_to_pending_ign7);
+    RUN_TEST(test_status_off_to_pending_ign7_flood);
 #endif
 #if IGN_CHANNELS >= 8
     RUN_TEST(test_status_off_to_pending_ign8);
+    RUN_TEST(test_status_off_to_pending_ign8_flood);
 #endif
 }
