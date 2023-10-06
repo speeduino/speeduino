@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
  */
 #include "globals.h"
 #include "comms_legacy.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "storage.h"
 #include "maths.h"
 #include "utilities.h"
@@ -659,7 +659,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * This will "live" information from @ref currentStatus struct.
  * @param offset - Start field number
  * @param packetLength - Length of actual message (after possible ack/confirm headers)
- * @param cmd - ??? - Will be used as some kind of ack on CANSerial
+ * @param cmd - ??? - Will be used as some kind of ack on secondarySerial
  * @param targetPort - The HardwareSerial device that will be transmitted to
  * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
@@ -667,26 +667,26 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  */
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
 {  
-  #if defined(CANSerial_AVAILABLE)
-  if (&targetPort == &CANSerial)
+  #if defined(secondarySerial_AVAILABLE)
+  if (&targetPort == &secondarySerial)
   {
     //CAN serial
     if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
         if (cmd == 0x30) 
         {
-          CANSerial.write("r");         //confirm cmd type
-          CANSerial.write(cmd);
+          secondarySerial.write("r");         //confirm cmd type
+          secondarySerial.write(cmd);
         }
         else if (cmd == 0x31)
         {
-          CANSerial.write("A");         // confirm command type   
+          secondarySerial.write("A");         // confirm command type   
         }
         else if (cmd == 0x32)
         {
-          CANSerial.write("n");                       // confirm command type
-          CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
-          CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+          secondarySerial.write("n");                       // confirm command type
+          secondarySerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+          secondarySerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
         }
     }  
   }

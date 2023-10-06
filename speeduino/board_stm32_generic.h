@@ -219,9 +219,9 @@
 * CAN / Second serial
 */
 #if defined(STM32GENERIC) // STM32GENERIC core
-  SerialUART &CANSerial = Serial2;
+  SerialUART &secondarySerial = Serial2;
 #else //libmaple core aka STM32DUINO
-  HardwareSerial &CANSerial = Serial2;
+  HardwareSerial &secondarySerial = Serial2;
 #endif
 
 #endif //CORE_STM32

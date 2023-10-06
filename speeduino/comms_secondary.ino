@@ -16,7 +16,7 @@ sendcancommand is called when a command is to be sent either to serial3
 ,to the external Can interface, or to the onboard/attached can interface
 */
 #include "globals.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "maths.h"
 #include "errors.h"
 #include "utilities.h"
@@ -25,85 +25,81 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "page_crc.h"
 
 uint8_t currentSecondaryCommand;
-uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
-uint8_t nCanretry = 0;      //no of retrys
-uint8_t cancmdfail = 0;     //command fail yes/no
-uint8_t canlisten = 0;
-uint8_t Lbuffer[8];         //8 byte buffer to store incoming can data
-uint8_t Gdata[9];
-uint8_t Glow, Ghigh;
 
 #if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  HardwareSerial &CANSerial = Serial3;
+  HardwareSerial &secondarySerial = Serial3;
 #elif defined(CORE_STM32)
   #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
     #define Serial2 Serial1
   #endif
   #if defined(STM32GENERIC) // STM32GENERIC core
-    SerialUART &CANSerial = Serial2;
+    SerialUART &secondarySerial = Serial2;
   #else //libmaple core aka STM32DUINO
-    HardwareSerial &CANSerial = Serial2;
+    HardwareSerial &secondarySerial = Serial2;
   #endif
 #elif defined(CORE_TEENSY)
-  HardwareSerial &CANSerial = Serial2;
+  HardwareSerial &secondarySerial = Serial2;
 #endif
 
 void secondserial_Command(void)
 {
-  #if defined(CANSerial_AVAILABLE)
-  if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = CANSerial.read(); }
+  #if defined(secondarySerial_AVAILABLE)
+  if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = secondarySerial.read(); }
 
   switch (currentSecondaryCommand)
   {
     case 'A': 
       // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
       //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
-      sendValues(0, CAN_PACKET_SIZE, 0x31, CANSerial, serialSecondaryStatusFlag); //send values to serial3
+      sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 
     case 'B': // AS above but for the serial compatibility mode. 
       BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 
     case 'd': // Send a CRC32 hash of a given page
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 
     case 'G': // this is the reply command sent by the Can interface
       serialSecondaryStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       byte destcaninchannel;
-      if (CANSerial.available() >= 9)
+      if (secondarySerial.available() >= 9)
       {
         serialSecondaryStatusFlag = SERIAL_INACTIVE;
-        cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
-        destcaninchannel = CANSerial.read();  // the input channel that requested the data value
-        if (cancmdfail != 0)
-           {                                 // read all 8 bytes of data.
-            for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
-              {
-                Gdata[Gx] = CANSerial.read();
-              }
-            Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
-               {
-                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
-                   {
-                    Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
-                   }
-            else{Ghigh = 0;}
-               }
-          else
-               {
-                 Ghigh = 0;
-               }
+        uint8_t cmdSuccessful = secondarySerial.read();        //0 == fail,  1 == good.
+        destcaninchannel = secondarySerial.read();  // the input channel that requested the data value
+        if (cmdSuccessful != 0)
+        {                                 // read all 8 bytes of data.
+          uint8_t Gdata[9];
+          uint8_t Glow, Ghigh;
 
-          currentStatus.canin[destcaninchannel] = (Ghigh<<8) | Glow;
+          for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
+          {
+            Gdata[Gx] = secondarySerial.read();
+          }
+          Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
+          if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
+          {
+            if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
+            {
+              Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
+            }
+            else { Ghigh = 0; }
+          }
+        else
+        {
+          Ghigh = 0;
         }
+
+        currentStatus.canin[destcaninchannel] = (Ghigh<<8) | Glow;
+      }
 
         else{}  //continue as command request failed and/or data/device was not available
 
@@ -115,50 +111,56 @@ void secondserial_Command(void)
         break;
         
     case 'L':
-        uint8_t Llength;
-        while (CANSerial.available() == 0) { }
-        canlisten = CANSerial.read();
+    {
+      //uint8_t Llength;
+      while (secondarySerial.available() == 0) { }
+      uint8_t canListen = secondarySerial.read();
 
-        if (canlisten == 0)
-        {
-          //command request failed and/or data/device was not available
-          break;
-        }
-
-        while (CANSerial.available() == 0) { }
-        Llength= CANSerial.read();              // next the number of bytes expected value
-
-        for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-        {
-          while (CANSerial.available() == 0){}
-          // receive all x bytes into "Lbuffer"
-          Lbuffer[Lcount] = CANSerial.read();
-        }
+      if (canListen == 0)
+      {
+        //command request failed and/or data/device was not available
         break;
+      }
 
+      while (secondarySerial.available() == 0) { }
+      /*
+      Unclear what the below is trying to achieve. Commenting out for now to avoid compiler warnings for unused variables
+      Llength = secondarySerial.read();             // next the number of bytes expected value
+      uint8_t Lbuffer[8];                     //8 byte buffer to store incoming can data
+
+      for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
+      {
+        while (secondarySerial.available() == 0){}
+        // receive all x bytes into "Lbuffer"
+        Lbuffer[Lcount] = secondarySerial.read();
+      }
+      */
+      break;
+    }
+      
     case 'n': // sends the bytes of realtime values from the NEW CAN list
-      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, CANSerial, serialSecondaryStatusFlag); //send values to serial3
+      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
       break;
 
     case 'p':
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 
     case 'Q': // send code version
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
        break;
 
     case 'r': //New format for the optimised OutputChannels over CAN
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 
     case 's': // send the "a" stream code version
-      CANSerial.print(F("Speeduino csx02019.8"));
+      secondarySerial.print(F("Speeduino csx02019.8"));
       break;
 
     case 'S': // send code version
-      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_MSDROID) { legacySerialHandler('Q', CANSerial, serialSecondaryStatusFlag); } //Note 'Q', this is a workaround for msDroid
-      else { legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag); }
+      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_MSDROID) { legacySerialHandler('Q', secondarySerial, serialSecondaryStatusFlag); } //Note 'Q', this is a workaround for msDroid
+      else { legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag); }
       
       break;
 
@@ -217,26 +219,26 @@ void can_Command(void)
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
-#if defined(CANSerial_AVAILABLE)
+#if defined(secondarySerial_AVAILABLE)
     switch (cmdtype)
     {
       case 0:
-        CANSerial.print("G");
-        CANSerial.write(canaddress);  //tscanid of speeduino device
-        CANSerial.write(candata1);    // table id
-        CANSerial.write(candata2);    //table memory offset
+        secondarySerial.print("G");
+        secondarySerial.write(canaddress);  //tscanid of speeduino device
+        secondarySerial.write(candata1);    // table id
+        secondarySerial.write(candata2);    //table memory offset
         break;
 
       case 1:                      //send request to listen for a can message
-        CANSerial.print("L");
-        CANSerial.write(canaddress);  //11 bit canaddress of device to listen for
+        secondarySerial.print("L");
+        secondarySerial.write(canaddress);  //11 bit canaddress of device to listen for
         break;
 
      case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
-        CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
-        CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
-        CANSerial.write(highByte(sourcecanAddress) );
+        secondarySerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
+        secondarySerial.write(candata1);                    //the currentStatus.current_caninchannel
+        secondarySerial.write(lowByte(sourcecanAddress) );       //send lsb first
+        secondarySerial.write(highByte(sourcecanAddress) );
         break;
 
      case 3:
