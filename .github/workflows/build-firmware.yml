@@ -41,7 +41,7 @@ jobs:
       run: platformio run -e teensy35 -e teensy36 -e teensy41
 
     - name: Build test STM32
-      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
+      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F401CE -e BlackPill_F411CE
 
     - name: Upload to Speeduino server
       if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
