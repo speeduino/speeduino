@@ -2813,8 +2813,6 @@ void triggerPri_Nissan360(void)
         }
        
      }
-
-     timePerDegree = curGap >> 1;; //The time per crank degree is simply the time between this tooth and the last one divided by 2
    }
 }
 
