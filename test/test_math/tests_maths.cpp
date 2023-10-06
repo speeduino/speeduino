@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "tests_maths.h"
 #include "maths.h"
+#include "..\timer.hpp"
 
 
 void testMaths()
@@ -20,7 +21,8 @@ void testMaths()
   RUN_TEST(test_maths_div100_S8);
   RUN_TEST(test_maths_div100_S16);
   RUN_TEST(test_maths_div100_S32);
- 
+  RUN_TEST(test_maths_udiv_32_16);
+  RUN_TEST(test_maths_udiv_32_16_perf);
 }
 
 void test_maths_percent_U8(void)
@@ -148,4 +150,67 @@ void test_maths_div100_S32(void)
   TEST_ASSERT_EQUAL_INT32(0, div100((int32_t)-50));
   TEST_ASSERT_EQUAL_INT32(-1, div100((int32_t)-120));
 #endif
+}
+
+void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
+    TEST_ASSERT_EQUAL_UINT16(dividend/(uint32_t)divisor, udiv_32_16(dividend, divisor));
+}
+
+void test_maths_udiv_32_16(void)
+{
+  // Divide by zero
+  assert_udiv_32_16(0, 0);
+
+  // Result doesn't fit into 16-bits
+  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16(UINT32_MAX, UINT16_MAX));
+
+  assert_udiv_32_16(1, 1);
+  assert_udiv_32_16(UINT16_MAX+1, UINT16_MAX);
+  assert_udiv_32_16(UINT16_MAX-1, UINT16_MAX);
+  assert_udiv_32_16(60000000, 60000); // 1000 RPM
+  assert_udiv_32_16(60000000, 54005); // 1111 RPM
+  assert_udiv_32_16(60000000, 7590);  // 7905 RPM
+  assert_udiv_32_16(60000000, 7715);  // 7777 RPM  
+  assert_udiv_32_16(60000000, 3333);  // 18000 RPM  
+}
+
+void test_maths_udiv_32_16_perf(void)
+{
+    constexpr uint16_t step = 111;
+    constexpr uint16_t max_divisor = UINT16_MAX/3*2;
+    constexpr uint16_t min_divisor = UINT16_MAX/3;
+    constexpr uint16_t iters = 64;
+
+    timer native_timer;
+    uint32_t checkSumNative = 0;
+    native_timer.start();
+    for (uint16_t loop=0; loop<iters; ++loop)
+    {
+      for (uint16_t a = min_divisor; a < max_divisor; a+=step)
+      {
+        uint32_t dividend = (uint32_t)a  + (UINT16_MAX*a);
+        checkSumNative += (uint32_t)dividend / (uint32_t)a;
+      }
+    }
+    native_timer.stop();
+
+    timer udiv_32_16_timer;
+    uint32_t checkSumudiv_32_16 = 0;
+    udiv_32_16_timer.start();
+    for (uint16_t loop=0; loop<iters; ++loop)
+    {
+      for (uint16_t a = min_divisor; a < max_divisor; a+=step)
+      {
+        uint32_t dividend = (uint32_t)a  + (UINT16_MAX*a);
+        checkSumudiv_32_16 += udiv_32_16(dividend, a);
+      }
+    }
+    udiv_32_16_timer.stop();
+
+    TEST_ASSERT_EQUAL(checkSumNative, checkSumudiv_32_16);
+    char buffer[256];
+    sprintf(buffer, "muldiv u16 timing: %lu, %lu", native_timer.duration_micros(), udiv_32_16_timer.duration_micros());
+    TEST_MESSAGE(buffer);
+    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), udiv_32_16_timer.duration_micros());
+
 }

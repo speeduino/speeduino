@@ -2,6 +2,7 @@
 #define MATH_H
 
 #include "globals.h"
+#include <limits.h>
 
 unsigned long percentage(uint8_t x, unsigned long y);
 unsigned long halfPercentage(uint8_t x, unsigned long y);
@@ -78,5 +79,53 @@ inline uint32_t div360(uint32_t n) {
 #define fastMap1023toX(x, out_max) ( ((unsigned long)x * out_max) >> 10)
 //This is a new version that allows for out_min
 #define fastMap10Bit(x, out_min, out_max) ( ( ((unsigned long)x * (out_max-out_min)) >> 10 ) + out_min)
+
+/**
+ * @brief Optimised division: uint32_t/uint16_t => uint16_t
+ * 
+ * Optimised division of unsigned 32-bit by unsigned 16-bit when it is known
+ * that the result fits into unsigned 16-bit.
+ * 
+ * ~50% quicker than raw 32/32 => 32 division on ATMega
+ * 
+ * @note Bad things will likely happen if the result doesn't fit into 16-bits.
+ * @note Copied from https://stackoverflow.com/a/66593564
+ * 
+ * @param dividend The dividend (numerator)
+ * @param divisor The divisor (denominator)
+ * @return uint16_t 
+ */
+static inline uint16_t  __attribute__((optimize("no-unroll-loops"))) udiv_32_16 (uint32_t dividend, uint16_t divisor)
+{
+    // Without no-unroll-loops, this routine takes up a lot of flash memory (.text) AND it's
+    // inlined in a number of places.
+#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+    if (dividend<UINT16_MAX) { // Just in case  
+        return (uint16_t)dividend/divisor;
+    }
+    uint16_t quot = dividend;        
+    uint16_t rem  = dividend >> 16;  
+
+    uint8_t bits = sizeof(uint16_t) * CHAR_BIT;     
+    do {
+        // (rem:quot) << 1, with carry out
+        bool carry = rem >> 15;
+        rem  = (rem << 1) | (quot >> 15);
+        quot = quot << 1;
+        // if partial remainder greater or equal to divisor, subtract divisor
+        if (carry || (rem >= divisor)) {
+            rem = rem - divisor;
+            quot = quot | 1;
+        }
+        bits--;
+    } while (bits);
+    return quot;
+#else
+    // The non-AVR platforms are all fast enough (or have built in dividers)
+    // so just fall back to regular 32-bit division.
+    return dividend / divisor;
+#endif
+}
+
 
 #endif
