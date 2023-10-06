@@ -227,21 +227,16 @@ void test_maths_udiv_32_16_perf(void)
     uint16_t end_index = UINT16_MAX/3*2;
     uint16_t step = 111;
 
-    timer native_timer;
-    uint32_t checkSumNative = 0;
     auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += (uint32_t)indexToDividend(index) / (uint32_t)index; };
-    measure_executiontime<uint16_t, uint32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
-
-    timer optimized_timer;
-    uint32_t checkSumOptimized = 0;
     auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += udiv_32_16(indexToDividend(index), index); };
-    measure_executiontime<uint16_t, uint32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
+    TEST_MESSAGE("udiv_32_16");
+    auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    
+    // The checksums will be different due to rounding. This is only
+    // here to force the compiler to run the loops above
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
-    TEST_ASSERT_EQUAL(checkSumNative, checkSumOptimized);
-    char buffer[256];
-    sprintf(buffer, "muldiv u16 timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
-    TEST_MESSAGE(buffer);
-    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 }
 
 void test_maths_div100_s16_perf(void)
@@ -251,24 +246,16 @@ void test_maths_div100_s16_perf(void)
     constexpr int16_t end_index = -1;
     constexpr int16_t step = 11;
 
-    timer native_timer;
-    int32_t checkSumNative = 0;
     auto nativeTest = [] (int16_t index, int32_t &checkSum) { checkSum += (int16_t)index / (int16_t)100; };
-    measure_executiontime<int16_t, int32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
-
-    timer optimized_timer;
-    int32_t checkSumOptimized = 0;
     auto optimizedTest = [] (int16_t index, int32_t &checkSum) { checkSum += div100(index); };
-    measure_executiontime<int16_t, int32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
-
+    TEST_MESSAGE("div100_s16");
+    auto comparison = compare_executiontime<int16_t, int32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
-    TEST_ASSERT_INT32_WITHIN(10000, checkSumNative, checkSumOptimized);
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
-    char buffer[256];
-    sprintf(buffer, "div100 s16 timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
-    TEST_MESSAGE(buffer);
-    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 }
 
 
@@ -279,24 +266,16 @@ void test_maths_div100_s32_perf(void)
     constexpr int32_t end_index = -1;
     constexpr int32_t step = 3715;
 
-    timer native_timer;
-    int32_t checkSumNative = 0;
     auto nativeTest = [] (int32_t index, int32_t &checkSum) { checkSum += (int32_t)index / (int32_t)100; };
-    measure_executiontime<int32_t, int32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
-
-    timer optimized_timer;
-    int32_t checkSumOptimized = 0;
     auto optimizedTest = [] (int32_t index, int32_t &checkSum) { checkSum += div100(index); };
-    measure_executiontime<int32_t, int32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
-
+    TEST_MESSAGE("div100_s32");
+    auto comparison = compare_executiontime<int32_t, int32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
-    TEST_ASSERT_INT32_WITHIN(10000, checkSumNative, checkSumOptimized);
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
-    char buffer[256];
-    sprintf(buffer, "div100 s32 timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
-    TEST_MESSAGE(buffer);
-    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 }
 
 
@@ -308,53 +287,37 @@ void test_maths_halfPercentage_perf(void)
     constexpr uint8_t step = 3;
     constexpr uint16_t percentOf = 57357;
 
-    timer native_timer;
-    uint32_t checkSumNative = 0;
     auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 200U; };
-    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
-
-    timer optimized_timer;
-    uint32_t checkSumOptimized = 0;
     auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += halfPercentage(index, percentOf); };
-    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
-
+    TEST_MESSAGE("halfPercentage ");
+    auto comparison = compare_executiontime<uint8_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
-    TEST_ASSERT_INT32_WITHIN(10000, checkSumNative, checkSumOptimized);
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
-    char buffer[256];
-    sprintf(buffer, "halfPercentage timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
-    TEST_MESSAGE(buffer);
-    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 }
 
 
 void test_maths_percentage_perf(void)
 {
-    constexpr int16_t iters = 4;
+    constexpr uint16_t iters = 4;
     constexpr uint8_t start_index = 3;
     constexpr uint8_t end_index = 99;
     constexpr uint8_t step = 3;
     constexpr uint16_t percentOf = 57357;
 
-    timer native_timer;
-    uint32_t checkSumNative = 0;
     auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
-    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
-
-    timer optimized_timer;
-    uint32_t checkSumOptimized = 0;
     auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
-    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
-
+    TEST_MESSAGE("Percentage ");
+    auto comparison = compare_executiontime<uint8_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+    
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
-    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, checkSumNative, checkSumOptimized);
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
-    char buffer[256];
-    sprintf(buffer, "percentage timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
-    TEST_MESSAGE(buffer);
-    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 }
 
 void testMaths()

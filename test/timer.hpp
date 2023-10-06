@@ -70,3 +70,34 @@ void measure_executiontime(uint16_t iterations, TLoop from, TLoop to, TLoop step
     }
     measure.stop();
 }
+
+template <typename TParam>
+struct execution_time {
+    TParam result;
+    uint32_t durationMicros;
+};
+template <typename TParam>
+struct comparative_execution_times {
+    execution_time<TParam> timeA;
+    execution_time<TParam> timeB;
+};
+template <typename TLoop, typename TParam>
+comparative_execution_times<TParam> compare_executiontime(uint16_t iterations, TLoop from, TLoop to, TLoop step, void (*pTestFunA)(TLoop, TParam&), void (*pTestFunB)(TLoop, TParam&)) {
+
+    timer timerA;
+    TParam paramA = 0;
+    measure_executiontime<TLoop, TParam&>(iterations, from, to, step, timerA, paramA, pTestFunA);
+
+    timer timerB;
+    TParam paramB = 0;
+    measure_executiontime<TLoop, TParam&>(iterations, from, to, step, timerB, paramB, pTestFunB);
+
+    char buffer[128];
+    sprintf(buffer, "Timing: %" PRIu32 ", %" PRIu32, timerA.duration_micros(), timerB.duration_micros());
+    TEST_MESSAGE(buffer);
+
+    return comparative_execution_times<TParam> {
+        .timeA = execution_time<TParam> { .result = paramA, .durationMicros = timerA.duration_micros()},
+        .timeB = execution_time<TParam> { .result = paramB, .durationMicros = timerB.duration_micros()}
+    };
+}
