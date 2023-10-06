@@ -4,7 +4,15 @@
 #include "maths.h"
 #include "globals.h"
 
-#define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
+/**
+ * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_IGN]
+ * 
+ * @param angle A crank angle in degrees
+ * @return int16_t 
+ */
+static inline int16_t ignitionLimits(int16_t angle) {
+    return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+}
 
 /** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
 #define MICROS_PER_DEG_1_RPM INT32_C(166667)
