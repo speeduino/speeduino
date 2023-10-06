@@ -15,18 +15,6 @@ const libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more =
 const libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
 #endif
 
-//Replace the standard arduino map() function to use the div function instead
-int fastMap(unsigned long x, int in_min, int in_max, int out_min, int out_max)
-{
-  unsigned long a = (x - (unsigned long)in_min);
-  int b = (out_max - out_min);
-  int c = (in_max - in_min);
-  int d = (ldiv( (a * (long)b) , (long)c ).quot);
-  return d + out_min;
-  //return ldiv( ((x - in_min) * (out_max - out_min)) , (in_max - in_min) ).quot + out_min;
-  //return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
 //Return x percent of y
 //This is a relatively fast approximation of a percentage value.
 unsigned long percentage(uint8_t x, unsigned long y)
@@ -42,17 +30,6 @@ unsigned long halfPercentage(uint8_t x, unsigned long y)
 #else
     return (y * x) / 200;
 #endif  
-}
-
-/*
- * Calculates integer power values. Same as pow() but with ints
- */
-inline long powint(int factor, unsigned int exponent)
-{
-  long product = 1;
-  unsigned int counter = exponent;
-  while ( (counter--) > 0) { product *= factor; }
-  return product;
 }
 
 //Generates a random number from 1 to 100 (inclusive).
