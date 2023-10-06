@@ -226,7 +226,6 @@ duration: The number of uS after startCallback is called before endCallback is c
 endCallback: This function is called once the duration time has been reached
 */
 
-
 void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
@@ -243,7 +242,6 @@ void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses time
         fuelSchedule1.startCompare = FUEL1_COUNTER + uS_TO_TIMER_COMPARE(timeout);
         fuelSchedule1.endCompare = fuelSchedule1.startCompare + uS_TO_TIMER_COMPARE(duration);
         fuelSchedule1.Status = PENDING; //Turn this schedule on
-        //Schedule 1 shares a timer with schedule 5
         SET_COMPARE(FUEL1_COMPARE, fuelSchedule1.startCompare);
         interrupts();
         FUEL1_TIMER_ENABLE();
@@ -997,7 +995,6 @@ void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a functio
     ignitionScheduleISR(ignitionSchedule1);
   }
 
-
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1007,7 +1004,6 @@ void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a functio
     ignitionScheduleISR(ignitionSchedule2);
   }
 
-
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1016,7 +1012,6 @@ void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a functio
   {
     ignitionScheduleISR(ignitionSchedule3);
   }
-
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2

@@ -133,7 +133,7 @@ void setup_DFCO_on()
   currentStatus.coolant = 80;
   configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
   configPage4.dfcoTPSThresh = 1;
-  configPage4.dfcoHyster = 50;
+  configPage4.dfcoHyster = 25;
   configPage2.dfcoMinCLT = 40; //Actually 0 with offset
   configPage2.dfcoDelay = 10;
 

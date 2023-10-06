@@ -1,5 +1,6 @@
 #ifndef TEENSY41_H
 #define TEENSY41_H
+
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 
 /*
@@ -30,6 +31,7 @@
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   //#define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) ) //Forbidden pins like USB
+
 
 /*
 ***********************************************************************************************************

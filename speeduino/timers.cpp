@@ -25,14 +25,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
   #include <avr/wdt.h>
 #endif
 
-volatile bool tachoAlt = false;
-
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
-volatile TachoOutputStatus tachoOutputFlag;
-volatile bool tachoSweepEnabled;
-volatile uint16_t tachoSweepIncr;
-volatile uint16_t tachoSweepAccum;
-
+volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -40,11 +33,16 @@ volatile byte loop250ms;
 volatile int loopSec;
 
 volatile unsigned int dwellLimit_uS;
-volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
+
+volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+volatile TachoOutputStatus tachoOutputFlag;
+volatile bool tachoSweepEnabled;
+volatile bool tachoAlt = false;
+volatile uint16_t tachoSweepIncr;
+volatile uint16_t tachoSweepAccum;
 
 #if defined (CORE_TEENSY)
-IntervalTimer lowResTimer;
+  IntervalTimer lowResTimer;
 #endif
 
 void initialiseTimers(void)
@@ -190,15 +188,6 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visual for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif
-
-    #if defined(CORE_AVR)
-      //Reset watchdog timer (Not active currently)
-      //wdt_reset();
-      //DIY watchdog
-      //This is a sign of a crash:
-      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
-      //else { last250msLoopCount = mainLoopCount; }
     #endif
   }
 

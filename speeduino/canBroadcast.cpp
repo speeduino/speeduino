@@ -7,8 +7,9 @@ A full copy of the license may be found in the projects root directory
 /*
 This is for handling the data broadcasted to various CAN dashes and instrument clusters.
 */
-#if defined(NATIVE_CAN_AVAILABLE)
 #include "globals.h"
+#if defined(NATIVE_CAN_AVAILABLE)
+#include "canBroadcast.h"
 
 // Forward declare
 void DashMessage(uint16_t DashMessageID);

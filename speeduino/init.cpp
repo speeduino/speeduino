@@ -7,7 +7,7 @@
 #include "updates.h"
 #include "speeduino.h"
 #include "timers.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
@@ -20,7 +20,9 @@
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#include EEPROM_LIB_H
+#if defined(EEPROM_RESET_PIN)
+  #include EEPROM_LIB_H
+#endif
 #ifdef SD_LOGGING
   #include "SD_logger.h"
   #include "rtc_common.h"
@@ -116,8 +118,8 @@ void initialiseAll(void)
 
     Serial.begin(115200);
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
-    #if defined(CANSerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #if defined(secondarySerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
@@ -744,7 +746,9 @@ void initialiseAll(void)
         channel2IgnDegrees = 72;
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
+#if (IGN_CHANNELS >= 5)
         channel5IgnDegrees = 288;
+#endif
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
         maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
@@ -753,7 +757,9 @@ void initialiseAll(void)
           channel2IgnDegrees = 144;
           channel3IgnDegrees = 288;
           channel4IgnDegrees = 432;
+#if (IGN_CHANNELS >= 5)
           channel5IgnDegrees = 576;
+#endif
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -877,9 +883,8 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 7
-              maxInjOutputs = 7;
-              channel7InjDegrees = channel1InjDegrees;
+              //No staging output will be active
+              maxInjOutputs = 6;
             #endif
           }
         }
@@ -1132,8 +1137,10 @@ void initialiseAll(void)
         ignitionSchedule3.pEndCallback = endCoil1Charge;
         ignitionSchedule4.pStartCallback = beginCoil1Charge;
         ignitionSchedule4.pEndCallback = endCoil1Charge;
+#if IGN_CHANNELS >= 5
         ignitionSchedule5.pStartCallback = beginCoil1Charge;
         ignitionSchedule5.pEndCallback = endCoil1Charge;
+#endif
 #if IGN_CHANNELS >= 6
         ignitionSchedule6.pStartCallback = beginCoil1Charge;
         ignitionSchedule6.pEndCallback = endCoil1Charge;
@@ -2928,11 +2935,6 @@ void setPinMapping(byte boardID)
   
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
-    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
-    mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
-    mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
-
     initMC33810();
   }
 

@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "scheduler.h"
 #include "comms.h"
 #include "comms_legacy.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "maths.h"
 #include "corrections.h"
 #include "timers.h"
@@ -108,13 +108,13 @@ void loop(void)
       }
 
       //Check for any CAN comms requiring action 
-      #if defined(CANSerial_AVAILABLE)
+      #if defined(secondarySerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
         if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
         {
-          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+          if ( ((mainLoopCount & 31) == 1) or (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if (CANSerial.available() > 0)  { secondserial_Command(); }
+            if (secondarySerial.available() > 0)  { secondserial_Command(); }
           }
         }
       #endif
@@ -311,7 +311,7 @@ void loop(void)
             if (configPage9.enable_secondarySerial == 1)  // megas only support can via secondary serial
             {
               sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
-              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from CANSERIAL
+              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from secondarySerial
             }
           }  
           else if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
@@ -1379,7 +1379,9 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle(dwellAngle, channel2IgnDegrees, currentStatus.advance, &ignition2EndAngle, &ignition2StartAngle);
       calculateIgnitionAngle(dwellAngle, channel3IgnDegrees, currentStatus.advance, &ignition3EndAngle, &ignition3StartAngle);
       calculateIgnitionAngle(dwellAngle, channel4IgnDegrees, currentStatus.advance, &ignition4EndAngle, &ignition4StartAngle);
+      #if (IGN_CHANNELS >= 5)
       calculateIgnitionAngle(dwellAngle, channel5IgnDegrees, currentStatus.advance, &ignition5EndAngle, &ignition5StartAngle);
+      #endif
       break;
     //6 cylinders
     case 6:

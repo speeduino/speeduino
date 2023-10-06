@@ -50,6 +50,35 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define DWELL_AVERAGE(input) (((long)input * (256 - DWELL_AVERAGE_ALPHA) + ((long)currentStatus.actualDwell * DWELL_AVERAGE_ALPHA))) >> 8
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
+/** @name IgnitionCallbacks
+ * These are the (global) function pointers that get called to begin and end the ignition coil charging.
+ * They are required for the various spark output modes.
+*/
+extern void (*inj1StartFunction)(void);
+extern void (*inj1EndFunction)(void);
+extern void (*inj2StartFunction)(void);
+extern void (*inj2EndFunction)(void);
+extern void (*inj3StartFunction)(void);
+extern void (*inj3EndFunction)(void);
+extern void (*inj4StartFunction)(void);
+extern void (*inj4EndFunction)(void);
+#if (INJ_CHANNELS >= 5)
+extern void (*inj5StartFunction)(void);
+extern void (*inj5EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 6)
+extern void (*inj6StartFunction)(void);
+extern void (*inj6EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 7)
+extern void (*inj7StartFunction)(void);
+extern void (*inj7EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 8)
+extern void (*inj8StartFunction)(void);
+extern void (*inj8EndFunction)(void);
+#endif
+
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
@@ -92,36 +121,45 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  void fuelSchedule1Interrupt();
-  void fuelSchedule2Interrupt();
-  void fuelSchedule3Interrupt();
-  void fuelSchedule4Interrupt();
-#if INJ_CHANNELS >= 5
-  void fuelSchedule5Interrupt();
+  void fuelSchedule1Interrupt(void);
+  void fuelSchedule2Interrupt(void);
+  void fuelSchedule3Interrupt(void);
+  void fuelSchedule4Interrupt(void);
+#if (INJ_CHANNELS >= 5)
+  void fuelSchedule5Interrupt(void);
 #endif
-#if INJ_CHANNELS >= 6
-  void fuelSchedule6Interrupt();
+#if (INJ_CHANNELS >= 6)
+  void fuelSchedule6Interrupt(void);
 #endif
-#if INJ_CHANNELS >= 7
-  void fuelSchedule7Interrupt();
+#if (INJ_CHANNELS >= 7)
+  void fuelSchedule7Interrupt(void);
 #endif
-#if INJ_CHANNELS >= 8
-  void fuelSchedule8Interrupt();
+#if (INJ_CHANNELS >= 8)
+  void fuelSchedule8Interrupt(void);
 #endif
-
-  void ignitionSchedule1Interrupt();
-  void ignitionSchedule2Interrupt();
-  void ignitionSchedule3Interrupt();
-  void ignitionSchedule4Interrupt();
-  void ignitionSchedule5Interrupt();
-#if IGN_CHANNELS >= 6
-  void ignitionSchedule6Interrupt();
+#if (IGN_CHANNELS >= 1)
+  void ignitionSchedule1Interrupt(void);
 #endif
-#if IGN_CHANNELS >= 7
-  void ignitionSchedule7Interrupt();
+#if (IGN_CHANNELS >= 2)
+  void ignitionSchedule2Interrupt(void);
 #endif
-#if IGN_CHANNELS >= 8
-  void ignitionSchedule8Interrupt();
+#if (IGN_CHANNELS >= 3)
+  void ignitionSchedule3Interrupt(void);
+#endif
+#if (IGN_CHANNELS >= 4)
+  void ignitionSchedule4Interrupt(void);
+#endif
+#if (IGN_CHANNELS >= 5)
+  void ignitionSchedule5Interrupt(void);
+#endif
+#if (IGN_CHANNELS >= 6)
+  void ignitionSchedule6Interrupt(void);
+#endif
+#if (IGN_CHANNELS >= 7)
+  void ignitionSchedule7Interrupt(void);
+#endif
+#if (IGN_CHANNELS >= 8)
+  void ignitionSchedule8Interrupt(void);
 #endif
 #endif
 /** Schedule statuses.

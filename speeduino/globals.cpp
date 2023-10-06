@@ -260,7 +260,7 @@ uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable; 
 
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
-inline bool pinIsOutput(byte pin)
+bool pinIsOutput(byte pin)
 {
   bool used = false;
   bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
@@ -313,7 +313,7 @@ inline bool pinIsOutput(byte pin)
   return used;
 }
 
-inline bool pinIsUsed(byte pin)
+bool pinIsUsed(byte pin)
 {
   bool used = false;
 
