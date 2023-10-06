@@ -18,8 +18,8 @@ static void assert_rounded_div(int32_t a, int32_t b, int32_t actual) {
   TEST_ASSERT_EQUAL_MESSAGE(expected, actual, msg);
 }
 
-static void test_percent(uint8_t percent, uint32_t value) {
-  assert_rounded_div(percent*value, 100, percentage(percent, value));
+static void test_percent(uint8_t percent, uint16_t value) {
+  assert_rounded_div((uint32_t)percent*value, 100, percentage(percent, value));
 }
 
 void test_maths_percent_U8(void)
@@ -46,20 +46,9 @@ void test_maths_percent_U16(void)
   test_percent(125, percentOf);
 }
 
-void test_maths_percent_U32(void)
-{
-  uint32_t percentOf = 5357915UL;
-  test_percent(0, percentOf);
-  test_percent(33, percentOf);
-  test_percent(50, percentOf);
-  test_percent(66, percentOf);
-  test_percent(75, percentOf);
-  test_percent(100, percentOf);
-  test_percent(125, percentOf);
-}
 
-static void test_halfPercentage(uint8_t percent, uint32_t value) {
-  assert_rounded_div(percent*value, 200, halfPercentage(percent, value));
+static void test_halfPercentage(uint8_t percent, uint16_t value) {
+  assert_rounded_div((int32_t)percent*value, 200, halfPercentage(percent, value));
 }
 
 void test_maths_halfpercent_U8(void)
@@ -77,18 +66,6 @@ void test_maths_halfpercent_U8(void)
 void test_maths_halfpercent_U16(void)
 {
   uint16_t percentOf = 57357;
-  test_halfPercentage(0, percentOf);
-  test_halfPercentage(33, percentOf);
-  test_halfPercentage(50, percentOf);
-  test_halfPercentage(66, percentOf);
-  test_halfPercentage(75, percentOf);
-  test_halfPercentage(100, percentOf);
-  test_halfPercentage(125, percentOf); 
-}
-
-void test_maths_halfpercent_U32(void)
-{
-  uint32_t percentOf = 5357915UL;
   test_halfPercentage(0, percentOf);
   test_halfPercentage(33, percentOf);
   test_halfPercentage(50, percentOf);
@@ -150,7 +127,7 @@ void test_maths_div100_S16(void)
   test_div100<int16_t>(INT16_MIN+100);
 
   // We expect this to fail - the rounding doesn't do integer promotion
-  TEST_ASSERT_EQUAL_UINT16(327, div100((int16_t)INT16_MIN));
+  TEST_ASSERT_EQUAL_UINT16(327U, div100((int16_t)INT16_MIN));
 }
 
 void test_maths_div100_S32(void)
@@ -322,14 +299,70 @@ void test_maths_div100_s32_perf(void)
     TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
 }
 
+
+void test_maths_halfPercentage_perf(void)
+{
+    constexpr int16_t iters = 4;
+    constexpr uint8_t start_index = 3;
+    constexpr uint8_t end_index = 99;
+    constexpr uint8_t step = 3;
+    constexpr uint16_t percentOf = 57357;
+
+    timer native_timer;
+    uint32_t checkSumNative = 0;
+    auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 200U; };
+    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
+
+    timer optimized_timer;
+    uint32_t checkSumOptimized = 0;
+    auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += halfPercentage(index, percentOf); };
+    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
+
+    // The checksums will be different due to rounding. This is only
+    // here to force the compiler to run the loops above
+    TEST_ASSERT_INT32_WITHIN(10000, checkSumNative, checkSumOptimized);
+
+    char buffer[256];
+    sprintf(buffer, "halfPercentage timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_MESSAGE(buffer);
+    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+}
+
+
+void test_maths_percentage_perf(void)
+{
+    constexpr int16_t iters = 4;
+    constexpr uint8_t start_index = 3;
+    constexpr uint8_t end_index = 99;
+    constexpr uint8_t step = 3;
+    constexpr uint16_t percentOf = 57357;
+
+    timer native_timer;
+    uint32_t checkSumNative = 0;
+    auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
+    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, native_timer, checkSumNative, nativeTest);
+
+    timer optimized_timer;
+    uint32_t checkSumOptimized = 0;
+    auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
+    measure_executiontime<uint8_t, uint32_t&>(iters, start_index, end_index, step, optimized_timer, checkSumOptimized, optimizedTest);
+
+    // The checksums will be different due to rounding. This is only
+    // here to force the compiler to run the loops above
+    TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, checkSumNative, checkSumOptimized);
+
+    char buffer[256];
+    sprintf(buffer, "percentage timing: %lu, %lu", native_timer.duration_micros(), optimized_timer.duration_micros());
+    TEST_MESSAGE(buffer);
+    TEST_ASSERT_LESS_THAN(native_timer.duration_micros(), optimized_timer.duration_micros());
+}
+
 void testMaths()
 {
   RUN_TEST(test_maths_percent_U8);
   RUN_TEST(test_maths_percent_U16);
-  RUN_TEST(test_maths_percent_U32);
   RUN_TEST(test_maths_halfpercent_U8);
   RUN_TEST(test_maths_halfpercent_U16);
-  RUN_TEST(test_maths_halfpercent_U32);
   RUN_TEST(test_maths_div100_U16);
   RUN_TEST(test_maths_div100_U32);
   RUN_TEST(test_maths_div100_S16);
@@ -340,4 +373,6 @@ void testMaths()
   RUN_TEST(test_maths_div360);
   RUN_TEST(test_maths_div100_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
+  RUN_TEST(test_maths_halfPercentage_perf);
+  RUN_TEST(test_maths_percentage_perf);
 }

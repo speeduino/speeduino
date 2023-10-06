@@ -179,15 +179,28 @@ static inline uint32_t div360(uint32_t n) {
 /**
  * @brief Integer based percentage calculation.
  * 
- * @param percentage The percentage to calculate ([0, 100])
+ * @param percent The percent to calculate ([0, 100])
  * @param value The value to operate on
  * @return uint32_t 
  */
-static inline uint32_t percentage(uint8_t percentage, uint32_t value) {
-    return div100(value * (uint32_t)percentage);
+static inline uint16_t percentage(uint8_t percent, uint16_t value) {
+    return div100((uint32_t)value * (uint32_t)percent);
 }
 
-uint32_t halfPercentage(uint8_t x, uint32_t y);
+/**
+ * @brief Integer based half-percentage calculation.
+ * 
+ * @param percent The percent to calculate ([0, 100])
+ * @param value The value to operate on
+ * @return uint16_t 
+ */
+static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
+#ifdef USE_LIBDIVIDE    
+    return libdivide::libdivide_u32_do_raw(((uint32_t)percent * (uint32_t)value) + DIV_ROUND_CORRECT(200, uint32_t), 2748779070L, 7);
+#else
+    return UDIV_ROUND_CLOSEST((uint32_t)percent * (uint32_t)value, 200U, uint32_t);
+#endif
+}
 
 /**
  * @brief Make one pass at correcting the value into the range [min, max)

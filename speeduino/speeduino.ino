@@ -68,9 +68,8 @@ void setup(void)
 
 inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
-    uint32_t pw1percent = 100 + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
-    if (pw1percent != 100) { return div100(uint32_t(pw1percent * currentPW)); }
-    return currentPW;
+    uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
+    return percentage(pw1percent, currentPW);
 }
 
 /** Speeduino main loop.
