@@ -150,7 +150,7 @@ void doCrankSpeedCalcs(void)
           unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
           uint16_t tempTriggerToothAngle = triggerToothAngle;
           interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
+          timePerDegreex16 = udiv_32_16((tempToothLastToothTime - tempToothLastMinusOneToothTime)*16, tempTriggerToothAngle);
           timePerDegree = timePerDegreex16 / 16;
         }
         else
@@ -159,8 +159,7 @@ void doCrankSpeedCalcs(void)
           interrupts();
           //Take into account any likely acceleration that has occurred since the last full revolution completed:
           //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          long rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
+          timePerDegreex16 = udiv_32_16( 2666656L, currentStatus.RPM); //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
           timePerDegree = timePerDegreex16 / 16;
         }
       }

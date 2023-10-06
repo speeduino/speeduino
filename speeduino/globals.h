@@ -120,8 +120,8 @@
 
 #define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
-#define MS_IN_MINUTE 60000
-#define US_IN_MINUTE 60000000
+#define MS_IN_MINUTE 60000U
+#define US_IN_MINUTE 60000000U
 
 #define SERIAL_PORT_PRIMARY   0
 #define SERIAL_PORT_SECONDARY 3
@@ -351,7 +351,7 @@
 #define GOING_LOW         0
 #define GOING_HIGH        1
 
-#define MAX_RPM 18000 /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
+#define MAX_RPM 18000U /**< The maximum rpm that the ECU will attempt to run at. It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be allowed to run. Lower number gives better performance */
 
 #define BATTV_COR_MODE_WHOLE 0
 #define BATTV_COR_MODE_OPENTIME 1
@@ -581,11 +581,11 @@ struct statuses {
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
   long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
-  int mapADC;
+  uint16_t mapADC;
   int baroADC;
   long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
   int16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
-  int16_t EMAPADC;
+  uint16_t EMAPADC;
   byte baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
   byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
@@ -695,6 +695,10 @@ struct statuses {
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
 };
+
+static inline bool HasAnySync(const statuses &status) {
+  return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
+}
 
 /** Page 2 of the config - mostly variables that are required for fuel.
  * These are "non-live" EFI setting, engine and "system" variables that remain fixed once sent
@@ -929,13 +933,13 @@ struct config4 {
   byte ignBypassPin : 6; //Pin the ignition bypass is activated on
   byte ignBypassHiLo : 1; //Whether this should be active high or low.
 
-  byte ADCFILTER_TPS;
-  byte ADCFILTER_CLT;
-  byte ADCFILTER_IAT;
-  byte ADCFILTER_O2;
-  byte ADCFILTER_BAT;
-  byte ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
-  byte ADCFILTER_BARO;
+  uint8_t ADCFILTER_TPS;
+  uint8_t ADCFILTER_CLT;
+  uint8_t ADCFILTER_IAT;
+  uint8_t ADCFILTER_O2;
+  uint8_t ADCFILTER_BAT;
+  uint8_t ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
+  uint8_t ADCFILTER_BARO;
   
   byte cltAdvBins[6];   /**< Coolant Temp timing advance curve bins */
   byte cltAdvValues[6]; /**< Coolant timing advance curve values. These are translated by 15 to allow for negative values */
