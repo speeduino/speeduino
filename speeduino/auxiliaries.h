@@ -101,13 +101,12 @@ extern volatile PORT_TYPE *fan_pin_port;
 extern volatile PINMASK_TYPE fan_pin_mask;
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-extern unsigned int fan_pwm_max_count; //Used for variable PWM frequency
+extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
 
-extern unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-extern unsigned int boost_pwm_max_count; //Used for variable PWM frequency
-
+extern uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
+extern uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 
 void boostInterrupt(void);
 void vvtInterrupt(void);

@@ -34,8 +34,8 @@ void initBoard(void)
     TCCR1B = TIMER_PRESCALER_256;   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS.
     TIFR1 = (1 << OCF1A) | (1<<OCF1B) | (1<<OCF1C) | (1<<TOV1) | (1<<ICF1); //Clear the compare flags, overflow flag and external input flag bits
 
-    boost_pwm_max_count = MICROS_PER_SEC / (16U * configPage6.boostFreq * 2U); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
-    vvt_pwm_max_count = MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
+    boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
+    vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
     // put idle_pwm_max_count calculation here?
 
     /*
