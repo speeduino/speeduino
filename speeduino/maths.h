@@ -1,10 +1,8 @@
 #ifndef MATH_H
 #define MATH_H
 
+#include <stdint.h>
 #include "globals.h"
-#include <limits.h>
-
-extern uint8_t random1to100(void);
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -15,87 +13,83 @@ extern uint8_t random1to100(void);
 #include "src/libdivide/constant_fast_div.h"
 #endif
 
-static inline uint8_t div100(uint8_t n) {
-    return n / (uint8_t)100U;
-}
-static inline int8_t div100(int8_t n) {
-    return n / (int8_t)100U;
-}
-static inline uint16_t div100(uint16_t n) {
-    // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
-    // (unlike the signed integer overload, where __divmodhi4 is still called);
-    return n / (uint16_t)100U;
-}
-static inline int16_t div100(int16_t n) {
-#ifdef USE_LIBDIVIDE    
-    if (n>0) {
-        return div100((uint16_t)n);
-    }
-    return libdivide::libdivide_s16_do_raw(n, S16_MAGIC(100), S16_MORE(100));
-#else
-    return n / (int16_t)100;
-#endif
-}
-static inline uint32_t div100(uint32_t n) {
-    if (n<=UINT16_MAX) {
-        return div100((uint16_t)n);
-    }
-#ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_u32_do_raw(n, 2748779070L, 6);
-#else
-    return n / (uint32_t)100U;
-#endif
-}
+extern uint8_t random1to100(void);
 
-#if defined(__arm__)
-static inline int div100(int n) {
-    return n / (int)100;
-}
-#else
-static inline int32_t div100(int32_t n) {
-#ifdef USE_LIBDIVIDE    
-    if (n<=INT16_MAX) {
-            return div100((int16_t)n);            
-        }
-    return libdivide::libdivide_s32_do_raw(n, 1374389535L, 5);
-#else
-    return n / (int32_t)100;
-#endif
-}
-#endif
+/**
+ * @defgroup group-rounded-div Rounding integer division
+ * 
+ * @brief Integer division returns the quotient. I.e. rounds to zero. This
+ * code will round the result to nearest integer. Rounding behavior is
+ * controlled by #DIV_ROUND_BEHAVIOR
+ * 
+ * @{
+ */
 
-static inline uint32_t div360(uint32_t n) {
-#ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do_raw(n, 1813430637L, 72);
-#else
-    return n / 360U;
-#endif
-}
+/**
+ * @defgroup group-rounded-div-behavior Rounding behavior
+ * @{
+ */
 
-//Return x percent of y
-//This is a relatively fast approximation of a percentage value.
-static inline uint32_t percentage(uint8_t x, uint32_t y) {
-    return div100(y * (uint32_t)x);
-}
 
-uint32_t halfPercentage(uint8_t x, uint32_t y);
+/** @brief Rounding behavior: always round down */
+#define DIV_ROUND_DOWN -1
+
+/** @brief Rounding behavior: always round up */
+#define DIV_ROUND_UP 1
+
+/** @brief Rounding behavior: round to nearest 
+ * 
+ * This rounds 0.5 away from zero. This is the same behavior
+ * as the standard library round() function.
+ */
+#define DIV_ROUND_NEAREST 0
+
+/** @brief Integer division rounding behavior. */
+#define DIV_ROUND_BEHAVIOR DIV_ROUND_NEAREST
+// (Unit tests expect DIV_ROUND_NEAREST behavior)
+
+/**
+ * @brief Computes the denominator correction for rounding division
+ * based on our rounding behavior.
+ * 
+ * @param d The divisor (an integer)
+ * @param t The type of the result. E.g. uint16_t
+ */
+#define DIV_ROUND_CORRECT(d, t) ((t)(((d)>>1)+DIV_ROUND_BEHAVIOR))
+///@}
 
 /**
  * @brief Rounded integer division
  * 
- * Integer division returns the quotient. I.e. rounds to zero.
- * Adding half the divisor pre-division has the effect of rounding to
- * the nearest integer. This is slighty more accurate, as those rounding
- * errors don't accumulate so rapidly.
+ * Integer division returns the quotient. I.e. rounds to zero. This
+ * macro will round the result to nearest integer. Rounding behavior
+ * is controlled by #DIV_ROUND_BEHAVIOR
+ * 
+ * @warning For performance reasons, this macro does not promote integers.
+ * So it will overflow if n>MAX(t)-(d/2).
+ * 
+ * @param n The numerator (dividee) (an integer)
+ * @param d The denominator (divider) (an integer)
+ * @param t The type of the result. E.g. uint16_t
  */
-#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) -  ((d)>>1))/(d)) : (((n) + ((d)>>1))/(d)))
+#define DIV_ROUND_CLOSEST(n, d, t) ( \
+    (((n) < 0) ^ ((d) < 0)) ? \
+        ((t)((n) - DIV_ROUND_CORRECT(d, t))/(t)(d)) : \
+        ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d)))
 
 /**
- * @brief Rounded unsigned integer division
+ * @brief Rounded \em unsigned integer division
  * 
- * Assumes both the divisee & divisor are both positive
+ * This is slighty faster than the signed version (DIV_ROUND_CLOSEST(n, d, t))
+ * 
+ * @warning For performance reasons, this macro does not promote integers.
+ * So it will overflow if n>MAX(t)-(d/2).
+ * 
+ * @param n The numerator (dividee) (an \em unsigned integer)
+ * @param d The denominator (divider) (an \em unsigned integer)
+ * @param t The type of the result. E.g. uint16_t
  */
-#define UDIV_ROUND_CLOSEST(n, d) (((n) + ((d)>>1))/(d))
+#define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
 
 /**
  * @brief Rounded arithmetic right shift
@@ -104,10 +98,96 @@ uint32_t halfPercentage(uint8_t x, uint32_t y);
  * effecitvely rounds down (towards zero). To round-to-the-nearest-integer
  * when right-shifting by S, just add in 2 power S−1 (which is the 
  * fixed-point equivalent of 0.5) first
+ * 
+ * @param n The value to shift
+ * @param s The shift distance in bits
  */
 #define RSHIFT_ROUND(n, s) (((n)+(1<<(s-1)))>>s)
+///@}
 
+/** @brief Test whether the parameter is an integer or not. */
 #define IS_INTEGER(d) ((d) == (int32_t)(d))
+
+/**
+ * @defgroup group-div100 Optimised integer divison by 100
+ * @{
+ */
+static inline uint16_t div100(uint16_t n) {
+    // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
+    // (unlike the signed integer overload, where __divmodhi4 is still called
+    // see https://godbolt.org/z/c5bs5noT1)
+    return UDIV_ROUND_CLOSEST(n, 100, uint16_t);
+}
+
+static inline int16_t div100(int16_t n) {
+#ifdef USE_LIBDIVIDE
+    // Try faster unsigned path first
+    if (n>0) {
+        return div100((uint16_t)n);
+    }
+    // Negative values here, so adjust pre-division to get same
+    // behavior as roundf(float)
+    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(100, int16_t), S16_MAGIC(100), S16_MORE(100));
+#else
+    return DIV_ROUND_CLOSEST(n, 100, int16_t);
+#endif
+}
+
+static inline uint32_t div100(uint32_t n) {
+#ifdef USE_LIBDIVIDE
+    if (n<=(uint32_t)UINT16_MAX) {
+        return div100((uint16_t)n);
+    }
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(100, uint32_t), 2748779070L, 6);
+#else
+    return UDIV_ROUND_CLOSEST(n, 100, uint32_t);
+#endif
+}
+
+#if defined(__arm__)
+static inline int div100(int n) {
+    return DIV_ROUND_CLOSEST(n, 100, int);
+}
+#else
+static inline int32_t div100(int32_t n) {
+#ifdef USE_LIBDIVIDE    
+    if (n<=INT16_MAX && n>=INT16_MIN) {
+        return div100((int16_t)n);            
+    }
+    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(100, uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
+#else
+    return DIV_ROUND_CLOSEST(n, 100, int32_t);
+#endif
+}
+#endif
+///@}
+
+/**
+ * @brief Optimised integer division by 360
+ * 
+ * @param n The numerator (dividee) (an integer)
+ * @return uint32_t 
+ */
+static inline uint32_t div360(uint32_t n) {
+#ifdef USE_LIBDIVIDE
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(360, uint32_t), 1813430637L, 72);
+#else
+    return UDIV_ROUND_CLOSEST(n, 360U, uint32_t);
+#endif
+}
+
+/**
+ * @brief Integer based percentage calculation.
+ * 
+ * @param percentage The percentage to calculate ([0, 100])
+ * @param value The value to operate on
+ * @return uint32_t 
+ */
+static inline uint32_t percentage(uint8_t percentage, uint32_t value) {
+    return div100(value * (uint32_t)percentage);
+}
+
+uint32_t halfPercentage(uint8_t x, uint32_t y);
 
 /**
  * @brief Make one pass at correcting the value into the range [min, max)

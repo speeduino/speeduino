@@ -302,8 +302,8 @@ static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 {
   if (revTime!=revolutionTime) {
     revolutionTime = revTime;
-    microsPerDegree = div360((revolutionTime << microsPerDegree_Shift) + UINT32_C(180));
-    degreesPerMicro = UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime);
+    microsPerDegree = div360(revolutionTime << microsPerDegree_Shift);
+    degreesPerMicro = UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
     return true;
   } 
   return false;

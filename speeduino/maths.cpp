@@ -2,12 +2,12 @@
 #include "maths.h"
 
 //Same as above, but 0.5% accuracy
-unsigned long halfPercentage(uint8_t x, unsigned long y)
+uint32_t halfPercentage(uint8_t x, uint32_t y)
 {
 #ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_u32_do_raw(y * x, 2748779070L, 7);
+    return libdivide::libdivide_u32_do_raw(y * x + DIV_ROUND_CORRECT(200, uint32_t), 2748779070L, 7);
 #else
-    return (y * x) / 200U;
+    return UDIV_ROUND_CLOSEST(y * x, 200U, uint32_t);
 #endif  
 }
 

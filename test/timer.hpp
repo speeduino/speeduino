@@ -8,9 +8,15 @@
 #include <sys/time.h>
 #endif
 
+#if !defined(MILLIS_PER_SEC)
 #define MILLIS_PER_SEC 1000ULL
+#endif
+#if !defined(MICROS_PER_SEC)
 #define MICROS_PER_SEC (MILLIS_PER_SEC*1000)
+#endif
+#if !defined(NANOS_PER_SEC)
 #define NANOS_PER_SEC (MICROS_PER_SEC*1000)
+#endif
 
 class timer {
 private:
@@ -51,3 +57,16 @@ public:
 #endif 
     }
 };
+
+template <typename TLoop, typename TParam>
+void measure_executiontime(uint16_t iterations, TLoop from, TLoop to, TLoop step, timer &measure, TParam param, void (*pTestFun)(TLoop, TParam)) {
+    measure.start();
+    for (uint16_t loop=0; loop<iterations; ++loop)
+    {
+      for (TLoop a = from; a < to; a+=step)
+      {
+        pTestFun(a, param);
+      }
+    }
+    measure.stop();
+}
