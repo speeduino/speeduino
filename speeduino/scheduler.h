@@ -121,49 +121,49 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
 void disablePendingFuelSchedule(byte channel);
 void disablePendingIgnSchedule(byte channel);
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd) __attribute__((always_inline));
+void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  inline void fuelSchedule1Interrupt(void);
-  inline void fuelSchedule2Interrupt(void);
-  inline void fuelSchedule3Interrupt(void);
-  inline void fuelSchedule4Interrupt(void);
+  void fuelSchedule1Interrupt(void);
+  void fuelSchedule2Interrupt(void);
+  void fuelSchedule3Interrupt(void);
+  void fuelSchedule4Interrupt(void);
 #if (INJ_CHANNELS >= 5)
-  inline void fuelSchedule5Interrupt(void);
+  void fuelSchedule5Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 6)
-  inline void fuelSchedule6Interrupt(void);
+  void fuelSchedule6Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 7)
-  inline void fuelSchedule7Interrupt(void);
+  void fuelSchedule7Interrupt(void);
 #endif
 #if (INJ_CHANNELS >= 8)
-  inline void fuelSchedule8Interrupt(void);
+  void fuelSchedule8Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 1)
-  inline void ignitionSchedule1Interrupt(void);
+  void ignitionSchedule1Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 2)
-  inline void ignitionSchedule2Interrupt(void);
+  void ignitionSchedule2Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 3)
-  inline void ignitionSchedule3Interrupt(void);
+  void ignitionSchedule3Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 4)
-  inline void ignitionSchedule4Interrupt(void);
+  void ignitionSchedule4Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 5)
-  inline void ignitionSchedule5Interrupt(void);
+  void ignitionSchedule5Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 6)
-  inline void ignitionSchedule6Interrupt(void);
+  void ignitionSchedule6Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 7)
-  inline void ignitionSchedule7Interrupt(void);
+  void ignitionSchedule7Interrupt(void);
 #endif
 #if (IGN_CHANNELS >= 8)
-  inline void ignitionSchedule8Interrupt(void);
+  void ignitionSchedule8Interrupt(void);
 #endif
 #endif
 /** Schedule statuses.

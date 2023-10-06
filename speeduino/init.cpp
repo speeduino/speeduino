@@ -20,7 +20,9 @@
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
-#include EEPROM_LIB_H
+#if defined(EEPROM_RESET_PIN)
+  #include EEPROM_LIB_H
+#endif
 #ifdef SD_LOGGING
   #include "SD_logger.h"
   #include "rtc_common.h"
@@ -2916,11 +2918,6 @@ void setPinMapping(byte boardID)
   
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
-    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
-    mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
-    mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
-
     initMC33810();
   }
 

@@ -10,12 +10,77 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "timers.h"
 
+static long vvt1_pwm_value;
+static long vvt2_pwm_value;
+volatile unsigned int vvt1_pwm_cur_value;
+volatile unsigned int vvt2_pwm_cur_value;
+static long vvt_pid_target_angle;
+static long vvt2_pid_target_angle;
+static long vvt_pid_current_angle;
+static long vvt2_pid_current_angle;
+volatile bool vvt1_pwm_state;
+volatile bool vvt2_pwm_state;
+volatile bool vvt1_max_pwm;
+volatile bool vvt2_max_pwm;
+volatile char nextVVT;
+byte boostCounter;
+byte vvtCounter;
+
+volatile PORT_TYPE *boost_pin_port;
+volatile PINMASK_TYPE boost_pin_mask;
+volatile PORT_TYPE *n2o_stage1_pin_port;
+volatile PINMASK_TYPE n2o_stage1_pin_mask;
+volatile PORT_TYPE *n2o_stage2_pin_port;
+volatile PINMASK_TYPE n2o_stage2_pin_mask;
+volatile PORT_TYPE *n2o_arming_pin_port;
+volatile PINMASK_TYPE n2o_arming_pin_mask;
+volatile PORT_TYPE *aircon_comp_pin_port;
+volatile PINMASK_TYPE aircon_comp_pin_mask;
+volatile PORT_TYPE *aircon_fan_pin_port;
+volatile PINMASK_TYPE aircon_fan_pin_mask;
+volatile PORT_TYPE *aircon_req_pin_port;
+volatile PINMASK_TYPE aircon_req_pin_mask;
+volatile PORT_TYPE *vvt1_pin_port;
+volatile PINMASK_TYPE vvt1_pin_mask;
+volatile PORT_TYPE *vvt2_pin_port;
+volatile PINMASK_TYPE vvt2_pin_mask;
+volatile PORT_TYPE *fan_pin_port;
+volatile PINMASK_TYPE fan_pin_mask;
+
+#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
+volatile bool fan_pwm_state;
+unsigned int fan_pwm_max_count; //Used for variable PWM frequency
+volatile unsigned int fan_pwm_cur_value;
+long fan_pwm_value;
+#endif
+
+bool acIsEnabled;
+bool acStandAloneFanIsEnabled;
+uint8_t acStartDelay;
+uint8_t acTPSLockoutDelay;
+uint8_t acRPMLockoutDelay;
+uint8_t acAfterEngineStartDelay;
+bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
+
+long boost_pwm_target_value;
+volatile bool boost_pwm_state;
+volatile unsigned int boost_pwm_cur_value = 0;
+
+uint32_t vvtWarmTime;
+bool vvtIsHot;
+bool vvtTimeHold;
+unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
+unsigned int boost_pwm_max_count; //Used for variable PWM frequency
+
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
 integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
+static inline void checkAirConCoolantLockout(void);
+static inline void checkAirConTPSLockout(void);
+static inline void checkAirConRPMLockout(void);
 
 /*
 Air Conditioning Control

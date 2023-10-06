@@ -25,6 +25,26 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
   #include <avr/wdt.h>
 #endif
 
+volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+volatile byte loop33ms;
+volatile byte loop66ms;
+volatile byte loop100ms;
+volatile byte loop250ms;
+volatile int loopSec;
+
+volatile unsigned int dwellLimit_uS;
+
+volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+volatile TachoOutputStatus tachoOutputFlag;
+volatile bool tachoSweepEnabled;
+volatile bool tachoAlt = false;
+volatile uint16_t tachoSweepIncr;
+volatile uint16_t tachoSweepAccum;
+
+#if defined (CORE_TEENSY)
+  IntervalTimer lowResTimer;
+#endif
+
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
@@ -160,14 +180,6 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     #endif
 
-    #if defined(CORE_AVR)
-      //Reset watchdog timer (Not active currently)
-      //wdt_reset();
-      //DIY watchdog
-      //This is a sign of a crash:
-      //if( (initialisationComplete == true) && (last250msLoopCount == mainLoopCount) ) { setup(); }
-      //else { last250msLoopCount = mainLoopCount; }
-    #endif
   }
 
   //1Hz loop

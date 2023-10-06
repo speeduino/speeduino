@@ -5,6 +5,7 @@
 #include "init.h"
 #include "maths.h"
 #include "utilities.h"
+#include BOARD_H 
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio

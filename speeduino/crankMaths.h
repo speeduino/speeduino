@@ -2,6 +2,7 @@
 #define CRANKMATHS_H
 
 #include "maths.h"
+#include "globals.h"
 
 #define CRANKMATH_METHOD_INTERVAL_DEFAULT  0
 #define CRANKMATH_METHOD_INTERVAL_REV      1

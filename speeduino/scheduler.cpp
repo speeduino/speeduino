@@ -639,7 +639,7 @@ void setIgnitionSchedule1(void (*startCallback)(), unsigned long timeout, unsign
   }
 }
 
-inline void refreshIgnitionSchedule1(unsigned long timeToEnd)
+void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
@@ -944,7 +944,7 @@ extern void beginInjectorPriming(void)
 //fuelSchedules 1 and 5
 ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule1Interrupt(void)
+void fuelSchedule1Interrupt(void)
 #endif
   {
     if (fuelSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -981,7 +981,7 @@ inline void fuelSchedule1Interrupt(void)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule2Interrupt(void)
+void fuelSchedule2Interrupt(void)
 #endif
   {
     if (fuelSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -1016,7 +1016,7 @@ inline void fuelSchedule2Interrupt(void)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule3Interrupt(void)
+void fuelSchedule3Interrupt(void)
 #endif
   {
     if (fuelSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -1051,7 +1051,7 @@ inline void fuelSchedule3Interrupt(void)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule4Interrupt(void)
+void fuelSchedule4Interrupt(void)
 #endif
   {
     if (fuelSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -1086,7 +1086,7 @@ inline void fuelSchedule4Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule5Interrupt(void)
+void fuelSchedule5Interrupt(void)
 #endif
 {
   if (fuelSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -1119,7 +1119,7 @@ inline void fuelSchedule5Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule6Interrupt(void)
+void fuelSchedule6Interrupt(void)
 #endif
 {
   if (fuelSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1154,7 +1154,7 @@ inline void fuelSchedule6Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule7Interrupt(void)
+void fuelSchedule7Interrupt(void)
 #endif
 {
   if (fuelSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1189,7 +1189,7 @@ inline void fuelSchedule7Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void fuelSchedule8Interrupt(void)
+void fuelSchedule8Interrupt(void)
 #endif
 {
   if (fuelSchedule8.Status == PENDING) //Check to see if this schedule is turn on
@@ -1224,7 +1224,7 @@ inline void fuelSchedule8Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule1Interrupt(void)
+void ignitionSchedule1Interrupt(void)
 #endif
   {
     if (ignitionSchedule1.Status == PENDING) //Check to see if this schedule is turn on
@@ -1266,7 +1266,7 @@ inline void ignitionSchedule1Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule2Interrupt(void)
+void ignitionSchedule2Interrupt(void)
 #endif
   {
     if (ignitionSchedule2.Status == PENDING) //Check to see if this schedule is turn on
@@ -1308,7 +1308,7 @@ inline void ignitionSchedule2Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule3Interrupt(void)
+void ignitionSchedule3Interrupt(void)
 #endif
   {
     if (ignitionSchedule3.Status == PENDING) //Check to see if this schedule is turn on
@@ -1350,7 +1350,7 @@ inline void ignitionSchedule3Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule4Interrupt(void)
+void ignitionSchedule4Interrupt(void)
 #endif
   {
     if (ignitionSchedule4.Status == PENDING) //Check to see if this schedule is turn on
@@ -1392,7 +1392,7 @@ inline void ignitionSchedule4Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule5Interrupt(void)
+void ignitionSchedule5Interrupt(void)
 #endif
   {
     if (ignitionSchedule5.Status == PENDING) //Check to see if this schedule is turn on
@@ -1434,7 +1434,7 @@ inline void ignitionSchedule5Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule6Interrupt(void)
+void ignitionSchedule6Interrupt(void)
 #endif
   {
     if (ignitionSchedule6.Status == PENDING) //Check to see if this schedule is turn on
@@ -1476,7 +1476,7 @@ inline void ignitionSchedule6Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule7Interrupt(void)
+void ignitionSchedule7Interrupt(void)
 #endif
   {
     if (ignitionSchedule7.Status == PENDING) //Check to see if this schedule is turn on
@@ -1518,7 +1518,7 @@ inline void ignitionSchedule7Interrupt(void)
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
-inline void ignitionSchedule8Interrupt(void)
+void ignitionSchedule8Interrupt(void)
 #endif
   {
     if (ignitionSchedule8.Status == PENDING) //Check to see if this schedule is turn on

@@ -20,10 +20,6 @@ void airConControl(void);
 bool READ_AIRCON_REQUEST(void);
 void wmiControl(void);
 
-static inline void checkAirConCoolantLockout(void);
-static inline void checkAirConTPSLockout(void);
-static inline void checkAirConRPMLockout(void);
-
 #define SIMPLE_BOOST_P  1
 #define SIMPLE_BOOST_I  1
 #define SIMPLE_BOOST_D  1
@@ -97,69 +93,23 @@ static inline void checkAirConRPMLockout(void);
 
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
-volatile PORT_TYPE *boost_pin_port;
-volatile PINMASK_TYPE boost_pin_mask;
-volatile PORT_TYPE *vvt1_pin_port;
-volatile PINMASK_TYPE vvt1_pin_mask;
-volatile PORT_TYPE *vvt2_pin_port;
-volatile PINMASK_TYPE vvt2_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
-volatile PORT_TYPE *n2o_stage1_pin_port;
-volatile PINMASK_TYPE n2o_stage1_pin_mask;
-volatile PORT_TYPE *n2o_stage2_pin_port;
-volatile PINMASK_TYPE n2o_stage2_pin_mask;
-volatile PORT_TYPE *n2o_arming_pin_port;
-volatile PINMASK_TYPE n2o_arming_pin_mask;
-volatile PORT_TYPE *aircon_comp_pin_port;
-volatile PINMASK_TYPE aircon_comp_pin_mask;
-volatile PORT_TYPE *aircon_fan_pin_port;
-volatile PINMASK_TYPE aircon_fan_pin_mask;
-volatile PORT_TYPE *aircon_req_pin_port;
-volatile PINMASK_TYPE aircon_req_pin_mask;
+extern volatile PORT_TYPE *vvt1_pin_port;
+extern volatile PINMASK_TYPE vvt1_pin_mask;
+extern volatile PORT_TYPE *vvt2_pin_port;
+extern volatile PINMASK_TYPE vvt2_pin_mask;
+extern volatile PORT_TYPE *fan_pin_port;
+extern volatile PINMASK_TYPE fan_pin_mask;
 
-volatile bool boost_pwm_state;
-unsigned int boost_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int boost_pwm_cur_value;
-long boost_pwm_target_value;
-long boost_cl_target_boost;
-byte boostCounter;
-byte vvtCounter;
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-volatile bool fan_pwm_state;
-unsigned int fan_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int fan_pwm_cur_value;
-long fan_pwm_value;
+extern unsigned int fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
-uint32_t vvtWarmTime;
-bool vvtIsHot;
-bool vvtTimeHold;
 
-volatile bool vvt1_pwm_state;
-volatile bool vvt2_pwm_state;
-volatile bool vvt1_max_pwm;
-volatile bool vvt2_max_pwm;
-volatile char nextVVT;
-unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int vvt1_pwm_cur_value;
-volatile unsigned int vvt2_pwm_cur_value;
-long vvt1_pwm_value;
-long vvt2_pwm_value;
-long vvt_pid_target_angle;
-long vvt2_pid_target_angle;
-long vvt_pid_current_angle;
-long vvt2_pid_current_angle;
+extern unsigned int vvt_pwm_max_count; //Used for variable PWM frequency
+extern unsigned int boost_pwm_max_count; //Used for variable PWM frequency
+
 
 void boostInterrupt(void);
 void vvtInterrupt(void);
-
-bool acIsEnabled;
-bool acStandAloneFanIsEnabled;
-uint8_t acStartDelay;
-uint8_t acTPSLockoutDelay;
-uint8_t acRPMLockoutDelay;
-uint8_t acAfterEngineStartDelay;
-bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
 #endif
