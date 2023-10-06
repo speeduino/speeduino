@@ -86,7 +86,7 @@ inline uint32_t div360(uint32_t n) {
  * Optimised division of unsigned 32-bit by unsigned 16-bit when it is known
  * that the result fits into unsigned 16-bit.
  * 
- * ~50% quicker than raw 32/32 => 32 division on ATMega
+ * ~60% quicker than raw 32/32 => 32 division on ATMega
  * 
  * @note Bad things will likely happen if the result doesn't fit into 16-bits.
  * @note Copied from https://stackoverflow.com/a/66593564
@@ -95,33 +95,42 @@ inline uint32_t div360(uint32_t n) {
  * @param divisor The divisor (denominator)
  * @return uint16_t 
  */
-static inline uint16_t  __attribute__((optimize("no-unroll-loops"))) udiv_32_16 (uint32_t dividend, uint16_t divisor)
+static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
-    // Without no-unroll-loops, this routine takes up a lot of flash memory (.text) AND it's
-    // inlined in a number of places.
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
-    if (dividend<UINT16_MAX) { // Just in case  
+    if (dividend<=UINT16_MAX) { // Just in case  
         return (uint16_t)dividend/divisor;
     }
-    uint16_t quot = dividend;        
-    uint16_t rem  = dividend >> 16;  
 
-    uint8_t bits = sizeof(uint16_t) * CHAR_BIT;     
-    do {
-        // (rem:quot) << 1, with carry out
-        bool carry = rem >> 15;
-        rem  = (rem << 1) | (quot >> 15);
-        quot = quot << 1;
-        // if partial remainder greater or equal to divisor, subtract divisor
-        if (carry || (rem >= divisor)) {
-            rem = rem - divisor;
-            quot = quot | 1;
-        }
-        bits--;
-    } while (bits);
-    return quot;
+    #define INDEX_REG "r16"
+
+    asm(
+        "    ldi " INDEX_REG ", 16 ; bits = 16\n\t"
+        "0:\n\t"
+        "    lsl  %A0     ; shift\n\t"
+        "    rol  %B0     ;  rem:quot\n\t"
+        "    rol  %C0     ;   left\n\t"
+        "    rol  %D0     ;    by 1\n\t"
+        "    brcs 1f     ; if carry out, rem > divisor\n\t"
+        "    cp   %C0, %A1 ; is rem less\n\t"
+        "    cpc  %D0, %B1 ;  than divisor ?\n\t"
+        "    brcs 2f     ; yes, when carry out\n\t"
+        "1:\n\t"
+        "    sub  %C0, %A1 ; compute\n\t"
+        "    sbc  %D0, %B1 ;  rem -= divisor\n\t"
+        "    ori  %A0, 1  ; record quotient bit as 1\n\t"
+        "2:\n\t"
+        "    dec  " INDEX_REG "     ; bits--\n\t"
+        "    brne 0b     ; until bits == 0"
+        : "=d" (dividend) 
+        : "d" (divisor) , "0" (dividend) 
+        : INDEX_REG
+    );
+
+    // Lower word contains the quotient, upper word contains the remainder.
+    return dividend & 0xFFFF;
 #else
-    // The non-AVR platforms are all fast enough (or have built in dividers)
+    // The non-AVR platforms are all fast enough (or have built in hardware dividers)
     // so just fall back to regular 32-bit division.
     return dividend / divisor;
 #endif

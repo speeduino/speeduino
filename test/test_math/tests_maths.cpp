@@ -159,7 +159,7 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 void test_maths_udiv_32_16(void)
 {
   // Divide by zero
-  assert_udiv_32_16(0, 0);
+  TEST_ASSERT_EQUAL_UINT16(0, udiv_32_16(0, 0));
 
   // Result doesn't fit into 16-bits
   TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16(UINT32_MAX, UINT16_MAX));
