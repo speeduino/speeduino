@@ -119,6 +119,10 @@ uint16_t ignition8EndTooth = 0;
 
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
+#ifdef USE_LIBDIVIDE
+#include "src/libdivide/libdivide.h"
+static libdivide::libdivide_s16_t divTriggerToothAngle;
+#endif
 
 /** Universal (shared between decoders) decoder routines.
 *
@@ -482,6 +486,9 @@ void triggerSetup_missingTooth(void)
 
   if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) ) { BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY); }
   else { BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); }
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif  
 }
 
 void triggerPri_missingTooth(void)
@@ -733,82 +740,43 @@ int getCrankAngle_missingTooth(void)
     return crankAngle;
 }
 
+static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(int endAngle, uint8_t toothAdder) {
+  //Temp variable used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  int16_t tempEndTooth = endAngle - configPage4.triggerAngle;
+#ifdef USE_LIBDIVIDE  
+  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+#else
+  tempEndTooth = tempEndTooth / triggerToothAngle;
+#endif
+  //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
+  if(configPage4.triggerTeeth > 12) { tempEndTooth = tempEndTooth - 1; }
+  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempEndTooth > triggerActualTeeth && tempEndTooth <= configPage4.triggerTeeth) { tempEndTooth = triggerActualTeeth; }
+  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
+  return tempEndTooth;
+}
+
 void triggerSetEndTeeth_missingTooth(void)
 {
-  byte toothAdder = 0;
-  byte toothMargin = 0;
-  if(configPage4.triggerTeeth > 12) { toothMargin = 1; } //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
-
+  uint8_t toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
 
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition1EndTooth > triggerActualTeeth && tempIgnition1EndTooth <= configPage4.triggerTeeth) { tempIgnition1EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition2EndTooth > triggerActualTeeth && tempIgnition2EndTooth <= configPage4.triggerTeeth) { tempIgnition2EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition2EndTooth = tempIgnition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition3EndTooth > triggerActualTeeth && tempIgnition3EndTooth <= configPage4.triggerTeeth) { tempIgnition3EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition3EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition3EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition4EndTooth > triggerActualTeeth && tempIgnition4EndTooth <= configPage4.triggerTeeth) { tempIgnition4EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition4EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition4EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition4EndTooth = tempIgnition4EndTooth;
-
+  ignition1EndTooth = calcEndTeeth_missingTooth(ignition1EndAngle, toothAdder);
+  ignition2EndTooth = calcEndTeeth_missingTooth(ignition2EndAngle, toothAdder);
+  ignition3EndTooth = calcEndTeeth_missingTooth(ignition3EndAngle, toothAdder);
+  ignition4EndTooth = calcEndTeeth_missingTooth(ignition4EndAngle, toothAdder);
 #if IGN_CHANNELS >= 5
-  int16_t tempIgnition5EndTooth;
-  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition5EndTooth <= 0) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition5EndTooth > triggerActualTeeth && tempIgnition5EndTooth <= configPage4.triggerTeeth) { tempIgnition5EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition5EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition5EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition5EndTooth = tempIgnition5EndTooth;
+  ignition5EndTooth = calcEndTeeth_missingTooth(ignition5EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  int16_t tempIgnition6EndTooth;
-  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition6EndTooth <= 0) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition6EndTooth > triggerActualTeeth && tempIgnition6EndTooth <= configPage4.triggerTeeth) { tempIgnition6EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition6EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition6EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition6EndTooth = tempIgnition6EndTooth;
+  ignition6EndTooth = calcEndTeeth_missingTooth(ignition6EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  int16_t tempIgnition7EndTooth;
-  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition7EndTooth <= 0) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition7EndTooth > triggerActualTeeth && tempIgnition7EndTooth <= configPage4.triggerTeeth) { tempIgnition7EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition7EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition7EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition7EndTooth = tempIgnition7EndTooth;
+  ignition7EndTooth = calcEndTeeth_missingTooth(ignition7EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  int16_t tempIgnition8EndTooth;
-  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - toothMargin;
-  if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition8EndTooth <= 0) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition8EndTooth > triggerActualTeeth && tempIgnition8EndTooth <= configPage4.triggerTeeth) { tempIgnition8EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition8EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition8EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition8EndTooth = tempIgnition8EndTooth;
+  ignition8EndTooth = calcEndTeeth_missingTooth(ignition8EndAngle, toothAdder);
 #endif
 
   lastToothCalcAdvance = currentStatus.advance;
@@ -835,6 +803,9 @@ void triggerSetup_DualWheel(void)
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
   MAX_STALL_TIME = (3333UL * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif
 }
 
 /** Dual Wheel Primary.
@@ -969,6 +940,19 @@ int getCrankAngle_DualWheel(void)
 
     return crankAngle;
 }
+
+static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(int ignitionAngle, uint8_t toothAdder) {
+  int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
+#ifdef USE_LIBDIVIDE
+  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+#else
+  tempEndTooth = tempEndTooth / triggerToothAngle;
+#endif
+  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
+  return tempEndTooth;
+}
+
 /** Dual Wheel - Set End Teeth.
  * 
  * */
@@ -978,57 +962,21 @@ void triggerSetEndTeeth_DualWheel(void)
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition2EndTooth = tempIgnition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition4EndTooth = tempIgnition4EndTooth;
-
+  ignition1EndTooth = calcEndTeeth_DualWheel(ignition1EndAngle, toothAdder);
+  ignition2EndTooth = calcEndTeeth_DualWheel(ignition2EndAngle, toothAdder);
+  ignition3EndTooth = calcEndTeeth_DualWheel(ignition3EndAngle, toothAdder);
+  ignition4EndTooth = calcEndTeeth_DualWheel(ignition4EndAngle, toothAdder);
 #if IGN_CHANNELS >= 5
-  int16_t tempIgnition5EndTooth;
-  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition5EndTooth <= 0) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition5EndTooth = tempIgnition5EndTooth;
+  ignition5EndTooth = calcEndTeeth_DualWheel(ignition5EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  int16_t tempIgnition6EndTooth;
-  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition6EndTooth <= 0) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition6EndTooth = tempIgnition6EndTooth;
+  ignition6EndTooth = calcEndTeeth_DualWheel(ignition6EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  int16_t tempIgnition7EndTooth;
-  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition7EndTooth <= 0) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition7EndTooth = tempIgnition7EndTooth;
+  ignition7EndTooth = calcEndTeeth_DualWheel(ignition7EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  int16_t tempIgnition8EndTooth;
-  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) );
-  if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition8EndTooth <= 0) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  ignition8EndTooth = tempIgnition8EndTooth;
+  ignition8EndTooth = calcEndTeeth_DualWheel(ignition8EndAngle, toothAdder);
 #endif
 
   lastToothCalcAdvance = currentStatus.advance;
@@ -4223,6 +4171,9 @@ void triggerSetup_FordST170(void)
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = (3333UL * triggerToothAngle * (1 + 1)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif  
 }
 
 void triggerSec_FordST170(void)
@@ -4319,40 +4270,30 @@ int getCrankAngle_FordST170(void)
     return crankAngle;
 }
 
+static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(int ignitionAngle, uint8_t toothAdder) {
+  int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
+#ifdef USE_LIBDIVIDE
+  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+#else
+  tempEndTooth = tempEndTooth / triggerToothAngle;
+#endif  
+  tempEndTooth = tempEndTooth - 1;
+  if(tempEndTooth > (36 + toothAdder)) { tempEndTooth -= (36 + toothAdder); }
+  if(tempEndTooth <= 0) { tempEndTooth += (36 + toothAdder); }
+  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
+  return tempEndTooth;
+}
+
 void triggerSetEndTeeth_FordST170(void)
 {
   byte toothAdder = 0;
    if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
 
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  ignition1EndTooth = calcSetEndTeeth_FordST170(ignition1EndAngle, toothAdder);
+  ignition2EndTooth = calcSetEndTeeth_FordST170(ignition2EndAngle, toothAdder);
+  ignition3EndTooth = calcSetEndTeeth_FordST170(ignition3EndAngle, toothAdder);
+  ignition4EndTooth = calcSetEndTeeth_FordST170(ignition4EndAngle, toothAdder);
 
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition1EndTooth > (36 + toothAdder)) { tempIgnition1EndTooth -= (36 + toothAdder); }
-  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (36 + toothAdder); }
-  if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition2EndTooth > (36 + toothAdder)) { tempIgnition2EndTooth -= (36 + toothAdder); }
-  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (36 + toothAdder); }
-  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition2EndTooth = tempIgnition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition3EndTooth > (36 + toothAdder)) { tempIgnition3EndTooth -= (36 + toothAdder); }
-  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (36 + toothAdder); }
-  if((uint16_t)tempIgnition3EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition3EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition4EndTooth > (36 + toothAdder)) { tempIgnition4EndTooth -= (36 + toothAdder); }
-  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (36 + toothAdder); }
-  if((uint16_t)tempIgnition4EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition4EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition4EndTooth = tempIgnition4EndTooth;
   // Removed ign channels >4 as an ST170 engine is a 4 cylinder
 
   lastToothCalcAdvance = currentStatus.advance;
@@ -4463,6 +4404,9 @@ void triggerSetup_NGC(void)
     toothAngles[8] = 3;
     toothAngles[9] = 1; // Pos 9 is required to be the same as group 1 for easier math
   }
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif  
 }
 
 void triggerPri_NGC(void) 
@@ -4701,93 +4645,40 @@ uint16_t getRPM_NGC(void)
   return tempRPM;
 }
 
+static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(int ignitionAngle, uint8_t toothAdder) {
+  int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
+#ifdef USE_LIBDIVIDE
+  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+#else
+  tempEndTooth = tempEndTooth / triggerToothAngle;
+#endif  
+  tempEndTooth = tempEndTooth - 1;
+  if(tempEndTooth < 1) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
+  else if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
+  if(tempEndTooth == 17 || tempEndTooth == 18) { tempEndTooth = 16; } // These are missing teeth, so set the next one before instead
+  else if(tempEndTooth == 35 || tempEndTooth == 36) { tempEndTooth = 34; } // These are missing teeth, so set the next one before instead
+  else if(tempEndTooth == 53 || tempEndTooth == 54) { tempEndTooth = 52; } // These are missing teeth, so set the next one before instead
+  else if(tempEndTooth > 70) { tempEndTooth = 70; } // These are missing teeth, so set the next one before instead
+  return tempEndTooth;
+}
+
 void triggerSetEndTeeth_NGC(void)
 {
   byte toothAdder = 0;
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
   
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition1EndTooth < 1) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition1EndTooth == 17 || tempIgnition1EndTooth == 18) { tempIgnition1EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition1EndTooth == 35 || tempIgnition1EndTooth == 36) { tempIgnition1EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition1EndTooth == 53 || tempIgnition1EndTooth == 54) { tempIgnition1EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition1EndTooth > 70) { tempIgnition1EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition2EndTooth < 1) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition2EndTooth == 17 || tempIgnition2EndTooth == 18) { tempIgnition2EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition2EndTooth == 35 || tempIgnition2EndTooth == 36) { tempIgnition2EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition2EndTooth == 53 || tempIgnition2EndTooth == 54) { tempIgnition2EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition2EndTooth > 70) { tempIgnition2EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition2EndTooth = tempIgnition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition3EndTooth < 1) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition3EndTooth == 17 || tempIgnition3EndTooth == 18) { tempIgnition3EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition3EndTooth == 35 || tempIgnition3EndTooth == 36) { tempIgnition3EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition3EndTooth == 53 || tempIgnition3EndTooth == 54) { tempIgnition3EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition3EndTooth > 70) { tempIgnition3EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition4EndTooth < 1) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition4EndTooth == 17 || tempIgnition4EndTooth == 18) { tempIgnition4EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition4EndTooth == 35 || tempIgnition4EndTooth == 36) { tempIgnition4EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition4EndTooth == 53 || tempIgnition4EndTooth == 54) { tempIgnition4EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition4EndTooth > 70) { tempIgnition4EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition4EndTooth = tempIgnition4EndTooth;
-
+  ignition1EndTooth = calcSetEndTeeth_NGC(ignition1EndAngle, toothAdder);
+  ignition2EndTooth = calcSetEndTeeth_NGC(ignition2EndAngle, toothAdder);
+  ignition3EndTooth = calcSetEndTeeth_NGC(ignition3EndAngle, toothAdder);
+  ignition4EndTooth = calcSetEndTeeth_NGC(ignition4EndAngle, toothAdder);
   #if IGN_CHANNELS >= 6
-  int16_t tempIgnition5EndTooth;
-  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition5EndTooth < 1) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition5EndTooth == 17 || tempIgnition5EndTooth == 18) { tempIgnition5EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition5EndTooth == 35 || tempIgnition5EndTooth == 36) { tempIgnition5EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition5EndTooth == 53 || tempIgnition5EndTooth == 54) { tempIgnition5EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition5EndTooth > 70) { tempIgnition5EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition5EndTooth = tempIgnition5EndTooth;
-
-  int16_t tempIgnition6EndTooth;
-  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition6EndTooth < 1) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition6EndTooth == 17 || tempIgnition6EndTooth == 18) { tempIgnition6EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition6EndTooth == 35 || tempIgnition6EndTooth == 36) { tempIgnition6EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition6EndTooth == 53 || tempIgnition6EndTooth == 54) { tempIgnition6EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition6EndTooth > 70) { tempIgnition6EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition6EndTooth = tempIgnition6EndTooth;
+  ignition5EndTooth = calcSetEndTeeth_NGC(ignition5EndAngle, toothAdder);
+  ignition6EndTooth = calcSetEndTeeth_NGC(ignition6EndAngle, toothAdder);
   #endif
 
   #if IGN_CHANNELS >= 8
-  int16_t tempIgnition7EndTooth;
-  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition7EndTooth < 1) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition7EndTooth == 17 || tempIgnition7EndTooth == 18) { tempIgnition7EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition7EndTooth == 35 || tempIgnition7EndTooth == 36) { tempIgnition7EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition7EndTooth == 53 || tempIgnition7EndTooth == 54) { tempIgnition7EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition7EndTooth > 70) { tempIgnition7EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition7EndTooth = tempIgnition7EndTooth;
-
-  int16_t tempIgnition8EndTooth;
-  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1; // Which tooth is the last tooth before ignition
-  if(tempIgnition8EndTooth < 1) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempIgnition8EndTooth == 17 || tempIgnition8EndTooth == 18) { tempIgnition8EndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition8EndTooth == 35 || tempIgnition8EndTooth == 36) { tempIgnition8EndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition8EndTooth == 53 || tempIgnition8EndTooth == 54) { tempIgnition8EndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempIgnition8EndTooth > 70) { tempIgnition8EndTooth = 70; } // These are missing teeth, so set the next one before instead
-  ignition8EndTooth = tempIgnition8EndTooth;
+  ignition7EndTooth = calcSetEndTeeth_NGC(ignition7EndAngle, toothAdder);
+  ignition8EndTooth = calcSetEndTeeth_NGC(ignition8EndAngle, toothAdder);
   #endif
 
   lastToothCalcAdvance = currentStatus.advance;
@@ -5024,6 +4915,9 @@ void triggerSetup_Renix(void)
   toothSystemCount = 1;
   toothCurrentCount = 1;
   toothLastToothTime = 0;
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif  
 }
 
 
@@ -5106,6 +5000,21 @@ void triggerPri_Renix(void)
   } 
 }
 
+static uint16_t __attribute__((noinline))  calcEndTeeth_Renix(int ignitionAngle, uint8_t toothAdder) {
+  int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
+#ifdef USE_LIBDIVIDE
+  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+#else
+  tempEndTooth = tempEndTooth / triggerToothAngle;
+#endif  
+  tempEndTooth = tempEndTooth - 1;
+  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
+  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
+  if((uint16_t)tempEndTooth > triggerActualTeeth && tempEndTooth <= configPage4.triggerTeeth) { tempEndTooth = triggerActualTeeth; }
+  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
+  return tempEndTooth;
+}
+
 void triggerSetEndTeeth_Renix(void)
 {
   byte toothAdder = 0;
@@ -5113,75 +5022,22 @@ void triggerSetEndTeeth_Renix(void)
 
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
 
-  int16_t tempIgnition1EndTooth;
-  tempIgnition1EndTooth = ( (ignition1EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition1EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition1EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition1EndTooth <= 0) { tempIgnition1EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition1EndTooth > triggerActualTeeth && tempIgnition1EndTooth <= configPage4.triggerTeeth) { tempIgnition1EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition1EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition1EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition1EndTooth = tempIgnition1EndTooth;
-
-
-  int16_t tempIgnition2EndTooth;
-  tempIgnition2EndTooth = ( (ignition2EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition2EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition2EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition2EndTooth <= 0) { tempIgnition2EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition2EndTooth > triggerActualTeeth && tempIgnition2EndTooth <= configPage4.triggerTeeth) { tempIgnition2EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition2EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition2EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition2EndTooth = tempIgnition2EndTooth;
+  ignition1EndTooth = calcEndTeeth_Renix(ignition1EndAngle, toothAdder);
+  ignition2EndTooth = calcEndTeeth_Renix(ignition2EndAngle, toothAdder);
   currentStatus.canin[1] = ignition2EndTooth;
-
-  int16_t tempIgnition3EndTooth;
-  tempIgnition3EndTooth = ( (ignition3EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition3EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition3EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition3EndTooth <= 0) { tempIgnition3EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition3EndTooth > triggerActualTeeth && tempIgnition3EndTooth <= configPage4.triggerTeeth) { tempIgnition3EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition3EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition3EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition3EndTooth = tempIgnition3EndTooth;
-
-  int16_t tempIgnition4EndTooth;
-  tempIgnition4EndTooth = ( (ignition4EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition4EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition4EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition4EndTooth <= 0) { tempIgnition4EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition4EndTooth > triggerActualTeeth && tempIgnition4EndTooth <= configPage4.triggerTeeth) { tempIgnition4EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition4EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition4EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition4EndTooth = tempIgnition4EndTooth;
-
+  ignition3EndTooth = calcEndTeeth_Renix(ignition3EndAngle, toothAdder);
+  ignition4EndTooth = calcEndTeeth_Renix(ignition4EndAngle, toothAdder);
 #if IGN_CHANNELS >= 5
-  int16_t tempIgnition5EndTooth;
-  tempIgnition5EndTooth = ( (ignition5EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition5EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition5EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition5EndTooth <= 0) { tempIgnition5EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition5EndTooth > triggerActualTeeth && tempIgnition5EndTooth <= configPage4.triggerTeeth) { tempIgnition5EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition5EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition5EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition5EndTooth = tempIgnition5EndTooth;
+  ignition5EndTooth = calcEndTeeth_Renix(ignition5EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 6
-  int16_t tempIgnition6EndTooth;
-  tempIgnition6EndTooth = ( (ignition6EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition6EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition6EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition6EndTooth <= 0) { tempIgnition6EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition6EndTooth > triggerActualTeeth && tempIgnition6EndTooth <= configPage4.triggerTeeth) { tempIgnition6EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition6EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition6EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition6EndTooth = tempIgnition6EndTooth;
+  ignition6EndTooth = calcEndTeeth_Renix(ignition6EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 7
-  int16_t tempIgnition7EndTooth;
-  tempIgnition7EndTooth = ( (ignition7EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition7EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition7EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition7EndTooth <= 0) { tempIgnition7EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition7EndTooth > triggerActualTeeth && tempIgnition7EndTooth <= configPage4.triggerTeeth) { tempIgnition7EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition7EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition7EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition7EndTooth = tempIgnition7EndTooth;
+  ignition7EndTooth = calcEndTeeth_Renix(ignition7EndAngle, toothAdder);
 #endif
 #if IGN_CHANNELS >= 8
-  int16_t tempIgnition8EndTooth;
-  tempIgnition8EndTooth = ( (ignition8EndAngle - configPage4.triggerAngle) / (int16_t)(triggerToothAngle) ) - 1;
-  if(tempIgnition8EndTooth > (configPage4.triggerTeeth + toothAdder)) { tempIgnition8EndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempIgnition8EndTooth <= 0) { tempIgnition8EndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempIgnition8EndTooth > triggerActualTeeth && tempIgnition8EndTooth <= configPage4.triggerTeeth) { tempIgnition8EndTooth = triggerActualTeeth; }
-  if((uint16_t)tempIgnition8EndTooth > (triggerActualTeeth + toothAdder)) { tempIgnition8EndTooth = (triggerActualTeeth + toothAdder); }
-  ignition8EndTooth = tempIgnition8EndTooth;
+  ignition8EndTooth = calcEndTeeth_Renix(ignition8EndAngle, toothAdder);
 #endif
 
   lastToothCalcAdvance = currentStatus.advance;
