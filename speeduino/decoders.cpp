@@ -295,31 +295,31 @@ static inline bool IsCranking(const statuses &status) {
 }
 
 #if defined(UNIT_TEST)
-void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+bool SetRevolutionTime(uint32_t revTime)
 #else
-static __attribute__((noinline)) void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 #endif
 {
-  uint32_t oldTime = revolutionTime;
-  revolutionTime = degreesOver == 720 ? UDIV_ROUND_CLOSEST(revTime, 2U) : revTime;
-  if (oldTime!=revolutionTime) {
+  if (revTime!=revolutionTime) {
+    revolutionTime = revTime;
     microsPerDegree = div360((revolutionTime << microsPerDegree_Shift) + 180UL);
     degreesPerMicro = UDIV_ROUND_CLOSEST((360UL << degreesPerMicro_Shift), revolutionTime);
-  }  
+    return true;
+  } 
+  return false;
 }
 
 static bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
   noInterrupts();
-  if(  HasAnySync(currentStatus) && !IsCranking(currentStatus)
-    && (toothOneTime>0) 
-    && (toothOneMinusOneTime>0))
-  {
-    SetRevolutionTime(toothOneTime - toothOneMinusOneTime, degreesOver); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-    interrupts();
-    return true;
-  }
+  bool updatedRevTime = HasAnySync(currentStatus) 
+    && !IsCranking(currentStatus)
+    && (toothOneMinusOneTime!=0L)
+    && (toothOneTime>toothOneMinusOneTime) 
+    //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> (degreesOver==720U ? 1U : 0U)); 
+
   interrupts();
- return false;  
+ return updatedRevTime;  
 }
 
 static inline uint16_t clampRpm(uint16_t rpm) {
@@ -345,7 +345,7 @@ static __attribute__((noinline)) uint16_t stdGetRPM(uint16_t degreesOver)
     return RpmFromRevolutionTimeUs(revolutionTime);
   }
 
-  return 0U;
+  return currentStatus.RPM;
 }
 
 /**
@@ -372,16 +372,18 @@ static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, uint16_t de
 {
   if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) )
   {
-    if( (toothLastToothTime > 0) && (toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
+    if((toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
       noInterrupts();
-      SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth, degreesOver);
+      bool newRevtime = SetRevolutionTime(((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth) >> (degreesOver==720U ? 1U : 0U));
       interrupts();
-      return RpmFromRevolutionTimeUs(revolutionTime);
+      if (newRevtime) {
+        return RpmFromRevolutionTimeUs(revolutionTime);
+      }
     }
   }
 
-  return 0U;
+  return currentStatus.RPM;
 }
 
 /**
@@ -1661,7 +1663,7 @@ uint16_t getRPM_4G63(void)
         interrupts();
         toothTime = toothTime * 36;
         tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
-        SetRevolutionTime((10UL * toothTime) / tempToothAngle, 360);
+        SetRevolutionTime((10UL * toothTime) / tempToothAngle);
         MAX_STALL_TIME = 366667UL; // 50RPM
       }
     }
@@ -2373,7 +2375,7 @@ uint16_t getRPM_Miata9905(void)
       interrupts();
       toothTime = toothTime * 36;
       tempRPM = ((unsigned long)tempToothAngle * 6000000UL) / toothTime;
-      SetRevolutionTime((10UL * toothTime) / tempToothAngle, 360);
+      SetRevolutionTime((10UL * toothTime) / tempToothAngle);
       MAX_STALL_TIME = 366667UL; // 50RPM
     }
   }
@@ -2576,7 +2578,7 @@ uint16_t getRPM_MazdaAU(void)
       int tempToothAngle;
       noInterrupts();
       tempToothAngle = triggerToothAngle;
-      SetRevolutionTime(36*(toothLastToothTime - toothLastMinusOneToothTime), 360); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
+      SetRevolutionTime(36*(toothLastToothTime - toothLastMinusOneToothTime)); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
       interrupts();
       tempRPM = (tempToothAngle * 60000000L) / revolutionTime;
     }
@@ -2856,13 +2858,13 @@ uint16_t getRPM_Nissan360(void)
     if(currentStatus.startRevolutions < 2)
     {
       noInterrupts();
-      SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * 180, 360); //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
+      SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * 180); //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
       interrupts();
     }
     else
     {
       noInterrupts();
-      SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> 1, 360); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+      SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> 1); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
     }
     tempRPM = RpmFromRevolutionTimeUs(revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
@@ -3312,7 +3314,7 @@ uint16_t getRPM_Daihatsu(void)
       else
       {
         noInterrupts();
-        SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1), 360);
+        SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1));
         interrupts();
         tempRPM = RpmFromRevolutionTimeUs(revolutionTime);
       } //is tooth #2
@@ -3441,7 +3443,7 @@ uint16_t getRPM_Harley(void)
           if(toothCurrentCount == 1) { tempToothAngle = 129; }
           else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
         */
-        SetRevolutionTime(toothOneTime - toothOneMinusOneTime, 360); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        SetRevolutionTime(toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
         toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 129 and 332 depending on the last tooth that was seen
         interrupts();
         toothTime = toothTime * 36;
@@ -4784,7 +4786,7 @@ uint16_t getRPM_Vmax(void)
       {
         noInterrupts();
         tempToothAngle = triggerToothAngle;
-        SetRevolutionTime(toothOneTime - toothOneMinusOneTime, 360); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+        SetRevolutionTime(toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
         toothTime = (toothLastToothTime - toothLastMinusOneToothTime); 
         interrupts();
         toothTime = toothTime * 36;
