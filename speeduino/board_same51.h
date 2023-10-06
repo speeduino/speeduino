@@ -189,7 +189,7 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-  Uart CANSerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
+  Uart secondarySerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
 
 #endif //CORE_SAMD21
 #endif //SAMD21_H

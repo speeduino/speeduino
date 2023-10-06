@@ -1422,26 +1422,6 @@
             <EcuConfigurationName type="String"/>
             <RelativeHeight type="double">0.051756007393715345</RelativeHeight>
             <RelativeWidth type="double">0.023622047244094488</RelativeWidth>
-            <RelativeX type="double">0.5787401574803149</RelativeX>
-            <RelativeY type="double">0.5304990757855823</RelativeY>
-            <AntialiasingOn type="boolean">true</AntialiasingOn>
-            <InvalidState type="boolean">false</InvalidState>
-            <ItalicFont type="boolean">false</ItalicFont>
-            <MustPaint type="boolean">false</MustPaint>
-            <FontFamily type="String"/>
-        </dashComp>
-        <dashComp type="Label">
-            <Text type="String">x</Text>
-            <RunDemo type="boolean">false</RunDemo>
-            <MustPaint type="boolean">false</MustPaint>
-            <BackgroundColor alpha="0" blue="0" green="0" red="0" type="Color">0</BackgroundColor>
-            <TextColor alpha="255" blue="255" green="255" red="255" type="Color">-1</TextColor>
-            <Id type="String"/>
-            <Dirty type="boolean">false</Dirty>
-            <RunDemo type="boolean">false</RunDemo>
-            <EcuConfigurationName type="String"/>
-            <RelativeHeight type="double">0.051756007393715345</RelativeHeight>
-            <RelativeWidth type="double">0.023622047244094488</RelativeWidth>
             <RelativeX type="double">0.2968503937007874</RelativeX>
             <RelativeY type="double">0.5304990757855823</RelativeY>
             <AntialiasingOn type="boolean">true</AntialiasingOn>

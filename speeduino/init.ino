@@ -7,7 +7,7 @@
 #include "updates.h"
 #include "speeduino.h"
 #include "timers.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
@@ -116,8 +116,8 @@ void initialiseAll(void)
 
     Serial.begin(115200);
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
-    #if defined(CANSerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { CANSerial.begin(115200); }
+    #if defined(secondarySerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
     #endif
 
     //Repoint the 2D table structs to the config pages that were just loaded
