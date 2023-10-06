@@ -113,11 +113,6 @@
     #define BOARD_H "board_stm32_generic.h"
   #endif
 
-  //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
-    #define SMALL_FLASH_MODE
-  #endif
-
   #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
   #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
   #if __GNUC__ < 7 //Already included on GCC 7
