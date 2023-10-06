@@ -532,7 +532,7 @@ void readBaro(void)
 
     //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
     unsigned long timeToLastTooth = (micros() - toothLastToothTime);
-    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    if((currentStatus.RPM == 0) && (timeToLastTooth > MICROS_PER_SEC))
     {
       instanteneousMAPReading(); //Get the current MAP value
       /* 
@@ -680,10 +680,10 @@ uint16_t getSpeed(void)
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    if ( (micros() - vssTimes[vssIndex]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
+    if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
-      tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
       tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue

@@ -305,7 +305,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
           uint32_t calibrationGap = vssGetPulseGap(0);
           if( calibrationGap > 0 )
           {
-            configPage2.vssPulsesPerKm = 60000000UL / calibrationGap;
+            configPage2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
             writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
             BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
           }

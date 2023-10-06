@@ -3,6 +3,7 @@
 #include <unity.h>
 #include <stdio.h>
 #include "tests_maths.h"
+#include "globals.h"
 #include "maths.h"
 #include "..\timer.hpp"
 
@@ -167,11 +168,11 @@ void test_maths_udiv_32_16(void)
   assert_udiv_32_16(1, 1);
   assert_udiv_32_16(UINT16_MAX+1, UINT16_MAX);
   assert_udiv_32_16(UINT16_MAX-1, UINT16_MAX);
-  assert_udiv_32_16(60000000, 60000); // 1000 RPM
-  assert_udiv_32_16(60000000, 54005); // 1111 RPM
-  assert_udiv_32_16(60000000, 7590);  // 7905 RPM
-  assert_udiv_32_16(60000000, 7715);  // 7777 RPM  
-  assert_udiv_32_16(60000000, 3333);  // 18000 RPM  
+  assert_udiv_32_16(MICROS_PER_MIN, 60000); // 1000 RPM
+  assert_udiv_32_16(MICROS_PER_MIN, 54005); // 1111 RPM
+  assert_udiv_32_16(MICROS_PER_MIN, 7590);  // 7905 RPM
+  assert_udiv_32_16(MICROS_PER_MIN, 7715);  // 7777 RPM  
+  assert_udiv_32_16(MICROS_PER_MIN, 3333);  // 18000 RPM  
 }
 
 void test_maths_udiv_32_16_perf(void)
