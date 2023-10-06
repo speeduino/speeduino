@@ -705,7 +705,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 21)
   {
-    //202306
+    //202310
 
     //Rolling cut curve added. Default values
     configPage15.rollingProtRPMDelta[0]   = -30;
