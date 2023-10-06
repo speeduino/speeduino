@@ -554,7 +554,7 @@ void test_rotary_channel_calcs(void)
 {
     setEngineSpeed(4000, 360);
 
-    static const int16_t test_data[][5] PROGMEM = {
+    static const int test_data[][5] PROGMEM = {
         // End Angle (deg), Dwell Angle, rotary split degrees, expected start angle, expected end angle
         { -40, 5, 0, -40, 315 },
         { -40, 95, 0, -40, 225 },
@@ -588,8 +588,8 @@ void test_rotary_channel_calcs(void)
         { 40, 355, 40, 80, 85 },
     };
 
-    const int16_t (*pStart)[5] = &test_data[0];
-    const int16_t (*pEnd)[5] = &test_data[0]+_countof(test_data);
+    const int (*pStart)[5] = &test_data[0];
+    const int (*pEnd)[5] = &test_data[0]+_countof(test_data);
 
     int endAngle, startAngle;
     int local[5];
@@ -598,8 +598,8 @@ void test_rotary_channel_calcs(void)
         memcpy_P(local, pStart, sizeof(local));
         ignition2EndAngle = local[0];
         calculateIgnitionTrailingRotary(local[1], local[2], local[0], &endAngle, &startAngle);
-        TEST_ASSERT_EQUAL(local[3], endAngle);
-        TEST_ASSERT_EQUAL(local[4], startAngle);
+        TEST_ASSERT_EQUAL_MESSAGE(local[3], endAngle, "endAngle");
+        TEST_ASSERT_EQUAL_MESSAGE(local[4], startAngle, "startAngle");
         ++pStart;
     } 
 

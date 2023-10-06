@@ -242,7 +242,7 @@ static void cylinder6_stroke4_seq_even(void)
   configPage2.engineType = EVEN_FIRE;
   initialiseAll(); //Run the main initialise function
 #if IGN_CHANNELS >= 6
-  const uint16_t angle[] = {0,120,240,360,480,540,0,0};
+  const uint16_t angle[] = {0,120,240,360,480,600,0,0};
   assert_ignition_schedules(720U, 6U, angle);
 #else
   const uint16_t angle[] = {0,120,240,0,0,0,0,0};
