@@ -97,7 +97,8 @@ volatile unsigned long triggerThirdFilterTime; // The shortest time (in uS) that
 
 volatile uint8_t decoderState = 0;
 
-UQ24X8_t timePerDegree24x8;
+UQ24X8_t microsPerDegree;
+UQ1X15_t degreesPerMicro;
 
 unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
@@ -290,15 +291,21 @@ static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0);
 }
 
-static inline void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver) {
+#if defined(UNIT_TEST)
+void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+#else
+static __attribute__((noinline)) void SetRevolutionTime(uint32_t revTime, uint16_t degreesOver)
+#endif
+{
   uint32_t oldTime = revolutionTime;
-  revolutionTime = degreesOver == 720 ? revTime/2 : revTime;
+  revolutionTime = degreesOver == 720 ? UDIV_ROUND_CLOSEST(revTime, 2U) : revTime;
   if (oldTime!=revolutionTime) {
-    timePerDegree24x8 = div360(revolutionTime << 8UL);
+    microsPerDegree = div360((revolutionTime << microsPerDegree_Shift) + 180UL);
+    degreesPerMicro = UDIV_ROUND_CLOSEST((360UL << degreesPerMicro_Shift), revolutionTime);
   }  
 }
 
-static inline bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
+static bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
   noInterrupts();
   if(  HasAnySync(currentStatus) && !IsCranking(currentStatus)
     && (toothOneTime>0) 
@@ -329,7 +336,7 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
 * @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
 * @return RPM
 */
-static inline uint16_t stdGetRPM(uint16_t degreesOver)
+static __attribute__((noinline)) uint16_t stdGetRPM(uint16_t degreesOver)
 {
   if (UpdateRevolutionTimeFromTeeth(degreesOver)) {
     return RpmFromRevolutionTimeUs(revolutionTime);
@@ -358,7 +365,7 @@ It can only be used on patterns where the teeth are evenly spaced.
 It takes an argument of the full (COMPLETE) number of teeth per revolution.
 For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
 */
-static inline int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
+static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, uint16_t degreesOver)
 {
   if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) )
   {
@@ -644,6 +651,8 @@ void triggerSec_missingTooth(void)
 
     currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
   }
+
+
 }
 
 void triggerThird_missingTooth(void)
@@ -910,22 +919,22 @@ void triggerSec_DualWheel(void)
  * */
 uint16_t getRPM_DualWheel(void)
 {
-  uint16_t tempRPM = 0;
   if( currentStatus.hasSync == true )
   {
+    //Account for cam speed
+    uint16_t degreesOver = (configPage4.TrigSpeed == CAM_SPEED) ? 720: 360;
     if( currentStatus.RPM < currentStatus.crankRPM )
     {
-      if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = crankingGetRPM(configPage4.triggerTeeth, 720); } //Account for cam speed
-      else { tempRPM = crankingGetRPM(configPage4.triggerTeeth, 360); }
+      return crankingGetRPM(configPage4.triggerTeeth, degreesOver);
     }
     else
     {
-      if(configPage4.TrigSpeed == CAM_SPEED) { tempRPM = stdGetRPM(720); } //Account for cam speed
-      else { tempRPM = stdGetRPM(360); }
+      return stdGetRPM(degreesOver);
     }
   }
-  return tempRPM;
+  return 0U;
 }
+
 /** Dual Wheel - Get Crank angle.
  * 
  * */

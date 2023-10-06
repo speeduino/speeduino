@@ -4,8 +4,6 @@
 #include "maths.h"
 #include "globals.h"
 
-void doCrankSpeedCalcs(void);
-
 #define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
 
 /** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
@@ -21,7 +19,7 @@ void doCrankSpeedCalcs(void);
 /** @brief Absolute minimum RPM that the crank math (& therefore all of Speeduino) can be used with 
  * 
  * This is dictated by the use of uint16_t as the base type for storing
- * angle to time conversion factor (timePerDegreex16)
+ * angle<->time conversion factor (degreesPerMicro)
 */
 #define MIN_RPM ((US_PER_DEG_PER_RPM/(UINT16_MAX/16UL))+1UL)
 

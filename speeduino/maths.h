@@ -70,7 +70,33 @@ inline uint32_t div360(uint32_t n) {
 #endif
 }
 
-#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) - (d)/2)/(d)) : (((n) + (d)/2)/(d)))
+/**
+ * @brief Rounded integer division
+ * 
+ * Integer division returns the quotient. I.e. rounds to zero.
+ * Adding half the divisor pre-division has the effect of rounding to
+ * the nearest integer. This is slighty more accurate, as those rounding
+ * errors don't accumulate so rapidly.
+ */
+#define DIV_ROUND_CLOSEST(n, d) ((((n) < 0) ^ ((d) < 0)) ? (((n) -  ((d)>>1))/(d)) : (((n) + ((d)>>1))/(d)))
+
+/**
+ * @brief Rounded unsigned integer division
+ * 
+ * Assumes both the divisee & divisor are both positive
+ */
+#define UDIV_ROUND_CLOSEST(n, d) (((n) + ((d)>>1))/(d))
+
+/**
+ * @brief Rounded arithmetic right shift
+ * 
+ * Right shifting throws away bits. When use for fixed point division, this
+ * effecitvely rounds down (towards zero). To round-to-the-nearest-integer
+ * when right-shifting by S, just add in 2 power S−1 (which is the 
+ * fixed-point equivalent of 0.5) first
+ */
+#define RSHIFT_ROUND(n, s) (((n)+(1<<(s-1)))>>s)
+
 #define IS_INTEGER(d) (d == (int32_t)d)
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range

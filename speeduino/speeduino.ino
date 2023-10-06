@@ -460,8 +460,6 @@ void loop(void)
       uint16_t injector8StartAngle = 0;
       #endif
 
-      doCrankSpeedCalcs(); //In crankMaths.ino
-
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
       //Handle multiple squirts per rev
