@@ -120,6 +120,7 @@ void test_maths_div100_U16(void)
   test_div100_Seed<uint16_t>(10000U);
 
   test_div100<uint16_t>(0);
+  test_div100<uint16_t>(99);
   test_div100<uint16_t>(UINT16_MAX-100);
 
   // We expect this to fail - the rounding doesn't do integer promotion
@@ -200,7 +201,7 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 void test_maths_udiv_32_16(void)
 {
   // Divide by zero
-  TEST_ASSERT_EQUAL_UINT16(0, udiv_32_16(0, 0));
+  TEST_ASSERT_EQUAL_UINT16(65535, udiv_32_16(0, 0));
 
   // Result doesn't fit into 16-bits
   TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16(UINT32_MAX, UINT16_MAX));
@@ -215,6 +216,29 @@ void test_maths_udiv_32_16(void)
   assert_udiv_32_16(MICROS_PER_MIN, 3333);  // 18000 RPM  
 }
 
+
+void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
+    assert_rounded_div(dividend, divisor, udiv_32_16_closest(dividend, divisor));
+}
+
+void test_maths_udiv_32_16_closest(void)
+{
+  // Divide by zero
+  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
+
+  // Result doesn't fit into 16-bits
+  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16_closest(UINT32_MAX-(UINT16_MAX/2)-1, UINT16_MAX));
+
+  assert_udiv_32_16(1, 1);
+  assert_udiv_32_16(2, 3);
+  assert_udiv_32_16(UINT16_MAX+1, UINT16_MAX);
+  assert_udiv_32_16(UINT16_MAX-1, UINT16_MAX);
+  assert_udiv_32_16(60000000, 60000); // 1000 RPM
+  assert_udiv_32_16(60000000, 54005); // 1111 RPM
+  assert_udiv_32_16(60000000, 7590);  // 7905 RPM
+  assert_udiv_32_16(60000000, 7715);  // 7777 RPM  
+  assert_udiv_32_16(60000000, 3333);  // 18000 RPM  
+}
 
 static uint32_t indexToDividend(int16_t index) {
   return (uint32_t)index  + (UINT16_MAX*index);
@@ -311,6 +335,7 @@ void testMaths()
   RUN_TEST(test_maths_div100_S16);
   RUN_TEST(test_maths_div100_S32);
   RUN_TEST(test_maths_udiv_32_16);
+  RUN_TEST(test_maths_udiv_32_16_closest);
   RUN_TEST(test_maths_udiv_32_16_perf);
   RUN_TEST(test_maths_div360);
   RUN_TEST(test_maths_div100_s16_perf);

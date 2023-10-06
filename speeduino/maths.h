@@ -229,10 +229,6 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
 static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
-    if (dividend<=UINT16_MAX) { // Just in case  
-        return (uint16_t)dividend/divisor;
-    }
-
     #define INDEX_REG "r16"
 
     asm(
@@ -267,5 +263,20 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 #endif
 }
 
+
+/**
+ * @brief Same as udiv_32_16(), except this will round to nearest integer 
+ * instead of truncating.
+ * 
+ * Minor performance drop compared to non-rounding version.
+ **/
+static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
+{
+#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+    return udiv_32_16(dividend + DIV_ROUND_CORRECT(divisor, uint16_t), divisor);
+#else
+    return UDIV_ROUND_CLOSEST(dividend, divisor, uint32_t);
+#endif
+}
 
 #endif
