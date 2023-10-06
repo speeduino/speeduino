@@ -11,7 +11,8 @@ int rpmDelta;
 #endif
 
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
-    return RSHIFT_ROUND((uint32_t)angle * (uint32_t)microsPerDegree, microsPerDegree_Shift);
+  UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
+  return RSHIFT_ROUND(micros, microsPerDegree_Shift);
 }
 
 uint32_t angleToTimeIntervalTooth(uint16_t angle) {
@@ -32,7 +33,8 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
 }
 
 uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
-    return RSHIFT_ROUND(time * (uint32_t)degreesPerMicro, degreesPerMicro_Shift);
+    uint32_t degFixed = time * (uint32_t)degreesPerMicro;
+    return RSHIFT_ROUND(degFixed, degreesPerMicro_Shift);
 }
 
 

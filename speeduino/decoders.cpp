@@ -303,7 +303,7 @@ static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
   if (revTime!=revolutionTime) {
     revolutionTime = revTime;
     microsPerDegree = div360(revolutionTime << microsPerDegree_Shift);
-    degreesPerMicro = UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
+    degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime, uint32_t);
     return true;
   } 
   return false;
@@ -4740,8 +4740,8 @@ void triggerPri_Vmax(void)
   }
   else if( BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER) ) // Inverted due to vr conditioner. So this is the falling lobe. We only process if there was a valid trigger.
   {
-    unsigned long curGap3 = curTime - curGap2;
-    if (curGap3 > (lastGap * 2)){// Small lobe is 5 degrees, big lobe is 45 degrees. So this should be the wide lobe.
+    unsigned long curGapLocal = curTime - curGap2;
+    if (curGapLocal > (lastGap * 2)){// Small lobe is 5 degrees, big lobe is 45 degrees. So this should be the wide lobe.
         if (toothCurrentCount == 0 || toothCurrentCount == 6){//Wide should be seen with toothCurrentCount = 0, when there is no sync yet, or toothCurrentCount = 6 when we have done a full revolution. 
           currentStatus.hasSync = true;
         }
@@ -4757,7 +4757,7 @@ void triggerPri_Vmax(void)
     else{// Small lobe, just add 1 to the toothCurrentCount.
       toothCurrentCount++;
     }
-    lastGap = curGap3;
+    lastGap = curGapLocal;
     return;
   }
   else if( BIT_CHECK(decoderState, BIT_DECODER_VALID_TRIGGER) == false)

@@ -55,7 +55,7 @@ extern uint8_t random1to100(void);
  * @param d The divisor (an integer)
  * @param t The type of the result. E.g. uint16_t
  */
-#define DIV_ROUND_CORRECT(d, t) ((t)(((d)>>1)+DIV_ROUND_BEHAVIOR))
+#define DIV_ROUND_CORRECT(d, t) ((t)(((d)>>1U)+(t)DIV_ROUND_BEHAVIOR))
 ///@}
 
 /**
@@ -73,7 +73,7 @@ extern uint8_t random1to100(void);
  * @param t The type of the result. E.g. uint16_t
  */
 #define DIV_ROUND_CLOSEST(n, d, t) ( \
-    (((n) < 0) ^ ((d) < 0)) ? \
+    (((n) < (t)(0)) ^ ((d) < (t)(0))) ? \
         ((t)((n) - DIV_ROUND_CORRECT(d, t))/(t)(d)) : \
         ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d)))
 
@@ -102,7 +102,7 @@ extern uint8_t random1to100(void);
  * @param n The value to shift
  * @param s The shift distance in bits
  */
-#define RSHIFT_ROUND(n, s) (((n)+(1<<(s-1)))>>s)
+#define RSHIFT_ROUND(n, s) (((n)+(1UL<<(s-1UL)))>>(s))
 ///@}
 
 /** @brief Test whether the parameter is an integer or not. */
@@ -116,7 +116,7 @@ static inline uint16_t div100(uint16_t n) {
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
     // (unlike the signed integer overload, where __divmodhi4 is still called
     // see https://godbolt.org/z/c5bs5noT1)
-    return UDIV_ROUND_CLOSEST(n, 100, uint16_t);
+    return UDIV_ROUND_CLOSEST(n, UINT16_C(100), uint16_t);
 }
 
 static inline int16_t div100(int16_t n) {
@@ -127,9 +127,9 @@ static inline int16_t div100(int16_t n) {
     }
     // Negative values here, so adjust pre-division to get same
     // behavior as roundf(float)
-    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(100, int16_t), S16_MAGIC(100), S16_MORE(100));
+    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), S16_MAGIC(100), S16_MORE(100));
 #else
-    return DIV_ROUND_CLOSEST(n, 100, int16_t);
+    return DIV_ROUND_CLOSEST(n, UINT16_C(100), int16_t);
 #endif
 }
 
@@ -138,15 +138,15 @@ static inline uint32_t div100(uint32_t n) {
     if (n<=(uint32_t)UINT16_MAX) {
         return div100((uint16_t)n);
     }
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(100, uint32_t), 2748779070L, 6);
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), 2748779070L, 6);
 #else
-    return UDIV_ROUND_CLOSEST(n, 100, uint32_t);
+    return UDIV_ROUND_CLOSEST(n, UINT32_C(100), uint32_t);
 #endif
 }
 
 #if defined(__arm__)
 static inline int div100(int n) {
-    return DIV_ROUND_CLOSEST(n, 100, int);
+    return DIV_ROUND_CLOSEST(n, 100U, int);
 }
 #else
 static inline int32_t div100(int32_t n) {
@@ -154,9 +154,9 @@ static inline int32_t div100(int32_t n) {
     if (n<=INT16_MAX && n>=INT16_MIN) {
         return div100((int16_t)n);            
     }
-    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(100, uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
+    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
 #else
-    return DIV_ROUND_CLOSEST(n, 100, int32_t);
+    return DIV_ROUND_CLOSEST(n, UINT32_C(100), int32_t);
 #endif
 }
 #endif
@@ -170,9 +170,9 @@ static inline int32_t div100(int32_t n) {
  */
 static inline uint32_t div360(uint32_t n) {
 #ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(360, uint32_t), 1813430637L, 72);
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), 1813430637L, 72);
 #else
-    return UDIV_ROUND_CLOSEST(n, 360U, uint32_t);
+    return (uint32_t)UDIV_ROUND_CLOSEST(n, UINT32_C(360), uint32_t);
 #endif
 }
 
@@ -184,7 +184,7 @@ static inline uint32_t div360(uint32_t n) {
  * @return uint32_t 
  */
 static inline uint16_t percentage(uint8_t percent, uint16_t value) {
-    return div100((uint32_t)value * (uint32_t)percent);
+    return (uint16_t)div100((uint32_t)value * (uint32_t)percent);
 }
 
 /**
@@ -195,10 +195,11 @@ static inline uint16_t percentage(uint8_t percent, uint16_t value) {
  * @return uint16_t 
  */
 static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
+    uint32_t x200 = (uint32_t)percent * (uint32_t)value;
 #ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_u32_do_raw(((uint32_t)percent * (uint32_t)value) + DIV_ROUND_CORRECT(200, uint32_t), 2748779070L, 7);
+    return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), 2748779070L, 7);
 #else
-    return UDIV_ROUND_CLOSEST((uint32_t)percent * (uint32_t)value, 200U, uint32_t);
+    return (uint16_t)UDIV_ROUND_CLOSEST(x200, UINT16_C(200), uint32_t);
 #endif
 }
 
@@ -286,9 +287,10 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
 {
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
-    return udiv_32_16(dividend + DIV_ROUND_CORRECT(divisor, uint16_t), divisor);
+    dividend = dividend + (uint32_t)(DIV_ROUND_CORRECT(divisor, uint16_t));
+    return udiv_32_16(dividend, divisor);
 #else
-    return UDIV_ROUND_CLOSEST(dividend, divisor, uint32_t);
+    return (uint16_t)UDIV_ROUND_CLOSEST(dividend, (uint32_t)divisor, uint32_t);
 #endif
 }
 
