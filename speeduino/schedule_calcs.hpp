@@ -38,7 +38,7 @@ inline uint32_t _calculateInjectorTimeout(const FuelSchedule &schedule, uint16_t
     }
   }
 
-  return ((uint32_t)(delta) * (uint32_t)timePerDegree);
+  return angleToTimeMicroSecPerDegree((uint16_t)delta);
 }
 
 static inline int _adjustToInjChannel(int angle, int channelInjDegrees) {

@@ -9,10 +9,10 @@
 constexpr uint16_t DWELL_TIME_MS = 4;
 
 uint16_t dwellAngle;
+
 void setEngineSpeed(uint16_t rpm, int16_t max_crank) {
     timePerDegreex16 = ldiv( 2666656L, rpm).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
-    timePerDegree = timePerDegreex16 / 16; 
-    degreesPeruSx32768 = 524288UL / timePerDegreex16;       
+    degreesPeruSx32768 = 524288UL / timePerDegreex16;
     revolutionTime =  (60UL*1000000UL) / rpm;
     CRANK_ANGLE_MAX_IGN = max_crank;
     CRANK_ANGLE_MAX_INJ = max_crank;
