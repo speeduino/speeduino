@@ -30,6 +30,7 @@ enum TachoOutputStatus {TACHO_INACTIVE, READY, ACTIVE}; //The 3 statuses that th
 extern volatile TachoOutputStatus tachoOutputFlag;
 extern volatile bool tachoSweepEnabled;
 extern volatile uint16_t tachoSweepIncr;
+
 #define TACHO_SWEEP_TIME_MS 1500
 #define TACHO_SWEEP_RAMP_MS (TACHO_SWEEP_TIME_MS * 2 / 3)
 #define MS_PER_SEC  1000

@@ -984,17 +984,17 @@ void initialiseAll(void)
     {
     case INJ_PAIRED:
         //Paired injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-#if (INJ_CHANNELS >= 5)
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
+        fuelSchedule1.pStartFunction = openInjector1;
+        fuelSchedule1.pEndFunction = closeInjector1;
+        fuelSchedule2.pStartFunction = openInjector2;
+        fuelSchedule2.pEndFunction = closeInjector2;
+        fuelSchedule3.pStartFunction = openInjector3;
+        fuelSchedule3.pEndFunction = closeInjector3;
+        fuelSchedule4.pStartFunction = openInjector4;
+        fuelSchedule4.pEndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
+        fuelSchedule5.pStartFunction = openInjector5;
+        fuelSchedule5.pEndFunction = closeInjector5;
 #endif
         break;
 
@@ -1004,109 +1004,109 @@ void initialiseAll(void)
         {
           if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
           {
-            inj1StartFunction = openInjector1and3;
-            inj1EndFunction = closeInjector1and3;
-            inj2StartFunction = openInjector2and4;
-            inj2EndFunction = closeInjector2and4;
+            fuelSchedule1.pStartFunction = openInjector1and3;
+            fuelSchedule1.pEndFunction = closeInjector1and3;
+            fuelSchedule2.pStartFunction = openInjector2and4;
+            fuelSchedule2.pEndFunction = closeInjector2and4;
           }
           else
           {
-            inj1StartFunction = openInjector1and4;
-            inj1EndFunction = closeInjector1and4;
-            inj2StartFunction = openInjector2and3;
-            inj2EndFunction = closeInjector2and3;
+            fuelSchedule1.pStartFunction = openInjector1and4;
+            fuelSchedule1.pEndFunction = closeInjector1and4;
+            fuelSchedule2.pStartFunction = openInjector2and3;
+            fuelSchedule2.pEndFunction = closeInjector2and3;
           }
         }
         else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
         {
-          inj1StartFunction = openInjector1;
-          inj1EndFunction = closeInjector1;
-          inj2StartFunction = openInjector2;
-          inj2EndFunction = closeInjector2;
-          inj3StartFunction = openInjector3and5;
-          inj3EndFunction = closeInjector3and5;
-          inj4StartFunction = openInjector4;
-          inj4EndFunction = closeInjector4;
+          fuelSchedule1.pStartFunction = openInjector1;
+          fuelSchedule1.pEndFunction = closeInjector1;
+          fuelSchedule2.pStartFunction = openInjector2;
+          fuelSchedule2.pEndFunction = closeInjector2;
+          fuelSchedule3.pStartFunction = openInjector3and5;
+          fuelSchedule3.pEndFunction = closeInjector3and5;
+          fuelSchedule4.pStartFunction = openInjector4;
+          fuelSchedule4.pEndFunction = closeInjector4;
         }
         else if( configPage2.nCylinders == 6 )
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and5;
-          inj2EndFunction = closeInjector2and5;
-          inj3StartFunction = openInjector3and6;
-          inj3EndFunction = closeInjector3and6;
+          fuelSchedule1.pStartFunction = openInjector1and4;
+          fuelSchedule1.pEndFunction = closeInjector1and4;
+          fuelSchedule2.pStartFunction = openInjector2and5;
+          fuelSchedule2.pEndFunction = closeInjector2and5;
+          fuelSchedule3.pStartFunction = openInjector3and6;
+          fuelSchedule3.pEndFunction = closeInjector3and6;
         }
         else if( configPage2.nCylinders == 8 )
         {
-          inj1StartFunction = openInjector1and5;
-          inj1EndFunction = closeInjector1and5;
-          inj2StartFunction = openInjector2and6;
-          inj2EndFunction = closeInjector2and6;
-          inj3StartFunction = openInjector3and7;
-          inj3EndFunction = closeInjector3and7;
-          inj4StartFunction = openInjector4and8;
-          inj4EndFunction = closeInjector4and8;
+          fuelSchedule1.pStartFunction = openInjector1and5;
+          fuelSchedule1.pEndFunction = closeInjector1and5;
+          fuelSchedule2.pStartFunction = openInjector2and6;
+          fuelSchedule2.pEndFunction = closeInjector2and6;
+          fuelSchedule3.pStartFunction = openInjector3and7;
+          fuelSchedule3.pEndFunction = closeInjector3and7;
+          fuelSchedule4.pStartFunction = openInjector4and8;
+          fuelSchedule4.pEndFunction = closeInjector4and8;
         }
         else
         {
           //Fall back to paired injection
-          inj1StartFunction = openInjector1;
-          inj1EndFunction = closeInjector1;
-          inj2StartFunction = openInjector2;
-          inj2EndFunction = closeInjector2;
-          inj3StartFunction = openInjector3;
-          inj3EndFunction = closeInjector3;
-          inj4StartFunction = openInjector4;
-          inj4EndFunction = closeInjector4;
-#if (INJ_CHANNELS >= 5)
-          inj5StartFunction = openInjector5;
-          inj5EndFunction = closeInjector5;
+          fuelSchedule1.pStartFunction = openInjector1;
+          fuelSchedule1.pEndFunction = closeInjector1;
+          fuelSchedule2.pStartFunction = openInjector2;
+          fuelSchedule2.pEndFunction = closeInjector2;
+          fuelSchedule3.pStartFunction = openInjector3;
+          fuelSchedule3.pEndFunction = closeInjector3;
+          fuelSchedule4.pStartFunction = openInjector4;
+          fuelSchedule4.pEndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
+          fuelSchedule5.pStartFunction = openInjector5;
+          fuelSchedule5.pEndFunction = closeInjector5;
 #endif
         }
         break;
 
     case INJ_SEQUENTIAL:
         //Sequential injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-#if (INJ_CHANNELS >= 5)
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
+        fuelSchedule1.pStartFunction = openInjector1;
+        fuelSchedule1.pEndFunction = closeInjector1;
+        fuelSchedule2.pStartFunction = openInjector2;
+        fuelSchedule2.pEndFunction = closeInjector2;
+        fuelSchedule3.pStartFunction = openInjector3;
+        fuelSchedule3.pEndFunction = closeInjector3;
+        fuelSchedule4.pStartFunction = openInjector4;
+        fuelSchedule4.pEndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
+        fuelSchedule5.pStartFunction = openInjector5;
+        fuelSchedule5.pEndFunction = closeInjector5;
 #endif
-#if (INJ_CHANNELS >= 6)
-        inj6StartFunction = openInjector6;
-        inj6EndFunction = closeInjector6;
+#if INJ_CHANNELS >= 6
+        fuelSchedule6.pStartFunction = openInjector6;
+        fuelSchedule6.pEndFunction = closeInjector6;
 #endif
-#if (INJ_CHANNELS >= 7)
-        inj7StartFunction = openInjector7;
-        inj7EndFunction = closeInjector7;
+#if INJ_CHANNELS >= 7
+        fuelSchedule7.pStartFunction = openInjector7;
+        fuelSchedule7.pEndFunction = closeInjector7;
 #endif
-#if (INJ_CHANNELS >= 8)
-        inj8StartFunction = openInjector8;
-        inj8EndFunction = closeInjector8;
+#if INJ_CHANNELS >= 8
+        fuelSchedule8.pStartFunction = openInjector8;
+        fuelSchedule8.pEndFunction = closeInjector8;
 #endif
         break;
 
     default:
         //Paired injection
-        inj1StartFunction = openInjector1;
-        inj1EndFunction = closeInjector1;
-        inj2StartFunction = openInjector2;
-        inj2EndFunction = closeInjector2;
-        inj3StartFunction = openInjector3;
-        inj3EndFunction = closeInjector3;
-        inj4StartFunction = openInjector4;
-        inj4EndFunction = closeInjector4;
-#if (INJ_CHANNELS >= 5)
-        inj5StartFunction = openInjector5;
-        inj5EndFunction = closeInjector5;
+        fuelSchedule1.pStartFunction = openInjector1;
+        fuelSchedule1.pEndFunction = closeInjector1;
+        fuelSchedule2.pStartFunction = openInjector2;
+        fuelSchedule2.pEndFunction = closeInjector2;
+        fuelSchedule3.pStartFunction = openInjector3;
+        fuelSchedule3.pEndFunction = closeInjector3;
+        fuelSchedule4.pStartFunction = openInjector4;
+        fuelSchedule4.pEndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
+        fuelSchedule5.pStartFunction = openInjector5;
+        fuelSchedule5.pEndFunction = closeInjector5;
 #endif
         break;
     }
@@ -1115,43 +1115,43 @@ void initialiseAll(void)
     {
     case IGN_MODE_WASTED:
         //Wasted Spark (Normal mode)
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1Charge;
+        ignitionSchedule1.pEndCallback = endCoil1Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2Charge;
+        ignitionSchedule2.pEndCallback = endCoil2Charge;
+        ignitionSchedule3.pStartCallback = beginCoil3Charge;
+        ignitionSchedule3.pEndCallback = endCoil3Charge;
+        ignitionSchedule4.pStartCallback = beginCoil4Charge;
+        ignitionSchedule4.pEndCallback = endCoil4Charge;
+        ignitionSchedule5.pStartCallback = beginCoil5Charge;
+        ignitionSchedule5.pEndCallback = endCoil5Charge;
         break;
 
     case IGN_MODE_SINGLE:
         //Single channel mode. All ignition pulses are on channel 1
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil1Charge;
-        ign2EndFunction = endCoil1Charge;
-        ign3StartFunction = beginCoil1Charge;
-        ign3EndFunction = endCoil1Charge;
-        ign4StartFunction = beginCoil1Charge;
-        ign4EndFunction = endCoil1Charge;
-#if (INJ_CHANNELS >= 5)
-        ign5StartFunction = beginCoil1Charge;
-        ign5EndFunction = endCoil1Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1Charge;
+        ignitionSchedule1.pEndCallback = endCoil1Charge;
+        ignitionSchedule2.pStartCallback = beginCoil1Charge;
+        ignitionSchedule2.pEndCallback = endCoil1Charge;
+        ignitionSchedule3.pStartCallback = beginCoil1Charge;
+        ignitionSchedule3.pEndCallback = endCoil1Charge;
+        ignitionSchedule4.pStartCallback = beginCoil1Charge;
+        ignitionSchedule4.pEndCallback = endCoil1Charge;
+#if IGN_CHANNELS >= 5
+        ignitionSchedule5.pStartCallback = beginCoil1Charge;
+        ignitionSchedule5.pEndCallback = endCoil1Charge;
 #endif
-#if (INJ_CHANNELS >= 6)
-        ign6StartFunction = beginCoil1Charge;
-        ign6EndFunction = endCoil1Charge;
+#if IGN_CHANNELS >= 6
+        ignitionSchedule6.pStartCallback = beginCoil1Charge;
+        ignitionSchedule6.pEndCallback = endCoil1Charge;
 #endif
-#if (INJ_CHANNELS >= 7)
-        ign7StartFunction = beginCoil1Charge;
-        ign7EndFunction = endCoil1Charge;
+#if IGN_CHANNELS >= 7
+        ignitionSchedule7.pStartCallback = beginCoil1Charge;
+        ignitionSchedule7.pEndCallback = endCoil1Charge;
 #endif
-#if (INJ_CHANNELS >= 5)
-        ign8StartFunction = beginCoil1Charge;
-        ign8EndFunction = endCoil1Charge;
+#if IGN_CHANNELS >= 8
+        ignitionSchedule8.pStartCallback = beginCoil1Charge;
+        ignitionSchedule8.pEndCallback = endCoil1Charge;
 #endif
         break;
 
@@ -1160,118 +1160,132 @@ void initialiseAll(void)
         //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
         if( configPage2.nCylinders <= 4 )
         {
-          ign1StartFunction = beginCoil1and3Charge;
-          ign1EndFunction = endCoil1and3Charge;
-          ign2StartFunction = beginCoil2and4Charge;
-          ign2EndFunction = endCoil2and4Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1and3Charge;
+          ignitionSchedule1.pEndCallback = endCoil1and3Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2and4Charge;
+          ignitionSchedule2.pEndCallback = endCoil2and4Charge;
 
-          ign3StartFunction = nullCallback;
-          ign3EndFunction = nullCallback;
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
+          ignitionSchedule3.pStartCallback = nullCallback;
+          ignitionSchedule3.pEndCallback = nullCallback;
+          ignitionSchedule4.pStartCallback = nullCallback;
+          ignitionSchedule4.pEndCallback = nullCallback;
         }
         //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
         else if( configPage2.nCylinders == 6 )
           {
-          ign1StartFunction = beginCoil1and4Charge;
-          ign1EndFunction = endCoil1and4Charge;
-          ign2StartFunction = beginCoil2and5Charge;
-          ign2EndFunction = endCoil2and5Charge;
-          ign3StartFunction = beginCoil3and6Charge;
-          ign3EndFunction = endCoil3and6Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1and4Charge;
+          ignitionSchedule1.pEndCallback = endCoil1and4Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2and5Charge;
+          ignitionSchedule2.pEndCallback = endCoil2and5Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3and6Charge;
+          ignitionSchedule3.pEndCallback = endCoil3and6Charge;
 
-          ign4StartFunction = nullCallback;
-          ign4EndFunction = nullCallback;
-          ign5StartFunction = nullCallback;
-          ign5EndFunction = nullCallback;
-          ign6StartFunction = nullCallback;
-          ign6EndFunction = nullCallback;
+          ignitionSchedule4.pStartCallback = nullCallback;
+          ignitionSchedule4.pEndCallback = nullCallback;
+          ignitionSchedule5.pStartCallback = nullCallback;
+          ignitionSchedule5.pEndCallback = nullCallback;
+#if IGN_CHANNELS >= 6
+          ignitionSchedule6.pStartCallback = nullCallback;
+          ignitionSchedule6.pEndCallback = nullCallback;
+#endif
         }
         //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
           {
-          ign1StartFunction = beginCoil1and5Charge;
-          ign1EndFunction = endCoil1and5Charge;
-          ign2StartFunction = beginCoil2and6Charge;
-          ign2EndFunction = endCoil2and6Charge;
-          ign3StartFunction = beginCoil3and7Charge;
-          ign3EndFunction = endCoil3and7Charge;
-          ign4StartFunction = beginCoil4and8Charge;
-          ign4EndFunction = endCoil4and8Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1and5Charge;
+          ignitionSchedule1.pEndCallback = endCoil1and5Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2and6Charge;
+          ignitionSchedule2.pEndCallback = endCoil2and6Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3and7Charge;
+          ignitionSchedule3.pEndCallback = endCoil3and7Charge;
+          ignitionSchedule4.pStartCallback = beginCoil4and8Charge;
+          ignitionSchedule4.pEndCallback = endCoil4and8Charge;
 
-          ign5StartFunction = nullCallback;
-          ign5EndFunction = nullCallback;
-          ign6StartFunction = nullCallback;
-          ign6EndFunction = nullCallback;
-          ign7StartFunction = nullCallback;
-          ign7EndFunction = nullCallback;
-          ign8StartFunction = nullCallback;
-          ign8EndFunction = nullCallback;
+          ignitionSchedule5.pStartCallback = nullCallback;
+          ignitionSchedule5.pEndCallback = nullCallback;
+#if IGN_CHANNELS >= 6
+          ignitionSchedule6.pStartCallback = nullCallback;
+          ignitionSchedule6.pEndCallback = nullCallback;
+#endif
+#if IGN_CHANNELS >= 7
+          ignitionSchedule7.pStartCallback = nullCallback;
+          ignitionSchedule7.pEndCallback = nullCallback;
+#endif
+#if IGN_CHANNELS >= 8
+          ignitionSchedule8.pStartCallback = nullCallback;
+          ignitionSchedule8.pEndCallback = nullCallback;
+#endif
         }
         else
         {
           //If the person has inadvertently selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil2Charge;
-          ign2EndFunction = endCoil2Charge;
-          ign3StartFunction = beginCoil3Charge;
-          ign3EndFunction = endCoil3Charge;
-          ign4StartFunction = beginCoil4Charge;
-          ign4EndFunction = endCoil4Charge;
-          ign5StartFunction = beginCoil5Charge;
-          ign5EndFunction = endCoil5Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2Charge;
+          ignitionSchedule2.pEndCallback = endCoil2Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3Charge;
+          ignitionSchedule3.pEndCallback = endCoil3Charge;
+          ignitionSchedule4.pStartCallback = beginCoil4Charge;
+          ignitionSchedule4.pEndCallback = endCoil4Charge;
+          ignitionSchedule5.pStartCallback = beginCoil5Charge;
+          ignitionSchedule5.pEndCallback = endCoil5Charge;
         }
         break;
 
     case IGN_MODE_SEQUENTIAL:
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
-        ign6StartFunction = beginCoil6Charge;
-        ign6EndFunction = endCoil6Charge;
-        ign7StartFunction = beginCoil7Charge;
-        ign7EndFunction = endCoil7Charge;
-        ign8StartFunction = beginCoil8Charge;
-        ign8EndFunction = endCoil8Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1Charge;
+        ignitionSchedule1.pEndCallback = endCoil1Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2Charge;
+        ignitionSchedule2.pEndCallback = endCoil2Charge;
+        ignitionSchedule3.pStartCallback = beginCoil3Charge;
+        ignitionSchedule3.pEndCallback = endCoil3Charge;
+        ignitionSchedule4.pStartCallback = beginCoil4Charge;
+        ignitionSchedule4.pEndCallback = endCoil4Charge;
+        ignitionSchedule5.pStartCallback = beginCoil5Charge;
+        ignitionSchedule5.pEndCallback = endCoil5Charge;
+#if IGN_CHANNELS >= 6
+        ignitionSchedule6.pStartCallback = beginCoil6Charge;
+        ignitionSchedule6.pEndCallback = endCoil6Charge;
+#endif
+#if IGN_CHANNELS >= 7
+        ignitionSchedule7.pStartCallback = beginCoil7Charge;
+        ignitionSchedule7.pEndCallback = endCoil7Charge;
+#endif
+#if IGN_CHANNELS >= 8
+        ignitionSchedule8.pStartCallback = beginCoil8Charge;
+        ignitionSchedule8.pEndCallback = endCoil8Charge;
+#endif
         break;
 
     case IGN_MODE_ROTARY:
         if(configPage10.rotaryType == ROTARY_IGN_FC)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil1Charge;
-          ign2EndFunction = endCoil1Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
+          ignitionSchedule2.pStartCallback = beginCoil1Charge;
+          ignitionSchedule2.pEndCallback = endCoil1Charge;
 
-          ign3StartFunction = beginTrailingCoilCharge;
-          ign3EndFunction = endTrailingCoilCharge1;
-          ign4StartFunction = beginTrailingCoilCharge;
-          ign4EndFunction = endTrailingCoilCharge2;
+          ignitionSchedule3.pStartCallback = beginTrailingCoilCharge;
+          ignitionSchedule3.pEndCallback = endTrailingCoilCharge1;
+          ignitionSchedule4.pStartCallback = beginTrailingCoilCharge;
+          ignitionSchedule4.pEndCallback = endTrailingCoilCharge2;
         }
         else if(configPage10.rotaryType == ROTARY_IGN_FD)
         {
           //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
-          ign2StartFunction = beginCoil1Charge;
-          ign2EndFunction = endCoil1Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
+          ignitionSchedule2.pStartCallback = beginCoil1Charge;
+          ignitionSchedule2.pEndCallback = endCoil1Charge;
 
           //Trailing coils have their own channel each
           //IGN2 = front rotor trailing spark
-          ign3StartFunction = beginCoil2Charge;
-          ign3EndFunction = endCoil2Charge;
+          ignitionSchedule3.pStartCallback = beginCoil2Charge;
+          ignitionSchedule3.pEndCallback = endCoil2Charge;
           //IGN3 = rear rotor trailing spark
-          ign4StartFunction = beginCoil3Charge;
-          ign4EndFunction = endCoil3Charge;
+          ignitionSchedule4.pStartCallback = beginCoil3Charge;
+          ignitionSchedule4.pEndCallback = endCoil3Charge;
 
           //IGN4 not used
         }
@@ -1280,33 +1294,33 @@ void initialiseAll(void)
           //RX8 outputs are simply 1 coil and 1 output per plug
 
           //IGN1 is front rotor, leading spark
-          ign1StartFunction = beginCoil1Charge;
-          ign1EndFunction = endCoil1Charge;
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
           //IGN2 is rear rotor, leading spark
-          ign2StartFunction = beginCoil2Charge;
-          ign2EndFunction = endCoil2Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2Charge;
+          ignitionSchedule2.pEndCallback = endCoil2Charge;
           //IGN3 = front rotor trailing spark
-          ign3StartFunction = beginCoil3Charge;
-          ign3EndFunction = endCoil3Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3Charge;
+          ignitionSchedule3.pEndCallback = endCoil3Charge;
           //IGN4 = rear rotor trailing spark
-          ign4StartFunction = beginCoil4Charge;
-          ign4EndFunction = endCoil4Charge;
+          ignitionSchedule4.pStartCallback = beginCoil4Charge;
+          ignitionSchedule4.pEndCallback = endCoil4Charge;
         }
         else { } //No action for other RX ignition modes (Future expansion / MISRA compliant). 
         break;
 
     default:
         //Wasted spark (Shouldn't ever happen anyway)
-        ign1StartFunction = beginCoil1Charge;
-        ign1EndFunction = endCoil1Charge;
-        ign2StartFunction = beginCoil2Charge;
-        ign2EndFunction = endCoil2Charge;
-        ign3StartFunction = beginCoil3Charge;
-        ign3EndFunction = endCoil3Charge;
-        ign4StartFunction = beginCoil4Charge;
-        ign4EndFunction = endCoil4Charge;
-        ign5StartFunction = beginCoil5Charge;
-        ign5EndFunction = endCoil5Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1Charge;
+        ignitionSchedule1.pEndCallback = endCoil1Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2Charge;
+        ignitionSchedule2.pEndCallback = endCoil2Charge;
+        ignitionSchedule3.pStartCallback = beginCoil3Charge;
+        ignitionSchedule3.pEndCallback = endCoil3Charge;
+        ignitionSchedule4.pStartCallback = beginCoil4Charge;
+        ignitionSchedule4.pEndCallback = endCoil4Charge;
+        ignitionSchedule5.pStartCallback = beginCoil5Charge;
+        ignitionSchedule5.pEndCallback = endCoil5Charge;
         break;
     }
 
@@ -3603,6 +3617,26 @@ void initialiseTriggers(void)
   }
 }
 
+static inline bool isAnyFuelScheduleRunning(void) {
+  return fuelSchedule1.Status==RUNNING
+      || fuelSchedule2.Status==RUNNING
+      || fuelSchedule3.Status==RUNNING
+      || fuelSchedule4.Status==RUNNING
+#if INJ_CHANNELS >= 5      
+      || fuelSchedule5.Status==RUNNING
+#endif
+#if INJ_CHANNELS >= 6
+      || fuelSchedule6.Status==RUNNING
+#endif
+#if INJ_CHANNELS >= 7
+      || fuelSchedule7.Status==RUNNING
+#endif
+#if INJ_CHANNELS >= 8
+      || fuelSchedule8.Status==RUNNING
+#endif
+      ;
+}
+
 /** Change injectors or/and ignition angles to 720deg.
  * Roll back req_fuel size and set number of outputs equal to cylinder count.
 * */
@@ -3610,35 +3644,34 @@ void changeHalfToFullSync(void)
 {
   //Need to do another check for injLayout as this function can be called from ignition
   noInterrupts();
-  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && fuelSchedule1.Status!=RUNNING && fuelSchedule2.Status!=RUNNING && fuelSchedule3.Status!=RUNNING && fuelSchedule4.Status!=RUNNING &&
-    fuelSchedule5.Status!=RUNNING && fuelSchedule6.Status!=RUNNING && fuelSchedule7.Status!=RUNNING && fuelSchedule8.Status!=RUNNING)
+  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
   {
     CRANK_ANGLE_MAX_INJ = 720;
     req_fuel_uS *= 2;
-        
-    inj1StartFunction = openInjector1;
-    inj1EndFunction = closeInjector1;
-    inj2StartFunction = openInjector2;
-    inj2EndFunction = closeInjector2;
-    inj3StartFunction = openInjector3;
-    inj3EndFunction = closeInjector3;
-    inj4StartFunction = openInjector4;
-    inj4EndFunction = closeInjector4;
-#if (INJ_CHANNELS >= 5)
-    inj5StartFunction = openInjector5;
-    inj5EndFunction = closeInjector5;
+    
+    fuelSchedule1.pStartFunction = openInjector1;
+    fuelSchedule1.pEndFunction = closeInjector1;
+    fuelSchedule2.pStartFunction = openInjector2;
+    fuelSchedule2.pEndFunction = closeInjector2;
+    fuelSchedule3.pStartFunction = openInjector3;
+    fuelSchedule3.pEndFunction = closeInjector3;
+    fuelSchedule4.pStartFunction = openInjector4;
+    fuelSchedule4.pEndFunction = closeInjector4;
+#if INJ_CHANNELS >= 5
+    fuelSchedule5.pStartFunction = openInjector5;
+    fuelSchedule5.pEndFunction = closeInjector5;
 #endif
-#if (INJ_CHANNELS >= 6)
-    inj6StartFunction = openInjector6;
-    inj6EndFunction = closeInjector6;
+#if INJ_CHANNELS >= 6
+    fuelSchedule6.pStartFunction = openInjector6;
+    fuelSchedule6.pEndFunction = closeInjector6;
 #endif
-#if (INJ_CHANNELS >= 7)
-    inj7StartFunction = openInjector7;
-    inj7EndFunction = closeInjector7;
+#if INJ_CHANNELS >= 6
+    fuelSchedule7.pStartFunction = openInjector7;
+    fuelSchedule7.pEndFunction = closeInjector7;
 #endif
-#if (INJ_CHANNELS >= 8)
-    inj8StartFunction = openInjector8;
-    inj8EndFunction = closeInjector8;
+#if INJ_CHANNELS >= 6
+    fuelSchedule8.pStartFunction = openInjector8;
+     fuelSchedule8.pEndFunction = closeInjector8;
 #endif
 
     switch (configPage2.nCylinders)
@@ -3670,30 +3703,30 @@ void changeHalfToFullSync(void)
     switch (configPage2.nCylinders)
     {
     case 4:
-      ign1StartFunction = beginCoil1Charge;
-      ign1EndFunction = endCoil1Charge;
-      ign2StartFunction = beginCoil2Charge;
-      ign2EndFunction = endCoil2Charge;
+      ignitionSchedule1.pStartCallback = beginCoil1Charge;
+      ignitionSchedule1.pEndCallback = endCoil1Charge;
+      ignitionSchedule2.pStartCallback = beginCoil2Charge;
+      ignitionSchedule2.pEndCallback = endCoil2Charge;
       break;
 
     case 6:
-      ign1StartFunction = beginCoil1Charge;
-      ign1EndFunction = endCoil1Charge;
-      ign2StartFunction = beginCoil2Charge;
-      ign2EndFunction = endCoil2Charge;
-      ign3StartFunction = beginCoil3Charge;
-      ign3EndFunction = endCoil3Charge;
+      ignitionSchedule1.pStartCallback = beginCoil1Charge;
+      ignitionSchedule1.pEndCallback = endCoil1Charge;
+      ignitionSchedule2.pStartCallback = beginCoil2Charge;
+      ignitionSchedule2.pEndCallback = endCoil2Charge;
+      ignitionSchedule3.pStartCallback = beginCoil3Charge;
+      ignitionSchedule3.pEndCallback = endCoil3Charge;
       break;
 
     case 8:
-      ign1StartFunction = beginCoil1Charge;
-      ign1EndFunction = endCoil1Charge;
-      ign2StartFunction = beginCoil2Charge;
-      ign2EndFunction = endCoil2Charge;
-      ign3StartFunction = beginCoil3Charge;
-      ign3EndFunction = endCoil3Charge;
-      ign4StartFunction = beginCoil4Charge;
-      ign4EndFunction = endCoil4Charge;
+      ignitionSchedule1.pStartCallback = beginCoil1Charge;
+      ignitionSchedule1.pEndCallback = endCoil1Charge;
+      ignitionSchedule2.pStartCallback = beginCoil2Charge;
+      ignitionSchedule2.pEndCallback = endCoil2Charge;
+      ignitionSchedule3.pStartCallback = beginCoil3Charge;
+      ignitionSchedule3.pEndCallback = endCoil3Charge;
+      ignitionSchedule4.pStartCallback = beginCoil4Charge;
+      ignitionSchedule4.pEndCallback = endCoil4Charge;
       break;
 
     default:
@@ -3718,40 +3751,40 @@ void changeFullToHalfSync(void)
       case 4:
         if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
         {
-          inj1StartFunction = openInjector1and3;
-          inj1EndFunction = closeInjector1and3;
-          inj2StartFunction = openInjector2and4;
-          inj2EndFunction = closeInjector2and4;
+          fuelSchedule1.pStartFunction = openInjector1and3;
+          fuelSchedule1.pEndFunction = closeInjector1and3;
+          fuelSchedule2.pStartFunction = openInjector2and4;
+          fuelSchedule2.pEndFunction = closeInjector2and4;
         }
         else
         {
-          inj1StartFunction = openInjector1and4;
-          inj1EndFunction = closeInjector1and4;
-          inj2StartFunction = openInjector2and3;
-          inj2EndFunction = closeInjector2and3;
+          fuelSchedule1.pStartFunction = openInjector1and4;
+          fuelSchedule1.pEndFunction = closeInjector1and4;
+          fuelSchedule2.pStartFunction = openInjector2and3;
+          fuelSchedule2.pEndFunction = closeInjector2and3;
         }
         maxInjOutputs = 2;
         break;
             
       case 6:
-        inj1StartFunction = openInjector1and4;
-        inj1EndFunction = closeInjector1and4;
-        inj2StartFunction = openInjector2and5;
-        inj2EndFunction = closeInjector2and5;
-        inj3StartFunction = openInjector3and6;
-        inj3EndFunction = closeInjector3and6;
+        fuelSchedule1.pStartFunction = openInjector1and4;
+        fuelSchedule1.pEndFunction = closeInjector1and4;
+        fuelSchedule2.pStartFunction = openInjector2and5;
+        fuelSchedule2.pEndFunction = closeInjector2and5;
+        fuelSchedule3.pStartFunction = openInjector3and6;
+        fuelSchedule3.pEndFunction = closeInjector3and6;
         maxInjOutputs = 3;
         break;
 
       case 8:
-        inj1StartFunction = openInjector1and5;
-        inj1EndFunction = closeInjector1and5;
-        inj2StartFunction = openInjector2and6;
-        inj2EndFunction = closeInjector2and6;
-        inj3StartFunction = openInjector3and7;
-        inj3EndFunction = closeInjector3and7;
-        inj4StartFunction = openInjector4and8;
-        inj4EndFunction = closeInjector4and8;
+        fuelSchedule1.pStartFunction = openInjector1and5;
+        fuelSchedule1.pEndFunction = closeInjector1and5;
+        fuelSchedule2.pStartFunction = openInjector2and6;
+        fuelSchedule2.pEndFunction = closeInjector2and6;
+        fuelSchedule3.pStartFunction = openInjector3and7;
+        fuelSchedule3.pEndFunction = closeInjector3and7;
+        fuelSchedule4.pStartFunction = openInjector4and8;
+        fuelSchedule4.pEndFunction = closeInjector4and8;
         maxInjOutputs = 4;
         break;
     }
@@ -3764,30 +3797,30 @@ void changeFullToHalfSync(void)
     switch (configPage2.nCylinders)
     {
       case 4:
-        ign1StartFunction = beginCoil1and3Charge;
-        ign1EndFunction = endCoil1and3Charge;
-        ign2StartFunction = beginCoil2and4Charge;
-        ign2EndFunction = endCoil2and4Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1and3Charge;
+        ignitionSchedule1.pEndCallback = endCoil1and3Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2and4Charge;
+        ignitionSchedule2.pEndCallback = endCoil2and4Charge;
         break;
             
       case 6:
-        ign1StartFunction = beginCoil1and4Charge;
-        ign1EndFunction = endCoil1and4Charge;
-        ign2StartFunction = beginCoil2and5Charge;
-        ign2EndFunction = endCoil2and5Charge;
-        ign3StartFunction = beginCoil3and6Charge;
-        ign3EndFunction = endCoil3and6Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1and4Charge;
+        ignitionSchedule1.pEndCallback = endCoil1and4Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2and5Charge;
+        ignitionSchedule2.pEndCallback = endCoil2and5Charge;
+        ignitionSchedule3.pStartCallback = beginCoil3and6Charge;
+        ignitionSchedule3.pEndCallback = endCoil3and6Charge;
         break;
 
       case 8:
-        ign1StartFunction = beginCoil1and5Charge;
-        ign1EndFunction = endCoil1and5Charge;
-        ign2StartFunction = beginCoil2and6Charge;
-        ign2EndFunction = endCoil2and6Charge;
-        ign3StartFunction = beginCoil3and7Charge;
-        ign3EndFunction = endCoil3and7Charge;
-        ign4StartFunction = beginCoil4and8Charge;
-        ign4EndFunction = endCoil4and8Charge;
+        ignitionSchedule1.pStartCallback = beginCoil1and5Charge;
+        ignitionSchedule1.pEndCallback = endCoil1and5Charge;
+        ignitionSchedule2.pStartCallback = beginCoil2and6Charge;
+        ignitionSchedule2.pEndCallback = endCoil2and6Charge;
+        ignitionSchedule3.pStartCallback = beginCoil3and7Charge;
+        ignitionSchedule3.pEndCallback = endCoil3and7Charge;
+        ignitionSchedule4.pStartCallback = beginCoil4and8Charge;
+        ignitionSchedule4.pEndCallback = endCoil4and8Charge;
         break;
     }
   }
