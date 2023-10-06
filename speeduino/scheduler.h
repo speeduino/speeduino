@@ -58,14 +58,22 @@ extern void (*inj3StartFunction)(void);
 extern void (*inj3EndFunction)(void);
 extern void (*inj4StartFunction)(void);
 extern void (*inj4EndFunction)(void);
+#if (INJ_CHANNELS >= 5)
 extern void (*inj5StartFunction)(void);
 extern void (*inj5EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 6)
 extern void (*inj6StartFunction)(void);
 extern void (*inj6EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 7)
 extern void (*inj7StartFunction)(void);
 extern void (*inj7EndFunction)(void);
+#endif
+#if (INJ_CHANNELS >= 8)
 extern void (*inj8StartFunction)(void);
 extern void (*inj8EndFunction)(void);
+#endif
 
 /** @name IgnitionCallbacks
  * These are the (global) function pointers that get called to begin and end the ignition coil charging.

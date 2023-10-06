@@ -3,6 +3,8 @@
 #include "errors.h"
 #include "decoders.h"
 #include "init.h"
+#include "maths.h"
+#include "utilities.h"
 
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
@@ -26,8 +28,8 @@ byte getTSLogEntry(uint16_t byteNum)
     case 3: statusValue = currentStatus.syncLossCounter; break;
     case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
     case 5: statusValue = highByte(currentStatus.MAP); break;
-    case 6: statusValue = (byte)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); break; //mat
-    case 7: statusValue = (byte)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); break; //Coolant ADC
+    case 6: statusValue = lowByte(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); break; //mat
+    case 7: statusValue = lowByte(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); break; //Coolant ADC
     case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
     case 9: statusValue = currentStatus.battery10; break; //battery voltage
     case 10: statusValue = currentStatus.O2; break; //O2
@@ -36,7 +38,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
-    case 16: statusValue = (byte)(currentStatus.AEamount >> 1); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+    case 16: statusValue = lowByte(currentStatus.AEamount >> 1U); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
     case 17: statusValue = lowByte(currentStatus.corrections); break; //Total GammaE (%)
     case 18: statusValue = highByte(currentStatus.corrections); break; //Total GammaE (%)
     case 19: statusValue = currentStatus.VE1; break; //VE 1 (%)
@@ -48,11 +50,11 @@ byte getTSLogEntry(uint16_t byteNum)
     case 25: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
     
     case 26: 
-      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
+      if(currentStatus.loopsPerSecond > 60000U) { currentStatus.loopsPerSecond = 60000U;}
       statusValue = lowByte(currentStatus.loopsPerSecond); 
       break;
     case 27: 
-      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
+      if(currentStatus.loopsPerSecond > 60000U) { currentStatus.loopsPerSecond = 60000U;}
       statusValue = highByte(currentStatus.loopsPerSecond); 
       break;
     
@@ -65,8 +67,8 @@ byte getTSLogEntry(uint16_t byteNum)
       statusValue = highByte(currentStatus.freeRAM); 
       break;
 
-    case 30: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
-    case 31: statusValue = (byte)(currentStatus.boostDuty / 100); break;
+    case 30: statusValue = lowByte(currentStatus.boostTarget >> 1U); break; //Divide boost target by 2 to fit in a byte
+    case 31: statusValue = lowByte(div100(currentStatus.boostDuty)); break;
     case 32: statusValue = currentStatus.spark; break; //Spark related bitfield
 
     //rpmDOT must be sent as a signed integer
@@ -142,7 +144,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 95: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
     case 96: statusValue = highByte(currentStatus.vvt1Angle); break;
     case 97: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 98: statusValue = (byte)(currentStatus.vvt1Duty); break;
+    case 98: statusValue = lowByte(currentStatus.vvt1Duty); break;
     case 99: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 100: statusValue = highByte(currentStatus.flexBoostCorrection); break;
     case 101: statusValue = currentStatus.baroCorrection; break;
@@ -158,9 +160,9 @@ byte getTSLogEntry(uint16_t byteNum)
     case 111: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
     case 112: statusValue = highByte(currentStatus.vvt2Angle); break;
     case 113: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 114: statusValue = (byte)(currentStatus.vvt2Duty); break;
+    case 114: statusValue = lowByte(currentStatus.vvt2Duty); break;
     case 115: statusValue = currentStatus.outputsStatus; break;
-    case 116: statusValue = (byte)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
+    case 116: statusValue = lowByte(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET); break; //Fuel temperature from flex sensor
     case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 118: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 119: statusValue = currentStatus.advance2; break; //advance 2 (%)
@@ -171,6 +173,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 124: statusValue = currentStatus.airConStatus; break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
+    default: statusValue = 0; // MISRA check
   }
 
   return statusValue;
@@ -212,7 +215,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 21: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
     
     case 22: 
-      if(currentStatus.loopsPerSecond > 60000) { currentStatus.loopsPerSecond = 60000;}
+      if(currentStatus.loopsPerSecond > 60000U) { currentStatus.loopsPerSecond = 60000U;}
       statusValue = currentStatus.loopsPerSecond; 
       break;
     
@@ -294,6 +297,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 88: statusValue = currentStatus.fanDuty; break;
     case 89: statusValue = currentStatus.airConStatus; break;
     case 90: statusValue = currentStatus.actualDwell; break;
+    default: statusValue = 0; // MISRA check
   }
 
   return statusValue;
@@ -305,7 +309,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
  * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
  * @return float value of the requested log entry. 
  */
-#if FPU_MAX_SIZE >= 32
+#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
 float getReadableFloatLogEntry(uint16_t logIndex)
 {
   float statusValue = 0.0;
@@ -333,46 +337,38 @@ float getReadableFloatLogEntry(uint16_t logIndex)
 /** 
  * Searches the log 2 byte array to determine whether a given index is a regular single byte or a 2 byte field
  * Uses a boundless binary search for improved performance, but requires the fsIntIndex to remain in order
- * Refer: https://github.com/scandum/binary_search
  * 
  * @param key - Index in the log array to check
  * @return True if the index is a 2 byte log field. False if it is a single byte
  */
 bool is2ByteEntry(uint8_t key)
 {
-  bool isFound = false;
-  unsigned int mid, bot;
-  uint16_t array_size = sizeof(fsIntIndex);
+  // This array indicates which index values from the log are 2 byte values
+  // This array MUST remain in ascending order
+  // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
+  static constexpr byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 125 };
 
-  if (array_size > 0)
-  {
-    bot = 0;
-    mid = array_size;
+  unsigned int bot = 0U;
+  unsigned int mid = _countof(fsIntIndex);
   
-    while (mid > 1)
-    {  
-      if (key >= pgm_read_byte( &fsIntIndex[bot + mid / 2]) )
-      {
-        bot += mid++ / 2;
-      }
-      mid /= 2;
-    }
-  
-    if (key == pgm_read_byte(&fsIntIndex[bot]) )
+  while (mid > 1U)
+  {  
+    if (key >= pgm_read_byte( &fsIntIndex[bot + mid / 2U]) )
     {
-      isFound = true;
+      bot += mid++ / 2U;
     }
+    mid /= 2U;
   }
 
-  return isFound;
+  return key == pgm_read_byte(&fsIntIndex[bot]);
 }
 
 void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
-  currentStatus.compositeTriggerUsed = 0; //Safety first (Should never be required)
+  currentStatus.compositeTriggerUsed = 0U; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-  toothHistoryIndex = 0;
+  toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -403,10 +399,10 @@ void stopToothLogger(void)
 
 void startCompositeLogger(void)
 {
-  currentStatus.compositeTriggerUsed = 2;
+  currentStatus.compositeTriggerUsed = 2U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-  toothHistoryIndex = 0;
+  toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -421,7 +417,7 @@ void startCompositeLogger(void)
 
 void stopCompositeLogger(void)
 {
-  currentStatus.compositeTriggerUsed = 0;
+  currentStatus.compositeTriggerUsed = 0U;
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
@@ -436,10 +432,10 @@ void stopCompositeLogger(void)
 
 void startCompositeLoggerTertiary(void)
 {
-  currentStatus.compositeTriggerUsed = 3;
+  currentStatus.compositeTriggerUsed = 3U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
-  toothHistoryIndex = 0;
+  toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
