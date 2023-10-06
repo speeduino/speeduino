@@ -4,23 +4,12 @@
 #include "timers.h"
 #include "maths.h"
 
-/** @brief uS per degree at current RPM in UQ12.4 fixed point
- *
- * @note 
- * The use of a x16 value gives accuracy down to 0.1 of a degree and can provide
- * noticeably better timing results on low resolution triggers.
- * 
- * Using 16 bits means there is a hard lower bound of 41 RPM in the system:
- *   41 RPM == 4065.04 us per degree == 650440 UQ12.4
- *   (40 RPM==66666 UQ12.4)
- */
-static volatile uint16_t timePerDegreex16;
-
 /** @brief Degrees per uS in UQ0.16 fixed point.
  * 
  * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
  */
-static volatile uint16_t degreesPeruSx32768;
+typedef uint16_t UQ0X16_t;
+static UQ0X16_t degreesPeruSx32768;
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -31,11 +20,7 @@ int rpmDelta;
 #endif
 
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
-    return ((uint32_t)angle * (uint32_t)timePerDegreex16) >> 4UL;
-}
-
-uint32_t angleToTimeIntervalRev(uint16_t angle) {
-    return div360((uint32_t)angle * revolutionTime);
+    return ((uint32_t)angle * (uint32_t)timePerDegree24x8) >> 8UL;
 }
 
 uint32_t angleToTimeIntervalTooth(uint16_t angle) {
@@ -51,7 +36,7 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
   //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
   else { 
     interrupts();
-    return angleToTimeIntervalRev(angle); 
+    return angleToTimeMicroSecPerDegree(angle); 
   }
 }
 
@@ -121,25 +106,5 @@ void doCrankSpeedCalcs(void)
       }
       else
 #endif
-      {
-        //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
-        noInterrupts();
-        if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
-        {
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-          uint16_t tempTriggerToothAngle = triggerToothAngle;
-          interrupts();
-          timePerDegreex16 = udiv_32_16((tempToothLastToothTime - tempToothLastMinusOneToothTime)*16UL, tempTriggerToothAngle);
-        }
-        else
-        {
-          //long timeThisRevolution = (micros_safe() - toothOneTime);
-          interrupts();
-          //Take into account any likely acceleration that has occurred since the last full revolution completed:
-          //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          timePerDegreex16 = udiv_32_16( US_PER_DEG_PER_RPM*16U, max(MIN_RPM, (unsigned long)currentStatus.RPM)); 
-        }
-      }
-      degreesPeruSx32768 = udiv_32_16(32768UL * 16UL, timePerDegreex16);
+      degreesPeruSx32768 = (32768UL << 8) / timePerDegree24x8;
 }

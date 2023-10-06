@@ -85,7 +85,7 @@ inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int1
       return 0;
     }
   }
-  return angleToTimeIntervalRev(delta);
+  return angleToTimeMicroSecPerDegree(delta);
 }
 
 static inline uint16_t _adjustToIgnChannel(int angle, int channelInjDegrees) {
