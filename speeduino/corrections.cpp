@@ -295,7 +295,7 @@ uint16_t correctionAccel(void)
   {
     //Get the MAP rate change
     MAP_change = (currentStatus.MAP - MAPlast);
-    currentStatus.mapDOT = ldiv(MICROS_PER_SEC, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the MAP has moved
+    currentStatus.mapDOT = (MICROS_PER_SEC / (MAP_time - MAPlast_time)) * MAP_change; //This is the % per second that the MAP has moved
     //currentStatus.mapDOT = 15 * MAP_change; //This is the kpa per second that the MAP has moved
   }
   else if(configPage2.aeMode == AE_MODE_TPS)
