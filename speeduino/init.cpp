@@ -746,7 +746,9 @@ void initialiseAll(void)
         channel2IgnDegrees = 72;
         channel3IgnDegrees = 144;
         channel4IgnDegrees = 216;
+#if (IGN_CHANNELS >= 5)
         channel5IgnDegrees = 288;
+#endif
         maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
         maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
@@ -755,7 +757,9 @@ void initialiseAll(void)
           channel2IgnDegrees = 144;
           channel3IgnDegrees = 288;
           channel4IgnDegrees = 432;
+#if (IGN_CHANNELS >= 5)
           channel5IgnDegrees = 576;
+#endif
 
           CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -879,9 +883,8 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 7
-              maxInjOutputs = 7;
-              channel7InjDegrees = channel1InjDegrees;
+              //No staging output will be active
+              maxInjOutputs = 6;
             #endif
           }
         }
