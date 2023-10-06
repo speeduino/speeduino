@@ -44,7 +44,7 @@ void stopCompositeLoggerCams(void);
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order
 // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
-const byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 127, 129, 131, 133 };
+const byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 125, 127, 129, 131, 133};
 
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 const char header_0[] PROGMEM = "secl";
@@ -109,7 +109,7 @@ const char header_58[] PROGMEM = "Engine Protect";
 const char header_59[] PROGMEM = "";
 const char header_60[] PROGMEM = "Fuel Load";
 const char header_61[] PROGMEM = "Ign Load";
-const char header_62[] PROGMEM = "Dwell";
+const char header_62[] PROGMEM = "Dwell Requested";
 const char header_63[] PROGMEM = "Idle Target (RPM)";
 const char header_64[] PROGMEM = "MAP DOT";
 const char header_65[] PROGMEM = "VVT1 Angle";
@@ -137,7 +137,7 @@ const char header_86[] PROGMEM = "SD Status";
 const char header_87[] PROGMEM = "EMAP";
 const char header_88[] PROGMEM = "Fan Duty";
 const char header_89[] PROGMEM = "AirConStatus";
-const char header_90[] PROGMEM = "Actual Dwell";
+const char header_90[] PROGMEM = "Dwell Actual";
 const char header_91[] PROGMEM = "WUE Correction 2";
 const char header_92[] PROGMEM = "WUE Correction";
 const char header_93[] PROGMEM = "ASE Correction 2";
@@ -263,6 +263,7 @@ const char* const header_table[] PROGMEM = {  header_0,\
                                               header_88,\
                                               header_89,\
                                               header_90,\
+                                              /*
                                               header_91,\
                                               header_92,\
                                               header_93,\
