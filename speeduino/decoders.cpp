@@ -291,7 +291,7 @@ void loggerTertiaryISR(void)
 }
 
 static inline bool IsCranking(const statuses &status) {
-  return (status.RPM < status.crankRPM) && (status.startRevolutions == 0);
+  return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
 }
 
 #if defined(UNIT_TEST)
@@ -302,8 +302,8 @@ static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 {
   if (revTime!=revolutionTime) {
     revolutionTime = revTime;
-    microsPerDegree = div360((revolutionTime << microsPerDegree_Shift) + 180UL);
-    degreesPerMicro = UDIV_ROUND_CLOSEST((360UL << degreesPerMicro_Shift), revolutionTime);
+    microsPerDegree = div360((revolutionTime << microsPerDegree_Shift) + UINT32_C(180));
+    degreesPerMicro = UDIV_ROUND_CLOSEST((UINT32_C(360) << degreesPerMicro_Shift), revolutionTime);
     return true;
   } 
   return false;
@@ -313,7 +313,7 @@ static bool UpdateRevolutionTimeFromTeeth(uint16_t degreesOver) {
   noInterrupts();
   bool updatedRevTime = HasAnySync(currentStatus) 
     && !IsCranking(currentStatus)
-    && (toothOneMinusOneTime!=0L)
+    && (toothOneMinusOneTime!=UINT32_C(0))
     && (toothOneTime>toothOneMinusOneTime) 
     //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
     && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> (degreesOver==720U ? 1U : 0U)); 
@@ -741,21 +741,29 @@ int getCrankAngle_missingTooth(void)
     return crankAngle;
 }
 
+static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
+  int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
+  return (uint16_t)nudge(1, toothRange, toothNum, toothRange);
+}
+
+static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
+  if(toothNum > triggerActualTeeth && toothNum <= configPage4.triggerTeeth) { toothNum = triggerActualTeeth; }
+  return min(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
+}
+
 static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(int endAngle, uint8_t toothAdder) {
   //Temp variable used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempEndTooth = endAngle - configPage4.triggerAngle;
+  int16_t tempEndTooth;
 #ifdef USE_LIBDIVIDE  
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+  tempEndTooth = libdivide::libdivide_s16_do(endAngle - configPage4.triggerAngle, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempEndTooth / triggerToothAngle;
+  tempEndTooth = (endAngle - (int16_t)configPage4.triggerAngle) / (int16_t)triggerToothAngle;
 #endif
   //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
-  if(configPage4.triggerTeeth > 12) { tempEndTooth = tempEndTooth - 1; }
-  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempEndTooth > triggerActualTeeth && tempEndTooth <= configPage4.triggerTeeth) { tempEndTooth = triggerActualTeeth; }
-  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
-  return tempEndTooth;
+  if(configPage4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
+  
+  // Clamp to tooth count
+  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
 }
 
 void triggerSetEndTeeth_missingTooth(void)
@@ -941,15 +949,13 @@ int getCrankAngle_DualWheel(void)
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(int ignitionAngle, uint8_t toothAdder) {
-  int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
+  int16_t tempEndTooth =
 #ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
+      libdivide::libdivide_s16_do(ignitionAngle - configPage4.triggerAngle, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempEndTooth / triggerToothAngle;
+      (ignitionAngle - (int16_t)configPage4.triggerAngle) / (int16_t)triggerToothAngle;
 #endif
-  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
-  return tempEndTooth;
+  return clampToToothCount(tempEndTooth, toothAdder);
 }
 
 /** Dual Wheel - Set End Teeth.
@@ -4235,13 +4241,10 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(int ignition
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempEndTooth / triggerToothAngle;
+  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
 #endif  
-  tempEndTooth = tempEndTooth - 1;
-  if(tempEndTooth > (36 + toothAdder)) { tempEndTooth -= (36 + toothAdder); }
-  if(tempEndTooth <= 0) { tempEndTooth += (36 + toothAdder); }
-  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
-  return tempEndTooth;
+  tempEndTooth = nudge(1, 36U + toothAdder,  tempEndTooth - 1, 36U + toothAdder);
+  return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
 }
 
 void triggerSetEndTeeth_FordST170(void)
@@ -4603,21 +4606,23 @@ uint16_t getRPM_NGC(void)
   return tempRPM;
 }
 
+static inline uint16_t calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
+  if(toothNum == 17U || toothNum == 18U) { return 16U; } // These are missing teeth, so set the next one before instead
+  if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
+  if(toothNum == 53U || toothNum == 54U) { return 52U; } // These are missing teeth, so set the next one before instead
+  if(toothNum > 70U) { return 70U; } // These are missing teeth, so set the next one before instead
+  return toothNum;
+
+}
+
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(int ignitionAngle, uint8_t toothAdder) {
   int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempEndTooth / triggerToothAngle;
+  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
 #endif  
-  tempEndTooth = tempEndTooth - 1;
-  if(tempEndTooth < 1) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth below 1
-  else if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); } // Wrap around teeth above max tooth count
-  if(tempEndTooth == 17 || tempEndTooth == 18) { tempEndTooth = 16; } // These are missing teeth, so set the next one before instead
-  else if(tempEndTooth == 35 || tempEndTooth == 36) { tempEndTooth = 34; } // These are missing teeth, so set the next one before instead
-  else if(tempEndTooth == 53 || tempEndTooth == 54) { tempEndTooth = 52; } // These are missing teeth, so set the next one before instead
-  else if(tempEndTooth > 70) { tempEndTooth = 70; } // These are missing teeth, so set the next one before instead
-  return tempEndTooth;
+  return calcSetEndTeeth_NGC_SkipMissing(clampToToothCount(tempEndTooth - 1, toothAdder));
 }
 
 void triggerSetEndTeeth_NGC(void)
@@ -4955,19 +4960,16 @@ void triggerPri_Renix(void)
   } 
 }
 
-static uint16_t __attribute__((noinline))  calcEndTeeth_Renix(int ignitionAngle, uint8_t toothAdder) {
+static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(int ignitionAngle, uint8_t toothAdder) {
   int16_t tempEndTooth = ignitionAngle - configPage4.triggerAngle;
 #ifdef USE_LIBDIVIDE
   tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
 #else
-  tempEndTooth = tempEndTooth / triggerToothAngle;
+  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
 #endif  
   tempEndTooth = tempEndTooth - 1;
-  if(tempEndTooth > (configPage4.triggerTeeth + toothAdder)) { tempEndTooth -= (configPage4.triggerTeeth + toothAdder); }
-  if(tempEndTooth <= 0) { tempEndTooth += (configPage4.triggerTeeth + toothAdder); }
-  if((uint16_t)tempEndTooth > triggerActualTeeth && tempEndTooth <= configPage4.triggerTeeth) { tempEndTooth = triggerActualTeeth; }
-  if((uint16_t)tempEndTooth > (triggerActualTeeth + toothAdder)) { tempEndTooth = (triggerActualTeeth + toothAdder); }
-  return tempEndTooth;
+  // Clamp to tooth count
+  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
 }
 
 void triggerSetEndTeeth_Renix(void)

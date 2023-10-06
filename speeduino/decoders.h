@@ -61,7 +61,7 @@ extern bool decoderHasFixedCrankingTiming;
 */
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
-#define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
+#define ANGLE_FILTER(input, alpha, prior) (((long)(input) * (256 - (alpha)) + ((long)(prior) * (alpha)))) >> 8
 
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
@@ -312,12 +312,8 @@ extern uint16_t ignition8EndTooth;
 
 extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
-//Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
-#define LONG 0;
-#define SHORT 1;
-
-#define CRANK_SPEED 0
-#define CAM_SPEED   1
+#define CRANK_SPEED 0U
+#define CAM_SPEED   1U
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM_SECONDARY 1

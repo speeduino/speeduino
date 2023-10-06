@@ -4,7 +4,7 @@
 #include "globals.h"
 #include <limits.h>
 
-uint8_t random1to100(void);
+extern uint8_t random1to100(void);
 
 #ifdef USE_LIBDIVIDE
 #include "src/libdivide/libdivide.h"
@@ -32,7 +32,7 @@ static inline int16_t div100(int16_t n) {
     return n / (int16_t)100;
 #endif
 }
-inline uint32_t div100(uint32_t n) {
+static inline uint32_t div100(uint32_t n) {
     if (n<UINT16_MAX) {
         return div100((uint16_t)n);
     }
@@ -111,7 +111,23 @@ uint32_t halfPercentage(uint8_t x, uint32_t y);
  */
 #define RSHIFT_ROUND(n, s) (((n)+(1<<(s-1)))>>s)
 
-#define IS_INTEGER(d) (d == (int32_t)d)
+#define IS_INTEGER(d) ((d) == (int32_t)(d))
+
+/**
+ * @brief Make one pass at correcting the value into the range [min, max)
+ * 
+ * @param min Minimum value (inclusive)
+ * @param max Maximum value (exclusive)
+ * @param value Value to nudge
+ * @param nudgeAmount Amount to change value by 
+ * @return int16_t 
+ */
+static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nudgeAmount)
+{
+    if (value<min) { return value + nudgeAmount; }
+    if (value>max) { return value - nudgeAmount; }
+    return value;
+}
 
 //This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
 //This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
@@ -167,7 +183,7 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
     );
 
     // Lower word contains the quotient, upper word contains the remainder.
-    return dividend & 0xFFFF;
+    return dividend & 0xFFFFU;
 #else
     // The non-AVR platforms are all fast enough (or have built in hardware dividers)
     // so just fall back to regular 32-bit division.

@@ -243,11 +243,11 @@
 #define OUTPUT_CONTROL_DIRECT   0
 #define OUTPUT_CONTROL_MC33810  10
 
-#define IGN_MODE_WASTED     0
-#define IGN_MODE_SINGLE     1
-#define IGN_MODE_WASTEDCOP  2
-#define IGN_MODE_SEQUENTIAL 3
-#define IGN_MODE_ROTARY     4
+#define IGN_MODE_WASTED     0U
+#define IGN_MODE_SINGLE     1U
+#define IGN_MODE_WASTEDCOP  2U
+#define IGN_MODE_SEQUENTIAL 3U
+#define IGN_MODE_ROTARY     4U
 
 #define SEC_TRIGGER_SINGLE  0
 #define SEC_TRIGGER_4_1     1
@@ -345,8 +345,8 @@
 #define MULTIPLY_MAP_MODE_BARO  1
 #define MULTIPLY_MAP_MODE_100   2
 
-#define FOUR_STROKE         0
-#define TWO_STROKE          1
+#define FOUR_STROKE         0U
+#define TWO_STROKE          1U
 
 #define GOING_LOW         0
 #define GOING_HIGH        1

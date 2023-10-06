@@ -12,13 +12,13 @@ inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t injChann
   // 45<=CRANK_ANGLE_MAX_INJ<=720
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
-  uint16_t startAngle = injAngle + injChannelDegrees;
+  uint16_t startAngle = (uint16_t)injAngle + (uint16_t)injChannelDegrees;
   // Avoid underflow
-  while (startAngle<pwDegrees) { startAngle = startAngle + CRANK_ANGLE_MAX_INJ; }
+  while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; }
   // Guarenteed to be >=0.
   startAngle = startAngle - pwDegrees;
   // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
-  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - CRANK_ANGLE_MAX_INJ; }
+  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; }
 
   return startAngle;
 }
@@ -57,7 +57,7 @@ inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int chann
 
 inline void calculateIgnitionAngle(const int dwellAngle, const uint16_t channelIgnDegrees, int8_t advance, int *pEndAngle, int *pStartAngle)
 {
-  *pEndAngle = (channelIgnDegrees==0 ? CRANK_ANGLE_MAX_IGN : channelIgnDegrees) - advance;
+  *pEndAngle = (channelIgnDegrees==0U ? CRANK_ANGLE_MAX_IGN : channelIgnDegrees) - advance;
   if(*pEndAngle > CRANK_ANGLE_MAX_IGN) {*pEndAngle -= CRANK_ANGLE_MAX_IGN;}
   *pStartAngle = *pEndAngle - dwellAngle;
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
@@ -71,7 +71,7 @@ inline void calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegre
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) {
+static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) {
   int16_t delta = startAngle - crankAngle;
   if (delta<0)
   {
