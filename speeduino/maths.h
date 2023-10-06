@@ -7,11 +7,12 @@
 extern uint8_t random1to100(void);
 
 #ifdef USE_LIBDIVIDE
+// We use pre-computed constant parameters with libdivide where possible. 
+// Using predefined constants saves flash and RAM (.bss) versus calling the 
+// libdivide generator functions (E.g. libdivide_s32_gen)
+// 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
 #include "src/libdivide/libdivide.h"
 #include "src/libdivide/constant_fast_div.h"
-extern const struct libdivide::libdivide_u32_t libdiv_u32_100;
-extern const struct libdivide::libdivide_s32_t libdiv_s32_100;
-extern const struct libdivide::libdivide_u32_t libdiv_u32_360;
 #endif
 
 static inline uint8_t div100(uint8_t n) {
@@ -27,17 +28,20 @@ static inline uint16_t div100(uint16_t n) {
 }
 static inline int16_t div100(int16_t n) {
 #ifdef USE_LIBDIVIDE    
+    if (n>0) {
+        return div100((uint16_t)n);
+    }
     return libdivide::libdivide_s16_do_raw(n, S16_MAGIC(100), S16_MORE(100));
 #else
     return n / (int16_t)100;
 #endif
 }
 static inline uint32_t div100(uint32_t n) {
-    if (n<UINT16_MAX) {
+    if (n<=UINT16_MAX) {
         return div100((uint16_t)n);
     }
 #ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_u32_do(n, &libdiv_u32_100);
+    return libdivide::libdivide_u32_do_raw(n, 2748779070L, 6);
 #else
     return n / (uint32_t)100U;
 #endif
@@ -45,23 +49,15 @@ static inline uint32_t div100(uint32_t n) {
 
 #if defined(__arm__)
 static inline int div100(int n) {
-#ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
-#else
     return n / (int)100;
-#endif
 }
 #else
 static inline int32_t div100(int32_t n) {
 #ifdef USE_LIBDIVIDE    
     if (n<=INT16_MAX) {
-        if (n>=0) {
-            return div100((uint16_t)n);
-        } else if (n>=INT16_MIN) {
             return div100((int16_t)n);            
         }
-    }
-    return libdivide::libdivide_s32_do(n, &libdiv_s32_100);
+    return libdivide::libdivide_s32_do_raw(n, 1374389535L, 5);
 #else
     return n / (int32_t)100;
 #endif
@@ -70,7 +66,7 @@ static inline int32_t div100(int32_t n) {
 
 static inline uint32_t div360(uint32_t n) {
 #ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do(n, &libdiv_u32_360);
+    return libdivide::libdivide_u32_do_raw(n, 1813430637L, 72);
 #else
     return n / 360U;
 #endif

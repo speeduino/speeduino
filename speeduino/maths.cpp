@@ -1,21 +1,11 @@
+#include <Arduino.h>
 #include "maths.h"
-#include <stdlib.h>
-
-#ifdef USE_LIBDIVIDE
-// Constants used for libdivide. Using predefined constants saves flash and RAM (.bss)
-// versus calling the libdivide generator functions (E.g. libdivide_s32_gen)
-// 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
-const libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
-const libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
-const libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
-const libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
-#endif
 
 //Same as above, but 0.5% accuracy
 unsigned long halfPercentage(uint8_t x, unsigned long y)
 {
 #ifdef USE_LIBDIVIDE    
-    return libdivide::libdivide_u32_do(y * x, &libdiv_u32_200);
+    return libdivide::libdivide_u32_do_raw(y * x, 2748779070L, 7);
 #else
     return (y * x) / 200U;
 #endif  
