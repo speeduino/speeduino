@@ -13,14 +13,14 @@
 #include "globals.h" // Needed for FPU_MAX_SIZE
 
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      127 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
+  #define LOG_ENTRY_SIZE      135 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
+  #define SD_LOG_ENTRY_SIZE   135 /**< The size of the live data packet used by the SD card.*/
 #else
   #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
-#define SD_LOG_NUM_FIELDS   91 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
+#define SD_LOG_NUM_FIELDS   95 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 
 byte getTSLogEntry(uint16_t byteNum);
 int16_t getReadableLogEntry(uint16_t logIndex);
@@ -44,7 +44,7 @@ void stopCompositeLoggerCams(void);
 // This array indicates which index values from the log are 2 byte values
 // This array MUST remain in ascending order
 // !!!! WARNING: If any value above 255 is required in this array, changes MUST be made to is2ByteEntry() function !!!!
-const byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 125 };
+const byte PROGMEM fsIntIndex[] = {4, 14, 17, 22, 26, 28, 33, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 76, 78, 80, 82, 86, 88, 90, 93, 95, 99, 104, 111, 121, 125, 127, 129, 131, 133};
 
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 const char header_0[] PROGMEM = "secl";
@@ -59,7 +59,7 @@ const char header_8[] PROGMEM = "Battery V";
 const char header_9[] PROGMEM = "AFR";
 const char header_10[] PROGMEM = "EGO Correction";
 const char header_11[] PROGMEM = "IAT Correction";
-const char header_12[] PROGMEM = "WUE Correction";
+const char header_12[] PROGMEM = "WUE Correction 1";
 const char header_13[] PROGMEM = "RPM";
 const char header_14[] PROGMEM = "Accel. Correction";
 const char header_15[] PROGMEM = "Gamma Correction";
@@ -118,7 +118,7 @@ const char header_67[] PROGMEM = "VVT1 Duty";
 const char header_68[] PROGMEM = "Flex Boost Adj";
 const char header_69[] PROGMEM = "Baro Correction";
 const char header_70[] PROGMEM = "VE Current";
-const char header_71[] PROGMEM = "ASE Correction";
+const char header_71[] PROGMEM = "ASE Correction 1";
 const char header_72[] PROGMEM = "Vehicle Speed";
 const char header_73[] PROGMEM = "Gear";
 const char header_74[] PROGMEM = "Fuel Pressure";
@@ -138,11 +138,11 @@ const char header_87[] PROGMEM = "EMAP";
 const char header_88[] PROGMEM = "Fan Duty";
 const char header_89[] PROGMEM = "AirConStatus";
 const char header_90[] PROGMEM = "Dwell Actual";
+const char header_91[] PROGMEM = "WUE Correction 2";
+const char header_92[] PROGMEM = "WUE Correction";
+const char header_93[] PROGMEM = "ASE Correction 2";
+const char header_94[] PROGMEM = "ASE Correction";
 /*
-const char header_91[] PROGMEM = "";
-const char header_92[] PROGMEM = "";
-const char header_93[] PROGMEM = "";
-const char header_94[] PROGMEM = "";
 const char header_95[] PROGMEM = "";
 const char header_96[] PROGMEM = "";
 const char header_97[] PROGMEM = "";
@@ -263,11 +263,11 @@ const char* const header_table[] PROGMEM = {  header_0,\
                                               header_88,\
                                               header_89,\
                                               header_90,\
-                                              /*
                                               header_91,\
                                               header_92,\
                                               header_93,\
                                               header_94,\
+                                              /*
                                               header_95,\
                                               header_96,\
                                               header_97,\

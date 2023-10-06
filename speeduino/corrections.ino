@@ -29,7 +29,9 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
+#include "secondaryTables.h"
 #include "src/PID_v1/PID_v1.h"
+#include "secondaryTables.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
@@ -58,6 +60,7 @@ void initialiseCorrections(void)
 {
   egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
   currentStatus.flexIgnCorrection = 0;
+  currentStatus.flexCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
   currentStatus.knockActive = false;
@@ -112,8 +115,8 @@ uint16_t correctionsFuel(void)
   currentStatus.baroCorrection = correctionBaro();
   if (currentStatus.baroCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.baroCorrection); }
 
-  currentStatus.flexCorrection = correctionFlex();
-  if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
+  //currentStatus.flexCorrection = correctionFlex(); //<-- Commented out during change to new flex system
+  //if (currentStatus.flexCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.flexCorrection); }
 
   currentStatus.fuelTempCorrection = correctionFuelTemp();
   if (currentStatus.fuelTempCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.fuelTempCorrection); }
@@ -124,7 +127,9 @@ uint16_t correctionsFuel(void)
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
-  if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
+  
+  if (configPage2.flexEnabled == 0 && sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
+  else if (configPage2.flexEnabled == 1 && sumCorrections > 10000) { sumCorrections = 10000; } //Limit is increased when using flex fuel. Not quite sure what to set this at
   return (uint16_t)sumCorrections;
 }
 
@@ -148,7 +153,7 @@ static inline byte correctionsFuel_new(void)
   currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
   currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
   currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
+  //currentStatus.flexCorrection = correctionFlex(); numCorrections++; <-- Commented out during change to new flex system
   currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
@@ -162,18 +167,38 @@ static inline byte correctionsFuel_new(void)
                   + currentStatus.batCorrection \
                   + currentStatus.iatCorrection \
                   + currentStatus.baroCorrection \
-                  + currentStatus.flexCorrection \
                   + currentStatus.launchCorrection;
   return (sumCorrections);
 
 }
 
+/**
+* @brief fetches WUE value if flex disabled, calculates blended table value if flex enabled
+* @return WUE value 
+*/
+uint16_t getWUEValue(void)
+{
+  uint16_t WUEValue;
+  currentStatus.wueCorrection1 = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled == 1)
+  {
+    currentStatus.wueCorrection2 = WUETABLE2_VALUE_SCALE * table2D_getValue(&WUETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550% (limited in TS to 2000% however)
+    WUEValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.wueCorrection1), currentStatus.wueCorrection2);
+  }
+  else
+  {
+    WUEValue = currentStatus.wueCorrection1;
+  }
+
+  return WUEValue;
+}
+
 /** Warm Up Enrichment (WUE) corrections.
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-byte correctionWUE(void)
+uint16_t correctionWUE(void)
 {
-  byte WUEValue;
+  uint16_t WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
   if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
@@ -185,10 +210,27 @@ byte correctionWUE(void)
   else
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    WUEValue = getWUEValue();
   }
 
   return WUEValue;
+}
+
+uint16_t getCrankingValue(void)
+{
+  uint16_t crankingValue;
+  uint16_t crankingValue1 = CRANKINGENRICHTABLE_VALUE_SCALE * table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 5 to get range of 0 - 1275%
+  if (configPage2.flexEnabled == 1)
+  {
+    uint16_t crankingValue2 = CRANKINGENRICHTABLE2_VALUE_SCALE * table2D_getValue(&crankingEnrichTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale value of 10 to get range of 0 - 2550%
+    crankingValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), crankingValue1, crankingValue2);
+  }
+  else
+  {
+    crankingValue = crankingValue1;
+  }
+
+  return crankingValue;
 }
 
 /** Cranking Enrichment corrections.
@@ -200,16 +242,14 @@ uint16_t correctionCranking(void)
   //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingValue = getCrankingValue();
     crankingEnrichTaper = 0;
   }
   
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
   else if ( crankingEnrichTaper < configPage10.crankingEnrichTaper )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
+    crankingValue = getCrankingValue();
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
     crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, 100); //Taper from start value to 100%
@@ -219,15 +259,39 @@ uint16_t correctionCranking(void)
   return crankingValue;
 }
 
+/* @brief computes the ASE value, able to blend secondary table for flex fueling
+*  @return the ASE value, now a uint16_t rather than a byte because ethanol may 
+*     require ASE > 255 in extreme cold, according to @pazi88
+*/
+uint16_t getASEValue()
+{
+  uint16_t ASETableValue;
+  currentStatus.ASEValue1 = table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  if (configPage2.flexEnabled == 1)
+  {
+    currentStatus.ASEValue2 = ASETABLE2_VALUE_SCALE * table2D_getValue(&ASETable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //scale by 5 to get range of 0 - 1275%
+    ASETableValue = biasedAverage_uint16(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), uint16_t(currentStatus.ASEValue1), currentStatus.ASEValue2);
+    currentStatus.ASEValue2 += 100; //Add 100 for logging readability
+  }
+  else
+  {
+    ASETableValue = currentStatus.ASEValue1;
+  }
+
+  currentStatus.ASEValue1 += 100; //Add 100 for logging readability
+  
+  return ASETableValue;
+}
+
 /** After Start Enrichment calculation.
  * This is a short period (Usually <20 seconds) immediately after the engine first fires (But not when cranking)
  * where an additional amount of fuel is added (Over and above the WUE amount).
  * 
- * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
+ * @return uint16_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */   
-byte correctionASE(void)
+uint16_t correctionASE(void)
 {
-  int16_t ASEValue = currentStatus.ASEValue;
+  uint16_t ASEValue = currentStatus.ASEValue;
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
@@ -238,7 +302,7 @@ byte correctionASE(void)
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        ASEValue = 100 + getASEValue();
         aseTaper = 0;
       }
       else
@@ -246,7 +310,7 @@ byte correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, getASEValue(), 0);
           aseTaper++;
         }
         else
@@ -257,9 +321,9 @@ byte correctionASE(void)
       }
       
       //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
-      if(ASEValue < 0) { ASEValue = 0; }
-      ASEValue = (byte)ASEValue;
+      if(!configPage2.flexEnabled && ASEValue > 255) { ASEValue = 255; }
+      else if (ASEValue > 1200) { ASEValue = 1200; } //arbitrary limit, not sure what to make this
+      //else if(ASEValue < 0) { ASEValue = 0; } //This was here before, but causes a warning now that aseCorrection is an unsigned 16
     }
   }
   else
@@ -570,17 +634,20 @@ bool correctionDFCO(void)
 
 /** Flex fuel adjustment to vary fuel based on ethanol content.
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
+ * 
+ * !!!NO LONGER USED UNDER NEW FLEX SYSTEM!!!
+ * 
 */
-byte correctionFlex(void)
-{
-  byte flexValue = 100;
-
-  if (configPage2.flexEnabled == 1)
-  {
-    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
-  }
-  return flexValue;
-}
+// byte correctionFlex(void)
+// {
+//   byte flexValue = 100;
+//
+//   if (configPage2.flexEnabled == 1)
+//   {
+//     flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+//   }
+//   return flexValue;
+// }
 
 /*
  * Fuel temperature adjustment to vary fuel based on fuel temperature reading
@@ -691,8 +758,8 @@ byte correctionAFRClosedLoop(void)
 int8_t correctionsIgn(int8_t base_advance)
 {
   int8_t advance;
-  advance = correctionFlexTiming(base_advance);
-  advance = correctionWMITiming(advance);
+  //advance = correctionFlexTiming(base_advance); <-- Commented out during change to new flex system
+  advance = correctionWMITiming(base_advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
   advance = correctionIdleAdvance(advance);

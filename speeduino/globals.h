@@ -347,12 +347,14 @@
 #define FUEL2_MODE_ADD      2
 #define FUEL2_MODE_CONDITIONAL_SWITCH   3
 #define FUEL2_MODE_INPUT_SWITCH 4
+#define FUEL2_MODE_FLEX 5
 
 #define SPARK2_MODE_OFF      0
 #define SPARK2_MODE_MULTIPLY 1
 #define SPARK2_MODE_ADD      2
 #define SPARK2_MODE_CONDITIONAL_SWITCH   3
 #define SPARK2_MODE_INPUT_SWITCH 4
+#define SPARK2_MODE_FLEX 5
 
 #define FUEL2_CONDITION_RPM 0
 #define FUEL2_CONDITION_MAP 1
@@ -447,6 +449,12 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define LOGGER_FILENAMING_DATETIME      1
 #define LOGGER_FILENAMING_SEQENTIAL     2
 
+#define WUETABLE2_VALUE_SCALE             5
+#define CRANKINGENRICHTABLE_VALUE_SCALE   5
+#define CRANKINGENRICHTABLE2_VALUE_SCALE  10
+#define ASETABLE2_VALUE_SCALE             5
+#define PRIMINGPULSETABLE_VALUE_SCALE     2 //NOTE: Values are divided by this scale factor rather than multiplied like the others
+
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
@@ -478,10 +486,14 @@ extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
+extern struct table2D WUETable2; //10 bin Flex Warm Up Enrichment map (2D)
 extern struct table2D ASETable; //4 bin After Start Enrichment map (2D)
+extern struct table2D ASETable2; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
+extern struct table2D PrimingPulseTable2; //4 bin Priming pulsewidth map (2D)
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
+extern struct table2D crankingEnrichTable2; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
 extern struct table2D injectorVCorrectionTable; //6 bin injector voltage correction (2D)
 extern struct table2D injectorAngleTable; //4 bin injector timing curve (2D)
@@ -655,7 +667,7 @@ struct statuses {
   uint16_t corrections; /**< The total current corrections % amount */
   uint16_t AEamount;    /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
   byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
-  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
+  byte wueCorrection1; /**< The current warmup enrichment value from WUE Table 1*/
   byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
   byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
   byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
@@ -718,7 +730,7 @@ struct statuses {
   byte vvt1TargetAngle;
   long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
-  byte ASEValue;
+  byte ASEValue1; /**< The current afterstart enrichment value from ASE Table 1*/
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
@@ -734,6 +746,10 @@ struct statuses {
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
+  uint16_t wueCorrection; /**< The total amount of warmup enrichment currently being applied*/
+  uint16_t wueCorrection2; /**< The current warmup enrichment value from WUE Table 2*/
+  uint16_t ASEValue; /**< The total amount of afterstart enrichment currently being applied*/
+  uint16_t ASEValue2; /**< The current afterstart enrichment value from ASE Table 2*/
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -1214,9 +1230,9 @@ struct config10 {
   uint8_t flexBoostBins[6]; //Bytes 33-38
   int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
+  uint8_t flexFuelBias[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
   uint8_t flexAdvBins[6]; //Bytes 63-68
-  uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
+  uint8_t flexAdvBias[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
                             //Bytes 69-74
 
@@ -1469,11 +1485,20 @@ struct config15 {
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
 
+  //Bytes 98-105
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
-  //Bytes 98-255
-  byte Unused15_98_255[150];
+  //Secondary corrections tables
+  //Bytes 106-127
+  byte asePct2[4];           ///< Afterstart enrichment values 2 (%)
+  byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2
+  byte crankingEnrichValues2[4];
+  byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
+
+  //Bytes 128-255
+  byte Unused15_128_255[127];
+  
 
 #if defined(CORE_AVR)
   };

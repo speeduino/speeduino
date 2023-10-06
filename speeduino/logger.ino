@@ -11,7 +11,7 @@
  *   2nd field in struct)
  * - The fields stored in multi-byte types will be accessed lowbyte and highbyte separately (e.g. PW1 will be broken into numbered byte-fields 75,76)
  * - Values have the value offsets and shifts expected by TunerStudio. They will not all be a 'human readable value'
- * @param byteNum - byte-Field number. This is not the entry number (As some entries have multiple byets), but the byte number that is needed
+ * @param byteNum - byte-Field number. This is not the entry number (As some entries have multiple bytes), but the byte number that is needed
  * @return Field value in 1 byte size struct fields or 1 byte partial value (chunk) on multibyte fields.
  */
 byte getTSLogEntry(uint16_t byteNum)
@@ -33,7 +33,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 10: statusValue = currentStatus.O2; break; //O2
     case 11: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
     case 12: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
-    case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
+    case 13: statusValue = currentStatus.wueCorrection1; break; //Warmup enrichment (%)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
     case 16: statusValue = (byte)(currentStatus.AEamount >> 1); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
@@ -147,7 +147,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 100: statusValue = highByte(currentStatus.flexBoostCorrection); break;
     case 101: statusValue = currentStatus.baroCorrection; break;
     case 102: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 103: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 103: statusValue = currentStatus.ASEValue1; break; //Current value from ASE table 1(%)
     case 104: statusValue = lowByte(currentStatus.vss); break;
     case 105: statusValue = highByte(currentStatus.vss); break;
     case 106: statusValue = currentStatus.gear; break;
@@ -171,6 +171,14 @@ byte getTSLogEntry(uint16_t byteNum)
     case 124: statusValue = currentStatus.airConStatus; break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
+    case 127: statusValue = lowByte(currentStatus.wueCorrection2); break;
+    case 128: statusValue = highByte(currentStatus.wueCorrection2); break;
+    case 129: statusValue = lowByte(currentStatus.wueCorrection); break;
+    case 130: statusValue = highByte(currentStatus.wueCorrection); break;
+    case 131: statusValue = lowByte(currentStatus.ASEValue2); break;
+    case 132: statusValue = highByte(currentStatus.ASEValue2); break;
+    case 133: statusValue = lowByte(currentStatus.ASEValue); break;
+    case 134: statusValue = highByte(currentStatus.ASEValue); break;
   }
 
   return statusValue;
@@ -294,6 +302,10 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 88: statusValue = currentStatus.fanDuty; break;
     case 89: statusValue = currentStatus.airConStatus; break;
     case 90: statusValue = currentStatus.actualDwell; break;
+    case 91: statusValue = currentStatus.wueCorrection2; break;
+    case 92: statusValue = currentStatus.wueCorrection; break;
+    case 93: statusValue = currentStatus.ASEValue2; break;
+    case 94: statusValue = currentStatus.ASEValue; break;
   }
 
   return statusValue;
