@@ -385,17 +385,6 @@ static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamT
 
   return currentStatus.RPM;
 }
-#define MIN_CYCLES_FOR_ENDCOMPARE 6
-
-inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) {
-  if( (schedule.Status == RUNNING) ) { 
-    SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ) ); 
-  }
-  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { 
-    schedule.endCompare = schedule.counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ); 
-    schedule.endScheduleSetByDecoder = true; 
-  }
-}
 
 /**
 On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
