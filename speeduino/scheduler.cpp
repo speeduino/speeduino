@@ -210,77 +210,56 @@ void initialiseSchedulers()
 
 }
 
-/*
-These 8 function turn a schedule on, provides the time to start and the duration and gives it callback functions.
-All 8 functions operate the same, just on different schedules
-Args:
-startCallback: The function to be called once the timeout is reached
-timeout: The number of uS in the future that the startCallback should be triggered
-duration: The number of uS after startCallback is called before endCallback is called
-endCallback: This function is called once the duration time has been reached
-*/
-void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
+void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  if(timeout < MAX_TIMER_PERIOD)
-  {
-    if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
-    {
-      schedule.duration = duration;
+  schedule.duration = duration;
 
-      //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-      noInterrupts();
-      schedule.startCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-      schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
-      SET_COMPARE(schedule.compare, schedule.startCompare); //Use the B compare unit of timer 3
-      schedule.Status = PENDING; //Turn this schedule on
-      interrupts();
-      schedule.pTimerEnable();
-    }
-    else
-    {
-      //If the schedule is already running, we can set the next schedule so it is ready to go
-      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-      schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      schedule.hasNextSchedule = true;
-    }
-  }
+  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+  noInterrupts();
+  schedule.startCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
+  SET_COMPARE(schedule.compare, schedule.startCompare); //Use the B compare unit of timer 3
+  schedule.Status = PENDING; //Turn this schedule on
+  interrupts();
+  schedule.pTimerEnable();
 }
 
-//Ignition schedulers use Timer 5
-void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
+void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  if(timeout < MAX_TIMER_PERIOD)
-  {
-    if(schedule.Status != RUNNING) //Check that we're not already part way through a schedule
-    {
-      schedule.duration = duration;
-
-      //Need to check that the timeout doesn't exceed the overflow
-      COMPARE_TYPE timeout_timer_compare;
-      if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
-      else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
-      noInterrupts();
-      schedule.startCompare = schedule.counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-      if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-      SET_COMPARE(schedule.compare, schedule.startCompare);
-      schedule.Status = PENDING; //Turn this schedule on
-      interrupts();
-      schedule.pTimerEnable();
-    }
-    else
-    {
-      //If the schedule is already running, we can set the next schedule so it is ready to go
-      //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
-      schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-      schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
-      schedule.hasNextSchedule = true;
-    }
-  }
+  //If the schedule is already running, we can set the next schedule so it is ready to go
+  //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+  schedule.hasNextSchedule = true;
 }
+
+void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
+{
+  schedule.duration = duration;
+
+  //Need to check that the timeout doesn't exceed the overflow
+  COMPARE_TYPE timeout_timer_compare;
+  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
+  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+
+  noInterrupts();
+  schedule.startCompare = schedule.counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+  if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+  SET_COMPARE(schedule.compare, schedule.startCompare);
+  schedule.Status = PENDING; //Turn this schedule on
+  interrupts();
+  schedule.pTimerEnable();
+}
+
+void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
+{
+  //If the schedule is already running, we can set the next schedule so it is ready to go
+  //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+  schedule.hasNextSchedule = true;
+}
+
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {

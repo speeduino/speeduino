@@ -147,7 +147,18 @@ struct IgnitionSchedule {
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
-void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+
+inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
+  if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+    _setIgnitionScheduleRunning(schedule, timeout, duration);
+  }
+  // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  else if(timeout < MAX_TIMER_PERIOD){
+    _setIgnitionScheduleNext(schedule, timeout, duration);
+  }
+}
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
@@ -186,7 +197,20 @@ struct FuelSchedule {
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
-void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+
+inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
+    //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD) {
+    if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+      _setFuelScheduleRunning(schedule, timeout, duration);
+    }
+    else {
+      _setFuelScheduleNext(schedule, timeout, duration);
+    }
+  }
+}
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
