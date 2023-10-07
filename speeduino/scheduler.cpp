@@ -64,59 +64,53 @@ IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE, IGN7_TIMER_DISABL
 IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE, IGN8_TIMER_DISABLE, IGN8_TIMER_ENABLE);
 #endif
 
+static void reset(FuelSchedule &schedule) 
+{
+    schedule.Status = OFF;
+    schedule.pTimerEnable();
+}
+
+static void reset(IgnitionSchedule &schedule) 
+{
+    schedule.Status = OFF;
+    schedule.pTimerEnable();
+}
+
 void initialiseSchedulers()
 {
-    fuelSchedule1.Status = OFF;
-    fuelSchedule2.Status = OFF;
-    fuelSchedule3.Status = OFF;
-    fuelSchedule4.Status = OFF;
+    reset(fuelSchedule1);
+    reset(fuelSchedule2);
+    reset(fuelSchedule3);
+    reset(fuelSchedule4);
 #if INJ_CHANNELS >= 5
-    fuelSchedule5.Status = OFF;
+    reset(fuelSchedule5);
 #endif
 #if INJ_CHANNELS >= 6
-    fuelSchedule6.Status = OFF;
+    reset(fuelSchedule6);
 #endif
 #if INJ_CHANNELS >= 7
-    fuelSchedule7.Status = OFF;
+    reset(fuelSchedule7);
 #endif
 #if INJ_CHANNELS >= 8
-    fuelSchedule8.Status = OFF;
+    reset(fuelSchedule8);
 #endif
 
-    ignitionSchedule1.Status = OFF;
-    IGN1_TIMER_ENABLE();
-    ignitionSchedule2.Status = OFF;
-    IGN2_TIMER_ENABLE();
-    ignitionSchedule3.Status = OFF;
-    IGN3_TIMER_ENABLE();
-    ignitionSchedule4.Status = OFF;
-    IGN4_TIMER_ENABLE();
+    reset(ignitionSchedule1);
+    reset(ignitionSchedule2);
+    reset(ignitionSchedule3);
+    reset(ignitionSchedule4);
+    reset(ignitionSchedule5);
 #if (IGN_CHANNELS >= 5)
-    ignitionSchedule5.Status = OFF;
-    IGN5_TIMER_ENABLE();
+    reset(ignitionSchedule5);
 #endif
 #if IGN_CHANNELS >= 6
-    ignitionSchedule6.Status = OFF;
-    IGN6_TIMER_ENABLE();
+    reset(ignitionSchedule6);
 #endif
 #if IGN_CHANNELS >= 7
-    ignitionSchedule7.Status = OFF;
-    IGN7_TIMER_ENABLE();
+    reset(ignitionSchedule7);
 #endif
 #if IGN_CHANNELS >= 8
-    ignitionSchedule8.Status = OFF;
-    IGN8_TIMER_ENABLE();
-#endif
-
-    FUEL1_TIMER_ENABLE();
-    FUEL2_TIMER_ENABLE();
-    FUEL3_TIMER_ENABLE();
-    FUEL4_TIMER_ENABLE();
-#if (INJ_CHANNELS >= 5)
-    FUEL5_TIMER_ENABLE();
-    FUEL6_TIMER_ENABLE();
-    FUEL7_TIMER_ENABLE();
-    FUEL8_TIMER_ENABLE();
+    reset(ignitionSchedule8);
 #endif
 
   fuelSchedule1.pStartFunction = nullCallback;
