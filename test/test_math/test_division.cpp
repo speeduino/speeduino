@@ -108,10 +108,10 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 void test_maths_udiv_32_16(void)
 {
   // Divide by zero
-  TEST_ASSERT_EQUAL_UINT16(65535, udiv_32_16(0, 0));
+  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(0, 0));
 
   // Result doesn't fit into 16-bits
-  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16(UINT32_MAX, UINT16_MAX));
+  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(UINT32_MAX, UINT16_MAX));
 
   assert_udiv_32_16(1, 1);
   assert_udiv_32_16(UINT16_MAX+1, UINT16_MAX);
@@ -134,7 +134,7 @@ void test_maths_udiv_32_16_closest(void)
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
 
   // Result doesn't fit into 16-bits
-  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16_closest(UINT32_MAX-(UINT16_MAX/2)-1, UINT16_MAX));
+  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(UINT32_MAX-(UINT16_MAX/2)-1, UINT16_MAX));
 
   assert_udiv_32_16(1, 1);
   assert_udiv_32_16(2, 3);

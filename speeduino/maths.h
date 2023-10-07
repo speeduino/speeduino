@@ -225,6 +225,13 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
 //This is a new version that allows for out_min
 #define fastMap10Bit(x, out_min, out_max) ( ( ((uint32_t)(x) * ((out_max)-(out_min))) >> 10 ) + (out_min))
 
+#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+
+static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
+  return divisor>(uint16_t)(dividend>>16U);
+}
+
+#endif
 /**
  * @brief Optimised division: uint32_t/uint16_t => uint16_t
  * 
@@ -243,6 +250,9 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
 static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+
+    if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
+
     #define INDEX_REG "r16"
 
     asm(
