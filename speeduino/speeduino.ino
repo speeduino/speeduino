@@ -1047,7 +1047,7 @@ void loop(void)
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
         if ( (timeOut > 0U) && (BIT_CHECK(ignitionChannelsOn, IGN1_CMD_BIT)) )
         {
-          setIgnitionSchedule1(timeOut,
+          setIgnitionSchedule(ignitionSchedule1, timeOut,
                     currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
@@ -1079,7 +1079,7 @@ void loop(void)
 
             if ( (ignition2StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN2_CMD_BIT)) )
             {
-              setIgnitionSchedule2(ignition2StartTime,
+              setIgnitionSchedule(ignitionSchedule2, ignition2StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1092,7 +1092,7 @@ void loop(void)
 
             if ( (ignition3StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN3_CMD_BIT)) )
             {
-              setIgnitionSchedule3(ignition3StartTime,
+              setIgnitionSchedule(ignitionSchedule3, ignition3StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1105,7 +1105,7 @@ void loop(void)
 
             if ( (ignition4StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN4_CMD_BIT)) )
             {
-              setIgnitionSchedule4(ignition4StartTime,
+              setIgnitionSchedule(ignitionSchedule4, ignition4StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1118,7 +1118,7 @@ void loop(void)
 
             if ( (ignition5StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN5_CMD_BIT)) )
             {
-              setIgnitionSchedule5(ignition5StartTime,
+              setIgnitionSchedule(ignitionSchedule5, ignition5StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1131,7 +1131,7 @@ void loop(void)
 
             if ( (ignition6StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN6_CMD_BIT)) )
             {
-              setIgnitionSchedule6(ignition6StartTime,
+              setIgnitionSchedule(ignitionSchedule6, ignition6StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1144,7 +1144,7 @@ void loop(void)
 
             if ( (ignition7StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN7_CMD_BIT)) )
             {
-              setIgnitionSchedule7(ignition7StartTime,
+              setIgnitionSchedule(ignitionSchedule7, ignition7StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }
@@ -1157,7 +1157,7 @@ void loop(void)
 
             if ( (ignition8StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN8_CMD_BIT)) )
             {
-              setIgnitionSchedule8(ignition8StartTime,
+              setIgnitionSchedule(ignitionSchedule8, ignition8StartTime,
                         currentStatus.dwell + fixedCrankingOverride);
             }
         }

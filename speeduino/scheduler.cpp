@@ -249,7 +249,7 @@ void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned lon
 }
 
 //Ignition schedulers use Timer 5
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
+void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -282,12 +282,6 @@ inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule 
   }
 }
 
-//Ignition schedulers use Timer 5
-void setIgnitionSchedule1(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule1, timeout, duration);
-}
-
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (ignitionSchedule1.Status == RUNNING) && (timeToEnd < ignitionSchedule1.duration) )
@@ -300,47 +294,6 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
     interrupts();
   }
 }
-
-void setIgnitionSchedule2(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule2, timeout, duration);
-}
-
-void setIgnitionSchedule3(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule3, timeout, duration);
-}
-
-void setIgnitionSchedule4(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule4, timeout, duration);
-}
-
-void setIgnitionSchedule5(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule5, timeout, duration);
-}
-
-#if IGN_CHANNELS >= 6
-void setIgnitionSchedule6(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule6, timeout, duration);
-}
-#endif
-
-#if IGN_CHANNELS >= 7
-void setIgnitionSchedule7(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule7, timeout, duration);
-}
-#endif
-
-#if IGN_CHANNELS >= 8
-void setIgnitionSchedule8(unsigned long timeout, unsigned long duration)
-{
-  setIgnitionSchedule(ignitionSchedule8, timeout, duration);
-}
-#endif
 
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).

@@ -53,21 +53,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
-void setIgnitionSchedule1(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule2(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule3(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule4(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule5(unsigned long timeout, unsigned long duration);
-#if IGN_CHANNELS >= 6
-void setIgnitionSchedule6(unsigned long timeout, unsigned long duration);
-#endif
-#if IGN_CHANNELS >= 7
-void setIgnitionSchedule7(unsigned long timeout, unsigned long duration);
-#endif
-#if IGN_CHANNELS >= 8
-void setIgnitionSchedule8(unsigned long timeout, unsigned long duration);
-#endif
-
 void disablePendingFuelSchedule(byte channel);
 void disablePendingIgnSchedule(byte channel);
 
@@ -162,6 +147,7 @@ struct IgnitionSchedule {
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
+void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.

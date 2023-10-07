@@ -79,7 +79,7 @@ void test_status_off_to_pending_ign1(void)
     initialiseSchedulers();
     ignitionSchedule1.pStartCallback = emptyCallback;
     ignitionSchedule1.pEndCallback = emptyCallback;
-    setIgnitionSchedule1(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule1, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule1.Status);
 }
 
@@ -88,7 +88,7 @@ void test_status_off_to_pending_ign2(void)
     initialiseSchedulers();
     ignitionSchedule2.pStartCallback = emptyCallback;
     ignitionSchedule2.pEndCallback = emptyCallback;
-    setIgnitionSchedule2(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule2, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule2.Status);
 }
 
@@ -97,7 +97,7 @@ void test_status_off_to_pending_ign3(void)
     initialiseSchedulers();
     ignitionSchedule3.pStartCallback = emptyCallback;
     ignitionSchedule3.pEndCallback = emptyCallback;
-    setIgnitionSchedule3(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule3, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule3.Status);
 }
 
@@ -106,7 +106,7 @@ void test_status_off_to_pending_ign4(void)
     initialiseSchedulers();
     ignitionSchedule4.pStartCallback = emptyCallback;
     ignitionSchedule4.pEndCallback = emptyCallback;
-    setIgnitionSchedule4(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule4, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule4.Status);
 }
 
@@ -116,7 +116,7 @@ void test_status_off_to_pending_ign5(void)
     initialiseSchedulers();
     ignitionSchedule5.pStartCallback = emptyCallback;
     ignitionSchedule5.pEndCallback = emptyCallback;
-    setIgnitionSchedule5(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule5, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule5.Status);
 }
 #endif
@@ -127,7 +127,7 @@ void test_status_off_to_pending_ign6(void)
     initialiseSchedulers();
     ignitionSchedule6.pStartCallback = emptyCallback;
     ignitionSchedule6.pEndCallback = emptyCallback;
-    setIgnitionSchedule6(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule6, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule6.Status);
 }
 #endif
@@ -138,7 +138,7 @@ void test_status_off_to_pending_ign7(void)
     initialiseSchedulers();
     ignitionSchedule7.pStartCallback = emptyCallback;
     ignitionSchedule7.pEndCallback = emptyCallback;
-    setIgnitionSchedule7(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule7, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule7.Status);
 }
 #endif
@@ -149,7 +149,7 @@ void test_status_off_to_pending_ign8(void)
     initialiseSchedulers();
     ignitionSchedule8.pStartCallback = emptyCallback;
     ignitionSchedule8.pEndCallback = emptyCallback;
-    setIgnitionSchedule8(TIMEOUT, DURATION);
+    setIgnitionSchedule(ignitionSchedule8, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, ignitionSchedule8.Status);
 }
 #endif
