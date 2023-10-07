@@ -12,28 +12,28 @@ static void emptyCallback(void) {  }
 void test_status_off_to_pending_inj1(void)
 {
     initialiseSchedulers();
-    setFuelSchedule1(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule1, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule1.Status);
 }
 
 void test_status_off_to_pending_inj2(void)
 {
     initialiseSchedulers();
-    setFuelSchedule2(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule2, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule2.Status);
 }
 
 void test_status_off_to_pending_inj3(void)
 {
     initialiseSchedulers();
-    setFuelSchedule3(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule3, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule3.Status);
 }
 
 void test_status_off_to_pending_inj4(void)
 {
     initialiseSchedulers();
-    setFuelSchedule4(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule4, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule4.Status);
 }
 
@@ -41,7 +41,7 @@ void test_status_off_to_pending_inj4(void)
 void test_status_off_to_pending_inj5(void)
 {
     initialiseSchedulers();
-    setFuelSchedule5(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule5, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule5.Status);
 }
 #endif
@@ -50,7 +50,7 @@ void test_status_off_to_pending_inj5(void)
 void test_status_off_to_pending_inj6(void)
 {
     initialiseSchedulers();
-    setFuelSchedule6(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule6, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule6.Status);
 }
 #endif
@@ -59,7 +59,7 @@ void test_status_off_to_pending_inj6(void)
 void test_status_off_to_pending_inj7(void)
 {
     initialiseSchedulers();
-    setFuelSchedule7(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule7, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule7.Status);
 }
 #endif
@@ -68,7 +68,7 @@ void test_status_off_to_pending_inj7(void)
 void test_status_off_to_pending_inj8(void)
 {
     initialiseSchedulers();
-    setFuelSchedule8(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule8, TIMEOUT, DURATION);
     TEST_ASSERT_EQUAL(PENDING, fuelSchedule8.Status);
 }
 #endif

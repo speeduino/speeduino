@@ -53,23 +53,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-#if INJ_CHANNELS >= 5
-void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 6
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 7
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 8
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-#endif
-
 void setIgnitionSchedule1(unsigned long timeout, unsigned long duration);
 void setIgnitionSchedule2(unsigned long timeout, unsigned long duration);
 void setIgnitionSchedule3(unsigned long timeout, unsigned long duration);
@@ -216,6 +199,8 @@ struct FuelSchedule {
   void (&pTimerDisable)();    // Reference to the timer disable function
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
+
+void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;

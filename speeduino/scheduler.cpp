@@ -219,7 +219,7 @@ timeout: The number of uS in the future that the startCallback should be trigger
 duration: The number of uS after startCallback is called before endCallback is called
 endCallback: This function is called once the duration time has been reached
 */
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
+void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
 {
   //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
   if(timeout < MAX_TIMER_PERIOD)
@@ -247,54 +247,6 @@ inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedul
     }
   }
 }
-
-void setFuelSchedule1(unsigned long timeout, unsigned long duration) //Uses timer 3 compare A
-{
-  setFuelSchedule(fuelSchedule1, timeout, duration);
-}
-
-void setFuelSchedule2(unsigned long timeout, unsigned long duration) //Uses timer 3 compare B
-{
-  setFuelSchedule(fuelSchedule2, timeout, duration);
-}
-
-void setFuelSchedule3(unsigned long timeout, unsigned long duration) //Uses timer 3 compare C
-{
-  setFuelSchedule(fuelSchedule3, timeout, duration);
-}
-
-void setFuelSchedule4(unsigned long timeout, unsigned long duration) //Uses timer 4 compare B
-{
-  setFuelSchedule(fuelSchedule4, timeout, duration);
-}
-
-#if INJ_CHANNELS >= 5
-void setFuelSchedule5(unsigned long timeout, unsigned long duration) //Uses timer 4 compare C
-{
-  setFuelSchedule(fuelSchedule5, timeout, duration);
-}
-#endif
-
-#if INJ_CHANNELS >= 6
-void setFuelSchedule6(unsigned long timeout, unsigned long duration) //Uses timer 4 compare A
-{
-  setFuelSchedule(fuelSchedule6, timeout, duration);
-}
-#endif
-
-#if INJ_CHANNELS >= 7
-void setFuelSchedule7(unsigned long timeout, unsigned long duration) //Uses timer 5 compare C
-{
-  setFuelSchedule(fuelSchedule7, timeout, duration);
-}
-#endif
-
-#if INJ_CHANNELS >= 8
-void setFuelSchedule8(unsigned long timeout, unsigned long duration) //Uses timer 5 compare B
-{
-  setFuelSchedule(fuelSchedule8, timeout, duration);
-}
-#endif
 
 //Ignition schedulers use Timer 5
 void setIgnitionSchedule1(unsigned long timeout, unsigned long duration)
@@ -580,27 +532,27 @@ extern void beginInjectorPriming(void)
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( maxInjOutputs >= 1 ) { setFuelSchedule1(100, primingValue); }
+    if ( maxInjOutputs >= 1 ) { setFuelSchedule(fuelSchedule1, 100, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( maxInjOutputs >= 2 ) { setFuelSchedule2(100, primingValue); }
+    if ( maxInjOutputs >= 2 ) { setFuelSchedule(fuelSchedule2, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( maxInjOutputs >= 3 ) { setFuelSchedule3(100, primingValue); }
+    if ( maxInjOutputs >= 3 ) { setFuelSchedule(fuelSchedule3, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( maxInjOutputs >= 4 ) { setFuelSchedule4(100, primingValue); }
+    if ( maxInjOutputs >= 4 ) { setFuelSchedule(fuelSchedule4, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( maxInjOutputs >= 5 ) { setFuelSchedule5(100, primingValue); }
+    if ( maxInjOutputs >= 5 ) { setFuelSchedule(fuelSchedule5, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( maxInjOutputs >= 6 ) { setFuelSchedule6(100, primingValue); }
+    if ( maxInjOutputs >= 6 ) { setFuelSchedule(fuelSchedule6, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( maxInjOutputs >= 7 ) { setFuelSchedule7(100, primingValue); }
+    if ( maxInjOutputs >= 7) { setFuelSchedule(fuelSchedule7, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( maxInjOutputs >= 8 ) { setFuelSchedule8(100, primingValue); }
+    if ( maxInjOutputs >= 8 ) { setFuelSchedule(fuelSchedule8, 100, primingValue); }
 #endif
   }
 }

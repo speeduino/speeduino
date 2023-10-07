@@ -17,7 +17,7 @@ void test_accuracy_timeout_inj1(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule1(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule1, TIMEOUT, DURATION);
     while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -27,7 +27,7 @@ void test_accuracy_timeout_inj2(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule2(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule2, TIMEOUT, DURATION);
     while(fuelSchedule2.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -37,7 +37,7 @@ void test_accuracy_timeout_inj3(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule3(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule3, TIMEOUT, DURATION);
     while(fuelSchedule3.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -47,7 +47,7 @@ void test_accuracy_timeout_inj4(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule4(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule4, TIMEOUT, DURATION);
     while(fuelSchedule4.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -58,7 +58,7 @@ void test_accuracy_timeout_inj5(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule5(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule5, TIMEOUT, DURATION);
     while(fuelSchedule5.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -70,7 +70,7 @@ void test_accuracy_timeout_inj6(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule6(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule6, TIMEOUT, DURATION);
     while(fuelSchedule6.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -82,7 +82,7 @@ void test_accuracy_timeout_inj7(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule7(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule7, TIMEOUT, DURATION);
     while(fuelSchedule7.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
@@ -94,7 +94,7 @@ void test_accuracy_timeout_inj8(void)
 {
     initialiseSchedulers();
     start_time = micros();
-    setFuelSchedule8(TIMEOUT, DURATION);
+    setFuelSchedule(fuelSchedule8, TIMEOUT, DURATION);
     while(fuelSchedule8.Status == PENDING) /*Wait*/ ;
     end_time = micros();
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);

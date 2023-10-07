@@ -889,10 +889,10 @@ void loop(void)
         uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
         if (timeOut>0U)
         {
-          setFuelSchedule1(
-                    timeOut,
-                    (unsigned long)currentStatus.PW1
-                    );
+            setFuelSchedule(fuelSchedule1, 
+                      timeOut,
+                      (unsigned long)currentStatus.PW1
+                      );
         }
       }
 #endif
@@ -913,7 +913,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, channel2InjDegrees, injector2StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule2(
+            setFuelSchedule(fuelSchedule2, 
                       timeOut,
                       (unsigned long)currentStatus.PW2
                       );
@@ -927,7 +927,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, channel3InjDegrees, injector3StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule3(
+            setFuelSchedule(fuelSchedule3, 
                       timeOut,
                       (unsigned long)currentStatus.PW3
                       );
@@ -941,7 +941,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, channel4InjDegrees, injector4StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule4(
+            setFuelSchedule(fuelSchedule4, 
                       timeOut,
                       (unsigned long)currentStatus.PW4
                       );
@@ -955,7 +955,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, channel5InjDegrees, injector5StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule5(
+            setFuelSchedule(fuelSchedule5, 
                       timeOut,
                       (unsigned long)currentStatus.PW5
                       );
@@ -969,7 +969,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, channel6InjDegrees, injector6StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule6(
+            setFuelSchedule(fuelSchedule6, 
                       timeOut,
                       (unsigned long)currentStatus.PW6
                       );
@@ -983,7 +983,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, channel7InjDegrees, injector7StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule7(
+            setFuelSchedule(fuelSchedule7, 
                       timeOut,
                       (unsigned long)currentStatus.PW7
                       );
@@ -997,7 +997,7 @@ void loop(void)
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, channel8InjDegrees, injector8StartAngle, crankAngle);
           if ( timeOut>0U )
           {
-            setFuelSchedule8(
+            setFuelSchedule(fuelSchedule8, 
                       timeOut,
                       (unsigned long)currentStatus.PW8
                       );
