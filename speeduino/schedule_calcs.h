@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include "scheduler.h"
 
-extern byte channelInjEnabled;
-
 extern int ignition1StartAngle;
 extern int ignition1EndAngle;
 extern int channel1IgnDegrees; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
@@ -68,6 +66,6 @@ inline void __attribute__((always_inline)) calculateIgnitionAngle(const int dwel
 // Ignition for rotary.
 inline void __attribute__((always_inline))  calculateIgnitionTrailingRotary(int dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle);
 
-inline uint32_t __attribute__((always_inline)) calculateIgnitionTimeout(const Schedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
+inline uint32_t __attribute__((always_inline)) calculateIgnitionTimeout(const IgnitionSchedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle);
 
 #include "schedule_calcs.hpp"
