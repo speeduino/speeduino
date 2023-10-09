@@ -20,6 +20,31 @@ A full copy of the license may be found in the projects root directory
 #include "auxiliaries.h"
 #include "utilities.h"
 
+uint32_t MAPcurRev; //Tracks which revolution we're sampling on
+unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
+unsigned long EMAPrunningValue; //As above but for EMAP
+bool auxIsEnabled;
+uint16_t MAPlast; /**< The previous MAP reading */
+unsigned long MAP_time; //The time the MAP sample was taken
+unsigned long MAPlast_time; //The time the previous MAP sample was taken
+volatile unsigned long vssTimes[VSS_SAMPLES] = {0};
+volatile byte vssIndex;
+
+volatile byte flexCounter = 0;
+volatile unsigned long flexStartTime;
+volatile unsigned long flexPulseWidth;
+
+volatile byte knockCounter = 0;
+volatile uint16_t knockAngle;
+
+//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
+byte mapErrorCount = 0;
+//byte iatErrorCount = 0; Not used
+//byte cltErrorCount = 0; Not used
+
+static inline void validateMAP(void);
+
 /** Init all ADC conversions by setting resolutions, etc.
  */
 void initialiseADC(void)
@@ -159,7 +184,7 @@ static inline void validateMAP(void)
   }
 }
 
-static inline void instanteneousMAPReading(void)
+void instanteneousMAPReading(void)
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
   MAPlast = currentStatus.MAP;
@@ -203,7 +228,7 @@ static inline void instanteneousMAPReading(void)
 
 }
 
-static inline void readMAP(void)
+void readMAP(void)
 {
   unsigned int tempReading;
   //MAP Sampling system

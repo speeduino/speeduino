@@ -1,9 +1,11 @@
+#include "globals.h"
+
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
 #include "board_teensy35.h"
-#include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
+#include "timers.h"
 
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;

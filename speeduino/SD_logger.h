@@ -8,8 +8,6 @@
 #else
   #include "SdFat.h"
 #endif
-#include "logger.h"
-//#include <SdSpiCard.h>
 #include "RingBuf.h"
 
 
@@ -41,6 +39,12 @@
     #define SD_CS_PIN PD2  //CS pin can be pretty much anything, but PD2 is one of the ones left unused from SDIO pins.
 #else
     #define SD_CS_PIN 10 //This is a made up value for now
+#endif
+
+#ifndef UNIT_TEST // Scope guard for unit testing
+  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
+#else
+  #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
 //Test values only

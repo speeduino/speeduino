@@ -1,6 +1,5 @@
-
-#if defined(CORE_AVR)
 #include "globals.h"
+#if defined(CORE_AVR)
 #include "auxiliaries.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
