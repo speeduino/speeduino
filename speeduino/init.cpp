@@ -3666,11 +3666,11 @@ void changeHalfToFullSync(void)
     fuelSchedule6.pStartFunction = openInjector6;
     fuelSchedule6.pEndFunction = closeInjector6;
 #endif
-#if INJ_CHANNELS >= 6
+#if INJ_CHANNELS >= 7
     fuelSchedule7.pStartFunction = openInjector7;
     fuelSchedule7.pEndFunction = closeInjector7;
 #endif
-#if INJ_CHANNELS >= 6
+#if INJ_CHANNELS >= 8
     fuelSchedule8.pStartFunction = openInjector8;
      fuelSchedule8.pEndFunction = closeInjector8;
 #endif

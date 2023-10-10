@@ -50,8 +50,8 @@ void secondserial_Command(void)
   {
     case 'A': 
       // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
-      //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
-      sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
+      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) { sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag, &getLegacySecondarySerialLogEntry); } // Send values using the legacy fixed byte order
+      else { sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag); } //send values to serial3 using the order in the ini file
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time
@@ -139,7 +139,9 @@ void secondserial_Command(void)
     }
       
     case 'n': // sends the bytes of realtime values from the NEW CAN list
-      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
+      //sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
+      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) { sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag, &getLegacySecondarySerialLogEntry); } // Send values using the legacy fixed byte order
+      else { sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag); } //send values to serial3 using the order in the ini file
       break;
 
     case 'p':

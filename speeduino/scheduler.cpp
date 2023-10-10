@@ -995,6 +995,7 @@ void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a functio
     ignitionScheduleISR(ignitionSchedule1);
   }
 
+#if IGN_CHANNELS >= 2
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1003,7 +1004,9 @@ void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a functio
   {
     ignitionScheduleISR(ignitionSchedule2);
   }
+#endif
 
+#if IGN_CHANNELS >= 3
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1012,7 +1015,9 @@ void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a functio
   {
     ignitionScheduleISR(ignitionSchedule3);
   }
+#endif
 
+#if IGN_CHANNELS >= 4
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1021,7 +1026,9 @@ void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a functio
   {
     ignitionScheduleISR(ignitionSchedule4);
   }
+#endif
 
+#if IGN_CHANNELS >= 5
 #if defined(CORE_AVR) //AVR chips use the ISR for this
 ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -1030,6 +1037,7 @@ void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a functio
   {
     ignitionScheduleISR(ignitionSchedule5);
   }
+#endif
 
 #if IGN_CHANNELS >= 6
 #if defined(CORE_AVR) //AVR chips use the ISR for this
