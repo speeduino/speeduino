@@ -1118,8 +1118,8 @@ struct config9 {
   byte enable_secondarySerial:1;            //enable secondary serial
   byte intcan_available:1;                     //enable internal can module
   byte enable_intcan:1;
-  byte secondarySerialProtocol:3;            //protocol for secondary serial. 0=Generic, 1=CAN, 2=msDroid, 3=Real Dash
-  byte unused9_0:2;
+  byte secondarySerialProtocol:4;            //protocol for secondary serial. 0=Generic (Fixed list), 1=Generic (ini based list), 2=CAN, 3=msDroid, 4=Real Dash
+  byte unused9_0:1;
 
   byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input
