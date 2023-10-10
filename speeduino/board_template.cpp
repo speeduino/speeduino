@@ -1,5 +1,6 @@
-#if defined(CORE_TEMPLATE)
 #include "globals.h"
+#if defined(CORE_TEMPLATE)
+
 
 void initBoard()
 {

@@ -112,7 +112,9 @@ void test_accuracy_duration_inj8(void)
 void test_accuracy_duration_ign1(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule1(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule1.pStartCallback = startCallback;
+    ignitionSchedule1.pEndCallback = endCallback;
+    setIgnitionSchedule1(TIMEOUT, DURATION);
     while( (ignitionSchedule1.Status == PENDING) || (ignitionSchedule1.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
@@ -120,7 +122,9 @@ void test_accuracy_duration_ign1(void)
 void test_accuracy_duration_ign2(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule2(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule2.pStartCallback = startCallback;
+    ignitionSchedule2.pEndCallback = endCallback;
+    setIgnitionSchedule2(TIMEOUT, DURATION);
     while( (ignitionSchedule2.Status == PENDING) || (ignitionSchedule2.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
@@ -128,7 +132,9 @@ void test_accuracy_duration_ign2(void)
 void test_accuracy_duration_ign3(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule3(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule3.pStartCallback = startCallback;
+    ignitionSchedule3.pEndCallback = endCallback;
+    setIgnitionSchedule3(TIMEOUT, DURATION);
     while( (ignitionSchedule3.Status == PENDING) || (ignitionSchedule3.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
@@ -136,7 +142,9 @@ void test_accuracy_duration_ign3(void)
 void test_accuracy_duration_ign4(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule4(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule4.pStartCallback = startCallback;
+    ignitionSchedule4.pEndCallback = endCallback;
+    setIgnitionSchedule4(TIMEOUT, DURATION);
     while( (ignitionSchedule4.Status == PENDING) || (ignitionSchedule4.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
@@ -145,7 +153,9 @@ void test_accuracy_duration_ign5(void)
 {
 #if IGN_CHANNELS >= 5
     initialiseSchedulers();
-    setIgnitionSchedule5(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule5.pStartCallback = startCallback;
+    ignitionSchedule5.pEndCallback = endCallback;
+    setIgnitionSchedule5(TIMEOUT, DURATION);
     while( (ignitionSchedule5.Status == PENDING) || (ignitionSchedule5.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 #endif
@@ -155,7 +165,9 @@ void test_accuracy_duration_ign5(void)
 void test_accuracy_duration_ign6(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule6(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule6.pStartCallback = startCallback;
+    ignitionSchedule6.pEndCallback = endCallback;
+    setIgnitionSchedule6(TIMEOUT, DURATION);
     while( (ignitionSchedule6.Status == PENDING) || (ignitionSchedule6.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
@@ -165,7 +177,9 @@ void test_accuracy_duration_ign6(void)
 void test_accuracy_duration_ign7(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule7(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule7.pStartCallback = startCallback;
+    ignitionSchedule7.pEndCallback = endCallback;
+    setIgnitionSchedule7(TIMEOUT, DURATION);
     while( (ignitionSchedule7.Status == PENDING) || (ignitionSchedule7.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
@@ -175,7 +189,9 @@ void test_accuracy_duration_ign7(void)
 void test_accuracy_duration_ign8(void)
 {
     initialiseSchedulers();
-    setIgnitionSchedule8(startCallback, TIMEOUT, DURATION, endCallback);
+    ignitionSchedule8.pStartCallback = startCallback;
+    ignitionSchedule8.pEndCallback = endCallback;
+    setIgnitionSchedule8(TIMEOUT, DURATION);
     while( (ignitionSchedule8.Status == PENDING) || (ignitionSchedule8.Status == RUNNING) ) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }

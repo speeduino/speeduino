@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "scheduler.h"
 #include "comms.h"
 #include "comms_legacy.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "maths.h"
 #include "corrections.h"
 #include "timers.h"
@@ -108,13 +108,13 @@ void loop(void)
       }
 
       //Check for any CAN comms requiring action 
-      #if defined(CANSerial_AVAILABLE)
+      #if defined(secondarySerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
         if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
         {
-          if ( ((mainLoopCount & 31) == 1) or (CANSerial.available() > SERIAL_BUFFER_THRESHOLD) )
+          if ( ((mainLoopCount & 31) == 1) or (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
-            if (CANSerial.available() > 0)  { secondserial_Command(); }
+            if (secondarySerial.available() > 0)  { secondserial_Command(); }
           }
         }
       #endif
@@ -311,7 +311,7 @@ void loop(void)
             if (configPage9.enable_secondarySerial == 1)  // megas only support can via secondary serial
             {
               sendCancommand(2,0,currentStatus.current_caninchannel,0,((configPage9.caninput_source_can_address[currentStatus.current_caninchannel]&2047)+0x100));
-              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from CANSERIAL
+              //send an R command for data from caninput_source_address[currentStatus.current_caninchannel] from secondarySerial
             }
           }  
           else if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12) == 4) 
@@ -1050,13 +1050,8 @@ void loop(void)
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
         if ( (timeOut > 0U) && (BIT_CHECK(ignitionChannelsOn, IGN1_CMD_BIT)) )
         {
-          
-          setIgnitionSchedule1(ign1StartFunction,
-                    //((unsigned long)(ignition1StartAngle - crankAngle) * (unsigned long)timePerDegree),
-                    timeOut,
-                    currentStatus.dwell + fixedCrankingOverride, //((unsigned long)((unsigned long)currentStatus.dwell* currentStatus.RPM) / newRPM) + fixedCrankingOverride,
-                    ign1EndFunction
-                    );
+          setIgnitionSchedule1(timeOut,
+                    currentStatus.dwell + fixedCrankingOverride);
         }
 #endif
 
@@ -1087,11 +1082,8 @@ void loop(void)
 
             if ( (ignition2StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN2_CMD_BIT)) )
             {
-              setIgnitionSchedule2(ign2StartFunction,
-                        ignition2StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign2EndFunction
-                        );
+              setIgnitionSchedule2(ignition2StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1103,11 +1095,8 @@ void loop(void)
 
             if ( (ignition3StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN3_CMD_BIT)) )
             {
-              setIgnitionSchedule3(ign3StartFunction,
-                        ignition3StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign3EndFunction
-                        );
+              setIgnitionSchedule3(ignition3StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1119,11 +1108,8 @@ void loop(void)
 
             if ( (ignition4StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN4_CMD_BIT)) )
             {
-              setIgnitionSchedule4(ign4StartFunction,
-                        ignition4StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign4EndFunction
-                        );
+              setIgnitionSchedule4(ignition4StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1135,11 +1121,8 @@ void loop(void)
 
             if ( (ignition5StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN5_CMD_BIT)) )
             {
-              setIgnitionSchedule5(ign5StartFunction,
-                        ignition5StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign5EndFunction
-                        );
+              setIgnitionSchedule5(ignition5StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1151,11 +1134,8 @@ void loop(void)
 
             if ( (ignition6StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN6_CMD_BIT)) )
             {
-              setIgnitionSchedule6(ign6StartFunction,
-                        ignition6StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign6EndFunction
-                        );
+              setIgnitionSchedule6(ignition6StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1167,11 +1147,8 @@ void loop(void)
 
             if ( (ignition7StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN7_CMD_BIT)) )
             {
-              setIgnitionSchedule7(ign7StartFunction,
-                        ignition7StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign7EndFunction
-                        );
+              setIgnitionSchedule7(ignition7StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1183,11 +1160,8 @@ void loop(void)
 
             if ( (ignition8StartTime > 0) && (BIT_CHECK(ignitionChannelsOn, IGN8_CMD_BIT)) )
             {
-              setIgnitionSchedule8(ign8StartFunction,
-                        ignition8StartTime,
-                        currentStatus.dwell + fixedCrankingOverride,
-                        ign8EndFunction
-                        );
+              setIgnitionSchedule8(ignition8StartTime,
+                        currentStatus.dwell + fixedCrankingOverride);
             }
         }
 #endif
@@ -1405,7 +1379,9 @@ void calculateIgnitionAngles(int dwellAngle)
       calculateIgnitionAngle(dwellAngle, channel2IgnDegrees, currentStatus.advance, &ignition2EndAngle, &ignition2StartAngle);
       calculateIgnitionAngle(dwellAngle, channel3IgnDegrees, currentStatus.advance, &ignition3EndAngle, &ignition3StartAngle);
       calculateIgnitionAngle(dwellAngle, channel4IgnDegrees, currentStatus.advance, &ignition4EndAngle, &ignition4StartAngle);
+      #if (IGN_CHANNELS >= 5)
       calculateIgnitionAngle(dwellAngle, channel5IgnDegrees, currentStatus.advance, &ignition5EndAngle, &ignition5StartAngle);
+      #endif
       break;
     //6 cylinders
     case 6:

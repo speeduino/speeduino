@@ -1,13 +1,20 @@
+#include "globals.h"
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 #include "board_teensy41.h"
-#include "globals.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
+#include "timers.h"
 
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
+
+static void PIT_isr();
+static void TMR1_isr(void);
+static void TMR2_isr(void);
+static void TMR3_isr(void);
+static void TMR4_isr(void);
 
 void initBoard()
 {

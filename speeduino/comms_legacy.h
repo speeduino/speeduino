@@ -41,6 +41,7 @@ enum SerialStatus {
 };
 /** @brief Current status of serial comms. */
 extern SerialStatus serialStatusFlag;
+extern SerialStatus serialSecondaryStatusFlag;
 
 /**
  * @brief Is a serial write in progress?
@@ -73,7 +74,9 @@ extern byte logItemsTransmitted;
 extern byte inProgressLength;
 
 void legacySerialCommand(void);//This is the heart of the Command Line Interpreter.  All that needed to be done was to make it human readable.
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, byte portNum);
+void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag);
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag);
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t));
 void sendValuesLegacy(void);
 void sendPage(void);
 void sendPageASCII(void);

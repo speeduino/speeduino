@@ -1,5 +1,7 @@
 #ifndef AVR2560_H
 #define AVR2560_H
+
+#include "globals.h"
 #if defined(CORE_AVR)
 
 #include <avr/interrupt.h>
@@ -88,42 +90,42 @@
   #define IGN8_COMPARE  OCR3B //Replaces injector 2
 
   //Note that the interrupt flag is reset BEFORE the interrupt is enabled
-  #define FUEL1_TIMER_ENABLE() TIFR3 |= (1<<OCF3A); TIMSK3 |= (1 << OCIE3A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define FUEL2_TIMER_ENABLE() TIFR3 |= (1<<OCF3B); TIMSK3 |= (1 << OCIE3B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL3_TIMER_ENABLE() TIFR3 |= (1<<OCF3C); TIMSK3 |= (1 << OCIE3C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define FUEL4_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define FUEL5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define FUEL6_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define FUEL7_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //
-  #define FUEL8_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //
+static inline void FUEL1_TIMER_ENABLE(void) { TIFR3 |= (1<<OCF3A) ; TIMSK3 |= (1 << OCIE3A); } //Turn on the A compare unit (ie turn on the interrupt)
+static inline void FUEL2_TIMER_ENABLE(void) { TIFR3 |= (1<<OCF3B); TIMSK3 |= (1 << OCIE3B); } //Turn on the B compare unit (ie turn on the interrupt)
+static inline void FUEL3_TIMER_ENABLE(void) { TIFR3 |= (1<<OCF3C); TIMSK3 |= (1 << OCIE3C); } //Turn on the C compare unit (ie turn on the interrupt)
+static inline void FUEL4_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B); } //Turn on the B compare unit (ie turn on the interrupt)
+static inline void FUEL5_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C); } //Turn on the C compare unit (ie turn on the interrupt)
+static inline void FUEL6_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A); } //Turn on the A compare unit (ie turn on the interrupt)
+static inline void FUEL7_TIMER_ENABLE(void) { TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C); } //
+static inline void FUEL8_TIMER_ENABLE(void) { TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B); } //
 
-  #define FUEL1_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3A); //Turn off this output compare unit
-  #define FUEL2_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B); //Turn off this output compare unit
-  #define FUEL3_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C); //Turn off this output compare unit
-  #define FUEL4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B); //Turn off this output compare unit
-  #define FUEL5_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C); //
-  #define FUEL6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A); //
-  #define FUEL7_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C); //
-  #define FUEL8_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B); //
+static inline void FUEL1_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3A); } // //Turn off this output compare unit
+static inline void FUEL2_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } // //Turn off this output compare unit
+static inline void FUEL3_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } // //Turn off this output compare unit
+static inline void FUEL4_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4B); } ////Turn off this output compare unit
+static inline void FUEL5_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4C); } // //
+static inline void FUEL6_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4A); } // //
+static inline void FUEL7_TIMER_DISABLE(void) { TIMSK5 &= ~(1 << OCIE5C); } // //
+static inline void FUEL8_TIMER_DISABLE(void) { TIMSK5 &= ~(1 << OCIE5B); } //
 
   //These have the TIFR5 bits set to 1 to clear the interrupt flag. This prevents a false interrupt being called the first time the channel is enabled.
-  #define IGN1_TIMER_ENABLE() TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN2_TIMER_ENABLE() TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B) //Turn on the B compare unit (ie turn on the interrupt)
-  #define IGN3_TIMER_ENABLE() TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C) //Turn on the C compare unit (ie turn on the interrupt)
-  #define IGN4_TIMER_ENABLE() TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN5_TIMER_ENABLE() TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C) //Turn on the A compare unit (ie turn on the interrupt)
-  #define IGN6_TIMER_ENABLE() TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_ENABLE() TIMSK3 |= (1 << OCIE3B) //Replaces injector 2
+static inline void IGN1_TIMER_ENABLE(void) { TIFR5 |= (1<<OCF5A); TIMSK5 |= (1 << OCIE5A); } //Turn on the A compare unit (ie turn on the interrupt)
+static inline void IGN2_TIMER_ENABLE(void) { TIFR5 |= (1<<OCF5B); TIMSK5 |= (1 << OCIE5B); }//Turn on the B compare unit (ie turn on the interrupt)
+static inline void IGN3_TIMER_ENABLE(void) { TIFR5 |= (1<<OCF5C); TIMSK5 |= (1 << OCIE5C); }//Turn on the C compare unit (ie turn on the interrupt)
+static inline void IGN4_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4A); TIMSK4 |= (1 << OCIE4A); }//Turn on the A compare unit (ie turn on the interrupt)
+static inline void IGN5_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4C); TIMSK4 |= (1 << OCIE4C); } //Turn on the A compare unit (ie turn on the interrupt)
+static inline void IGN6_TIMER_ENABLE(void) { TIFR4 |= (1<<OCF4B); TIMSK4 |= (1 << OCIE4B); } //Replaces injector 4
+static inline void IGN7_TIMER_ENABLE(void) { TIMSK3 |= (1 << OCIE3C); }//Replaces injector 3
+static inline void IGN8_TIMER_ENABLE(void) { TIMSK3 |= (1 << OCIE3B); } //Replaces injector 2
 
-  #define IGN1_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5A) //Turn off this output compare unit
-  #define IGN2_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5B) //Turn off this output compare unit
-  #define IGN3_TIMER_DISABLE() TIMSK5 &= ~(1 << OCIE5C) //Turn off this output compare unit
-  #define IGN4_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4A) //Turn off this output compare unit
-  #define IGN5_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4C) //Turn off this output compare unit
-  #define IGN6_TIMER_DISABLE() TIMSK4 &= ~(1 << OCIE4B) //Replaces injector 4
-  #define IGN7_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3C) //Replaces injector 3
-  #define IGN8_TIMER_DISABLE() TIMSK3 &= ~(1 << OCIE3B) //Replaces injector 2
+static inline void IGN1_TIMER_DISABLE(void) { TIMSK5 &= ~(1 << OCIE5A); } //Turn off this output compare unit
+static inline void IGN2_TIMER_DISABLE(void) { TIMSK5 &= ~(1 << OCIE5B); } //Turn off this output compare unit
+static inline void IGN3_TIMER_DISABLE(void) { TIMSK5 &= ~(1 << OCIE5C); } //Turn off this output compare unit
+static inline void IGN4_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4A); } //Turn off this output compare unit
+static inline void IGN5_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4C); } //Turn off this output compare unit
+static inline void IGN6_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4B); } //Replaces injector 4
+static inline void IGN7_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } //Replaces injector 3
+static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
 
   #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
   #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed

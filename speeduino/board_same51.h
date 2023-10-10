@@ -111,45 +111,45 @@
   #define IGN7_COMPARE  TCC2->CC[0].bit.CC
   #define IGN8_COMPARE  TCC2->CC[1].bit.CC
 
-  #define FUEL1_TIMER_ENABLE() TCC0->INTENSET.bit.MC0 = 0x1
-  #define FUEL2_TIMER_ENABLE() TCC0->INTENSET.bit.MC1 = 0x1
-  #define FUEL3_TIMER_ENABLE() TCC0->INTENSET.bit.MC2 = 0x1
-  #define FUEL4_TIMER_ENABLE() TCC0->INTENSET.bit.MC3 = 0x1
+static inline void FUEL1_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC0 = 0x1; }
+static inline void FUEL2_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC1 = 0x1; }
+static inline void FUEL3_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC2 = 0x1; }
+static inline void FUEL4_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC3 = 0x1; }
   //The below are NOT YET RIGHT!
-  #define FUEL5_TIMER_ENABLE() TCC0->INTENSET.bit.MC0 = 0x1
-  #define FUEL6_TIMER_ENABLE() TCC0->INTENSET.bit.MC1 = 0x1
-  #define FUEL7_TIMER_ENABLE() TCC0->INTENSET.bit.MC2 = 0x1
-  #define FUEL8_TIMER_ENABLE() TCC0->INTENSET.bit.MC3 = 0x1
+static inline void FUEL5_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC0 = 0x1; }
+static inline void FUEL6_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC1 = 0x1; }
+static inline void FUEL7_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC2 = 0x1; }
+static inline void FUEL8_TIMER_ENABLE(void) { TCC0->INTENSET.bit.MC3 = 0x1; }
 
-  #define FUEL1_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL2_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL3_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL4_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
+static inline void FUEL1_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL2_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL3_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL4_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
   //The below are NOT YET RIGHT!
-  #define FUEL5_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL6_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL7_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
-  #define FUEL8_TIMER_DISABLE() TCC0->INTENSET.bit.MC0 = 0x0
+static inline void FUEL5_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL6_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL7_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
+static inline void FUEL9_TIMER_DISABLE(void) { TCC0->INTENSET.bit.MC0 = 0x0; }
 
-  #define IGN1_TIMER_ENABLE() TCC1->INTENSET.bit.MC0 = 0x1
-  #define IGN2_TIMER_ENABLE() TCC1->INTENSET.bit.MC1 = 0x1
-  #define IGN3_TIMER_ENABLE() TCC2->INTENSET.bit.MC0 = 0x1
-  #define IGN4_TIMER_ENABLE() TCC2->INTENSET.bit.MC1 = 0x1
-  //The below are NOT YET RIGHT!
-  #define IGN5_TIMER_ENABLE() TCC1->INTENSET.bit.MC0 = 0x1
-  #define IGN6_TIMER_ENABLE() TCC1->INTENSET.bit.MC1 = 0x1
-  #define IGN7_TIMER_ENABLE() TCC2->INTENSET.bit.MC0 = 0x1
-  #define IGN8_TIMER_ENABLE() TCC2->INTENSET.bit.MC1 = 0x1
+static inline void IGN1_TIMER_ENABLE(void) { TCC1->INTENSET.bit.MC0 = 0x1; }
+static inline void IGN2_TIMER_ENABLE(void) { TCC1->INTENSET.bit.MC1 = 0x1; }
+static inline void IGN3_TIMER_ENABLE(void) { TCC2->INTENSET.bit.MC0 = 0x1; }
+static inline void IGN4_TIMER_ENABLE(void) { TCC2->INTENSET.bit.MC1 = 0x1; }
+//The below are NOT YET RIGHT!
+static inline void IGN5_TIMER_ENABLE(void) { TCC1->INTENSET.bit.MC0 = 0x1; }
+static inline void IGN6_TIMER_ENABLE(void) { TCC1->INTENSET.bit.MC1 = 0x1; }
+static inline void IGN7_TIMER_ENABLE(void) { TCC2->INTENSET.bit.MC0 = 0x1; }
+static inline void IGN8_TIMER_ENABLE(void) { TCC2->INTENSET.bit.MC1 = 0x1; }
 
-  #define IGN1_TIMER_DISABLE() TCC1->INTENSET.bit.MC0 = 0x0
-  #define IGN2_TIMER_DISABLE() TCC1->INTENSET.bit.MC1 = 0x0
-  #define IGN3_TIMER_DISABLE() TCC2->INTENSET.bit.MC0 = 0x0
-  #define IGN4_TIMER_DISABLE() TCC2->INTENSET.bit.MC1 = 0x0
-  //The below are NOT YET RIGHT!
-  #define IGN5_TIMER_DISABLE() TCC1->INTENSET.bit.MC0 = 0x0
-  #define IGN6_TIMER_DISABLE() TCC1->INTENSET.bit.MC1 = 0x0
-  #define IGN7_TIMER_DISABLE() TCC2->INTENSET.bit.MC0 = 0x0
-  #define IGN8_TIMER_DISABLE() TCC2->INTENSET.bit.MC1 = 0x0
+static inline void IGN1_TIMER_DISABLE(void) { TCC1->INTENSET.bit.MC0 = 0x0; }
+static inline void IGN2_TIMER_DISABLE(void) { TCC1->INTENSET.bit.MC1 = 0x0; }
+static inline void IGN3_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC0 = 0x0; }
+static inline void IGN4_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC1 = 0x0; }
+//The below are NOT YET RIGHT!
+static inline void IGN5_TIMER_DISABLE(void) { TCC1->INTENSET.bit.MC0 = 0x0; }
+static inline void IGN6_TIMER_DISABLE(void) { TCC1->INTENSET.bit.MC1 = 0x0; }
+static inline void IGN7_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC0 = 0x0; }
+static inline void IGN8_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC1 = 0x0; }
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define MAX_TIMER_PERIOD_SLOW 139808
@@ -189,7 +189,7 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-  Uart CANSerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
+  Uart secondarySerial (&sercom3, 0, 1, SERCOM_RX_PAD_1, UART_TX_PAD_0);
 
 #endif //CORE_SAMD21
 #endif //SAMD21_H
