@@ -674,7 +674,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   #if defined(secondarySerial_AVAILABLE)
   if (&targetPort == &secondarySerial)
   {
-    //CAN serial
+    //Using Secondary serial, check if selected protocol requires the echo back of the command
     if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_INI) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
         if (cmd == 0x30) 
