@@ -22,6 +22,7 @@ int16_t getReadableLogEntry(uint16_t logIndex);
 #if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
   float getReadableFloatLogEntry(uint16_t logIndex);
 #endif
+uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum);
 bool is2ByteEntry(uint8_t key);
 
 void startToothLogger(void);

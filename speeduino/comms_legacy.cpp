@@ -36,7 +36,6 @@ byte inProgressLength;
 SerialStatus serialStatusFlag;
 SerialStatus serialSecondaryStatusFlag;
 
-
 static bool isMap(void) {
     // Detecting if the current page is a table/map
   return (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page);
@@ -665,16 +664,18 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * @param cmd - ??? - Will be used as some kind of ack on secondarySerial
  * @param targetPort - The HardwareSerial device that will be transmitted to
  * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
+ * @param logFunction - The function that should be called to retrieve the log value
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t))
 {  
   #if defined(secondarySerial_AVAILABLE)
   if (&targetPort == &secondarySerial)
   {
-    //CAN serial
-    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
+    //Using Secondary serial, check if selected protocol requires the echo back of the command
+    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_INI) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
         if (cmd == 0x30) 
         {
@@ -711,9 +712,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   {
     bool bufferFull = false;
 
-    targetPort.write(getTSLogEntry(offset+x));
+    //targetPort.write(getTSLogEntry(offset+x));
+    targetPort.write(logFunction(offset+x));
 
-    if( (&targetPort == &Serial) || (configPage9.secondarySerialProtocol != SECONDARY_SERIAL_PROTO_REALDASH) ) 
+    if( (&targetPort == &Serial) ) 
     { 
       //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
       if(targetPort.availableForWrite() < 1) { bufferFull = true; }
