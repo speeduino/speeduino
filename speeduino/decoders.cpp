@@ -599,7 +599,7 @@ void triggerSec_missingTooth(void)
           secondaryToothCount = 1;
           revolutionOne = 1; //Sequential revolution reset
           triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-          recordVVT1Angle ();
+          triggerRecordVVT1Angle ();
         }
         else
         {
@@ -613,7 +613,7 @@ void triggerSec_missingTooth(void)
         revolutionOne = 1; //Sequential revolution reset
         triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
         secondaryToothCount++;
-        recordVVT1Angle ();
+        triggerRecordVVT1Angle ();
         break;
 
       case SEC_TRIGGER_TOYOTA_3:
@@ -627,7 +627,7 @@ void triggerSec_missingTooth(void)
         else if(secondaryToothCount == 2)
         { 
           revolutionOne = 1; // sequential revolution reset
-          recordVVT1Angle (); 
+          triggerRecordVVT1Angle (); 
         
         }        
         //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
@@ -638,7 +638,7 @@ void triggerSec_missingTooth(void)
   } //Trigger filter
 }
 
-void recordVVT1Angle ()
+void triggerRecordVVT1Angle (void)
 {
 //Record the VVT Angle
   if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
