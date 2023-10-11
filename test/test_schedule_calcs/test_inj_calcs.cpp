@@ -22,23 +22,25 @@ struct inj_test_parameters
     uint32_t running;       // Expected delay when channel status is RUNNING
 };
 
+static void nullInjCallback(void) { }
+
 static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     static constexpr uint16_t injAngle = 355;
     char msg[150];
     uint16_t PWdivTimerPerDegree = div(parameters.pw, timePerDegree).quot;
 
-    memset(&fuelSchedule2, 0, sizeof(fuelSchedule2));
+    FuelSchedule schedule(FUEL2_COUNTER, FUEL2_COMPARE, nullInjCallback, nullInjCallback);
 
-    fuelSchedule2.Status = PENDING;
+    schedule.Status = PENDING;
     uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("PENDING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
+    sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", startAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.pending, calculateInjectorTimeout(schedule, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
     
-    fuelSchedule2.Status = RUNNING;
+    schedule.Status = RUNNING;
     startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("RUNNING channelAngle: % " PRIu16 ", pw: % " PRIu16 ", crankAngle: % " PRIu16 ", startAngle: % " PRIu16 ""), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorTimeout(fuelSchedule2, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
+    sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", startAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
+    TEST_ASSERT_EQUAL_MESSAGE(parameters.running, calculateInjectorTimeout(schedule, parameters.channelAngle, startAngle, parameters.crankAngle), msg);
 }
 
 

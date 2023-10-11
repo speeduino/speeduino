@@ -4,8 +4,8 @@
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
 
-#include "TS_CommandButtonHandler.h"
 #include "globals.h"
+#include "TS_CommandButtonHandler.h"
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "sensors.h"

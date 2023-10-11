@@ -1,5 +1,6 @@
 #ifndef TEENSY41_H
 #define TEENSY41_H
+
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 
 /*
@@ -30,6 +31,7 @@
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   //#define PWM_FAN_AVAILABLE
   #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) ) //Forbidden pins like USB
+
 
 /*
 ***********************************************************************************************************
@@ -80,41 +82,41 @@
   #define IGN7_COMPARE  TMR4_COMP12
   #define IGN8_COMPARE  TMR4_COMP13
 
-  #define FUEL1_TIMER_ENABLE() TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_ENABLE() TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define FUEL3_TIMER_ENABLE() TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define FUEL4_TIMER_ENABLE() TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN
-  #define FUEL5_TIMER_ENABLE() TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define FUEL6_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define FUEL7_TIMER_ENABLE() TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define FUEL8_TIMER_ENABLE() TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN
+  static inline void FUEL1_TIMER_ENABLE(void)  {TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN;} //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_ENABLE(void)  {TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL3_TIMER_ENABLE(void)  {TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL4_TIMER_ENABLE(void)  {TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL5_TIMER_ENABLE(void)  {TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL6_TIMER_ENABLE(void)  {TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL7_TIMER_ENABLE(void)  {TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL8_TIMER_ENABLE(void)  {TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
-  #define FUEL1_TIMER_DISABLE() TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN //Write 0 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_DISABLE() TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL3_TIMER_DISABLE() TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL4_TIMER_DISABLE() TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL5_TIMER_DISABLE() TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL6_TIMER_DISABLE() TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL7_TIMER_DISABLE() TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL8_TIMER_DISABLE() TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
+  static inline void FUEL1_TIMER_DISABLE(void)  {TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;} //Write 0 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_DISABLE(void)  {TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL3_TIMER_DISABLE(void)  {TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL4_TIMER_DISABLE(void)  {TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL5_TIMER_DISABLE(void)  {TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL6_TIMER_DISABLE(void)  {TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL7_TIMER_DISABLE(void)  {TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL8_TIMER_DISABLE(void)  {TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-  #define IGN1_TIMER_ENABLE() TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define IGN2_TIMER_ENABLE() TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IGN3_TIMER_ENABLE() TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define IGN4_TIMER_ENABLE() TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN
-  #define IGN5_TIMER_ENABLE() TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define IGN6_TIMER_ENABLE() TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IGN7_TIMER_ENABLE() TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define IGN8_TIMER_ENABLE() TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN
+    static inline void IGN1_TIMER_ENABLE(void)  {TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN2_TIMER_ENABLE(void)  {TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN3_TIMER_ENABLE(void)  {TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN4_TIMER_ENABLE(void)  {TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN5_TIMER_ENABLE(void)  {TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN6_TIMER_ENABLE(void)  {TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN7_TIMER_ENABLE(void)  {TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN8_TIMER_ENABLE(void)  {TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
-  #define IGN1_TIMER_DISABLE() TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN2_TIMER_DISABLE() TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN3_TIMER_DISABLE() TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN4_TIMER_DISABLE() TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN5_TIMER_DISABLE() TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN6_TIMER_DISABLE() TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN7_TIMER_DISABLE() TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN8_TIMER_DISABLE() TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
+    static inline void IGN1_TIMER_DISABLE(void)  {TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN2_TIMER_DISABLE(void)  {TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN3_TIMER_DISABLE(void)  {TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN4_TIMER_DISABLE(void)  {TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN5_TIMER_DISABLE(void)  {TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN6_TIMER_DISABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
   //Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
   //#define TMR_PRESCALE  128
