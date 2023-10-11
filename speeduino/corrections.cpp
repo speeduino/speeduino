@@ -123,18 +123,9 @@ uint16_t correctionsFuel(void)
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
-  {
-    if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
-    {
-      //Do a check if the user reduced the duration while active to avoid overflow
-      if (dfcoTaper > configPage9.dfcoTaperTime) { dfcoTaper = configPage9.dfcoTaperTime; }
-      sumCorrections = map(dfcoTaper, configPage9.dfcoTaperTime, 0, sumCorrections, div100(sumCorrections * configPage9.dfcoTaperFuel));
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
-    }
-    else { sumCorrections = 0; } //Taper ended or disabled, disable fuel
-  }
-  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
+  byte dfcoTaperCorrection = correctionDFCOfuel();
+  if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
+  else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
@@ -551,6 +542,27 @@ byte correctionLaunch(void)
   return launchValue;
 }
 
+/**
+*/
+byte correctionDFCOfuel(void)
+{
+  byte scaleValue = 100;
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  {
+    if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
+    {
+      //Do a check if the user reduced the duration while active to avoid overflow
+      if (dfcoTaper > configPage9.dfcoTaperTime) { dfcoTaper = configPage9.dfcoTaperTime; }
+      scaleValue = map(dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
+    }
+    else { scaleValue = 0; } //Taper ended or disabled, disable fuel
+  }
+  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
+
+  return scaleValue;
+}
+
 /*
  * Returns true if deceleration fuel cutoff should be on, false if its off
  */
@@ -714,14 +726,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftFlatShift(advance);
   advance = correctionKnock(advance);
 
-  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
-  {
-    if ( dfcoTaper != 0 )
-    {
-      advance -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
-    }
-    else { advance -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
-  }
+  advance = correctionDFCOignition(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -955,6 +960,23 @@ int8_t correctionKnock(int8_t advance)
   }
 
   return advance - knockRetard;
+}
+
+/** Ignition DFCO taper correction.
+ */
+int8_t correctionDFCOignition(int8_t advance)
+{
+  int8_t dfcoRetard = advance;
+  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  {
+    if ( dfcoTaper != 0 )
+    {
+      dfcoRetard -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
+    }
+    else { dfcoRetard -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
+  }
+  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
+  return dfcoRetard;
 }
 
 /** Ignition Dwell Correction.

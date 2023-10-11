@@ -178,6 +178,65 @@ void test_corrections_dfco_off_delay()
 
   TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on
 }
+void setup_DFCO_taper_on()
+{
+  //Test that DFCO comes will not activate if there has not been a long enough delay
+  //The steup function below simulates a 2 second delay
+  setup_DFCO_on();
+
+  configPage9.dfcoTaperEnable = 1; //Enable
+  configPage9.dfcoTaperTime = 20; //2.0 second
+  configPage9.dfcoTaperFuel = 0; //Scale fuel to 0%
+  configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+
+  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  //Set the threshold to be 2.5 seconds, above the simulated delay of 2s
+  configPage2.dfcoDelay = 250;
+}
+void test_corrections_dfco_taper()
+{
+  setup_DFCO_taper_on();
+
+  TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on
+  correctionDFCOfuel();
+  TEST_ASSERT_EQUAL(20, dfcoTaper); //Check if value was reset to setting
+}
+void test_corrections_dfco_taper_fuel()
+{
+  setup_DFCO_taper_on();
+
+  correctionDFCOfuel();
+  TEST_ASSERT_EQUAL(20, dfcoTaper); //Check if value was reset to setting
+
+  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  dfcoTaper = 10;
+  TEST_ASSERT_EQUAL(50, correctionDFCOfuel());
+  dfcoTaper = 5;
+  TEST_ASSERT_EQUAL(25, correctionDFCOfuel());
+
+  configPage9.dfcoTaperTime = 10; //1.0 second
+  dfcoTaper = 15; //Check for overflow
+  TEST_ASSERT_EQUAL(100, correctionDFCOfuel());
+  configPage9.dfcoTaperEnable = 0; //Disable
+  TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
+}
+void test_corrections_dfco_taper_ign()
+{
+  setup_DFCO_taper_on();
+
+  dfcoTaper = 20;
+  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+
+  TEST_ASSERT_EQUAL(20, correctionDFCOignition(20));
+  dfcoTaper = 15;
+  TEST_ASSERT_EQUAL(15, correctionDFCOignition(20));
+  dfcoTaper = 10;
+  TEST_ASSERT_EQUAL(10, correctionDFCOignition(20));
+  dfcoTaper = 5;
+  TEST_ASSERT_EQUAL(5, correctionDFCOignition(20));
+  configPage9.dfcoTaperEnable = 0; //Disable
+  TEST_ASSERT_EQUAL(20, correctionDFCOignition(20));
+}
 
 void test_corrections_dfco()
 {
@@ -185,6 +244,9 @@ void test_corrections_dfco()
   RUN_TEST(test_corrections_dfco_off_RPM);
   RUN_TEST(test_corrections_dfco_off_TPS);
   RUN_TEST(test_corrections_dfco_off_delay);
+  RUN_TEST(test_corrections_dfco_taper);
+  RUN_TEST(test_corrections_dfco_taper_fuel);
+  RUN_TEST(test_corrections_dfco_taper_ign);
 }
 //**********************************************************************************************************************
 //Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
