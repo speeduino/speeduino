@@ -137,9 +137,9 @@ void setup_DFCO_on()
   configPage2.dfcoMinCLT = 40; //Actually 0 with offset
   configPage2.dfcoDelay = 10;
 
-  dfcoTaper = 1;
+  dfcoDelay = 1;
   correctionDFCO();
-  dfcoTaper = 20;
+  dfcoDelay = 20;
 }
 //**********************************************************************************************************************
 void test_corrections_dfco_on(void)

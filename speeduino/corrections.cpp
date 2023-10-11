@@ -123,20 +123,18 @@ uint16_t correctionsFuel(void)
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  //if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
   if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
   {
-    if (configPage9.dfcoTaperEnable == 1)
+    if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
     {
-      if ( dfcoTaper != 0 )
-      {
-        sumCorrections = map(dfcoTaper, configPage9.dfcoTaperTime, 0, sumCorrections, (sumCorrections * configPage9.dfcoTaperFuel) / 100);
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
-      }
+      //Do a check if the user reduced the duration while active to avoid overflow
+      if (dfcoTaper > configPage9.dfcoTaperTime) { dfcoTaper = configPage9.dfcoTaperTime; }
+      sumCorrections = map(dfcoTaper, configPage9.dfcoTaperTime, 0, sumCorrections, div100(sumCorrections * configPage9.dfcoTaperFuel));
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
     }
-    else { sumCorrections = 0; }
+    else { sumCorrections = 0; } //Taper ended or disabled, disable fuel
   }
-  else { dfcoTaper = configPage9.dfcoTaperTime; }
+  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
@@ -716,9 +714,13 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftFlatShift(advance);
   advance = correctionKnock(advance);
 
-  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) && (dfcoTaper != 0) )
+  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
   {
-    advance -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
+    if ( dfcoTaper != 0 )
+    {
+      advance -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
+    }
+    else { advance -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
   }
 
   //Fixed timing check must go last

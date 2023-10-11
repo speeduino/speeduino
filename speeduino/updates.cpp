@@ -727,7 +727,10 @@ void doUpdates(void)
   if(readEEPROMVersion() == 22)
   {
     //202311-dev
-
+    configPage9.dfcoTaperEnable = 0; //Disable
+    configPage9.dfcoTaperTime = 10; //1 second
+    configPage9.dfcoTaperFuel = 100; //Don't scale fuel
+    configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
 
     writeAllConfig();
     storeEEPROMVersion(23);
