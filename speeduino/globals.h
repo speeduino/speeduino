@@ -75,60 +75,16 @@
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
+  #define BOARD_H "board_stm32_official.h"
   #define CORE_STM32
+
   #define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
-  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 not
+  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
    #define INJ_CHANNELS 8
    #define IGN_CHANNELS 8
   #else
    #define INJ_CHANNELS 4
    #define IGN_CHANNELS 5
-  #endif
-
-//Select one for EEPROM,the default is EEPROM emulation on internal flash.
-//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
-//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
-
-  #ifndef word
-    #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
-  #endif
-  
-  
-  #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
-   || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-    //STM32 Pill boards
-    #ifndef NUM_DIGITAL_PINS
-      #define NUM_DIGITAL_PINS 35
-    #endif
-    #ifndef LED_BUILTIN
-      #define LED_BUILTIN PB1 //Maple Mini
-    #endif
-  #elif defined(STM32F407xx)
-    #ifndef NUM_DIGITAL_PINS
-      #define NUM_DIGITAL_PINS 75
-    #endif
-  #endif
-
-  #if defined(STM32_CORE_VERSION)
-    #define BOARD_H "board_stm32_official.h"
-  #else
-    #define CORE_STM32_GENERIC
-    #define BOARD_H "board_stm32_generic.h"
-  #endif
-
-  //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
-    #define SMALL_FLASH_MODE
-  #endif
-
-  #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
-  #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
-  #if __GNUC__ < 7 //Already included on GCC 7
-  extern "C" char* sbrk(int incr); //Used to freeRam
-  #endif
-  #ifndef digitalPinToInterrupt
-  inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
