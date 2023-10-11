@@ -241,6 +241,15 @@ uint16_t getRPM_Vmax(void);
 int getCrankAngle_Vmax(void);
 void triggerSetEndTeeth_Vmax(void);
 
+void triggerSetup_SuzukiK6A(void);
+void triggerPri_SuzukiK6A(void);
+void triggerSec_SuzukiK6A(void);
+uint16_t getRPM_SuzukiK6A(void);
+int getCrankAngle_SuzukiK6A(void);
+void triggerSetEndTeeth_SuzukiK6A(void);
+
+
+
 extern void (*triggerHandler)(void); //Pointer for the trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerSecondaryHandler)(void); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
 extern void (*triggerTertiaryHandler)(void); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
