@@ -76,7 +76,9 @@ byte getNextError(void)
 
 
 // Check if we need to display the "check engine light" & reset the light if we don't
-void CheckEngineLight (void)
+// spare check areas for future expansion. Also reserved another byte so can add 8 extra checks ontop of the two TBC in the
+// current byte giving 10 additional areas to test.
+void checkEngineLightRoutine (void)
 {
   if(configPage9.celEnabled == true)
   {
@@ -86,7 +88,7 @@ void CheckEngineLight (void)
     if (configPage9.celLightOnStartUp == true && currentStatus.secl == 5 && BIT_CHECK (currentStatus.checkEngineLight,BIT_CEL_STARTUP) == true)
     {
       // turn off all lights
-      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
+      BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_GENERAL); // generic light, use non specific
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_LOAD);
       BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TBC1);
@@ -97,6 +99,8 @@ void CheckEngineLight (void)
       CEL_OFF (); // turn the CEL pin off
     }
 
+    // check water and air temperature values are sensible. Arbitary values picked for the range the sensor will work
+    // within without reporting an error
     if (configPage9.celCheckTemp == true)
     {
       if (currentStatus.cltADC == 0 || currentStatus.coolant < -20 || currentStatus.coolant > 120 ||
@@ -106,9 +110,11 @@ void CheckEngineLight (void)
     else
     { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
 
+
+    // check if the system load (MAP or TPS) are erroring
     if (configPage9.celCheckLoad == true)
     {
-      // TPS set within readTPS function in sensors.ino
+      // TPS checked / set within readTPS function in sensors.ino
       if(mapErrorCount > 0)
       {
         mapErrorCount = 0;
@@ -144,6 +150,7 @@ void CheckEngineLight (void)
     { BIT_CLEAR(currentStatus.checkEngineLight, BIT_CEL_BATTERY); }
 
     // O2 - checks to be done in readO2 in sensors.ino - perhaps check if value outside of calibration range?
+    // future releases include checking second o2 sensor.
     if (configPage9.celCheckO2 == true)
     {
       if (currentStatus.O2ADC == 0 || currentStatus.O2ADC == 255)

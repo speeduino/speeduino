@@ -49,7 +49,7 @@ struct packedError
 byte getNextError(void);
 byte setError(byte errorID);
 void clearError(byte errorID);
-void checkEngineLight(void);
+void checkEngineLightRoutine(void);
 
 
 extern byte errorCount;

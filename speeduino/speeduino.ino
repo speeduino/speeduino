@@ -45,6 +45,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "SD_logger.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
+#include "errors.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -368,7 +369,7 @@ void loop(void)
         } 
       }
 
-      CheckEngineLight();
+      checkEngineLightRoutine();
 
       
       #ifdef SD_LOGGING
