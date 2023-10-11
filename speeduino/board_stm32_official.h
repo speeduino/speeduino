@@ -29,6 +29,44 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
+//Select one for EEPROM,the default is EEPROM emulation on internal flash.
+//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
+//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash on BlackF407VE*/
+//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
+
+#ifndef word
+  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+#endif  
+  
+#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  //STM32 Pill boards
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 35
+  #endif
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN PB1 //Maple Mini
+  #endif
+#elif defined(STM32F407xx)
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 75
+  #endif
+#endif
+
+//Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
+#if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
+  #define SMALL_FLASH_MODE
+#endif
+
+#define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
+#define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
+#if __GNUC__ < 7 //Already included on GCC 7
+extern "C" char* sbrk(int incr); //Used to freeRam
+#endif
+#ifndef digitalPinToInterrupt
+inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+#endif
+
 #if defined(USER_BTN) 
   #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
 #endif
@@ -59,7 +97,6 @@ void initBoard();
 uint16_t freeRam();
 void doSystemReset();
 void jumpToBootloader();
-extern "C" char* sbrk(int incr);
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
