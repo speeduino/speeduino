@@ -22,8 +22,7 @@
   #include "stm32f3xx_ll_tim.h"
 #elif defined(STM32F4)
   #include "stm32f4xx_ll_tim.h"
-  #include "stm32f4xx_hal_can.h"
-  #ifndef HAL_CAN_MODULE_ENABLED
+  #if defined(STM32F407xx) && !defined(HAL_CAN_MODULE_ENABLED)
     #warning "CAN module is not enabled. Internal CAN will NOT be available"
   #endif
 #else /*Default should be STM32F4*/
