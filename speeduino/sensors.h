@@ -34,9 +34,9 @@
 #endif
 */
 
-volatile byte flexCounter = 0;
-volatile unsigned long flexStartTime;
-volatile unsigned long flexPulseWidth;
+extern volatile byte flexCounter;
+extern volatile unsigned long flexStartTime;
+extern volatile unsigned long flexPulseWidth;
 
 #if defined(CORE_AVR)
   #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
@@ -44,25 +44,14 @@ volatile unsigned long flexPulseWidth;
   #define READ_FLEX() digitalRead(pinFlex)
 #endif
 
-volatile byte knockCounter = 0;
-volatile uint16_t knockAngle;
+extern volatile byte knockCounter;
 
-unsigned long MAPrunningValue; //Used for tracking either the total of all MAP readings in this cycle (Event average) or the lowest value detected in this cycle (event minimum)
-unsigned long EMAPrunningValue; //As above but for EMAP
-unsigned int MAPcount; //Number of samples taken in the current MAP cycle
-uint32_t MAPcurRev; //Tracks which revolution we're sampling on
-bool auxIsEnabled;
-uint16_t MAPlast; /**< The previous MAP reading */
-unsigned long MAP_time; //The time the MAP sample was taken
-unsigned long MAPlast_time; //The time the previous MAP sample was taken
-volatile unsigned long vssTimes[VSS_SAMPLES] = {0};
-volatile byte vssIndex;
-
-
-//These variables are used for tracking the number of running sensors values that appear to be errors. Once a threshold is reached, the sensor reading will go to default value and assume the sensor is faulty
-byte mapErrorCount = 0;
-byte iatErrorCount = 0;
-byte cltErrorCount = 0;
+extern unsigned int MAPcount; //Number of samples taken in the current MAP cycle
+extern uint32_t MAPcurRev; //Tracks which revolution we're sampling on
+extern bool auxIsEnabled;
+extern uint16_t MAPlast; /**< The previous MAP reading */
+extern unsigned long MAP_time; //The time the MAP sample was taken
+extern unsigned long MAPlast_time; //The time the previous MAP sample was taken
 
 /**
  * @brief Simple low pass IIR filter macro for the analog inputs
@@ -71,9 +60,6 @@ byte cltErrorCount = 0;
  */
 #define ADC_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
 
-static inline void instanteneousMAPReading(void) __attribute__((always_inline));
-static inline void readMAP(void) __attribute__((always_inline));
-static inline void validateMAP(void);
 void initialiseADC(void);
 void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
 void readO2_2(void);
@@ -91,6 +77,8 @@ void readIAT(void);
 void readO2(void);
 void readBat(void);
 void readBaro(void);
+void readMAP(void);
+void instanteneousMAPReading(void);
 
 #if defined(ANALOG_ISR)
 volatile int AnChannel[15];

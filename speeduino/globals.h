@@ -34,13 +34,17 @@
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
   #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
   #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
-#ifndef LED_BUILTIN
-  #define LED_BUILTIN 13
-#endif
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN 13
+  #endif
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
 
   #if defined(__AVR_ATmega2561__)
     //This is a workaround to avoid having to change all the references to higher ADC channels. We simply define the channels (Which don't exist on the 2561) as being the same as A0-A7
@@ -71,60 +75,16 @@
   #define IGN_CHANNELS 8
 
 #elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
+  #define BOARD_H "board_stm32_official.h"
   #define CORE_STM32
+
   #define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
-  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 not
+  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
    #define INJ_CHANNELS 8
    #define IGN_CHANNELS 8
   #else
    #define INJ_CHANNELS 4
    #define IGN_CHANNELS 5
-  #endif
-
-//Select one for EEPROM,the default is EEPROM emulation on internal flash.
-//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash */
-//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
-
-  #ifndef word
-    #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
-  #endif
-  
-  
-  #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
-   || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-    //STM32 Pill boards
-    #ifndef NUM_DIGITAL_PINS
-      #define NUM_DIGITAL_PINS 35
-    #endif
-    #ifndef LED_BUILTIN
-      #define LED_BUILTIN PB1 //Maple Mini
-    #endif
-  #elif defined(STM32F407xx)
-    #ifndef NUM_DIGITAL_PINS
-      #define NUM_DIGITAL_PINS 75
-    #endif
-  #endif
-
-  #if defined(STM32_CORE_VERSION)
-    #define BOARD_H "board_stm32_official.h"
-  #else
-    #define CORE_STM32_GENERIC
-    #define BOARD_H "board_stm32_generic.h"
-  #endif
-
-  //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
-  #if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
-    #define SMALL_FLASH_MODE
-  #endif
-
-  #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
-  #define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
-  #if __GNUC__ < 7 //Already included on GCC 7
-  extern "C" char* sbrk(int incr); //Used to freeRam
-  #endif
-  #ifndef digitalPinToInterrupt
-  inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
   #endif
 #elif defined(__SAMD21G18A__)
   #define BOARD_H "board_samd21.h"
@@ -1118,8 +1078,8 @@ struct config9 {
   byte enable_secondarySerial:1;            //enable secondary serial
   byte intcan_available:1;                     //enable internal can module
   byte enable_intcan:1;
-  byte secondarySerialProtocol:3;            //protocol for secondary serial. 0=Generic, 1=CAN, 2=msDroid, 3=Real Dash
-  byte unused9_0:2;
+  byte secondarySerialProtocol:4;            //protocol for secondary serial. 0=Generic (Fixed list), 1=Generic (ini based list), 2=CAN, 3=msDroid, 4=Real Dash
+  byte unused9_0:1;
 
   byte caninput_sel[16];                    //bit status on/Can/analog_local/digtal_local if input is enabled
   uint16_t caninput_source_can_address[16];        //u16 [15] array holding can address of input

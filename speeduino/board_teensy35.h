@@ -76,41 +76,41 @@
   #define IGN7_COMPARE  FTM3_C6V
   #define IGN8_COMPARE  FTM3_C7V
 
-  #define FUEL1_TIMER_ENABLE() FTM0_C0SC |= FTM_CSC_CHIE //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_ENABLE() FTM0_C1SC |= FTM_CSC_CHIE
-  #define FUEL3_TIMER_ENABLE() FTM0_C2SC |= FTM_CSC_CHIE
-  #define FUEL4_TIMER_ENABLE() FTM0_C3SC |= FTM_CSC_CHIE
-  #define FUEL5_TIMER_ENABLE() FTM3_C0SC |= FTM_CSC_CHIE
-  #define FUEL6_TIMER_ENABLE() FTM3_C1SC |= FTM_CSC_CHIE
-  #define FUEL7_TIMER_ENABLE() FTM3_C2SC |= FTM_CSC_CHIE
-  #define FUEL8_TIMER_ENABLE() FTM3_C3SC |= FTM_CSC_CHIE
+  static inline void FUEL1_TIMER_ENABLE(void)  {FTM0_C0SC |= FTM_CSC_CHIE;} //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_ENABLE(void)  {FTM0_C1SC |= FTM_CSC_CHIE;}
+  static inline void FUEL3_TIMER_ENABLE(void)  {FTM0_C2SC |= FTM_CSC_CHIE;}
+  static inline void FUEL4_TIMER_ENABLE(void)  {FTM0_C3SC |= FTM_CSC_CHIE;}
+  static inline void FUEL5_TIMER_ENABLE(void)  {FTM3_C0SC |= FTM_CSC_CHIE;}
+  static inline void FUEL6_TIMER_ENABLE(void)  {FTM3_C1SC |= FTM_CSC_CHIE;}
+  static inline void FUEL7_TIMER_ENABLE(void)  {FTM3_C2SC |= FTM_CSC_CHIE;}
+  static inline void FUEL8_TIMER_ENABLE(void)  {FTM3_C3SC |= FTM_CSC_CHIE;}
 
-  #define FUEL1_TIMER_DISABLE() FTM0_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_DISABLE() FTM0_C1SC &= ~FTM_CSC_CHIE
-  #define FUEL3_TIMER_DISABLE() FTM0_C2SC &= ~FTM_CSC_CHIE
-  #define FUEL4_TIMER_DISABLE() FTM0_C3SC &= ~FTM_CSC_CHIE
-  #define FUEL5_TIMER_DISABLE() FTM3_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL6_TIMER_DISABLE() FTM3_C1SC &= ~FTM_CSC_CHIE
-  #define FUEL7_TIMER_DISABLE() FTM3_C2SC &= ~FTM_CSC_CHIE
-  #define FUEL8_TIMER_DISABLE() FTM3_C3SC &= ~FTM_CSC_CHIE
+  static inline void FUEL1_TIMER_DISABLE(void)  {FTM0_C0SC &= ~FTM_CSC_CHIE;} //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_DISABLE(void)  {FTM0_C1SC &= ~FTM_CSC_CHIE;}
+  static inline void FUEL3_TIMER_DISABLE(void)  {FTM0_C2SC &= ~FTM_CSC_CHIE;}
+  static inline void FUEL4_TIMER_DISABLE(void)  {FTM0_C3SC &= ~FTM_CSC_CHIE;}
+  static inline void FUEL5_TIMER_DISABLE(void)  {FTM3_C0SC &= ~FTM_CSC_CHIE;} //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL6_TIMER_DISABLE(void)  {FTM3_C1SC &= ~FTM_CSC_CHIE;}
+  static inline void FUEL7_TIMER_DISABLE(void)  {FTM3_C2SC &= ~FTM_CSC_CHIE;}
+  static inline void FUEL8_TIMER_DISABLE(void)  {FTM3_C3SC &= ~FTM_CSC_CHIE;}
 
-  #define IGN1_TIMER_ENABLE() FTM0_C4SC |= FTM_CSC_CHIE
-  #define IGN2_TIMER_ENABLE() FTM0_C5SC |= FTM_CSC_CHIE
-  #define IGN3_TIMER_ENABLE() FTM0_C6SC |= FTM_CSC_CHIE
-  #define IGN4_TIMER_ENABLE() FTM0_C7SC |= FTM_CSC_CHIE
-  #define IGN5_TIMER_ENABLE() FTM3_C4SC |= FTM_CSC_CHIE
-  #define IGN6_TIMER_ENABLE() FTM3_C5SC |= FTM_CSC_CHIE
-  #define IGN7_TIMER_ENABLE() FTM3_C6SC |= FTM_CSC_CHIE
-  #define IGN8_TIMER_ENABLE() FTM3_C7SC |= FTM_CSC_CHIE
+    static inline void IGN1_TIMER_ENABLE(void)  {FTM0_C4SC |= FTM_CSC_CHIE;}
+    static inline void IGN2_TIMER_ENABLE(void)  {FTM0_C5SC |= FTM_CSC_CHIE;}
+    static inline void IGN3_TIMER_ENABLE(void)  {FTM0_C6SC |= FTM_CSC_CHIE;}
+    static inline void IGN4_TIMER_ENABLE(void)  {FTM0_C7SC |= FTM_CSC_CHIE;}
+    static inline void IGN5_TIMER_ENABLE(void)  {FTM3_C4SC |= FTM_CSC_CHIE;}
+    static inline void IGN6_TIMER_ENABLE(void)  {FTM3_C5SC |= FTM_CSC_CHIE;}
+    static inline void IGN7_TIMER_ENABLE(void)  {FTM3_C6SC |= FTM_CSC_CHIE;}
+    static inline void IGN8_TIMER_ENABLE(void)  {FTM3_C7SC |= FTM_CSC_CHIE;}
 
-  #define IGN1_TIMER_DISABLE() FTM0_C4SC &= ~FTM_CSC_CHIE
-  #define IGN2_TIMER_DISABLE() FTM0_C5SC &= ~FTM_CSC_CHIE
-  #define IGN3_TIMER_DISABLE() FTM0_C6SC &= ~FTM_CSC_CHIE
-  #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
-  #define IGN5_TIMER_DISABLE() FTM3_C4SC &= ~FTM_CSC_CHIE
-  #define IGN6_TIMER_DISABLE() FTM3_C5SC &= ~FTM_CSC_CHIE
-  #define IGN7_TIMER_DISABLE() FTM3_C6SC &= ~FTM_CSC_CHIE
-  #define IGN8_TIMER_DISABLE() FTM3_C7SC &= ~FTM_CSC_CHIE
+    static inline void IGN1_TIMER_DISABLE(void)  {FTM0_C4SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN2_TIMER_DISABLE(void)  {FTM0_C5SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN3_TIMER_DISABLE(void)  {FTM0_C6SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN4_TIMER_DISABLE(void)  {FTM0_C7SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN5_TIMER_DISABLE(void)  {FTM3_C4SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN6_TIMER_DISABLE(void)  {FTM3_C5SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN7_TIMER_DISABLE(void)  {FTM3_C6SC &= ~FTM_CSC_CHIE;}
+    static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.

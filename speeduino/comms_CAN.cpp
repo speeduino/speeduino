@@ -2,179 +2,129 @@
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
-can_comms was originally contributed by Darren Siepka
 */
 
 /*
-secondserial_command is called when a command is received from the secondary serial port
-It parses the command and calls the relevant function.
-
-can_command is called when a command is received by the onboard/attached canbus module
-It parses the command and calls the relevant function.
-
-sendcancommand is called when a command is to be sent either to serial3 
-,to the external Can interface, or to the onboard/attached can interface
+This is for handling the data broadcasted to various CAN dashes and instrument clusters.
 */
 #include "globals.h"
-#include "cancomms.h"
-#include "maths.h"
-#include "errors.h"
+
+#if defined(NATIVE_CAN_AVAILABLE)
+#include "comms_CAN.h"
 #include "utilities.h"
-#include "comms_legacy.h"
-#include "logger.h"
-#include "page_crc.h"
 
-uint8_t currentSecondaryCommand;
-uint8_t currentCanPage = 1;//Not the same as the speeduino config page numbers
-uint8_t nCanretry = 0;      //no of retrys
-uint8_t cancmdfail = 0;     //command fail yes/no
-uint8_t canlisten = 0;
-uint8_t Lbuffer[8];         //8 byte buffer to store incoming can data
-uint8_t Gdata[9];
-uint8_t Glow, Ghigh;
+// Forward declare
+void DashMessage(uint16_t DashMessageID);
 
-#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  HardwareSerial &CANSerial = Serial3;
-#elif defined(CORE_STM32)
-  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
-    #define Serial2 Serial1
-  #endif
-  #if defined(STM32GENERIC) // STM32GENERIC core
-    SerialUART &CANSerial = Serial2;
-  #else //libmaple core aka STM32DUINO
-    HardwareSerial &CANSerial = Serial2;
-  #endif
-#elif defined(CORE_TEENSY)
-  HardwareSerial &CANSerial = Serial2;
-#endif
-
-void secondserial_Command(void)
+void sendBMWCluster()
 {
-  #if defined(CANSerial_AVAILABLE)
-  if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = CANSerial.read(); }
+  DashMessage(CAN_BMW_DME1);
+  Can0.write(outMsg);
+  DashMessage(CAN_BMW_DME2);
+  Can0.write(outMsg);
+  DashMessage(CAN_BMW_DME4);
+  Can0.write(outMsg);
+}
 
-  switch (currentSecondaryCommand)
+void sendVAGCluster()
+{
+  DashMessage(CAN_VAG_RPM);
+  Can0.write(outMsg);
+  DashMessage(CAN_VAG_VSS);
+  Can0.write(outMsg);
+}
+
+// switch case for gathering all data to message based on CAN Id.
+void DashMessage(uint16_t DashMessageID)
+{
+  switch (DashMessageID)
   {
-    case 'A': 
-      // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
-      //sendcanValues(0, CAN_PACKET_SIZE, 0x31, 1); //send values to serial3
-      sendValues(0, CAN_PACKET_SIZE, 0x31, CANSerial, serialSecondaryStatusFlag); //send values to serial3
-      break;
+    case CAN_BMW_DME1:
+      uint32_t temp_RPM;
+      temp_RPM = currentStatus.RPM * 64;  //RPM conversion is currentStatus.RPM * 6.4, but this does it without floats.
+      temp_RPM = temp_RPM / 10;
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = 0x05;  //bitfield, Bit0 = 1 = terminal 15 on detected, Bit2 = 1 = the ASC message ASC1 was received within the last 500 ms and contains no plausibility errors
+      outMsg.buf[1] = 0x0C;  //Indexed Engine Torque in % of C_TQ_STND TBD do torque calculation.
+      outMsg.buf[2] = lowByte(uint16_t(temp_RPM));  //lsb RPM
+      outMsg.buf[3] = highByte(uint16_t(temp_RPM)); //msb RPM
+      outMsg.buf[4] = 0x0C;  //Indicated Engine Torque in % of C_TQ_STND TBD do torque calculation!! Use same as for byte 1
+      outMsg.buf[5] = 0x15;  //Engine Torque Loss (due to engine friction, AC compressor and electrical power consumption)
+      outMsg.buf[6] = 0x00;  //not used
+      outMsg.buf[7] = 0x35;  //Theorethical Engine Torque in % of C_TQ_STND after charge intervention
+    break;
 
-    case 'b': // New EEPROM burn command to only burn a single page at a time
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-      break;
+    case CAN_BMW_DME2:
+      uint8_t temp_TPS;
+      uint8_t temp_BARO;
+      uint16_t temp_CLT;
+      temp_TPS = map(currentStatus.TPS, 0, 100, 0, 254);//TPS value conversion (from 0x00 to 0xFE)
+      temp_CLT = (((currentStatus.coolant - CALIBRATION_TEMPERATURE_OFFSET) + 48)*4/3); //CLT conversion (actual value to add is 48.373, but close enough)
+      if (temp_CLT > 255) { temp_CLT = 255; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
+      temp_BARO = currentStatus.baro;
 
-    case 'B': // AS above but for the serial compatibility mode. 
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-      break;
+      outMsg.id = DashMessageID;
+      outMsg.len = 7;
+      outMsg.buf[0] = 0x11;  //Multiplexed Information
+      outMsg.buf[1] = temp_CLT;
+      outMsg.buf[2] = temp_BARO;
+      outMsg.buf[3] = 0x08;  //bitfield, Bit0 = 0 = Clutch released, Bit 3 = 1 = engine running
+      outMsg.buf[4] = 0x00;  //TPS_VIRT_CRU_CAN (Not used)
+      outMsg.buf[5] = temp_TPS;
+      outMsg.buf[6] = 0x00;  //bitfield, Bit0 = 0 = brake not actuated, Bit1 = 0 = brake switch system OK etc...
+      outMsg.buf[7] = 0x00;  //not used, but set to zero just in case.
+    break;
 
-    case 'd': // Send a CRC32 hash of a given page
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-      break;
+    case 0x545:       //fuel consumption and CEl light for BMW e46/e39/e38 instrument cluster
+                      //fuel consumption calculation not implemented yet. But this still needs to be sent to get rid of the CEL and EML fault lights on the dash.
+      outMsg.id = DashMessageID;
+      outMsg.len = 5;
+      outMsg.buf[0] = 0x00;  //Check engine light (binary 10), Cruise light (binary 1000), EML (binary 10000).
+      outMsg.buf[1] = 0x00;  //LSB Fuel consumption
+      outMsg.buf[2] = 0x00;  //MSB Fuel Consumption
+      if (currentStatus.coolant > 159) { outMsg.buf[3] = 0x08; } //Turn on overheat light if coolant temp hits 120 degrees celsius.
+      else { outMsg.buf[3] = 0x00; } //Overheat light off at normal engine temps.
+      outMsg.buf[4] = 0x7E; //this is oil temp
+    break;
 
-    case 'G': // this is the reply command sent by the Can interface
-      serialSecondaryStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-      byte destcaninchannel;
-      if (CANSerial.available() >= 9)
-      {
-        serialSecondaryStatusFlag = SERIAL_INACTIVE;
-        cancmdfail = CANSerial.read();        //0 == fail,  1 == good.
-        destcaninchannel = CANSerial.read();  // the input channel that requested the data value
-        if (cancmdfail != 0)
-           {                                 // read all 8 bytes of data.
-            for (byte Gx = 0; Gx < 8; Gx++) // first two are the can address the data is from. next two are the can address the data is for.then next 1 or two bytes of data
-              {
-                Gdata[Gx] = CANSerial.read();
-              }
-            Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
-            if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
-               {
-                if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
-                   {
-                    Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
-                   }
-            else{Ghigh = 0;}
-               }
-          else
-               {
-                 Ghigh = 0;
-               }
+    case 0x280:       //RPM for VW instrument cluster
+      temp_RPM =  currentStatus.RPM * 4; //RPM conversion
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = 0x49;
+      outMsg.buf[1] = 0x0E;
+      outMsg.buf[2] = lowByte(uint16_t(temp_RPM));  //lsb RPM
+      outMsg.buf[3] = highByte(uint16_t(temp_RPM)); //msb RPM
+      outMsg.buf[4] = 0x0E;
+      outMsg.buf[5] = 0x00;
+      outMsg.buf[6] = 0x1B;
+      outMsg.buf[7] = 0x0E;
+    break;
 
-          currentStatus.canin[destcaninchannel] = (Ghigh<<8) | Glow;
-        }
-
-        else{}  //continue as command request failed and/or data/device was not available
-
-      }
-      break;
-
-    case 'k':   //placeholder for new can interface (toucan etc) commands
-
-        break;
-        
-    case 'L':
-        uint8_t Llength;
-        while (CANSerial.available() == 0) { }
-        canlisten = CANSerial.read();
-
-        if (canlisten == 0)
-        {
-          //command request failed and/or data/device was not available
-          break;
-        }
-
-        while (CANSerial.available() == 0) { }
-        Llength= CANSerial.read();              // next the number of bytes expected value
-
-        for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-        {
-          while (CANSerial.available() == 0){}
-          // receive all x bytes into "Lbuffer"
-          Lbuffer[Lcount] = CANSerial.read();
-        }
-        break;
-
-    case 'n': // sends the bytes of realtime values from the NEW CAN list
-      sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, CANSerial, serialSecondaryStatusFlag); //send values to serial3
-      break;
-
-    case 'p':
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-      break;
-
-    case 'Q': // send code version
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-       break;
-
-    case 'r': //New format for the optimised OutputChannels over CAN
-      legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag);
-      break;
-
-    case 's': // send the "a" stream code version
-      CANSerial.print(F("Speeduino csx02019.8"));
-      break;
-
-    case 'S': // send code version
-      if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_MSDROID) { legacySerialHandler('Q', CANSerial, serialSecondaryStatusFlag); } //Note 'Q', this is a workaround for msDroid
-      else { legacySerialHandler(currentSecondaryCommand, CANSerial, serialSecondaryStatusFlag); }
-      
-      break;
-
-    case 'Z': //dev use
-       break;
+    case 0x5A0:       //VSS for VW instrument cluster
+      uint16_t temp_VSS;
+      temp_VSS =  currentStatus.vss * 133; //VSS conversion
+      outMsg.id = DashMessageID;
+      outMsg.len = 8;
+      outMsg.buf[0] = 0xFF;
+      outMsg.buf[1] = lowByte(temp_VSS);
+      outMsg.buf[2] = highByte(temp_VSS);
+      outMsg.buf[3] = 0x00;
+      outMsg.buf[4] = 0x00;
+      outMsg.buf[5] = 0x00;
+      outMsg.buf[6] = 0x00;
+      outMsg.buf[7] = 0xAD;
+    break;
 
     default:
-       break;
+    break;
   }
-  #endif
 }
 
 void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
- #if defined (NATIVE_CAN_AVAILABLE)
       // currentStatus.canin[12] = (inMsg.id);
  if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      
   {
@@ -211,66 +161,8 @@ void can_Command(void)
          }
       }
   }
-#endif  
-}  
-    
-// this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
-void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
-{
-#if defined(CANSerial_AVAILABLE)
-    switch (cmdtype)
-    {
-      case 0:
-        CANSerial.print("G");
-        CANSerial.write(canaddress);  //tscanid of speeduino device
-        CANSerial.write(candata1);    // table id
-        CANSerial.write(candata2);    //table memory offset
-        break;
+} 
 
-      case 1:                      //send request to listen for a can message
-        CANSerial.print("L");
-        CANSerial.write(canaddress);  //11 bit canaddress of device to listen for
-        break;
-
-     case 2:                                          // requests via serial3
-        CANSerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
-        CANSerial.write(candata1);                    //the currentStatus.current_caninchannel
-        CANSerial.write(lowByte(sourcecanAddress) );       //send lsb first
-        CANSerial.write(highByte(sourcecanAddress) );
-        break;
-
-     case 3:
-        //send to truecan send routine
-        //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
-        //This section is to be moved to the correct can output routine later
-        #if defined(NATIVE_CAN_AVAILABLE)
-        outMsg.id = (canaddress);
-        outMsg.len = 8;
-        outMsg.buf[0] = 0x0B ;  //11;   
-        outMsg.buf[1] = 0x15;
-        outMsg.buf[2] = candata1;
-        outMsg.buf[3] = 0x24;
-        outMsg.buf[4] = 0x7F;
-        outMsg.buf[5] = 0x70;
-        outMsg.buf[6] = 0x9E;
-        outMsg.buf[7] = 0x4D;
-        Can0.write(outMsg);
-        #endif
-        break;
-
-     default:
-        break;
-    }
-#else
-  UNUSED(cmdtype);
-  UNUSED(canaddress);
-  UNUSED(candata1);
-  UNUSED(candata2);
-  UNUSED(sourcecanAddress);
-#endif
-}
-
-#if defined(NATIVE_CAN_AVAILABLE)
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
 void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh)
 { 

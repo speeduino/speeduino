@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
  */
 #include "globals.h"
 #include "comms_legacy.h"
-#include "cancomms.h"
+#include "comms_secondary.h"
 #include "storage.h"
 #include "maths.h"
 #include "utilities.h"
@@ -19,6 +19,7 @@ A full copy of the license may be found in the projects root directory
 #include "page_crc.h"
 #include "logger.h"
 #include "table3d_axis_io.h"
+#include BOARD_H
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -34,7 +35,6 @@ byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
 SerialStatus serialSecondaryStatusFlag;
-
 
 static bool isMap(void) {
     // Detecting if the current page is a table/map
@@ -618,7 +618,8 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'Q': // send code version
-      targetPort.print(F("speeduino 202306-dev"));
+      targetPort.print(F("speeduino 202311-dev"));
+      //targetPort.print(F("speeduino 202310"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -650,7 +651,8 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'S': // send code version
-      targetPort.print(F("Speeduino 2023.06-dev"));
+      targetPort.print(F("Speeduino 2023.11-dev"));
+      //targetPort.print(F("Speeduino 2023.10"));
       break;
   }
 }
@@ -659,34 +661,36 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * This will "live" information from @ref currentStatus struct.
  * @param offset - Start field number
  * @param packetLength - Length of actual message (after possible ack/confirm headers)
- * @param cmd - ??? - Will be used as some kind of ack on CANSerial
+ * @param cmd - ??? - Will be used as some kind of ack on secondarySerial
  * @param targetPort - The HardwareSerial device that will be transmitted to
  * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
+ * @param logFunction - The function that should be called to retrieve the log value
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t))
 {  
-  #if defined(CANSerial_AVAILABLE)
-  if (&targetPort == &CANSerial)
+  #if defined(secondarySerial_AVAILABLE)
+  if (&targetPort == &secondarySerial)
   {
-    //CAN serial
-    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
+    //Using Secondary serial, check if selected protocol requires the echo back of the command
+    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_INI) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
         if (cmd == 0x30) 
         {
-          CANSerial.write("r");         //confirm cmd type
-          CANSerial.write(cmd);
+          secondarySerial.write("r");         //confirm cmd type
+          secondarySerial.write(cmd);
         }
         else if (cmd == 0x31)
         {
-          CANSerial.write("A");         // confirm command type   
+          secondarySerial.write("A");         // confirm command type   
         }
         else if (cmd == 0x32)
         {
-          CANSerial.write("n");                       // confirm command type
-          CANSerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
-          CANSerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
+          secondarySerial.write("n");                       // confirm command type
+          secondarySerial.write(cmd);                       // send command type  , 0x32 (dec50) is ascii '0'
+          secondarySerial.write(NEW_CAN_PACKET_SIZE);       // send the packet size the receiving device should expect.
         }
     }  
   }
@@ -708,9 +712,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   {
     bool bufferFull = false;
 
-    targetPort.write(getTSLogEntry(offset+x));
+    //targetPort.write(getTSLogEntry(offset+x));
+    targetPort.write(logFunction(offset+x));
 
-    if( (&targetPort == &Serial) || (configPage9.secondarySerialProtocol != SECONDARY_SERIAL_PROTO_REALDASH) ) 
+    if( (&targetPort == &Serial) ) 
     { 
       //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
       if(targetPort.availableForWrite() < 1) { bufferFull = true; }

@@ -16,7 +16,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    22
+  #define CURRENT_DATA_VERSION    23
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -705,7 +705,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 21)
   {
-    //202306
+    //202310
 
     //Rolling cut curve added. Default values
     configPage15.rollingProtRPMDelta[0]   = -30;
@@ -717,13 +717,22 @@ void doUpdates(void)
     configPage15.rollingProtCutPercent[2] = 80;
     configPage15.rollingProtCutPercent[3] = 95;
 
-    // DFCO Map Threshold added
-    configPage9.dfcoMAPThresh = 100; //Default value of 100 is egual to 200 kpa, because the value is multiply by 2, this is a high value to not brake old tunes
-    //DFCO Hyster was mlutipled by 2 to allow a range of 0-500. Existing values must be halved
+    //DFCO Hyster was multipled by 2 to allow a range of 0-500. Existing values must be halved
     configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
 
     writeAllConfig();
     storeEEPROMVersion(22);
+  }
+
+  if(readEEPROMVersion() == 22)
+  {
+    //202311-dev
+
+    // DFCO Map Threshold added
+    configPage9.dfcoMAPThresh = 100; //Default value of 100 is egual to 200 kpa, because the value is multiply by 2, this is a high value to not brake old tunes
+
+    writeAllConfig();
+    storeEEPROMVersion(23);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)
