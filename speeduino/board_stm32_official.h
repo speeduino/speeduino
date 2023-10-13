@@ -7,14 +7,27 @@
 #include "STM32RTC.h"
 #include <SPI.h>
 
+#ifndef PLATFORMIO
+  #ifndef USBCON
+    #error "USBCON must be defined in boards.txt"
+  #endif
+  #ifndef USBD_USE_CDC
+    #error "USBD_USE_CDC must be defined in boards.txt"
+  #endif
+#endif
+
 #if defined(STM32F1)
-#include "stm32f1xx_ll_tim.h"
+  #include "stm32f1xx_ll_tim.h"
 #elif defined(STM32F3)
-#include "stm32f3xx_ll_tim.h"
+  #include "stm32f3xx_ll_tim.h"
 #elif defined(STM32F4)
-#include "stm32f4xx_ll_tim.h"
+  #include "stm32f4xx_ll_tim.h"
+  #include "stm32f4xx_hal_can.h"
+  #ifndef HAL_CAN_MODULE_ENABLED
+    #warning "CAN module is not enabled. Internal CAN will NOT be available"
+  #endif
 #else /*Default should be STM32F4*/
-#include "stm32f4xx_ll_tim.h"
+  #include "stm32f4xx_ll_tim.h"
 #endif
 /*
 ***********************************************************************************************************
@@ -76,7 +89,7 @@ inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrup
   #define SD_LOGGING
 #endif
 
-#if defined SD_LOGGING
+#if defined(SD_LOGGING)
   #define RTC_ENABLED
   //SD logging with STM32 uses SD card in SPI mode, because used SD library doesn't support SDIO implementation. By default SPI3 is used that uses same pins as SDIO also, but in different order.
   extern SPIClass SD_SPI; //SPI3_MOSI, SPI3_MISO, SPI3_SCK
@@ -369,7 +382,7 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if HAL_CAN_MODULE_ENABLED
+#if defined(HAL_CAN_MODULE_ENABLED)
 #define NATIVE_CAN_AVAILABLE
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
