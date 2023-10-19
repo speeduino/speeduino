@@ -728,6 +728,9 @@ void doUpdates(void)
   {
     //202311-dev
 
+    //Default values for pulsed hw test modes
+    configPage13.hwTestInjDuration = 8;
+    configPage13.hwTestIgnDuration = 4;
 
     writeAllConfig();
     storeEEPROMVersion(23);
