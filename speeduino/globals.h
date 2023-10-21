@@ -1096,8 +1096,8 @@ struct config9 {
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-  byte unused10_110;
-  byte unused10_111;
+  byte FanIdleUpAdder;
+  byte FanIdleUpOn : 1;
   byte unused10_112;
   byte unused10_113;
   byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
