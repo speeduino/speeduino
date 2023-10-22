@@ -96,6 +96,9 @@ volatile PINMASK_TYPE tach_pin_mask;
 volatile PORT_TYPE *pump_pin_port;
 volatile PINMASK_TYPE pump_pin_mask;
 
+volatile PORT_TYPE *cel_pin_port;
+volatile PINMASK_TYPE cel_pin_mask;
+
 volatile PORT_TYPE *flex_pin_port;
 volatile PINMASK_TYPE flex_pin_mask;
 
@@ -186,6 +189,7 @@ byte pinBat;      //Battery voltage pin
 byte pinDisplayReset; // OLED reset pin
 byte pinTachOut;  //Tacho output
 byte pinFuelPump; //Fuel pump on/off
+byte pinCEL;      //Check Engine Light On/Off
 byte pinIdle1;    //Single wire idle control
 byte pinIdle2;    //2 wire idle control (Not currently used)
 byte pinIdleUp;   //Input for triggering Idle Up
@@ -301,6 +305,7 @@ bool pinIsOutput(byte pin)
   || ((pin == pinStepperEnable) && isIdleSteper)
   || ((pin == pinStepperStep) && isIdleSteper)
   || ((pin == pinStepperDir) && isIdleSteper)
+  || ((pin == pinCEL) && (configPage9.celEnabled == true))
   || (pin == pinTachOut)
   || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
   || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )

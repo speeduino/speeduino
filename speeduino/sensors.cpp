@@ -200,8 +200,11 @@ void instanteneousMAPReading(void)
     tempReading = analogRead(pinMAP);
   #endif
   //Error checking
-  if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) { mapErrorCount += 1; }
-  else { mapErrorCount = 0; }
+  if( (tempReading >= VALID_MAP_MAX) || (tempReading <= VALID_MAP_MIN) ) 
+  { 
+    mapErrorCount++;
+  }
+
 
   //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
   if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
@@ -218,10 +221,12 @@ void instanteneousMAPReading(void)
 
     //Error check
     if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
-      {
-        currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
-      }
-    else { mapErrorCount += 1; }
+    {
+      currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
+    }
+    else 
+    { mapErrorCount++; }
+
     currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
     if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
   }
@@ -260,7 +265,10 @@ void readMAP(void)
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
-          else { mapErrorCount += 1; }
+          else 
+          { 
+            mapErrorCount++;
+          }
 
           //Repeat for EMAP if it's enabled
           if(configPage6.useEMAP == true)
@@ -274,7 +282,10 @@ void readMAP(void)
               currentStatus.EMAPADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.EMAPADC);
               EMAPrunningValue += currentStatus.EMAPADC; //Add the current reading onto the total
             }
-            else { mapErrorCount += 1; }
+            else 
+            { 
+              mapErrorCount++;
+            }
           }
         }
         else
@@ -337,7 +348,10 @@ void readMAP(void)
           {
             if( (unsigned long)tempReading < MAPrunningValue ) { MAPrunningValue = (unsigned long)tempReading; } //Check whether the current reading is lower than the running minimum
           }
-          else { mapErrorCount += 1; }
+          else 
+          { 
+            mapErrorCount++;
+          }
         }
         else
         {
@@ -374,8 +388,8 @@ void readMAP(void)
           #else
             tempReading = analogRead(pinMAP);
             tempReading = analogRead(pinMAP);
-          #endif
-
+          #endif          
+          
           //Error check
           if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
           {
@@ -383,7 +397,10 @@ void readMAP(void)
             MAPrunningValue += currentStatus.mapADC; //Add the current reading onto the total
             MAPcount++;
           }
-          else { mapErrorCount += 1; }
+          else 
+          { 
+            mapErrorCount++;
+          }
         }
         else
         {
@@ -439,8 +456,10 @@ void readTPS(bool useFilter)
   if(configPage2.tpsMax > configPage2.tpsMin)
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    if (currentStatus.tpsADC < configPage2.tpsMin) { tempADC = configPage2.tpsMin; }
-    else if(currentStatus.tpsADC > configPage2.tpsMax) { tempADC = configPage2.tpsMax; }
+    if (currentStatus.tpsADC < configPage2.tpsMin) 
+    { tempADC = configPage2.tpsMin; }
+    else if(currentStatus.tpsADC > configPage2.tpsMax) 
+    { tempADC = configPage2.tpsMax; }
     currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
   }
   else
@@ -453,9 +472,20 @@ void readTPS(bool useFilter)
     uint16_t tempTPSMin = 255 - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
-    if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }
-    else if(tempADC < tempTPSMin) { tempADC = tempTPSMin; }
+    if (tempADC > tempTPSMax) 
+    { tempADC = tempTPSMax; }
+    else if(tempADC < tempTPSMin) 
+    { tempADC = tempTPSMin; }
     currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
+  }
+
+  // do checks for Check Engine Light
+  if( configPage9.celCheckLoad == true && configPage9.celEnabled == true)
+  {
+    if(currentStatus.tpsADC < (((configPage2.tpsMin - 5) > 0) ? configPage2.tpsMin-5 : configPage2.tpsMin) ) // gives a little room for noise
+    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_LOAD);}
+    else if(currentStatus.tpsADC > (((configPage2.tpsMax+5)> 255) ? configPage2.tpsMax : configPage2.tpsMax) )  // gives a little room for noise
+    { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_LOAD);}
   }
 
   //Check whether the closed throttle position sensor is active
@@ -565,6 +595,13 @@ void readO2(void)
     currentStatus.O2ADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_O2, currentStatus.O2ADC);
     //currentStatus.O2 = o2CalibrationTable[currentStatus.O2ADC];
     currentStatus.O2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2ADC);
+
+    // do checks for Check Engine Light
+    if( configPage9.celCheckO2 == true && configPage9.celEnabled == true)
+    {
+      if(tempReading == 0 || tempReading == 255 ) // each sensor has different ranges, combined with different fuels having different ranges so can't do specific AFR values
+      { BIT_SET (currentStatus.checkEngineLight, BIT_CEL_O2);}      
+    }
   }
   else
   {
@@ -745,9 +782,9 @@ byte getOilPressure(void)
     tempReading = analogRead(pinOilPressure);
     tempReading = analogRead(pinOilPressure);
 
-
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
     tempOilPressure = ADC_FILTER(tempOilPressure, ADCFILTER_PSI_DEFAULT, currentStatus.oilPressure); //Apply smoothing factor
+
     //Sanity check
     if(tempOilPressure > configPage10.oilPressureMax) { tempOilPressure = configPage10.oilPressureMax; }
     if(tempOilPressure < 0 ) { tempOilPressure = 0; } //prevent negative values, which will cause problems later when the values aren't signed.

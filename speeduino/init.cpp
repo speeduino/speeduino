@@ -366,6 +366,24 @@ void initialiseAll(void)
     initialiseADC();
     initialiseProgrammableIO();
 
+    if(configPage9.celEnabled == true && configPage9.celLightOnStartUp == true) // start the Check Engine Light
+    {
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_GENERAL);
+      if(configPage9.celCheckTemp == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TEMP); }
+      if(configPage9.celCheckLoad == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_LOAD); }
+      if(configPage9.celCheckTBC1 == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC1); }
+      if(configPage9.celCheckTBC2 == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_TBC2); }
+      if(configPage9.celCheckBattery == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_BATTERY); }
+      if(configPage9.celCheckO2 == true)
+      { BIT_SET(currentStatus.checkEngineLight, BIT_CEL_O2); }
+      BIT_SET(currentStatus.checkEngineLight, BIT_CEL_STARTUP);
+    }
+
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
@@ -1329,7 +1347,7 @@ void initialiseAll(void)
     if(configPage2.fpPrime > 0)
     {
       FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true;
+      currentStatus.fuelPumpOn = true;      
     }
     else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
@@ -2815,6 +2833,9 @@ void setPinMapping(byte boardID)
   if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) && (configPage13.onboard_log_tr5_Epin_pin < BOARD_MAX_IO_PINS) ) { pinSDEnable = pinTranslate(configPage13.onboard_log_tr5_Epin_pin); }
   
 
+  // currently there's no default pin for Check Engine Light (CEL)
+  pinCEL = pinTranslate(configPage9.celPin);
+ 
   //Currently there's no default pin for Idle Up
   
   pinIdleUp = pinTranslate(configPage2.idleUpPin);
@@ -2849,6 +2870,7 @@ void setPinMapping(byte boardID)
   pinMode(pinFuelPump, OUTPUT);
   pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
+  pinMode(pinCEL, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
@@ -2948,6 +2970,10 @@ void setPinMapping(byte boardID)
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
   pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
   pump_pin_mask = digitalPinToBitMask(pinFuelPump);
+
+  cel_pin_port = portOutputRegister(digitalPinToPort(pinCEL));
+  cel_pin_mask = digitalPinToBitMask(pinCEL);
+
 
   //And for inputs
   #if defined(CORE_STM32)
