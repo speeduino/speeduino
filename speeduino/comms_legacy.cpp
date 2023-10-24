@@ -190,6 +190,10 @@ void legacySerialCommand(void)
       Serial.write(highByte(currentStatus.freeRAM));
       break;
 
+    case 'M':
+      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
+      break;
+
     case 'N': // Displays a new line.  Like pushing enter in a text editor
       Serial.println();
       break;
@@ -391,48 +395,6 @@ void legacySerialCommand(void)
 
       break;
 
-    case 'M':
-      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-
-      if(chunkPending == false)
-      {
-        //This means it's a new request
-        //7 bytes required:
-        //2 - Page identifier
-        //2 - offset
-        //2 - Length
-        //1 - 1st New value
-        if(Serial.available() >= 7)
-        {
-          byte offset1, offset2, length1, length2;
-
-          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
-          currentPage = Serial.read();
-          //currentPage = 1;
-          offset1 = Serial.read();
-          offset2 = Serial.read();
-          valueOffset = word(offset2, offset1);
-          length1 = Serial.read();
-          length2 = Serial.read();
-          chunkSize = word(length2, length1);
-
-          //Regular page data
-          chunkPending = true;
-          chunkComplete = 0;
-        }
-      }
-      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
-      if(chunkPending == true)
-      { 
-        while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
-        {
-          setPageValue(currentPage, (valueOffset + chunkComplete), Serial.read());
-          chunkComplete++;
-        }
-        if(chunkComplete >= chunkSize) { serialStatusFlag = SERIAL_INACTIVE; chunkPending = false; }
-      }
-      break;
-
     case 'w':
       //No w commands are supported in legacy mode. This should never be called
       if(Serial.available() >= 7)
@@ -583,6 +545,48 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
         targetPort.write( (CRC32_val & 255) );
         
         targetStatusFlag = SERIAL_INACTIVE;
+      }
+      break;
+
+    case 'M':
+      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if(chunkPending == false)
+      {
+        //This means it's a new request
+        //7 bytes required:
+        //2 - Page identifier
+        //2 - offset
+        //2 - Length
+        //1 - 1st New value
+        if(targetPort.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
+
+          targetPort.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = targetPort.read();
+          //currentPage = 1;
+          offset1 = targetPort.read();
+          offset2 = targetPort.read();
+          valueOffset = word(offset2, offset1);
+          length1 = targetPort.read();
+          length2 = targetPort.read();
+          chunkSize = word(length2, length1);
+
+          //Regular page data
+          chunkPending = true;
+          chunkComplete = 0;
+        }
+      }
+      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
+      if(chunkPending == true)
+      { 
+        while( (targetPort.available() > 0) && (chunkComplete < chunkSize) )
+        {
+          setPageValue(currentPage, (valueOffset + chunkComplete), targetPort.read());
+          chunkComplete++;
+        }
+        if(chunkComplete >= chunkSize) { targetStatusFlag = SERIAL_INACTIVE; chunkPending = false; }
       }
       break;
 
