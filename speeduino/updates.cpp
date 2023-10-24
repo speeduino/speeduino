@@ -731,6 +731,10 @@ void doUpdates(void)
     configPage9.dfcoTaperTime = 10; //1 second
     configPage9.dfcoTaperFuel = 100; //Don't scale fuel
     configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+    
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
 
     writeAllConfig();
     storeEEPROMVersion(23);
