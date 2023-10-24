@@ -728,6 +728,9 @@ void doUpdates(void)
   {
     //202311-dev
 
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 50,
+    configPage9.egoMAPMin = 13,
 
     writeAllConfig();
     storeEEPROMVersion(23);
