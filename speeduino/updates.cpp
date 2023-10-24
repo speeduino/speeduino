@@ -728,8 +728,11 @@ void doUpdates(void)
   {
     //202311-dev
 
-    // DFCO Map Threshold added
-    configPage9.dfcoMAPThresh = 100; //Default value of 100 is egual to 200 kpa, because the value is multiply by 2, this is a high value to not brake old tunes
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
+    //DFCO MAP Threshold
+    configPage9.dfcoMAPThresh = 255, // 255 will be 510 kpa
 
     writeAllConfig();
     storeEEPROMVersion(23);

@@ -1098,8 +1098,8 @@ struct config9 {
 
   byte unused10_110;
   byte unused10_111;
-  byte unused10_112;
-  byte unused10_113;
+  byte egoMAPMax; //needs to be multiplied by 2 to get the proper value
+  byte egoMAPMin; //needs to be multiplied by 2 to get the proper value
   byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
   uint16_t true_address;            //speeduino 11bit can address
   uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
@@ -1128,7 +1128,7 @@ struct config9 {
   byte hardRevMode : 2;
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
-  byte dfcoMAPThresh; // DFCO Map Threshold. Needs to be multiplied by 2 to have a correct value.
+  byte dfcoMAPThresh; //needs to be multiplied by 2 to get the proper value
   byte unused10_180;
   byte unused10_181;
   byte unused10_182;
