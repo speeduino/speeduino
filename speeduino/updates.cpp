@@ -729,8 +729,8 @@ void doUpdates(void)
     //202311-dev
 
     //EGO MAP Limits
-    configPage9.egoMAPMax = 50,
-    configPage9.egoMAPMin = 13,
+    configPage9.egoMAPMax = 150, // 150 will be 300 kpa
+    configPage9.egoMAPMin = 5,  // 5 will be 10 kpa
 
     writeAllConfig();
     storeEEPROMVersion(23);
