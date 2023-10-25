@@ -574,7 +574,7 @@ bool correctionDFCO(void)
     if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ) && ( currentStatus.MAP <= ( configPage9.dfcoMAPThresh * 2U ) ) ; 
-      if ( DFCOValue == false) { dfcoTaper = 0; }
+      if ( DFCOValue == false) { dfcoDelay = 0; }
     }
     else 
     {
