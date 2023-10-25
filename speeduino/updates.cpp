@@ -732,6 +732,10 @@ void doUpdates(void)
     configPage9.dfcoTaperFuel = 100; //Don't scale fuel
     configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
     
+    //Fan idle up
+    configPage9.FanIdleUpOn = 0; //Disable fan idel up
+    configPage9.FanIdleUpAdder = 0; //Set to 0 the fan idle up amount
+
     //EGO MAP Limits
     configPage9.egoMAPMax = 255, // 255 will be 510 kpa
     configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
