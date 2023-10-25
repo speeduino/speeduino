@@ -138,7 +138,7 @@ void initialiseIdle(bool forcehoming)
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits( (configPage2.iacCLminValue<<2), (configPage2.iacCLmaxValue<<2) );
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = 0;
@@ -162,7 +162,7 @@ void initialiseIdle(bool forcehoming)
       #elif defined(CORE_TEENSY41)
         idle_pwm_max_count = 1000000L / (2 * configPage6.idleFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
       #endif
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
+      idlePID.SetOutputLimits( (configPage2.iacCLminValue<<2), (configPage2.iacCLmaxValue<<2) );
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
       idle_pid_target_value = 0;
@@ -459,11 +459,11 @@ static inline byte isInDecay(void)
   bool decay = false; // by default the decay is off
   if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL || configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL ) 
   {//In OL+CL the rpm or the tps is keeping the valve at the same value. Here we can use the rpm because if the pid overshoot the valve will use the table but sense the table value is lower then the pid the rpm will not stuck at high idle
-    if( currentStatus.RPM > (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) || currentStatus.TPS > configPage2.iacTPSlimit ) { decay = true; }
+    if( currentStatus.RPM >= (idle_cl_target_rpm + configPage2.iacRPMlimitHysteresis*10) || currentStatus.TPS >= configPage2.iacTPSlimit ) { decay = true; }
   }
   else
   {//In CL the tps is keeping the valve at the same value. Here we cannot use the rpm because if the pid overshoot the rpm will stuck in a high idle
-    if( currentStatus.TPS > configPage2.iacTPSlimit ) { decay = true; }
+    if( currentStatus.TPS >= configPage2.iacTPSlimit ) { decay = true; }
   }
   return decay;
 }
@@ -524,7 +524,6 @@ void idleControl(void)
         currentStatus.idleLoad = getPWMCrank(); //Currently cranking. Use the cranking table
         if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
         if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
-        if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
         idleTaper = 0;
       }
       else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
@@ -534,26 +533,26 @@ void idleControl(void)
           currentStatus.idleLoad = getPWMCrank(); //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
           if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
-          if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
           idleTaper = 0;
         }
       }
       else
       {
-        if ( idleTaper < configPage2.idleTaperTime )
+        if ( idleTaper < configPage2.idleTaperTime ) //Check for tapering between cranking and running 
         {
           currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime, getPWMCrank(), getPWMTable()); //Tapering between cranking IAC value and running
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
+          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; } //Increase the taper timer
         }
-        else
+        else //Standard running
         {
-          currentStatus.idleLoad = getPWMTable(); //Standard running
+          currentStatus.idleLoad = getPWMTable(); //Set the Idle load to the pwm table value
           if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; } //Add air conditioning idle-up - we only do this if the engine is running "A/C should never engage with engine off".
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
           if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
         }
-        if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
+        
       }
+      if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
       idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count); //Assign the real PWM value to the output
       
       break;
@@ -566,9 +565,8 @@ void idleControl(void)
         currentStatus.idleLoad = getPWMCrank(); //Currently cranking. Use the cranking table
         if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
         if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
-        if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Limits the PWM to 100%
-        idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count); //Assign the real PWM value to the output
-        idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
+        if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
+        idle_pid_target_value = currentStatus.idleLoad<<2; //Resolution increased
         FeedForwardTerm = idle_pid_target_value;
         idlePID.ResetIntegeral();
         idleTaper = 0;
@@ -580,9 +578,8 @@ void idleControl(void)
           currentStatus.idleLoad = getPWMCrank(); //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
           if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
           if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
-          if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Limits the PWM to 100%
-          idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count); //Assign the real PWM value to the output
-          idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
+          if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
+          idle_pid_target_value = currentStatus.idleLoad<<2; //Resolution increased
           FeedForwardTerm = idle_pid_target_value;
           idlePID.ResetIntegeral();
           idleTaper = 0;
@@ -594,37 +591,31 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Read RPM target to feed P.I.D, Multiply the byte target value back out by 10       
         if( configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL ) //This allows to use less code because we can run CL and OL+CL together
         {
-          FeedForwardTerm = percentage( getPWMTable(), idle_pwm_max_count<<2 ); //Read the OL table as feedforward term, because is runing in OL+CL
+          FeedForwardTerm = getPWMTable()<<2; //Read the OL table as feedforward term, because is runing in OL+CL
         }
         else{ FeedForwardTerm = idle_pid_target_value; } //Re feed the target to feadforward, because is runing in CL only
         idlePID.Compute(true, FeedForwardTerm); //Cumpute the P.I.D
-        if( idleTaper < configPage2.idleTaperTime )//Tapering between cranking IAC value and running 
+        if( idleTaper < configPage2.idleTaperTime )//Check for tapering between cranking and running 
         {
-          long TEMP_idle_pwm_target_value = 0; //Temp Value for the PWM
-          TEMP_idle_pwm_target_value = ((unsigned long)((idle_pid_target_value>>2) * 100UL) / idle_pwm_max_count); //Sets the temp idle value to the pid value
-          currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime, getPWMCrank(), TEMP_idle_pwm_target_value); //The taper between the cranking and runnig
-          if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Limits the idle load
-          idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count); //Assign the real PWM value to the output
+          currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime, getPWMCrank(), (idle_pid_target_value>>2)); //The taper between the cranking and runnig
           if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; } //Increase the taper timer
         }
-        else
+        else //Standard running
         {
           if( isInDecay() == true ) //Maintains the valve at the same value when not in idle
           {
             idle_pid_target_value = FeedForwardTerm;
             idlePID.ResetIntegeral();
           }
-          long TEMP_idle_pwm_target_value = 0; //Temp Value for the PWM
-          TEMP_idle_pwm_target_value = idle_pid_target_value; //Set the PWM output to P.I.D output
-          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { TEMP_idle_pwm_target_value += percentage(configPage15.airConIdleSteps, idle_pwm_max_count<<2); } //Add air conditioning idle-up - we only do this if the engine is running "A/C should never engage with engine off".
-          if(currentStatus.idleUpActive == true) { TEMP_idle_pwm_target_value += percentage(configPage2.idleUpAdder, idle_pwm_max_count<<2); } //Add Idle Up amount if active
-          if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { TEMP_idle_pwm_target_value += percentage(configPage9.FanIdleUpAdder, idle_pwm_max_count<<2); } //Fan Idle Up
-          if(TEMP_idle_pwm_target_value > (idle_pwm_max_count<<2)) { TEMP_idle_pwm_target_value = (idle_pwm_max_count<<2); }//Limits the temp value
-          idle_pwm_target_value = TEMP_idle_pwm_target_value>>2; //Assign the real PWM value to the output
-          currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);//Sets the idle load gauge
+          currentStatus.idleLoad = idle_pid_target_value>>2; //Set the idle load to the P.I.D output
+          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; } //Add air conditioning idle-up - we only do this if the engine is running "A/C should never engage with engine off".
+          if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) { currentStatus.idleLoad += configPage9.FanIdleUpAdder; } //Fan Idle Up
         }
+        if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } // Limits the PWM to 100%
         idleCounter++;
       }
+      idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count); //Assign the real PWM value to the output
 
       break;
 
@@ -642,31 +633,29 @@ void idleControl(void)
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) {idleStepper.targetIdleStep += configPage9.FanIdleUpAdder; } //Fan Idle Up
           }
-          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          doStep(); //Move Stepper Motor
           idleTaper = 0;
         }
-        else
+        else 
         {
-          //Standard running
           if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) && (currentStatus.RPM > 0))
           {
-            if ( idleTaper < configPage2.idleTaperTime )
+            if ( idleTaper < configPage2.idleTaperTime ) //Check for tapering between cranking and running 
             {
               idleStepper.targetIdleStep = map(idleTaper, 0, configPage2.idleTaperTime, getStepperCrank(), getStepperTable()); //Tapering between cranking IAC value and running
-              if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
+              if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; } //Increase the taper timer
             }
-            else
+            else //Standard running
             {
-              idleStepper.targetIdleStep = getStepperTable(); //Standard running
+              idleStepper.targetIdleStep = getStepperTable(); //Set the stepper output to the stepper table value
               if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; } //Add air conditioning idle-up - we only do this if the engine is running "A/C should never engage with engine off".
               if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
               if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) {idleStepper.targetIdleStep += configPage9.FanIdleUpAdder; } //Fan Idle Up
             }
           }
-          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          doStep(); //Move Stepper Motor
         }
+        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limit to the configured max steps.
+        doStep(); //Move Stepper Motor
+        //Set the idle load gauge value
         if( ((uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; } //Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
       }
@@ -675,8 +664,8 @@ void idleControl(void)
       else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); }
       if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Runs in 1hz
       {
-        iacStepTime_uS = configPage6.iacStepTime * 1000; //Reads stepp time
-        iacCoolTime_uS = configPage9.iacCoolTime * 1000; //Reads stepp cool time
+        iacStepTime_uS = configPage6.iacStepTime * 1000; //Read stepp time
+        iacCoolTime_uS = configPage9.iacCoolTime * 1000; //Read stepp cool time
       }
 
       break;
@@ -694,12 +683,11 @@ void idleControl(void)
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) {idleStepper.targetIdleStep += configPage9.FanIdleUpAdder; } //Fan Idle Up
           }
-          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limits the valve to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          doStep(); //Move Stepper Motor
-          idleTaper = 0;
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limits the valve to the configured max steps.
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           FeedForwardTerm = idle_pid_target_value;
           idlePID.ResetIntegeral();
+          idleTaper = 0;
         }
         else 
         {
@@ -712,28 +700,28 @@ void idleControl(void)
             }
             else { FeedForwardTerm = idle_pid_target_value; }//Runing in CL
             idlePID.Compute(true, FeedForwardTerm);//Compute the P.I.D
-            if( idleTaper < configPage2.idleTaperTime )//Tapering between cranking IAC value and running 
+            if( idleTaper < configPage2.idleTaperTime )//Check for tapering between cranking and running 
             {
-              idleStepper.targetIdleStep = map(idleTaper, 0, configPage2.idleTaperTime, getStepperCrank(), idle_pid_target_value>>2);
-              if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
+              idleStepper.targetIdleStep = map(idleTaper, 0, configPage2.idleTaperTime, getStepperCrank(), idle_pid_target_value>>2); //The taper between the cranking and runnig
+              if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; } //Increase the taper timer
             }
-            else
+            else //Standard running
             {
               if( isInDecay() == true ) //Maintains the valve at the same value when not in idle.
               {
                 idle_pid_target_value = FeedForwardTerm;
                 idlePID.ResetIntegeral();
               }
-              idleStepper.targetIdleStep = idle_pid_target_value>>2; //Set stepper output to P.I.D output
+              idleStepper.targetIdleStep = idle_pid_target_value>>2; //Set stepper output to the P.I.D output
               if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; } //Add air conditioning idle-up - we only do this if the engine is running "A/C should never engage with engine off".
               if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
               if(configPage9.FanIdleUpOn > 0 && BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN) == true) {idleStepper.targetIdleStep += configPage9.FanIdleUpAdder; } //Fan Idle Up
             }
-          } 
-          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limits the valve to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          doStep(); //Move Stepper Motor
+          }
+          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) ){ idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3; } //limits the valve to the configured max steps.
         }
-
+        doStep(); //Move Stepper Motor
+        //Set the idle load gauge value
         if( ( (uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
       }
@@ -743,8 +731,8 @@ void idleControl(void)
       if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Runs in 1hz
       {
         idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); //Reads the pid tune
-        iacStepTime_uS = configPage6.iacStepTime * 1000; //Reads stepp time
-        iacCoolTime_uS = configPage9.iacCoolTime * 1000; //Reads stepp cool time
+        iacStepTime_uS = configPage6.iacStepTime * 1000; //Read stepp time
+        iacCoolTime_uS = configPage9.iacCoolTime * 1000; //Read stepp cool time
       }
 
       break;
@@ -794,7 +782,7 @@ void disableIdle(void)
   {
     IDLE_TIMER_DISABLE();
     BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); //Turn the idle control flag off
-    currentStatus.idleLoad = 0;
+    if(currentStatus.idleLoad > 0) {currentStatus.idleLoad = 0;}
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
