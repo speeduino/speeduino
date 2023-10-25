@@ -1096,10 +1096,11 @@ struct config9 {
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
+
   byte FanIdleUpAdder;
   byte FanIdleUpOn : 1;
-  byte unused10_112;
-  byte unused10_113;
+  byte egoMAPMax; //needs to be multiplied by 2 to get the proper value
+  byte egoMAPMin; //needs to be multiplied by 2 to get the proper value
   byte speeduino_tsCanId:4;         //speeduino TS canid (0-14)
   uint16_t true_address;            //speeduino 11bit can address
   uint16_t realtime_base_address;   //speeduino 11 bit realtime base address
@@ -1128,12 +1129,16 @@ struct config9 {
   byte hardRevMode : 2;
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
+
   byte unused10_179;
-  byte unused10_180;
-  byte unused10_181;
-  byte unused10_182;
-  byte unused10_183;
+  byte dfcoTaperTime;
+  byte dfcoTaperFuel;
+  byte dfcoTaperAdvance;
+  byte dfcoTaperEnable : 1;
+  byte unused10_183 : 6;
+
   byte unused10_184;
+
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
   byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */

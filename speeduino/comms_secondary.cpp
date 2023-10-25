@@ -137,6 +137,10 @@ void secondserial_Command(void)
       */
       break;
     }
+
+    case 'M':
+      legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
+      break;
       
     case 'n': // sends the bytes of realtime values from the NEW CAN list
       //sendValues(0, NEW_CAN_PACKET_SIZE, 0x32, secondarySerial, serialSecondaryStatusFlag); //send values to serial3
