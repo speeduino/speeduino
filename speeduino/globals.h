@@ -1096,7 +1096,6 @@ struct config9 {
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-
   byte FanIdleUpAdder;
   byte FanIdleUpOn : 1;
   byte egoMAPMax; //needs to be multiplied by 2 to get the proper value
