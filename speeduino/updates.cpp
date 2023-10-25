@@ -739,7 +739,6 @@ void doUpdates(void)
     //DFCO MAP Threshold
     configPage9.dfcoMAPThresh = 255, // 255 will be 510 kpa
 
-
     writeAllConfig();
     storeEEPROMVersion(23);
   }
