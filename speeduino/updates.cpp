@@ -727,6 +727,12 @@ void doUpdates(void)
   if(readEEPROMVersion() == 22)
   {
     //202311-dev
+
+    //Default values for pulsed hw test modes
+    configPage13.hwTestInjDuration = 8;
+    configPage13.hwTestIgnDuration = 4;
+
+    //DFCO taper default values (Feature disabled by default)
     configPage9.dfcoTaperEnable = 0; //Disable
     configPage9.dfcoTaperTime = 10; //1 second
     configPage9.dfcoTaperFuel = 100; //Don't scale fuel
