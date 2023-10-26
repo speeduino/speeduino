@@ -732,6 +732,16 @@ void doUpdates(void)
     configPage13.hwTestInjDuration = 8;
     configPage13.hwTestIgnDuration = 4;
 
+    //DFCO taper default values (Feature disabled by default)
+    configPage9.dfcoTaperEnable = 0; //Disable
+    configPage9.dfcoTaperTime = 10; //1 second
+    configPage9.dfcoTaperFuel = 100; //Don't scale fuel
+    configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+    
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
+
     writeAllConfig();
     storeEEPROMVersion(23);
   }
