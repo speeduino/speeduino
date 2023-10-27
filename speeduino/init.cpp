@@ -1878,6 +1878,58 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    
+    case 15:
+      //Pin mappings as per the FazxFi PROTO2.0 board
+    #ifndef SMALL_FLASH_MODE
+    
+      pinInjector1 =       5; //Output pin injector 1 is on
+      pinInjector2 =       4; //Output pin injector 2 is on
+      pinInjector3 =       3; //Output pin injector 3 is on
+      pinInjector4 =       2; //Output pin injector 4 is on
+      pinInjector5 =      45; //Output pin injector 5 is placeholder
+      pinInjector6 =      46; //Output pin injector 6 is placeholder 
+      pinCoil1 =          17; //Pin for coil 1
+      pinCoil2 =          16; //Pin for coil 2
+      pinCoil3 =          15; //Pin for coil 3
+      pinCoil4 =          14; //Pin for coil 4
+      pinCoil5 =          47; //Pin for coil 5 PLACEHOLDER value for now
+      pinTrigger =        19; //The CAS pin
+      pinTrigger2 =       18; //The Cam Sensor pin
+      pinTrigger3 =       48; //The Cam sensor 2 pin
+      pinTPS =            A2;//TPS input pin
+      pinMAP =            A1; //MAP sensor pin
+      pinIAT =            A4; //IAT sensor pin
+      pinCLT =            A7; //CLS sensor pin
+      pinO2 =             A5; //O2 Sensor pin
+      pinBat =            A6; //Battery reference voltage pin
+      pinDisplayReset =   53; // OLED reset pin
+      pinTachOut =        10; //Tacho output pin
+      pinIdle1 =           6; //Single wire idle control
+      pinIdle2 =           7; //2 wire idle control
+      pinBoost =           9; //Boost control
+      pinVVT_1 =           8; //Default VVT output
+      pinVVT_2 =           7; //Share with pinIdle2
+      pinFuelPump =       12; //Fuel pump output 
+      pinStepperDir =     23; //Direction pin  for DRV8825 driver
+      pinStepperStep =    22; //Step pin for DRV8825 driver
+      pinStepperEnable =  25; //Enable pin for DRV8825
+      pinFan =            11; //Pin for the fan output
+      pinLaunch =         37; //Can be overwritten below
+      pinFlex =           21; // Flex sensor (Must be external interrupt enabled)
+      pinResetControl =   52; //Reset control output
+      pinBaro =           A0;
+      pinVSS =            20;
+      pinWMIEmpty =       44;
+      pinWMIIndicator =   43;
+      pinWMIEnabled =     42;
+      //FazXFi add-on
+      //pinITPS =           ; //Idle position pin
+      //pinCTS =            ; //Close throtlle pin
+
+    #endif
+      break;
+
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
