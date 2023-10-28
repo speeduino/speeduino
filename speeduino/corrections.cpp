@@ -100,7 +100,7 @@ uint16_t correctionsFuel(void)
   if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
   {
     inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
-    currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
+    //currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time "commented this line for the open time gauge to work on tunerstudio because it uses this value for calculating the open time gauge. also this line may not be needed because when using open time in the setting battery correction mode it will not sum the battery correction in the correction"
   }
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
   {
