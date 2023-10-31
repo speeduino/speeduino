@@ -1400,6 +1400,11 @@ Page 15 - second page for VVT and boost control.
 256 bytes long. 
 */
 struct config15 {
+  // Bytes 0 to 63 - boostTableDutyLookup 8x8 byte array. 
+  // bytes 64 to 71 - rpmBinsDutyLookup 8 byte array
+  // Bytes 72 to 79 - loadBinsDutyLookup 8 byte array
+
+  // Byte 80 - 82 boost control
   byte boostControlEnable : 1; 
   byte unused15_1 : 7; //7bits unused
   byte boostDCWhenDisabled;
@@ -1433,10 +1438,11 @@ struct config15 {
   byte airConIdleUpRPMAdder;
   byte airConPwmFanMinDuty;
 
-  int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
+  // Bytes 98 to 105 rolling cut
+  byte rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
-  //Bytes 98-255
+  //Bytes 105-255
   byte Unused15_98_255[150];
 
 #if defined(CORE_AVR)
