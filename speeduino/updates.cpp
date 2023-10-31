@@ -16,7 +16,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    22
+  #define CURRENT_DATA_VERSION    23
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -705,7 +705,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 21)
   {
-    //202306
+    //202310
 
     //Rolling cut curve added. Default values
     configPage15.rollingProtRPMDelta[0]   = -30;
@@ -717,8 +717,33 @@ void doUpdates(void)
     configPage15.rollingProtCutPercent[2] = 80;
     configPage15.rollingProtCutPercent[3] = 95;
 
+    //DFCO Hyster was multipled by 2 to allow a range of 0-500. Existing values must be halved
+    configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
+
     writeAllConfig();
     storeEEPROMVersion(22);
+  }
+
+  if(readEEPROMVersion() == 22)
+  {
+    //202311-dev
+
+    //Default values for pulsed hw test modes
+    configPage13.hwTestInjDuration = 8;
+    configPage13.hwTestIgnDuration = 4;
+
+    //DFCO taper default values (Feature disabled by default)
+    configPage9.dfcoTaperEnable = 0; //Disable
+    configPage9.dfcoTaperTime = 10; //1 second
+    configPage9.dfcoTaperFuel = 100; //Don't scale fuel
+    configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+    
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
+
+    writeAllConfig();
+    storeEEPROMVersion(23);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

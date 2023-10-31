@@ -138,9 +138,9 @@ int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system 
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
-volatile byte HWTest_INJ_50pc = 0; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
+volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents one of the injector channels and it's pulsed HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
-volatile byte HWTest_IGN_50pc = 0; 
+volatile byte HWTest_IGN_Pulsed = 0; 
 byte maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
 byte maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
 
@@ -260,7 +260,7 @@ uint8_t o2Calibration_values[32];
 struct table2D o2CalibrationTable; 
 
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
-inline bool pinIsOutput(byte pin)
+bool pinIsOutput(byte pin)
 {
   bool used = false;
   bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
@@ -313,7 +313,7 @@ inline bool pinIsOutput(byte pin)
   return used;
 }
 
-inline bool pinIsUsed(byte pin)
+bool pinIsUsed(byte pin)
 {
   bool used = false;
 

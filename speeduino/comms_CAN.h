@@ -1,5 +1,5 @@
-#ifndef CANBROADCAST_H
-#define CANBROADCAST_H
+#ifndef COMMS_CAN_H
+#define COMMS_CAN_H
 #if defined(NATIVE_CAN_AVAILABLE)
 
 //For BMW e46/e39/e38, rover and mini other CAN instrument clusters
@@ -17,5 +17,9 @@
 void sendBMWCluster();
 void sendVAGCluster();
 void DashMessages(uint16_t DashMessageID);
+void can_Command(void);
+void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);
+void readAuxCanBus();
+
 #endif
-#endif // CANBROADCAST_H
+#endif // COMMS_CAN_H
