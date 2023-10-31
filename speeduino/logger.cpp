@@ -174,6 +174,8 @@ byte getTSLogEntry(uint16_t byteNum)
     case 124: statusValue = currentStatus.airConStatus; break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
+    case 127: statusValue = lowByte(currentStatus.injAngle); break; 
+    case 128: statusValue = highByte(currentStatus.injAngle); break;
     default: statusValue = 0; // MISRA check
   }
 
