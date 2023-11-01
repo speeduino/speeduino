@@ -110,20 +110,20 @@ TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
 // to a caller defined function overloaded by the type of the table. 
 #define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
   case TO_TYPE_KEY(size, xDomain, yDomain): action(size, xDomain, yDomain, ##__VA_ARGS__);
-#define CONCRETE_TABLE_ACTION(testKey, action, ...) \
+#define CONCRETE_TABLE_ACTION(testKey, action, defaultAction, ...) \
   switch ((table_type_t)testKey) { \
   TABLE3D_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
-  default: abort(); }
+  default: defaultAction; }
 
 // =============================== Table function calls =========================
 
-table_value_iterator rows_begin(const void *pTable, table_type_t key);
+table_value_iterator rows_begin(void *pTable, table_type_t key);
 
-table_axis_iterator x_begin(const void *pTable, table_type_t key);
+table_axis_iterator x_begin(void *pTable, table_type_t key);
 
-table_axis_iterator x_rbegin(const void *pTable, table_type_t key);
+table_axis_iterator x_rbegin(void *pTable, table_type_t key);
 
-table_axis_iterator y_begin(const void *pTable, table_type_t key);
+table_axis_iterator y_begin(void *pTable, table_type_t key);
 
-table_axis_iterator y_rbegin(const void *pTable, table_type_t key);
+table_axis_iterator y_rbegin(void *pTable, table_type_t key);
 /** @} */
