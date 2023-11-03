@@ -386,9 +386,6 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
 extern STM32_CAN Can0;
-
-static CAN_message_t outMsg;
-static CAN_message_t inMsg;
 #endif
 
 #endif //CORE_STM32
