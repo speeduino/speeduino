@@ -288,14 +288,14 @@ void readMAP(void)
             MAPlast_time = MAP_time;
             MAP_time = micros();
 
-            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.mapADC = udiv_32_16(MAPrunningValue, MAPcount);
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
             {
-              currentStatus.EMAPADC = ldiv(EMAPrunningValue, MAPcount).quot; //Note that the MAP count can be reused here as it will always be the same count.
+              currentStatus.EMAPADC = udiv_32_16(EMAPrunningValue, MAPcount); //Note that the MAP count can be reused here as it will always be the same count.
               currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
               if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
             }
@@ -396,7 +396,7 @@ void readMAP(void)
             MAPlast_time = MAP_time;
             MAP_time = micros();
 
-            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.mapADC = udiv_32_16(MAPrunningValue, MAPcount);
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
           }
@@ -532,7 +532,7 @@ void readBaro(void)
 
     //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
     unsigned long timeToLastTooth = (micros() - toothLastToothTime);
-    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    if((currentStatus.RPM == 0) && (timeToLastTooth > MICROS_PER_SEC))
     {
       instanteneousMAPReading(); //Get the current MAP value
       /* 
@@ -680,10 +680,10 @@ uint16_t getSpeed(void)
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    if ( (micros() - vssTimes[vssIndex]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
+    if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
-      tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
       tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
@@ -700,7 +700,7 @@ byte getGear(void)
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = udiv_32_16(currentStatus.vss * 10000UL, currentStatus.RPM); //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
@@ -784,7 +784,7 @@ void knockPulse(void)
   //Check if this the start of a knock. 
   if(knockCounter == 0)
   {
-    //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    //knockAngle = crankAngle + timeToAngleDegPerMicroSec( (micros() - lastCrankAngleCalc) ); 
     knockStartTime = micros();
     knockCounter = 1;
   }

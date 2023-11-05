@@ -1,104 +1,63 @@
 #include "globals.h"
 #include "crankMaths.h"
 #include "decoders.h"
-#include "timers.h"
-#include "maths.h"
 
-volatile uint16_t timePerDegree;
-volatile uint16_t timePerDegreex16;
-volatile uint16_t degreesPeruSx2048;
-volatile unsigned long degreesPeruSx32768;
+#define SECOND_DERIV_ENABLED                0          
 
 //These are only part of the experimental 2nd deriv calcs
+#if SECOND_DERIV_ENABLED!=0
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
+#endif
 
-/*
-* Converts a crank angle into a time from or since that angle occurred.
-* Positive angles are assumed to be in the future, negative angles in the past:
-*   * Future angle calculations will use a predicted speed/acceleration
-*   * Past angle calculations will use the known speed
-* 
-* Currently 4 methods are planned and/or available:
-* 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
-* 3) Closed loop error correction (Alpha-beta filter) 
-* 4) 2nd derivative prediction (Speed + acceleration)
-*/
-unsigned long angleToTime(uint16_t angle, byte method)
-{
-    unsigned long returnTime = 0;
-
-    if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
-    {
-        returnTime = angleToTimeIntervalRev(angle);
-        //returnTime = angle * (unsigned long)timePerDegree;
-    }
-    else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
-    {
-        //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-        if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-        {
-          noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-          interrupts();
-          
-          returnTime = ( (toothTime * angle) / tempTriggerToothAngle );
-        }
-        else { returnTime = angleToTime(angle, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-    }
-
-    return returnTime;
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
+  UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
+  return RSHIFT_ROUND(micros, microsPerDegree_Shift);
 }
 
-/*
-* Convert a time (uS) into an angle at current speed
-* Currently 4 methods are planned and/or available:
-* 1) Last interval based on a full revolution
-* 2) Last interval based on the time between the last 2 teeth (Crank Pattern dependent)
-* 3) Closed loop error correction (Alpha-beta filter) 
-* 4) 2nd derivative prediction (Speed + acceleration)
-*/
-uint16_t timeToAngle(unsigned long time, byte method)
-{
-    uint16_t returnAngle = 0;
-
-    if( (method == CRANKMATH_METHOD_INTERVAL_REV) || (method == CRANKMATH_METHOD_INTERVAL_DEFAULT) )
-    {
-        //A last interval method of calculating angle that does not take into account any acceleration. The interval used is the time taken to complete the last full revolution
-        //degreesPeruSx2048 is the number of degrees the crank moves per uS. This value is almost always <1uS, so it is multiplied by 2048. This allows an angle calculation with only a multiply and a bitshift without any appreciable drop in accuracy
-        returnAngle = fastTimeToAngle(time); 
-    }
-    else if (method == CRANKMATH_METHOD_INTERVAL_TOOTH)
-    {
-        //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-        if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
-        {
-          noInterrupts();
-          unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-          uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-          interrupts();
-
-          returnAngle = ( (unsigned long)(time * tempTriggerToothAngle) / toothTime );
-        }
-        else { returnAngle = timeToAngle(time, CRANKMATH_METHOD_INTERVAL_REV); } //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-    }
-    else if (method == CRANKMATH_METHOD_ALPHA_BETA)
-    {
-        //Not yet implemented. Default to Rev
-        returnAngle = timeToAngle(time, CRANKMATH_METHOD_INTERVAL_REV);
-    }
-    else if (method == CRANKMATH_METHOD_2ND_DERIVATIVE)
-    {
-        //Not yet implemented. Default to Rev
-        returnAngle = timeToAngle(time, CRANKMATH_METHOD_INTERVAL_REV);
-    }
-
-   return returnAngle;
+uint32_t angleToTimeIntervalTooth(uint16_t angle) {
+  noInterrupts();
+  if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
+  {
+    unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+    uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
+    interrupts();
     
+    return (toothTime * (uint32_t)angle) / tempTriggerToothAngle;
+  }
+  //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
+  else { 
+    interrupts();
+    return angleToTimeMicroSecPerDegree(angle); 
+  }
 }
 
+uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
+    uint32_t degFixed = time * (uint32_t)degreesPerMicro;
+    return RSHIFT_ROUND(degFixed, degreesPerMicro_Shift);
+}
+
+
+uint16_t timeToAngleIntervalTooth(uint32_t time)
+{
+    noInterrupts();
+    //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
+    if(BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT))
+    {
+      unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
+      uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
+      interrupts();
+
+      return (unsigned long)(time * (uint32_t)tempTriggerToothAngle) / toothTime;
+    }
+    else { 
+      interrupts();
+      //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
+      return timeToAngleDegPerMicroSec(time);
+    }
+}
+
+#if SECOND_DERIV_ENABLED!=0
 void doCrankSpeedCalcs(void)
 {
      //********************************************************
@@ -106,7 +65,7 @@ void doCrankSpeedCalcs(void)
       //We use a 1st Deriv acceleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
-      if( SECOND_DERIV_ENABLED && (BIT_CHECK(decoderState, BIT_DECODER_2ND_DERIV)) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if( (BIT_CHECK(decoderState, BIT_DECODER_2ND_DERIV)) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
         //if (deltaToothCount != toothCurrentCount)
@@ -129,7 +88,7 @@ void doCrankSpeedCalcs(void)
           }
           else { angle1 = triggerToothAngle; angle2 = triggerToothAngle; }
 
-          uint32_t toothDeltaV = (1000000L * angle2 / toothHistory[toothHistoryIndex]) - (1000000L * angle1 / toothHistory[toothHistoryIndex-1]);
+          uint32_t toothDeltaV = (MICROS_PER_SEC * angle2 / toothHistory[toothHistoryIndex]) - (MICROS_PER_SEC * angle1 / toothHistory[toothHistoryIndex-1]);
           uint32_t toothDeltaT = toothHistory[toothHistoryIndex];
           //long timeToLastTooth = micros() - toothLastToothTime;
 
@@ -137,33 +96,6 @@ void doCrankSpeedCalcs(void)
         }
 
           timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpmDelta).quot; //This gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
-          timePerDegree = timePerDegreex16 / 16;
       }
-      else
-      {
-        //If we can, attempt to get the timePerDegree by comparing the times of the last two teeth seen. This is only possible for evenly spaced teeth
-        noInterrupts();
-        if( (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)) && (toothLastToothTime > toothLastMinusOneToothTime) && (abs(currentStatus.rpmDOT) > 30) )
-        {
-          //noInterrupts();
-          unsigned long tempToothLastToothTime = toothLastToothTime;
-          unsigned long tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-          uint16_t tempTriggerToothAngle = triggerToothAngle;
-          interrupts();
-          timePerDegreex16 = (unsigned long)( (tempToothLastToothTime - tempToothLastMinusOneToothTime)*16) / tempTriggerToothAngle;
-          timePerDegree = timePerDegreex16 / 16;
-        }
-        else
-        {
-          //long timeThisRevolution = (micros_safe() - toothOneTime);
-          interrupts();
-          //Take into account any likely acceleration that has occurred since the last full revolution completed:
-          //long rpm_adjust = (timeThisRevolution * (long)currentStatus.rpmDOT) / 1000000; 
-          long rpm_adjust = 0;
-          timePerDegreex16 = ldiv( 2666656L, currentStatus.RPM + rpm_adjust).quot; //The use of a x16 value gives accuracy down to 0.1 of a degree and can provide noticeably better timing results on low resolution triggers
-          timePerDegree = timePerDegreex16 / 16;
-        }
-      }
-      degreesPeruSx2048 = 2048 / timePerDegree;
-      degreesPeruSx32768 = 524288 / timePerDegreex16;
 }
+#endif
