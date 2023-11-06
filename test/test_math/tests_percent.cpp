@@ -1,7 +1,7 @@
 #include <unity.h>
 #include "test_fp_support.h"
 #include "maths.h"
-#include "..\timer.hpp"
+#include "../timer.hpp"
 
 static void test_percent(uint8_t percent, uint16_t value) {
   assert_rounded_div((uint32_t)percent*value, 100, percentage(percent, value));

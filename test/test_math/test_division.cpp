@@ -2,7 +2,7 @@
 #include "test_fp_support.h"
 #include "maths.h"
 #include "crankMaths.h"
-#include "..\timer.hpp"
+#include "../timer.hpp"
 
 
 template <typename T>
