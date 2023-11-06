@@ -121,10 +121,10 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
+  const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
   while (location.can_write() && !it.at_end())
   {
-    location.update(pConverter->to_byte(*it));
+    location.update(converter.to_byte(*it));
     ++location;
     ++it;
   }
@@ -132,7 +132,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 }
 
 
-static inline write_location writeTable(const void *pTable, table_type_t key, write_location location)
+static inline write_location writeTable(void *pTable, table_type_t key, write_location location)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
@@ -384,10 +384,10 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 
 static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
-  const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
+    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
   while (!it.at_end())
   {
-    *it = pConverter->from_byte(EEPROM.read(address));
+    *it = converter.from_byte(EEPROM.read(address));
     ++address;
     ++it;
   }
@@ -395,7 +395,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 }
 
 
-static inline eeprom_address_t loadTable(const void *pTable, table_type_t key, eeprom_address_t address)
+static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_address_t address)
 {
   return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 

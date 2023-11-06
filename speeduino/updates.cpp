@@ -770,7 +770,7 @@ void doUpdates(void)
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
-void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
+void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
@@ -780,7 +780,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   }
 }
 
-void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+void divideTableLoad(void *pTable, table_type_t key, uint8_t divisor)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())

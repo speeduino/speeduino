@@ -163,8 +163,6 @@
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
   extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
-  static CAN_message_t outMsg;
-  static CAN_message_t inMsg;
   #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

@@ -13,6 +13,9 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #include "comms_CAN.h"
 #include "utilities.h"
 
+CAN_message_t inMsg;
+CAN_message_t outMsg;
+
 // Forward declare
 void DashMessage(uint16_t DashMessageID);
 
@@ -126,7 +129,7 @@ void can_Command(void)
 {
  //int currentcanCommand = inMsg.id;
       // currentStatus.canin[12] = (inMsg.id);
- if ( (inMsg.id == uint16_t(configPage9.obd_address + 0x100))  || (inMsg.id == 0x7DF))      
+ if ( (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))  || (inMsg.id == 0x7DF))      
   {
     // The address is the speeduino specific ecu canbus address 
     // or the 0x7df(2015 dec) broadcast address
@@ -145,7 +148,7 @@ void can_Command(void)
         Can0.write(outMsg);       // send the 8 bytes of obd data
       }
   }
- if (inMsg.id == uint16_t(configPage9.obd_address + 0x100))      
+ if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))      
   {
     // The address is only the speeduino specific ecu canbus address    
     if (inMsg.buf[1] == 0x09)
@@ -513,7 +516,7 @@ void readAuxCanBus()
 {
   for (int i = 0; i < 16; i++)
   {
-    if (inMsg.id == (configPage9.caninput_source_can_address[i] + 0x100)) //Filters frame ID
+    if (inMsg.id == (configPage9.caninput_source_can_address[i] + TS_CAN_OFFSET)) //Filters frame ID
     {
 
       if (!BIT_CHECK(configPage9.caninput_source_num_bytes, i))
@@ -537,6 +540,6 @@ void readAuxCanBus()
         }
       }
     }
-  }
+  } 
 }
 #endif
