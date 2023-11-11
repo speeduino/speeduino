@@ -30,13 +30,13 @@ static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc
 
 static inline uint32_t compute_tableaxis_crc(table_axis_iterator it, uint32_t crc, FastCRC32 &crcCalc)
 {
-    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
+    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
 
     byte values[32]; // Fingers crossed we don't have a table bigger than 32x32
     byte *pValue = values;
     while (!it.at_end())
     {
-        *pValue++ = pConverter->to_byte(*it);
+        *pValue++ = converter.to_byte(*it);
         ++it;
     }
     return pValue-values==0 ? crc : crcCalc.crc32_upd(values, pValue-values, false);

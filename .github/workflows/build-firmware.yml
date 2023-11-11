@@ -35,7 +35,7 @@ jobs:
         pip install --upgrade platformio
 
     - name: Build test atmel
-      run: platformio run -e megaatmega2560 -e megaatmega2561
+      run: platformio run -e megaatmega2560 -e megaatmega2560-6-3 -e megaatmega2560-8-1 -e megaatmega2561
 
     - name: Build test teensy
       run: platformio run -e teensy35 -e teensy36 -e teensy41

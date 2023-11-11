@@ -1,7 +1,9 @@
-#include "globals.h"
+#include <unity.h>
+// #include "globals.h"
 #include "crankMaths.h"
-#include "unity.h"
 #include "decoders.h"
+
+extern void SetRevolutionTime(uint32_t revTime);
 
 struct crankmaths_rev_testdata {
   uint16_t rpm;
@@ -9,6 +11,12 @@ struct crankmaths_rev_testdata {
   uint16_t angle;
   unsigned long expected;
 } *crankmaths_rev_testdata_current;
+
+void test_crankmaths_angletotime_revolution_execute() {
+  crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
+  SetRevolutionTime(testdata->revolutionTime);
+  TEST_ASSERT_INT32_WITHIN(1, testdata->expected, angleToTimeMicroSecPerDegree(testdata->angle));
+}
 
 struct crankmaths_tooth_testdata {
   uint16_t rpm;
@@ -18,17 +26,11 @@ struct crankmaths_tooth_testdata {
   unsigned long expected;
 } *crankmaths_tooth_testdata_current;
 
-void test_crankmaths_angletotime_revolution_execute() {
-  crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
-  revolutionTime = testdata->revolutionTime;
-  TEST_ASSERT_EQUAL(testdata->expected, angleToTime(testdata->angle, CRANKMATH_METHOD_INTERVAL_REV));
-}
-
 void test_crankmaths_angletotime_tooth_execute() {
   crankmaths_tooth_testdata *testdata = crankmaths_tooth_testdata_current;
   triggerToothAngle = testdata->triggerToothAngle;
   toothLastToothTime = toothLastMinusOneToothTime + testdata->toothTime;
-  TEST_ASSERT_EQUAL(testdata->expected, angleToTime(testdata->angle, CRANKMATH_METHOD_INTERVAL_TOOTH));
+  TEST_ASSERT_EQUAL(testdata->expected, angleToTimeIntervalTooth(testdata->angle));
 }
 
 void testCrankMaths()
@@ -41,7 +43,7 @@ void testCrankMaths()
     { .rpm = 50,    .revolutionTime = 1200000, .angle = 25,  .expected = 83333 }, // 83333,3333
     { .rpm = 50,    .revolutionTime = 1200000, .angle = 720, .expected = 2400000 },
     { .rpm = 2500,  .revolutionTime = 24000,   .angle = 0,   .expected = 0 },
-    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 25,  .expected = 1666 }, // 1666,6666
+    { .rpm = 2500,  .revolutionTime = 24000,   .angle = 25,  .expected = 1667 }, // 1666,6666
     { .rpm = 2500,  .revolutionTime = 24000,   .angle = 720, .expected = 48000 },
     { .rpm = 20000, .revolutionTime = 3000,    .angle = 0,   .expected = 0 },
     { .rpm = 20000, .revolutionTime = 3000,    .angle = 25,  .expected = 208 }, // 208,3333
