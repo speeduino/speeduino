@@ -1157,9 +1157,19 @@ void initialiseAll(void)
 
     case IGN_MODE_WASTEDCOP:
         //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
-        //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-        if( configPage2.nCylinders <= 4 )
+        if( configPage2.nCylinders <= 3)
         {
+          //1-3 cylinder wasted COP is the same as regular wasted mode
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2Charge;
+          ignitionSchedule2.pEndCallback = endCoil2Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3Charge;
+          ignitionSchedule3.pEndCallback = endCoil3Charge;
+        }
+        else if( configPage2.nCylinders == 4 )
+        {
+          //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and3Charge;
           ignitionSchedule1.pEndCallback = endCoil1and3Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and4Charge;
@@ -1170,9 +1180,9 @@ void initialiseAll(void)
           ignitionSchedule4.pStartCallback = nullCallback;
           ignitionSchedule4.pEndCallback = nullCallback;
         }
-        //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
         else if( configPage2.nCylinders == 6 )
-          {
+        {
+          //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and4Charge;
           ignitionSchedule1.pEndCallback = endCoil1and4Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and5Charge;
@@ -1189,9 +1199,9 @@ void initialiseAll(void)
           ignitionSchedule6.pEndCallback = nullCallback;
 #endif
         }
-        //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
-          {
+        {
+          //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and5Charge;
           ignitionSchedule1.pEndCallback = endCoil1and5Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and6Charge;
@@ -1507,6 +1517,11 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
+
+        //Make sure the CAN pins aren't overwritten
+        pinTrigger3 = 54;
+        pinVVT_1 = 55;
+
       #elif defined(CORE_TEENSY41)
         //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
         pinBaro = A4; 
@@ -2840,6 +2855,7 @@ void setPinMapping(byte boardID)
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }
+  
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinTachOut, OUTPUT);
@@ -2847,7 +2863,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
-  pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
@@ -2855,6 +2870,7 @@ void setPinMapping(byte boardID)
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
   pinMode(pinVVT_2, OUTPUT);
+  if(configPage4.ignBypassEnabled > 0) { pinMode(pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }

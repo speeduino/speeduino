@@ -49,7 +49,7 @@
 
 //Test values only
 #define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
-#define MAX_LOG_FILES     10000
+#define MAX_LOG_FILES     9999
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
 #define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10) //Allow for 10 entries in the ringbuffer. Will need tuning

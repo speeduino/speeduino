@@ -887,10 +887,10 @@ namespace {
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
+    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
     while (!it.at_end())
     {
-      Serial.write(pConverter->to_byte(*it));
+      Serial.write(converter.to_byte(*it));
       ++it;
     }
   }
@@ -996,7 +996,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(table3d_axis_io::to_byte(y_it.get_domain(), *y_it));
+    serial_print_prepadded_value(get_table3d_axis_converter(y_it.get_domain()).to_byte(*y_it));
 
     while (!row.at_end())
     {
@@ -1006,21 +1006,21 @@ namespace {
     Serial.println();
   }
 
-  void print_x_axis(const void *pTable, table_type_t key)
+  void print_x_axis(void *pTable, table_type_t key)
   {
     Serial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
-    const int16_byte *pConverter = table3d_axis_io::get_converter(x_it.get_domain());
+    const table3d_axis_io_converter converter = get_table3d_axis_converter(x_it.get_domain());
 
     while(!x_it.at_end())
     {
-      serial_print_prepadded_value(pConverter->to_byte(*x_it));
+      serial_print_prepadded_value(converter.to_byte(*x_it));
       ++x_it;
     }
   }
 
-  void serial_print_3dtable(const void *pTable, table_type_t key)
+  void serial_print_3dtable(void *pTable, table_type_t key)
   {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);

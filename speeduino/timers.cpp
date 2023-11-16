@@ -41,6 +41,9 @@ volatile bool tachoAlt = false;
 volatile uint16_t tachoSweepIncr;
 volatile uint16_t tachoSweepAccum;
 
+volatile uint8_t testInjectorPulseCount = 0;
+volatile uint8_t testIgnitionPulseCount = 0;
+
 #if defined (CORE_TEENSY)
   IntervalTimer lowResTimer;
 #endif
@@ -155,6 +158,33 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   if (loop33ms == 33)
   {
     loop33ms = 0;
+
+    //Pulse fuel and ignition test outputs are set at 30Hz
+    if( BIT_CHECK(currentStatus.testOutputs, 1) && (currentStatus.RPM == 0) )
+    {
+      //Check for pulsed injector output test
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
+      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
+      testInjectorPulseCount = 0;
+
+      //Check for pulsed ignition output test
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
+      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
+      testIgnitionPulseCount = 0;
+    }
+
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
@@ -279,34 +309,53 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       currentStatus.fuelTemp = div100( (int16_t)(((4224 * (long)flexPulseWidth) >> 10) - 8125) );
     }
 
-    //**************************************************************************************************************************************************
-    //Handle any of the hardware testing outputs
-    if( BIT_CHECK(currentStatus.testOutputs, 1) )
-    {
-      //Check whether any of the fuel outputs is on
-
-      //Check for injector outputs on 50%
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ1_CMD_BIT)) { injector1Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ2_CMD_BIT)) { injector2Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ3_CMD_BIT)) { injector3Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ4_CMD_BIT)) { injector4Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ5_CMD_BIT)) { injector5Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ6_CMD_BIT)) { injector6Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ7_CMD_BIT)) { injector7Toggle(); }
-      if(BIT_CHECK(HWTest_INJ_50pc, INJ8_CMD_BIT)) { injector8Toggle(); }
-
-      //Check for ignition outputs on 50%
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN1_CMD_BIT)) { coil1Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN2_CMD_BIT)) { coil2Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN3_CMD_BIT)) { coil3Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN4_CMD_BIT)) { coil4Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN5_CMD_BIT)) { coil5Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN6_CMD_BIT)) { coil6Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN7_CMD_BIT)) { coil7Toggle(); }
-      if(BIT_CHECK(HWTest_IGN_50pc, IGN8_CMD_BIT)) { coil8Toggle(); }
-    }
-
   }
+
+  //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
+  if( BIT_CHECK(currentStatus.testOutputs, 1) )
+  {
+    //Check for pulsed injector output test
+    if( (HWTest_INJ_Pulsed > 0)  )
+    {
+      if(testInjectorPulseCount >= configPage13.hwTestInjDuration)
+      {
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); }
+        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); }
+        
+        testInjectorPulseCount = 0;
+      }
+      else { testInjectorPulseCount++; }
+    }
+    
+
+    //Check for pulsed ignition output test
+    if( (HWTest_IGN_Pulsed > 0) )
+    {
+      if(testIgnitionPulseCount >= configPage13.hwTestIgnDuration)
+      {
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); }
+        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); }
+
+        testIgnitionPulseCount = 0;
+      }
+      else { testIgnitionPulseCount++; }
+    }
+    
+  }
+
+
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
     TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.

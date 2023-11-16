@@ -30,7 +30,10 @@ public:
 
     /** @brief Construct */
     table_axis_iterator(table3d_axis_t *pStart, const table3d_axis_t *pEnd, axis_domain domain)
-     : _pAxis(pStart), _pAxisEnd(pEnd), _stride(pEnd>pStart ? stride_inc : stride_dec), _domain(domain) //cppcheck-suppress misra-c2012-10.4
+     : _stride(pEnd>pStart ? stride_inc : stride_dec)
+     , _pStart(pStart)
+     , _pEnd(pEnd + _stride)
+     , _domain(domain) //cppcheck-suppress misra-c2012-10.4
     {
     }
 
@@ -41,7 +44,7 @@ public:
     */
     table_axis_iterator& advance(int8_t steps)
     {
-        _pAxis = _pAxis + ((int16_t)_stride * steps);
+        _pStart = _pStart + ((int16_t)_stride * steps);
         return *this;
     }
 
@@ -54,27 +57,27 @@ public:
     /** @brief Test for end of iteration */
     bool at_end(void) const
     {
-        return _pAxis == _pAxisEnd;
+        return _pStart == _pEnd;
     }
 
     /** @brief Dereference the iterator */
     table3d_axis_t& operator*(void)
     {
-        return *_pAxis;
+        return *_pStart;
     }
     /** @copydoc table_axis_iterator::operator*()  */
     const table3d_axis_t& operator*(void) const
     {
-        return *_pAxis;
+        return *_pStart;
     }    
     
 private:
 
     static constexpr int8_t stride_inc = 1;
     static constexpr int8_t stride_dec = -1;
-    table3d_axis_t *_pAxis;
-    const table3d_axis_t *_pAxisEnd;
     int8_t _stride;
+    table3d_axis_t *_pStart;
+    const table3d_axis_t *_pEnd;
     const axis_domain _domain;
 };
 
@@ -95,12 +98,12 @@ private:
         /** @brief Iterate over the axis elements */ \
         table_axis_iterator begin(void) \
         {  \
-            return table_axis_iterator(axis+(size)-1, axis-1, domain); \
+            return table_axis_iterator(axis+(size)-1, axis, domain); \
         } \
         /** @brief Iterate over the axis elements, from largest to smallest */ \
         table_axis_iterator rbegin(void) \
         {  \
-            return table_axis_iterator(axis, axis+(size), domain); \
+            return table_axis_iterator(axis, axis+(size)-1, domain); \
         } \
     };
 

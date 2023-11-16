@@ -181,7 +181,7 @@ byte getVE2(void)
   else if (configPage10.fuel2Algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    currentStatus.fuelLoad2 = (currentStatus.MAP * 100) / currentStatus.EMAP;
+    currentStatus.fuelLoad2 = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
   }
   else { currentStatus.fuelLoad2 = currentStatus.MAP; } //Fallback position
   tempVE = get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value

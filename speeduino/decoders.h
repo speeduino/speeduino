@@ -61,7 +61,7 @@ extern bool decoderHasFixedCrankingTiming;
 */
 
 //This isn't to to filter out wrong pulses on triggers, but just to smooth out the cam angle reading for better closed loop VVT control.
-#define ANGLE_FILTER(input, alpha, prior) (((long)input * (256 - alpha) + ((long)prior * alpha))) >> 8
+#define ANGLE_FILTER(input, alpha, prior) (((long)(input) * (256 - (alpha)) + ((long)(prior) * (alpha)))) >> 8
 
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
@@ -282,8 +282,24 @@ extern volatile uint16_t triggerToothAngle; //The number of crank degrees that e
 extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
-extern int16_t lastToothCalcAdvance; //Invalid value here forces calculation of this on first main loop
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
+
+typedef uint32_t UQ24X8_t;
+constexpr uint8_t UQ24X8_Shift = 8U;
+
+/** @brief uS per degree at current RPM in UQ24.8 fixed point */
+extern UQ24X8_t microsPerDegree;
+constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
+
+typedef uint16_t UQ1X15_t;
+constexpr uint8_t UQ1X15_Shift = 15U;
+
+/** @brief Degrees per uS in UQ1.15 fixed point.
+ * 
+ * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
+ */
+extern UQ1X15_t degreesPerMicro;
+constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;
@@ -296,12 +312,8 @@ extern uint16_t ignition8EndTooth;
 
 extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
-//Used for identifying long and short pulses on the 4G63 (And possibly other) trigger patterns
-#define LONG 0;
-#define SHORT 1;
-
-#define CRANK_SPEED 0
-#define CAM_SPEED   1
+#define CRANK_SPEED 0U
+#define CAM_SPEED   1U
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM_SECONDARY 1
