@@ -159,6 +159,9 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 * CAN / Second serial
 */
 
+  #define secondarySerial_AVAILABLE
+  #define SECONDARY_SERIAL_T HardwareSerial
+
 
 #endif //CORE_AVR
 #endif //AVR2560_H

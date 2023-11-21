@@ -111,7 +111,7 @@ void loop(void)
         //if can or secondary serial interface is enabled then check for requests.
         if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
         {
-          if ( ((mainLoopCount & 31) == 1) or (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
+          if ( ((mainLoopCount & 31) == 1) || (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
             if (secondarySerial.available() > 0)  { secondserial_Command(); }
           }

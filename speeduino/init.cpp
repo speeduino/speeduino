@@ -117,10 +117,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
-    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
-    #if defined(secondarySerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-    #endif
+    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
     taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -318,6 +315,11 @@ void initialiseAll(void)
     #if defined(CORE_TEENSY35)
       Can0.setRX(DEF);
       Can0.setTX(DEF);
+    #endif
+
+    //Must come after setPinMapping() as secondary serial can be changed on a per board basis
+    #if defined(secondarySerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
     #endif
 
     //End all coil charges to ensure no stray sparks on startup
@@ -2333,9 +2335,21 @@ void setPinMapping(byte boardID)
       pinInjector3 = 12; //MISO
       pinInjector4 = 10; //CS for MC33810 1
       pinInjector5 = 9; //CS for MC33810 2
+      pinInjector6 = 9; //CS for MC33810 3
 
+      //Dummy pins, without thes pin 0 (Serial1 RX) gets overwritten
+      pinCoil1 = 40;
+      pinCoil2 = 41;
+      /*
+      pinCoil3 = 55;
+      pinCoil4 = 55;
+      pinCoil5 = 55;
+      pinCoil6 = 55;
+      */
+      
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 22; //Uses one of the protected spare digitial inputs. This must be set or Serial1 (Pin 0) gets broken
       pinFlex = A16; // Flex sensor
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
@@ -2369,6 +2383,8 @@ void setPinMapping(byte boardID)
         pinCLT = A20; //CLS sensor pin
         pinO2 = A21; //O2 Sensor pin
         pinO2_2 = A18; //Spare 2
+
+        pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
       #endif
 
       #if defined(CORE_TEENSY41)
