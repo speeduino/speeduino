@@ -1,5 +1,6 @@
 #include "globals.h"
 #if defined(CORE_AVR)
+#include "board_avr2560.h"
 #include "auxiliaries.h"
 #include "comms_secondary.h"
 
@@ -23,7 +24,9 @@ void initBoard(void)
     * General
     */
     configPage9.intcan_available = 0;   // AVR devices do NOT have internal canbus
-    pSecondarySerial = &Serial3;
+    #ifdef secondarySerial_AVAILABLE
+      pSecondarySerial = &Serial3;
+    #endif
 
     /*
     ***********************************************************************************************************
