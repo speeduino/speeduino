@@ -17,7 +17,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    21
+  #define CURRENT_DATA_VERSION    23
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -676,7 +676,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 20)
   {
-    //202210
+    //202305
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
     configPage2.maeMinChange = 2; //Default is 2% minimum change to match prior behaviour.
 
@@ -703,16 +703,52 @@ void doUpdates(void)
     writeAllConfig();
     storeEEPROMVersion(21);
   }
-  
+
   if(readEEPROMVersion() == 21)
   {
-    //Unreleased
-    if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) { multiplyTableValue(wmiMapPage, 2); } //Increased PWM resolution from 0-100 to 0-200 to match VVT
-    
-    //writeAllConfig();
-    //storeEEPROMVersion(21);
+    //202310
+
+    //Rolling cut curve added. Default values
+    configPage15.rollingProtRPMDelta[0]   = -30;
+    configPage15.rollingProtRPMDelta[1]   = -20;
+    configPage15.rollingProtRPMDelta[2]   = -10;
+    configPage15.rollingProtRPMDelta[3]   = -5;
+    configPage15.rollingProtCutPercent[0] = 50;
+    configPage15.rollingProtCutPercent[1] = 65;
+    configPage15.rollingProtCutPercent[2] = 80;
+    configPage15.rollingProtCutPercent[3] = 95;
+
+    //DFCO Hyster was multipled by 2 to allow a range of 0-500. Existing values must be halved
+    configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
+
+    writeAllConfig();
+    storeEEPROMVersion(22);
   }
 
+  if(readEEPROMVersion() == 22)
+  {
+    //202311-dev
+    
+    if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) { multiplyTableValue(wmiMapPage, 2); } //Increased PWM resolution from 0-100 to 0-200 to match VVT
+
+    //Default values for pulsed hw test modes
+    configPage13.hwTestInjDuration = 8;
+    configPage13.hwTestIgnDuration = 4;
+
+    //DFCO taper default values (Feature disabled by default)
+    configPage9.dfcoTaperEnable = 0; //Disable
+    configPage9.dfcoTaperTime = 10; //1 second
+    configPage9.dfcoTaperFuel = 100; //Don't scale fuel
+    configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+    
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
+
+    writeAllConfig();
+    storeEEPROMVersion(23);
+  }
+  
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
   {
@@ -737,7 +773,7 @@ void doUpdates(void)
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
-void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
+void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
@@ -747,7 +783,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   }
 }
 
-void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+void divideTableLoad(void *pTable, table_type_t key, uint8_t divisor)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())

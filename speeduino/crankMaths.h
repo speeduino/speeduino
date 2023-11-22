@@ -1,28 +1,79 @@
 #ifndef CRANKMATHS_H
 #define CRANKMATHS_H
 
-#define CRANKMATH_METHOD_INTERVAL_DEFAULT  0
-#define CRANKMATH_METHOD_INTERVAL_REV      1
-#define CRANKMATH_METHOD_INTERVAL_TOOTH    2
-#define CRANKMATH_METHOD_ALPHA_BETA        3
-#define CRANKMATH_METHOD_2ND_DERIVATIVE    4
+#include "maths.h"
+#include "globals.h"
 
-#define SECOND_DERIV_ENABLED                0          
+/**
+ * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_IGN]
+ * 
+ * @param angle A crank angle in degrees
+ * @return int16_t 
+ */
+static inline int16_t ignitionLimits(int16_t angle) {
+    return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+}
 
-//#define fastDegreesToUS(targetDegrees) ((targetDegrees) * (unsigned long)timePerDegree)
-#define fastDegreesToUS(targetDegrees) (((targetDegrees) * (unsigned long)timePerDegreex16) >> 4)
-/*#define fastTimeToAngle(time) (((unsigned long)time * degreesPeruSx2048) / 2048) */ //Divide by 2048 will be converted at compile time to bitshift
-#define fastTimeToAngle(time) (((unsigned long)(time) * degreesPeruSx32768) / 32768) //Divide by 32768 will be converted at compile time to bitshift
+/** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
+#define MICROS_PER_DEG_1_RPM INT32_C(166667)
 
-#define ignitionLimits(angle) ( (((int16_t)(angle)) >= CRANK_ANGLE_MAX_IGN) ? ((angle) - CRANK_ANGLE_MAX_IGN) : ( ((int16_t)(angle) < 0) ? ((angle) + CRANK_ANGLE_MAX_IGN) : (angle)) )
+/** @brief The maximum rpm that the ECU will attempt to run at. 
+ * 
+ * It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be
+ * allowed to run. Lower number gives better performance 
+ **/
+#define MAX_RPM INT16_C(18000)
 
+/** @brief Absolute minimum RPM that the crank math (& therefore all of Speeduino) can be used with 
+ * 
+ * This is dictated by the use of uint16_t as the base type for storing
+ * angle<->time conversion factor (degreesPerMicro)
+*/
+#define MIN_RPM ((MICROS_PER_DEG_1_RPM/(UINT16_MAX/16UL))+1UL)
 
-unsigned long angleToTime(int16_t angle, byte method);
-uint16_t timeToAngle(unsigned long time, byte method);
-void doCrankSpeedCalcs(void);
+/**
+ * @name Converts angular degrees to the time interval that amount of rotation
+ * will take at current RPM.
+ * 
+ * Based on angle of [0,720] and min/max RPM, result ranges from
+ * 9 (MAX_RPM, 1 deg) to 2926828 (MIN_RPM, 720 deg)
+ *
+ * @param angle Angle in degrees
+ * @return Time interval in uS
+ */
+///@{
+/** @brief Converts based on the time one degree of rotation takes 
+ * 
+ * Inverse of timeToAngleDegPerMicroSec
+*/
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
 
-extern volatile uint16_t timePerDegree;
-extern volatile uint16_t timePerDegreex16;
-extern volatile unsigned long degreesPeruSx32768;
+/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
+ * 
+ * Inverse of timeToAngleIntervalTooth
+*/
+uint32_t angleToTimeIntervalTooth(uint16_t angle);
+///@}
+
+/**
+ * @name Converts a time interval in microsecods to the equivalent degrees of angular (crank)
+ * rotation at current RPM.
+ *
+ * @param time Time interval in uS
+ * @return Angle in degrees
+ */
+///@{
+/** @brief Converts based on the the interval on time one degree of rotation takes 
+ * 
+ * Inverse of angleToTimeMicroSecPerDegree
+*/
+uint16_t timeToAngleDegPerMicroSec(uint32_t time);
+
+/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
+ * 
+ * Inverse of angleToTimeIntervalTooth
+*/
+uint16_t timeToAngleIntervalTooth(uint32_t time);
+///@}
 
 #endif
