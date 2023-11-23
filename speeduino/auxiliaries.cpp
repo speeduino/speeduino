@@ -87,7 +87,7 @@ Air Conditioning Control
 */
 void initialiseAirCon(void)
 {
-  if( (configPage15.airConEnable&1) == 1 &&
+  if( (configPage15.airConEnable) == 1 &&
       pinAirConRequest != 0 &&
       pinAirConComp != 0 )
   {
@@ -217,7 +217,7 @@ bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  bool acReqPinStatus = ( ((configPage15.airConReqPol&1)==1) ? 
+  bool acReqPinStatus = ( ((configPage15.airConReqPol)==1) ? 
                              !!(*aircon_req_pin_port & aircon_req_pin_mask) :
                              !(*aircon_req_pin_port & aircon_req_pin_mask));
   BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
@@ -346,7 +346,7 @@ void fanControl(void)
 
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
-           ((configPage15.airConTurnsFanOn&1) == 1 &&
+           ((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
@@ -387,7 +387,7 @@ void fanControl(void)
       else
       {
         byte tempFanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        if((configPage15.airConTurnsFanOn&1) == 1 &&
+        if((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {
           // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
