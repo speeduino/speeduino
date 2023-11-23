@@ -2841,10 +2841,10 @@ void setPinMapping(byte boardID)
   pinCTPS = pinTranslate(configPage2.CTPSPin);
   
   // Air conditioning control initialisation
-  if (((configPage15.airConCompPin&63) != 0) && ((configPage15.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin&63); }
-  if (((configPage15.airConFanPin&63) != 0) && ((configPage15.airConFanPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin&63); }
-  if (((configPage15.airConReqPin&63) != 0) && ((configPage15.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin&63); }
-  
+  if ((configPage15.airConCompPin != 0) && (configPage15.airConCompPin < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin); }
+  if ((configPage15.airConFanPin != 0) && (configPage15.airConFanPin < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin); }
+  if ((configPage15.airConReqPin != 0) && (configPage15.airConReqPin < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin); }
+    
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -3049,14 +3049,14 @@ void setPinMapping(byte boardID)
     }
   } 
 
-  if((pinAirConComp>0) && ((configPage15.airConEnable&1) == 1))
+  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
   {
     pinMode(pinAirConComp, OUTPUT);
   }
 
-  if((pinAirConRequest > 0) && ((configPage15.airConEnable&1) == 1) && (!pinIsOutput(pinAirConRequest)))
+  if((pinAirConRequest > 0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConRequest)))
   {
-    if((configPage15.airConReqPol&1) == 1)
+    if((configPage15.airConReqPol) == 1)
     {
       // Inverted
       // +5V is ON, Use external pull-down resistor for OFF
@@ -3070,7 +3070,7 @@ void setPinMapping(byte boardID)
     }
   }
 
-  if((pinAirConFan > 0) && ((configPage15.airConEnable&1) == 1) && ((configPage15.airConFanEnabled&1) == 1))
+  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
