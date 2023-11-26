@@ -24,23 +24,10 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "comms_legacy.h"
 #include "logger.h"
 #include "page_crc.h"
+#include BOARD_H
 
 uint8_t currentSecondaryCommand;
-
-#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  HardwareSerial &secondarySerial = Serial3;
-#elif defined(CORE_STM32)
-  #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
-    #define Serial2 Serial1
-  #endif
-  #if defined(STM32GENERIC) // STM32GENERIC core
-    SerialUART &secondarySerial = Serial2;
-  #else //libmaple core aka STM32DUINO
-    HardwareSerial &secondarySerial = Serial2;
-  #endif
-#elif defined(CORE_TEENSY)
-  HardwareSerial &secondarySerial = Serial2;
-#endif
+SECONDARY_SERIAL_T* pSecondarySerial;
 
 void secondserial_Command(void)
 {

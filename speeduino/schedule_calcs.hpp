@@ -3,6 +3,8 @@
 
 #include "scheduler.h"
 #include "crankMaths.h"
+#include "maths.h"
+#include "timers.h"
 
 static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t injChannelDegrees, uint16_t injAngle)
 {
@@ -100,4 +102,16 @@ static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule
       return _calculateIgnitionTimeout(schedule, startAngle, crankAngle);
   }
   return _calculateIgnitionTimeout(schedule, _adjustToIgnChannel(startAngle, channelIgnDegrees), _adjustToIgnChannel(crankAngle, channelIgnDegrees));
+}
+
+#define MIN_CYCLES_FOR_ENDCOMPARE 6
+
+inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) {
+  if( (schedule.Status == RUNNING) ) { 
+    SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ) ); 
+  }
+  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { 
+    schedule.endCompare = schedule.counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ); 
+    schedule.endScheduleSetByDecoder = true; 
+  }
 }

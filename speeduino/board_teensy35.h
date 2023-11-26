@@ -155,7 +155,10 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-   #define USE_SERIAL3               // Secondary serial port to use
+  #define USE_SERIAL3               // Secondary serial port to use
+  #define secondarySerial_AVAILABLE
+  #define SECONDARY_SERIAL_T HardwareSerial
+
   #include <FlexCAN_T4.h>
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;

@@ -388,5 +388,12 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 extern STM32_CAN Can0;
 #endif
 
+#define secondarySerial_AVAILABLE
+#if defined(STM32GENERIC) // STM32GENERIC core
+  #define SECONDARY_SERIAL_T SerialUART
+#else //libmaple core aka STM32DUINO
+  #define SECONDARY_SERIAL_T HardwareSerial
+#endif
+
 #endif //CORE_STM32
 #endif //STM32_H

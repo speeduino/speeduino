@@ -117,10 +117,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
-    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
-    #if defined(secondarySerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-    #endif
+    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
     taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -318,6 +315,11 @@ void initialiseAll(void)
     #if defined(CORE_TEENSY35)
       Can0.setRX(DEF);
       Can0.setTX(DEF);
+    #endif
+
+    //Must come after setPinMapping() as secondary serial can be changed on a per board basis
+    #if defined(secondarySerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
     #endif
 
     //End all coil charges to ensure no stray sparks on startup
@@ -1157,9 +1159,19 @@ void initialiseAll(void)
 
     case IGN_MODE_WASTEDCOP:
         //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
-        //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-        if( configPage2.nCylinders <= 4 )
+        if( configPage2.nCylinders <= 3)
         {
+          //1-3 cylinder wasted COP is the same as regular wasted mode
+          ignitionSchedule1.pStartCallback = beginCoil1Charge;
+          ignitionSchedule1.pEndCallback = endCoil1Charge;
+          ignitionSchedule2.pStartCallback = beginCoil2Charge;
+          ignitionSchedule2.pEndCallback = endCoil2Charge;
+          ignitionSchedule3.pStartCallback = beginCoil3Charge;
+          ignitionSchedule3.pEndCallback = endCoil3Charge;
+        }
+        else if( configPage2.nCylinders == 4 )
+        {
+          //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and3Charge;
           ignitionSchedule1.pEndCallback = endCoil1and3Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and4Charge;
@@ -1170,9 +1182,9 @@ void initialiseAll(void)
           ignitionSchedule4.pStartCallback = nullCallback;
           ignitionSchedule4.pEndCallback = nullCallback;
         }
-        //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
         else if( configPage2.nCylinders == 6 )
-          {
+        {
+          //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and4Charge;
           ignitionSchedule1.pEndCallback = endCoil1and4Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and5Charge;
@@ -1189,9 +1201,9 @@ void initialiseAll(void)
           ignitionSchedule6.pEndCallback = nullCallback;
 #endif
         }
-        //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
         else if( configPage2.nCylinders == 8 )
-          {
+        {
+          //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
           ignitionSchedule1.pStartCallback = beginCoil1and5Charge;
           ignitionSchedule1.pEndCallback = endCoil1and5Charge;
           ignitionSchedule2.pStartCallback = beginCoil2and6Charge;
@@ -1507,6 +1519,11 @@ void setPinMapping(byte boardID)
         pinCoil4 = 29;
         pinCoil3 = 30;
         pinO2 = A22;
+
+        //Make sure the CAN pins aren't overwritten
+        pinTrigger3 = 54;
+        pinVVT_1 = 55;
+
       #elif defined(CORE_TEENSY41)
         //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
         pinBaro = A4; 
@@ -2370,9 +2387,21 @@ void setPinMapping(byte boardID)
       pinInjector3 = 12; //MISO
       pinInjector4 = 10; //CS for MC33810 1
       pinInjector5 = 9; //CS for MC33810 2
+      pinInjector6 = 9; //CS for MC33810 3
 
+      //Dummy pins, without thes pin 0 (Serial1 RX) gets overwritten
+      pinCoil1 = 40;
+      pinCoil2 = 41;
+      /*
+      pinCoil3 = 55;
+      pinCoil4 = 55;
+      pinCoil5 = 55;
+      pinCoil6 = 55;
+      */
+      
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 22; //Uses one of the protected spare digitial inputs. This must be set or Serial1 (Pin 0) gets broken
       pinFlex = A16; // Flex sensor
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
@@ -2406,6 +2435,8 @@ void setPinMapping(byte boardID)
         pinCLT = A20; //CLS sensor pin
         pinO2 = A21; //O2 Sensor pin
         pinO2_2 = A18; //Spare 2
+
+        pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
       #endif
 
       #if defined(CORE_TEENSY41)
@@ -2878,10 +2909,10 @@ void setPinMapping(byte boardID)
   pinCTPS = pinTranslate(configPage2.CTPSPin);
   
   // Air conditioning control initialisation
-  if (((configPage15.airConCompPin&63) != 0) && ((configPage15.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin&63); }
-  if (((configPage15.airConFanPin&63) != 0) && ((configPage15.airConFanPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin&63); }
-  if (((configPage15.airConReqPin&63) != 0) && ((configPage15.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin&63); }
-  
+  if ((configPage15.airConCompPin != 0) && (configPage15.airConCompPin < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin); }
+  if ((configPage15.airConFanPin != 0) && (configPage15.airConFanPin < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin); }
+  if ((configPage15.airConReqPin != 0) && (configPage15.airConReqPin < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin); }
+    
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
@@ -2892,6 +2923,7 @@ void setPinMapping(byte boardID)
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }
+  
 
   //Finally, set the relevant pin modes for outputs
   pinMode(pinTachOut, OUTPUT);
@@ -2899,7 +2931,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
-  pinMode(pinIgnBypass, OUTPUT);
   pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
@@ -2907,6 +2938,7 @@ void setPinMapping(byte boardID)
   pinMode(pinBoost, OUTPUT);
   pinMode(pinVVT_1, OUTPUT);
   pinMode(pinVVT_2, OUTPUT);
+  if(configPage4.ignBypassEnabled > 0) { pinMode(pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
@@ -3085,14 +3117,14 @@ void setPinMapping(byte boardID)
     }
   } 
 
-  if((pinAirConComp>0) && ((configPage15.airConEnable&1) == 1))
+  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
   {
     pinMode(pinAirConComp, OUTPUT);
   }
 
-  if((pinAirConRequest > 0) && ((configPage15.airConEnable&1) == 1) && (!pinIsOutput(pinAirConRequest)))
+  if((pinAirConRequest > 0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConRequest)))
   {
-    if((configPage15.airConReqPol&1) == 1)
+    if((configPage15.airConReqPol) == 1)
     {
       // Inverted
       // +5V is ON, Use external pull-down resistor for OFF
@@ -3106,7 +3138,7 @@ void setPinMapping(byte boardID)
     }
   }
 
-  if((pinAirConFan > 0) && ((configPage15.airConEnable&1) == 1) && ((configPage15.airConFanEnabled&1) == 1))
+  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
