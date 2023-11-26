@@ -1897,9 +1897,8 @@ void setPinMapping(byte boardID)
 
     
     case 15:
+    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the FazxFi PROTO2.0 board
-    #ifndef SMALL_FLASH_MODE
-    
       pinInjector1 =       5; //Output pin injector 1 is on
       pinInjector2 =       4; //Output pin injector 2 is on
       pinInjector3 =       3; //Output pin injector 3 is on
@@ -1914,13 +1913,13 @@ void setPinMapping(byte boardID)
       pinTrigger =        19; //The CAS pin
       pinTrigger2 =       18; //The Cam Sensor pin
       pinTrigger3 =       48; //The Cam sensor 2 pin
-      pinTPS =            A2;//TPS input pin
+      pinTPS =            A2; //TPS input pin
       pinMAP =            A1; //MAP sensor pin
       pinIAT =            A4; //IAT sensor pin
       pinCLT =            A7; //CLS sensor pin
       pinO2 =             A5; //O2 Sensor pin
       pinBat =            A6; //Battery reference voltage pin
-      pinDisplayReset =   53; // OLED reset pin
+      pinDisplayReset =   53; //OLED reset pin
       pinTachOut =        10; //Tacho output pin
       pinIdle1 =           6; //Single wire idle control
       pinIdle2 =           7; //2 wire idle control
@@ -1933,7 +1932,7 @@ void setPinMapping(byte boardID)
       pinStepperEnable =  25; //Enable pin for DRV8825
       pinFan =            11; //Pin for the fan output
       pinLaunch =         37; //Can be overwritten below
-      pinFlex =           21; // Flex sensor (Must be external interrupt enabled)
+      pinFlex =           21; //Flex sensor (Must be external interrupt enabled)
       pinResetControl =   52; //Reset control output
       pinBaro =           A0;
       pinVSS =            20;
@@ -1941,8 +1940,8 @@ void setPinMapping(byte boardID)
       pinWMIIndicator =   43;
       pinWMIEnabled =     42;
       //FazXFi add-on
-      //pinITPS =           ; //Idle position pin
-      //pinCTS =            ; //Close throtlle pin
+      //pinITPS =         A3; //Idle position pin
+      //pinCTS =          36; //Close throtlle pin
 
     #endif
       break;
