@@ -256,6 +256,46 @@ void test_initialisation_outputs_reset_control_override_board_default(void)
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));
 }
 
+void test_initialisation_user_pin_override_board_default(void)
+{
+  prepareForInitialiseAll(3);
+  // We do not test all pins, too many & too fragile. So fingers crossed the 
+  // same pattern is used for all.
+  configPage2.tachoPin = 15;
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(15, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+}
+
+// All config user pin fields are <= 6 *bits*. So too small to
+// assign BOARD_MAX_IO_PINS to. So while there is defensive code
+// in place, it cannot be unit tested.
+#if false
+void test_initialisation_user_pin_not_valid_no_override(void)
+{
+  prepareForInitialiseAll(3);
+  configPage2.tachoPin = (uint8_t)BOARD_MAX_IO_PINS;// + (uint8_t)1U;
+  ++configPage2.tachoPin;
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(49, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+}
+#endif
+
+void test_initialisation_input_user_pin_does_not_override_outputpin(void)
+{
+  // A user defineable input pin should not overwrite any output pins.
+  prepareForInitialiseAll(3);
+  configPage6.launchPin = 49; // 49 is the default tacho output
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(49, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+  TEST_ASSERT_EQUAL(49, pinLaunch);  
+}
+
 void testInitialisation()
 {
   RUN_TEST_P(test_initialisation_complete);
@@ -268,4 +308,6 @@ void testInitialisation()
   RUN_TEST_P(test_initialisation_outputs_VVT);
   RUN_TEST_P(test_initialisation_outputs_reset_control_use_board_default);
   RUN_TEST_P(test_initialisation_outputs_reset_control_override_board_default);
+  RUN_TEST_P(test_initialisation_user_pin_override_board_default);
+  RUN_TEST_P(test_initialisation_input_user_pin_does_not_override_outputpin);
 }
