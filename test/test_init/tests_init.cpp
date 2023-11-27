@@ -2,6 +2,9 @@
 #include "globals.h"
 #include "init.h"
 #include "../test_utils.h"
+#include "storage.h"
+
+void prepareForInitialiseAll(uint8_t boardId);
 
 #define UNKNOWN_PIN 0xFF
 
@@ -37,6 +40,7 @@ uint8_t getPinMode(uint8_t pin)
 
 void test_initialisation_complete(void)
 {
+  prepareForInitialiseAll(3);
   initialiseAll(); //Run the main initialise function
   TEST_ASSERT_EQUAL(true, initialisationComplete);
 }
@@ -44,6 +48,7 @@ void test_initialisation_complete(void)
 void test_initialisation_ports(void)
 {
   //Test that all the port values have been set
+  prepareForInitialiseAll(3);
   initialiseAll(); //Run the main initialise function
   TEST_ASSERT_NOT_EQUAL(0, inj1_pin_port);
   TEST_ASSERT_NOT_EQUAL(0, inj2_pin_port);
@@ -58,7 +63,7 @@ void test_initialisation_ports(void)
 //Test that all mandatory output pins have their mode correctly set to output
 void test_initialisation_outputs_V03(void)
 {
-  configPage2.pinMapping = 2; //Set the board number to test
+  prepareForInitialiseAll(2);
   initialiseAll(); //Run the main initialise function
 
   char msg[32];
@@ -89,8 +94,7 @@ void test_initialisation_outputs_V03(void)
 //Test that all mandatory output pins have their mode correctly set to output
 void test_initialisation_outputs_V04(void)
 {
-  configPage2.pinMapping = 3; //Set the board number to test
-
+  prepareForInitialiseAll(3);
   initialiseAll(); //Run the main initialise function
 
   char msg[32];
@@ -140,7 +144,7 @@ void test_initialisation_outputs_V04(void)
 //Test that all mandatory output pins have their mode correctly set to output
 void test_initialisation_outputs_MX5_8995(void)
 {
-  configPage2.pinMapping = 9; //Set the board number to test
+  prepareForInitialiseAll(9);
   initialiseAll(); //Run the main initialise function
 
   char msg[32];
@@ -170,7 +174,8 @@ void test_initialisation_outputs_MX5_8995(void)
 
 void test_initialisation_outputs_PWM_idle(void)
 {
-  configPage2.pinMapping = 3; //Set the board number to test (v0.4)
+  prepareForInitialiseAll(3);
+
   //Force 2 channel PWM idle
   configPage6.iacChannels = 1;
   configPage6.iacAlgorithm = 2;
@@ -190,7 +195,9 @@ void test_initialisation_outputs_PWM_idle(void)
 
 void test_initialisation_outputs_stepper_idle(void)
 {
+  prepareForInitialiseAll(9);
   bool isIdleStepper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
+  initialiseAll(); //Run the main initialise function
 
   char msg[32];
   strcpy_P(msg, PSTR("Is Stepper Idle"));
@@ -205,6 +212,9 @@ void test_initialisation_outputs_stepper_idle(void)
 
 void test_initialisation_outputs_boost(void)
 {
+  prepareForInitialiseAll(9);
+  initialiseAll(); //Run the main initialise function
+
   char msg[32];
   strcpy_P(msg, PSTR("Boost"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinBoost), msg);
@@ -212,11 +222,78 @@ void test_initialisation_outputs_boost(void)
 
 void test_initialisation_outputs_VVT(void)
 {
+  prepareForInitialiseAll(9);
+  initialiseAll(); //Run the main initialise function
+
   char msg[32];
   strcpy_P(msg, PSTR("VVT1"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_1), msg);
   strcpy_P(msg, PSTR("VVT2"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinVVT_2), msg);
+}
+
+void test_initialisation_outputs_reset_control_use_board_default(void)
+{
+  prepareForInitialiseAll(9);
+  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlPin = 0; // Flags to use board default
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_NOT_EQUAL(0, pinResetControl); 
+  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));  
+}
+
+void test_initialisation_outputs_reset_control_override_board_default(void)
+{
+  prepareForInitialiseAll(9);
+  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlPin = 45; // Use a different pin
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(45, pinResetControl);  
+  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));
+}
+
+void test_initialisation_user_pin_override_board_default(void)
+{
+  prepareForInitialiseAll(3);
+  // We do not test all pins, too many & too fragile. So fingers crossed the 
+  // same pattern is used for all.
+  configPage2.tachoPin = 15;
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(15, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+}
+
+// All config user pin fields are <= 6 *bits*. So too small to
+// assign BOARD_MAX_IO_PINS to. So while there is defensive code
+// in place, it cannot be unit tested.
+#if false
+void test_initialisation_user_pin_not_valid_no_override(void)
+{
+  prepareForInitialiseAll(3);
+  configPage2.tachoPin = (uint8_t)BOARD_MAX_IO_PINS;// + (uint8_t)1U;
+  ++configPage2.tachoPin;
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(49, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+}
+#endif
+
+void test_initialisation_input_user_pin_does_not_override_outputpin(void)
+{
+  // A user defineable input pin should not overwrite any output pins.
+  prepareForInitialiseAll(3);
+  configPage6.launchPin = 49; // 49 is the default tacho output
+  initialiseAll(); //Run the main initialise function
+
+  TEST_ASSERT_EQUAL(49, pinTachOut);  
+  TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinTachOut));
+  TEST_ASSERT_EQUAL(49, pinLaunch);  
 }
 
 void testInitialisation()
@@ -229,4 +306,8 @@ void testInitialisation()
   RUN_TEST_P(test_initialisation_outputs_PWM_idle);
   RUN_TEST_P(test_initialisation_outputs_boost);
   RUN_TEST_P(test_initialisation_outputs_VVT);
+  RUN_TEST_P(test_initialisation_outputs_reset_control_use_board_default);
+  RUN_TEST_P(test_initialisation_outputs_reset_control_override_board_default);
+  RUN_TEST_P(test_initialisation_user_pin_override_board_default);
+  RUN_TEST_P(test_initialisation_input_user_pin_does_not_override_outputpin);
 }
