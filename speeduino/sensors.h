@@ -1,7 +1,7 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include "Arduino.h"
+#include "globals.h"
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
@@ -27,12 +27,6 @@
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
 #define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
-
-/*
-#if defined(CORE_AVR)
-  #define ANALOG_ISR
-#endif
-*/
 
 extern volatile byte flexCounter;
 extern volatile unsigned long flexStartTime;
@@ -79,70 +73,5 @@ void readBat(void);
 void readBaro(void);
 void readMAP(void);
 void instanteneousMAPReading(void);
-
-#if defined(ANALOG_ISR)
-volatile int AnChannel[15];
-
-//Analog ISR interrupt routine
-/*
-ISR(ADC_vect)
-{
-  byte nChannel;
-  int result = ADCL | (ADCH << 8);
-
-  //ADCSRA = 0x6E; - ADC disabled by clearing bit 7(ADEN)
-  //BIT_CLEAR(ADCSRA, ADIE);
-
-  nChannel = ADMUX & 0x07;
-  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-    if (nChannel==7) { ADMUX = 0x40; }
-  #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if(ADCSRB & 0x08) { nChannel += 8; }  //8 to 15
-    if(nChannel == 15)
-    {
-      ADMUX = 0x40; //channel 0
-      ADCSRB = 0x00; //clear MUX5 bit
-    }
-    else if (nChannel == 7) //channel 7
-    {
-      ADMUX = 0x40;
-      ADCSRB = 0x08; //Set MUX5 bit
-    }
-  #endif
-    else { ADMUX++; }
-  AnChannel[nChannel-1] = result;
-
-  //BIT_SET(ADCSRA, ADIE);
-  //ADCSRA = 0xEE; - ADC Interrupt Flag enabled
-}
-*/
-ISR(ADC_vect)
-{
-  byte nChannel = ADMUX & 0x07;
-  int result = ADCL | (ADCH << 8);
-
-  BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
-
-  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-    if (nChannel==7) { ADMUX = 0x40; }
-  #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if( (ADCSRB & 0x08) > 0) { nChannel += 8; }  //8 to 15
-    if(nChannel == 15)
-    {
-      ADMUX = 0x40; //channel 0
-      ADCSRB = 0x00; //clear MUX5 bit
-    }
-    else if (nChannel == 7) //channel 7
-    {
-      ADMUX = 0x40;
-      ADCSRB = 0x08; //Set MUX5 bit
-    }
-  #endif
-    else { ADMUX++; }
-  AnChannel[nChannel] = result;
-
-  BIT_SET(ADCSRA, ADEN); //Enable ADC
-}
-#endif
 
 #endif // SENSORS_H
