@@ -2917,8 +2917,10 @@ void setPinMapping(byte boardID)
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
   if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_MAX_IO_PINS) )
   {
+    if (configPage4.resetControlPin!=0U) {
+      pinResetControl = pinTranslate(configPage4.resetControlPin);
+    }
     resetControl = configPage4.resetControlConfig;
-    pinResetControl = pinTranslate(configPage4.resetControlPin);
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }
