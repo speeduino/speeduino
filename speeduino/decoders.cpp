@@ -620,15 +620,10 @@ void triggerSec_missingTooth(void)
         // designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. 
         // the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
         secondaryToothCount++;
-        if(secondaryToothCount == 1)
-        {
-          thirdToothCount = 0; // reset this to 0 as the third input (VVT2) cam tooth always appears after a secondary input (VVT1) cam first tooth.
-        }
-        else if(secondaryToothCount == 2)
+        if(secondaryToothCount == 2)
         { 
           revolutionOne = 1; // sequential revolution reset
-          triggerRecordVVT1Angle (); 
-        
+          triggerRecordVVT1Angle ();         
         }        
         //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
         triggerSecFilterTime = curGap2 >> 2; 
@@ -675,16 +670,13 @@ void triggerThird_missingTooth(void)
     thirdToothCount++;
     triggerThirdFilterTime = curGap3 >> 2; //Next third filter is 25% the current gap
     
+    curAngle = getCrankAngle();
+    while(curAngle > 360) { curAngle -= 360; }
+    curAngle -= configPage4.triggerAngle; //Value at TDC
+    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
+    //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
+    currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
 
-    if( thirdToothCount == 2 || configPage4.trigPatternSec != SEC_TRIGGER_TOYOTA_3 ) // if not Toyota 3 tooth pattern run this code otherwise make sure its the second tooth on the Toyota pattern.
-    {
-      curAngle = getCrankAngle();
-      while(curAngle > 360) { curAngle -= 360; }
-      curAngle -= configPage4.triggerAngle; //Value at TDC
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-      //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
-      currentStatus.vvt2Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
-    }
     toothLastThirdToothTime = curTime3;
   } //Trigger filter
 }
