@@ -45,6 +45,38 @@ byte mapErrorCount = 0;
 
 static inline void validateMAP(void);
 
+#if defined(ANALOG_ISR)
+volatile int AnChannel[15];
+
+ISR(ADC_vect)
+{
+  byte nChannel = ADMUX & 0x07;
+  int result = ADCL | (ADCH << 8);
+
+  BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
+
+  #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
+    if (nChannel==7) { ADMUX = 0x40; }
+  #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if( (ADCSRB & 0x08) > 0) { nChannel += 8; }  //8 to 15
+    if(nChannel == 15)
+    {
+      ADMUX = 0x40; //channel 0
+      ADCSRB = 0x00; //clear MUX5 bit
+    }
+    else if (nChannel == 7) //channel 7
+    {
+      ADMUX = 0x40;
+      ADCSRB = 0x08; //Set MUX5 bit
+    }
+  #endif
+    else { ADMUX++; }
+  AnChannel[nChannel] = result;
+
+  BIT_SET(ADCSRA, ADEN); //Enable ADC
+}
+#endif
+
 /** Init all ADC conversions by setting resolutions, etc.
  */
 void initialiseADC(void)
@@ -61,7 +93,9 @@ void initialiseADC(void)
     ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
 
     //All of the below is the longhand version of: ADCSRA = 0xEE;
-    #define ADFR 5 //Why the HELL isn't this defined in the same place as everything else (wiring.h)?!?!
+    #ifndef ADFR
+      #define ADFR 5 //Looks like this is now defined. Retain this for compatibility with earlier versions of Arduino IDE that did not have this.
+    #endif
     BIT_SET(ADCSRA,ADFR); //Set free running mode
     BIT_SET(ADCSRA,ADIE); //Set ADC interrupt enabled
     BIT_CLEAR(ADCSRA,ADIF); //Clear interrupt flag
@@ -265,8 +299,12 @@ void readMAP(void)
           //Repeat for EMAP if it's enabled
           if(configPage6.useEMAP == true)
           {
-            tempReading = analogRead(pinEMAP);
-            tempReading = analogRead(pinEMAP);
+            #if defined(ANALOG_ISR_MAP)
+              tempReading = AnChannel[pinEMAP-A0];
+            #else
+              tempReading = analogRead(pinEMAP);
+              tempReading = analogRead(pinEMAP);
+            #endif
 
             //Error check
             if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
@@ -288,14 +326,14 @@ void readMAP(void)
             MAPlast_time = MAP_time;
             MAP_time = micros();
 
-            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.mapADC = udiv_32_16(MAPrunningValue, MAPcount);
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
 
             //If EMAP is enabled, the process is identical to the above
             if(configPage6.useEMAP == true)
             {
-              currentStatus.EMAPADC = ldiv(EMAPrunningValue, MAPcount).quot; //Note that the MAP count can be reused here as it will always be the same count.
+              currentStatus.EMAPADC = udiv_32_16(EMAPrunningValue, MAPcount); //Note that the MAP count can be reused here as it will always be the same count.
               currentStatus.EMAP = fastMap10Bit(currentStatus.EMAPADC, configPage2.EMAPMin, configPage2.EMAPMax);
               if(currentStatus.EMAP < 0) { currentStatus.EMAP = 0; } //Sanity check
             }
@@ -396,7 +434,7 @@ void readMAP(void)
             MAPlast_time = MAP_time;
             MAP_time = micros();
 
-            currentStatus.mapADC = ldiv(MAPrunningValue, MAPcount).quot;
+            currentStatus.mapADC = udiv_32_16(MAPrunningValue, MAPcount);
             currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
             validateMAP();
           }
@@ -471,7 +509,7 @@ void readCLT(bool useFilter)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinCLT-A0], 511); //Get the current raw CLT value
+    tempReading = AnChannel[pinCLT-A0]; //Get the current raw CLT value
   #else
     tempReading = analogRead(pinCLT);
     tempReading = analogRead(pinCLT);
@@ -488,7 +526,7 @@ void readIAT(void)
 {
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinIAT-A0], 511); //Get the current raw IAT value
+    tempReading = AnChannel[pinIAT-A0]; //Get the current raw IAT value
   #else
     tempReading = analogRead(pinIAT);
     tempReading = analogRead(pinIAT);
@@ -532,7 +570,7 @@ void readBaro(void)
 
     //Verify the engine isn't running by confirming RPM is 0 and it has been at least 1 second since the last tooth was detected
     unsigned long timeToLastTooth = (micros() - toothLastToothTime);
-    if((currentStatus.RPM == 0) && (timeToLastTooth > 1000000UL))
+    if((currentStatus.RPM == 0) && (timeToLastTooth > MICROS_PER_SEC))
     {
       instanteneousMAPReading(); //Get the current MAP value
       /* 
@@ -556,7 +594,7 @@ void readO2(void)
   {
     unsigned int tempReading;
     #if defined(ANALOG_ISR)
-      tempReading = fastMap1023toX(AnChannel[pinO2-A0], 511); //Get the current O2 value.
+      tempReading = AnChannel[pinO2-A0]; //Get the current O2 value.
     #else
       tempReading = analogRead(pinO2);
       tempReading = analogRead(pinO2);
@@ -580,7 +618,7 @@ void readO2_2(void)
   //Get the current O2 value.
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[pinO2_2-A0], 511); //Get the current O2 value.
+    tempReading = AnChannel[pinO2_2-A0]; //Get the current O2 value.
   #else
     tempReading = analogRead(pinO2_2);
     tempReading = analogRead(pinO2_2);
@@ -680,10 +718,10 @@ uint16_t getSpeed(void)
     }
 
     pulseTime = vssTotalTime / (VSS_SAMPLES - 1);
-    if ( (micros() - vssTimes[vssIndex]) > 1000000UL ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
+    if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
-      tempSpeed = 3600000000UL / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
       tempSpeed = ADC_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
@@ -700,7 +738,7 @@ byte getGear(void)
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = (currentStatus.vss * 10000UL) / currentStatus.RPM; //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = udiv_32_16(currentStatus.vss * 10000UL, currentStatus.RPM); //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }
@@ -721,8 +759,12 @@ byte getFuelPressure(void)
   if(configPage10.fuelPressureEnable > 0)
   {
     //Perform ADC read
-    tempReading = analogRead(pinFuelPressure);
-    tempReading = analogRead(pinFuelPressure);
+    #if defined(ANALOG_ISR)
+      tempReading = AnChannel[pinFuelPressure-A0];
+    #else
+      tempReading = analogRead(pinFuelPressure);
+      tempReading = analogRead(pinFuelPressure);
+    #endif
 
     tempFuelPressure = fastMap10Bit(tempReading, configPage10.fuelPressureMin, configPage10.fuelPressureMax);
     tempFuelPressure = ADC_FILTER(tempFuelPressure, ADCFILTER_PSI_DEFAULT, currentStatus.fuelPressure); //Apply smoothing factor
@@ -742,8 +784,12 @@ byte getOilPressure(void)
   if(configPage10.oilPressureEnable > 0)
   {
     //Perform ADC read
-    tempReading = analogRead(pinOilPressure);
-    tempReading = analogRead(pinOilPressure);
+    #if defined(ANALOG_ISR)
+      tempReading = AnChannel[pinOilPressure-A0];
+    #else
+      tempReading = analogRead(pinOilPressure);
+      tempReading = analogRead(pinOilPressure);
+    #endif
 
 
     tempOilPressure = fastMap10Bit(tempReading, configPage10.oilPressureMin, configPage10.oilPressureMax);
@@ -784,7 +830,7 @@ void knockPulse(void)
   //Check if this the start of a knock. 
   if(knockCounter == 0)
   {
-    //knockAngle = crankAngle + fastTimeToAngle( (micros() - lastCrankAngleCalc) ); 
+    //knockAngle = crankAngle + timeToAngleDegPerMicroSec( (micros() - lastCrankAngleCalc) ); 
     knockStartTime = micros();
     knockCounter = 1;
   }

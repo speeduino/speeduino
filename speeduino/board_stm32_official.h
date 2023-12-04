@@ -7,14 +7,26 @@
 #include "STM32RTC.h"
 #include <SPI.h>
 
+#ifndef PLATFORMIO
+  #ifndef USBCON
+    #error "USBCON must be defined in boards.txt"
+  #endif
+  #ifndef USBD_USE_CDC
+    #error "USBD_USE_CDC must be defined in boards.txt"
+  #endif
+#endif
+
 #if defined(STM32F1)
-#include "stm32f1xx_ll_tim.h"
+  #include "stm32f1xx_ll_tim.h"
 #elif defined(STM32F3)
-#include "stm32f3xx_ll_tim.h"
+  #include "stm32f3xx_ll_tim.h"
 #elif defined(STM32F4)
-#include "stm32f4xx_ll_tim.h"
+  #include "stm32f4xx_ll_tim.h"
+  #if defined(STM32F407xx) && !defined(HAL_CAN_MODULE_ENABLED)
+    #warning "CAN module is not enabled. Internal CAN will NOT be available"
+  #endif
 #else /*Default should be STM32F4*/
-#include "stm32f4xx_ll_tim.h"
+  #include "stm32f4xx_ll_tim.h"
 #endif
 /*
 ***********************************************************************************************************
@@ -29,6 +41,44 @@
 #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
 #define TIMER_RESOLUTION 4
 
+//Select one for EEPROM,the default is EEPROM emulation on internal flash.
+//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
+//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash on BlackF407VE*/
+//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
+
+#ifndef word
+  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+#endif  
+  
+#if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
+  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
+  //STM32 Pill boards
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 35
+  #endif
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN PB1 //Maple Mini
+  #endif
+#elif defined(STM32F407xx)
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 75
+  #endif
+#endif
+
+//Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
+#if defined(MCU_STM32F103C8) || defined(MCU_STM32F103CB)
+  #define SMALL_FLASH_MODE
+#endif
+
+#define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
+#define BOARD_MAX_IO_PINS NUM_DIGITAL_PINS
+#if __GNUC__ < 7 //Already included on GCC 7
+extern "C" char* sbrk(int incr); //Used to freeRam
+#endif
+#ifndef digitalPinToInterrupt
+inline uint32_t  digitalPinToInterrupt(uint32_t Interrupt_pin) { return Interrupt_pin; } //This isn't included in the stm32duino libs (yet)
+#endif
+
 #if defined(USER_BTN) 
   #define EEPROM_RESET_PIN USER_BTN //onboard key0 for black STM32F407 boards and blackpills, keep pressed during boot to reset eeprom
 #endif
@@ -38,7 +88,7 @@
   #define SD_LOGGING
 #endif
 
-#if defined SD_LOGGING
+#if defined(SD_LOGGING)
   #define RTC_ENABLED
   //SD logging with STM32 uses SD card in SPI mode, because used SD library doesn't support SDIO implementation. By default SPI3 is used that uses same pins as SDIO also, but in different order.
   extern SPIClass SD_SPI; //SPI3_MOSI, SPI3_MISO, SPI3_SCK
@@ -59,7 +109,6 @@ void initBoard();
 uint16_t freeRam();
 void doSystemReset();
 void jumpToBootloader();
-extern "C" char* sbrk(int incr);
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
@@ -332,14 +381,18 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if HAL_CAN_MODULE_ENABLED
+#if defined(HAL_CAN_MODULE_ENABLED)
 #define NATIVE_CAN_AVAILABLE
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
 extern STM32_CAN Can0;
+#endif
 
-static CAN_message_t outMsg;
-static CAN_message_t inMsg;
+#define secondarySerial_AVAILABLE
+#if defined(STM32GENERIC) // STM32GENERIC core
+  #define SECONDARY_SERIAL_T SerialUART
+#else //libmaple core aka STM32DUINO
+  #define SECONDARY_SERIAL_T HardwareSerial
 #endif
 
 #endif //CORE_STM32

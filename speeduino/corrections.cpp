@@ -48,9 +48,10 @@ byte lastKnockCount;
 int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint8_t aseTaper;
-uint8_t dfcoTaper;
+uint8_t dfcoDelay;
 uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
+uint8_t dfcoTaper;
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
@@ -122,7 +123,9 @@ uint16_t correctionsFuel(void)
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
+  byte dfcoTaperCorrection = correctionDFCOfuel();
+  if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
+  else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
@@ -292,14 +295,14 @@ uint16_t correctionAccel(void)
   {
     //Get the MAP rate change
     MAP_change = (currentStatus.MAP - MAPlast);
-    currentStatus.mapDOT = ldiv(1000000, (MAP_time - MAPlast_time)).quot * MAP_change; //This is the % per second that the MAP has moved
+    currentStatus.mapDOT = (MICROS_PER_SEC / (MAP_time - MAPlast_time)) * MAP_change; //This is the % per second that the MAP has moved
     //currentStatus.mapDOT = 15 * MAP_change; //This is the kpa per second that the MAP has moved
   }
   else if(configPage2.aeMode == AE_MODE_TPS)
   {
     //Get the TPS rate change
     TPS_change = (currentStatus.TPS - currentStatus.TPSlast);
-    //currentStatus.tpsDOT = ldiv(1000000, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
+    //currentStatus.tpsDOT = ldiv(MICROS_PER_SEC, (TPS_time - TPSlast_time)).quot * TPS_change; //This is the % per second that the TPS has moved
     currentStatus.tpsDOT = (TPS_READ_FREQUENCY * TPS_change) / 2; //This is the % per second that the TPS has moved, adjusted for the 0.5% resolution of the TPS
   }
   
@@ -539,6 +542,27 @@ byte correctionLaunch(void)
   return launchValue;
 }
 
+/**
+*/
+byte correctionDFCOfuel(void)
+{
+  byte scaleValue = 100;
+  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  {
+    if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
+    {
+      //Do a check if the user reduced the duration while active to avoid overflow
+      if (dfcoTaper > configPage9.dfcoTaperTime) { dfcoTaper = configPage9.dfcoTaperTime; }
+      scaleValue = map(dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
+    }
+    else { scaleValue = 0; } //Taper ended or disabled, disable fuel
+  }
+  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
+
+  return scaleValue;
+}
+
 /*
  * Returns true if deceleration fuel cutoff should be on, false if its off
  */
@@ -550,19 +574,19 @@ bool correctionDFCO(void)
     if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
-      if ( DFCOValue == false) { dfcoTaper = 0; }
+      if ( DFCOValue == false) { dfcoDelay = 0; }
     }
     else 
     {
       if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) && (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ) )
       {
-        if( dfcoTaper < configPage2.dfcoDelay )
+        if( dfcoDelay < configPage2.dfcoDelay )
         {
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper++; }
+          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoDelay++; }
         }
         else { DFCOValue = true; }
       }
-      else { dfcoTaper = 0; } //Prevent future activation right away if previous time wasn't activated
+      else { dfcoDelay = 0; } //Prevent future activation right away if previous time wasn't activated
     } // DFCO active check
   } // DFCO enabled check
   return DFCOValue;
@@ -631,7 +655,7 @@ byte correctionAFRClosedLoop(void)
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) )
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) && ( currentStatus.MAP <= (configPage9.egoMAPMax * 2U) ) && ( currentStatus.MAP >= (configPage9.egoMAPMin * 2U) ) )
       {
 
         //Check which algorithm is used, simple or PID
@@ -701,6 +725,8 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
   advance = correctionKnock(advance);
+
+  advance = correctionDFCOignition(advance);
 
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
@@ -936,6 +962,23 @@ int8_t correctionKnock(int8_t advance)
   return advance - knockRetard;
 }
 
+/** Ignition DFCO taper correction.
+ */
+int8_t correctionDFCOignition(int8_t advance)
+{
+  int8_t dfcoRetard = advance;
+  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  {
+    if ( dfcoTaper != 0 )
+    {
+      dfcoRetard -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
+    }
+    else { dfcoRetard -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
+  }
+  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
+  return dfcoRetard;
+}
+
 /** Ignition Dwell Correction.
  */
 uint16_t correctionsDwell(uint16_t dwell)
@@ -978,8 +1021,8 @@ uint16_t correctionsDwell(uint16_t dwell)
   if(dwellPerRevolution > revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
-    uint16_t adjustedSparkDur = (sparkDur_uS * revolutionTime) / dwellPerRevolution;
-    tempDwell = (revolutionTime / pulsesPerRevolution) - adjustedSparkDur;
+    uint16_t adjustedSparkDur = udiv_32_16(sparkDur_uS * revolutionTime, dwellPerRevolution);
+    tempDwell = udiv_32_16(revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
   }
 
   return tempDwell;

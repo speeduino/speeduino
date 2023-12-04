@@ -53,38 +53,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
-void setFuelSchedule1(unsigned long timeout, unsigned long duration);
-void setFuelSchedule2(unsigned long timeout, unsigned long duration);
-void setFuelSchedule3(unsigned long timeout, unsigned long duration);
-void setFuelSchedule4(unsigned long timeout, unsigned long duration);
-#if INJ_CHANNELS >= 5
-void setFuelSchedule5(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 6
-void setFuelSchedule6(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 7
-void setFuelSchedule7(unsigned long timeout, unsigned long duration);
-#endif
-#if INJ_CHANNELS >= 8
-void setFuelSchedule8(unsigned long timeout, unsigned long duration);
-#endif
-
-void setIgnitionSchedule1(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule2(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule3(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule4(unsigned long timeout, unsigned long duration);
-void setIgnitionSchedule5(unsigned long timeout, unsigned long duration);
-#if IGN_CHANNELS >= 6
-void setIgnitionSchedule6(unsigned long timeout, unsigned long duration);
-#endif
-#if IGN_CHANNELS >= 7
-void setIgnitionSchedule7(unsigned long timeout, unsigned long duration);
-#endif
-#if IGN_CHANNELS >= 8
-void setIgnitionSchedule8(unsigned long timeout, unsigned long duration);
-#endif
-
 void disablePendingFuelSchedule(byte channel);
 void disablePendingIgnSchedule(byte channel);
 
@@ -179,6 +147,18 @@ struct IgnitionSchedule {
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
+void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+
+inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
+  if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+    _setIgnitionScheduleRunning(schedule, timeout, duration);
+  }
+  // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  else if(timeout < MAX_TIMER_PERIOD){
+    _setIgnitionScheduleNext(schedule, timeout, duration);
+  }
+}
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
@@ -216,6 +196,21 @@ struct FuelSchedule {
   void (&pTimerDisable)();    // Reference to the timer disable function
   void (&pTimerEnable)();     // Reference to the timer enable function  
 };
+
+void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+
+inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) {
+    //Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+  if(timeout < MAX_TIMER_PERIOD) {
+    if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
+      _setFuelScheduleRunning(schedule, timeout, duration);
+    }
+    else {
+      _setFuelScheduleNext(schedule, timeout, duration);
+    }
+  }
+}
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;

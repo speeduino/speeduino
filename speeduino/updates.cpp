@@ -728,6 +728,19 @@ void doUpdates(void)
   {
     //202311-dev
 
+    //Default values for pulsed hw test modes
+    configPage13.hwTestInjDuration = 8;
+    configPage13.hwTestIgnDuration = 4;
+
+    //DFCO taper default values (Feature disabled by default)
+    configPage9.dfcoTaperEnable = 0; //Disable
+    configPage9.dfcoTaperTime = 10; //1 second
+    configPage9.dfcoTaperFuel = 100; //Don't scale fuel
+    configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
+    
+    //EGO MAP Limits
+    configPage9.egoMAPMax = 255, // 255 will be 510 kpa
+    configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
 
     writeAllConfig();
     storeEEPROMVersion(23);
@@ -757,7 +770,7 @@ void doUpdates(void)
   if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
-void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
+void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
@@ -767,7 +780,7 @@ void multiplyTableLoad(const void *pTable, table_type_t key, uint8_t multiplier)
   }
 }
 
-void divideTableLoad(const void *pTable, table_type_t key, uint8_t divisor)
+void divideTableLoad(void *pTable, table_type_t key, uint8_t divisor)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
