@@ -330,7 +330,9 @@ bool createLogFile()
   currentLogFileNumber = getNextSDLogFileNumber();
 
   //Create the filename
-  sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
+  //sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
+  if(currentLogFileNumber > MAX_LOG_FILES) { currentLogFileNumber = 1; } //If we've run out of file numbers, start again from 1
+  snprintf(filenameBuffer, 13, "%s%04d.%s", LOG_FILE_PREFIX, currentLogFileNumber, LOG_FILE_EXTENSION);
 
   logFile.close();
   if (logFile.open(filenameBuffer, O_RDWR | O_CREAT | O_TRUNC)) 
@@ -364,7 +366,8 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
   if(logFile.isOpen()) { endSDLogging(); }
 
   char filenameBuffer[13]; //8 + 1 + 3 + 1
-  sprintf(filenameBuffer, "%s%04d.%s", LOG_FILE_PREFIX, logNumber, LOG_FILE_EXTENSION);
+  if(logNumber > MAX_LOG_FILES) { logNumber = MAX_LOG_FILES; } //If we've run out of file numbers, start again from 1
+  snprintf(filenameBuffer, 13, "%s%04d.%s", LOG_FILE_PREFIX, logNumber, LOG_FILE_EXTENSION);
   
   if(sd.exists(filenameBuffer))
   {

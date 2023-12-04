@@ -6,6 +6,7 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
+#include "comms_secondary.h"
 
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
@@ -20,6 +21,7 @@ void initBoard()
     ***********************************************************************************************************
     * General
     */
+   pSecondarySerial = &Serial2;
 
     /*
     ***********************************************************************************************************
@@ -158,11 +160,9 @@ void initBoard()
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM1);
 
-        boost_pwm_max_count = 1000000L / (32 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        vvt_pwm_max_count = 1000000L / (32 * configPage6.vvtFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        fan_pwm_max_count = 1000000L / (32 * configPage6.fanFreq * 2);     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-
-
+        boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+        vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.vvtFreq * 2U));     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
+        fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.fanFreq * 2U));     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*

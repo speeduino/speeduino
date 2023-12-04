@@ -6,8 +6,10 @@
 #include "scheduledIO.h"
 #include "utilities.h"
 #include "../test_utils.h"
+#include "storage.h"
 
 extern uint16_t req_fuel_uS;
+void prepareForInitialiseAll(uint8_t boardId);
 
 static constexpr uint16_t reqFuel = 86; // ms * 10
 
@@ -102,6 +104,7 @@ static void cylinder1_stroke4_semiseq_staged(void)
 
 static void run_1_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 1;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -160,6 +163,7 @@ static void cylinder1_stroke2_semiseq_staged(void)
 
 static void run_1_cylinder_2stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 1;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -218,6 +222,7 @@ static void cylinder2_stroke4_semiseq_staged(void)
 
 static void run_2_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 2;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -277,6 +282,7 @@ static void cylinder2_stroke2_semiseq_staged(void)
 
 static void run_2_cylinder_2stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 2;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -345,6 +351,7 @@ static void cylinder3_stroke4_semiseq_staged(void)
 
 static void run_3_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 3;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -409,6 +416,7 @@ static void cylinder3_stroke2_semiseq_staged(void)
 
 static void run_3_cylinder_2stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 3;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -478,6 +486,7 @@ static void cylinder4_stroke4_semiseq_staged(void)
 
 void run_4_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -543,6 +552,7 @@ static void cylinder4_stroke2_semiseq_staged(void)
 
 void run_4_cylinder_2stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 4;
   configPage2.strokes = TWO_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -617,6 +627,7 @@ static void cylinder5_stroke4_semiseq_staged(void)
 
 void run_5_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 5;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -689,6 +700,7 @@ static void cylinder6_stroke4_semiseq_staged(void)
 
 void run_6_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 6;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -720,6 +732,7 @@ static void cylinder8_stroke4_seq_nostage(void)
 
 void run_8_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 8;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
@@ -813,6 +826,7 @@ static void cylinder_8_NoinjTiming_paired(void) {
 
 static void run_no_inj_timing_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;
   configPage2.injTiming = false;
@@ -843,6 +857,7 @@ static void cylinder_2_oddfire(void)
 
 static void run_oddfire_tests()
 {
+  prepareForInitialiseAll(3U);
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = ODD_FIRE;
   configPage2.injTiming = true;
@@ -878,6 +893,7 @@ static void run_oddfire_tests()
 
 static void test_partial_sync(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;
   configPage2.engineType = EVEN_FIRE;

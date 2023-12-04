@@ -114,6 +114,9 @@ void setResetControlPinState(void)
       digitalWrite(pinResetControl, HIGH);
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
       break;
+    default:
+      // Do nothing - keep MISRA happy
+      break;
   }
 }
 

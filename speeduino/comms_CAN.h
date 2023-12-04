@@ -14,12 +14,17 @@
 #define CAN_VAG_RPM 0x280
 #define CAN_VAG_VSS 0x5A0
 
+#define TS_CAN_OFFSET 0x100
+
 void sendBMWCluster();
 void sendVAGCluster();
 void DashMessages(uint16_t DashMessageID);
 void can_Command(void);
 void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);
 void readAuxCanBus();
+
+extern CAN_message_t outMsg;
+extern CAN_message_t inMsg;
 
 #endif
 #endif // COMMS_CAN_H

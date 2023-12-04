@@ -386,9 +386,13 @@ void ignitionSchedule8Interrupt(HardwareTimer*);
 #include <src/STM32_CAN/STM32_CAN.h>
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
 extern STM32_CAN Can0;
+#endif
 
-static CAN_message_t outMsg;
-static CAN_message_t inMsg;
+#define secondarySerial_AVAILABLE
+#if defined(STM32GENERIC) // STM32GENERIC core
+  #define SECONDARY_SERIAL_T SerialUART
+#else //libmaple core aka STM32DUINO
+  #define SECONDARY_SERIAL_T HardwareSerial
 #endif
 
 #endif //CORE_STM32
