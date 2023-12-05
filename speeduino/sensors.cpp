@@ -19,6 +19,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "auxiliaries.h"
 #include "utilities.h"
+#include BOARD_H
 
 uint32_t MAPcurRev; //Tracks which revolution we're sampling on
 unsigned int MAPcount; //Number of samples taken in the current MAP cycle
@@ -46,34 +47,35 @@ byte mapErrorCount = 0;
 static inline void validateMAP(void);
 
 #if defined(ANALOG_ISR)
-volatile int AnChannel[15];
+static volatile uint16_t AnChannel[16];
 
 ISR(ADC_vect)
 {
-  byte nChannel = ADMUX & 0x07;
-  int result = ADCL | (ADCH << 8);
+  byte nChannel = (ADMUX & 0x07);
 
-  BIT_CLEAR(ADCSRA, ADEN); //Disable ADC for Changing Channel (see chapter 26.5 of datasheet)
+  byte result_low = ADCL;
+  byte result_high = ADCH;
 
   #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-    if (nChannel==7) { ADMUX = 0x40; }
+    if (nChannel == 7) { ADMUX = 0x40; }
   #elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    if( (ADCSRB & 0x08) > 0) { nChannel += 8; }  //8 to 15
+    if( BIT_CHECK(ADCSRB, MUX5) ) { nChannel += 8; }  //8 to 15
     if(nChannel == 15)
     {
-      ADMUX = 0x40; //channel 0
+      ADMUX = ADMUX_DEFAULT_CONFIG; //channel 0
       ADCSRB = 0x00; //clear MUX5 bit
     }
     else if (nChannel == 7) //channel 7
     {
-      ADMUX = 0x40;
+      ADMUX = ADMUX_DEFAULT_CONFIG;
       ADCSRB = 0x08; //Set MUX5 bit
     }
   #endif
     else { ADMUX++; }
-  AnChannel[nChannel] = result;
 
-  BIT_SET(ADCSRA, ADEN); //Enable ADC
+  //ADMUX always appears to be one ahead of the actual channel value that is in ADCL/ADCH. Subtract 1 from it to get the correct channel number
+  if(nChannel == 0) { nChannel = 16;} 
+  AnChannel[nChannel-1] = (result_high << 8) | result_low;
 }
 #endif
 
@@ -84,13 +86,11 @@ void initialiseADC(void)
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
 
   #if defined(ANALOG_ISR)
-    //This sets the ADC (Analog to Digital Converter) to run at 250KHz, greatly reducing analog read times (MAP/TPS)
-    //the code on ISR run each conversion every 25 ADC clock, conversion run about 100KHz effectively
-    //making a 6250 conversions/s on 16 channels and 12500 on 8 channels devices.
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers
 
     ADCSRB = 0x00; //ADC Auto Trigger Source is in Free Running mode
-    ADMUX = 0x40;  //Select AREF as reference, ADC Left Adjust Result, Starting at channel 0
+
+    ADMUX = ADMUX_DEFAULT_CONFIG;  //Select AVCC as reference, ADC Right Adjust Result, Starting at channel 0
 
     //All of the below is the longhand version of: ADCSRA = 0xEE;
     #ifndef ADFR
@@ -174,6 +174,7 @@ void initialiseADC(void)
 
     }
   } //For loop iterating through aux in lines
+  
 
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
@@ -247,8 +248,12 @@ void instanteneousMAPReading(void)
   //Repeat for EMAP if it's enabled
   if(configPage6.useEMAP == true)
   {
-    tempReading = analogRead(pinEMAP);
-    tempReading = analogRead(pinEMAP);
+    #if defined(ANALOG_ISR_MAP)
+      tempReading = AnChannel[pinEMAP-A0];
+    #else
+      tempReading = analogRead(pinEMAP);
+      tempReading = analogRead(pinEMAP);
+    #endif
 
     //Error check
     if( (tempReading < VALID_MAP_MAX) && (tempReading > VALID_MAP_MIN) )
@@ -530,7 +535,6 @@ void readIAT(void)
   #else
     tempReading = analogRead(pinIAT);
     tempReading = analogRead(pinIAT);
-    //tempReading = fastMap1023toX(analogRead(pinIAT), 511); //Get the current raw IAT value
   #endif
   currentStatus.iatADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
@@ -856,11 +860,10 @@ uint16_t readAuxanalog(uint8_t analogPin)
   //read the Aux analog value for pin set by analogPin 
   unsigned int tempReading;
   #if defined(ANALOG_ISR)
-    tempReading = fastMap1023toX(AnChannel[analogPin-A0], 1023); //Get the current raw Auxanalog value
+    tempReading = AnChannel[analogPin-A0]; //Get the current raw Auxanalog value
   #else
     tempReading = analogRead(analogPin);
     tempReading = analogRead(analogPin);
-    //tempReading = fastMap1023toX(analogRead(analogPin), 511); Get the current raw Auxanalog value
   #endif
   return tempReading;
 } 
