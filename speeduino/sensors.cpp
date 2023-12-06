@@ -241,7 +241,7 @@ void instanteneousMAPReading(void)
   else { mapErrorCount = 0; }
 
   //During startup a call is made here to get the baro reading. In this case, we can't apply the ADC filter
-  if(initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
+  if(currentStatus.initialisationComplete == true) { currentStatus.mapADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_MAP, currentStatus.mapADC); } //Very weak filter
   else { currentStatus.mapADC = tempReading; } //Baro reading (No filter)
 
   currentStatus.MAP = fastMap10Bit(currentStatus.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
@@ -555,7 +555,7 @@ void readBaro(void)
       tempReading = analogRead(pinBaro);
     #endif
 
-    if(initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
+    if(currentStatus.initialisationComplete == true) { currentStatus.baroADC = ADC_FILTER(tempReading, configPage4.ADCFILTER_BARO, currentStatus.baroADC); }//Very weak filter
     else { currentStatus.baroADC = tempReading; } //Baro reading (No filter)
 
     currentStatus.baro = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax); //Get the current MAP value
@@ -658,7 +658,7 @@ void readBat(void)
   {
     //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
-    fpPrimed = false;
+    currentStatus.fpPrimed = false;
     FUEL_PUMP_ON();
 
     //Redo the stepper homing

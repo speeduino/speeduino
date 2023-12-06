@@ -37,11 +37,8 @@ volatile unsigned int dwellLimit_uS;
 
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
-volatile bool tachoSweepEnabled;
-volatile bool tachoAlt = false;
 volatile uint16_t tachoSweepIncr;
 volatile uint16_t tachoSweepAccum;
-
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
@@ -120,9 +117,9 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
   // See if we're in power-on sweep mode
-  if( tachoSweepEnabled )
+  if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -142,7 +139,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   if(tachoOutputFlag == READY)
   {
     //Check for half speed tacho
-    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
     { 
       TACHO_PULSE_LOW();
       //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
@@ -154,7 +151,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       //Don't run on this pulse (Half speed tacho)
       tachoOutputFlag = TACHO_INACTIVE;
     }
-    tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
+    currentStatus.tachoAlt = !currentStatus.tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
   else if(tachoOutputFlag == ACTIVE)
   {
@@ -226,7 +223,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
-    if ( (injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); injPrimed = true; }
+    if ( (currentStatus.injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); currentStatus.injPrimed = true; }
     seclx10++;
   }
 
@@ -272,12 +269,12 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     }
 
     //Check whether fuel pump priming is complete
-    if(fpPrimed == false)
+    if(currentStatus.fpPrimed == false)
     {
       //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
       if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
       {
-        fpPrimed = true; //Mark the priming as being completed
+        currentStatus.fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running

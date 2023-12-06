@@ -50,8 +50,8 @@
  */
 void initialiseAll(void)
 {   
-    fpPrimed = false;
-    injPrimed = false;
+    currentStatus.fpPrimed = false;
+    currentStatus.injPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -1343,19 +1343,19 @@ void initialiseAll(void)
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true;
     }
-    else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+    else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
 
     /* tacho sweep function. */
-    tachoSweepEnabled = (configPage2.useTachoSweep > 0);
+    //tachoStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
        tachoSweepIncr is also the number of tach pulses per second */
     tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
     
-    initialisationComplete = true;
+    currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 
 }

@@ -62,7 +62,7 @@ uint16_t staged_req_fuel_mult_sec = 0;
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup(void)
 {
-  initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
+  currentStatus.initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
   initialiseAll();
 }
 
@@ -105,7 +105,7 @@ void loop(void)
       {
         serialReceive();
       }
-
+      
       //Check for any CAN comms requiring action 
       #if defined(secondarySerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
@@ -114,7 +114,7 @@ void loop(void)
           if ( ((mainLoopCount & 31) == 1) || (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
           {
             if (secondarySerial.available() > 0)  { secondserial_Command(); }
-          }
+          } 
         }
       #endif
       #if defined (NATIVE_CAN_AVAILABLE)
@@ -170,7 +170,7 @@ void loop(void)
       ignitionCount = 0;
       ignitionChannelsOn = 0;
       fuelChannelsOn = 0;
-      if (fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (currentStatus.fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK); //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP); //Same as above except for WUE
@@ -189,7 +189,6 @@ void loop(void)
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
-
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
@@ -200,7 +199,10 @@ void loop(void)
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_200HZ);
-      BIT_SET(ADCSRA,ADIE); //Enable ADC
+      #if defined(ANALOG_ISR)
+        //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
+        BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
+      #endif
     }
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
@@ -1635,21 +1637,21 @@ void calculateStaging(uint32_t pwLimit)
 void checkLaunchAndFlatShift()
 {
   //Check for launching/flat shift (clutch) based on the current and previous clutch states
-  previousClutchTrigger = clutchTrigger;
+  currentStatus.previousClutchTrigger = currentStatus.clutchTrigger;
   //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
   if(configPage6.flatSEnable || configPage6.launchEnabled)
   {
-    if(configPage6.launchHiLo > 0) { clutchTrigger = digitalRead(pinLaunch); }
-    else { clutchTrigger = !digitalRead(pinLaunch); }
+    if(configPage6.launchHiLo > 0) { currentStatus.clutchTrigger = digitalRead(pinLaunch); }
+    else { currentStatus.clutchTrigger = !digitalRead(pinLaunch); }
   }
-  if(clutchTrigger && (previousClutchTrigger != clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
+  if(currentStatus.clutchTrigger && (currentStatus.previousClutchTrigger != currentStatus.clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
 
   //Default flags to off
   currentStatus.launchingHard = false; 
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
   currentStatus.flatShiftingHard = false;
 
-  if (configPage6.launchEnabled && clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
   { 
     //Check whether RPM is above the launch limit
     uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
@@ -1665,7 +1667,7 @@ void checkLaunchAndFlatShift()
   else 
   { 
     //If launch is not active, check whether flat shift should be active
-    if(configPage6.flatSEnable && clutchTrigger && (currentStatus.clutchEngagedRPM >= ((unsigned int)(configPage6.flatSArm * 100)) ) ) 
+    if(configPage6.flatSEnable && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM >= ((unsigned int)(configPage6.flatSArm * 100)) ) ) 
     { 
       uint16_t flatRPMLimit = currentStatus.clutchEngagedRPM;
       if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { flatRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
