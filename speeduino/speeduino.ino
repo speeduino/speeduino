@@ -197,6 +197,11 @@ void loop(void)
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
       readMAP();
     }
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_200HZ);
+      BIT_SET(ADCSRA,ADIE); //Enable ADC
+    }
     
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {

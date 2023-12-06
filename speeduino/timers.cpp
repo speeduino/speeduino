@@ -26,6 +26,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #endif
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+volatile byte loop5ms;
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -51,6 +52,7 @@ volatile uint8_t testIgnitionPulseCount = 0;
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
+  loop5ms = 0;
   loop33ms = 0;
   loop66ms = 0;
   loop100ms = 0;
@@ -79,6 +81,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   ms_counter++;
 
   //Increment Loop Counters
+  loop5ms++;
   loop33ms++;
   loop66ms++;
   loop100ms++;
@@ -88,12 +91,21 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //Overdwell check
   uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) {
+  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) 
+  {
     applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
+#if IGN_CHANNELS >= 2
     applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 3
     applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 4
     applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 5
     applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
+#endif
 #if IGN_CHANNELS >= 6
     applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
 #endif
@@ -152,6 +164,13 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       TACHO_PULSE_HIGH();
       tachoOutputFlag = TACHO_INACTIVE;
     }
+  }
+
+  //200Hz loop
+  if (loop5ms == 5)
+  {
+    loop5ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
   }  
 
   //30Hz loop

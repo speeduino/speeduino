@@ -64,6 +64,8 @@ ISR(ADC_vect)
     {
       ADMUX = ADMUX_DEFAULT_CONFIG; //channel 0
       ADCSRB = 0x00; //clear MUX5 bit
+
+      BIT_CLEAR(ADCSRA,ADIE); //Disable interrupt as we're at the end of a full ADC cycle. This will be re-enabled in the main loop
     }
     else if (nChannel == 7) //channel 7
     {
