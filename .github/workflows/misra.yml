@@ -54,7 +54,7 @@ jobs:
         message: ${{ env.VIOLATIONS }}
 
     - name: Archive MISRA scan artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: MISRA results
         path: |

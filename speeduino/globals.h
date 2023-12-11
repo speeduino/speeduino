@@ -861,7 +861,7 @@ struct config2 {
 
   byte canBMWCluster : 1;
   byte canVAGCluster : 1;
-  byte enableCluster1 : 1;
+  byte canREWBO : 1 ;
   byte enableCluster2 : 1;
   byte vssAuxCh : 4;
 
@@ -1442,8 +1442,8 @@ struct config15 {
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
-  //Bytes 98-255
-  byte Unused15_98_255[150];
+  //Bytes 106-255
+  byte Unused15_106_255[150];
 
 #if defined(CORE_AVR)
   };
