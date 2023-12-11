@@ -256,6 +256,7 @@ void loop(void)
       #if defined(NATIVE_CAN_AVAILABLE)
       if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
       if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
+      if (configPage15.canREWBOCAN == true) {reciveCANwbo();}
       #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();
