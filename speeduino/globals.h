@@ -255,6 +255,7 @@
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
 #define SEC_TRIGGER_5_3_2   3
+#define SEC_TRIGGER_TOYOTA_3  4
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -1469,8 +1470,8 @@ extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
 extern byte ignitionOutputControl; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinTrigger; //The CAS pin
-extern byte pinTrigger2; //The Cam Sensor pin
-extern byte pinTrigger3;	//the 2nd cam sensor pin
+extern byte pinTrigger2; //The Cam Sensor pin known as secondary input
+extern byte pinTrigger3;	//the 2nd cam sensor pin known as tertiary input
 extern byte pinTPS;//TPS input pin
 extern byte pinMAP; //MAP sensor pin
 extern byte pinEMAP; //EMAP sensor pin
