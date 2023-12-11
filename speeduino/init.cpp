@@ -2970,6 +2970,7 @@ void setPinMapping(byte boardID)
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
     initMC33810();
+    pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
   }
 
 //CS pin number is now set in a compile flag. 
@@ -3186,11 +3187,6 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-
-  #if defined(CORE_TEENSY41)
-    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
-    setTriggerHysteresis();
-  #endif
 
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
@@ -3649,6 +3645,11 @@ void initialiseTriggers(void)
       else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
       break;
   }
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {
