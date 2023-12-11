@@ -23,7 +23,7 @@ int CAN_read();
 void CAN_write();
 void sendBMWCluster();
 void sendVAGCluster();
-void reciveCANwbo();
+void receiveCANwbo();
 void DashMessages(uint16_t DashMessageID);
 void can_Command(void);
 void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);

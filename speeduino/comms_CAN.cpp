@@ -24,6 +24,14 @@ CAN_message_t outMsg;
   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
 
+//These are declared locally for Teensy due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
+#if defined(CORE_TEENSY35)         // use for Teensy 3.5 only 
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+#elif defined(CORE_TEENSY41)         // use for Teensy 3.6 only
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+#endif
+
 // Forward declare
 void DashMessage(uint16_t DashMessageID);
 
@@ -219,9 +227,16 @@ void can_Command(void)
     }
   }
   if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))      
+  if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))      
   {
     // The address is only the speeduino specific ecu canbus address    
     if (inMsg.buf[1] == 0x09)
+    {
+      // PID mode 9 , vehicle information request
+      if (inMsg.buf[2] == 02)
+      {
+        //send the VIN number , 17 char long VIN sent in 5 messages.
+      }
     {
       // PID mode 9 , vehicle information request
       if (inMsg.buf[2] == 02)
@@ -254,6 +269,18 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
   
   if (PIDmode == 0x01)
   {
+    switch (requestedPIDlow)
+    {
+      case 0:       //PID-0x00 PIDs supported 01-20  
+        outMsg.buf[0] =  0x06;    // sending 6 bytes
+        outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
+        outMsg.buf[2] =  0x00;    // PID code
+        outMsg.buf[3] =  0x08;   //B0000 1000   1-8
+        outMsg.buf[4] =  B01111110;   //9-16
+        outMsg.buf[5] =  B10100000;   //17-24
+        outMsg.buf[6] =  B00010001;   //17-32
+        outMsg.buf[7] =  B00000000;   
+      break;
     switch (requestedPIDlow)
     {
       case 0:       //PID-0x00 PIDs supported 01-20  
