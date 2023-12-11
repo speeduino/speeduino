@@ -55,6 +55,7 @@ int (*getCrankAngle)(void) = nullGetCrankAngle; ///Pointer to the getCrank Angle
 void (*triggerSetEndTeeth)(void) = triggerSetEndTeeth_missingTooth; ///Pointer to the triggerSetEndTeeth function of each decoder
 
 static void triggerRoverMEMSCommon(void);
+static inline void triggerRecordVVT1Angle (void);
 
 volatile unsigned long curTime;
 volatile unsigned long curGap;
@@ -662,9 +663,9 @@ void triggerSec_missingTooth(void)
   } //Trigger filter
 }
 
-void triggerRecordVVT1Angle (void)
+static inline void triggerRecordVVT1Angle (void)
 {
-//Record the VVT Angle
+  //Record the VVT Angle
   if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
   {
     int16_t curAngle;
@@ -675,8 +676,6 @@ void triggerRecordVVT1Angle (void)
 
     currentStatus.vvt1Angle = ANGLE_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
   }
-
-
 }
 
 
