@@ -36,7 +36,17 @@ void sendVAGCluster()
   DashMessage(CAN_VAG_VSS);
   Can0.write(outMsg);
 }
-
+void reciveCANwbo()
+  {
+    if (inMsg.id == 400 && configPage15.canREWBOCAN == true) // RusEFI CAN Wideband support
+    {
+      uint16_t inLambda = 0;
+      for (int i = 0; i < 16 / 8; ++i) {
+        inLambda |= (uint16_t)inMsg.buf[16 / 8 + i] << (8 * i);
+      }
+      currentStatus.O2 = inLambda;
+    }
+  }
 // switch case for gathering all data to message based on CAN Id.
 void DashMessage(uint16_t DashMessageID)
 {
