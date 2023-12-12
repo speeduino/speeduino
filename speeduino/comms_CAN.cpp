@@ -77,20 +77,13 @@ void sendVAGCluster()
 }
 void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wideband
   {
-    if(configPage15.canREWBOCAN == true && currentStatus.coolant > 40)) // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
+    if(configPage15.canREWBOCAN == true)) // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
     {
       outMsg.id = 0x192;
       outMsg.len = 2;
       outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
-      outMsg.buf[1] = 0x1; // Heater enable bit 0 - off 1 - on
-      Can0.write(outMsg);
-    }
-    else if(onfigPage15.canREWBOCAN == true && currentStatus.coolant <= 40) // Disable heater if engine temp is lower/equal to 40C
-    {
-      outMsg.id = 0x192;
-      outMsg.len = 2;
-      outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
-      outMsg.buf[1] = 0x0; // Heater enable bit 0 - off 1 - on
+      if(currentStatus.coolant > 40) outMsg.buf[1] = 0x1; // Heater enable bit 0 - off 1 - on
+      else outMsg.buf[1] = 0x0;
       Can0.write(outMsg);
     }
     if (inMsg.id == 400 && configPage15.canREWBOCAN == true)
