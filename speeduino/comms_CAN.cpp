@@ -75,12 +75,24 @@ void sendVAGCluster()
   DashMessage(CAN_VAG_VSS);
   Can0.write(outMsg);
 }
-void reciveCANwbo()
+void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wideband
   {
-    if (inMsg.id == 400 && configPage15.canREWBOCAN == true) // RusEFI CAN Wideband support https://github.com/mck1117/wideband
+    if(configPage15.canREWBOCAN == true && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) // Enable heater once engine starts to avoid heater running on cold engine with ignition on
     {
-      uint16_t inLambda = word(inMsg.buf[3], inMsg.buf[2]);
-      currentStatus.O2 = (inLambda * configPage2.stoich) / 10000;
+      outMsg.id = 0x190;
+      outMsg.len = 2;
+      outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
+      outMsg.buf[1] = 0x1; // Heater enable bit 0 - off 1 - on
+      Can0.write(outMsg);
+    }
+    if (inMsg.id == 400 && configPage15.canREWBOCAN == true)
+    {
+      uint16_t inLambda;
+      inLambda = (word(inMsg.buf[3], inMsg.buf[2])) * 10000; // Combining 2 bytes of data into single variable and multiplying it 10000 since factor is 0.0001 and to avoid floating point
+      if((inLambda > 5000 || inLambda < 14000) && inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
+      {
+        currentStatus.O2 = (inLambda * configPage2.stoich) / 10; // 
+      }
     }
   }
 // switch case for gathering all data to message based on CAN Id.
