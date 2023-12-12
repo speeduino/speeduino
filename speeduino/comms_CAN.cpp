@@ -49,10 +49,10 @@ void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wi
     if (inMsg.id == 400 && configPage15.canREWBOCAN == true)
     {
       uint16_t inLambda;
-      inLambda = (word(inMsg.buf[3], inMsg.buf[2])) * 10000; // Combining 2 bytes of data into single variable and multiplying it 10000 since factor is 0.0001 and to avoid floating point
+      inLambda = (word(inMsg.buf[3], inMsg.buf[2])) * 100000; // Combining 2 bytes of data into single variable and multiplying it 10000 since factor is 0.0001 and to avoid floating point
       if((inLambda > 5000 || inLambda < 14000) && inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
       {
-        currentStatus.O2 = (inLambda * configPage2.stoich) / 10; // 
+        currentStatus.O2 = (inLambda * configPage2.stoich) / 100; // Multiplying lambda by stoich ratio to get AFR and dividing it by 100 to get correct value
       }
     }
   }
