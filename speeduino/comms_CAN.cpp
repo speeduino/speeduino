@@ -77,21 +77,29 @@ void sendVAGCluster()
 }
 void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wideband
   {
-    if(configPage15.canREWBOCAN == true && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) // Enable heater once engine starts to avoid heater running on cold engine with ignition on
+    if(configPage15.canREWBOCAN == true && currentStatus.coolant > 40)) // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
     {
-      outMsg.id = 0x190;
+      outMsg.id = 0x192;
       outMsg.len = 2;
       outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
       outMsg.buf[1] = 0x1; // Heater enable bit 0 - off 1 - on
+      Can0.write(outMsg);
+    }
+    else if(onfigPage15.canREWBOCAN == true && currentStatus.coolant <= 40) // Disable heater if engine temp is lower/equal to 40C
+    {
+      outMsg.id = 0x192;
+      outMsg.len = 2;
+      outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
+      outMsg.buf[1] = 0x0; // Heater enable bit 0 - off 1 - on
       Can0.write(outMsg);
     }
     if (inMsg.id == 400 && configPage15.canREWBOCAN == true)
     {
       uint16_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])) * 100000; // Combining 2 bytes of data into single variable and multiplying it 10000 since factor is 0.0001 and to avoid floating point
-      if((inLambda > 5000 || inLambda < 14000) && inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
+      if((inLambda > 5 || inLambda < 14) && inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
       {
-        currentStatus.O2 = (inLambda * configPage2.stoich) / 100; // Multiplying lambda by stoich ratio to get AFR and dividing it by 100 to get correct value
+        currentStatus.O2 = unsigned int(inLambda * configPage2.stoich) / 10; // Multiplying lambda by stoich ratio to get AFR and dividing it by 10 to get correct value
       }
     }
   }
