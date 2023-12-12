@@ -77,7 +77,7 @@ void sendVAGCluster()
 }
 void reciveCANwbo()
   {
-    if (inMsg.id == 400 && configPage15.canREWBOCAN == true) // RusEFI CAN Wideband support
+    if (inMsg.id == 400 && configPage15.canREWBOCAN == true) // RusEFI CAN Wideband support https://github.com/mck1117/wideband
     {
       uint16_t inLambda = word(inMsg.buf[3], inMsg.buf[2]);
       currentStatus.O2 = (inLambda * configPage2.stoich) / 10000;
