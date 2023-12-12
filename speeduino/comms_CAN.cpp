@@ -79,11 +79,8 @@ void reciveCANwbo()
   {
     if (inMsg.id == 400 && configPage15.canREWBOCAN == true) // RusEFI CAN Wideband support
     {
-      uint16_t inLambda = 0;
-      for (int i = 0; i < 16 / 8; ++i) {
-        inLambda |= (uint16_t)inMsg.buf[16 / 8 + i] << (8 * i);
-      }
-      currentStatus.O2 = inLambda;
+      uint16_t inLambda = word(inMsg.buf[3], inMsg.buf[2]);
+      currentStatus.O2 = (inLambda * configPage2.stoich) / 10000;
     }
   }
 // switch case for gathering all data to message based on CAN Id.
