@@ -2167,6 +2167,43 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 42:
+      //Pin mappings for all BlitzboxBL49sp variants
+      pinInjector1 = 6; //Output pin injector 1
+      pinInjector2 = 7; //Output pin injector 2
+      pinInjector3 = 8; //Output pin injector 3
+      pinInjector4 = 9; //Output pin injector 4
+      pinCoil1 = 24; //Pin for coil 1
+      pinCoil2 = 25; //Pin for coil 2
+      pinCoil3 = 23; //Pin for coil 3
+      pinCoil4 = 22; //Pin for coil 4
+      pinTrigger = 19; //The CRANK Sensor pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      //pinFlex = 20; // Flex sensor
+      pinTPS = A0; //TPS input pin
+      pinSpareTemp1 = A1; //LMM sensor pin
+      pinO2 = A2; //O2 Sensor pin
+      pinIAT = A3; //IAT sensor pin
+      pinCLT = A4; //CLT sensor pin
+      pinMAP = A7; //internal MAP sensor
+      pinBat = A6; //Battery reference voltage pin
+      pinBaro = A5; //external MAP/Baro sensor pin
+      //pinO2_2 = A9; //O2 sensor pin (second sensor)
+      pinLaunch = 2; //Can be overwritten below
+      pinTachOut = 10; //Tacho output pin
+      pinIdle1 = 11; //Single wire idle control
+      //pinIdle2 = 10; //2 wire idle control
+      pinFuelPump = 3; //Fuel pump output
+      //pinVVT_1 = 11; //Default VVT output
+      pinBoost = 13; //Boost control
+      pinSpareLOut1 = 49; //enable Wideband Lambda Heater
+      //pinSpareLOut2 = 27; //low current output spare2
+      //pinSpareLOut3 = 28; //low current output spare3
+      //pinSpareLOut4 = 29; //low current output spare4
+      pinFan = 12; //Pin for the fan output
+      //pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+    break;
+    
     case 45:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
