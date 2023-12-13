@@ -1443,8 +1443,9 @@ struct config15 {
   byte rollingProtCutPercent[4];
   
   byte canREWBOCAN : 1;
-  //Bytes 99-255
-  byte Unused15_107_255[148];
+  byte Unused15_106 : 7;
+  //Bytes 107-255
+  byte Unused15_107_255[149];
 
 #if defined(CORE_AVR)
   };
