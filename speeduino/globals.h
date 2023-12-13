@@ -1444,7 +1444,7 @@ struct config15 {
   
   byte canREWBOCAN : 1;
   //Bytes 99-255
-  byte Unused15_99_255[149];
+  byte Unused15_107_255[148];
 
 #if defined(CORE_AVR)
   };
