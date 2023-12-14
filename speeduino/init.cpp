@@ -2179,7 +2179,7 @@ void setPinMapping(byte boardID)
       pinCoil4 = 22; //Pin for coil 4
       pinTrigger = 19; //The CRANK Sensor pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      //pinFlex = 20; // Flex sensor
+      pinFlex = 20; // Flex sensor PLACEHOLDER value for now
       pinTPS = A0; //TPS input pin
       pinSpareTemp1 = A1; //LMM sensor pin
       pinO2 = A2; //O2 Sensor pin
@@ -2188,20 +2188,20 @@ void setPinMapping(byte boardID)
       pinMAP = A7; //internal MAP sensor
       pinBat = A6; //Battery reference voltage pin
       pinBaro = A5; //external MAP/Baro sensor pin
-      //pinO2_2 = A9; //O2 sensor pin (second sensor)
+      pinO2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
       pinLaunch = 2; //Can be overwritten below
       pinTachOut = 10; //Tacho output pin
       pinIdle1 = 11; //Single wire idle control
-      //pinIdle2 = 10; //2 wire idle control
+      pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
       pinFuelPump = 3; //Fuel pump output
-      //pinVVT_1 = 11; //Default VVT output
+      pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
       pinBoost = 13; //Boost control
       pinSpareLOut1 = 49; //enable Wideband Lambda Heater
-      //pinSpareLOut2 = 27; //low current output spare2
-      //pinSpareLOut3 = 28; //low current output spare3
-      //pinSpareLOut4 = 29; //low current output spare4
+      pinSpareLOut2 = 16; //low current output spare2 PLACEHOLDER value for now
+      pinSpareLOut3 = 17; //low current output spare3 PLACEHOLDER value for now
+      pinSpareLOut4 = 21; //low current output spare4 PLACEHOLDER value for now
       pinFan = 12; //Pin for the fan output
-      //pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
     break;
     
     case 45:
