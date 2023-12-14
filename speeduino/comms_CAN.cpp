@@ -41,6 +41,7 @@ void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wi
     if(configPage15.canREWBOCAN == true)
     {
       outMsg.id = 0xEF50000;
+      outMsg.flags.extended = 1;
       outMsg.len = 2;
       outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
       outMsg.buf[1] = currentStatus.coolant <= 40? 0x00 : 0x01; // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
