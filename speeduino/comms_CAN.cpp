@@ -76,8 +76,8 @@ void sendVAGCluster()
   Can0.write(outMsg);
 }
 void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wideband
-  {
-    if(configPage15.canREWBOCAN == true)
+{
+  if(configPage2.canREWBOCAN == 1)
     {
       outMsg.id = 0xEF50000;
       outMsg.flags.extended = 1;
@@ -85,12 +85,11 @@ void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wi
       outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
       outMsg.buf[1] = currentStatus.coolant <= 40? 0x00 : 0x01; // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
       Can0.write(outMsg);
-    }
-    if ((inMsg.id == 0x190 || inMsg.id == 0x192) && configPage15.canREWBOCAN == true)
+    if ((inMsg.id == 0x190 || inMsg.id == 0x192))
     {
-      uint16_t inLambda;
+      uint32_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
-      if(inMsg.buf[1] == 1 && (inLambda > 5000 || inLambda < 14000)) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
+      if(inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
       {
         switch(inMsg.id)
         {
@@ -108,6 +107,7 @@ void reciveCANwbo() // RusEFI CAN Wideband support https://github.com/mck1117/wi
       }
     }
   }
+}
 // switch case for gathering all data to message based on CAN Id.
 void DashMessage(uint16_t DashMessageID)
 {
