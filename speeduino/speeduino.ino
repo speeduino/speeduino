@@ -122,7 +122,7 @@ void loop(void)
         {            
           //check local can module
           // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
-          while (Can0.read(inMsg) ) 
+          while (CAN_read()) 
           {
             can_Command();
             readAuxCanBus();
