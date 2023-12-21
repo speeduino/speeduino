@@ -8,6 +8,7 @@
 #include "speeduino.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "comms_CAN.h"
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
@@ -291,15 +292,7 @@ void initialiseAll(void)
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined (NATIVE_CAN_AVAILABLE)
-      configPage9.intcan_available = 1;   // device has internal canbus
-      //Teensy uses the Flexcan_T4 library to use the internal canbus
-      //enable local can interface
-      //setup can interface to 500k   
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
-    #endif
+    
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
@@ -310,11 +303,8 @@ void initialiseAll(void)
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    /* Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs.
-     * Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14 */
-    #if defined(CORE_TEENSY35)
-      Can0.setRX(DEF);
-      Can0.setTX(DEF);
+    #if defined(NATIVE_CAN_AVAILABLE)
+      initCAN();
     #endif
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
@@ -3007,6 +2997,7 @@ void setPinMapping(byte boardID)
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
     initMC33810();
+    pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
   }
 
 //CS pin number is now set in a compile flag. 
@@ -3223,11 +3214,6 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-
-  #if defined(CORE_TEENSY41)
-    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
-    setTriggerHysteresis();
-  #endif
 
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
@@ -3686,6 +3672,11 @@ void initialiseTriggers(void)
       else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
       break;
   }
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {
