@@ -42,7 +42,7 @@ void test_initialisation_complete(void)
 {
   prepareForInitialiseAll(3);
   initialiseAll(); //Run the main initialise function
-  TEST_ASSERT_EQUAL(true, initialisationComplete);
+  TEST_ASSERT_EQUAL(true, currentStatus.initialisationComplete);
 }
 
 void test_initialisation_ports(void)
