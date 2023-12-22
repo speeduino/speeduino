@@ -2,6 +2,7 @@
 #include "secondaryTables.h"
 #include "corrections.h"
 #include "load_source.h"
+#include "maths.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -56,8 +57,8 @@ void calculateSecondaryFuel(void)
     currentStatus.VE2 = getVE2();
     BIT_SET(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
     //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-    uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100U;
-    currentStatus.VE = (uint8_t)min((uint16_t)UINT8_MAX, combinedVE);
+    auto combinedVE = percentage(currentStatus.VE2, currentStatus.VE1);
+    currentStatus.VE = (uint8_t)min((uint32_t)UINT8_MAX, combinedVE);
   }
   else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
   {
@@ -140,7 +141,7 @@ void calculateSecondarySpark(void)
     //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
     currentStatus.advance2 = max((int8_t)0, getAdvance2());
     //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-    int16_t combinedAdvance = ((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2) / 100;
+    int16_t combinedAdvance = div100((int16_t)currentStatus.advance1 * (int16_t)currentStatus.advance2);
     //make sure we don't overflow and accidentally set negative timing, currentStatus.advance can only hold a signed 8 bit value
     currentStatus.advance = (int8_t)min((int16_t)INT8_MAX, combinedAdvance);
   }
