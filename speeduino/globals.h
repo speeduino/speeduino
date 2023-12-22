@@ -30,6 +30,7 @@
 #include "table2d.h"
 #include "table3d.h"
 #include "statuses.h"
+#include "load_source.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
@@ -118,11 +119,6 @@
 
 #define SERIAL_PORT_PRIMARY   0
 #define SERIAL_PORT_SECONDARY 3
-
-//Define the load algorithm
-#define LOAD_SOURCE_MAP         0
-#define LOAD_SOURCE_TPS         1
-#define LOAD_SOURCE_IMAPEMAP    2
 
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
@@ -523,7 +519,7 @@ struct config2 {
   byte crkngAddCLTAdv : 1;
   byte includeAFR : 1; //< Enable AFR compensation ? (See also @ref config2.incorporateAFR)
   byte hardCutType : 1;
-  byte ignAlgorithm : 3;
+  LoadSource ignAlgorithm : 3;
   byte indInjAng : 1;
   byte injOpen;     ///< Injector opening time (ms * 10)
   uint16_t injAng[4];
@@ -535,7 +531,7 @@ struct config2 {
   byte nCylinders : 4; ///< Number of cylinders
 
   //config2 in ini
-  byte fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
+  LoadSource fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
   byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref configPage4.FixAng)
   byte nInjectors : 4;   ///< Number of injectors
 
@@ -1033,7 +1029,7 @@ struct config10 {
   byte knock_recoveryStep; //Byte 121
 
   //Byte 122
-  byte fuel2Algorithm : 3;
+  LoadSource fuel2Algorithm : 3;
   byte fuel2Mode : 3;
   byte fuel2SwitchVariable : 2;
 
@@ -1106,7 +1102,7 @@ struct config10 {
   byte fuelTempValues[6]; //180
 
   //Byte 186
-  byte spark2Algorithm : 3;
+  LoadSource spark2Algorithm : 3;
   byte spark2Mode : 3;
   byte spark2SwitchVariable : 2;
 
