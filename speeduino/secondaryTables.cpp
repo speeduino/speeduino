@@ -3,6 +3,7 @@
 #include "corrections.h"
 #include "load_source.h"
 #include "maths.h"
+#include "unit_testing.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -129,7 +130,7 @@ static inline bool sparkModeInputSwitchActive(void) {
       && (digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity);
 }
 
-static inline bool isFixedTimingOn(void) {
+TESTABLE_INLINE_STATIC bool isFixedTimingOn(void) {
             // Fixed timing is in effect
     return  (configPage2.fixAngEnable == 1U)
             // Cranking, so the cranking advance angle is in effect
