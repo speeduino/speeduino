@@ -6,7 +6,7 @@
 #include "storage.h"
 
 
-TEST_DATA_P table3d_value_t values[] PROGMEM = {
+TEST_DATA_P table3d_value_t values[] = {
  //0    1    2   3     4    5    6    7    8    9   10   11   12   13    14   15
 34,  34,  34,  34,  34,  34,  34,  34,  34,  35,  35,  35,  35,  35,  35,  35, 
 34,  35,  36,  37,  39,  41,  42,  43,  43,  44,  44,  44,  44,  44,  44,  44, 
@@ -62,25 +62,24 @@ static void test_no_secondary_spark(void) {
     assert_2nd_spark_is_off(50);
 }
 
-static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode) {
+static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_t expectedAdvance2) {
     test_setup();
     configPage10.spark2Mode = mode;    
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.advance1 = 120;
-    currentStatus.advance = currentStatus.advance1;
+    currentStatus.advance = currentStatus.advance1 = 120;
     currentStatus.MAP = 100; //Load source value
     currentStatus.RPM = 7000;
 
     calculateSecondarySpark();
 
-    assert_2nd_spark_is_on(120, (int16_t)150-INT16_C(OFFSET_IGNITION), INT8_MAX);
+    assert_2nd_spark_is_on(120, expectedAdvance2, INT8_MAX);
 }
 
 static constexpr int8_t SIMPLE_ADVANCE1 = 75;
 static constexpr int16_t SIMPLE_LOAD_LOOKUP_VALUE = 68;
 static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_VALUE-INT16_C(OFFSET_IGNITION);
 
-static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance) {
+static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance, int8_t expectedAdvance2) {
     test_setup();
     configPage10.spark2Mode = mode;    
     configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
@@ -91,23 +90,23 @@ static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expe
 
     calculateSecondarySpark();
 
-    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, expectedAdvance);
+    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, expectedAdvance2, expectedAdvance);
 }
 
 static void test_sparkmode_multiply_cap_UINT8_MAX(void) {
-    test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY);
+    test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY, (int16_t)150-INT16_C(OFFSET_IGNITION)-INT16_C(INT8_MAX));
 }
 
 static void test_sparkmode_multiply(void) {
-    test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*SIMPLE_LOAD_VALUE)/100);
+    test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*SIMPLE_LOAD_VALUE)/100, SIMPLE_LOAD_VALUE-INT8_MAX);
 }
 
 static void test_sparkmode_add(void) {
-    test_mode_simple(SPARK2_MODE_ADD, SIMPLE_ADVANCE1+SIMPLE_LOAD_VALUE);
+    test_mode_simple(SPARK2_MODE_ADD, SIMPLE_ADVANCE1+SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 }
 
 static void test_sparkmode_add_cap_UINT8_MAX(void) {
-    test_mode_cap_INT8_MAX(SPARK2_MODE_ADD);
+    test_mode_cap_INT8_MAX(SPARK2_MODE_ADD, (int16_t)150-INT16_C(OFFSET_IGNITION));
 }
 
 static void __attribute__((noinline)) setup_test_mode_cond_switch(uint8_t cond, uint16_t trigger) {
