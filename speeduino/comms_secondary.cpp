@@ -207,7 +207,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
         outMsg.buf[5] = 0x70;
         outMsg.buf[6] = 0x9E;
         outMsg.buf[7] = 0x4D;
-        Can0.write(outMsg);
+        CAN_write();
         #endif
         break;
 

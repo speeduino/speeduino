@@ -76,6 +76,7 @@ uint16_t getRPM_missingTooth(void);
 int getCrankAngle_missingTooth(void);
 extern void triggerSetEndTeeth_missingTooth(void);
 
+
 void triggerSetup_DualWheel(void);
 void triggerPri_DualWheel(void);
 void triggerSec_DualWheel(void);

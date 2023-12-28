@@ -176,6 +176,7 @@
 #define BIT_TIMER_10HZ            2
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
+#define BIT_TIMER_200HZ           6
 #define BIT_TIMER_1KHZ            7
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
@@ -254,6 +255,7 @@
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
 #define SEC_TRIGGER_5_3_2   3
+#define SEC_TRIGGER_TOYOTA_3  4
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -517,7 +519,7 @@ extern byte triggerInterrupt;
 extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
 
-extern bool initialisationComplete; //Tracks whether the setup() function has run completely
+
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
@@ -525,12 +527,8 @@ extern unsigned long revolutionTime; //The time in uS that one revolution would 
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
 extern volatile unsigned long ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
-extern bool clutchTrigger;
-extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_SIZE];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
-extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
-extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
@@ -554,10 +552,7 @@ extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 extern byte maxIgnOutputs;            /**< Number of ignition outputs being used by the current tune configuration */
 extern byte maxInjOutputs;            /**< Number of injection outputs being used by the current tune configuration */
-
-
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
-
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
@@ -575,8 +570,16 @@ extern volatile byte LOOP_TIMER;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
-  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
-    This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
+  This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  bool initialisationComplete : 1; //Tracks whether the setup() function has run completely
+  bool clutchTrigger : 1;
+  bool previousClutchTrigger : 1;
+  volatile bool fpPrimed : 1; //Tracks whether or not the fuel pump priming has been completed yet
+  volatile bool injPrimed : 1; //Tracks whether or not the injector priming has been completed yet
+  volatile bool tachoSweepEnabled : 1;
+  volatile bool tachoAlt : 1;
+    
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
   long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
@@ -1467,8 +1470,8 @@ extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
 extern byte ignitionOutputControl; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinTrigger; //The CAS pin
-extern byte pinTrigger2; //The Cam Sensor pin
-extern byte pinTrigger3;	//the 2nd cam sensor pin
+extern byte pinTrigger2; //The Cam Sensor pin known as secondary input
+extern byte pinTrigger3;	//the 2nd cam sensor pin known as tertiary input
 extern byte pinTPS;//TPS input pin
 extern byte pinMAP; //MAP sensor pin
 extern byte pinEMAP; //EMAP sensor pin
