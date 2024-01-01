@@ -91,7 +91,7 @@ void receiveCANwbo() // rusEFI CAN Wideband support https://github.com/mck1117/w
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
 
       uint16_t temp_AFR;
-      temp_AFR = (unsigned int)(inLambda * configPage2.stoich / 10000); // Calculating temp AFR using stoich ratio and incomming lambda value afterwards diving by 10K to get final AFR ratio and converting to integer
+      temp_AFR = (unsigned int)((uint32_t)inLambda * configPage2.stoich / 10000); // Calculating temp AFR using stoich ratio and incomming lambda value afterwards diving by 10K to get final AFR ratio and converting to integer
 
       switch(inMsg.id)
       {
