@@ -861,8 +861,7 @@ struct config2 {
 
   byte canBMWCluster : 1;
   byte canVAGCluster : 1;
-  byte canREWBOCAN : 1 ;
-  byte enableCluster2 : 1;
+  byte canWBO : 2 ;
   byte vssAuxCh : 4;
 
   byte decelAmount;
