@@ -256,15 +256,15 @@ void loop(void)
       #if defined(NATIVE_CAN_AVAILABLE)
       if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
       if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
-      if (configPage2.canREWBOCAN == 1) { reciveCANwbo(); }
+      if (configPage2.canWBO > 0) { reciveCANwbo(); }
       #endif
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
-      if (!(configPage2.canREWBOCAN == 1))
+      if (configPage2.canWBO == 0)
       {
-      readO2();
-      readO2_2();
+        readO2();
+        readO2_2();
       }
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }

@@ -14,6 +14,8 @@
 #define CAN_VAG_RPM 0x280
 #define CAN_VAG_VSS 0x5A0
 
+#define CAN_WBO_RUSEFI 1
+
 #define TS_CAN_OFFSET 0x100
 
 void initCAN();
