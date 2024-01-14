@@ -2015,7 +2015,7 @@ void setPinMapping(byte boardID)
       pinIdleUp = 37; //(placeholder)
       pinCTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
-      pinInjector1 = PB15; //Output pin injector 1
+      //pinInjector1 = PB15; //Output pin injector 1
       pinInjector2 = PB14; //Output pin injector 2
       pinInjector3 = PB12; //Output pin injector 3
       pinInjector4 = PB13; //Output pin injector 4

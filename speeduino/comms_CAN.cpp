@@ -90,7 +90,7 @@ void reciveCANwbo()
     {
       uint32_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
-      if(inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
+      if(inMsg.buf[1] == 1) // Checking if lambda is valid
       {
         switch(inMsg.id)
         {
