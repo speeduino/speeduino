@@ -4709,14 +4709,16 @@ void triggerPri_Vmax(void)
             toothOneMinusOneTime = toothOneTime;
             toothOneTime = curTime;
             currentStatus.hasSync = true;
-            setFilter((curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
+            //setFilter((curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
+            setFilter( ((curGap*4)/7) );//Angle to this tooth is 70, next is in 40, compensating.
             currentStatus.startRevolutions++; //Counter
           }
           else if (toothCurrentCount==2)
           {
             secondaryToothCount = 2;
             triggerToothAngle = 40;
-            setFilter((curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
+            //setFilter((curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
+            setFilter( ((curGap*7)/4) );//Angle to this tooth is 40, next is in 70, compensating.
           }
           else if (toothCurrentCount==3)
           {
@@ -4728,13 +4730,15 @@ void triggerPri_Vmax(void)
           {
             secondaryToothCount = 4;
             triggerToothAngle = 70;
-            setFilter((curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
+            //setFilter((curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
+            setFilter( ((curGap*4)/7) );//Angle to this tooth is 70, next is in 40, compensating.
           }
           else if (toothCurrentCount==5)
           {
             secondaryToothCount = 5;
             triggerToothAngle = 40;
-            setFilter((curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
+            //setFilter((curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
+            setFilter( ((curGap*7)/4) );//Angle to this tooth is 40, next is in 70, compensating.
           }
           else if (toothCurrentCount==6)
           {
