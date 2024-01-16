@@ -465,7 +465,7 @@ void loop(void)
       #if INJ_CHANNELS >= 8
       uint16_t injector8StartAngle = 0;
       #endif
-
+      
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
       uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
       //Handle multiple squirts per rev
@@ -483,7 +483,8 @@ void loop(void)
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-      currentStatus.injAngle = max(currentStatus.injAngle, uint16_t(CRANK_ANGLE_MAX_INJ) );
+      if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
+
       unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
 
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
