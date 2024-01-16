@@ -467,14 +467,7 @@ void loop(void)
       #endif
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint32_t pwLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-      //Handle multiple squirts per rev
-      if (configPage2.strokes == FOUR_STROKE) { pwLimit = pwLimit * 2; }
-      // This requires 32-bit division, which is very slow on Mega 2560.
-      // So only divide if necessary - nSquirts is often only 1.
-      if (currentStatus.nSquirts!=1) {
-        pwLimit = pwLimit / currentStatus.nSquirts;
-      }
+      uint16_t pwLimit = calculatePWLimit();
       //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
@@ -1438,6 +1431,36 @@ void calculateIgnitionAngles(int dwellAngle)
     default:
       break;
   }
+}
+
+uint16_t calculatePWLimit()
+{
+  uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  //Handle multiple squirts per rev
+  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+  //Optimise for power of two divisions where possible
+  switch(currentStatus.nSquirts)
+  {
+    case 1:
+      //No action needed
+      break;
+    case 2:
+      tempLimit = tempLimit / 2;
+      break;
+    case 4:
+      tempLimit = tempLimit / 4;
+      break;
+    case 8:
+      tempLimit = tempLimit / 8;
+      break;
+    default:
+      //Non-PoT squirts value. Perform (slow) uint32_t division
+      tempLimit = tempLimit / currentStatus.nSquirts;
+      break;
+  }
+  if(tempLimit > UINT16_MAX) { tempLimit = UINT16_MAX; }
+
+  return tempLimit;
 }
 
 void calculateStaging(uint32_t pwLimit)
