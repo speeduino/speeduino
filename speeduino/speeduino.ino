@@ -1209,7 +1209,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   if (corrections > 1023) { bitShift = 5; }
   
   //iVE = ((unsigned int)VE << 7) / 100;
-  iVE = div100(((unsigned int)VE << 7));
+  iVE = div100(((uint16_t)VE << 7));
 
   //Check whether either of the multiply MAP modes is turned on
   //if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
