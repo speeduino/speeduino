@@ -3625,8 +3625,8 @@ void initialiseTriggers(void)
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
 
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
       break;
   }
 }
