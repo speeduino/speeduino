@@ -744,8 +744,7 @@ void loop(void)
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = getCrankAngle();
-      while(crankAngle > CRANK_ANGLE_MAX_INJ ) { crankAngle = crankAngle - CRANK_ANGLE_MAX_INJ; } //Continue reducing the crank angle by the max injection amount until it's below the required limit. This will usually only run (at most) once, but in cases where there is sequential ignition and more than 2 squirts per cycle, it may run up to 4 times. 
+      int crankAngle = injectorLimits(getCrankAngle());
 
       // if(Serial && false)
       // {
@@ -1042,8 +1041,7 @@ void loop(void)
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-        while (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= CRANK_ANGLE_MAX_IGN; }
+        crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
 
 #if IGN_CHANNELS >= 1
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
@@ -1059,8 +1057,7 @@ void loop(void)
         {
           unsigned long uSToEnd = 0;
 
-          crankAngle = getCrankAngle(); //Refresh with the latest crank angle
-          if (crankAngle > CRANK_ANGLE_MAX_IGN ) { crankAngle -= 360; }
+          crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
           
           //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
           //*********

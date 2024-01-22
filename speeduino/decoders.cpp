@@ -752,7 +752,6 @@ int getCrankAngle_missingTooth(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -958,7 +957,6 @@ int getCrankAngle_DualWheel(void)
     if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -1122,7 +1120,6 @@ int getCrankAngle_BasicDistributor(void)
     
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -1314,7 +1311,6 @@ int getCrankAngle_GM7X(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
@@ -1724,7 +1720,6 @@ int getCrankAngle_4G63(void)
       crankAngle += timeToAngleIntervalTooth(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
-      if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
       if (crankAngle < 0) { crankAngle += 360; }
     }
     return crankAngle;
@@ -1882,7 +1877,6 @@ int getCrankAngle_24X(void)
     if (tempRevolutionOne == 1) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
@@ -1989,7 +1983,6 @@ int getCrankAngle_Jeep2000(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
@@ -2110,7 +2103,6 @@ int getCrankAngle_Audi135(void)
     if (tempRevolutionOne) { crankAngle += 360; }
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -2208,7 +2200,6 @@ int getCrankAngle_HondaD17(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
@@ -2433,7 +2424,6 @@ int getCrankAngle_Miata9905(void)
       crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
-      if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
       if (crankAngle < 0) { crankAngle += 360; }
     }
 
@@ -2631,7 +2621,6 @@ int getCrankAngle_MazdaAU(void)
       crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
-      if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
       if (crankAngle < 0) { crankAngle += 360; }
     }
 
@@ -2706,7 +2695,6 @@ int getCrankAngle_non360(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
 
     return crankAngle;
@@ -2922,7 +2910,6 @@ int getCrankAngle_Nissan360(void)
   }
 
   if (crankAngle >= 720) { crankAngle -= 720; }
-  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
   if (crankAngle < 0) { crankAngle += 360; }
 
   return crankAngle;
@@ -3169,7 +3156,6 @@ int getCrankAngle_Subaru67(void)
     crankAngle += timeToAngleIntervalTooth(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += 360; }
   }
 
@@ -3369,7 +3355,6 @@ int getCrankAngle_Daihatsu(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -3507,7 +3492,6 @@ int getCrankAngle_Harley(void)
   crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
   if (crankAngle >= 720) { crankAngle -= 720; }
-  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
   if (crankAngle < 0) { crankAngle += 360; }
 
   return crankAngle;
@@ -3992,7 +3976,6 @@ int getCrankAngle_420a(void)
   crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
   if (crankAngle >= 720) { crankAngle -= 720; }
-  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
   if (crankAngle < 0) { crankAngle += 360; }
 
   return crankAngle;
@@ -4246,7 +4229,6 @@ int getCrankAngle_FordST170(void)
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;
@@ -4847,7 +4829,6 @@ int getCrankAngle_Vmax(void)
   crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
   if (crankAngle >= 720) { crankAngle -= 720; }
-  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
   if (crankAngle < 0) { crankAngle += 360; }
 
   return crankAngle;
@@ -5254,7 +5235,6 @@ int getCrankAngle_RoverMEMS()
     crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
     if (crankAngle >= 720) { crankAngle -= 720; }
-    else if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
     if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
 
     return crankAngle;

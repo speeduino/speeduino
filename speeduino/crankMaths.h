@@ -10,8 +10,23 @@
  * @param angle A crank angle in degrees
  * @return int16_t 
  */
-static inline int16_t ignitionLimits(int16_t angle) {
+static inline int16_t ignitionLimits(int16_t angle)
+{
     return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+}
+
+/**
+ * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_INJ]
+ * 
+ * @param angle A crank angle in degrees
+ * @return int16_t 
+ */
+static inline int16_t injectorLimits(int16_t angle)
+{
+    int16_t tempAngle = angle;
+    if(tempAngle < 0) { tempAngle = tempAngle + CRANK_ANGLE_MAX_INJ; }
+    while(tempAngle > CRANK_ANGLE_MAX_INJ ) { tempAngle -= CRANK_ANGLE_MAX_INJ; }
+    return tempAngle;
 }
 
 /** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
