@@ -9,45 +9,67 @@
 
 #pragma once
 
+#include "int16_byte.h"
 #include "table3d_axes.h"
+#ifdef USE_LIBDIVIDE
+#include "src/libdivide/constant_fast_div.h"
+#endif
 
-/** @brief Byte type. This is not defined in any C or C++ standard header. */
-typedef uint8_t byte;
+/** @brief table axis I/O support 
+ * 
+ * @attention Using \c constexpr class static variables seems to be the best
+ * combination of size and speed - \c constexpr implies \c inline, so we
+ * can't use it on traditional \c extern global variables.
+*/
+class table3d_axis_io {
+public:
 
-/** @brief Models int16->byte conversion 
- * @see table3d_axis_io_converter 
- */
-typedef byte(*pToByteConverter)(int16_t value);
+    /**
+     * @brief Obtain a converter instance for a given axis domain.
+     * 
+     * Often we need to deal internally with values that fit in 16-bits but do
+     * not require much accuracy. E.g. RPM. For these values we can 
+     * save storage space (EEPROM) by scaling to/from 8-bits using a fixed divisor.
+     * 
+     * The divisor is dependent on the domain. I.e all axes with the same domain use 
+     * the same divisor 
+     * 
+     * Conversion during I/O is orthogonal to other axis concerns, so is separated and
+     * encapsulated here.
+     */
+    static constexpr const int16_byte* get_converter(axis_domain domain)  {
+        return domain==axis_domain_Rpm ? &converter_100 :
+                domain==axis_domain_Load ? &converter_2 : &converter_1;
+    }
 
-/** @brief Models byte->int16 conversion
- * @see table3d_axis_io_converter 
- */
-typedef int16_t(*pFromByteConverter)(byte in);
+    /** 
+     * @brief Convert to a \c byte 
+     * 
+     * Useful for converting a single value.
+     * If converting multiple, probably faster to cache the converter rather than
+     * repeatedly calling this function.
+    */
+    static inline byte to_byte(axis_domain domain, int16_t value) { return get_converter(domain)->to_byte(value); }
 
-/** @brief Convert a 16-bit value to/from a byte. Useful for I/O. 
- *
- * Often we need to deal internally with values that fit in 16-bits but do
- * not require much accuracy. E.g. table axes in RPM. For these values we can 
- * save storage space (EEPROM) by scaling to/from 8-bits.
- */
-struct table3d_axis_io_converter {
-    pToByteConverter to_byte;
-    pFromByteConverter from_byte;
+    /** 
+     * @brief Convert from a \c byte 
+     * 
+     * Useful for converting a single value.
+     * If converting multiple, probably faster to cache the converter rather than
+     * repeatedly calling this function.
+    */
+    static inline int16_t from_byte(axis_domain domain, byte in ) { return get_converter(domain)->from_byte(in); }    
+
+private:
+#ifdef USE_LIBDIVIDE
+    static constexpr int16_byte converter_100 = { 100, { S16_MAGIC(100), S16_MORE(100) } };
+    static constexpr int16_byte converter_2 = { 2, { S16_MAGIC(2), S16_MORE(2) } };
+    static constexpr int16_byte converter_1 = { 1, { S16_MAGIC(1), S16_MORE(1) } };
+#else
+    static constexpr int16_byte converter_100 = { 100 };
+    static constexpr int16_byte converter_2 = { 2 };
+    static constexpr int16_byte converter_1 = { 1 };
+#endif
 };
-
-/**
- * @brief Obtain a converter instance for a given axis domain.
- * 
- * Often we need to deal internally with values that fit in 16-bits but do
- * not require much accuracy. E.g. RPM. For these values we can 
- * save storage space (EEPROM) by scaling to/from 8-bits.
- * 
- * The converter is dependent on the domain. I.e all axes with the same domain use 
- * the same converter 
- * 
- * Conversion during I/O is orthogonal to other axis concerns, so is separated and
- * encapsulated here.
- */
-table3d_axis_io_converter get_table3d_axis_converter(axis_domain domain);
 
 /** @} */

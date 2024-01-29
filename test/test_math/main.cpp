@@ -1,9 +1,8 @@
 #include <Arduino.h>
 #include <unity.h>
-#include "tests_crankmaths.h"
 
-extern void testPercent(void);
-extern void testDivision(void);
+#include "tests_crankmaths.h"
+#include "tests_maths.h"
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -18,8 +17,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testCrankMaths();
-    testPercent();
-    testDivision();
+    testMaths();
 
     UNITY_END(); // stop unit testing
 }

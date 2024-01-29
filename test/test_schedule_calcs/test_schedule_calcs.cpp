@@ -4,7 +4,6 @@
 
 extern void test_calc_ign_timeout();
 extern void test_calc_inj_timeout();
-extern void test_adjust_crank_angle();
 
 void setup()
 {
@@ -15,7 +14,6 @@ void setup()
 
   test_calc_ign_timeout();
   test_calc_inj_timeout();
-  test_adjust_crank_angle();
   
   UNITY_END(); // stop unit testing
 

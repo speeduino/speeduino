@@ -19,7 +19,6 @@ A full copy of the license may be found in the projects root directory
 #include "page_crc.h"
 #include "logger.h"
 #include "table3d_axis_io.h"
-#include BOARD_H
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -35,6 +34,7 @@ byte logItemsTransmitted;
 byte inProgressLength;
 SerialStatus serialStatusFlag;
 SerialStatus serialSecondaryStatusFlag;
+
 
 static bool isMap(void) {
     // Detecting if the current page is a table/map
@@ -188,10 +188,6 @@ void legacySerialCommand(void)
       currentStatus.freeRAM = freeRam();
       Serial.write(lowByte(currentStatus.freeRAM));
       Serial.write(highByte(currentStatus.freeRAM));
-      break;
-
-    case 'M':
-      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
     case 'N': // Displays a new line.  Like pushing enter in a text editor
@@ -395,6 +391,48 @@ void legacySerialCommand(void)
 
       break;
 
+    case 'M':
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
+
+      if(chunkPending == false)
+      {
+        //This means it's a new request
+        //7 bytes required:
+        //2 - Page identifier
+        //2 - offset
+        //2 - Length
+        //1 - 1st New value
+        if(Serial.available() >= 7)
+        {
+          byte offset1, offset2, length1, length2;
+
+          Serial.read(); // First byte of the page identifier can be ignored. It's always 0
+          currentPage = Serial.read();
+          //currentPage = 1;
+          offset1 = Serial.read();
+          offset2 = Serial.read();
+          valueOffset = word(offset2, offset1);
+          length1 = Serial.read();
+          length2 = Serial.read();
+          chunkSize = word(length2, length1);
+
+          //Regular page data
+          chunkPending = true;
+          chunkComplete = 0;
+        }
+      }
+      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
+      if(chunkPending == true)
+      { 
+        while( (Serial.available() > 0) && (chunkComplete < chunkSize) )
+        {
+          setPageValue(currentPage, (valueOffset + chunkComplete), Serial.read());
+          chunkComplete++;
+        }
+        if(chunkComplete >= chunkSize) { serialStatusFlag = SERIAL_INACTIVE; chunkPending = false; }
+      }
+      break;
+
     case 'w':
       //No w commands are supported in legacy mode. This should never be called
       if(Serial.available() >= 7)
@@ -548,48 +586,6 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       }
       break;
 
-    case 'M':
-      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-
-      if(chunkPending == false)
-      {
-        //This means it's a new request
-        //7 bytes required:
-        //2 - Page identifier
-        //2 - offset
-        //2 - Length
-        //1 - 1st New value
-        if(targetPort.available() >= 7)
-        {
-          byte offset1, offset2, length1, length2;
-
-          targetPort.read(); // First byte of the page identifier can be ignored. It's always 0
-          currentPage = targetPort.read();
-          //currentPage = 1;
-          offset1 = targetPort.read();
-          offset2 = targetPort.read();
-          valueOffset = word(offset2, offset1);
-          length1 = targetPort.read();
-          length2 = targetPort.read();
-          chunkSize = word(length2, length1);
-
-          //Regular page data
-          chunkPending = true;
-          chunkComplete = 0;
-        }
-      }
-      //This CANNOT be an else of the above if statement as chunkPending gets set to true above
-      if(chunkPending == true)
-      { 
-        while( (targetPort.available() > 0) && (chunkComplete < chunkSize) )
-        {
-          setPageValue(currentPage, (valueOffset + chunkComplete), targetPort.read());
-          chunkComplete++;
-        }
-        if(chunkComplete >= chunkSize) { targetStatusFlag = SERIAL_INACTIVE; chunkPending = false; }
-      }
-      break;
-
     case 'p':
       targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
@@ -622,8 +618,8 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'Q': // send code version
-      targetPort.print(F("speeduino 202311-dev"));
-      //targetPort.print(F("speeduino 202310"));
+      //targetPort.print(F("speeduino 202306-dev"));
+      targetPort.print(F("speeduino 202310"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -655,8 +651,8 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'S': // send code version
-      targetPort.print(F("Speeduino 2023.11-dev"));
-      //targetPort.print(F("Speeduino 2023.10"));
+      //targetPort.print(F("Speeduino 2023.06-dev"));
+      targetPort.print(F("Speeduino 2023.10"));
       break;
   }
 }
@@ -668,18 +664,16 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * @param cmd - ??? - Will be used as some kind of ack on secondarySerial
  * @param targetPort - The HardwareSerial device that will be transmitted to
  * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
- * @param logFunction - The function that should be called to retrieve the log value
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
  * @return the current values of a fixed group of variables
  */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t))
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag)
 {  
   #if defined(secondarySerial_AVAILABLE)
   if (&targetPort == &secondarySerial)
   {
-    //Using Secondary serial, check if selected protocol requires the echo back of the command
-    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_INI) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
+    //CAN serial
+    if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_REALDASH))
     {
         if (cmd == 0x30) 
         {
@@ -716,10 +710,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   {
     bool bufferFull = false;
 
-    //targetPort.write(getTSLogEntry(offset+x));
-    targetPort.write(logFunction(offset+x));
+    targetPort.write(getTSLogEntry(offset+x));
 
-    if( (&targetPort == &Serial) ) 
+    if( (&targetPort == &Serial) || (configPage9.secondarySerialProtocol != SECONDARY_SERIAL_PROTO_REALDASH) ) 
     { 
       //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
       if(targetPort.availableForWrite() < 1) { bufferFull = true; }
@@ -887,10 +880,10 @@ namespace {
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(it.get_domain());
     while (!it.at_end())
     {
-      Serial.write(converter.to_byte(*it));
+      Serial.write(pConverter->to_byte(*it));
       ++it;
     }
   }
@@ -996,7 +989,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(get_table3d_axis_converter(y_it.get_domain()).to_byte(*y_it));
+    serial_print_prepadded_value(table3d_axis_io::to_byte(y_it.get_domain(), *y_it));
 
     while (!row.at_end())
     {
@@ -1006,21 +999,21 @@ namespace {
     Serial.println();
   }
 
-  void print_x_axis(void *pTable, table_type_t key)
+  void print_x_axis(const void *pTable, table_type_t key)
   {
     Serial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
-    const table3d_axis_io_converter converter = get_table3d_axis_converter(x_it.get_domain());
+    const int16_byte *pConverter = table3d_axis_io::get_converter(x_it.get_domain());
 
     while(!x_it.at_end())
     {
-      serial_print_prepadded_value(converter.to_byte(*x_it));
+      serial_print_prepadded_value(pConverter->to_byte(*x_it));
       ++x_it;
     }
   }
 
-  void serial_print_3dtable(void *pTable, table_type_t key)
+  void serial_print_3dtable(const void *pTable, table_type_t key)
   {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);

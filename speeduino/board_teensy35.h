@@ -76,41 +76,41 @@
   #define IGN7_COMPARE  FTM3_C6V
   #define IGN8_COMPARE  FTM3_C7V
 
-  static inline void FUEL1_TIMER_ENABLE(void)  {FTM0_C0SC |= FTM_CSC_CHIE;} //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  static inline void FUEL2_TIMER_ENABLE(void)  {FTM0_C1SC |= FTM_CSC_CHIE;}
-  static inline void FUEL3_TIMER_ENABLE(void)  {FTM0_C2SC |= FTM_CSC_CHIE;}
-  static inline void FUEL4_TIMER_ENABLE(void)  {FTM0_C3SC |= FTM_CSC_CHIE;}
-  static inline void FUEL5_TIMER_ENABLE(void)  {FTM3_C0SC |= FTM_CSC_CHIE;}
-  static inline void FUEL6_TIMER_ENABLE(void)  {FTM3_C1SC |= FTM_CSC_CHIE;}
-  static inline void FUEL7_TIMER_ENABLE(void)  {FTM3_C2SC |= FTM_CSC_CHIE;}
-  static inline void FUEL8_TIMER_ENABLE(void)  {FTM3_C3SC |= FTM_CSC_CHIE;}
+  #define FUEL1_TIMER_ENABLE() FTM0_C0SC |= FTM_CSC_CHIE //Write 1 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  #define FUEL2_TIMER_ENABLE() FTM0_C1SC |= FTM_CSC_CHIE
+  #define FUEL3_TIMER_ENABLE() FTM0_C2SC |= FTM_CSC_CHIE
+  #define FUEL4_TIMER_ENABLE() FTM0_C3SC |= FTM_CSC_CHIE
+  #define FUEL5_TIMER_ENABLE() FTM3_C0SC |= FTM_CSC_CHIE
+  #define FUEL6_TIMER_ENABLE() FTM3_C1SC |= FTM_CSC_CHIE
+  #define FUEL7_TIMER_ENABLE() FTM3_C2SC |= FTM_CSC_CHIE
+  #define FUEL8_TIMER_ENABLE() FTM3_C3SC |= FTM_CSC_CHIE
 
-  static inline void FUEL1_TIMER_DISABLE(void)  {FTM0_C0SC &= ~FTM_CSC_CHIE;} //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  static inline void FUEL2_TIMER_DISABLE(void)  {FTM0_C1SC &= ~FTM_CSC_CHIE;}
-  static inline void FUEL3_TIMER_DISABLE(void)  {FTM0_C2SC &= ~FTM_CSC_CHIE;}
-  static inline void FUEL4_TIMER_DISABLE(void)  {FTM0_C3SC &= ~FTM_CSC_CHIE;}
-  static inline void FUEL5_TIMER_DISABLE(void)  {FTM3_C0SC &= ~FTM_CSC_CHIE;} //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
-  static inline void FUEL6_TIMER_DISABLE(void)  {FTM3_C1SC &= ~FTM_CSC_CHIE;}
-  static inline void FUEL7_TIMER_DISABLE(void)  {FTM3_C2SC &= ~FTM_CSC_CHIE;}
-  static inline void FUEL8_TIMER_DISABLE(void)  {FTM3_C3SC &= ~FTM_CSC_CHIE;}
+  #define FUEL1_TIMER_DISABLE() FTM0_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  #define FUEL2_TIMER_DISABLE() FTM0_C1SC &= ~FTM_CSC_CHIE
+  #define FUEL3_TIMER_DISABLE() FTM0_C2SC &= ~FTM_CSC_CHIE
+  #define FUEL4_TIMER_DISABLE() FTM0_C3SC &= ~FTM_CSC_CHIE
+  #define FUEL5_TIMER_DISABLE() FTM3_C0SC &= ~FTM_CSC_CHIE //Write 0 to the CHIE (Channel Interrupt Enable) bit of channel 0 Status/Control
+  #define FUEL6_TIMER_DISABLE() FTM3_C1SC &= ~FTM_CSC_CHIE
+  #define FUEL7_TIMER_DISABLE() FTM3_C2SC &= ~FTM_CSC_CHIE
+  #define FUEL8_TIMER_DISABLE() FTM3_C3SC &= ~FTM_CSC_CHIE
 
-    static inline void IGN1_TIMER_ENABLE(void)  {FTM0_C4SC |= FTM_CSC_CHIE;}
-    static inline void IGN2_TIMER_ENABLE(void)  {FTM0_C5SC |= FTM_CSC_CHIE;}
-    static inline void IGN3_TIMER_ENABLE(void)  {FTM0_C6SC |= FTM_CSC_CHIE;}
-    static inline void IGN4_TIMER_ENABLE(void)  {FTM0_C7SC |= FTM_CSC_CHIE;}
-    static inline void IGN5_TIMER_ENABLE(void)  {FTM3_C4SC |= FTM_CSC_CHIE;}
-    static inline void IGN6_TIMER_ENABLE(void)  {FTM3_C5SC |= FTM_CSC_CHIE;}
-    static inline void IGN7_TIMER_ENABLE(void)  {FTM3_C6SC |= FTM_CSC_CHIE;}
-    static inline void IGN8_TIMER_ENABLE(void)  {FTM3_C7SC |= FTM_CSC_CHIE;}
+  #define IGN1_TIMER_ENABLE() FTM0_C4SC |= FTM_CSC_CHIE
+  #define IGN2_TIMER_ENABLE() FTM0_C5SC |= FTM_CSC_CHIE
+  #define IGN3_TIMER_ENABLE() FTM0_C6SC |= FTM_CSC_CHIE
+  #define IGN4_TIMER_ENABLE() FTM0_C7SC |= FTM_CSC_CHIE
+  #define IGN5_TIMER_ENABLE() FTM3_C4SC |= FTM_CSC_CHIE
+  #define IGN6_TIMER_ENABLE() FTM3_C5SC |= FTM_CSC_CHIE
+  #define IGN7_TIMER_ENABLE() FTM3_C6SC |= FTM_CSC_CHIE
+  #define IGN8_TIMER_ENABLE() FTM3_C7SC |= FTM_CSC_CHIE
 
-    static inline void IGN1_TIMER_DISABLE(void)  {FTM0_C4SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN2_TIMER_DISABLE(void)  {FTM0_C5SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN3_TIMER_DISABLE(void)  {FTM0_C6SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN4_TIMER_DISABLE(void)  {FTM0_C7SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN5_TIMER_DISABLE(void)  {FTM3_C4SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN6_TIMER_DISABLE(void)  {FTM3_C5SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN7_TIMER_DISABLE(void)  {FTM3_C6SC &= ~FTM_CSC_CHIE;}
-    static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
+  #define IGN1_TIMER_DISABLE() FTM0_C4SC &= ~FTM_CSC_CHIE
+  #define IGN2_TIMER_DISABLE() FTM0_C5SC &= ~FTM_CSC_CHIE
+  #define IGN3_TIMER_DISABLE() FTM0_C6SC &= ~FTM_CSC_CHIE
+  #define IGN4_TIMER_DISABLE() FTM0_C7SC &= ~FTM_CSC_CHIE
+  #define IGN5_TIMER_DISABLE() FTM3_C4SC &= ~FTM_CSC_CHIE
+  #define IGN6_TIMER_DISABLE() FTM3_C5SC &= ~FTM_CSC_CHIE
+  #define IGN7_TIMER_DISABLE() FTM3_C6SC &= ~FTM_CSC_CHIE
+  #define IGN8_TIMER_DISABLE() FTM3_C7SC &= ~FTM_CSC_CHIE
 
   #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
@@ -155,21 +155,16 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-  #define USE_SERIAL3               // Secondary serial port to use
-  #define secondarySerial_AVAILABLE
-  #define SECONDARY_SERIAL_T HardwareSerial
-
+   #define USE_SERIAL3               // Secondary serial port to use
   #include <FlexCAN_T4.h>
-  /*
-  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 #elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
   extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
-*/
+  static CAN_message_t outMsg;
+  static CAN_message_t inMsg;
   #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

@@ -8,6 +8,8 @@
 #else
   #include "SdFat.h"
 #endif
+#include "logger.h"
+//#include <SdSpiCard.h>
 #include "RingBuf.h"
 
 
@@ -41,15 +43,9 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
-#ifndef UNIT_TEST // Scope guard for unit testing
-  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
-#else
-  #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
-#endif
-
 //Test values only
 #define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
-#define MAX_LOG_FILES     9999
+#define MAX_LOG_FILES     10000
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
 #define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10) //Allow for 10 entries in the ringbuffer. Will need tuning

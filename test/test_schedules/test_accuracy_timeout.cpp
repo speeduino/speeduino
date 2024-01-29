@@ -13,121 +13,172 @@ static uint32_t start_time, end_time;
 static void startCallback(void) { end_time = micros(); }
 static void endCallback(void) { /*Empty*/ }
 
-void test_accuracy_timeout_inj(FuelSchedule &schedule)
-{
-    initialiseSchedulers();
-    schedule.pStartFunction = startCallback;
-    schedule.pEndFunction = endCallback;
-    start_time = micros();
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
-}
-
 void test_accuracy_timeout_inj1(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule1);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule1(TIMEOUT, DURATION);
+    while(fuelSchedule1.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_inj2(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule2);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule2(TIMEOUT, DURATION);
+    while(fuelSchedule2.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_inj3(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule3);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule3(TIMEOUT, DURATION);
+    while(fuelSchedule3.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_inj4(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule4);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule4(TIMEOUT, DURATION);
+    while(fuelSchedule4.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 #if INJ_CHANNELS >= 5
 void test_accuracy_timeout_inj5(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule5);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule5(TIMEOUT, DURATION);
+    while(fuelSchedule5.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if INJ_CHANNELS >= 6
 void test_accuracy_timeout_inj6(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule6);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule6(TIMEOUT, DURATION);
+    while(fuelSchedule6.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if INJ_CHANNELS >= 7
 void test_accuracy_timeout_inj7(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule7);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule7(TIMEOUT, DURATION);
+    while(fuelSchedule7.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if INJ_CHANNELS >= 8
 void test_accuracy_timeout_inj8(void)
 {
-    test_accuracy_timeout_inj(fuelSchedule8);
+    initialiseSchedulers();
+    start_time = micros();
+    setFuelSchedule8(TIMEOUT, DURATION);
+    while(fuelSchedule8.Status == PENDING) /*Wait*/ ;
+    end_time = micros();
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
-void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
-{
-    initialiseSchedulers();
-    schedule.pStartCallback = startCallback;
-    schedule.pEndCallback = endCallback;
-    start_time = micros();
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
-}
 
 void test_accuracy_timeout_ign1(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule1);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule1(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule1.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_ign2(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule2);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule2(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule2.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_ign3(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule3);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule3(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule3.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 void test_accuracy_timeout_ign4(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule4);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule4(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule4.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
 #if IGN_CHANNELS >= 5
 void test_accuracy_timeout_ign5(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule5);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule5(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule5.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if IGN_CHANNELS >= 6
 void test_accuracy_timeout_ign6(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule6);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule6(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule6.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if IGN_CHANNELS >= 7
 void test_accuracy_timeout_ign7(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule7);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule7(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule7.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 
 #if IGN_CHANNELS >= 8
 void test_accuracy_timeout_ign8(void)
 {
-    test_accuracy_timeout_ign(ignitionSchedule8);
+    initialiseSchedulers();
+    start_time = micros();
+    setIgnitionSchedule8(startCallback, TIMEOUT, DURATION, endCallback);
+    while(ignitionSchedule8.Status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 #endif
 

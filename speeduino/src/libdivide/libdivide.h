@@ -243,12 +243,8 @@ static LIBDIVIDE_INLINE uint16_t libdivide_u16_do_raw(
     uint16_t numer, uint16_t magic, uint8_t more);    
 static LIBDIVIDE_INLINE uint16_t libdivide_u16_do(
     uint16_t numer, const struct libdivide_u16_t* denom);
-static LIBDIVIDE_INLINE uint32_t libdivide_s32_do_raw(
-    int32_t numer, int32_t magic, uint8_t more);
 static LIBDIVIDE_INLINE int32_t libdivide_s32_do(
     int32_t numer, const struct libdivide_s32_t *denom);
-static LIBDIVIDE_INLINE uint32_t libdivide_u32_do_raw(
-    uint32_t numer, uint32_t magic, uint8_t more);
 static LIBDIVIDE_INLINE uint32_t libdivide_u32_do(
     uint32_t numer, const struct libdivide_u32_t *denom);
 static LIBDIVIDE_INLINE int64_t libdivide_s64_do(
@@ -916,11 +912,12 @@ struct libdivide_u32_branchfree_t libdivide_u32_branchfree_gen(uint32_t d) {
     return ret;
 }
 
-uint32_t libdivide_u32_do_raw(uint32_t numer, uint32_t magic, uint8_t more) {
-    if (!magic) {
+uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
+    uint8_t more = denom->more;
+    if (!denom->magic) {
         return numer >> more;
     } else {
-        uint32_t q = libdivide_mullhi_u32(magic, numer);
+        uint32_t q = libdivide_mullhi_u32(denom->magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             uint32_t t = ((numer - q) >> 1) + q;
             return t >> (more & LIBDIVIDE_32_SHIFT_MASK);
@@ -930,10 +927,6 @@ uint32_t libdivide_u32_do_raw(uint32_t numer, uint32_t magic, uint8_t more) {
             return q >> more;
         }
     }
-}
-
-uint32_t libdivide_u32_do(uint32_t numer, const struct libdivide_u32_t *denom) {
-    return libdivide_u32_do_raw(numer, denom->magic, denom->more);
 }
 
 uint32_t libdivide_u32_branchfree_do(
@@ -1435,10 +1428,11 @@ struct libdivide_s32_branchfree_t libdivide_s32_branchfree_gen(int32_t d) {
     return result;
 }
 
-uint32_t libdivide_s32_do_raw(int32_t numer, int32_t magic, uint8_t more) {
+int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
+    uint8_t more = denom->more;
     uint8_t shift = more & LIBDIVIDE_32_SHIFT_MASK;
 
-    if (!magic) {
+    if (!denom->magic) {
         uint32_t sign = (int8_t)more >> 7;
         uint32_t mask = ((uint32_t)1 << shift) - 1;
         uint32_t uq = numer + ((numer >> 31) & mask);
@@ -1447,7 +1441,7 @@ uint32_t libdivide_s32_do_raw(int32_t numer, int32_t magic, uint8_t more) {
         q = (q ^ sign) - sign;
         return q;
     } else {
-        uint32_t uq = (uint32_t)libdivide_mullhi_s32(magic, numer);
+        uint32_t uq = (uint32_t)libdivide_mullhi_s32(denom->magic, numer);
         if (more & LIBDIVIDE_ADD_MARKER) {
             // must be arithmetic shift and then sign extend
             int32_t sign = (int8_t)more >> 7;
@@ -1460,10 +1454,6 @@ uint32_t libdivide_s32_do_raw(int32_t numer, int32_t magic, uint8_t more) {
         q += (q < 0);
         return q;
     }
-}
-
-int32_t libdivide_s32_do(int32_t numer, const struct libdivide_s32_t *denom) {
-    return libdivide_s32_do_raw(numer, denom->magic, denom->more);
 }
 
 int32_t libdivide_s32_branchfree_do(int32_t numer, const struct libdivide_s32_branchfree_t *denom) {
