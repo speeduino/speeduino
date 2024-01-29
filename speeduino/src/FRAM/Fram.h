@@ -41,7 +41,7 @@
 // MB85RS64A - 256 K (32 K x 8) bit SPI FRAM
 #define FRAM_SIZE 0x8000UL
 
-#define DUMMYBYTE  0xFE	//dummy bytes to make easier to sniff
+#define FRAM_DUMMYBYTE 0xFE	//dummy bytes to make easier to sniff
 
 #define FRAM_CMD_WREN  0x06	//write enable
 #define FRAM_CMD_WRDI  0x04	//write disable
