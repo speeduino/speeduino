@@ -11,3 +11,4 @@ void test_corrections_baro(void);
 void test_corrections_launch(void);
 void test_corrections_dfco(void);
 void test_corrections_TAE(void);
+void test_corrections_integration(void);

@@ -29,6 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO.h"
 #include "timers.h"
 #include "schedule_calcs.h"
+#include "secondaryTables.h"
 
 FuelSchedule fuelSchedule1;
 FuelSchedule fuelSchedule2;
@@ -888,16 +889,35 @@ void setIgnitionSchedule8(void (*startCallback)(), unsigned long timeout, unsign
     }
   }
 }
+
+byte getPrimingPulse(void)
+{
+  byte primingValue;
+  byte primingValue1 = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+
+  if (configPage2.flexEnabled == 1)
+  {
+    byte primingValue2 = table2D_getValue(&PrimingPulseTable2, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    primingValue = biasedAverage(table2D_getValue(&flexFuelTable, currentStatus.ethanolPct), primingValue1, primingValue2);
+  }
+  else
+  {
+    primingValue = primingValue1;
+  }
+
+  return primingValue;
+}
+
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
  */
 extern void beginInjectorPriming(void)
 {
-  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  unsigned long primingValue = getPrimingPulse();
   if( (primingValue > 0) && (currentStatus.TPS < configPage4.floodClear) )
   {
-    primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
+    primingValue = primingValue * 1000 / PRIMINGPULSETABLE_VALUE_SCALE; //value in TS is in mS and scaled by 0.5 when stored. Need to convert to uS then divide by 2 to account for scale
     if ( maxInjOutputs >= 1 ) { setFuelSchedule1(100, primingValue); }
 #if (INJ_CHANNELS >= 2)
     if ( maxInjOutputs >= 2 ) { setFuelSchedule2(100, primingValue); }

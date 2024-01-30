@@ -346,7 +346,7 @@ void resetConfigPages(void)
 
 //  ================================= Internal read support ===============================
 
-/** Load range of bytes form EEPROM offset to memory.
+/** Load range of bytes from EEPROM offset to memory.
  * @param address - start offset in EEPROM
  * @param pFirst - Start memory address
  * @param pLast - End memory address
