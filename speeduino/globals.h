@@ -1501,7 +1501,7 @@ struct config15 {
   byte CLTBoostCutEnabled : 1;
 
   //Bytes 128-206
-  byte Unused15_128_175[47];
+  byte Unused15_135_175[40];
 
   //*Boost table 2 occupies bytes 176-255*
   
