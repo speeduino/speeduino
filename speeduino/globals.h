@@ -1510,7 +1510,7 @@ struct config15 {
   byte IATdisableBoostControlTemp;
 
   //Bytes 128-206
-  byte Unused15_141_175[34];
+  byte Unused15_143_175[32];
 
   //*Boost table 2 occupies bytes 176-255*
   
