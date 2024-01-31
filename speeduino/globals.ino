@@ -53,6 +53,7 @@ struct table2D rotarySplitTable; ///< 8 bin ignition split curve for rotary lead
 struct table2D flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   ///< 6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; ///< 6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D flexBoostLimitAddTable; //6 bin flex fuel correction table to increase boost limit (2D)
 struct table2D fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;

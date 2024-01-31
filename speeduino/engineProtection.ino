@@ -56,13 +56,13 @@ byte checkBoostLimit(void)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
   BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
+  uint16_t currentBoostLimit;
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
     //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-    if( (configPage6.boostCutEnabled > 0) && (configPage15.CLTBoostCutEnabled < 1) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+    if( (configPage6.boostCutEnabled > 0) && (configPage15.CLTBoostCutEnabled < 1) )
     {
-      boostLimitActive = 1;
-      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
+      currentBoostLimit = configPage6.boostLimit * 2;
       /*
       switch(configPage6.boostCutType)
       {
@@ -89,12 +89,18 @@ byte checkBoostLimit(void)
 
     else if ( (configPage6.boostCutEnabled > 0) && (configPage15.CLTBoostCutEnabled > 0))
     {
-      byte CLTBoostLimit = table2D_getValue(&CLTBoostLimitTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2;
-      if (currentStatus.MAP > CLTBoostLimit)
-      {
-        boostLimitActive = 1;
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-      }
+      currentBoostLimit = table2D_getValue(&CLTBoostLimitTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2;
+    }
+
+    if (configPage2.flexEnabled)
+    {
+      currentBoostLimit += table2D_getValue(&flexBoostLimitAddTable, currentStatus.ethanolPct);
+    }
+
+    if (currentStatus.MAP > currentBoostLimit)
+    {
+      boostLimitActive = 1;
+      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
     }
      
   }

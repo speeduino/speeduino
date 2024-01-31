@@ -248,6 +248,12 @@ void initialiseAll(void)
     flexBoostTable.xSize = 6;
     flexBoostTable.values = configPage10.flexBoostBias;
     flexBoostTable.axisX = configPage10.flexBoostBins;
+    flexBoostLimitAddTable.valueSize = SIZE_BYTE;
+    flexBoostLimitAddTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    flexBoostLimitAddTable.xSize = 6;
+    flexBoostLimitAddTable.values = configPage10.flexBoostBins;
+    flexBoostLimitAddTable.axisX = configPage15.flexBoostLimitAdds;
+
     fuelTempTable.valueSize = SIZE_BYTE;
     fuelTempTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     fuelTempTable.xSize = 6;

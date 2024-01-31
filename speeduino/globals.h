@@ -509,6 +509,7 @@ extern struct table2D rotarySplitTable; //8 bin ignition split curve for rotary 
 extern struct table2D flexFuelTable;  //6 bin flex fuel correction table for fuel adjustments (2D)
 extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
+extern struct table2D flexBoostLimitAddTable; //6 bin flex fuel correction table to increase boost limit (2D)
 extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table for fuel adjustments (2D)
 extern struct table2D knockWindowStartTable;
 extern struct table2D knockWindowDurationTable;
@@ -1230,11 +1231,11 @@ struct config10 {
   byte lnchCtrlTPS; //Byte 32
 
   uint8_t flexBoostBins[6]; //Bytes 33-38
-  int16_t flexBoostBias[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
+  int16_t flexBoostBias[6];  //Percentage bias toward second boost table. Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
-  uint8_t flexFuelBias[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
+  uint8_t flexFuelBias[6];   //Percentage bias toward second fuel table . Bytes 57-62
   uint8_t flexAdvBins[6]; //Bytes 63-68
-  uint8_t flexAdvBias[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
+  uint8_t flexAdvBias[6];    //Percentage bias toward second spark table
                             //And another three corn rows die.
                             //Bytes 69-74
 
@@ -1499,9 +1500,11 @@ struct config15 {
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
   byte CLTBoostLimits[6];
   byte CLTBoostCutEnabled : 1;
+  byte unused15_134 : 7;
+  byte flexBoostLimitAdds[6];
 
   //Bytes 128-206
-  byte Unused15_135_175[40];
+  byte Unused15_141_175[34];
 
   //*Boost table 2 occupies bytes 176-255*
   
