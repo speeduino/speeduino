@@ -8,6 +8,8 @@
 #endif
 
 void initialiseAuxPWM(void);
+bool checkBoostControlProt(void);
+byte getBoostTableVal(void);
 void boostControl(void);
 void boostDisable(void);
 void boostByGear(void);
