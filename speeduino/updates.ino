@@ -110,7 +110,7 @@ void doUpdates(void)
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
-    configPage10.flexBoostAdj[0]  = (int8_t)configPage2.aeColdPct;
+    configPage10.flexBoostBias[0]  = (int8_t)configPage2.aeColdPct;
 
     configPage10.flexFuelBins[0] = 0;
     configPage10.flexFuelBias[0]  = configPage2.idleUpPin;
@@ -126,7 +126,7 @@ void doUpdates(void)
       configPage10.flexAdvBins[x] = pct;
 
       int16_t boostAdder = (((configPage2.aeColdTaperMin - (int8_t)configPage2.aeColdPct) * pct) / 100) + (int8_t)configPage2.aeColdPct;
-      configPage10.flexBoostAdj[x] = boostAdder;
+      configPage10.flexBoostBias[x] = boostAdder;
 
       //uint8_t fuelAdder = (((configPage2.idleUpAdder - configPage2.idleUpPin) * pct) / 100) + configPage2.idleUpPin;
       configPage10.flexFuelBias[x] = pct; // = fuelAdder; <-- Changed to pct for new flex system
