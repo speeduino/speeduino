@@ -454,7 +454,7 @@ This is so we can use an unsigned byte (0-255) to represent temperature ranges f
 #define CRANKINGENRICHTABLE2_VALUE_SCALE  10
 #define ASETABLE2_VALUE_SCALE             5
 #define PRIMINGPULSETABLE_VALUE_SCALE     2 //NOTE: Values are divided by this scale factor rather than multiplied like the others
-
+#define CLTBOOSTLIMITTABLE_VALUE_SCALE    2
 extern const char TSfirmwareVersion[] PROGMEM;
 
 extern const byte data_structure_version; //This identifies the data structure when reading / writing. Now in use: CURRENT_DATA_VERSION (migration on-the fly) ?
@@ -493,6 +493,7 @@ extern struct table2D ASETable2; //4 bin After Start Enrichment map (2D)
 extern struct table2D ASECountTable; //4 bin After Start duration map (2D)
 extern struct table2D PrimingPulseTable; //4 bin Priming pulsewidth map (2D)
 extern struct table2D PrimingPulseTable2; //4 bin Priming pulsewidth map (2D)
+extern struct table2D CLTBoostLimitTable;
 extern struct table2D crankingEnrichTable; //4 bin cranking Enrichment map (2D)
 extern struct table2D crankingEnrichTable2; //4 bin cranking Enrichment map (2D)
 extern struct table2D dwellVCorrectionTable; //6 bin dwell voltage correction (2D)
@@ -1496,6 +1497,8 @@ struct config15 {
   byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2
   byte crankingEnrichValues2[4];
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
+  byte CLTBoostLimits[6];
+  byte CLTBoostCutEnabled : 1;
 
   //Bytes 128-206
   byte Unused15_128_175[47];

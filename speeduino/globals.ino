@@ -37,6 +37,7 @@ struct table2D ASETable2; ///< 4 bin After Start Enrichment map (2D)
 struct table2D ASECountTable; ///< 4 bin After Start duration map (2D)
 struct table2D PrimingPulseTable; ///< 4 bin Priming pulsewidth map (2D)
 struct table2D PrimingPulseTable2; ///< 4 bin Priming pulsewidth map (2D)
+struct table2D CLTBoostLimitTable;
 struct table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 struct table2D crankingEnrichTable2; ///< 4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)

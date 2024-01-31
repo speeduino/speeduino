@@ -59,7 +59,7 @@ byte checkBoostLimit(void)
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
     //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-    if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
+    if( (configPage6.boostCutEnabled > 0) && (configPage15.CLTBoostCutEnabled < 1) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
     {
       boostLimitActive = 1;
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
@@ -86,6 +86,17 @@ byte checkBoostLimit(void)
       }
       */
     }
+
+    else if ( (configPage6.boostCutEnabled > 0) && (configPage15.CLTBoostCutEnabled > 0))
+    {
+      byte CLTBoostLimit = table2D_getValue(&CLTBoostLimitTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) * 2;
+      if (currentStatus.MAP > CLTBoostLimit)
+      {
+        boostLimitActive = 1;
+        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
+      }
+    }
+     
   }
 
   return boostLimitActive;
