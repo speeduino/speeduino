@@ -1500,8 +1500,14 @@ struct config15 {
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
   byte CLTBoostLimits[6];
   byte CLTBoostCutEnabled : 1;
-  byte unused15_134 : 7;
+  byte CLTdisableBoostControl : 1;
+  byte IATdisableBoostControl : 1;
+  byte unused15_134 : 5;
+
   byte flexBoostLimitAdds[6];
+
+  byte CLTdisableBoostControlTemp;
+  byte IATdisableBoostControlTemp;
 
   //Bytes 128-206
   byte Unused15_141_175[34];
