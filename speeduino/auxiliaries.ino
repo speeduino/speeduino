@@ -9,6 +9,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
 #include "timers.h"
+#include "secondaryTables.h"
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -613,6 +614,34 @@ void boostByGear(void)
   }
 }
 
+/**
+ * @brief Calculates the correct boost table value dependent on conditions TPS, RPM, and FlexEnabled/ETH%
+ * @return byte 
+ */
+byte getBoostTableVal(void)
+{
+  byte BoostTableVal;
+  byte BoostTableVal1 = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM);
+  
+  if(configPage2.flexEnabled > 0 && currentStatus.ethanolPct > 0)
+  {
+    byte BoostTableVal2 = get3DTableValue(&boostTable2, (currentStatus.TPS * 2), currentStatus.RPM);
+    int t2BoostBias = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
+
+    BoostTableVal = biasedAverage(t2BoostBias, BoostTableVal1, BoostTableVal2); //calculate biased average between VE1 and VE2 based on specified bias at current ETH%
+    currentStatus.flexBoostCorrection = BoostTableVal - BoostTableVal1;
+  }
+
+  else
+  {
+    BoostTableVal = BoostTableVal1;
+    currentStatus.flexBoostCorrection = 0;
+  }
+
+  return BoostTableVal;
+
+}
+
 void boostControl(void)
 {
   if( configPage6.boostEnabled==1 )
@@ -621,7 +650,7 @@ void boostControl(void)
     {
       //Open loop
       if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
-      else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) * 2 * 100; }
+      else{ currentStatus.boostDuty = getBoostTableVal() * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
       if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
@@ -635,10 +664,13 @@ void boostControl(void)
       if( (boostCounter & 7) == 1) 
       { 
         if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
-        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
+        else{ currentStatus.boostTarget = getBoostTableVal() << 1; } //Boost target table is in kpa and divided by 2
       } 
       if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
+        //COMMENTED OUT WHEN CHANGING TO NEW FLEX BOOST SYSTEM
+        //SEE getBoostTableVal() above
+        /*-----------------------------------------------------
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
         {
@@ -648,7 +680,7 @@ void boostControl(void)
         {
           currentStatus.flexBoostCorrection = 0;
         }
-
+        -----------------------------------------------------*/
         if(currentStatus.boostTarget > 0)
         {
           //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second

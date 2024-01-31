@@ -466,6 +466,7 @@ extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
 extern struct table3d16RpmLoad afrTable; //16x16 afr target map
 extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
 extern struct table3d8RpmLoad boostTable; //8x8 boost map
+extern struct table3d8RpmLoad boostTable2; //8x8 boost map
 extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
 extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
 extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
@@ -1228,7 +1229,7 @@ struct config10 {
   byte lnchCtrlTPS; //Byte 32
 
   uint8_t flexBoostBins[6]; //Bytes 33-38
-  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
+  int16_t flexBoostBias[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
   uint8_t flexFuelBins[6]; //Bytes 51-56
   uint8_t flexFuelBias[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
   uint8_t flexAdvBins[6]; //Bytes 63-68
@@ -1496,8 +1497,10 @@ struct config15 {
   byte crankingEnrichValues2[4];
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
 
-  //Bytes 128-255
-  byte Unused15_128_255[127];
+  //Bytes 128-206
+  byte Unused15_128_175[47];
+
+  //*Boost table 2 occupies bytes 176-255*
   
 
 #if defined(CORE_AVR)
