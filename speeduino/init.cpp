@@ -3670,6 +3670,20 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;   
 
+    case DECODER_SUZUKI_K6A:
+      triggerSetup_SuzukiK6A();
+      triggerHandler = triggerPri_SuzukiK6A; // only primary, no secondary, trigger pattern is over 720 degrees
+      getRPM = getRPM_SuzukiK6A;
+      getCrankAngle = getCrankAngle_SuzukiK6A;
+      triggerSetEndTeeth = triggerSetEndTeeth_SuzukiK6A;
+
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;

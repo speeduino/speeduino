@@ -313,9 +313,9 @@ static void cylinder3_stroke4_semiseq_nostage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
+	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
   //assert_fuel_schedules(240U, reqFuel * 50U, enabled, angle);
-  assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle); //Special case as 3 squirts per cycle MUST be over 720 degrees
+  assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle); //Special case as 3 squirts per cycle MUST be over 720 degrees
 }
 
 static void cylinder3_stroke4_seq_staged(void)
@@ -341,12 +341,12 @@ static void cylinder3_stroke4_semiseq_staged(void)
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
-	const uint16_t angle[] = {0,80,160,0,80,160,0,0};
+	const uint16_t angle[] = {0,120,240,0,120,240,0,0};
 #else
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
+	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
 #endif
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-  assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle); //Special case as 3 squirts per cycle MUST be over 720 degrees
+  assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle); //Special case as 3 squirts per cycle MUST be over 720 degrees
 }
 
 static void run_3_cylinder_4stroke_tests(void)
@@ -380,8 +380,8 @@ static void cylinder3_stroke2_semiseq_nostage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
-  assert_fuel_schedules(120U, reqFuel * 100U, enabled, angle);
+	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
+  assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
   }
 
 static void cylinder3_stroke2_seq_staged(void)
@@ -406,12 +406,12 @@ static void cylinder3_stroke2_semiseq_staged(void)
   configPage10.stagingEnabled = true;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
-	const uint16_t angle[] = {0,80,160,0,80,160,0,0};
+	const uint16_t angle[] = {0,120,240,0,120,240,0,0};
 #else
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
+	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
 #endif
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-  assert_fuel_schedules(120U, reqFuel * 100U, enabled, angle);
+  assert_fuel_schedules(180U, reqFuel * 100U, enabled, angle);
 }
 
 static void run_3_cylinder_2stroke_tests(void)
@@ -777,7 +777,7 @@ static void cylinder_3_NoinjTiming_paired(void) {
   initialiseAll(); //Run the main initialise function
 
   const bool enabled[] = {true, true, true, false, false, false, false, false};
-  assert_fuel_schedules(720U, reqFuel * 50U, enabled, zeroAngles);   
+  assert_fuel_schedules(360U, reqFuel * 50U, enabled, zeroAngles);   
 }
 
 static void cylinder_4_NoinjTiming_paired(void) {
