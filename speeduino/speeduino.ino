@@ -479,10 +479,8 @@ void loop(void)
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-<<<<<<< HEAD
-=======
-      currentStatus.injAngle = max(currentStatus.injAngle, uint16_t(CRANK_ANGLE_MAX_INJ) );
->>>>>>> f14edc6d6c4f1faf99e3381029cd658e19c5aa26
+      if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
+
       unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
 
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
