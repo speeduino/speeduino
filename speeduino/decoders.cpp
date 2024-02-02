@@ -5420,7 +5420,7 @@ void triggerSetup_SuzukiK6A(void)
   toothCurrentCount = 1;
   curGap = curGap2 = curGap3 = 0;
 
-  if(initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
+  if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   else { toothLastToothTime = 0; }
   toothLastMinusOneToothTime = 0;
 
@@ -5725,7 +5725,7 @@ int getCrankAngle_SuzukiK6A(void)
       triggerToothAngle = 70;
       break;
   }
-  crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_TOOTH);
+  crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
   if (crankAngle >= 720) { crankAngle -= 720; }
 //  if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; } not needed, crank angle max gets max from injection or ignition, we have to be over 720 degrees so can ignore
   if (crankAngle < 0) { crankAngle += 720; }   
@@ -5799,9 +5799,6 @@ void triggerSetEndTeeth_SuzukiK6A(void)
   if(nCount == 8)
   { tempIgnitionEndTooth = 7; } // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
   ignition3EndTooth = tempIgnitionEndTooth;
-
-
-  lastToothCalcAdvance = currentStatus.advance;
 }
 /** @} */
 
