@@ -83,7 +83,7 @@ void sendVAGCluster()
   DashMessage(CAN_VAG_VSS);
   Can0.write(outMsg);
 }
-void reciveCANwbo() 
+void receiveCANwbo() 
 {
   // Currently only RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
   if(configPage2.canWBO == CAN_WBO_RUSEFI)
@@ -207,27 +207,27 @@ void DashMessage(uint16_t DashMessageID)
 
 void can_Command(void)
 {
-  if ( (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))  || (inMsg.id == 0x7DF))      
+  if ((inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET)) || (inMsg.id == 0x7DF))
   {
     // The address is the speeduino specific ecu canbus address 
     // or the 0x7df(2015 dec) broadcast address
     if (inMsg.buf[1] == 0x01)
     {
       // PID mode 0 , realtime data stream
-      obd_response(inMsg.buf[1], inMsg.buf[2], 0);     // get the obd response based on the data in byte2
-      outMsg.id = (0x7E8);       //((configPage9.obd_address + 0x100)+ 8);  
-      Can0.write(outMsg);       // send the 8 bytes of obd data   
+      obd_response(inMsg.buf[1], inMsg.buf[2], 0); // get the obd response based on the data in byte2
+      outMsg.id = (0x7E8);                         //((configPage9.obd_address + 0x100)+ 8);  
+      Can0.write(outMsg);                           // send the 8 bytes of obd data   
     }
     if (inMsg.buf[1] == 0x22)
     {
       // PID mode 22h , custom mode , non standard data
-      obd_response(inMsg.buf[1], inMsg.buf[2], inMsg.buf[3]);     // get the obd response based on the data in byte2
-      outMsg.id = (0x7E8); //configPage9.obd_address+8);
-      Can0.write(outMsg);       // send the 8 bytes of obd data
+      obd_response(inMsg.buf[1], inMsg.buf[2], inMsg.buf[3]); // get the obd response based on the data in byte2
+      outMsg.id = (0x7E8);                                   //configPage9.obd_address+8);
+      Can0.write(outMsg);                                     // send the 8 bytes of obd data
     }
   }
-  if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))      
-  if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))      
+
+  if (inMsg.id == uint16_t(configPage9.obd_address + TS_CAN_OFFSET))
   {
     // The address is only the speeduino specific ecu canbus address    
     if (inMsg.buf[1] == 0x09)
@@ -237,6 +237,8 @@ void can_Command(void)
       {
         //send the VIN number , 17 char long VIN sent in 5 messages.
       }
+    }
+    else
     {
       // PID mode 9 , vehicle information request
       if (inMsg.buf[2] == 02)
@@ -245,16 +247,16 @@ void can_Command(void)
       }
       else if (inMsg.buf[2] == 0x0A)
       {
-      //code 20: send 20 ascii characters with ECU name , "ECU -SpeeduinoXXXXXX" , change the XXXXXX ONLY as required.  
+        //code 20: send 20 ascii characters with ECU name , "ECU -SpeeduinoXXXXXX" , change the XXXXXX ONLY as required.  
       }
     }
   }
-} 
+}
 
 // This routine builds the realtime data into packets that the obd requesting device can understand. This is only used by teensy and stm32 with onboard canbus
-void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh)
+void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPIDhigh) 
 { 
-//only build the PID if the mcu has onboard/attached can 
+  //only build the PID if the mcu has onboard/attached can 
 
   uint16_t obdcalcA;    //used in obd calcs
   uint16_t obdcalcB;    //used in obd calcs 
@@ -267,10 +269,8 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
 
   outMsg.len = 8;
   
-  if (PIDmode == 0x01)
-  {
-    switch (requestedPIDlow)
-    {
+  if (PIDmode == 0x01) {
+    switch (requestedPIDlow) {
       case 0:       //PID-0x00 PIDs supported 01-20  
         outMsg.buf[0] =  0x06;    // sending 6 bytes
         outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
@@ -280,20 +280,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         outMsg.buf[5] =  B10100000;   //17-24
         outMsg.buf[6] =  B00010001;   //17-32
         outMsg.buf[7] =  B00000000;   
-      break;
-    switch (requestedPIDlow)
-    {
-      case 0:       //PID-0x00 PIDs supported 01-20  
-        outMsg.buf[0] =  0x06;    // sending 6 bytes
-        outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-        outMsg.buf[2] =  0x00;    // PID code
-        outMsg.buf[3] =  0x08;   //B0000 1000   1-8
-        outMsg.buf[4] =  B01111110;   //9-16
-        outMsg.buf[5] =  B10100000;   //17-24
-        outMsg.buf[6] =  B00010001;   //17-32
-        outMsg.buf[7] =  B00000000;   
-      break;
-
+        break;
       case 5:      //PID-0x05 Engine coolant temperature , range is -40 to 215 deg C , formula == A-40
         outMsg.buf[0] =  0x03;                 // sending 3 bytes
         outMsg.buf[1] =  0x41;                 // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
@@ -303,8 +290,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         outMsg.buf[5] =  0x00; 
         outMsg.buf[6] =  0x00; 
         outMsg.buf[7] =  0x00;
-      break;
-
+        break;
       case 10:        // PID-0x0A , Fuel Pressure (Gauge) , range is 0 to 765 kPa , formula == A / 3)
         uint16_t temp_fuelpressure;
         // Fuel pressure is in PSI. PSI to kPa is 6.89475729, but that needs to be divided by 3 for OBD2 formula. So 2.298.... 2.3 is close enough, so that in fraction.
@@ -317,7 +303,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         outMsg.buf[5] =  0x00; 
         outMsg.buf[6] =  0x00; 
         outMsg.buf[7] =  0x00;
-      break;
+        break;
 
       case 11:        // PID-0x0B , MAP , range is 0 to 255 kPa , Formula == A
         outMsg.buf[0] =  0x03;    // sending 3 byte
@@ -474,11 +460,11 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
 
         outMsg.buf[0] =  0x06;    // sending 4 bytes
         outMsg.buf[1] =  0x41;    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
-        outMsg.buf[2] =  0x25;    // pid code
+        outMsg.buf[2] =  0x24;    // pid code
         outMsg.buf[3] =  obdcalcA;   // A
         outMsg.buf[4] =  obdcalcB;   // B
         outMsg.buf[5] =  obdcalcC;   // C
-        outMsg.buf[6] =  obdcalcD;   // D 
+        outMsg.buf[6] =  obdcalcD;   // D
         outMsg.buf[7] =  0x00;
       break;
 
