@@ -3722,6 +3722,32 @@ static inline bool isAnyFuelScheduleRunning(void) {
       ;
 }
 
+static inline bool isAnyIgnScheduleRunning(void) {
+  return ignitionSchedule1.Status==RUNNING      
+#if IGN_CHANNELS >= 2 
+      || ignitionSchedule2.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 3 
+      || ignitionSchedule3.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 4       
+      || ignitionSchedule4.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 5      
+      || ignitionSchedule5.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 6
+      || ignitionSchedule6.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 7
+      || ignitionSchedule7.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 8
+      || ignitionSchedule8.Status==RUNNING
+#endif
+      ;
+}
+
 /** Change injectors or/and ignition angles to 720deg.
  * Roll back req_fuel size and set number of outputs equal to cylinder count.
 * */
@@ -3781,7 +3807,7 @@ void changeHalfToFullSync(void)
   interrupts();
 
   //Need to do another check for sparkMode as this function can be called from injection
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) )
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
   {
     CRANK_ANGLE_MAX_IGN = 720;
     maxIgnOutputs = configPage2.nCylinders;
