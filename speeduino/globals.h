@@ -1135,7 +1135,7 @@ struct config9 {
   byte coolantProtRPM[6];
   byte coolantProtTemp[6];
 
-  byte unused10_179;
+  byte dfcoMAPThresh; //needs to be multiplied by 2 to get the proper value
   byte dfcoTaperTime;
   byte dfcoTaperFuel;
   byte dfcoTaperAdvance;
