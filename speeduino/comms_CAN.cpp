@@ -92,21 +92,29 @@ void receiveCANwbo()
     outMsg.flags.extended = 1;
     outMsg.len = 2;
     outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
-    outMsg.buf[1] = currentStatus.coolant <= 40? 0x00 : 0x01; // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
+    outMsg.buf[1] = currentStatus.coolant <= 40? 0x00 : 0x1; // Enable heater once engine reaches 40C to avoid heater running on cold engine with ignition on
     Can0.write(outMsg);
     if ((inMsg.id == 0x190 || inMsg.id == 0x192))
     {
       uint32_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
-      if(inMsg.buf[1] == 1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
+      if(inMsg.buf[1] == 0x1) // Checking if lambda is within usable range of 0.5 and 1.4 and if valid bit is present from the controller
       {
         switch(inMsg.id)
         {
           case 0x190:
+          if (inLambda > 17000) {
+            currentStatus.O2 = 250;
+            break;
+          }
           currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
           break;
 
           case 0x192:
+          if (inLambda > 17000) {
+            currentStatus.O2 = 250;
+            break;
+          }
           currentStatus.O2_2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
           break;
 
