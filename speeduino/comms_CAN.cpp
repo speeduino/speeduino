@@ -24,6 +24,14 @@ CAN_message_t outMsg;
   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
 
+//These are declared locally for Teensy due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
+#if defined(CORE_TEENSY35)         // use for Teensy 3.5 only 
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+#elif defined(CORE_TEENSY41)         // use for Teensy 3.6 only
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+#endif
+
 // Forward declare
 void DashMessage(uint16_t DashMessageID);
 
@@ -75,7 +83,48 @@ void sendVAGCluster()
   DashMessage(CAN_VAG_VSS);
   Can0.write(outMsg);
 }
+void receiveCANwbo() 
+{
+  // Currently only RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
+  if(configPage2.canWBO == CAN_WBO_RUSEFI)
+  {
+    outMsg.id = 0xEF50000;
+    outMsg.flags.extended = 1;
+    outMsg.len = 2;
+    outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
+    outMsg.buf[1] = 0x1; // Enable heater
+    Can0.write(outMsg);
+    if ((inMsg.id == 0x190 || inMsg.id == 0x192))
+    {
+      uint32_t inLambda;
+      inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
+      if(inMsg.buf[1] == 0x1) // Checking if lambda is valid
+      {
+        switch(inMsg.id)
+        {
+          case 0x190:
+          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
+            currentStatus.O2 = 250;
+            break;
+          }
+          currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          break;
 
+          case 0x192:
+          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
+            currentStatus.O2 = 250;
+            break;
+          }
+          currentStatus.O2_2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          break;
+
+          default:
+          break;
+        }
+      }
+    }
+  }
+}
 // switch case for gathering all data to message based on CAN Id.
 void DashMessage(uint16_t DashMessageID)
 {

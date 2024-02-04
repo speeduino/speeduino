@@ -126,6 +126,7 @@ void loop(void)
           {
             can_Command();
             readAuxCanBus();
+            if (configPage2.canWBO > 0) { receiveCANwbo(); }
           }
         }   
       #endif
@@ -260,9 +261,11 @@ void loop(void)
       #if TPS_READ_FREQUENCY == 30
         readTPS();
       #endif
-      readO2();
-      readO2_2();
-      
+      if (configPage2.canWBO == 0)
+      {
+        readO2();
+        readO2_2();
+      }      
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif

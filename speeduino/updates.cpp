@@ -745,6 +745,9 @@ void doUpdates(void)
     configPage9.egoMAPMax = 255, // 255 will be 510 kpa
     configPage9.egoMAPMin = 0,  // 0 will be 0 kpa
 
+    //rusEFI CAN Wideband
+    configPage2.canWBO = 0;
+
     writeAllConfig();
     storeEEPROMVersion(23);
   }
