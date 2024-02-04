@@ -1502,7 +1502,11 @@ struct config15 {
   byte CLTBoostCutEnabled : 1;
   byte CLTdisableBoostControl : 1;
   byte IATdisableBoostControl : 1;
-  byte unused15_134 : 5;
+  byte unused15_134_3 : 1;
+  byte unused15_134_4 : 1;
+  byte unused15_134_5 : 1;
+  byte unused15_134_6 : 1;
+  byte unused15_134_7 : 1;
 
   byte flexBoostLimitAdds[6];
 
@@ -1510,7 +1514,7 @@ struct config15 {
   byte IATdisableBoostControlTemp;
 
   //Bytes 128-206
-  byte Unused15_143_175[32];
+  byte Unused15_143_175[33];
 
   //*Boost table 2 occupies bytes 176-255*
   
