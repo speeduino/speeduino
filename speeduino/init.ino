@@ -243,7 +243,7 @@ void initialiseAll(void)
     flexAdvTable.xSize = 6;
     flexAdvTable.values = configPage10.flexAdvBias;
     flexAdvTable.axisX = configPage10.flexAdvBins;
-    flexBoostTable.valueSize = SIZE_INT;
+    flexBoostTable.valueSize = SIZE_BYTE;
     flexBoostTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins (NOTE THIS IS DIFFERENT TO THE VALUES!!)
     flexBoostTable.xSize = 6;
     flexBoostTable.values = configPage10.flexBoostBias;

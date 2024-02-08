@@ -1,0 +1,9 @@
+void testBoostControl();
+void test_boost_control_open_loop();
+void test_boost_control_closed_loop();
+void test_boost_control_open_loop_IAT_disable();
+void test_boost_control_open_loop_CLT_disable();
+void test_boost_control_closed_loop_IAT_disable();
+void test_boost_control_closed_loop_CLT_disable();
+void test_boost_control_flex_open_loop();
+void test_boost_control_flex_closed_loop();
