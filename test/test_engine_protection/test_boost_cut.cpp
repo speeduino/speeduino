@@ -9,8 +9,8 @@ void testBoostCut()
   //RUN_TESTS
   RUN_TEST(test_boost_cut_basic);
   test_boost_cut_CLT();
-  test_flex_boost_cut_basic;
-  test_flex_CLT_boost_cut_();
+  test_flex_boost_cut_basic();
+  test_flex_CLT_boost_cut();
 
 }
 
@@ -31,19 +31,6 @@ void test_boost_cut_basic()
 }
 
 //~~~~~~~~~~ CLT Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void test_boost_cut_CLT()
-{
-  configPage6.boostCutEnabled = 1;
-  configPage15.CLTBoostCutEnabled = 1;
-  configPage2.flexEnabled = 0;
-  set_CLT_boost_limit_table();
-
-  RUN_TEST(test_boost_cut_CLT_warming);
-  RUN_TEST(test_boost_cut_CLT_operating_temp);
-  RUN_TEST(test_boost_cut_CLT_overheating);
-  RUN_TEST(test_boost_cut_CLT_extreme_overheating);
-}
-
 void test_boost_cut_CLT_warming()
 {
   currentStatus.coolant = 100; 
@@ -114,22 +101,22 @@ void set_CLT_boost_limit_table()
   ((uint8_t*)CLTBoostLimitTable.values)[4] = 100;
   ((uint8_t*)CLTBoostLimitTable.values)[5] = 100;
 }
+
+void test_boost_cut_CLT()
+{
+  configPage6.boostCutEnabled = 1;
+  configPage15.CLTBoostCutEnabled = 1;
+  configPage2.flexEnabled = 0;
+  set_CLT_boost_limit_table();
+
+  RUN_TEST(test_boost_cut_CLT_warming);
+  RUN_TEST(test_boost_cut_CLT_operating_temp);
+  RUN_TEST(test_boost_cut_CLT_overheating);
+  RUN_TEST(test_boost_cut_CLT_extreme_overheating);
+}
 //~~~~~~~~~~ END CLT Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //~~~~~~~~~~ Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void test_flex_boost_cut_basic()
-{
-  configPage6.boostCutEnabled = 1;
-  configPage15.CLTBoostCutEnabled = 0;
-  configPage6.boostLimit = 200/2; //set base MAP limit to 200 kPa
-  configPage2.flexEnabled = 1;
-
-  RUN_TEST(test_flex_boost_cut_basic_no_eth);
-  RUN_TEST(test_flex_boost_cut_basic_low_eth);
-  RUN_TEST(test_flex_boost_cut_basic_mid_eth);
-  RUN_TEST(test_flex_boost_cut_basic_high_eth);
-}
-
 void test_flex_boost_cut_basic_no_eth()
 {
   currentStatus.ethanolPct = 0;
@@ -191,24 +178,22 @@ void set_flex_boost_limit_add_table()
   ((uint8_t*)flexBoostLimitAddTable.values)[4] = 80; // little bit less than 12 extra PSI
   ((uint8_t*)flexBoostLimitAddTable.values)[5] = 100; // about 14 extra PSI
 }
-//~~~~~~~~~~ End Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-//~~~~~~~~~~ CLT Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-void test_flex_CLT_boost_cut_()
+void test_flex_boost_cut_basic()
 {
   configPage6.boostCutEnabled = 1;
-  configPage15.CLTBoostCutEnabled = 1;
+  configPage15.CLTBoostCutEnabled = 0;
   configPage6.boostLimit = 200/2; //set base MAP limit to 200 kPa
   configPage2.flexEnabled = 1;
 
-  set_CLT_boost_limit_table;
-  set_flex_boost_limit_add_table;
-
-  RUN_TEST(test_flex_CLT_boost_cut_warming_no_eth);
-  RUN_TEST(test_flex_CLT_boost_cut_operating_temp_high_eth);
-  RUN_TEST(test_flex_CLT_boost_cut_overheating_high_eth);
+  RUN_TEST(test_flex_boost_cut_basic_no_eth);
+  RUN_TEST(test_flex_boost_cut_basic_low_eth);
+  RUN_TEST(test_flex_boost_cut_basic_mid_eth);
+  RUN_TEST(test_flex_boost_cut_basic_high_eth);
 }
+//~~~~~~~~~~ End Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+//~~~~~~~~~~ CLT Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void test_flex_CLT_boost_cut_warming_no_eth()
 {
   currentStatus.coolant = 100; 
@@ -253,4 +238,18 @@ void test_flex_CLT_boost_cut_overheating_high_eth()
   TEST_ASSERT_BIT_HIGH(ENGINE_PROTECT_BIT_MAP, currentStatus.engineProtectStatus); //should trigger boost cut
 }
 
+void test_flex_CLT_boost_cut()
+{
+  configPage6.boostCutEnabled = 1;
+  configPage15.CLTBoostCutEnabled = 1;
+  configPage6.boostLimit = 200/2; //set base MAP limit to 200 kPa
+  configPage2.flexEnabled = 1;
+
+  set_CLT_boost_limit_table();
+  set_flex_boost_limit_add_table();
+
+  RUN_TEST(test_flex_CLT_boost_cut_warming_no_eth);
+  RUN_TEST(test_flex_CLT_boost_cut_operating_temp_high_eth);
+  RUN_TEST(test_flex_CLT_boost_cut_overheating_high_eth);
+}
 //~~~~~~~~~~ End CLT Flex Boost Cut ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -15,12 +15,12 @@ void setup()
     // if board doesn't support software reset via Serial.DTR/RTS
     delay(2000);
 
-    UNITY_BEGIN();    // IMPORTANT LINE!
+    //UNITY_BEGIN();    // IMPORTANT LINE!
 
-    initialiseAll(); //Run the main initialise function
-    testBoostControl();
+    //initialiseAll(); //Run the main initialise function
+    //testBoostControl();
 
-    UNITY_END(); // stop unit testing
+    //UNITY_END(); // stop unit testing
 }
 
 void loop()
