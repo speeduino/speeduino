@@ -12,7 +12,7 @@
 // load it at run time.
 #define RUN_TEST_P(func) \
   { \
-    char funcName[64]; \
+    char funcName[128]; \
     strcpy_P(funcName, PSTR(#func)); \
     UnityDefaultTestRun(func, funcName, __LINE__); \
   }
