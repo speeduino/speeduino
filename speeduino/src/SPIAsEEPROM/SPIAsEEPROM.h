@@ -213,9 +213,6 @@ class FLASH_EEPROM_BaseClass
      */
     uint16_t length();
 
-    //Class variable indicating if the emulated EEPROM flash is initialized  
-    bool _EmulatedEEPROMAvailable=false;
-
     //Class variable storing number of ones counted in adres translation block
     uint32_t _nrOfOnes = 0;
 
@@ -225,17 +222,20 @@ class FLASH_EEPROM_BaseClass
     //Class variable storing what flash address we are working in.
     uint32_t _addressFLASH = 0;
 
-    //Class bool indicating if the flash is initialized and available for use
-    bool _FlashAvailable=false;
-
     //Readwrite buffer used for flash access through the class. 
-    byte _ReadWriteBuffer[128]; //make sure the FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1 < 128. Else increase this number.
+    byte _ReadWriteBuffer[128] __attribute__((aligned (sizeof(int)))); //make sure the FLASH_SECTOR_SIZE/EEPROM_BYTES_PER_SECTOR+1 < 128. Else increase this number.
 
     EEPROM_Emulation_Config _config;
     uint32_t _Flash_Size_Used;
     uint32_t _Flash_Size_Per_EEPROM_Byte;
     uint32_t _Addres_Translation_Size;
     uint32_t _EEPROM_Emulation_Size;
+
+    //Class variable indicating if the emulated EEPROM flash is initialized  
+    bool _EmulatedEEPROMAvailable=false;
+
+    //Class bool indicating if the flash is initialized and available for use
+    bool _FlashAvailable=false;
 
   private:
 
