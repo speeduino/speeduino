@@ -1497,8 +1497,8 @@ struct config15 {
   byte crankingEnrichValues2[4];
   byte primePulse2[4]; //Priming pulsewidth values (mS, copied to @ref PrimingPulseTable2)
 
-  //Bytes 128-206
-  byte Unused15_128_175[47];
+  //Bytes 128-175
+  byte Unused15_128_175[48];
 
   //*Boost table 2 occupies bytes 176-255*
   

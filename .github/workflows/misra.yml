@@ -44,7 +44,7 @@ jobs:
       env:
         MISRA_GIST: ${{ secrets.MISRA_GIST }}
         VIOLATIONS: ${{ env.VIOLATIONS }}
-      uses: schneegans/dynamic-badges-action@v1.6.0
+      uses: schneegans/dynamic-badges-action@v1.7.0
       with:
         auth: ${{ secrets.MISRA_GIST }}
         gistID: d8a449a3f6d3307dab457431512502f9
@@ -54,7 +54,7 @@ jobs:
         message: ${{ env.VIOLATIONS }}
 
     - name: Archive MISRA scan artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: MISRA results
         path: |
