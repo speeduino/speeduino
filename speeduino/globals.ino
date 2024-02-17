@@ -37,6 +37,7 @@ struct table2D ASETable2; ///< 4 bin After Start Enrichment map (2D)
 struct table2D ASECountTable; ///< 4 bin After Start duration map (2D)
 struct table2D PrimingPulseTable; ///< 4 bin Priming pulsewidth map (2D)
 struct table2D PrimingPulseTable2; ///< 4 bin Priming pulsewidth map (2D)
+struct table2D CLTBoostLimitTable;
 struct table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 struct table2D crankingEnrichTable2; ///< 4 bin cranking Enrichment map (2D)
 struct table2D dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)
@@ -52,6 +53,7 @@ struct table2D rotarySplitTable; ///< 8 bin ignition split curve for rotary lead
 struct table2D flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D flexAdvTable;   ///< 6 bin flex fuel correction table for timing advance (2D)
 struct table2D flexBoostTable; ///< 6 bin flex fuel correction table for boost adjustments (2D)
+struct table2D flexBoostLimitAddTable; //6 bin flex fuel correction table to increase boost limit (2D)
 struct table2D fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 struct table2D knockWindowStartTable;
 struct table2D knockWindowDurationTable;

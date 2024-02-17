@@ -614,6 +614,14 @@ void boostByGear(void)
   }
 }
 
+bool checkBoostControlProt(void)
+{
+  if ((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET) > configPage15.CLTdisableBoostControl) { return true; }
+  if ((currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) > configPage15.IATdisableBoostControl) { return true; }
+  
+  return false;
+}
+
 /**
  * @brief Calculates the correct boost table value dependent on conditions TPS, RPM, and FlexEnabled/ETH%
  * @return byte 
@@ -636,6 +644,11 @@ byte getBoostTableVal(void)
   {
     BoostTableVal = BoostTableVal1;
     currentStatus.flexBoostCorrection = 0;
+  }
+
+  if (checkBoostControlProt())
+  {
+    BoostTableVal = 0;
   }
 
   return BoostTableVal;
