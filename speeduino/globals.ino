@@ -14,6 +14,7 @@ struct table3d16RpmLoad ignitionTable2; ///< 16x16 ignition map
 struct table3d16RpmLoad afrTable; ///< 16x16 afr target map
 struct table3d8RpmLoad stagingTable; ///< 8x8 fuel staging table
 struct table3d8RpmLoad boostTable; ///< 8x8 boost map
+struct table3d8RpmLoad boostTable2; ///< 8x8 boost map
 struct table3d8RpmLoad boostTableLookupDuty; ///< 8x8 boost map lookup table
 struct table3d8RpmLoad vvtTable; ///< 8x8 vvt map
 struct table3d8RpmLoad vvt2Table; ///< 8x8 vvt2 map

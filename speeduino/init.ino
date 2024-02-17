@@ -241,7 +241,7 @@ void initialiseAll(void)
     flexBoostTable.valueSize = SIZE_INT;
     flexBoostTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins (NOTE THIS IS DIFFERENT TO THE VALUES!!)
     flexBoostTable.xSize = 6;
-    flexBoostTable.values = configPage10.flexBoostAdj;
+    flexBoostTable.values = configPage10.flexBoostBias;
     flexBoostTable.axisX = configPage10.flexBoostBins;
     fuelTempTable.valueSize = SIZE_BYTE;
     fuelTempTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins

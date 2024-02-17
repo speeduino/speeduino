@@ -317,6 +317,13 @@ void writeConfig(uint8_t pageNum)
       | Config page 15 (See storage.h for data layout)
       -----------------------------------------------------*/
       result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), result.changeWriteAddress(EEPROM_CONFIG15_START));
+
+      /*---------------------------------------------------
+      | Boost table 2 (See storage.h for data layout) - Page 15
+      | 8x8 table itself + the 8 values along each of the axes
+      -----------------------------------------------------*/
+      result = writeTable(&boostTable2, decltype(boostTable2)::type_key, result.changeWriteAddress(EEPROM_CONFIG15_MAP2));
+
       break;
 
     default:
