@@ -42,7 +42,7 @@
 #endif
 
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
+  #define SD_LOG_ENTRY_SIZE   129 /**< The size of the live data packet used by the SD card.*/
 #else
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
