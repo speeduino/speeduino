@@ -335,6 +335,42 @@ uint16_t correctionASE(void)
   return ASEValue;
 }
 
+/**
+ * Calculates the blended TAE value based on ethanol percentage, TAE tables 1 and 2
+*/
+byte getTAEvalue()
+{
+  byte taeVal = 100;
+  byte taeVal1 = table2D_getValue(&taeTable, currentStatus.tpsDOT / 10);
+  
+  if (configPage2.flexEnabled == 1)
+  {
+    byte taeVal2 = table2D_getValue(&taeTable2, currentStatus.tpsDOT / 10);
+    int t2FuelBias = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+    taeVal = biasedAverage(t2FuelBias, taeVal1, taeVal2);
+  }
+
+  else
+  {
+    taeVal = taeVal1;
+  }
+
+  return taeVal;
+}
+
+byte getAEColdPct()
+{
+  byte aeColdPctValue = configPage2.aeColdPct;
+
+  if (configPage2.flexEnabled == 1)
+  {
+    int t2FuelBias = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
+    aeColdPctValue = biasedAverage(t2FuelBias, configPage2.aeColdPct, configPage15.aeColdPct2);
+  }
+
+  return aeColdPctValue;
+}
+
 /** Acceleration enrichment correction calculation.
  * 
  * Calculates the % change of the throttle over time (%/second) and performs a lookup based on this
@@ -497,7 +533,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT / 10); //The x-axis of tae table is divided by 10 to fit values in byte.
+            accelValue = getTAEvalue(); //The x-axis of tae table is divided by 10 to fit values in byte.
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
             uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
@@ -519,7 +555,7 @@ uint16_t correctionAccel(void)
               //If CLT is less than taper min temp, apply full modifier on top of accelValue
               if ( currentStatus.coolant <= (int)(configPage2.aeColdTaperMin - CALIBRATION_TEMPERATURE_OFFSET) )
               {
-                uint16_t accelValue_uint = percentage(configPage2.aeColdPct, accelValue);
+                uint16_t accelValue_uint = percentage(getAEColdPct(), accelValue);
                 accelValue = (int16_t) accelValue_uint;
               }
               //If CLT is between taper min and max, taper the modifier value and apply it on top of accelValue
@@ -527,7 +563,7 @@ uint16_t correctionAccel(void)
               {
                 int16_t taperRange = (int16_t) configPage2.aeColdTaperMax - configPage2.aeColdTaperMin;
                 int16_t taperPercent = (int)((currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - configPage2.aeColdTaperMin) * 100) / taperRange;
-                int16_t coldPct = (int16_t)100 + percentage( (100 - taperPercent), (configPage2.aeColdPct-100) );
+                int16_t coldPct = (int16_t)100 + percentage( (100 - taperPercent), (getAEColdPct()-100) );
                 uint16_t accelValue_uint = (uint16_t) accelValue * coldPct / 100; //Potential overflow (if AE is large) without using uint16_t
                 accelValue = (int16_t) accelValue_uint;
               }

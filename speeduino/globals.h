@@ -485,6 +485,7 @@ extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern struct table2D taeTable; //4 bin TPS Acceleration Enrichment map (2D)
+extern struct table2D taeTable2;//4 bin TPS Acceleration Enrichment map 2 (2D)
 extern struct table2D maeTable;
 extern struct table2D WUETable; //10 bin Warm Up Enrichment map (2D)
 extern struct table2D WUETable2; //10 bin Flex Warm Up Enrichment map (2D)
@@ -1513,8 +1514,11 @@ struct config15 {
   byte CLTdisableBoostControlTemp;
   byte IATdisableBoostControlTemp;
 
-  //Bytes 128-206
-  byte Unused15_143_175[33];
+  byte taeValues2[4];  ///< TPS based acceleration enrichment rates 2 (Unit: % to add), values matched to thresholds of taeBins
+  byte aeColdPct2;  //AE cold clt modifier % no. 2. To be used with flex fuel
+
+  //Bytes 148-206
+  byte Unused15_148_175[28];
 
   //*Boost table 2 occupies bytes 176-255*
   

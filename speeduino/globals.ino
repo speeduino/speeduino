@@ -29,6 +29,7 @@ trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 struct table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
+struct table2D taeTable2;///< 4 bin TPS Acceleration Enrichment map 2 (2D)
 struct table2D maeTable;
 struct table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 struct table2D WUETable2; ///< 10 bin Warm Up Enrichment map 2 (2D)

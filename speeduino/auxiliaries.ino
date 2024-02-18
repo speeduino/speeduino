@@ -631,7 +631,7 @@ byte getBoostTableVal(void)
   byte BoostTableVal;
   byte BoostTableVal1 = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM);
   
-  if(configPage2.flexEnabled > 0 && currentStatus.ethanolPct > 0)
+  if(configPage2.flexEnabled > 0)
   {
     byte BoostTableVal2 = get3DTableValue(&boostTable2, (currentStatus.TPS * 2), currentStatus.RPM);
     int t2BoostBias = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);

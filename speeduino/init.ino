@@ -126,6 +126,11 @@ void initialiseAll(void)
     taeTable.xSize = 4;
     taeTable.values = configPage4.taeValues;
     taeTable.axisX = configPage4.taeBins;
+    taeTable2.valueSize = SIZE_BYTE; //Set this table to use byte values
+    taeTable2.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
+    taeTable2.xSize = 4;
+    taeTable2.values = configPage15.taeValues2;
+    taeTable2.axisX = configPage4.taeBins;
     maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
     maeTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     maeTable.xSize = 4;
