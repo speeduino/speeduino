@@ -85,7 +85,7 @@ void test_fuel_set_ASE_tables(void)
   ((uint8_t*)ASETable.values)[2] = 20;
   ((uint8_t*)ASETable.values)[3] = 5;
 
-  ((uint8_t*)ASETable2.values)[0] = 1000 / ASETABLE2_VALUE_SCALE; //Table2 values are scaled by 5 in storage
+  ((uint8_t*)ASETable2.values)[0] = 450 / ASETABLE2_VALUE_SCALE; //Table2 values are scaled by 5 in storage
   ((uint8_t*)ASETable2.values)[1] = 400  / ASETABLE2_VALUE_SCALE;
   ((uint8_t*)ASETable2.values)[2] = 50   / ASETABLE2_VALUE_SCALE;
   ((uint8_t*)ASETable2.values)[3] = 20   / ASETABLE2_VALUE_SCALE;
