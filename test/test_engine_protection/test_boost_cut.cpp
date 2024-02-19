@@ -17,6 +17,7 @@ void testBoostCut()
 void test_boost_cut_basic()
 {
   configPage6.boostCutEnabled = 1;
+  configPage6.engineProtectType = PROTECT_CUT_BOTH;
   configPage15.CLTBoostCutEnabled = 0;
   configPage6.boostLimit = 200/2; //set MAP limit to 200 kPa
   configPage2.flexEnabled = 0;
@@ -107,6 +108,7 @@ void test_boost_cut_CLT()
   configPage6.boostCutEnabled = 1;
   configPage15.CLTBoostCutEnabled = 1;
   configPage2.flexEnabled = 0;
+  configPage6.engineProtectType = PROTECT_CUT_BOTH;
   set_CLT_boost_limit_table();
 
   RUN_TEST(test_boost_cut_CLT_warming);
@@ -185,6 +187,7 @@ void test_flex_boost_cut_basic()
   configPage15.CLTBoostCutEnabled = 0;
   configPage6.boostLimit = 200/2; //set base MAP limit to 200 kPa
   configPage2.flexEnabled = 1;
+  configPage6.engineProtectType = PROTECT_CUT_BOTH;
 
   RUN_TEST(test_flex_boost_cut_basic_no_eth);
   RUN_TEST(test_flex_boost_cut_basic_low_eth);
@@ -244,6 +247,7 @@ void test_flex_CLT_boost_cut()
   configPage15.CLTBoostCutEnabled = 1;
   configPage6.boostLimit = 200/2; //set base MAP limit to 200 kPa
   configPage2.flexEnabled = 1;
+  configPage6.engineProtectType = PROTECT_CUT_BOTH;
 
   set_CLT_boost_limit_table();
   set_flex_boost_limit_add_table();
