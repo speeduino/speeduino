@@ -215,7 +215,9 @@ byte getAdvance2(void)
   }
   else { currentStatus.ignLoad2 = currentStatus.MAP; }
   tempAdvance = get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
+
+  //Perform the corrections calculation on the secondary advance value, only if it uses a switched mode
+  if( (configPage10.spark2SwitchVariable == SPARK2_MODE_CONDITIONAL_SWITCH) || (configPage10.spark2SwitchVariable == SPARK2_MODE_INPUT_SWITCH) ) { tempAdvance = correctionsIgn(tempAdvance); } 
 
   return tempAdvance;
 }
