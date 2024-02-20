@@ -1511,9 +1511,9 @@ void calculateStaging(uint32_t pwLimit)
       else 
       {
         //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
-        //Secondary PW is simply set to 0 
+        currentStatus.PW1 += inj_opentime_uS; //Add the open time back in
         BIT_CLEAR(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE); //Clear the staging active flag 
-        currentStatus.PW2 = 0; 
+        currentStatus.PW2 = 0; //Secondary PW is simply set to 0 as it is not required
       } 
     }
 

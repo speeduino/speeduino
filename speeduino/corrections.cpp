@@ -100,7 +100,7 @@ uint16_t correctionsFuel(void)
   if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
   {
     inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
-    currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
+    //currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
   }
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
   {
@@ -129,46 +129,6 @@ uint16_t correctionsFuel(void)
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
-}
-
-/*
-correctionsTotal() calls all the other corrections functions and combines their results.
-This is the only function that should be called from anywhere outside the file
-*/
-static inline byte correctionsFuel_new(void)
-{
-  uint32_t sumCorrections = 100;
-  byte numCorrections = 0;
-
-  //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
-  currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  currentStatus.ASEValue = correctionASE(); numCorrections++;
-  uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
-  currentStatus.AEamount = correctionAccel(); numCorrections++;
-  uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
-  currentStatus.egoCorrection = correctionAFRClosedLoop(); numCorrections++;
-
-  currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
-  currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
-  currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
-  currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
-
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
-
-  sumCorrections = currentStatus.wueCorrection \
-                  + currentStatus.ASEValue \
-                  + correctionCrankingValue \
-                  + currentStatus.AEamount \
-                  + correctionFloodClearValue \
-                  + currentStatus.batCorrection \
-                  + currentStatus.iatCorrection \
-                  + currentStatus.baroCorrection \
-                  + currentStatus.flexCorrection \
-                  + currentStatus.launchCorrection;
-  return (sumCorrections);
-
 }
 
 /** Warm Up Enrichment (WUE) corrections.
