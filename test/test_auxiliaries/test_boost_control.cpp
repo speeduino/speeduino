@@ -12,7 +12,7 @@ void testBoostControl()
 //   RUN_TEST(test_boost_table_value_lookup_flex);
 //   RUN_TEST(test_boost_control_IAT_disable);
 //   RUN_TEST(test_boost_control_CLT_disable);
-// }
+}
 
 // void setBoostTables()
 // {
