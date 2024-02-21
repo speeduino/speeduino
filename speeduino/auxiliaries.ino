@@ -662,11 +662,26 @@ void boostControl(void)
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
       //Open loop
-      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
-      else{ currentStatus.boostDuty = getBoostTableVal() * 2 * 100; }
+      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) )
+      { 
+        boostByGear(); 
+      }
 
-      if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      else
+      { 
+        currentStatus.boostDuty = getBoostTableVal() * 2 * 100; 
+      }
+
+      if(currentStatus.boostDuty > 10000) 
+      { 
+        currentStatus.boostDuty = 10000; 
+      } //Safety check
+
+      if(currentStatus.boostDuty == 0) 
+      { 
+        DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); 
+      } //If boost duty is 0, shut everything down
+      
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
