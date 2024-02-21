@@ -14,10 +14,10 @@ void testBoostControl()
 //   RUN_TEST(test_boost_control_CLT_disable);
 // }
 
-void setBoostTables()
-{
- return;
-}
+// void setBoostTables()
+// {
+//  return;
+// }
 
 void test_boost_table_value_lookup_basic()
 {
