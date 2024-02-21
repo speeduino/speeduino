@@ -28,6 +28,7 @@ jobs:
               - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99
             lib_deps: |
               - name: Time
+              - name: SimplyAtomic
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
@@ -38,6 +39,7 @@ jobs:
               - build..extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
+              - name: SimplyAtomic
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -48,6 +50,7 @@ jobs:
               - build..extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
+              - name: SimplyAtomic
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -61,6 +64,7 @@ jobs:
               - name: "STM32duino RTC"
                 version: 1.2.0
               - name: SdFat
+              - name: SimplyAtomic
 
     steps:
       - name: Checkout repository
