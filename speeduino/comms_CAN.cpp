@@ -84,7 +84,7 @@ void receiveCANwbo()
     outMsg.flags.extended = 1;
     outMsg.len = 2;
     outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
-    outMsg.buf[1] = 0x1; // Enable heater
+    outMsg.buf[1] = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ? 0x1 : 0x0; // Enable heater once engine is running (ie. above cranking rpm), this condition can be changed to CLT above certain temp and so on.
     Can0.write(outMsg);
     if ((inMsg.id == 0x190 || inMsg.id == 0x192))
     {
