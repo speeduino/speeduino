@@ -727,7 +727,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 22)
   {
-    //202311-dev
+    //202402
     
     if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) { multiplyTableValue(wmiMapPage, 2); } //Increased PWM resolution from 0-100 to 0-200 to match VVT
 
