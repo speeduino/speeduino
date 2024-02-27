@@ -363,7 +363,13 @@ static inline byte checkForStepping(void)
         if(configPage9.iacStepperPower == STEPPER_POWER_WHEN_ACTIVE) 
         { 
           //Disable the DRV8825, but only if we're at the final step in this cycle. 
-          if(idleStepper.targetIdleStep == idleStepper.curIdleStep) { digitalWrite(pinStepperEnable, HIGH); } 
+          if(idleStepper.targetIdleStep == idleStepper.curIdleStep)
+	    if(configPage9.iacStepperEnInv) { 
+              digitalWrite(pinStepperEnable, LOW);
+            } else {
+              digitalWrite(pinStepperEnable, HIGH);
+            }
+	  }
         }
       }
     }
@@ -398,7 +404,11 @@ static inline void doStep(void)
       idleStepper.curIdleStep++;
     }
 
-    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+    if(configPage9.iacStepperEnInv) {
+      (pinStepperEnable, HIGH); 
+    } else {
+      (pinStepperEnable, LOW); //Enable the DRV8825
+    }
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
@@ -418,7 +428,11 @@ static inline byte isStepperHomed(void)
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
     digitalWrite(pinStepperDir, idleStepper.lessAirDirection); //homing the stepper closes off the air bleed
-    digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+    if(configPage9.iacStepperEnInv) {
+      digitalWrite(pinStepperEnable, HIGH);
+    } else {
+      digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
+    }
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;

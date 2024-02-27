@@ -1116,7 +1116,7 @@ struct config9 {
   byte iacCoolTime : 3; // how long to wait for the stepper to cool between steps
 
   byte boostByGearEnabled : 2;
-  byte blankField : 1;
+  byte iacStepperEnInv : 1; //Whether or not the stepper enable signal is inverted or not
   byte iacStepperPower : 1; //Whether or not to power the stepper motor when not in use
 
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
