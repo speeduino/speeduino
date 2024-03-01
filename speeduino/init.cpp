@@ -727,7 +727,7 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 5
+              //Put the staging output to the non-existent channel 5
               #if (INJ_CHANNELS >= 5)
               maxInjOutputs = 5;
               channel5InjDegrees = channel1InjDegrees;
@@ -2373,7 +2373,7 @@ void setPinMapping(byte boardID)
       pinInjector5 = 9; //CS for MC33810 2
       pinInjector6 = 9; //CS for MC33810 3
 
-      //Dummy pins, without thes pin 0 (Serial1 RX) gets overwritten
+      //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
       pinCoil1 = 40;
       pinCoil2 = 41;
       /*
@@ -2385,7 +2385,7 @@ void setPinMapping(byte boardID)
       
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTrigger3 = 22; //Uses one of the protected spare digitial inputs. This must be set or Serial1 (Pin 0) gets broken
+      pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
       pinFlex = A16; // Flex sensor
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin

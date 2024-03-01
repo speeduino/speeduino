@@ -17,7 +17,7 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
   uint16_t startAngle = (uint16_t)injAngle + (uint16_t)injChannelDegrees;
   // Avoid underflow
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; }
-  // Guarenteed to be >=0.
+  // Guaranteed to be >=0.
   startAngle = startAngle - pwDegrees;
   // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
   while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; }
@@ -31,7 +31,7 @@ static inline uint32_t _calculateInjectorTimeout(const FuelSchedule &schedule, u
   {
     if ((schedule.Status == RUNNING) && (delta>-CRANK_ANGLE_MAX_INJ)) 
     { 
-      // Guarenteed to be >0
+      // Guaranteed to be >0
       delta = delta + CRANK_ANGLE_MAX_INJ; 
     }
     else

@@ -307,7 +307,7 @@ bool pinIsOutput(byte pin)
   {
     used = true;
   }
-  //Forbiden or hardware reserved? (Defined at board_xyz.h file)
+  //Forbidden or hardware reserved? (Defined at board_xyz.h file)
   if ( pinIsReserved(pin) ) { used = true; }
 
   return used;

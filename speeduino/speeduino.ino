@@ -743,7 +743,7 @@ void loop(void)
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
       //Finally calculate the time (uS) until we reach the firing angles and set the schedules
-      //We only need to set the shcedule if we're BEFORE the open angle
+      //We only need to set the schedule if we're BEFORE the open angle
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
@@ -1558,7 +1558,7 @@ void calculateStaging(uint32_t pwLimit)
             currentStatus.PW4 = currentStatus.PW1;
           #else
             //This is an invalid config as there are not enough outputs to support sequential + staging
-            //Put the staging output to the non-existant channel 5
+            //Put the staging output to the non-existent channel 5
             currentStatus.PW5 = currentStatus.PW2;
           #endif
         }

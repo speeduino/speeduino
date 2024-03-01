@@ -31,7 +31,7 @@ A full copy of the license may be found in the projects root directory
 
 // Forward declarations
 
-/** @brief Processes a message once it has been fully recieved */
+/** @brief Processes a message once it has been fully received */
 void processSerialCommand(void);
 
 /** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
@@ -104,7 +104,7 @@ static inline bool isTimeout(void) {
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }
 
-// ====================================== Endianess Support =============================
+// ====================================== Endianness Support =============================
 
 /**
  * @brief      Flush all remaining bytes from the rx serial buffer
@@ -392,7 +392,7 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 }
 
 /**
- * @brief Convert 2 bytes into an offset temperature in degrees Celcius
+ * @brief Convert 2 bytes into an offset temperature in degrees Celsius
  * @attention Returned value will be offset CALIBRATION_TEMPERATURE_OFFSET
  */
 static uint16_t toTemperature(byte lo, byte hi)
@@ -438,7 +438,7 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 
-Comands are single byte (letter symbol) commands.
+Commands are single byte (letter symbol) commands.
 */
 void serialReceive(void)
 {
