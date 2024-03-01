@@ -2,10 +2,10 @@
  * PID Adaptive Tuning Example
  * One of the benefits of the PID library is that you can
  * change the tuning parameters at any time.  this can be
- * helpful if we want the controller to be agressive at some
+ * helpful if we want the controller to be aggressive at some
  * times, and conservative at others.   in the example below
  * we set the controller to use Conservative Tuning Parameters
- * when we're near setpoint and more agressive Tuning
+ * when we're near setpoint and more aggressive Tuning
  * Parameters when we're farther away.
  ********************************************************/
 

@@ -404,7 +404,7 @@
    return true;
  }
 
- // Checks to see if chip is powered down. If it is, retrns true. If not, returns false.
+ // Checks to see if chip is powered down. If it is, returns true. If not, returns false.
  bool SPIFlash::_isChipPoweredDown(void) {
    if (chipPoweredDown) {
      _troubleshoot(CHIPISPOWEREDDOWN);

@@ -186,7 +186,7 @@ void PID::SetControllerDirection(byte Direction)
    controllerDirection = Direction;
 }
 
-/* Status Funcions*************************************************************
+/* Status Functions*************************************************************
  * Just because you set the Kp=-1 doesn't mean it actually happened.  these
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
@@ -512,7 +512,7 @@ void integerPID::SetControllerDirection(byte Direction)
    controllerDirection = Direction;
 }
 
-/* Status Funcions*************************************************************
+/* Status Functions*************************************************************
  * Just because you set the Kp=-1 doesn't mean it actually happened.  these
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
@@ -554,7 +554,7 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  **********************************************************************************/
 bool integerPID_ideal::Compute()
 {
-   //This is the orginal PID with 50% Base target DC
+   //This is the original PID with 50% Base target DC
    return Compute(50*limitMultiplier);
 }
 
@@ -599,7 +599,7 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
 
       /*Compute PID Output*/
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
-      output = FeedForward + (output / 10); //output is % multipled by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
+      output = FeedForward + (output / 10); //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
       //if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
       //if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
@@ -694,7 +694,7 @@ void integerPID_ideal::SetControllerDirection(byte Direction)
    controllerDirection = Direction;
 }
 
-/* Status Funcions*************************************************************
+/* Status Functions*************************************************************
  * Just because you set the Kp=-1 doesn't mean it actually happened.  these
  * functions query the internal state of the PID.  they're here for display
  * purposes.  this are the functions the PID Front-end uses for example
