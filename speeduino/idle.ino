@@ -489,6 +489,11 @@ void idleControl(void)
           //Standard running
           currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
           currentStatus.idleLoad += table2D_getValue(&iacPWMBattCorrTable, currentStatus.battery10);
+
+          if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN))
+          {
+            FeedForwardTerm += configPage15.iacPWMfanUp;
+          }
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
         if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
@@ -581,7 +586,15 @@ void idleControl(void)
       else
       {
         //Read the OL table as feedforward term
-        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        FeedForwardTerm = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        FeedForwardTerm += table2D_getValue(&iacPWMBattCorrTable, currentStatus.battery10);
+        
+        if (BIT_CHECK(currentStatus.status4, BIT_STATUS4_FAN))
+        {
+          FeedForwardTerm += configPage15.iacPWMfanUp;
+        }
+
+        FeedForwardTerm = percentage(FeedForwardTerm, idle_pwm_max_count<<2); //All temps are offset by 40 degrees
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
@@ -615,7 +628,6 @@ void idleControl(void)
         {
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
-          currentStatus.idleLoad += table2D_getValue(&iacPWMBattCorrTable, currentStatus.battery10);
         }
         idleCounter++;
       }

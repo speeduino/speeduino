@@ -1503,9 +1503,7 @@ struct config15 {
   byte CLTBoostCutEnabled : 1;
   byte CLTdisableBoostControl : 1;
   byte IATdisableBoostControl : 1;
-  byte unused15_134_3 : 1;
-  byte unused15_134_4 : 1;
-  byte unused15_134_5 : 1;
+  byte iacPWMfanUp : 3;
   byte unused15_134_6 : 1;
   byte unused15_134_7 : 1;
 
