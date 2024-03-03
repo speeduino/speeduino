@@ -1521,8 +1521,8 @@ struct config15 {
   byte boostAuthPlus;
   byte boostAuthMinus;
 
-  //Bytes 148-206
-  byte Unused15_158_175[20];
+  //Bytes 158-175
+  byte Unused15_158_175[18];
 
   //*Boost table 2 occupies bytes 176-255*
   
