@@ -1517,8 +1517,11 @@ struct config15 {
   byte taeValues2[4];  ///< TPS based acceleration enrichment rates 2 (Unit: % to add), values matched to thresholds of taeBins
   byte aeColdPct2;  //AE cold clt modifier % no. 2. To be used with flex fuel
 
+  byte iacCorrectionBins[4];
+  int8_t iacBattCorrectionValues[4];
+
   //Bytes 148-206
-  byte Unused15_148_175[28];
+  byte Unused15_156_175[20];
 
   //*Boost table 2 occupies bytes 176-255*
   

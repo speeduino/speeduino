@@ -67,6 +67,12 @@ void initialiseIdle(bool forcehoming)
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
 
+      iacPWMBattCorrTable.xSize = 4;
+      iacPWMBattCorrTable.valueSize = SIZE_SIGNED_BYTE;
+      iacPWMBattCorrTable.axisSize = SIZE_BYTE;
+      iacPWMBattCorrTable.values = configPage15.iacBattCorrectionValues;
+      iacPWMBattCorrTable.axisX = configPage15.iacCorrectionBins;
+
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
@@ -91,6 +97,12 @@ void initialiseIdle(bool forcehoming)
       iacPWMTable.axisSize = SIZE_BYTE;
       iacPWMTable.values = configPage6.iacOLPWMVal;
       iacPWMTable.axisX = configPage6.iacBins;
+
+      iacPWMBattCorrTable.xSize = 4;
+      iacPWMBattCorrTable.valueSize = SIZE_SIGNED_BYTE;
+      iacPWMBattCorrTable.axisSize = SIZE_BYTE;
+      iacPWMBattCorrTable.values = configPage15.iacBattCorrectionValues;
+      iacPWMBattCorrTable.axisX = configPage15.iacCorrectionBins;
 
       iacCrankDutyTable.xSize = 4;
       iacCrankDutyTable.valueSize = SIZE_BYTE;
@@ -476,6 +488,7 @@ void idleControl(void)
         {
           //Standard running
           currentStatus.idleLoad = table2D_getValue(&iacPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+          currentStatus.idleLoad += table2D_getValue(&iacPWMBattCorrTable, currentStatus.battery10);
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
         if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
@@ -602,6 +615,7 @@ void idleControl(void)
         {
           idle_pwm_target_value = idle_pid_target_value>>2; //increased resolution
           currentStatus.idleLoad = ((unsigned long)(idle_pwm_target_value * 100UL) / idle_pwm_max_count);
+          currentStatus.idleLoad += table2D_getValue(&iacPWMBattCorrTable, currentStatus.battery10);
         }
         idleCounter++;
       }
