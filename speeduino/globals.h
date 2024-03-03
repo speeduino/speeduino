@@ -1518,8 +1518,11 @@ struct config15 {
   byte iacCorrectionBins[4];
   int8_t iacBattCorrectionValues[4];
 
+  byte boostAuthPlus;
+  byte boostAuthMinus;
+
   //Bytes 148-206
-  byte Unused15_156_175[20];
+  byte Unused15_158_175[20];
 
   //*Boost table 2 occupies bytes 176-255*
   

@@ -720,7 +720,22 @@ void boostControl(void)
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
-          bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
+          byte boostTableLookupDutyVal = get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100 / 2;
+          bool PIDcomputed = boostPID.Compute(boostTableLookupDutyVal); //Compute() returns false if the required interval has not yet passed.
+          int16_t minBoostDuty = boostTableLookupDutyVal - (configPage15.boostAuthMinus * 100); 
+          if (minBoostDuty < 0) {minBoostDuty = 0;} 
+
+          if (currentStatus.boostDuty > uint16_t(boostTableLookupDutyVal + (configPage15.boostAuthPlus * 100)))
+          {
+            currentStatus.boostDuty = boostTableLookupDutyVal + (configPage15.boostAuthPlus * 100);
+          }
+
+          else if (currentStatus.boostDuty < uint16_t(minBoostDuty))
+          {
+            currentStatus.boostDuty = minBoostDuty;
+          }
+
+
           if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
           else
           {
