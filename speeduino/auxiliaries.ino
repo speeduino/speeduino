@@ -646,6 +646,13 @@ byte getBoostTableVal(void)
     currentStatus.flexBoostCorrection = 0;
   }
 
+  BoostTableVal *= 2;
+
+  if (configPage15.boostDCiatAdjEnable == 1 && configPage4.boostType == OPEN_LOOP_BOOST)
+  {
+    BoostTableVal += table2D_getValue(&boostIATadjTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET);
+  }
+
   if (checkBoostControlProt())
   {
     BoostTableVal = 0;
@@ -669,7 +676,7 @@ void boostControl(void)
 
       else
       { 
-        currentStatus.boostDuty = getBoostTableVal() * 2 * 100; 
+        currentStatus.boostDuty = getBoostTableVal() * 100; 
       }
 
       if(currentStatus.boostDuty > 10000) 
@@ -720,7 +727,12 @@ void boostControl(void)
             else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
           }
 
-          byte boostTableLookupDutyVal = get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100 / 2;
+          uint16_t boostTableLookupDutyVal = get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100 / 2;
+          if (configPage15.boostDCiatAdjEnable)
+          {
+            boostTableLookupDutyVal += table2D_getValue(&boostIATadjTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) * 100;
+          }
+          
           bool PIDcomputed = boostPID.Compute(boostTableLookupDutyVal); //Compute() returns false if the required interval has not yet passed.
           int16_t minBoostDuty = boostTableLookupDutyVal - (configPage15.boostAuthMinus * 100); 
           if (minBoostDuty < 0) {minBoostDuty = 0;} 
