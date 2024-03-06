@@ -619,7 +619,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
 
     case 'Q': // send code version
       //targetPort.print(F("speeduino 202306-dev"));
-      targetPort.print(F("speeduino 202310"));
+      targetPort.print(F("Speeduino - RussellE46 202310g"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
