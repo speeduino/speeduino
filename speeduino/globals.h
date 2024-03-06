@@ -519,6 +519,7 @@ extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advan
 extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
 extern struct table2D fanPWMTable;
 extern struct table2D rollingCutTable;
+extern struct table2D boostIATadjTable;
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;
@@ -1494,7 +1495,7 @@ struct config15 {
   byte rollingProtCutPercent[4];
   
   //Secondary corrections tables
-  //Bytes 106-127
+  //Bytes 106-165
   byte asePct2[4];           ///< Afterstart enrichment values 2 (%)
   byte wueValues2[10];   ///< Warm up enrichment array 2 (10 bytes, transferred to @ref WUETable2
   byte crankingEnrichValues2[4];
@@ -1503,10 +1504,8 @@ struct config15 {
   byte CLTBoostCutEnabled : 1;
   byte CLTdisableBoostControl : 1;
   byte IATdisableBoostControl : 1;
-  byte unused15_134_3 : 1;
-  byte unused15_134_4 : 1;
-  byte unused15_134_5 : 1;
-  byte unused15_134_6 : 1;
+  byte iacPWMfanUp : 3;
+  byte boostDCiatAdjEnable : 1;
   byte unused15_134_7 : 1;
 
   byte flexBoostLimitAdds[6];
@@ -1517,8 +1516,17 @@ struct config15 {
   byte taeValues2[4];  ///< TPS based acceleration enrichment rates 2 (Unit: % to add), values matched to thresholds of taeBins
   byte aeColdPct2;  //AE cold clt modifier % no. 2. To be used with flex fuel
 
-  //Bytes 148-206
-  byte Unused15_148_175[28];
+  byte iacCorrectionBins[4];
+  int8_t iacBattCorrectionValues[4];
+
+  byte boostAuthPlus;
+  byte boostAuthMinus;
+
+  int8_t boostDCiatAdj[4];
+  byte   boostDCiatBins[4];
+
+  //Bytes 166-175
+  byte Unused15_166_175[10];
 
   //*Boost table 2 occupies bytes 176-255*
   

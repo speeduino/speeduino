@@ -288,7 +288,6 @@ void initialiseAll(void)
     coolantProtectTable.values = configPage9.coolantProtRPM;
     coolantProtectTable.axisX = configPage9.coolantProtTemp;
 
-
     fanPWMTable.valueSize = SIZE_BYTE;
     fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
     fanPWMTable.xSize = 4;
@@ -300,6 +299,12 @@ void initialiseAll(void)
     rollingCutTable.xSize = 4;
     rollingCutTable.values = configPage15.rollingProtCutPercent;
     rollingCutTable.axisX = configPage15.rollingProtRPMDelta;
+
+    boostIATadjTable.valueSize = SIZE_SIGNED_BYTE;
+    boostIATadjTable.axisSize = SIZE_BYTE;
+    boostIATadjTable.xSize = 4;
+    boostIATadjTable.values = configPage15.boostDCiatAdj;
+    boostIATadjTable.axisX = configPage15.boostDCiatBins;
 
     wmiAdvTable.valueSize = SIZE_BYTE;
     wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
