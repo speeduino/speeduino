@@ -65,8 +65,8 @@ constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
 //constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','0','6','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
 //constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '0', '6', '-', 'd', 'e', 'v'};
-constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o', ' ', 'R','u','s','s','e','l','l','E','4','6', ' ', '2','0','2','3','1','0'} ; //Note no null terminator in array and statu variable at the start
-constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S','p','e','e','d','u','i','n','o', ' ', 'R','u','s','s','e','l','l','E','4','6', ' ', '2','0','2','3','.','1','0'};
+constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','1','0'} ; //Note no null terminator in array and statu variable at the start
+constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '1', '0'};
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 //!@}
 
