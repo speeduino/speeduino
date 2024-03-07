@@ -402,7 +402,8 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
     {
       CHECK_TABLE(boostvvtPage2, offset, &boostTableLookupDuty, 0)
       CHECK_RAW(boostvvtPage2, offset, &configPage15, sizeof(configPage15), 1)
-      END_OF_PAGE(boostvvtPage2, 2)
+      CHECK_TABLE(boostvvtPage2, offset, &boostTable2, 2)
+      END_OF_PAGE(boostvvtPage2, 3)
     }
 
     default:

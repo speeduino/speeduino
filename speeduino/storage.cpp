@@ -480,7 +480,7 @@ void loadConfig(void)
   //CONFIG PAGE (15) + boost duty lookup table (LUT)
   loadTable(&boostTableLookupDuty, decltype(boostTableLookupDuty)::type_key, EEPROM_CONFIG15_MAP);
   load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));  
-
+  loadTable(&boostTable2, decltype(boostTable2)::type_key, EEPROM_CONFIG15_MAP2);
   //*********************************************************************************************************************************************************************************
 }
 
