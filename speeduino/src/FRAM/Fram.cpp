@@ -114,11 +114,7 @@ void FramClass::setClock(uint32_t clockSpeed) {
   spiSpeed = 1000000 / (clockSpeed * 2);
   #ifdef SPI_HAS_TRANSACTION
   FRAMSettings = SPISettings(clockSpeed, MSBFIRST, SPI_MODE0);
-  #if defined(ARDUINO_ARCH_STM32)
-  spi->beginTransaction(csPin, FRAMSettings);
-  #else
   spi->beginTransaction(FRAMSettings);
-  #endif
   #endif
 }
 
@@ -227,7 +223,7 @@ uint8_t FramClass::read (uint32_t addr, uint8_t *dataBuffer, uint16_t count)
   spiSend(FRAM_CMD_READ);
   sendAddr(addr);
   for (uint16_t i=0; i < count; ++i)
-    dataBuffer[i] = spiSend(DUMMYBYTE);
+    dataBuffer[i] = spiSend(FRAM_DUMMYBYTE);
   deassertCS();
 
   return 1U;
@@ -242,7 +238,7 @@ uint8_t FramClass::read (uint32_t addr)
   assertCS();
   spiSend(FRAM_CMD_READ);
   sendAddr(addr);
-  dataBuffer = spiSend(DUMMYBYTE);
+  dataBuffer = spiSend(FRAM_DUMMYBYTE);
   deassertCS();
 
   return dataBuffer;
@@ -283,7 +279,7 @@ uint8_t FramClass::readSR(void)
 
   assertCS();
   spiSend(FRAM_CMD_RDSR);
-  dataBuffer = spiSend(DUMMYBYTE);
+  dataBuffer = spiSend(FRAM_DUMMYBYTE);
   deassertCS();
 
   return dataBuffer;
@@ -320,11 +316,7 @@ uint8_t FramClass::spiSend(uint8_t data)
     }
     fastWrite(clkPort, clkMask, LOW);
   }
-#if defined(ARDUINO_ARCH_STM32)
-  else { reply = spi->transfer(csPin, data, SPI_CONTINUE); }
-#else
   else { reply = spi->transfer(data); }
-#endif
   return reply;
 }
 
@@ -345,11 +337,7 @@ uint16_t FramClass::spiSend16(uint16_t data)
     }
     fastWrite(clkPort, clkMask, LOW);
   }
-#if defined(ARDUINO_ARCH_STM32)
-  else { reply = spi->transfer16(csPin, data, SPI_CONTINUE); }
-#else
   else { reply = spi->transfer16(data); }
-#endif
   return reply;
 }
 

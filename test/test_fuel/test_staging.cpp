@@ -65,9 +65,9 @@ void test_Staging_4cyl_Auto_Inactive(void)
   uint32_t pwLimit = 9000; //90% duty cycle at 6000rpm
   calculateStaging(pwLimit);
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
-  //PW1/2 should be (PW - openTime) * staged_req_fuel_mult_pri = (3000 - 1000) * 3.0 = 6000
-  TEST_ASSERT_EQUAL(6000, currentStatus.PW1);
-  TEST_ASSERT_EQUAL(6000, currentStatus.PW2);
+  //PW1/2 should be ((PW - openTime) * staged_req_fuel_mult_pri) + openTime = ((3000 - 1000) * 3.0) + 1000 = 7000
+  TEST_ASSERT_EQUAL(7000, currentStatus.PW1);
+  TEST_ASSERT_EQUAL(7000, currentStatus.PW2);
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
   TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));

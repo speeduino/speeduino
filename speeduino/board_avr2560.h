@@ -158,7 +158,10 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 ***********************************************************************************************************
 * CAN / Second serial
 */
-
+#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
+  #define secondarySerial_AVAILABLE
+#endif
+#define SECONDARY_SERIAL_T HardwareSerial
 
 #endif //CORE_AVR
 #endif //AVR2560_H

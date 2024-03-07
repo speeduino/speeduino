@@ -112,7 +112,7 @@
     static inline void IGN7_TIMER_DISABLE(void)  {FTM3_C6SC &= ~FTM_CSC_CHIE;}
     static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
-  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
+  #define MAX_TIMER_PERIOD 139808UL // 2.13333333uS * 65535
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*
@@ -155,14 +155,21 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-   #define USE_SERIAL3               // Secondary serial port to use
+  #define USE_SERIAL3               // Secondary serial port to use
+  #define secondarySerial_AVAILABLE
+  #define SECONDARY_SERIAL_T HardwareSerial
+
   #include <FlexCAN_T4.h>
+  /*
+  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 #elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
   extern FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
   extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 #endif
+*/
   #define NATIVE_CAN_AVAILABLE
 #endif //CORE_TEENSY
 #endif //TEENSY35_H

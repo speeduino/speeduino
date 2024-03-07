@@ -44,10 +44,10 @@ void wmiControl(void);
 #define FUEL_PUMP_ON()          (digitalWrite(pinFuelPump, HIGH))
 #define FUEL_PUMP_OFF()         (digitalWrite(pinFuelPump, LOW))
 
-#define AIRCON_ON()             { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_OFF()            { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_FAN_ON()         { ((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN); }
-#define AIRCON_FAN_OFF()        { ((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN); }
+#define AIRCON_ON()             { (((configPage15.airConCompPol==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
+#define AIRCON_OFF()            { (((configPage15.airConCompPol==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
+#define AIRCON_FAN_ON()         { (((configPage15.airConFanPol==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN); }
+#define AIRCON_FAN_OFF()        { (((configPage15.airConFanPol==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN); }
 
 #define FAN_ON()                { ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); }
 #define FAN_OFF()               { ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); }
@@ -73,10 +73,10 @@ void wmiControl(void);
 #define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
 #define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
 
-#define AIRCON_ON()             ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_OFF()            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConCompPol&1)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_FAN_ON()         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN); }
-#define AIRCON_FAN_OFF()        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConFanPol&1)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN); }
+#define AIRCON_ON()             ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
+#define AIRCON_OFF()            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
+#define AIRCON_FAN_ON()         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN); }
+#define AIRCON_FAN_OFF()        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN); }
 
 #define FAN_ON()                ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); }
 #define FAN_OFF()               ATOMIC_BLOCK(ATOMIC_RESTORESTATE) { ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); }

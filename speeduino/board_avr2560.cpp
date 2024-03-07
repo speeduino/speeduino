@@ -1,6 +1,8 @@
 #include "globals.h"
 #if defined(CORE_AVR)
+#include "board_avr2560.h"
 #include "auxiliaries.h"
+#include "comms_secondary.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -22,6 +24,9 @@ void initBoard(void)
     * General
     */
     configPage9.intcan_available = 0;   // AVR devices do NOT have internal canbus
+    #ifdef secondarySerial_AVAILABLE
+      pSecondarySerial = &Serial3;
+    #endif
 
     /*
     ***********************************************************************************************************

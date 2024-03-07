@@ -20,6 +20,7 @@ void loop(void);
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen);
 byte getVE1(void);
 byte getAdvance1(void);
+uint16_t calculatePWLimit();
 void calculateStaging(uint32_t);
 void calculateIgnitionAngles(int dwellAngle);
 void checkLaunchAndFlatShift();
