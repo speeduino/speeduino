@@ -313,14 +313,14 @@ uint16_t correctionAccel(void)
       {
         if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC))
         {
-          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.maeThresh && currentStatus.tpsDOT < 0))
+          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.taeThresh && currentStatus.tpsDOT < 0))
           {
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
           }
         }
         else if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC))
         {
-          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.maeThresh && currentStatus.tpsDOT > 0))
+          if((abs(currentStatus.tpsDOT) > activateTPSDOT) || (abs(currentStatus.tpsDOT) > configPage2.taeThresh && currentStatus.tpsDOT > 0))
           {
             BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
           }
