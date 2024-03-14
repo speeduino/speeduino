@@ -364,7 +364,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         // TPS percentage, range is 0 to 100 percent, formula == 100/256 A 
         uint16_t temp_tpsPC;
         temp_tpsPC = currentStatus.TPS;
-        obdcalcA = (temp_tpsPC <<8) / 100;     // (tpsPC *256) /100;
+        obdcalcA = (temp_tpsPC <<8) / 200;     // (tpsPC *256) /200;
         if (obdcalcA > 255){ obdcalcA = 255;}
         outMsg.buf[0] =  0x03;                    // sending 3 bytes
         outMsg.buf[1] =  0x41;                    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
