@@ -17,11 +17,10 @@ CAN_message_t inMsg;
 CAN_message_t outMsg;
 
 //These are declared locally for Teensy due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
-#if defined(CORE_TEENSY35)         // use for Teensy 3.5 only 
+#if defined(CORE_TEENSY35) || defined(CORE_TEENSY36)        // use for Teensy 3.5/3.6 only 
   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-#elif defined(CORE_TEENSY41)         // use for Teensy 3.6 only
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+#elif defined(CORE_TEENSY41)         // use for Teensy 4.1 only
+  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0; 
 #endif
 
 // Forward declare
