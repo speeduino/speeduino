@@ -32,8 +32,6 @@ struct StepperIdle
   int targetIdleStep; //What the targeted step is
   volatile StepperStatus stepperStatus;
   volatile unsigned long stepStartTime;
-  byte lessAirDirection;
-  byte moreAirDirection;
 };
 
 extern uint16_t idle_pwm_max_count; //Used for variable PWM frequency
