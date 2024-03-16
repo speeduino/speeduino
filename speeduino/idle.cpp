@@ -8,6 +8,9 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "src/PID_v1/PID_v1.h"
 
+#define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
+#define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
+
 byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 byte idleCounter; //Used for tracking the number of calls to the idle control function
@@ -196,16 +199,6 @@ void initialiseIdle(bool forcehoming)
         idleStepper.stepperStatus = SOFF;
       }
 
-      if (! configPage9.iacStepperInv)
-      {
-        idleStepper.lessAirDirection = STEPPER_BACKWARD;
-        idleStepper.moreAirDirection = STEPPER_FORWARD;
-      }
-      else
-      {
-        idleStepper.lessAirDirection = STEPPER_FORWARD;
-        idleStepper.moreAirDirection = STEPPER_BACKWARD;
-      }
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
@@ -225,17 +218,6 @@ void initialiseIdle(bool forcehoming)
         completedHomeSteps = 0;
         idleStepper.curIdleStep = 0;
         idleStepper.stepperStatus = SOFF;
-      }
-
-      if (! configPage9.iacStepperInv)
-      {
-        idleStepper.lessAirDirection = STEPPER_BACKWARD;
-        idleStepper.moreAirDirection = STEPPER_FORWARD;
-      }
-      else
-      {
-        idleStepper.lessAirDirection = STEPPER_FORWARD;
-        idleStepper.moreAirDirection = STEPPER_BACKWARD;
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
@@ -269,17 +251,6 @@ void initialiseIdle(bool forcehoming)
         completedHomeSteps = 0;
         idleStepper.curIdleStep = 0;
         idleStepper.stepperStatus = SOFF;
-      }
-
-      if (! configPage9.iacStepperInv)
-      {
-        idleStepper.lessAirDirection = STEPPER_BACKWARD;
-        idleStepper.moreAirDirection = STEPPER_FORWARD;
-      }
-      else
-      {
-        idleStepper.lessAirDirection = STEPPER_FORWARD;
-        idleStepper.moreAirDirection = STEPPER_BACKWARD;
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
@@ -381,20 +352,20 @@ Performs a step
 */
 static inline void doStep(void)
 {
-  if ( (idleStepper.targetIdleStep <= (idleStepper.curIdleStep - configPage6.iacStepHyster)) || (idleStepper.targetIdleStep >= (idleStepper.curIdleStep + configPage6.iacStepHyster)) ) //Hysteresis check
+  int16_t error = idleStepper.targetIdleStep - idleStepper.curIdleStep;
+  if ( (error < -((int8_t)configPage6.iacStepHyster)) || (error > configPage6.iacStepHyster) ) //Hysteresis check
   {
     // the home position for a stepper is pintle fully seated, i.e. no airflow.
-    if(idleStepper.targetIdleStep < idleStepper.curIdleStep)
+    if (error < 0)
     {
       // we are moving toward the home position (reducing air)
-      digitalWrite(pinStepperDir, idleStepper.lessAirDirection);
+      digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() );
       idleStepper.curIdleStep--;
     }
     else
-    if (idleStepper.targetIdleStep > idleStepper.curIdleStep)
     {
       // we are moving away from the home position (adding air).
-      digitalWrite(pinStepperDir, idleStepper.moreAirDirection);
+      digitalWrite(pinStepperDir, STEPPER_MORE_AIR_DIRECTION() );
       idleStepper.curIdleStep++;
     }
 
@@ -403,7 +374,11 @@ static inline void doStep(void)
     idleStepper.stepStartTime = micros_safe();
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
+
+    BIT_SET(currentStatus.spark, BIT_SPARK_IDLE);
   }
+  else
+    BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE);
 }
 
 /*
@@ -417,7 +392,7 @@ static inline byte isStepperHomed(void)
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
-    digitalWrite(pinStepperDir, idleStepper.lessAirDirection); //homing the stepper closes off the air bleed
+    digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros_safe();
@@ -653,14 +628,6 @@ void idleControl(void)
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
           if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
-
-          //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-          {
-            idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-          }
-
-          doStep();
           idleTaper = 0;
         }
         else
@@ -688,21 +655,17 @@ void idleControl(void)
             
             iacStepTime_uS = configPage6.iacStepTime * 1000;
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
-
-            //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-            if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-            {
-              idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-            }
           }
-          doStep();
+        }
+        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+        {
+          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
         }
         if( ((uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
+        doStep();
       }
-      //Set or clear the idle active flag
-      if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }
-      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); }
       break;
 
     case IAC_ALGORITHM_STEP_OLCL:  //Case 7 is closed+open loop stepper control
@@ -722,7 +685,6 @@ void idleControl(void)
             idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
           }
           
-          doStep();
           idleTaper = 0;
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
           idlePID.ResetIntegeral();
@@ -779,14 +741,10 @@ void idleControl(void)
         {
           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
         }
-        doStep();
-
         if( ( (uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
+        doStep();
       }
-      //Set or clear the idle active flag
-      if(idleStepper.targetIdleStep != idleStepper.curIdleStep) { BIT_SET(currentStatus.spark, BIT_SPARK_IDLE); }
-      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_IDLE); }
       if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
       {
         //This only needs to be run very infrequently, once per second
