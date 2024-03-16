@@ -8,6 +8,9 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "src/PID_v1/PID_v1.h"
 
+#define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
+#define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
+
 byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
 byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
 byte idleCounter; //Used for tracking the number of calls to the idle control function
@@ -356,13 +359,13 @@ static inline void doStep(void)
     if (error < 0)
     {
       // we are moving toward the home position (reducing air)
-      digitalWrite(pinStepperDir, (configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD);
+      digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() );
       idleStepper.curIdleStep--;
     }
     else
     {
       // we are moving away from the home position (adding air).
-      digitalWrite(pinStepperDir, (configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD);
+      digitalWrite(pinStepperDir, STEPPER_MORE_AIR_DIRECTION() );
       idleStepper.curIdleStep++;
     }
 
@@ -389,7 +392,7 @@ static inline byte isStepperHomed(void)
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
-    digitalWrite(pinStepperDir, (configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD); //homing the stepper closes off the air bleed
+    digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
     idleStepper.stepStartTime = micros_safe();
