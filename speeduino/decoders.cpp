@@ -4329,13 +4329,16 @@ void triggerSetEndTeeth_ThirtySixMinus222(void)
 //************************************************************************************************************************
 
 /** 36-2-1 / Mistsubishi 4B11 - A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
+ * The decoder sets tooth #1 at TDC for piston #1
+ *
  * @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11
  * @{
  */
 void triggerSetup_ThirtySixMinus21(void)
 {
-  triggerToothAngle = 10;                                      // The number of degrees that passes from tooth to tooth
-  triggerActualTeeth = 33;                                     // The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
+  configPage4.triggerTeeth = 36;
+  configPage4.TrigSpeed = CRANK_SPEED;
+  triggerToothAngle = 360U / (uint16_t)configPage4.triggerTeeth; // The number of degrees that passes from tooth to tooth
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); // Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
@@ -4368,52 +4371,54 @@ void triggerPri_ThirtySixMinus21(void)
       curGap = 0;
     }
 
+    // We found the one tooth missing
     if ((curGap > targetGap))
     {
+      // Let's check if it's a single tooth gap or a double tooth gap
       if ((curGap < targetGap2))
       {
         // we are at the tooth after the single gap
-        toothCurrentCount = 20; // it's either 19 or 20, need to clarify engine direction!
+        toothCurrentCount = 28; // TDC is a tooth 1 so this will be tooth 28
         currentStatus.hasSync = true;
       }
       else
       {
         // we are at the tooth after the double gap
-        toothCurrentCount = 1;
+        toothCurrentCount = 10; // TDC is at tooth 1 so this will be tooth 10
         currentStatus.hasSync = true;
       }
 
       BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); // The tooth angle is double at this point
       triggerFilterTime = 0;                                  // This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
     }
-  }
-  else
-  {
-    if ((toothCurrentCount > 36) || (toothCurrentCount == 1))
+    else
     {
-      // Means a complete rotation has occurred.
-      toothCurrentCount = 1;
-      revolutionOne = !revolutionOne; // Flip sequential revolution tracker
-      toothOneMinusOneTime = toothOneTime;
-      toothOneTime = curTime;
-      currentStatus.startRevolutions++; // Counter
+      if ((toothCurrentCount > 36))
+      {
+        // Means a complete rotation has occurred.
+        toothCurrentCount = 1;
+        revolutionOne = !revolutionOne; // Flip sequential revolution tracker
+        toothOneMinusOneTime = toothOneTime;
+        toothOneTime = curTime;
+        currentStatus.startRevolutions++; // Counter
+      }
+
+      // Filter can only be recalculated for the regular teeth, not the missing one.
+      setFilter(curGap);
+
+      BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
     }
 
-    // Filter can only be recalculated for the regular teeth, not the missing one.
-    setFilter(curGap);
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
 
-    BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
-  }
-
-  toothLastMinusOneToothTime = toothLastToothTime;
-  toothLastToothTime = curTime;
-
-  // EXPERIMENTAL!
-  if (configPage2.perToothIgn == true)
-  {
-    int16_t crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle;
-    crankAngle = ignitionLimits(crankAngle);
-    checkPerToothTiming(crankAngle, toothCurrentCount);
+    // EXPERIMENTAL!
+    if (configPage2.perToothIgn == true)
+    {
+      int16_t crankAngle = ((toothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits(crankAngle);
+      checkPerToothTiming(crankAngle, toothCurrentCount);
+    }
   }
 }
 
@@ -4427,7 +4432,7 @@ uint16_t getRPM_ThirtySixMinus21(void)
   uint16_t tempRPM = 0;
   if (currentStatus.RPM < currentStatus.crankRPM)
   {
-    if ((toothCurrentCount != 20) && (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)))
+    if ((toothCurrentCount != 26) && (toothCurrentCount != 28) && (toothCurrentCount != 7) && (toothCurrentCount != 10) && (BIT_CHECK(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT)))
     {
       tempRPM = crankingGetRPM(36, CRANK_SPEED);
     }
@@ -4451,8 +4456,8 @@ int getCrankAngle_ThirtySixMinus21(void)
 
 void triggerSetEndTeeth_ThirtySixMinus21(void)
 {
-  ignition1EndTooth = 10;
-  ignition2EndTooth = 28; // Arbitrarily picked  at 180°.
+  // Calling the same method for missingTooth algo. No need to duplicate code.
+  triggerSetEndTeeth_missingTooth();
 }
 /** @} */
 
@@ -5254,7 +5259,7 @@ void triggerSec_NGC4(void)
           }
         }
 
-        triggerSecFilterTime = 0; // This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+        triggerSecFilterTime = 0; // This is used to prevent a condition where serious intermitent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
       }
       else if (secondaryToothCount > 0)
       {
