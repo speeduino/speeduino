@@ -19,29 +19,30 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 #ifndef TIMERS_H
 #define TIMERS_H
 
-volatile bool tachoAlt = false;
+#include "globals.h"
+
+#define SET_COMPARE(compare, value) compare = (COMPARE_TYPE)(value) // It is important that we cast this to the actual overflow limit of the timer. The compare variables type can be bigger than the timer overflow.
+
 #define TACHO_PULSE_HIGH() *tach_pin_port |= (tach_pin_mask)
 #define TACHO_PULSE_LOW() *tach_pin_port &= ~(tach_pin_mask)
-enum TachoOutputStatus {DEACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
-volatile TachoOutputStatus tachoOutputFlag;
+enum TachoOutputStatus {TACHO_INACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have. NOTE: Cannot just use 'INACTIVE' as this is already defined within the Teensy Libs
 
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
+extern volatile TachoOutputStatus tachoOutputFlag;
+extern volatile bool tachoSweepEnabled;
+extern volatile uint16_t tachoSweepIncr;
 
-volatile unsigned int dwellLimit_uS;
-volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile uint16_t last250msLoopCount = 1000; //Set to effectively random number on startup. Just need this to be different to what mainLoopCount equals initially (Probably 0)
+#define TACHO_SWEEP_TIME_MS 1500
+#define TACHO_SWEEP_RAMP_MS (TACHO_SWEEP_TIME_MS * 2 / 3)
+#define MS_PER_SEC  1000
+
+extern volatile unsigned int dwellLimit_uS;
 
 #if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-  void oneMSInterval();
+  extern IntervalTimer lowResTimer;
+  void oneMSInterval(void);
 #elif defined (ARDUINO_ARCH_STM32)
-  void oneMSInterval();
+  void oneMSInterval(void);
 #endif
-void initialiseTimers();
+void initialiseTimers(void);
 
 #endif // TIMERS_H

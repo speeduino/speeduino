@@ -8,16 +8,19 @@
 */
   #define PORT_TYPE uint32_t //Size of the port variables (Eg inj1_pin_port). Most systems use a byte, but SAMD21 and possibly others are a 32-bit unsigned int
   #define PINMASK_TYPE uint32_t
+  #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+  #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
   #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
+  typedef int eeprom_address_t;
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
   void jumpToBootloader();
 
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 
 /*
 ***********************************************************************************************************
@@ -64,45 +67,45 @@
   #define IGN7_COMPARE  <register here>
   #define IGN8_COMPARE  <register here>
 
-  #define FUEL1_TIMER_ENABLE() <macro here>
-  #define FUEL2_TIMER_ENABLE() <macro here>
-  #define FUEL3_TIMER_ENABLE() <macro here>
-  #define FUEL4_TIMER_ENABLE() <macro here>
+  static inline void FUEL1_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL2_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL3_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL4_TIMER_ENABLE(void)  {<macro here>;}
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_TIMER_ENABLE() <macro here>
-  #define FUEL6_TIMER_ENABLE() <macro here>
-  #define FUEL7_TIMER_ENABLE() <macro here>
-  #define FUEL8_TIMER_ENABLE() <macro here>
+  static inline void FUEL5_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL6_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL7_TIMER_ENABLE(void)  {<macro here>;}
+  static inline void FUEL8_TIMER_ENABLE(void)  {<macro here>;}
 
-  #define FUEL1_TIMER_DISABLE() <macro here>
-  #define FUEL2_TIMER_DISABLE() <macro here>
-  #define FUEL3_TIMER_DISABLE() <macro here>
-  #define FUEL4_TIMER_DISABLE() <macro here>
+  static inline void FUEL1_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL2_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL3_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL4_TIMER_DISABLE(void)  { <macro here>;}
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_TIMER_DISABLE() <macro here>
-  #define FUEL6_TIMER_DISABLE() <macro here>
-  #define FUEL7_TIMER_DISABLE() <macro here>
-  #define FUEL8_TIMER_DISABLE() <macro here>
+  static inline void FUEL5_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL6_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL7_TIMER_DISABLE(void)  { <macro here>;}
+  static inline void FUEL8_TIMER_DISABLE(void)  { <macro here>;}
 
-  #define IGN1_TIMER_ENABLE() <macro here>
-  #define IGN2_TIMER_ENABLE() <macro here>
-  #define IGN3_TIMER_ENABLE() <macro here>
-  #define IGN4_TIMER_ENABLE() <macro here>
+    static inline void IGN1_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN2_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN3_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN4_TIMER_ENABLE(void)  {<macro here>;}
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_TIMER_ENABLE() <macro here>
-  #define IGN6_TIMER_ENABLE() <macro here>
-  #define IGN7_TIMER_ENABLE() <macro here>
-  #define IGN8_TIMER_ENABLE() <macro here>
+    static inline void IGN5_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN6_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN7_TIMER_ENABLE(void)  {<macro here>;}
+    static inline void IGN8_TIMER_ENABLE(void)  {<macro here>;}
 
-  #define IGN1_TIMER_DISABLE() <macro here>
-  #define IGN2_TIMER_DISABLE() <macro here>
-  #define IGN3_TIMER_DISABLE() <macro here>
-  #define IGN4_TIMER_DISABLE() <macro here>
-  //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_TIMER_DISABLE() <macro here>
-  #define IGN6_TIMER_DISABLE() <macro here>
-  #define IGN7_TIMER_DISABLE() <macro here>
-  #define IGN8_TIMER_DISABLE() <macro here>
+    static inline void IGN1_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN2_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN3_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN4_TIMER_DISABLE(void)  {<macro here>;}
+  //The below are optional, but recommended if there are suffici;}ent timers/compares
+    static inline void IGN5_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN6_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN7_TIMER_DISABLE(void)  {<macro here>;}
+    static inline void IGN8_TIMER_DISABLE(void)  {<macro here>;}
 
   
   #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
@@ -110,11 +113,11 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
   //macro functions for enabling and disabling timer interrupts for the boost and vvt functions
   #define ENABLE_BOOST_TIMER()  <macro here>
-  #define DISABLE_BOOST_TIMER() <macro here>
+  #define DISABLE_BOOST_TIMER(void)  { <macro here>
 
   #define ENABLE_VVT_TIMER()    <macro here>
   #define DISABLE_VVT_TIMER()   <macro here>

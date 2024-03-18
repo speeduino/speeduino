@@ -268,7 +268,7 @@ byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
 int8_t SPI_EEPROM_Class::begin(SPIClass &_spi, uint8_t pinSPIFlash_CS=6){
     pinMode(pinSPIFlash_CS, OUTPUT);
     bool flashavailable;
-    flashavailable = winbondSPIFlash.begin(_W25Q16,_spi, pinSPIFlash_CS);
+    flashavailable = winbondSPIFlash.begin(winbondFlashClass::partNumber::autoDetect, _spi, pinSPIFlash_CS);
     return FLASH_EEPROM_BaseClass::initialize(flashavailable);
 }    
 
@@ -394,6 +394,14 @@ int8_t InternalSTM32F4_EEPROM_Class::writeFlashBytes(uint32_t flashAddress, byte
   uint16_t data = 0;
   uint32_t offset = 0;
   uint32_t countaddress = translatedAddress; 
+
+  //Clear any flash errors before try writing to flash to prevent write failures.
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_WRPERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_WRPERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGAERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGAERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGPERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGPERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_PGSERR) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_PGSERR);
+  if(__HAL_FLASH_GET_FLAG(FLASH_FLAG_OPERR ) != RESET) __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_OPERR);
+  
   HAL_FLASH_Unlock();
   while (countaddress < translatedAddress + length) {
       memcpy(&data, buf + offset, sizeof(uint16_t));

@@ -2,20 +2,22 @@
 #define MC33810_H
 
 #include <SPI.h>
+#include "globals.h"
+#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
-volatile PORT_TYPE *mc33810_1_pin_port;
-volatile PINMASK_TYPE mc33810_1_pin_mask;
-volatile PORT_TYPE *mc33810_2_pin_port;
-volatile PINMASK_TYPE mc33810_2_pin_mask;
+extern volatile PORT_TYPE *mc33810_1_pin_port;
+extern volatile PINMASK_TYPE mc33810_1_pin_mask;
+extern volatile PORT_TYPE *mc33810_2_pin_port;
+extern volatile PINMASK_TYPE mc33810_2_pin_mask;
 
 //#define MC33810_ONOFF_CMD   3
-static uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal
-volatile uint8_t mc33810_1_requestedState; //Current binary state of the 1st ICs IGN and INJ values
-volatile uint8_t mc33810_2_requestedState; //Current binary state of the 2nd ICs IGN and INJ values
-volatile uint8_t mc33810_1_returnState; //Current binary state of the 1st ICs IGN and INJ values
-volatile uint8_t mc33810_2_returnState; //Current binary state of the 2nd ICs IGN and INJ values
+static const uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal
+static volatile uint8_t mc33810_1_requestedState; //Current binary state of the 1st ICs IGN and INJ values
+static volatile uint8_t mc33810_2_requestedState; //Current binary state of the 2nd ICs IGN and INJ values
+static volatile uint8_t mc33810_1_returnState; //Current binary state of the 1st ICs IGN and INJ values
+static volatile uint8_t mc33810_2_returnState; //Current binary state of the 2nd ICs IGN and INJ values
 
-void initMC33810();
+void initMC33810(void);
 
 #define MC33810_1_ACTIVE() (*mc33810_1_pin_port &= ~(mc33810_1_pin_mask))
 #define MC33810_1_INACTIVE() (*mc33810_1_pin_port |= (mc33810_1_pin_mask))
@@ -24,23 +26,23 @@ void initMC33810();
 
 //These are default values for which injector is attached to which output on the IC. 
 //They may (Probably will) be changed during init by the board specific config in init.ino
-uint8_t MC33810_BIT_INJ1 = 1;
-uint8_t MC33810_BIT_INJ2 = 2;
-uint8_t MC33810_BIT_INJ3 = 3;
-uint8_t MC33810_BIT_INJ4 = 4;
-uint8_t MC33810_BIT_INJ5 = 5;
-uint8_t MC33810_BIT_INJ6 = 6;
-uint8_t MC33810_BIT_INJ7 = 7;
-uint8_t MC33810_BIT_INJ8 = 8;
+extern uint8_t MC33810_BIT_INJ1;
+extern uint8_t MC33810_BIT_INJ2;
+extern uint8_t MC33810_BIT_INJ3;
+extern uint8_t MC33810_BIT_INJ4;
+extern uint8_t MC33810_BIT_INJ5;
+extern uint8_t MC33810_BIT_INJ6;
+extern uint8_t MC33810_BIT_INJ7;
+extern uint8_t MC33810_BIT_INJ8;
 
-uint8_t MC33810_BIT_IGN1 = 1;
-uint8_t MC33810_BIT_IGN2 = 2;
-uint8_t MC33810_BIT_IGN3 = 3;
-uint8_t MC33810_BIT_IGN4 = 4;
-uint8_t MC33810_BIT_IGN5 = 5;
-uint8_t MC33810_BIT_IGN6 = 6;
-uint8_t MC33810_BIT_IGN7 = 7;
-uint8_t MC33810_BIT_IGN8 = 8;
+extern uint8_t MC33810_BIT_IGN1;
+extern uint8_t MC33810_BIT_IGN2;
+extern uint8_t MC33810_BIT_IGN3;
+extern uint8_t MC33810_BIT_IGN4;
+extern uint8_t MC33810_BIT_IGN5;
+extern uint8_t MC33810_BIT_IGN6;
+extern uint8_t MC33810_BIT_IGN7;
+extern uint8_t MC33810_BIT_IGN8;
 
 #define openInjector1_MC33810() MC33810_1_ACTIVE(); BIT_SET(mc33810_1_requestedState, MC33810_BIT_INJ1); mc33810_1_returnState = SPI.transfer16(word(MC33810_ONOFF_CMD, mc33810_1_requestedState)); MC33810_1_INACTIVE()
 #define openInjector2_MC33810() MC33810_1_ACTIVE(); BIT_SET(mc33810_1_requestedState, MC33810_BIT_INJ2); mc33810_1_returnState = SPI.transfer16(word(MC33810_ONOFF_CMD, mc33810_1_requestedState)); MC33810_1_INACTIVE()

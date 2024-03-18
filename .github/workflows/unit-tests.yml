@@ -1,0 +1,59 @@
+name: Unit Tests
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Only try to run hardware unit tests on the upstream repository
+    if: github.repository_owner == 'noisymime'
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: latest
+        platform: x32
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+        pip install wheel
+        platformio update
+        platformio platform update
+        
+    - name: Run Unit Tests
+      env:
+        PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+      run: | 
+        platformio run -e megaatmega2560
+        platformio remote test --force-remote --environment megaatmega2560
+
+    - name: Discord Notification (Unit Tests Failed)
+      uses: rjstone/discord-webhook-notify@v1
+      if: failure()
+      with:
+          severity: error
+          avatarUrl: https://avatars.githubusercontent.com/u/9919?v=4&size=48
+          username: GitHub
+          description: 'Unit Tests FAILED :warning:'
+          details: "**Author:** ${{ github.event.pusher.name }} \n
+            **Commit URL:** ${{ github.event.head_commit.url }} \n
+            **Commit Message:** ${{ github.event.head_commit.message }}"
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}

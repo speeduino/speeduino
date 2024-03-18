@@ -1,6 +1,7 @@
 #ifndef TEENSY41_H
 #define TEENSY41_H
-#if defined(CORE_TEENSY)&& defined(__IMXRT1062__)
+
+#if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 
 /*
 ***********************************************************************************************************
@@ -10,18 +11,27 @@
   uint16_t freeRam();
   void doSystemReset();
   void jumpToBootloader();
+  void setTriggerHysteresis();
+  time_t getTeensy3Time();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
-  #define COMPARE_TYPE uint32_t
-  #define COUNTER_TYPE uint32_t
+  #define COMPARE_TYPE uint16_t
+  #define COUNTER_TYPE uint16_t
+  #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+  #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #define BOARD_MAX_DIGITAL_PINS 34
   #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
   #define EEPROM_LIB_H <EEPROM.h>
+  typedef int eeprom_address_t;
   #define RTC_ENABLED
+  #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
   #define RTC_LIB_H "TimeLib.h"
+  #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbiden pins like USB
+  //#define PWM_FAN_AVAILABLE
+  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) ) //Forbidden pins like USB
+
 
 /*
 ***********************************************************************************************************
@@ -72,45 +82,47 @@
   #define IGN7_COMPARE  TMR4_COMP12
   #define IGN8_COMPARE  TMR4_COMP13
 
-  #define FUEL1_TIMER_ENABLE() TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_ENABLE() TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define FUEL3_TIMER_ENABLE() TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define FUEL4_TIMER_ENABLE() TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN
-  #define FUEL5_TIMER_ENABLE() TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define FUEL6_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define FUEL7_TIMER_ENABLE() TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define FUEL8_TIMER_ENABLE() TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN
+  static inline void FUEL1_TIMER_ENABLE(void)  {TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN;} //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_ENABLE(void)  {TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL3_TIMER_ENABLE(void)  {TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL4_TIMER_ENABLE(void)  {TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL5_TIMER_ENABLE(void)  {TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL6_TIMER_ENABLE(void)  {TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL7_TIMER_ENABLE(void)  {TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL8_TIMER_ENABLE(void)  {TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
-  #define FUEL1_TIMER_DISABLE() TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN //Write 0 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
-  #define FUEL2_TIMER_DISABLE() TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL3_TIMER_DISABLE() TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL4_TIMER_DISABLE() TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL5_TIMER_DISABLE() TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL6_TIMER_DISABLE() TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL7_TIMER_DISABLE() TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define FUEL8_TIMER_DISABLE() TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
+  static inline void FUEL1_TIMER_DISABLE(void)  {TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;} //Write 0 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_DISABLE(void)  {TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL3_TIMER_DISABLE(void)  {TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL4_TIMER_DISABLE(void)  {TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL5_TIMER_DISABLE(void)  {TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL6_TIMER_DISABLE(void)  {TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL7_TIMER_DISABLE(void)  {TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL8_TIMER_DISABLE(void)  {TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-  #define IGN1_TIMER_ENABLE() TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define IGN2_TIMER_ENABLE() TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IGN3_TIMER_ENABLE() TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define IGN4_TIMER_ENABLE() TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN
-  #define IGN5_TIMER_ENABLE() TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define IGN6_TIMER_ENABLE() TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IGN7_TIMER_ENABLE() TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN
-  #define IGN8_TIMER_ENABLE() TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN
+    static inline void IGN1_TIMER_ENABLE(void)  {TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN2_TIMER_ENABLE(void)  {TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN3_TIMER_ENABLE(void)  {TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN4_TIMER_ENABLE(void)  {TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN5_TIMER_ENABLE(void)  {TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN6_TIMER_ENABLE(void)  {TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN7_TIMER_ENABLE(void)  {TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+    static inline void IGN8_TIMER_ENABLE(void)  {TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
-  #define IGN1_TIMER_DISABLE() TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN2_TIMER_DISABLE() TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN3_TIMER_DISABLE() TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN4_TIMER_DISABLE() TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN5_TIMER_DISABLE() TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN6_TIMER_DISABLE() TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN7_TIMER_DISABLE() TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN
-  #define IGN8_TIMER_DISABLE() TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
+    static inline void IGN1_TIMER_DISABLE(void)  {TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN2_TIMER_DISABLE(void)  {TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN3_TIMER_DISABLE(void)  {TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN4_TIMER_DISABLE(void)  {TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN5_TIMER_DISABLE(void)  {TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN6_TIMER_DISABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+    static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-  //Clock is 150Mhz
-  #define MAX_TIMER_PERIOD 55923 // 0.85333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 75) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  //Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
+  //#define TMR_PRESCALE  128
+  //#define MAX_TIMER_PERIOD ((65535 * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
+  #define MAX_TIMER_PERIOD 55923UL
+  #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
   /*
   To calculate the above uS_TO_TIMER_COMPARE
   Choose number of bit of precision. Eg: 6
@@ -120,21 +132,26 @@
 
 /*
 ***********************************************************************************************************
-* Auxilliaries
+* Auxiliaries
 */
-  #define ENABLE_BOOST_TIMER()  TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN
-  #define DISABLE_BOOST_TIMER() TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN
+  #define ENABLE_BOOST_TIMER()  PIT_TCTRL1 |= PIT_TCTRL_TEN
+  #define DISABLE_BOOST_TIMER() PIT_TCTRL1 &= ~PIT_TCTRL_TEN
 
-  #define ENABLE_VVT_TIMER()    TMR3_CSCTRL0 |= TMR_CSCTRL_TCF2EN
-  #define DISABLE_VVT_TIMER()   TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF2EN
+  #define ENABLE_VVT_TIMER()    PIT_TCTRL2 |= PIT_TCTRL_TEN
+  #define DISABLE_VVT_TIMER()   PIT_TCTRL2 &= ~PIT_TCTRL_TEN
+
+  //Ran out of timers, this most likely won't work. This should be possible to implement with the GPT timer. 
+  #define ENABLE_FAN_TIMER()    TMR3_CSCTRL1 |= TMR_CSCTRL_TCF2EN
+  #define DISABLE_FAN_TIMER()   TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF2EN
 
   #define BOOST_TIMER_COMPARE   PIT_LDVAL1
   #define BOOST_TIMER_COUNTER   0
   #define VVT_TIMER_COMPARE     PIT_LDVAL2
   #define VVT_TIMER_COUNTER     0
 
-  void boostInterrupt();
-  void vvtInterrupt();
+  //these probaply need to be PIT_LDVAL something???
+  #define FAN_TIMER_COMPARE     TMR3_COMP22
+  #define FAN_TIMER_COUNTER     TMR3_CNTR1
 
 /*
 ***********************************************************************************************************
@@ -143,23 +160,25 @@
   #define IDLE_COUNTER 0
   #define IDLE_COMPARE PIT_LDVAL0
 
-  #define IDLE_TIMER_ENABLE() TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN
-  #define IDLE_TIMER_DISABLE() TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
-
-  void idleInterrupt();
+  #define IDLE_TIMER_ENABLE() PIT_TCTRL0 |= PIT_TCTRL_TEN
+  #define IDLE_TIMER_DISABLE() PIT_TCTRL0 &= ~PIT_TCTRL_TEN
 
 /*
 ***********************************************************************************************************
 * CAN / Second serial
 */
   #define USE_SERIAL3
+  #define secondarySerial_AVAILABLE
+  #define SECONDARY_SERIAL_T HardwareSerial
+  
   #include <FlexCAN_T4.h>
+  /*
+  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
   extern FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
   extern FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
   extern FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
-  static CAN_message_t outMsg;
-  static CAN_message_t inMsg;
-  //#define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
+  */
+  #define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
   
 #endif //CORE_TEENSY
 #endif //TEENSY41_H
