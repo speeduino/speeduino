@@ -665,7 +665,7 @@ void doUpdates(void)
 
     //AFR Protection added, add default values
     configPage9.afrProtectEnabled = 0; //Disable by default
-    configPage9.afrProtectMinMAP = 90; //Is divided by 2, vlue represents 180kPa
+    configPage9.afrProtectMinMAP = 90; //Is divided by 2, value represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min
     configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
@@ -718,7 +718,7 @@ void doUpdates(void)
     configPage15.rollingProtCutPercent[2] = 80;
     configPage15.rollingProtCutPercent[3] = 95;
 
-    //DFCO Hyster was multipled by 2 to allow a range of 0-500. Existing values must be halved
+    //DFCO Hyster was multiplied by 2 to allow a range of 0-500. Existing values must be halved
     configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
 
     writeAllConfig();

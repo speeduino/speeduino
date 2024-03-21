@@ -219,7 +219,7 @@
 #define IAT_CALIBRATION_PAGE  1U
 #define CLT_CALIBRATION_PAGE  0U
 
-// note the sequence of these defines which refernce the bits used in a byte has moved when the third trigger & engine cycle was incorporated
+// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
 #define COMPOSITE_LOG_THIRD 2 
@@ -1145,7 +1145,7 @@ struct config9 {
 
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
-  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */
+  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divided by 100. Increments of 100 RPM, maximum 25500 RPM */
   byte afrProtectMinTPS; /* < Minimum TPS. */
   byte afrProtectDeviation; /* < Maximum deviation from AFR target table. Stored value is multiplied by 10 */
   byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */
