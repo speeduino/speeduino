@@ -144,7 +144,7 @@ static inline uint32_t div100(uint32_t n) {
 #endif
 }
 
-#if defined(__arm__) && !defined(CORE_TEENSY)
+#if defined(__arm__)
 static inline int div100(int n) {
     return DIV_ROUND_CLOSEST(n, 100U, int);
 }
