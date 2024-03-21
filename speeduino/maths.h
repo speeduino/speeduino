@@ -144,7 +144,7 @@ static inline uint32_t div100(uint32_t n) {
 #endif
 }
 
-#if defined(__arm__)
+#if defined(__arm__) && !defined(CORE_TEENSY)
 static inline int div100(int n) {
     return DIV_ROUND_CLOSEST(n, 100U, int);
 }
@@ -156,7 +156,7 @@ static inline int32_t div100(int32_t n) {
     }
     return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
 #else
-    return DIV_ROUND_CLOSEST(n, UINT32_C(100), int32_t);
+    return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
 }
 #endif

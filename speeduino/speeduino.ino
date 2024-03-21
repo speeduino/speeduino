@@ -716,24 +716,23 @@ void loop(void)
       //Set dwell
       //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
       if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) ) {
-        currentStatus.dwell =  (configPage4.dwellCrank * 100); //use cranking dwell
+        currentStatus.dwell =  (configPage4.dwellCrank * 100U); //use cranking dwell
       }
       else 
       {
         if ( configPage2.useDwellMap == true )
         {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100); //use running dwell from map
+          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100U); //use running dwell from map
         }
         else
         {
-          currentStatus.dwell =  (configPage4.dwellRun * 100); //use fixed running dwell
+          currentStatus.dwell =  (configPage4.dwellRun * 100U); //use fixed running dwell
         }
       }
       currentStatus.dwell = correctionsDwell(currentStatus.dwell);
 
-      int dwellAngle = timeToAngleDegPerMicroSec(currentStatus.dwell); //Convert the dwell time to dwell angle based on the current engine speed
-
-      calculateIgnitionAngles(dwellAngle);
+      // Convert the dwell time to dwell angle based on the current engine speed
+      calculateIgnitionAngles(timeToAngleDegPerMicroSec(currentStatus.dwell));
 
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
@@ -1323,10 +1322,8 @@ byte getAdvance1(void)
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-void calculateIgnitionAngles(int dwellAngle)
+void calculateIgnitionAngles(uint16_t dwellAngle)
 {
-  
-
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)
   {
