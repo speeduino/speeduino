@@ -63,7 +63,7 @@ void test_maths_div100_S16(void)
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-#if defined(__arm__) && !defined(CORE_TEENSY)
+#if defined(__arm__)
   test_div100_Seed<int>(100U);
   test_div100_Seed<int>(10000U);
   test_div100_Seed<int>(100000000UL);
@@ -151,9 +151,12 @@ void test_maths_udiv_32_16_closest(void)
 #endif
 }
 
+#if defined(ARDUINO_ARCH_AVR)
 static uint32_t indexToDividend(int16_t index) {
   return (uint32_t)index  + (UINT16_MAX*index);
 }
+#endif
+
 void test_maths_udiv_32_16_perf(void)
 {
 #if defined(ARDUINO_ARCH_AVR)
