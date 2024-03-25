@@ -17,11 +17,6 @@ TESTABLE_STATIC uint16_t req_fuel_uS = 0U; /**< The required fuel variable (As c
 static uint16_t stagedPriReqFuelPct = 0;
 static uint16_t stagedSecReqFuelPct = 0; 
 
-#ifdef USE_LIBDIVIDE
-#include "src/libdivide/libdivide.h"
-static struct libdivide::libdivide_u32_t libdiv_u32_nsquirts;
-#endif
-
 void initialisePWCalcs(void)
 {
   if(configPage10.stagingEnabled == true)
@@ -47,10 +42,6 @@ void initialisePWCalcs(void)
   }
 
   calculateRequiredFuel(configPage2.injLayout);
-
-#ifdef USE_LIBDIVIDE
-  libdiv_u32_nsquirts = libdivide::libdivide_u32_gen(currentStatus.nSquirts);
-#endif    
 }
 
 void calculateRequiredFuel(InjectorLayout injLayout) {
@@ -162,27 +153,38 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
         injOpenTimeUS), 
         REQ_FUEL);
 
-
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate));
 }  
 
-TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(void) {
-  //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
-  uint32_t limit = percentage(configPage2.dutyLim, revolutionTime); 
-  if (configPage2.strokes == FOUR_STROKE) { limit = limit * 2U; }
-      
+TESTABLE_INLINE_STATIC uint16_t calculatePWLimit()
+{
+  uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (currentStatus.nSquirts!=1U) {
-#ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do(limit, &libdiv_u32_nsquirts);
-#else
-    return limit / currentStatus.nSquirts; 
-#endif
+  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+
+  //Optimise for power of two divisions where possible
+  switch(currentStatus.nSquirts)
+  {
+    case 1:
+      //No action needed
+      break;
+    case 2:
+      tempLimit = tempLimit / 2U;
+      break;
+    case 4:
+      tempLimit = tempLimit / 4U;
+      break;
+    case 8:
+      tempLimit = tempLimit / 8U;
+      break;
+    default:
+      //Non-PoT squirts value. Perform (slow) uint32_t division
+      tempLimit = tempLimit / currentStatus.nSquirts;
+      break;
   }
- 
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return (uint16_t)(limit>UINT16_MAX ? UINT16_MAX : limit);
+  return (uint16_t)(tempLimit>UINT16_MAX ? UINT16_MAX : tempLimit);
 }
 
 static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTimeUS) {
