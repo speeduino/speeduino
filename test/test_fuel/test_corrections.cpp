@@ -679,6 +679,8 @@ static void setup_battery_correction(void) {
   populate_2dtable_P(&injectorVCorrectionTable, values, bins);   
 }
 
+extern  uint16_t req_fuel_uS;
+
 static void test_corrections_bat_mode_wholePw(void) {
   setup_battery_correction();
 
