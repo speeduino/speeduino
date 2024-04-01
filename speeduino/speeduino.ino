@@ -144,8 +144,11 @@ void loop(void)
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
-      FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true; //Not sure if this is needed.
+      if(currentStatus.RPM > 0)
+      {
+        FUEL_PUMP_ON();
+        currentStatus.fuelPumpOn = true;
+      }
     }
     else
     {
