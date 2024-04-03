@@ -917,8 +917,12 @@ void triggerSetup_BasicDistributor()
 {
   triggerActualTeeth = configPage2.nCylinders;
   if(triggerActualTeeth == 0) { triggerActualTeeth = 1; }
-  triggerToothAngle = 720 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
-  triggerFilterTime = 60000000L / MAX_RPM / configPage2.nCylinders; // Minimum time required between teeth
+
+  //The number of degrees that passes from tooth to tooth. Depends on number of cylinders and whether 4 or 2 stroke
+  if(configPage2.strokes == FOUR_STROKE) { triggerToothAngle = 720U / triggerActualTeeth; }
+  else { triggerToothAngle = 360U / triggerActualTeeth; }
+
+  triggerFilterTime = MICROS_PER_MIN / MAX_RPM / configPage2.nCylinders; // Minimum time required between teeth
   triggerFilterTime = triggerFilterTime / 2; //Safety margin
   triggerFilterTime = 0;
   secondDerivEnabled = false;
@@ -990,11 +994,14 @@ void triggerSec_BasicDistributor() { return; } //Not required
 uint16_t getRPM_BasicDistributor()
 {
   uint16_t tempRPM;
-  if( currentStatus.RPM < currentStatus.crankRPM)
+  uint16_t distributorSpeed = 720U; //Default to cam speed
+  if(configPage2.strokes == TWO_STROKE) { distributorSpeed = 360U; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
+
+  if( currentStatus.RPM < currentStatus.crankRPM )
   { 
-    tempRPM = crankingGetRPM(triggerActualTeeth, 720);
+    tempRPM = crankingGetRPM(triggerActualTeeth, distributorSpeed);
   } 
-  else { tempRPM = stdGetRPM(720); }
+  else { tempRPM = stdGetRPM(distributorSpeed); }
 
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(triggerActualTeeth == 1) { MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
