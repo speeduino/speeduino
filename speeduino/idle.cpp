@@ -43,6 +43,7 @@ volatile PINMASK_TYPE idleUpOutput_pin_mask;
 
 static table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
 static table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
+static table2D_u8_u8_10 iacPWMIATTable(&configPage6.iacBins, &configPage15.iacOLPWMIATVal);
 //Open loop tables specifically for cranking
 static table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
 static table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
@@ -397,13 +398,13 @@ void idleControl(void)
           //Tapering between cranking IAC value and running
           currentStatus.idleLoad = map(idleTaper, 0, configPage2.idleTaperTime,\
           table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)),\
-          table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)));
+          table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)) + table2D_getValue(&iacPWMIATTable, temperatureAddOffset(currentStatus.IAT)));
           if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleTaper++; }
         }
         else
         {
           //Standard running
-          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)) + table2D_getValue(&iacPWMIATTable, temperatureAddOffset(currentStatus.IAT)); //All temps are offset by 40 degrees
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
         if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
@@ -496,7 +497,7 @@ void idleControl(void)
       else
       {
         //Read the OL table as feedforward term
-        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)) + table2D_getValue(&iacPWMIATTable, temperatureAddOffset(currentStatus.IAT)), idle_pwm_max_count<<2); //All temps are offset by 40 degrees
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
