@@ -42,7 +42,7 @@ static long PID_O2, PID_output, PID_AFRTarget;
 */
 static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
 
-static byte aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
+static uint8_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
 static bool idleAdvActive = false;
 TESTABLE_STATIC uint16_t AFRnextCycle;
@@ -485,7 +485,7 @@ static inline uint16_t correctionAccelModeTps(void) {
  * @return uint16_t The Acceleration enrichment modifier as a %. 100% = No modification.
  * 
  * As the maximum enrichment amount is +255% and maximum cold adjustment for this is 255%, the overall return value
- * from this function can be 100+(255*255/100)=750. Hence this function returns a uint16_t rather than byte.
+ * from this function can be 100+(255*255/100)=750. Hence this function returns a uint16_t rather than uint8_t.
  */
 TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
 {
@@ -498,22 +498,19 @@ TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
   return NO_FUEL_CORRECTION;
 }
 
+// ============================= Flood Clear =============================
+
+static inline bool isFloodClearActive(const statuses &current, const config4 &page4) {
+  return current.engineIsCranking
+      && current.TPS >= page4.floodClear;
+}
+
 /** Simple check to see whether we are cranking with the TPS above the flood clear threshold.
 @return 100 (not cranking and thus no need for flood-clear) or 0 (Engine cranking and TPS above @ref config4.floodClear limit).
 */
-TESTABLE_INLINE_STATIC byte correctionFloodClear(void)
+TESTABLE_INLINE_STATIC uint8_t correctionFloodClear(void)
 {
-  byte floodValue = NO_FUEL_CORRECTION;
-  if( currentStatus.engineIsCranking )
-  {
-    //Engine is currently cranking, check what the TPS is
-    if(currentStatus.TPS >= configPage4.floodClear)
-    {
-      //Engine is cranking and TPS is above threshold. Cut all fuel
-      floodValue = 0;
-    }
-  }
-  return floodValue;
+  return isFloodClearActive(currentStatus, configPage4) ? 0U : NO_FUEL_CORRECTION;
 }
 
 /** Battery Voltage correction.
@@ -529,41 +526,36 @@ TESTABLE_INLINE_STATIC byte correctionBatVoltage(void)
 /** Simple temperature based corrections lookup based on the inlet air temperature (IAT).
 This corrects for changes in air density from movement of the temperature.
 */
-TESTABLE_INLINE_STATIC byte correctionIATDensity(void)
+TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 {
-  byte IATValue = NO_FUEL_CORRECTION;
-  IATValue = table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
-
-  return IATValue;
+  return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 }
+
+// ============================= Baro pressure correction =============================
 
 /** Correction for current barometric / ambient pressure.
  * @returns A percentage value indicating the amount the fuelling should be changed based on the barometric reading. 100 = No change. 110 = 10% increase. 90 = 10% decrease
  */
-TESTABLE_INLINE_STATIC byte correctionBaro(void)
+TESTABLE_INLINE_STATIC uint8_t correctionBaro(void)
 {
-  byte baroValue = NO_FUEL_CORRECTION;
-  baroValue = table2D_getValue(&baroFuelTable, currentStatus.baro);
-
-  return baroValue;
+  return (uint8_t)table2D_getValue(&baroFuelTable, currentStatus.baro);
 }
+
+// ============================= Launch control correction =============================
 
 /** Launch control has a setting to increase the fuel load to assist in bringing up boost.
 This simple check applies the extra fuel if we're currently launching
 */
-TESTABLE_INLINE_STATIC byte correctionLaunch(void)
+TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
-  byte launchValue = NO_FUEL_CORRECTION;
-  if(currentStatus.launchingHard || currentStatus.launchingSoft) { launchValue = (BASELINE_FUEL_CORRECTION + configPage6.lnchFuelAdd); }
-
-  return launchValue;
+  return BASELINE_FUEL_CORRECTION + ((currentStatus.launchingHard || currentStatus.launchingSoft) ? configPage6.lnchFuelAdd : 0U);
 }
 
-/**
-*/
-TESTABLE_INLINE_STATIC byte correctionDFCOfuel(void)
+// ============================= Deceleration Fuel Cut Off (DFCO) correction =============================
+
+TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
 {
-  byte scaleValue = NO_FUEL_CORRECTION;
+  uint8_t scaleValue = NO_FUEL_CORRECTION;
   if ( currentStatus.isDFCOActive )
   {
     if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
@@ -609,32 +601,24 @@ TESTABLE_INLINE_STATIC bool correctionDFCO(void)
   return DFCOValue;
 }
 
+// ============================= Flex fuel correction =============================
+
 /** Flex fuel adjustment to vary fuel based on ethanol content.
  * The amount of extra fuel required is a linear relationship based on the % of ethanol.
 */
-TESTABLE_INLINE_STATIC byte correctionFlex(void)
+TESTABLE_INLINE_STATIC uint8_t correctionFlex(void)
 {
-  byte flexValue = NO_FUEL_CORRECTION;
-
-  if (configPage2.flexEnabled == 1)
-  {
-    flexValue = table2D_getValue(&flexFuelTable, currentStatus.ethanolPct);
-  }
-  return flexValue;
+  return configPage2.flexEnabled ? table2D_getValue(&flexFuelTable, currentStatus.ethanolPct) : NO_FUEL_CORRECTION;
 }
+
+// ============================= Fuel temperature correction =============================
 
 /*
  * Fuel temperature adjustment to vary fuel based on fuel temperature reading
 */
-TESTABLE_INLINE_STATIC byte correctionFuelTemp(void)
+TESTABLE_INLINE_STATIC uint8_t correctionFuelTemp(void)
 {
-  byte fuelTempValue = NO_FUEL_CORRECTION;
-
-  if (configPage2.flexEnabled == 1)
-  {
-    fuelTempValue = table2D_getValue(&fuelTempTable, temperatureAddOffset(currentStatus.fuelTemp));
-  }
-  return fuelTempValue;
+  return configPage2.flexEnabled ? table2D_getValue(&fuelTempTable, temperatureAddOffset(currentStatus.fuelTemp)) : NO_FUEL_CORRECTION;
 }
 
 
