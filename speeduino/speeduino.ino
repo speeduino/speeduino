@@ -180,7 +180,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.startRevolutions = 0;
       resetMAPcycleAndEvent();
       currentStatus.rpmDOT = 0;
-      AFRnextCycle = 0;
+      initialiseCorrections();
       ignitionCount = 0;
       ignitionChannelsOn = 0;
       fuelChannelsOn = 0;
