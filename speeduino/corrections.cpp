@@ -54,7 +54,6 @@ static uint8_t knockLastRecoveryStep;
 static uint8_t aseTaper;
 TESTABLE_STATIC uint8_t dfcoDelay;
 static uint8_t idleAdvTaper;
-static uint8_t crankingEnrichTaper;
 static uint8_t dfcoTaper;
 
 TESTABLE_STATIC table2D_u8_u8_4 taeTable(&configPage4.taeBins, &configPage4.taeValues);
@@ -112,9 +111,9 @@ void initialiseCorrections(void)
 /** Warm Up Enrichment (WUE) corrections.
 Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y axis is the amount of extra fuel to add
 */
-TESTABLE_INLINE_STATIC byte correctionWUE(void)
+TESTABLE_INLINE_STATIC uint8_t correctionWUE(void)
 {
-  byte WUEValue;
+  uint8_t WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
   if (currentStatus.coolant > temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
   {
@@ -136,29 +135,47 @@ TESTABLE_INLINE_STATIC byte correctionWUE(void)
 /** Cranking Enrichment corrections.
 Additional fuel % to be added when the engine is cranking
 */
+
+static inline uint16_t lookUpCrankingEnrichmentPct(void) {
+  return toWorkingU8U16(CRANKING_ENRICHMENT, 
+                        table2D_getValue(&crankingEnrichTable, temperatureAddOffset(currentStatus.coolant)));
+}
+
+//Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
+static inline uint16_t computeCrankingTaperStartPct(uint16_t crankingPercent) {
+  // Avoid 32-bit division if possible
+  if (currentStatus.aseIsActive && currentStatus.ASEValue!=NO_FUEL_CORRECTION) {
+    return udiv_32_16((uint32_t)crankingPercent * UINT32_C(100), currentStatus.ASEValue);
+  };
+
+  return crankingPercent;
+}
+
 TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
 {
-  uint16_t crankingValue = NO_FUEL_CORRECTION;
+  static uint8_t crankingEnrichTaper = 0U;
+
+  uint16_t crankingPercent = NO_FUEL_CORRECTION;
+
   //Check if we are actually cranking
   if ( currentStatus.engineIsCranking )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, temperatureAddOffset(currentStatus.coolant));
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
-    crankingEnrichTaper = 0;
+    crankingPercent = lookUpCrankingEnrichmentPct();
+    crankingEnrichTaper = 0U;
   }
-  
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
   else if ( crankingEnrichTaper < configPage10.crankingEnrichTaper )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, temperatureAddOffset(currentStatus.coolant));
-    crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
-    //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
-    unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
-    crankingValue = (uint16_t) map(crankingEnrichTaper, 0, configPage10.crankingEnrichTaper, taperStart, NO_FUEL_CORRECTION); //Taper from start value to 100%
-    if (crankingValue < NO_FUEL_CORRECTION) { crankingValue = NO_FUEL_CORRECTION; } //Sanity check
+    crankingPercent = (uint16_t) map( crankingEnrichTaper, 
+                                      0U, configPage10.crankingEnrichTaper, 
+                                      computeCrankingTaperStartPct(lookUpCrankingEnrichmentPct()), NO_FUEL_CORRECTION); //Taper from start value to 100%
     if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { crankingEnrichTaper++; }
+  } else {
+    // Not cranking and taper not in effect, so no cranking enrichment needed.
+    // just need to keep MISRA checker happy.
   }
-  return crankingValue;
+
+  return max((uint16_t)NO_FUEL_CORRECTION, (uint16_t)crankingPercent);
 }
 
 // ============================= After Start Enrichment =============================
