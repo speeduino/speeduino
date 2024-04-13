@@ -143,7 +143,7 @@ static constexpr inline uint8_t toRawU8(const conversionFactor &factor, uint16_t
  * @{
  */
 
-/** @brief RPMs stored as a uint8_t */
+/** @brief RPM stored as RPM/100. E.g. 2700 -> 27 */
 static constexpr conversionFactor RPM_COARSE = { .scale=100U, .translate=0U };
 
 /** @brief Time values stored in 1/10th milliseconds I.e ms/10 
@@ -160,6 +160,9 @@ static constexpr conversionFactor MAP_DOT = { .scale=10U, .translate=0U };
 
 /** @brief TPS rate of change: %/s */
 static constexpr conversionFactor TPS_DOT = { .scale=10U, .translate=0U };
+
+/** @brief Cranking enrichment values range from 0% to 1275% */
+static constexpr conversionFactor CRANKING_ENRICHMENT = { .scale=5U, .translate=0U };
 
 /** 
  * @brief All temperature measurements are stored offset by 40 degrees.
@@ -192,3 +195,4 @@ static inline constexpr int16_t temperatureRemoveOffset(uint8_t temp) {
     return toWorkingU8S16(TEMPERATURE, temp);
 }
 ///@}
+
