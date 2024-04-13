@@ -98,7 +98,7 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(0, 0));
 
@@ -123,7 +123,7 @@ void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16_closest(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
 
@@ -142,15 +142,15 @@ void test_maths_udiv_32_16_closest(void)
 #endif
 }
 
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
 static uint32_t indexToDividend(int16_t index) {
-  return (uint32_t)index  + (UINT16_MAX*index);
+  return (UINT16_MAX*index)-(uint32_t)index;
 }
 #endif
 
 void test_maths_udiv_32_16_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     uint16_t iters = 32;
     uint16_t start_index = UINT16_MAX/3;
     uint16_t end_index = UINT16_MAX/3*2;
@@ -170,7 +170,7 @@ void test_maths_udiv_32_16_perf(void)
 
 void test_maths_div100_s16_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int16_t iters = 1;
     constexpr int16_t start_index = -10000;
     constexpr int16_t end_index = -1;
@@ -191,7 +191,7 @@ void test_maths_div100_s16_perf(void)
 void test_maths_div10_s16_perf(void)
 {
   // Unit test to confirm using div100 to divide by 10 is quicker than straight division by 10.
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   constexpr int16_t iters = 1;
   constexpr int16_t start_index = -3213;
   constexpr int16_t end_index = 3213;
@@ -211,7 +211,7 @@ void test_maths_div10_s16_perf(void)
 
 void test_maths_div100_s32_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int32_t iters = 1;
     constexpr int32_t start_index = -1439190;
     constexpr int32_t end_index = -1;
@@ -229,6 +229,56 @@ void test_maths_div100_s32_perf(void)
 #endif
 }
 
+
+static void assert_udiv_16_8(uint16_t dividend, uint8_t divisor) {
+    TEST_ASSERT_EQUAL_UINT16(dividend/(uint16_t)divisor, udiv_16_8(dividend, divisor));
+}
+
+static void test_maths_udiv_16_8(void)
+{
+#if defined(__AVR__)
+  // Divide by zero
+  TEST_ASSERT_EQUAL_UINT16(UINT8_MAX, udiv_16_8(0, 0));
+
+  // Result doesn't fit into 8-bits
+  TEST_ASSERT_EQUAL_UINT16(UINT8_MAX, udiv_16_8(UINT16_MAX, UINT8_MAX));
+
+  assert_udiv_16_8(1, 1);
+  assert_udiv_16_8(UINT8_MAX+1, UINT8_MAX);
+  assert_udiv_16_8(UINT8_MAX-1, UINT8_MAX);
+  // Below are from an idle target table in a real tune
+  assert_udiv_16_8(150, 30); 
+  assert_udiv_16_8(70, 14);
+  assert_udiv_16_8(60, 25);
+  assert_udiv_16_8(40, 9);
+  // Artificial
+  assert_udiv_16_8(UINT8_MAX*7-1, 7); 
+#endif
+}
+
+static uint32_t indexToDividend(uint8_t index) {
+  return (UINT8_MAX*(uint32_t)index) - (uint32_t)index;
+}
+void test_maths_udiv_16_8_perf(void)
+{
+#if defined(__AVR__)
+  uint16_t iters = 32;
+  uint8_t start_index = 3;
+  uint8_t end_index = 255;
+  uint8_t step = 1;
+
+  auto nativeTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += (uint16_t)indexToDividend(index) / (uint16_t)index; };
+  auto optimizedTest = [] (uint8_t index, uint32_t &checkSum) { checkSum += udiv_16_8(indexToDividend(index), index); };
+  auto comparison = compare_executiontime<uint8_t, uint32_t>(iters, start_index, end_index, step, nativeTest, optimizedTest);
+  
+  // The checksums will be different due to rounding. This is only
+  // here to force the compiler to run the loops above
+  TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
+
+  TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
+}
+
 void testDivision(void) {
   SET_UNITY_FILENAME() {
 
@@ -243,5 +293,7 @@ void testDivision(void) {
   RUN_TEST(test_maths_div100_s16_perf);
   RUN_TEST(test_maths_div10_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
+  RUN_TEST(test_maths_udiv_16_8);
+  RUN_TEST(test_maths_udiv_16_8_perf);  
   }
 }
