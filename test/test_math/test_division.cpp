@@ -111,7 +111,7 @@ void test_maths_fast_div_closest(void)
 
 void test_maths_div100_s16_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int16_t iters = 1;
     constexpr int16_t start_index = -10000;
     constexpr int16_t end_index = -1;
@@ -132,7 +132,7 @@ void test_maths_div100_s16_perf(void)
 void test_maths_div10_s16_perf(void)
 {
   // Unit test to confirm using div100 to divide by 10 is quicker than straight division by 10.
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   constexpr int16_t iters = 1;
   constexpr int16_t start_index = -3213;
   constexpr int16_t end_index = 3213;
@@ -152,7 +152,7 @@ void test_maths_div10_s16_perf(void)
 
 void test_maths_div100_s32_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int32_t iters = 1;
     constexpr int32_t start_index = -1439190;
     constexpr int32_t end_index = -1;

@@ -866,21 +866,19 @@ static void test_correctionsDwell(void) {
 
 void testIgnCorrections(void) {
     SET_UNITY_FILENAME() {
-
-    test_correctionFixedTiming();
-    test_correctionCLTadvance();
-    test_correctionCrankingFixedTiming();
-    test_correctionFlexTiming();
-    test_correctionWMITiming();
-    test_correctionIATretard();
-    test_correctionIdleAdvance();
-    test_correctionSoftRevLimit();
-    test_correctionNitrous();
-    test_correctionSoftLaunch();
-    test_correctionSoftFlatShift();
-    test_correctionKnock();
-    // correctionDFCOignition() is tested in the fueling unit tests, since it is tightly coupled to fuel DFCO
-    test_correctionsDwell();
-
+        test_correctionFixedTiming();
+        test_correctionCLTadvance();
+        test_correctionCrankingFixedTiming();
+        test_correctionFlexTiming();
+        test_correctionWMITiming();
+        test_correctionIATretard();
+        test_correctionIdleAdvance();
+        test_correctionSoftRevLimit();
+        test_correctionNitrous();
+        test_correctionSoftLaunch();
+        test_correctionSoftFlatShift();
+        test_correctionKnock();
+        // correctionDFCOignition() is tested in the fueling unit tests, since it is tightly coupled to fuel DFCO
+        test_correctionsDwell();
     }
 }
