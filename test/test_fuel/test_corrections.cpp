@@ -85,21 +85,27 @@ static void test_corrections_WUE(void)
 extern uint16_t correctionCranking(void);
 extern table2D_u8_u8_4 crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 
-static void setup_correctionCranking_table(void) {
+static void setup_correctionCranking(void) {
   initialiseCorrections();
 
-  uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
-  uint8_t bins[] = { 
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) - 10U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 10U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 20U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 30U)
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
+  currentStatus.coolant = COOLANT_INITIAL;
+
+  TEST_DATA_P uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
+  TEST_DATA_P uint8_t bins[] = { 
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) - 10U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 10U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 20U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 30U)
   };
-  populate_2dtable(&crankingEnrichTable, values, bins);
+  populate_2dtable_P(&crankingEnrichTable, values, bins);
 }
 
 static void test_corrections_cranking_inactive(void) {
-  initialiseCorrections();
+  setup_correctionCranking();
+  
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
   configPage10.crankingEnrichTaper = 0U;
@@ -108,24 +114,22 @@ static void test_corrections_cranking_inactive(void) {
 } 
 
 static void test_corrections_cranking_cranking(void) {
+  setup_correctionCranking();
+  
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
   configPage10.crankingEnrichTaper = 0U;
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
 
   // Should be half way between the 2 table values.
   TEST_ASSERT_EQUAL(125, correctionCranking() );
 } 
 
 static void test_corrections_cranking_taper_noase(void) {
+  setup_correctionCranking();
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  
   configPage10.crankingEnrichTaper = 100U;
   currentStatus.ASEValue = 100U;
-  
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
 
   // Reset taper
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
@@ -153,12 +157,9 @@ static void test_corrections_cranking_taper_noase(void) {
 
 
 static void test_corrections_cranking_taper_withase(void) {
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  setup_correctionCranking();
   configPage10.crankingEnrichTaper = 100U;
   
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
-
   BIT_SET(currentStatus.engine, BIT_ENGINE_ASE);
   currentStatus.ASEValue = 50U;
 
