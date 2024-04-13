@@ -21,6 +21,7 @@
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include "board_definition.h"
+#include "unit_testing.h"
 #if defined(EEPROM_RESET_PIN)
   #include EEPROM_LIB_H
 #endif
