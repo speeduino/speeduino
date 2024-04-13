@@ -319,6 +319,7 @@ static void test_corrections_floodclear(void)
 }
 
 uint8_t correctionAFRClosedLoop(void);
+extern uint16_t AFRnextCycle;
 
 static void setup_valid_ego_cycle(void) {
   AFRnextCycle = 4196;
@@ -813,6 +814,7 @@ static void setup_DFCO_on_taper_on_no_delay()
 }
 
 extern byte correctionDFCOfuel(void);
+extern int8_t correctionDFCOignition(int8_t advance);
 
 static void test_correctionDFCOfuel_DFCO_off()
 {
@@ -873,8 +875,6 @@ static void test_correctionDFCOfuel_taper()
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
 }
-
-extern int8_t correctionDFCOignition(int8_t advance);
 
 static void test_correctionDFCOignition_DFCO_off()
 {
