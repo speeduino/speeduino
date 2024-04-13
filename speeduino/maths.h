@@ -184,6 +184,13 @@ static inline uint32_t div360(uint32_t n) {
 #endif
 }
 
+/** @brief This is only here to eliminate magic numbers
+ * 
+ * DO NOT USE UNLESS YOU REALLY ARE WORKING IN PERCENTAGES - it will be very
+ * confusing for maintainers (which is what we are trying to avoid!)
+ */
+static constexpr uint8_t ONE_HUNDRED_PCT = 100U;
+
 /**
  * @brief Integer based percentage calculation.
  * 
