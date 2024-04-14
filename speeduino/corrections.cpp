@@ -641,6 +641,96 @@ uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &cur
   return current.afrTarget;
 }
 
+static inline uint8_t computeSimpleLeanCorrection(const statuses &current, const config6 &page6) {
+  if(current.egoCorrection < (BASELINE_FUEL_CORRECTION + page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
+  {
+    return current.egoCorrection+1U; //Increase the fuelling by 1%
+  }
+  return current.egoCorrection; //Means we're at the maximum adjustment amount, so simply return that again
+}
+
+static inline uint8_t computeSimpleRichCorrection(const statuses &current, const config6 &page6) {
+  if(current.egoCorrection > (BASELINE_FUEL_CORRECTION - page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
+  {
+    return (current.egoCorrection - 1); //Decrease the fuelling by 1%
+  }
+  return current.egoCorrection; //Means we're at the maximum adjustment amount, so simply return that again  
+}
+
+static inline uint8_t computeSimpleCorrection(const statuses &current, const config6 &page6) {
+  if(current.O2 > current.afrTarget) {
+    return computeSimpleLeanCorrection(current, page6);
+  }
+  if(current.O2 < current.afrTarget) {
+    return computeSimpleRichCorrection(current, page6);
+  }
+  return current.egoCorrection; //Means we're already right on target
+}
+
+static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
+  //Set the limits again, just in case the user has changed them since the last loop. 
+  //Note that these are sent to the PID library as (Eg:) -15 and +15
+  egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
+  //Set the PID values again, just in case the user has changed them since the last loop
+  egoPID.SetTunings(page6.egoKP, page6.egoKI, page6.egoKD); 
+  PID_O2 = (long)(current.O2);
+  PID_AFRTarget = (long)(current.afrTarget);
+
+  (void)egoPID.Compute();
+  return BASELINE_FUEL_CORRECTION + PID_output;
+}
+
+static inline bool nextAfrCycleHasStarted(void) {
+  //Check whether ignitionCount has exceeded AFRnextCycle.
+  //This method prevents any issues when AFRnextCycle overflows but these variables 
+  //cannot be more than UINT16_HALF_RANGE apart
+  return (((uint16_t)(ignitionCount - AFRnextCycle)) < UINT16_HALF_RANGE);
+}
+
+static inline void setNextAfrCycle(void) {
+  AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
+}
+
+static inline bool isAfrClosedLoopOperational(const statuses &current, const config6 &page6, const config9 &page9) {
+  return (current.coolant > temperatureRemoveOffset(page6.egoTemp)) 
+      && (current.RPM > toWorkingU8U16(RPM_COARSE, page6.egoRPM)) 
+      && (current.TPS <= page6.egoTPSMax) 
+      && (current.O2 < page6.ego_max) 
+      && (current.O2 > page6.ego_min) 
+      && (current.runSecs > page6.ego_sdelay) 
+      && (!current.isDFCOActive) 
+      && (current.MAP <= (long)toWorkingU8U16(MAP, page9.egoMAPMax) ) 
+      && (current.MAP >= (long)toWorkingU8U16(MAP, page9.egoMAPMin) )
+      ;
+}
+
+static inline bool isValidEgoAlgorithm(const config6 &page6) {
+  return (page6.egoAlgorithm != EGO_ALGORITHM_INVALID1)
+      && (page6.egoAlgorithm != EGO_ALGORITHM_NONE);
+}
+
+static inline bool isAfrCorrectionEnabled(const statuses &current, const config6 &page6) {
+  return (page6.egoType!=EGO_TYPE_OFF) 
+      // If DFCO is active do not run the ego controllers to prevent iterator wind-up.
+      && !current.isDFCOActive
+      && isValidEgoAlgorithm(page6);
+}
+
+static inline uint8_t computeAFRCorrection(const statuses &current, const config6 &page6) {
+  uint8_t correction = NO_FUEL_CORRECTION;
+
+  if (page6.egoAlgorithm == EGO_ALGORITHM_SIMPLE) {
+    correction = computeSimpleCorrection(current, page6);
+  } else if(page6.egoAlgorithm == EGO_ALGORITHM_PID) {
+    correction = computePIDCorrection(current, page6);
+  } else {
+    // Unknown algorithm - use default & keep MISRA checker happy;
+    correction  = NO_FUEL_CORRECTION;
+  }
+
+  return correction;
+}
+
 /** Lookup the AFR target table and perform either a simple or PID adjustment based on this.
 
 Simple (Best suited to narrowband sensors):
@@ -654,78 +744,28 @@ This continues until either:
 PID (Best suited to wideband sensors):
 
 */
-TESTABLE_INLINE_STATIC byte correctionAFRClosedLoop(void)
+TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
 {
-  byte AFRValue = NO_FUEL_CORRECTION;
-
-  if((configPage6.egoType > 0) && ( !currentStatus.isDFCOActive ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent iterator wind-up.
-  {
-    AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
-    
-    if(((uint16_t)(ignitionCount - AFRnextCycle)) < UINT16_HALF_RANGE) //Check whether ignitionCount has exceeded AFRnextCycle. This method prevents any issues when AFRnextCycle overflows but these variables cannot be more than UINT16_HALF_RANGE apart
-    {
-      AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
+  uint8_t correction = NO_FUEL_CORRECTION;
+  
+  if (isAfrCorrectionEnabled(currentStatus, configPage6)) {
+    if (nextAfrCycleHasStarted()) {
+      setNextAfrCycle();
         
       //Check all other requirements for closed loop adjustments
-      if(    (currentStatus.coolant > temperatureRemoveOffset(configPage6.egoTemp)) 
-          && (currentStatus.RPM > (configPage6.egoRPM * 100U)) 
-          && (currentStatus.TPS <= configPage6.egoTPSMax) 
-          && (currentStatus.O2 < configPage6.ego_max) 
-          && (currentStatus.O2 > configPage6.ego_min)
-          && (currentStatus.runSecs > configPage6.ego_sdelay) 
-          && (currentStatus.MAP <= (long)(configPage9.egoMAPMax * 2U)) 
-          && (currentStatus.MAP >= (long)(configPage9.egoMAPMin * 2U)) )
-      {
-        //Check which algorithm is used, simple or PID
-        if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
-        {
-          //*************************************************************************************************************************************
-          //Simple algorithm
-          if(currentStatus.O2 > currentStatus.afrTarget)
-          {
-            //Running lean
-            if(currentStatus.egoCorrection < (BASELINE_FUEL_CORRECTION + configPage6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
-            {
-              AFRValue = (currentStatus.egoCorrection + 1); //Increase the fuelling by 1%
-            }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
-          }
-          else if(currentStatus.O2 < currentStatus.afrTarget)
-          {
-            //Running Rich
-            if(currentStatus.egoCorrection > (BASELINE_FUEL_CORRECTION - configPage6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
-            {
-              AFRValue = (currentStatus.egoCorrection - 1); //Decrease the fuelling by 1%
-            }
-            else { AFRValue = currentStatus.egoCorrection; } //Means we're at the maximum adjustment amount, so simply return that again
-          }
-          else { AFRValue = currentStatus.egoCorrection; } //Means we're already right on target
-
-        }
-        else if(configPage6.egoAlgorithm == EGO_ALGORITHM_PID)
-        {
-          //*************************************************************************************************************************************
-          //PID algorithm
-          egoPID.SetOutputLimits((long)(-configPage6.egoLimit), (long)(configPage6.egoLimit)); //Set the limits again, just in case the user has changed them since the last loop. Note that these are sent to the PID library as (Eg:) -15 and +15
-          egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD); //Set the PID values again, just in case the user has changed them since the last loop
-          PID_O2 = (long)(currentStatus.O2);
-          PID_AFRTarget = (long)(currentStatus.afrTarget);
-
-          bool PID_compute = egoPID.Compute();
-          if(PID_compute == true) { AFRValue = BASELINE_FUEL_CORRECTION + PID_output; }
-          
-        }
-        else { AFRValue = NO_FUEL_CORRECTION; } // Occurs if the egoAlgorithm is set to 0 (No Correction)
-      } //Multi variable check 
-      else { AFRValue = NO_FUEL_CORRECTION; } // If multivariable check fails disable correction
-    } //Ignition count check
+      if (isAfrClosedLoopOperational(currentStatus, configPage6, configPage9)) {
+        correction = computeAFRCorrection(currentStatus, configPage6);
+      }
+    } else {
+      // Not within the upcoming cycle, so reuse current correction
+      correction = currentStatus.egoCorrection; 
+    }
   } //egoType
 
-  //Final check to ensure within authority range (This can be needed if the user has lowered the authority limit)
-  if(AFRValue < (100U - configPage6.egoLimit)) {AFRValue = (100U - configPage6.egoLimit); }
-  if(AFRValue > (100U + configPage6.egoLimit)) {AFRValue = (100U + configPage6.egoLimit); }
-
-  return AFRValue; //Catch all (Includes when AFR target = current AFR
+  // Final check to ensure within authority range (This can be needed if the user has lowered the authority limit)
+  return clamp( correction, 
+                (uint8_t)(BASELINE_FUEL_CORRECTION - configPage6.egoLimit), 
+                (uint8_t)(BASELINE_FUEL_CORRECTION + configPage6.egoLimit));
 }
 
 
