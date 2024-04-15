@@ -97,6 +97,7 @@ void initialiseCorrections(void)
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   currentStatus.egoCorrection = NO_FUEL_CORRECTION; 
   currentStatus.ASEValue = NO_FUEL_CORRECTION;
+  currentStatus.wueCorrection = NO_FUEL_CORRECTION;
   AFRnextCycle = 0;
   currentStatus.knockRetardActive = false;
   currentStatus.knockPulseDetected = false;
@@ -113,18 +114,21 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 */
 TESTABLE_INLINE_STATIC uint8_t correctionWUE(void)
 {
-  uint8_t WUEValue;
-  //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  if (currentStatus.coolant > temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
-  {
-    //This prevents us doing the 2D lookup if we're already up to temp
-    currentStatus.wueIsActive = false;
-     WUEValue = WUETable.values[WUETable.size()-1U];
-  }
-  else
-  {
-    currentStatus.wueIsActive = true;
-    WUEValue = table2D_getValue(&WUETable, temperatureAddOffset(currentStatus.coolant));
+  uint8_t WUEValue = currentStatus.wueCorrection;
+
+  // Only update as fast as the sensor is read
+  if( BIT_CHECK(LOOP_TIMER, CLT_TIMER_BIT) ) { 
+    if (currentStatus.coolant >= temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
+    {
+      //This prevents us doing the 2D lookup if we're already up to temp
+      currentStatus.wueIsActive = false;
+      WUEValue = WUETable.values[WUETable.size()-1U];
+    }
+    else
+    {
+      currentStatus.wueIsActive = true;
+      WUEValue = table2D_getValue(&WUETable, temperatureAddOffset(currentStatus.coolant));
+    }
   }
 
   return WUEValue;

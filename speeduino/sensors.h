@@ -63,6 +63,7 @@ uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 
 void readCLT(bool useFilter=true); //Allows the option to override the use of the filter
+#define CLT_TIMER_BIT BIT_TIMER_4HZ
 
 void readIAT(void);
 

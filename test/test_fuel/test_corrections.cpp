@@ -13,6 +13,8 @@ extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ) ;
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
@@ -1534,6 +1536,30 @@ extern byte correctionBaro(void);
 extern table2D_u8_u8_9 IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
 extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 
+static void setup_baro_correction(void) {
+  initialiseCorrections();
+
+  TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110, 120, 130 };
+  TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90, 90, 90 };
+  populate_2dtable_P(&baroFuelTable, values, bins);
+}
+
+// Battery correction will recalculates at 10Hz, otherwise it will re-use cached values. 
+static void test_corrections_baro_lookup(void) {
+  setup_baro_correction();
+
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.baro = 95;
+  currentStatus.baroCorrection = 1U;
+  TEST_ASSERT_NOT_EQUAL(currentStatus.baroCorrection, correctionBaro());
+}
+
+static void test_corrections_baro(void)
+{
+  RUN_TEST_P(test_corrections_baro_lookup);
+}
+
+
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
   populate_2dtable(&injectorVCorrectionTable, (uint8_t)100, (uint8_t)100);
@@ -1687,5 +1713,6 @@ void testCorrections()
     test_corrections_afrtarget();
     test_corrections_closedloop();
     test_corrections_correctionsFuel();
+    test_corrections_baro();
   }
 }
