@@ -50,7 +50,6 @@ static unsigned long knockStartTime;
 static uint8_t knockLastRecoveryStep;
 //static int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 //static int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
-static uint8_t aseTaper;
 TESTABLE_STATIC uint8_t dfcoDelay;
 static uint8_t idleAdvTaper;
 static uint8_t dfcoTaper;
@@ -95,7 +94,9 @@ void initialiseCorrections(void)
   egoPID.SetMode(AUTOMATIC);
 
   currentStatus.flexIgnCorrection = 0;
-  currentStatus.egoCorrection = NO_FUEL_CORRECTION; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
+  currentStatus.egoCorrection = NO_FUEL_CORRECTION; 
+  currentStatus.ASEValue = NO_FUEL_CORRECTION;
   AFRnextCycle = 0;
   currentStatus.knockRetardActive = false;
   currentStatus.knockPulseDetected = false;
@@ -185,50 +186,52 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
  * 
  * @return uint8_t The After Start Enrichment modifier as a %. 100% = No modification. 
  */   
-TESTABLE_INLINE_STATIC byte correctionASE(void)
+TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
 {
-  int16_t ASEValue = currentStatus.ASEValue;
-  //Two checks are required:
-  //1) Is the engine run time less than the configured ase time
-  //2) Make sure we're not still cranking
-  if( currentStatus.engineIsCranking != true )
-  {
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
-    {
-      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, temperatureAddOffset(currentStatus.coolant)))) && (!currentStatus.engineIsCranking) )
-      {
-        currentStatus.aseIsActive = true; //Mark ASE as active.
-        ASEValue = BASELINE_FUEL_CORRECTION + table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant));
-        aseTaper = 0;
-      }
-      else
-      {
-        if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
-        {
-          currentStatus.aseIsActive = true; //Mark ASE as active.
-          ASEValue = BASELINE_FUEL_CORRECTION + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant)), 0);
-          aseTaper++;
-        }
-        else
-        {
-          currentStatus.aseIsActive = false; //Mark ASE as inactive.
-          ASEValue = NO_FUEL_CORRECTION;
-        }
-      }
-      
-      //Safety checks
-      if(ASEValue > UINT8_MAX) { ASEValue = UINT8_MAX; }
-      
-      if(ASEValue < 0) { ASEValue = 0; }
-      ASEValue = (byte)ASEValue;
-    }
-  }
-  else
-  {
-    //Engine is cranking, ASE disabled
-    currentStatus.aseIsActive = false; //Mark ASE as inactive.
+  // We use aseTaper both to track taper AND as a flag value
+  // to tell when ASE is complete and avoid unnecessary table lookups.
+  constexpr uint8_t ASE_COMPLETE = UINT8_MAX;
+  static uint8_t aseTaper = 0U;
+
+  uint8_t ASEValue = NO_FUEL_CORRECTION;
+
+  if (currentStatus.engineIsCranking) {
+    // Engine is cranking - mark ASE as inactive and ready to run 
+    currentStatus.aseIsActive = false;
+    aseTaper = 0U; 
     ASEValue = NO_FUEL_CORRECTION;
+  } else if (aseTaper!=ASE_COMPLETE) {
+    // ASE hasn't started or isn't complete.
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ))
+    {
+      // We only update ASE every 100ms for performance reasons - coolant
+      // doesn't change temperature that quickly. 
+      //
+      // We must use 100ms (rather than CLT_TIMER_BIT) since aseTaper counts tenths of a second.
+      
+      if (aseTaper==0U // Avoid table lookup if taper is being applied
+       && (currentStatus.runSecs < table2D_getValue(&ASECountTable, temperatureAddOffset(currentStatus.coolant))))
+      {
+        currentStatus.aseIsActive = true;
+        ASEValue = BASELINE_FUEL_CORRECTION + table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant));
+      } else if ( aseTaper < configPage2.aseTaperTime ) { //Check if we've reached the end of the taper time
+        currentStatus.aseIsActive = true;
+        ASEValue = BASELINE_FUEL_CORRECTION + (uint8_t)map(aseTaper, 
+                                        0U, configPage2.aseTaperTime, 
+                                        table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant)), 0);
+        aseTaper = aseTaper + 1U;
+      } else {
+        // ASE has finished
+        currentStatus.aseIsActive = false;
+        aseTaper = ASE_COMPLETE; // Flag ASE as complete
+        ASEValue = NO_FUEL_CORRECTION;
+      }
+    } else {
+      // ASE is in effect, but we're not due to update, so reuse previous value.
+      ASEValue = currentStatus.ASEValue;
+    }    
   }
+
   return ASEValue;
 }
 
