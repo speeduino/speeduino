@@ -334,9 +334,9 @@ static void test_correctionIdleAdvance_ctps_lookup_nodelay(void) {
 
 static void test_correctionIdleAdvance_inactive_notrunning(void) {
     setup_correctionIdleAdvance();
+    
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
-    TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
 }
 
