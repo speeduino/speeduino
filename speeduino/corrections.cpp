@@ -841,21 +841,16 @@ uint16_t correctionsFuel(void)
  */
 int8_t correctionFixedTiming(int8_t advance)
 {
-  int8_t ignFixValue = advance;
-  if (configPage2.fixAngEnable == 1) { ignFixValue = configPage4.FixAng; } //Check whether the user has set a fixed timing angle
-  return ignFixValue;
+  return (configPage2.fixAngEnable == 1) ? configPage4.FixAng : advance; //Check whether the user has set a fixed timing angle
 }
 
 /** Ignition correction for coolant temperature (CLT).
  */
 TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
 {
-  int8_t ignCLTValue = advance;
   //Adjust the advance based on CLT.
-  int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant))) - 15;
-  ignCLTValue = (advance + advanceCLTadjust);
-  
-  return ignCLTValue;
+  int8_t advanceCLTadjust = (int8_t)(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant))) - 15;
+  return (advance + advanceCLTadjust);
 }
 
 /** Correct ignition timing to configured fixed value to use during craning.
@@ -863,25 +858,26 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  int8_t ignCrankFixValue = advance;
   if ( currentStatus.engineIsCranking )
   { 
-    if ( configPage2.crkngAddCLTAdv == 0 ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
-    else { ignCrankFixValue = correctionCLTadvance(configPage4.CrankAng); } //Use the CLT compensated cranking ignition angle
+    if ( configPage2.crkngAddCLTAdv == 0 ) { 
+      advance = configPage4.CrankAng; //Use the fixed cranking ignition angle
+    } else { 
+      advance = correctionCLTadvance(configPage4.CrankAng); //Use the CLT compensated cranking ignition angle
+    }
   }
-  return ignCrankFixValue;
+  return advance;
 }
 
 TESTABLE_INLINE_STATIC int8_t correctionFlexTiming(int8_t advance)
 {
-  int16_t ignFlexValue = advance;
   if( configPage2.flexEnabled == 1 ) //Check for flex being enabled
   {
-    ignFlexValue = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
-    currentStatus.flexIgnCorrection = (int8_t) ignFlexValue; //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here. 
-    ignFlexValue = (int8_t) advance + currentStatus.flexIgnCorrection;
+    //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here.
+    currentStatus.flexIgnCorrection = (int16_t) table2D_getValue(&flexAdvTable, currentStatus.ethanolPct) - OFFSET_IGNITION; //Negative values are achieved with offset
+    return advance + currentStatus.flexIgnCorrection;
   }
-  return (int8_t) ignFlexValue;
+  return advance;
 }
 
 TESTABLE_INLINE_STATIC int8_t correctionWMITiming(int8_t advance)
@@ -895,13 +891,13 @@ TESTABLE_INLINE_STATIC int8_t correctionWMITiming(int8_t advance)
   }
   return advance;
 }
-/** Ignition correction for inlet air temperature (IAT).
+
+/** 
+ * Ignition correction for inlet air temperature (IAT).
  */
 TESTABLE_INLINE_STATIC int8_t correctionIATretard(int8_t advance)
 {
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, (uint8_t)currentStatus.IAT);
-
-  return advance - advanceIATadjust;
+  return advance - table2D_getValue(&IATRetardTable, (uint8_t)currentStatus.IAT); // TODO: check if this needs converted
 }
 
 /** Ignition Idle advance correction.
@@ -980,28 +976,26 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
  */
 TESTABLE_INLINE_STATIC int8_t correctionNitrous(int8_t advance)
 {
-  byte ignNitrous = advance;
   //Check if nitrous is currently active
   if(configPage10.n2o_enable > 0)
   {
     //Check which stage is running (if any)
     if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
-      ignNitrous -= configPage10.n2o_stage1_retard;
+      advance -= configPage10.n2o_stage1_retard;
     }
     if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
     {
-      ignNitrous -= configPage10.n2o_stage2_retard;
+      advance -= configPage10.n2o_stage2_retard;
     }
   }
 
-  return ignNitrous;
+  return advance;
 }
 /** Ignition soft launch correction.
  */
 TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
 {
-  uint8_t ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
   if(  configPage6.launchEnabled && currentStatus.clutchTrigger && \
       (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && \
@@ -1012,7 +1006,7 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
   {
     currentStatus.launchingSoft = true;
     currentStatus.softLaunchActive = true;
-    ignSoftLaunchValue = configPage6.lnchRetard;
+    advance = configPage6.lnchRetard;
   }
   else
   {
@@ -1020,22 +1014,20 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
     currentStatus.softLaunchActive = false;
   }
 
-  return ignSoftLaunchValue;
+  return advance;
 }
 /** Ignition correction for soft flat shift.
  */
 TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
 {
-  int8_t ignSoftFlatValue = advance;
-
   if(configPage6.flatSEnable && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
     currentStatus.flatShiftSoftCut = true;
-    ignSoftFlatValue = configPage6.flatSRetard;
+    advance = configPage6.flatSRetard;
   }
   else { currentStatus.flatShiftSoftCut = false; }
 
-  return ignSoftFlatValue;
+  return advance;
 }
 
 
@@ -1166,17 +1158,16 @@ static inline int8_t correctionKnockTiming(int8_t advance)
  */
 TESTABLE_INLINE_STATIC int8_t correctionDFCOignition(int8_t advance)
 {
-  int8_t dfcoRetard = advance;
   if ( (configPage9.dfcoTaperEnable == 1) && currentStatus.isDFCOActive )
   {
     if ( dfcoTaper != 0 )
     {
-      dfcoRetard -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
+      advance -= map(dfcoTaper, configPage9.dfcoTaperTime, 0, 0, configPage9.dfcoTaperAdvance);
     }
-    else { dfcoRetard -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
+    else { advance -= configPage9.dfcoTaperAdvance; } //Taper ended, use full value
   }
   else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
-  return dfcoRetard;
+  return advance;
 }
 
 /** Ignition Dwell Correction.
