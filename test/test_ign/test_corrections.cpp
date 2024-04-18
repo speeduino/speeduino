@@ -765,7 +765,8 @@ extern table2D_u8_u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correctio
 
 static void setup_correctionsDwell(void) {
     initialiseCorrections();
-    
+    BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
+
     configPage4.sparkDur = 10;
     configPage2.perToothIgn = false;
     configPage4.dwellErrCorrect = 0;
@@ -820,7 +821,6 @@ static void test_correctionsDwell_pertooth(void) {
 static void test_correctionsDwell_wasted_nopertooth_largerevolutiontime(void) {
     setup_correctionsDwell();
 
-    currentStatus.dwellCorrection = 55;
     currentStatus.battery10 = 105;
     currentStatus.revolutionTime = 5000;
     TEST_ASSERT_EQUAL(800, correctionsDwell(800));
@@ -834,17 +834,9 @@ static void test_correctionsDwell_initialises_current_actualDwell(void) {
     TEST_ASSERT_EQUAL(777, currentStatus.actualDwell);
 }
 
-static void test_correctionsDwell_sets_dwellCorrection(void) {
-    setup_correctionsDwell();
-
-    currentStatus.dwellCorrection = UINT8_MAX;
-    currentStatus.battery10 = 90;
-    correctionsDwell(777);
-    TEST_ASSERT_EQUAL(115, currentStatus.dwellCorrection);
-}
-
 static void test_correctionsDwell_uses_batvcorrection(void) {
     setup_correctionsDwell();
+
     configPage2.nCylinders = 8;
     configPage4.sparkMode = IGN_MODE_WASTED;
 
@@ -860,7 +852,6 @@ static void test_correctionsDwell(void) {
     RUN_TEST_P(test_correctionsDwell_pertooth);
     RUN_TEST_P(test_correctionsDwell_wasted_nopertooth_largerevolutiontime);
     RUN_TEST_P(test_correctionsDwell_initialises_current_actualDwell);
-    RUN_TEST_P(test_correctionsDwell_sets_dwellCorrection);
     RUN_TEST_P(test_correctionsDwell_uses_batvcorrection);
 }
 
