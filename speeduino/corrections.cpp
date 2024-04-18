@@ -1187,27 +1187,48 @@ TESTABLE_INLINE_STATIC int8_t correctionDFCOignition(int8_t advance)
 
 /** Ignition Dwell Correction.
  */
+static inline uint8_t getPulsesPerRev(void) {
+  if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || 
+     ((configPage4.sparkMode == IGN_MODE_ROTARY) && (configPage10.rotaryType != ROTARY_IGN_RX8)) ) 
+     //No point in running this for 1 cylinder engines
+     && (configPage2.nCylinders > 1) )  {
+    return configPage2.nCylinders >> 1U;
+  }
+  return 1U;
+}
+
+static inline uint16_t adjustDwellClosedLoop(uint16_t dwell) {
+    int16_t error = dwell - currentStatus.actualDwell;
+    if(dwell > INT16_MAX) { dwell = INT16_MAX; } //Prevent overflow when casting to signed int
+    if(error > ((int16_t)dwell / 2)) { error += error; } //Double correction amount if actual dwell is less than 50% of the requested dwell
+    if(error > 0) { 
+      return dwell + error;
+    }
+    return dwell;
+}
+
 uint16_t correctionsDwell(uint16_t dwell)
 {
-  uint16_t tempDwell = dwell;
-  uint16_t sparkDur_uS = (configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
-  if(currentStatus.actualDwell == 0) { currentStatus.actualDwell = tempDwell; } //Initialise the actualDwell value if this is the first time being called
+  //Initialise the actualDwell value if this is the first time being called
+  if(currentStatus.actualDwell == 0) { 
+    currentStatus.actualDwell = dwell; 
+  } 
 
   //**************************************************************************************************************************
   //Pull battery voltage based dwell correction and apply if needed
-  currentStatus.dwellCorrection = table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
-  if (currentStatus.dwellCorrection != 100) { tempDwell = div100(dwell) * currentStatus.dwellCorrection; }
-
+  static uint8_t dwellCorrection = ONE_HUNDRED_PCT;
+  if (BIT_CHECK(LOOP_TIMER, BAT_TIMER_BIT)) { // Performance: only update as fast as the sensor is read
+    dwellCorrection = (uint8_t)table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
+  }
+  if (dwellCorrection != ONE_HUNDRED_PCT) { 
+    dwell = div100(dwell) * dwellCorrection; 
+  }
 
   //**************************************************************************************************************************
   //Dwell error correction is a basic closed loop to keep the dwell time consistent even when adjusting its end time for the per tooth timing.
   //This is mostly of benefit to low resolution triggers at low rpm (<1500)
-  if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1) )
-  {
-    int16_t error = tempDwell - currentStatus.actualDwell;
-    if(tempDwell > INT16_MAX) { tempDwell = INT16_MAX; } //Prevent overflow when casting to signed int
-    if(error > ((int16_t)tempDwell / 2)) { error += error; } //Double correction amount if actual dwell is less than 50% of the requested dwell
-    if(error > 0) { tempDwell += error; }
+  if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1) ) {
+    dwell = adjustDwellClosedLoop(dwell);
   }
 
   //**************************************************************************************************************************
@@ -1217,22 +1238,19 @@ uint16_t correctionsDwell(uint16_t dwell)
   1. Single channel spark mode where there will be nCylinders/2 sparks per revolution
   2. Rotary ignition in wasted spark configuration (FC/FD), results in 2 pulses per rev. RX-8 is fully sequential resulting in 1 pulse, so not required
   */
-  uint16_t dwellPerRevolution = tempDwell + sparkDur_uS;
-  int8_t pulsesPerRevolution = 1;
-  if( ( (configPage4.sparkMode == IGN_MODE_SINGLE) || ((configPage4.sparkMode == IGN_MODE_ROTARY) && (configPage10.rotaryType != ROTARY_IGN_RX8)) ) && (configPage2.nCylinders > 1) ) //No point in running this for 1 cylinder engines
-  {
-    pulsesPerRevolution = (configPage2.nCylinders >> 1);
-    dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
-  }
+  uint16_t sparkDur_uS = (configPage4.sparkDur * 100); //Spark duration is in mS*10. Multiple it by 100 to get spark duration in uS
+  int8_t pulsesPerRevolution = getPulsesPerRev();
+  uint16_t dwellPerRevolution = (dwell + sparkDur_uS) * pulsesPerRevolution;
   if(dwellPerRevolution > revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
     uint16_t adjustedSparkDur = udiv_32_16(sparkDur_uS * revolutionTime, dwellPerRevolution);
-    tempDwell = udiv_32_16(revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
+    dwell = (pulsesPerRevolution==1U ? revolutionTime : udiv_32_16(revolutionTime, (uint16_t)pulsesPerRevolution)) - adjustedSparkDur;
   }
 
-  return tempDwell;
+  return dwell;
 }
+
 
 /** Dispatch calculations for all ignition related corrections.
  * @param base_advance - Base ignition advance (deg. ?)
