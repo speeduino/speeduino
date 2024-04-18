@@ -44,14 +44,12 @@ static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, confi
 
 static uint8_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
-static bool idleAdvActive = false;
 TESTABLE_STATIC uint16_t AFRnextCycle;
 static unsigned long knockStartTime;
 static uint8_t knockLastRecoveryStep;
 //static int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 //static int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 TESTABLE_STATIC uint8_t dfcoDelay;
-static uint8_t idleAdvTaper;
 static uint8_t dfcoTaper;
 
 TESTABLE_STATIC table2D_u8_u8_4 taeTable(&configPage4.taeBins, &configPage4.taeValues);
@@ -904,49 +902,65 @@ TESTABLE_INLINE_STATIC int8_t correctionIATretard(int8_t advance)
  */
 #define IGN_IDLE_THRESHOLD 200 //RPM threshold (below CL idle target) for when ign based idle control will engage
 
+static inline uint8_t computeIdleAdvanceRpmDelta(void) {
+  int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
+  // Limit idle rpm delta between -500rpm - 500rpm
+  return constrain(idleRPMdelta, 0, 100);
+}
+
+static inline int8_t applyIdleAdvanceAdjust(int8_t advance, int8_t adjustment) {
+  if(configPage2.idleAdvEnabled == IDLEADVANCE_MODE_ADDED) { 
+    return (advance + adjustment); 
+  } else if(configPage2.idleAdvEnabled == IDLEADVANCE_MODE_SWITCHED) { 
+    return adjustment;
+  } else {
+    // Unknown idle advance mode - do nothing
+    return advance;
+  }
+}
+
+static inline bool isIdleAdvanceOn(void) {
+  return (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) 
+      && (runSecsX10 >= (configPage2.idleAdvDelay * 5))
+      && currentStatus.engineIsRunning
+      /* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
+      When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
+      */
+      && ((configPage6.iacAlgorithm == 0) 
+        || (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)IGN_IDLE_THRESHOLD)));
+}
+
+static inline bool isIdleAdvanceOperational(void) {
+  return (currentStatus.RPM < (configPage2.idleAdvRPM * 100))
+      && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
+      && (((configPage2.idleAdvAlgorithm == 0) && (currentStatus.TPS < configPage2.idleAdvTPS)) 
+        || ((configPage2.idleAdvAlgorithm == 1) && (currentStatus.CTPSActive == 1)));// closed throttle position sensor (CTPS) based idle state
+}
+
 TESTABLE_INLINE_STATIC int8_t correctionIdleAdvance(int8_t advance)
 {
-
-  int8_t ignIdleValue = advance;
   //Adjust the advance based on idle target rpm.
-  if( (configPage2.idleAdvEnabled >= 1) && (runSecsX10 >= (configPage2.idleAdvDelay * 5)) && idleAdvActive)
+  if (isIdleAdvanceOn())
   {
-    //currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-    int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
-    // Limit idle rpm delta between -500rpm - 500rpm
-    if(idleRPMdelta > 100) { idleRPMdelta = 100; }
-    if(idleRPMdelta < 0) { idleRPMdelta = 0; }
-    if( (currentStatus.RPM < (configPage2.idleAdvRPM * 100)) && ((configPage2.vssMode == 0) || (currentStatus.vss < configPage2.idleAdvVss))
-    && (((configPage2.idleAdvAlgorithm == 0) && (currentStatus.TPS < configPage2.idleAdvTPS)) || ((configPage2.idleAdvAlgorithm == 1) && (currentStatus.CTPSActive == 1))) ) // closed throttle position sensor (CTPS) based idle state
+    static uint8_t idleAdvDelayCount;
+    if(isIdleAdvanceOperational())
     {
-      if( idleAdvTaper < configPage9.idleAdvStartDelay )
+      if( idleAdvDelayCount < configPage9.idleAdvStartDelay )
       {
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvTaper++; }
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { idleAdvDelayCount++; }
       }
       else
       {
-        int8_t advanceIdleAdjust = (int8_t)table2D_getValue(&idleAdvanceTable, (uint8_t)idleRPMdelta) - 15;
-        if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
-        else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
+        int8_t advanceIdleAdjust = (int8_t)(table2D_getValue(&idleAdvanceTable, computeIdleAdvanceRpmDelta())) - (int8_t)15;
+        advance = applyIdleAdvanceAdjust(advance, (int8_t)advanceIdleAdjust); 
       }
     }
-    else { idleAdvTaper = 0; }
+    else { idleAdvDelayCount = 0; }
   }
 
-/* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
-When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
-*/
-
-  if ((!idleAdvActive && currentStatus.engineIsRunning) &&
-   ((configPage6.iacAlgorithm == 0) || (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)IGN_IDLE_THRESHOLD))))
-  { 
-    idleAdvActive = true; 
-  } 
-  else 
-    if (idleAdvActive && !currentStatus.engineIsRunning) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
-
-  return ignIdleValue;
+  return advance;
 }
+
 /** Ignition soft revlimit correction.
  */
 TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
