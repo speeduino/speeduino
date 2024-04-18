@@ -70,6 +70,7 @@ void readIAT(void);
 void readO2(void);
 
 void readBat(void);
+#define BAT_TIMER_BIT BIT_TIMER_4HZ
 
 void readBaro(void);
 
