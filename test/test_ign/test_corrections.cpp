@@ -33,6 +33,8 @@ extern table2D_u8_u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on 
 
 static void setup_clt_advance_table(void) {
   initialiseCorrections();
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&CLTAdvanceTable, values, bins);
@@ -248,8 +250,10 @@ static void setup_IATRetard(void) {
 static void test_correctionIATretard_table_lookup(void) {
     setup_IATRetard();
 
+    BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
     TEST_ASSERT_EQUAL(-11-8, correctionIATretard(-11));
 
+    BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
     currentStatus.IAT = 35;
     TEST_ASSERT_EQUAL(11-28, correctionIATretard(11));
 }
