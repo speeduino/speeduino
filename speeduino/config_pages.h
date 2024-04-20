@@ -142,9 +142,6 @@ using byte = uint8_t;
 #define GOING_LOW         0
 #define GOING_HIGH        1
 
-#define BATTV_COR_MODE_WHOLE 0
-#define BATTV_COR_MODE_OPENTIME 1
-
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
   MAPSamplingCycleAverage = 1, 
@@ -332,6 +329,15 @@ struct config2 {
 #define IDLEADVANCE_ALGO_TPS      0U
 #define IDLEADVANCE_ALGO_CTPS     1U
 
+#define VSS_MODE_OFF          0U
+#define VSS_MODE_INTERNAL_PIN 1U
+#define VSS_MODE_EXTERNAL_KM  2U
+#define VSS_MODE_EXTERNAL_MI  3U
+
+static inline bool isExternalVssMode(const config2 &page2) {
+  return page2.vssMode==VSS_MODE_EXTERNAL_KM
+      || page2.vssMode==VSS_MODE_EXTERNAL_MI;
+}
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */
