@@ -96,6 +96,7 @@ void initialiseCorrections(void)
   currentStatus.egoCorrection = NO_FUEL_CORRECTION; 
   currentStatus.ASEValue = NO_FUEL_CORRECTION;
   currentStatus.wueCorrection = NO_FUEL_CORRECTION;
+  currentStatus.iatCorrection = NO_FUEL_CORRECTION;
   AFRnextCycle = 0;
   currentStatus.knockRetardActive = false;
   currentStatus.knockPulseDetected = false;
@@ -535,7 +536,11 @@ This corrects for changes in air density from movement of the temperature.
 */
 TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 {
-  return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+  // Performance: only update as fast as the sensor is read
+  if( BIT_CHECK(LOOP_TIMER, IAT_TIMER_BIT) ) { 
+    return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+  }
+  return currentStatus.iatCorrection;
 }
 
 // ============================= Baro pressure correction =============================
