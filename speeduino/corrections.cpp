@@ -966,9 +966,19 @@ TESTABLE_INLINE_STATIC int8_t correctionIdleAdvance(int8_t advance)
 
 /** Ignition soft revlimit correction.
  */
+static inline int8_t calculateSoftRevLimitAdvance(int8_t advance) {
+  if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { 
+    return advance - (int8_t)configPage4.SoftLimRetard; //delay timing by configured number of degrees in relative mode
+  } else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { 
+    return (int8_t)configPage4.SoftLimRetard; //delay timing to configured number of degrees in fixed mode
+  } else {
+    // Unknown limit mode - do nothing, keep MISRA checker happy
+    return advance;
+  }
+}
+
 TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
 {
-  byte ignSoftRevValue = advance;
   currentStatus.softLimitActive = false;
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
@@ -978,17 +988,20 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
       currentStatus.softLimitActive = true;
       if( softLimitTime < configPage4.SoftLimMax )
       {
-        if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
-        else if (configPage2.SoftLimitMode == SOFT_LIMIT_FIXED) { ignSoftRevValue = configPage4.SoftLimRetard; } //delay timing to configured number of degrees in fixed mode
-
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softLimitTime++; }
+        advance = calculateSoftRevLimitAdvance(advance);
+        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+          softLimitTime++; 
+        }
       }
     }
-    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { softLimitTime = 0; } //Only reset time at runSecsX10 update rate
+    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+      softLimitTime = 0; //Only reset time at runSecsX10 update rate
+    }
   }
 
-  return ignSoftRevValue;
+  return advance;
 }
+
 /** Ignition Nitrous oxide correction.
  */
 TESTABLE_INLINE_STATIC int8_t correctionNitrous(int8_t advance)
