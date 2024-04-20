@@ -773,7 +773,7 @@ uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
   // Get VSS from CAN, Serial or Analog by using Aux input channels.
-  if(configPage2.vssMode == 1U)
+  if(configPage2.vssMode == VSS_MODE_INTERNAL_PIN)
   {
     // Direct reading from Aux channel
     if (configPage2.vssPulsesPerKm == 0U)
@@ -788,7 +788,7 @@ uint16_t getSpeed(void)
     tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
   // Interrupt driven mode
-  else if(configPage2.vssMode > 1U)
+  else if (isExternalVssMode(configPage2))
   {
     uint32_t pulseTime = 0U;
     uint32_t vssTotalTime = 0U;
