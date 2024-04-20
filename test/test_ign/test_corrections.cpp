@@ -287,7 +287,7 @@ static void setup_correctionIdleAdvance(void) {
     configPage2.idleAdvEnabled = IDLEADVANCE_MODE_ADDED;
     configPage2.idleAdvDelay = 5;
     configPage2.idleAdvRPM = 20;
-    configPage2.vssMode = 0;
+    configPage2.vssMode = VSS_MODE_OFF;
     configPage6.iacAlgorithm = IAC_ALGORITHM_NONE;
     configPage9.idleAdvStartDelay = 0U;
 
@@ -359,7 +359,7 @@ static void test_correctionIdleAdvance_noadvance_rpmtoohigh(void) {
 static void test_correctionIdleAdvance_noadvance_vsslimit(void) {
     setup_correctionIdleAdvance();
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
-    configPage2.vssMode = 1;
+    configPage2.vssMode = VSS_MODE_INTERNAL_PIN;
     configPage2.idleAdvVss = 15;
     currentStatus.vss = configPage2.idleAdvVss + 1;
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
