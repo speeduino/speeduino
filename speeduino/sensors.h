@@ -66,6 +66,7 @@ void readCLT(bool useFilter=true); //Allows the option to override the use of th
 #define CLT_TIMER_BIT BIT_TIMER_4HZ
 
 void readIAT(void);
+#define IAT_TIMER_BIT BIT_TIMER_4HZ
 
 void readO2(void);
 
