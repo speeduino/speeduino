@@ -678,6 +678,9 @@ extern table2D_u8_u8_6 injectorVCorrectionTable; ///< 6 bin injector voltage cor
 
 static void setup_battery_correction(void) {
   initialiseCorrections();
+  
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BAT_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
