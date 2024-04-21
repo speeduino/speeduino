@@ -98,6 +98,7 @@ void initialiseCorrections(void)
   currentStatus.wueCorrection = NO_FUEL_CORRECTION;
   currentStatus.iatCorrection = NO_FUEL_CORRECTION;
   currentStatus.baroCorrection = NO_FUEL_CORRECTION;
+  currentStatus.batCorrection = NO_FUEL_CORRECTION;
   AFRnextCycle = 0;
   currentStatus.knockRetardActive = false;
   currentStatus.knockPulseDetected = false;
@@ -527,9 +528,12 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 */
 TESTABLE_INLINE_STATIC byte correctionBatVoltage(void)
 {
-  byte batValue = NO_FUEL_CORRECTION;
-  batValue = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
-  return batValue;
+  // No point in updating more often than the sensor is read
+  uint8_t correction = currentStatus.batCorrection;
+  if( BIT_CHECK(LOOP_TIMER, BAT_TIMER_BIT) ) { 
+    correction = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
+  }
+  return correction;
 }
 
 /** Simple temperature based corrections lookup based on the inlet air temperature (IAT).
