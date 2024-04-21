@@ -74,6 +74,7 @@ void readBat(void);
 #define BAT_TIMER_BIT BIT_TIMER_4HZ
 
 void readBaro(void);
+#define BARO_TIMER_BIT BIT_TIMER_1HZ
 
 /** @brief Initialize the MAP calculation & Baro values */
 void initialiseMAPBaro(void);
