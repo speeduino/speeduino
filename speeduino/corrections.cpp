@@ -107,6 +107,9 @@ void initialiseCorrections(void)
   knockLastRecoveryStep = 0;
   knockStartTime = 0;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets spurious pulses after boot)  
+
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
 }
 
 // ============================= Warm Up Enrichment =============================
@@ -566,7 +569,7 @@ This simple check applies the extra fuel if we're currently launching
 */
 TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
-  return BASELINE_FUEL_CORRECTION + ((currentStatus.launchingHard || currentStatus.launchingSoft) ? configPage6.lnchFuelAdd : 0U);
+  return (BIT_CHECK(currentStatus.status2, BIT_STATUS2_HLAUNCH) || BIT_CHECK(currentStatus.status2, BIT_STATUS2_SLAUNCH)) ? BASELINE_FUEL_CORRECTION + configPage6.lnchFuelAdd : NO_FUEL_CORRECTION;
 }
 
 // ============================= Deceleration Fuel Cut Off (DFCO) correction =============================
@@ -1057,13 +1060,11 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
       ( (configPage2.vssMode == VSS_MODE_OFF) || ((configPage2.vssMode!=VSS_MODE_OFF) && (currentStatus.vss <= configPage10.lnchCtrlVss)) )
     )
   {
-    currentStatus.launchingSoft = true;
     BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
     advance = configPage6.lnchRetard;
   }
   else
   {
-    currentStatus.launchingSoft = false;
     BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   }
 
