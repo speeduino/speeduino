@@ -704,32 +704,32 @@ static void test_corrections_bat(void)
 uint8_t correctionLaunch(void);
 
 static void test_corrections_launch_inactive(void) {
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(100U, correctionLaunch() );
 }
 
 static void test_corrections_launch_hard(void) {
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = false;
+  BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
 static void test_corrections_launch_soft(void) {
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = true;
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
 static void test_corrections_launch_both(void) {
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = true;
+  BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
@@ -1585,8 +1585,8 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.runSecs = 255; 
   currentStatus.battery10 = 90;  
   currentStatus.IAT = 100;
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   currentStatus.ASEValue = 100U;
@@ -1673,8 +1673,8 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.IAT = temperatureRemoveOffset(100);
   currentStatus.baro = 100;
   currentStatus.ethanolPct = 100;
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   currentStatus.AEamount = 100U;
   currentStatus.ASEValue = 100U;
   currentStatus.TPSlast = 0;
