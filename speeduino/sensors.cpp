@@ -692,7 +692,7 @@ void resetMAPcycleAndEvent(void)
 
 // ========================================== O2 ==========================================
 
-void readO2(void)
+static inline void readO2_1(void)
 {
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0U)
@@ -708,12 +708,23 @@ void readO2(void)
   
 }
 
-void readO2_2(void)
+
+static inline void readO2_2(void)
 {
-  //Second O2 currently disabled as its not being used
-  //Get the current O2 value.
-  currentStatus.O2_2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
-  currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  // Read second O2 if configured.
+  if (pinO2_2!=0U)
+  {
+    currentStatus.O2_2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
+    currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  }
+}
+
+void readO2(void)
+{
+  if (configPage2.canWBO == 0) {
+    readO2_1();
+    readO2_2();
+  } 
 }
 
 void readBat(void)
