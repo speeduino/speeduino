@@ -240,7 +240,7 @@ extern table2D_u8_u8_6 IATRetardTable; ///< 6 bin ignition adjustment based on i
 static void setup_IATRetard(void) {
   initialiseCorrections();
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, IAT_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&IATRetardTable, values, bins);
