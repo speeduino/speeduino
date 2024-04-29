@@ -15,7 +15,7 @@ extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 static void setup_wue_table(void) {
   initialiseCorrections();
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ) ;
+  BIT_SET(LOOP_TIMER, CLT_READ_TIMER_BIT) ;
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
@@ -681,7 +681,7 @@ static void setup_battery_correction(void) {
   initialiseCorrections();
   
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BAT_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, BAT_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
@@ -988,7 +988,7 @@ static void setup_TAE()
   setup_AE();
 
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, TPS_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, TPS_READ_TIMER_BIT);
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
   TEST_DATA_P uint8_t bins[] = { 0, 8, 22, 97 };
@@ -1207,7 +1207,7 @@ static void setup_MAE(void)
 
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, MAP_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, MAP_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 0, 15, 19, 50 };
   TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
@@ -1546,7 +1546,7 @@ extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 static void setup_baro_correction(void) {
   initialiseCorrections();
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BARO_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 120, 110, 100, 90, 80, 70 };
@@ -1671,8 +1671,8 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   populate_2dtable(&fuelTempTable, (uint8_t)255, (uint8_t)100);
 
   LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, IAT_TIMER_BIT);
-  BIT_SET(LOOP_TIMER, BARO_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   configPage2.flexEnabled = 1;
   configPage2.dfcoEnabled = 0;
