@@ -2,6 +2,7 @@
 #define SENSORS_H
 
 #include "globals.h"
+#include "config_pages.h"
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
@@ -93,13 +94,11 @@ void readIAT(void);
 #define O2_READ_TIMER_BIT BIT_TIMER_30HZ
 
 /**
- * @brief Read the O2 sensor
+ * @brief Read the O2 sensors
  * 
  * We expect this to be called at O2_READ_TIMER_BIT intervals
  */
 void readO2(void);
-/** @copydoc readO2 */
-void readO2_2(void);
 
 /** @brief Define the battery sensor read frequency. */
 #define BAT_READ_TIMER_BIT BIT_TIMER_4HZ
