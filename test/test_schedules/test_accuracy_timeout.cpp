@@ -133,6 +133,8 @@ void test_accuracy_timeout_ign8(void)
 
 void test_accuracy_timeout(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_accuracy_timeout_inj1);
     RUN_TEST(test_accuracy_timeout_inj2);
     RUN_TEST(test_accuracy_timeout_inj3);

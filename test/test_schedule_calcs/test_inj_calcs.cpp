@@ -279,6 +279,8 @@ static void test_calc_inj_timeout_720()
 // 
 void test_calc_inj_timeout(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_calc_inj_timeout_360);
     RUN_TEST(test_calc_inj_timeout_720);
 }

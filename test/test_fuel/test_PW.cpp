@@ -7,6 +7,8 @@
 
 void testPW(void)
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_PW_No_Multiply);
   RUN_TEST(test_PW_MAP_Multiply);
   RUN_TEST(test_PW_MAP_Multiply_Compatibility);

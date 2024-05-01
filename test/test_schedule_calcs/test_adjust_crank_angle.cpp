@@ -75,6 +75,8 @@ void test_adjust_crank_angle_running()
 
 void test_adjust_crank_angle()
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_adjust_crank_angle_pending_below_minrevolutions);
     RUN_TEST(test_adjust_crank_angle_pending_above_minrevolutions);
     RUN_TEST(test_adjust_crank_angle_running);

@@ -612,6 +612,8 @@ void test_rotary_channel_calcs(void)
 
 void test_calc_ign_timeout(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_calc_ign_timeout_360);
     RUN_TEST(test_calc_ign_timeout_720);
     RUN_TEST(test_rotary_channel_calcs);

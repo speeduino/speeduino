@@ -157,6 +157,8 @@ void test_nissan360_newIgn_12_trigNeg360_1()
 
 void testNissan360()
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_nissan360_newIgn_12_trig0_1);
     RUN_TEST(test_nissan360_newIgn_12_trig90_1);
     RUN_TEST(test_nissan360_newIgn_12_trig180_1);

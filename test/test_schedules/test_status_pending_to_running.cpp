@@ -172,6 +172,8 @@ void test_status_pending_to_running_ign8(void)
 
 void test_status_pending_to_running(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_status_pending_to_running_inj1);
     RUN_TEST(test_status_pending_to_running_inj2);
     RUN_TEST(test_status_pending_to_running_inj3);

@@ -130,6 +130,8 @@ void test_accuracy_duration_ign8(void)
 
 void test_accuracy_duration(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_accuracy_duration_inj1);
     RUN_TEST(test_accuracy_duration_inj2);
     RUN_TEST(test_accuracy_duration_inj3);

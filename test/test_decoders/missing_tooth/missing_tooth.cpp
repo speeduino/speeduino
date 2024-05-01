@@ -344,6 +344,8 @@ void test_missingtooth_newIgn_4()
 
 void testMissingTooth()
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_missingtooth_newIgn_36_1_trig0_1);
   RUN_TEST(test_missingtooth_newIgn_36_1_trig90_1);
   RUN_TEST(test_missingtooth_newIgn_36_1_trig180_1);

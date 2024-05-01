@@ -222,6 +222,8 @@ void test_maths_div100_s32_perf(void)
 }
 
 void testDivision(void) {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_maths_div100_U16);
   RUN_TEST(test_maths_div100_U32);
   RUN_TEST(test_maths_div100_S16);

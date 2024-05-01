@@ -336,6 +336,8 @@ static void test_partial_sync(void)
 
 void testIgnitionScheduleInit()
 {
+  Unity.TestFile = __FILE__;
+
   run_1_cylinder_4stroke_tests();
   run_2_cylinder_4stroke_tests();
   run_3_cylinder_4stroke_tests();

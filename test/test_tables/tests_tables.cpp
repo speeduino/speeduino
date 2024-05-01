@@ -113,6 +113,8 @@ void setup_TestTable(void)
 
 void testTables()
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_tableLookup_50pct);
   RUN_TEST(test_tableLookup_exact1Axis);
   RUN_TEST(test_tableLookup_exact2Axis);

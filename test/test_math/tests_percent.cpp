@@ -107,6 +107,8 @@ void test_maths_percentage_perf(void)
 
 void testPercent()
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_maths_percent_U8);
   RUN_TEST(test_maths_percent_U16);
   RUN_TEST(test_maths_halfpercent_U8);

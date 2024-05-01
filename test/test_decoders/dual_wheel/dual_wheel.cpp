@@ -324,6 +324,8 @@ void test_dualwheel_newIgn_4()
 
 void testDualWheel()
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_dualwheel_newIgn_12_1_trig0_1);
   RUN_TEST(test_dualwheel_newIgn_12_1_trig90_1);
   RUN_TEST(test_dualwheel_newIgn_12_1_trig180_1);

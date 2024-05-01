@@ -147,6 +147,8 @@ void test_table2d_all_decrementing(void)
 
 void testTable2d()
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_table2dLookup_50pct);
     RUN_TEST(test_table2dLookup_exactAxis);
     RUN_TEST(test_table2dLookup_overMax);

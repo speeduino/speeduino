@@ -310,6 +310,8 @@ void test_Renix_newIgn_66_trig181_2()
 
 void testRenix()
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_Renix_newIgn_44_trig0_1);
   RUN_TEST(test_Renix_newIgn_44_trig90_1);
   RUN_TEST(test_Renix_newIgn_44_trig180_1);

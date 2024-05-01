@@ -133,6 +133,8 @@ void test_ngc_newIgn_12_trigNeg360_1()
 
 void testNGC()
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_ngc_newIgn_12_trig0_1);
     RUN_TEST(test_ngc_newIgn_12_trig90_1);
     RUN_TEST(test_ngc_newIgn_12_trig180_1);

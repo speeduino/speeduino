@@ -5,6 +5,8 @@
 
 void testStaging(void)
 {
+  Unity.TestFile = __FILE__;
+
   RUN_TEST(test_Staging_Off);
   RUN_TEST(test_Staging_4cyl_Auto_Inactive);
   RUN_TEST(test_Staging_4cyl_Table_Inactive);

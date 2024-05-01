@@ -156,6 +156,8 @@ void test_status_off_to_pending_ign8(void)
 
 void test_status_off_to_pending(void)
 {
+    Unity.TestFile = __FILE__;
+
     RUN_TEST(test_status_off_to_pending_inj1);
     RUN_TEST(test_status_off_to_pending_inj2);
     RUN_TEST(test_status_off_to_pending_inj3);
