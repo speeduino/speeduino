@@ -842,7 +842,7 @@ void sendValuesLegacy(void)
   bytestosend -= Serial.write(temp >> 8); // MAPdot
   bytestosend -= Serial.write(temp); // MAPdot
 
-  temp = currentStatus.dwell * 10;
+  temp = currentStatus.dwell * 10U;
   bytestosend -= Serial.write(temp>>8); // dwell
   bytestosend -= Serial.write(temp); // dwell
 

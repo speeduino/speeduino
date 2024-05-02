@@ -80,7 +80,7 @@ extern uint8_t random1to100(void);
 /**
  * @brief Rounded \em unsigned integer division
  * 
- * This is slighty faster than the signed version (DIV_ROUND_CLOSEST(n, d, t))
+ * This is slightly faster than the signed version (DIV_ROUND_CLOSEST(n, d, t))
  * 
  * @warning For performance reasons, this macro does not promote integers.
  * So it will overflow if n>MAX(t)-(d/2).
@@ -95,7 +95,7 @@ extern uint8_t random1to100(void);
  * @brief Rounded arithmetic right shift
  * 
  * Right shifting throws away bits. When use for fixed point division, this
- * effecitvely rounds down (towards zero). To round-to-the-nearest-integer
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
  * when right-shifting by S, just add in 2 power S−1 (which is the 
  * fixed-point equivalent of 0.5) first
  * 
@@ -109,7 +109,7 @@ extern uint8_t random1to100(void);
 #define IS_INTEGER(d) ((d) == (int32_t)(d))
 
 /**
- * @defgroup group-div100 Optimised integer divison by 100
+ * @defgroup group-div100 Optimised integer division by 100
  * @{
  */
 static inline uint16_t div100(uint16_t n) {
@@ -156,7 +156,7 @@ static inline int32_t div100(int32_t n) {
     }
     return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
 #else
-    return DIV_ROUND_CLOSEST(n, UINT32_C(100), int32_t);
+    return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
 }
 #endif

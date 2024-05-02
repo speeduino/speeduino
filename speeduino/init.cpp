@@ -727,7 +727,7 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 5
+              //Put the staging output to the non-existent channel 5
               #if (INJ_CHANNELS >= 5)
               maxInjOutputs = 5;
               channel5InjDegrees = channel1InjDegrees;
@@ -1349,7 +1349,7 @@ void initialiseAll(void)
     readTPS(false); // Need to read tps to detect flood clear state
 
     /* tacho sweep function. */
-    //tachoStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
+    currentStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
        tachoSweepIncr is also the number of tach pulses per second */
     tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
@@ -2373,7 +2373,7 @@ void setPinMapping(byte boardID)
       pinInjector5 = 9; //CS for MC33810 2
       pinInjector6 = 9; //CS for MC33810 3
 
-      //Dummy pins, without thes pin 0 (Serial1 RX) gets overwritten
+      //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
       pinCoil1 = 40;
       pinCoil2 = 41;
       /*
@@ -2385,7 +2385,7 @@ void setPinMapping(byte boardID)
       
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
-      pinTrigger3 = 22; //Uses one of the protected spare digitial inputs. This must be set or Serial1 (Pin 0) gets broken
+      pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
       pinFlex = A16; // Flex sensor
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
@@ -3041,6 +3041,16 @@ void setPinMapping(byte boardID)
       pinMode(pinBat, INPUT);
       pinMode(pinBaro, INPUT);
     #endif
+  #elif defined(CORE_TEENSY41)
+    //Teensy 4.1 has a weak pull down resistor that needs to be disabled for all analog pins. 
+    pinMode(pinMAP, INPUT_DISABLE);
+    pinMode(pinO2, INPUT_DISABLE);
+    pinMode(pinO2_2, INPUT_DISABLE);
+    pinMode(pinTPS, INPUT_DISABLE);
+    pinMode(pinIAT, INPUT_DISABLE);
+    pinMode(pinCLT, INPUT_DISABLE);
+    pinMode(pinBat, INPUT_DISABLE);
+    pinMode(pinBaro, INPUT_DISABLE);
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions

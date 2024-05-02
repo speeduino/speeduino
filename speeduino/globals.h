@@ -219,7 +219,7 @@
 #define IAT_CALIBRATION_PAGE  1U
 #define CLT_CALIBRATION_PAGE  0U
 
-// note the sequence of these defines which refernce the bits used in a byte has moved when the third trigger & engine cycle was incorporated
+// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
 #define COMPOSITE_LOG_THIRD 2 
@@ -607,8 +607,8 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
-  int dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
-  volatile int16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
+  uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
+  volatile uint16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */
   byte battery10;     /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance;     /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
@@ -909,8 +909,8 @@ struct config4 {
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
   byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS (crank) pulse. Only currently valid for Basic distributor and 4G63.
 
-  byte dwellCrank;    ///< Dwell time whilst cranking
-  byte dwellRun;      ///< Dwell time whilst running
+  uint8_t dwellCrank;    ///< Dwell time whilst cranking
+  uint8_t dwellRun;      ///< Dwell time whilst running
   byte triggerTeeth;  ///< The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; ///< The size of the tooth gap (ie number of missing teeth)
   byte crankRPM;      ///< RPM below which the engine is considered to be cranking
@@ -1145,7 +1145,7 @@ struct config9 {
 
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
-  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */
+  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divided by 100. Increments of 100 RPM, maximum 25500 RPM */
   byte afrProtectMinTPS; /* < Minimum TPS. */
   byte afrProtectDeviation; /* < Maximum deviation from AFR target table. Stored value is multiplied by 10 */
   byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */

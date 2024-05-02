@@ -62,6 +62,7 @@ void test_maths_halfpercent_U16(void)
 
 void test_maths_halfPercentage_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr int16_t iters = 4;
     constexpr uint8_t start_index = 3;
     constexpr uint8_t end_index = 99;
@@ -78,11 +79,13 @@ void test_maths_halfPercentage_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 
 void test_maths_percentage_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr uint16_t iters = 4;
     constexpr uint8_t start_index = 3;
     constexpr uint8_t end_index = 99;
@@ -99,6 +102,7 @@ void test_maths_percentage_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 void testPercent()

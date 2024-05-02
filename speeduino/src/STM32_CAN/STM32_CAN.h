@@ -1,6 +1,6 @@
 /*
 This is universal CAN library for STM32 that was made to be used with Speeduino EFI.
-It should support all STM32 MCUs that are also supported in stm32duino Arduino_Core_STM32 and supports up to 3x CAN busses.
+It should support all STM32 MCUs that are also supported in stm32duino Arduino_Core_STM32 and supports up to 3x CAN buses.
 The library is created because at least currently (year 2021) there is no official CAN library in the STM32 core.
 This library is based on several STM32 CAN example libraries linked below and it has been combined with few
 things from Teensy FlexCAN library to make it compatible with the CAN features that exist in speeduino for Teensy.
@@ -130,7 +130,7 @@ class STM32_CAN {
     void enableMBInterrupts();
     void disableMBInterrupts();
  
-    // These are public because these are also used from interupts.
+    // These are public because these are also used from interrupts.
     typedef struct RingbufferTypeDef {
       volatile uint16_t head;
       volatile uint16_t tail;
