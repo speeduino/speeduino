@@ -75,11 +75,11 @@ static constexpr inline int16_t _optimisedDivideS16(const conversionFactor &fact
             // No division required
     return  (factor.scale==1U) ? working :
                 // Unsigned path
-                (working>=0) ? _optimisedDivideU16(factor, (uint16_t)working) :
+                (working>=0) ? (int16_t)_optimisedDivideU16(factor, (uint16_t)working) :
                     // int16_t/100
                     (factor.scale==100U) ? div100(working) :
                         // Faster than int16_t/10.
-                        (factor.scale==10U) ? div100(working*10) :
+                        (factor.scale==10U) ? div100((int16_t)(working*10)) :
                             // Slowest path
                             working = working / (int16_t)factor.scale;
 }
@@ -102,7 +102,7 @@ static constexpr inline uint16_t toWorkingU8U16(const conversionFactor &factor, 
 
 /** @copydoc toWorkingU8U16 */
 static constexpr inline int16_t toWorkingU8S16(const conversionFactor &factor, uint8_t raw) {
-    return scale_translate_detail::_toWorkingApplyTranslateS16(factor, raw) * factor.scale;
+    return scale_translate_detail::_toWorkingApplyTranslateS16(factor, raw) * (int16_t)factor.scale;
 }
 
 /** @copydoc toWorkingU8U16 */
@@ -146,11 +146,35 @@ static constexpr inline uint8_t toRawU8(const conversionFactor &factor, uint16_t
 /** @brief RPM stored as RPM/100. E.g. 2700 -> 27 */
 static constexpr conversionFactor RPM_COARSE = { .scale=100U, .translate=0U };
 
+/** @brief RPM stored as RPM/10. E.g. 2700 -> 270
+ * 
+ * This limits the maximum value to 2550 RPM, but gives more precision than RPM_COARSE
+ */
+static constexpr conversionFactor RPM_MEDIUM = { .scale=10U, .translate=0U };
+
+/** @brief RPM stored as RPM/5. E.g. 1300->260
+ * 
+ * This limits the maximum value to 1275 RPM, but gives more precision than RPM_MEDIUM
+ */
+static constexpr conversionFactor RPM_FINE = { .scale=5U, .translate=0U };
+
 /** @brief Time values stored in 1/10th milliseconds I.e ms/10 
  * 
  * We convert to/from µS
 */
 static constexpr conversionFactor TIME_TENTH_MILLIS = { .scale=10000U, .translate=0U };
+
+/** @brief Time values stored in 20 milliseconds 
+ * 
+ * We convert to/from secs/0.1
+*/
+static constexpr conversionFactor TIME_TWENTY_MILLIS = { .scale=5U, .translate=0U };
+
+/** @brief Time values stored in 10 milliseconds 
+ * 
+ * We convert to/from µS
+*/
+static constexpr conversionFactor TIME_TEN_MILLIS = { .scale=100U, .translate=0U };
 
 /** @brief MAP values: kpa */
 static constexpr conversionFactor MAP = { .scale=2U, .translate=0U };
@@ -163,6 +187,16 @@ static constexpr conversionFactor TPS_DOT = { .scale=10U, .translate=0U };
 
 /** @brief Cranking enrichment values range from 0% to 1275% */
 static constexpr conversionFactor CRANKING_ENRICHMENT = { .scale=5U, .translate=0U };
+
+/** 
+ * @brief Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing
+ * This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 40
+ */
+static constexpr conversionFactor IGNITION_ADVANCE_LARGE = { .scale=1U, .translate=-40 };
+
+/** @brief Ignition advance adjustments can use a smaller offset */
+static constexpr conversionFactor IGNITION_ADVANCE_SMALL = { .scale=1U, .translate=-15 };
+
 
 /** 
  * @brief All temperature measurements are stored offset by 40 degrees.
