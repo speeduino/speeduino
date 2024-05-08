@@ -138,9 +138,6 @@ void storeLastBaro(uint8_t newValue);
 uint8_t readEEPROMVersion(void);
 void storeEEPROMVersion(uint8_t newVersion);
 
-void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
-uint32_t readPageCRC32(uint8_t pageNum);
-
 void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);
 uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
 
