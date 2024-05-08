@@ -8,11 +8,14 @@ A full copy of the license may be found in the projects root directory
  */
 
 #include "globals.h"
-#include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "pages.h"
 #include "table3d_axis_io.h"
 #include "sensors.h"
+#include EEPROM_LIB_H //This is defined in the board .h files
+
+// Should be defined in a CPP file elsewhere. Usually the board CPP file.
+extern EEPROM_t EEPROM;
 
 #define EEPROM_DATA_VERSION   0
 
