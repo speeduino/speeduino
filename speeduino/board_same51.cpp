@@ -2,6 +2,11 @@
 #include "globals.h"
 #include "auxiliaries.h"
 
+#ifdef USE_SPI_EEPROM
+SPI_EEPROM_Class EEPROM({255UL, 4096UL, 31, 0x00100000UL}, //windbond W25Q16 SPI flash EEPROM emulation
+                        SPIconfig);
+#endif
+
 void initBoard()
 {
     /*
