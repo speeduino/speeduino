@@ -31,10 +31,14 @@
 #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
 #ifdef USE_SPI_EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
+  using eeprom_address_t = uint16_t;
+  class SPI_EEPROM_Class;
+  using EEPROM_t = SPI_EEPROM_Class;
 #else
   #define EEPROM_LIB_H <EEPROM.h>
-  typedef int eeprom_address_t;
+  using eeprom_address_t = int;
+  class EEPROMClass;
+  using EEPROM_t = EEPROMClass;
 #endif
 #ifdef PLATFORMIO
   #define RTC_LIB_H <TimeLib.h>
