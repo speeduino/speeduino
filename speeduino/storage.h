@@ -164,7 +164,7 @@ uint16_t getEEPROMSize(void);
 void clearStorage(void);
 
 bool isEepromWritePending(void);
-extern uint32_t deferEEPROMWritesUntil;
+
 
 #define EEPROM_CONFIG1_MAP    3
 #define EEPROM_CONFIG2_START  291
@@ -207,7 +207,5 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CONFIG15_MAP   3199
 #define EEPROM_CONFIG15_START 3281
 #define EEPROM_CONFIG15_END   3457
-
-#define EEPROM_DEFER_DELAY          MICROS_PER_SEC //1.0 second pause after large comms before writing to EEPROM
 
 #endif // STORAGE_H
