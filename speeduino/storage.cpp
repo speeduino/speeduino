@@ -139,11 +139,11 @@ static inline write_location writeTable(void *pTable, table_type_t key, write_lo
                   write(rows_begin(pTable, key), location)));
 }
 
+//  ================================= End write support ===============================
+
 //Simply an alias for EEPROM.update()
 void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
 uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
-
-//  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
 Takes the current configuration (config pages and maps)
