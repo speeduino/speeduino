@@ -14,7 +14,6 @@
 #include "updates.h"
 #include "pages.h"
 #include "comms_CAN.h"
-#include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates(void)
 {
@@ -78,16 +77,16 @@ void doUpdates(void)
     {
       int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 128; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      byte currentVal = EEPROMReadRaw(startMem);
+      EEPROMWriteRaw(endMem, currentVal);
     }
     //The remaining data only has to move back 64 bytes
     for(int x=0; x < 352; x++)
     {
       int endMem = EEPROM_CONFIG10_END - 1152 - x;
       int startMem = endMem - 64; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      byte currentVal = EEPROMReadRaw(startMem);
+      EEPROMWriteRaw(endMem, currentVal);
     }
 
     storeEEPROMVersion(6);
@@ -101,8 +100,8 @@ void doUpdates(void)
     {
       int endMem = EEPROM_CONFIG10_END - x;
       int startMem = endMem - 82; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      byte currentVal = EEPROMReadRaw(startMem);
+      EEPROMWriteRaw(endMem, currentVal);
     }
 
     storeEEPROMVersion(7);
@@ -386,15 +385,15 @@ void doUpdates(void)
     for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
     {
       y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
-      cltCalibration_values[x] = EEPROM.read(y);
+      cltCalibration_values[x] = EEPROMReadRaw(y);
       cltCalibration_bins[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
-      iatCalibration_values[x] = EEPROM.read(y);
+      iatCalibration_values[x] = EEPROMReadRaw(y);
       iatCalibration_bins[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
-      o2Calibration_values[x] = EEPROM.read(y);
+      o2Calibration_values[x] = EEPROMReadRaw(y);
       o2Calibration_bins[x] = (x * 32);
     }
     writeCalibration();
@@ -457,7 +456,7 @@ void doUpdates(void)
     //Fix for wrong placed page 13
     for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
     {
-      EEPROM.update(x, EEPROM.read(x-112));
+      EEPROMWriteRaw(x, EEPROMReadRaw(x-112));
     }
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
