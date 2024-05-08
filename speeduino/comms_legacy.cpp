@@ -363,7 +363,7 @@ void legacySerialCommand(void)
       tableID = primarySerial.read(); //Not currently used for anything
 
       receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
+      writeCalibrationTables(); //Store received values in EEPROM
 
       break;
 
@@ -1253,11 +1253,11 @@ void receiveCalibration(byte tableID)
       
       ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
       pnt_TargetTable_bins[x] = (x * 32U);
-      writeCalibration();
+      writeCalibrationTables();
     }
   }
 
-  writeCalibration();
+  writeCalibrationTables();
 }
 
 /** Send 256 tooth log entries to primarySerial.
