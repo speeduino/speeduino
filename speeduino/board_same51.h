@@ -12,7 +12,6 @@
   #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
   #define BOARD_MAX_IO_PINS  58 //digital pins + analog channels + 1
 
-  //#define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
   #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
@@ -20,19 +19,14 @@
   #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
     #include EEPROM_LIB_H
-    //SPIClass SPI_for_flash(1, 2, 3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-    SPIClass SPI_for_flash = SPI; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
- 
-    //windbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
-    //Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
-    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+    using eeprom_address_t = int;
+    using EEPROM_t = SPI_EEPROM_Class;    
   #else
-    //#define EEPROM_LIB_H <EEPROM.h>
     #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
+    using eeprom_address_t = int;
+    class EEPROMClass;
+    using EEPROM_t = EEPROMClass;    
   #endif
   #define RTC_LIB_H "TimeLib.h"
   void initBoard();
