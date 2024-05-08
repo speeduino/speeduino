@@ -60,10 +60,6 @@
 // Some code relies on TOOTH_LOG_SIZE being uint8_t.
 static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 
-#define O2_CALIBRATION_PAGE   2U
-#define IAT_CALIBRATION_PAGE  1U
-#define CLT_CALIBRATION_PAGE  0U
-
 // note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
