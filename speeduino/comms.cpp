@@ -99,9 +99,11 @@ static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
 #endif
-static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
-static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent
+static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
+static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
+static uint32_t deferEEPROMWritesUntil = 0; //!< Point in time that we can resume writing pages
+static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -324,7 +326,7 @@ static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffe
     {
       setPageValue(pageNum, (offset + i), buffer[i]);
     }
-    deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
+    setStorageWriteTimeout(micros() + EEPROM_DEFER_DELAY);
     return true;
   }
 
@@ -586,7 +588,7 @@ void processSerialCommand(void)
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
+      if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
       else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
@@ -594,8 +596,8 @@ void processSerialCommand(void)
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-      deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
+      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4)); //Add 25% more to the EEPROM defer time
+      if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
       else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
@@ -1176,6 +1178,14 @@ void sendCompositeLog(void)
 
   //Send the CRC
   (void)serialWrite(CRC32_val);
+}
+
+void setStorageWriteTimeout(uint32_t time) {
+  deferEEPROMWritesUntil = time;
+}
+
+bool storageWriteTimeoutExpired(void) {
+  return micros() > deferEEPROMWritesUntil;
 }
 
 #if defined(CORE_AVR)

@@ -36,8 +36,6 @@ extern EEPROM_t EEPROM;
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 
-uint32_t deferEEPROMWritesUntil = 0;
-
 bool isEepromWritePending(void)
 {
   return BIT_CHECK(currentStatus.status4, BIT_STATUS4_BURNPENDING);
