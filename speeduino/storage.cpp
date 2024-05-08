@@ -484,30 +484,6 @@ void writeCalibrationPage(uint8_t pageNum)
   }
 }
 
-static eeprom_address_t compute_crc_address(uint8_t pageNum)
-{
-  return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
-}
-
-/** Write CRC32 checksum to EEPROM.
-Takes a page number and CRC32 value then stores it in the relevant place in EEPROM
-@param pageNum - Config page number
-@param crcValue - CRC32 checksum
-*/
-void storePageCRC32(uint8_t pageNum, uint32_t crcValue)
-{
-  EEPROM.put(compute_crc_address(pageNum), crcValue);
-}
-
-/** Retrieves and returns the 4 byte CRC32 checksum for a given page from EEPROM.
-@param pageNum - Config page number
-*/
-uint32_t readPageCRC32(uint8_t pageNum)
-{
-  uint32_t crc32_val;
-  return EEPROM.get(compute_crc_address(pageNum), crc32_val);
-}
-
 /** Same as above, but writes the CRC32 for the calibration page rather than tune data
 @param calibrationPageNum - Calibration page number
 @param calibrationCRC - CRC32 checksum
