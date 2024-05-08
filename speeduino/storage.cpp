@@ -302,24 +302,6 @@ void writeConfig(uint8_t pageNum)
   currentStatus.burnPending = !result.can_write();
 }
 
-/** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.
- */
-void resetConfigPages(void)
-{
-  for (uint8_t page=1; page<getPageCount(); ++page)
-  {
-    page_iterator_t entity = page_begin(page);
-    while (entity.type!=End)
-    {
-      if (entity.type==Raw)
-      {
-        memset(entity.pData, 0, entity.address.size);
-      }
-      entity = advance(entity);
-    }
-  }
-}
-
 //  ================================= Internal read support ===============================
 
 /** Load range of bytes form EEPROM offset to memory.

@@ -21,6 +21,7 @@
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include "board_definition.h"
+#include "pages.h"
 #ifdef SD_LOGGING
   #include "SD_logger.h"
   #include "rtc_common.h"
@@ -137,7 +138,8 @@ void initialiseAll(void)
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
       //First time running on this board
-      resetConfigPages();
+      setTuneToEmpty();
+      configPage4.triggerTeeth = 4; //Avoiddiv by 0 when start decoders
       setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
