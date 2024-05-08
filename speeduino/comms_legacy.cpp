@@ -364,7 +364,7 @@ void legacySerialCommand(void)
       tableID = primarySerial.read(); //Not currently used for anything
 
       receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
+      writeCalibrationTables(); //Store received values in EEPROM
 
       break;
 
@@ -1218,11 +1218,11 @@ void receiveCalibration(byte tableID)
       
       pTargetTable->values[x] = temperatureAddOffset(tempValue);
       pTargetTable->axis[x] = (x * 32U);
-      writeCalibration();
+      writeCalibrationTables();
     }
   }
 
-  writeCalibration();
+  writeCalibrationTables();
 }
 
 /** Send 256 tooth log entries to primarySerial.
