@@ -417,8 +417,8 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
   if( offset >= 1023U ) 
   {
     //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
-    storeCalibrationCRC32(O2_CALIBRATION_PAGE, calibrationCRC);
-    writeCalibrationPage(O2_CALIBRATION_PAGE);
+    writeCalibrationCrc(SensorCalibrationTable::O2Sensor, calibrationCRC);
+    writeCalibrationTable(SensorCalibrationTable::O2Sensor);
   }
 }
 
@@ -443,18 +443,18 @@ static uint8_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, table2D_u16_u16_32 &table)
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, SensorCalibrationTable calibrationPage, uint16_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)
   {
     for (uint16_t x = 0; x < 32U; x++)
     {
-      table.values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
-      table.axis[x] = (x * 33U); // 0*33=0 to 31*33=1023
+      values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
+      bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
-    storeCalibrationCRC32(calibrationPage, CRC32_calibration.crc32(&serialPayload[7], 64));
-    writeCalibrationPage(calibrationPage);
+    writeCalibrationCrc(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+    writeCalibrationTable(calibrationPage);
     sendReturnCodeMsg(SERIAL_RC_OK);
   }
   else 
@@ -673,7 +673,7 @@ void processSerialCommand(void)
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
+      uint32_t CRC32_val = reverse_bytes(readCalibrationCrc((SensorCalibrationTable)serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
       (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));
@@ -894,23 +894,23 @@ void processSerialCommand(void)
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
     {
-      uint8_t cmd = serialPayload[2];
+      SensorCalibrationTable cmd = (SensorCalibrationTable)serialPayload[2];
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      if(cmd == O2_CALIBRATION_PAGE)
+      if(cmd == SensorCalibrationTable::O2Sensor)
       {
         loadO2CalibrationChunk(offset, calibrationLength);
         sendReturnCodeMsg(SERIAL_RC_OK);
         primarySerial.flush(); //This is safe because engine is assumed to not be running during calibration
       }
-      else if(cmd == IAT_CALIBRATION_PAGE)
+      else if(cmd == SensorCalibrationTable::IntakeAirTempSensor)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibrationTable);
+        processTemperatureCalibrationTableUpdate(calibrationLength, cmd, iatCalibrationTable.values, iatCalibrationTable.axis);
       }
-      else if(cmd == CLT_CALIBRATION_PAGE)
+      else if(cmd == SensorCalibrationTable::CoolantSensor)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibrationTable);
+        processTemperatureCalibrationTableUpdate(calibrationLength, cmd, cltCalibrationTable.values, cltCalibrationTable.axis);
       }
       else
       {
