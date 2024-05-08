@@ -437,9 +437,9 @@ void loadConfig(void)
 /** Read the calibration information from EEPROM.
 This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio.
 */
-void loadCalibration(void)
+void loadCalibrationTables(void)
 {
-  // If you modify this function be sure to also modify writeCalibration();
+  // If you modify this function be sure to also modify writeCalibrationTables();
   // it should be a mirror image of this function.
 
   EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
@@ -456,84 +456,63 @@ void loadCalibration(void)
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
 and saves them to the EEPROM.
 */
-void writeCalibration(void)
+void writeCalibrationTables(void)
 {
-  // If you modify this function be sure to also modify loadCalibration();
+  // If you modify this function be sure to also modify loadCalibrationTables();
   // it should be a mirror image of this function.
-  writeCalibrationPage(O2_CALIBRATION_PAGE);
-  writeCalibrationPage(IAT_CALIBRATION_PAGE);
-  writeCalibrationPage(CLT_CALIBRATION_PAGE);
+
+  writeCalibrationTable(SensorCalibrationTable::O2Sensor);
+  writeCalibrationTable(SensorCalibrationTable::IntakeAirTempSensor);
+  writeCalibrationTable(SensorCalibrationTable::CoolantSensor);
 }
 
-void writeCalibrationPage(uint8_t pageNum)
+void writeCalibrationTable(SensorCalibrationTable sensor)
 {
-  if(pageNum == O2_CALIBRATION_PAGE)
+  if(sensor == SensorCalibrationTable::O2Sensor)
   {
     EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
     EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
   }
-  else if(pageNum == IAT_CALIBRATION_PAGE)
+  else if(sensor == SensorCalibrationTable::IntakeAirTempSensor)
   {
     EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
     EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
   }
-  else if(pageNum == CLT_CALIBRATION_PAGE)
+  else if(sensor == SensorCalibrationTable::CoolantSensor)
   {
     EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
     EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
   }
 }
 
-/** Same as above, but writes the CRC32 for the calibration page rather than tune data
-@param calibrationPageNum - Calibration page number
-@param calibrationCRC - CRC32 checksum
-*/
-void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC)
-{
-  uint16_t targetAddress;
-  switch(calibrationPageNum)
-  {
-    case O2_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_O2_CRC;
-      break;
-    case IAT_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
-      break;
-    case CLT_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
-      break;
-    default:
-      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
-      break;
-  }
+static inline eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
+  constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_CRC = 3674;
+  constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_CRC = 3678;
+  constexpr eeprom_address_t EEPROM_CALIBRATION_O2_CRC = 3682;
 
-  EEPROM.put(targetAddress, calibrationCRC);
+  switch(sensor)
+  {
+    case SensorCalibrationTable::O2Sensor:
+      return EEPROM_CALIBRATION_O2_CRC;
+    case SensorCalibrationTable::IntakeAirTempSensor:
+      return EEPROM_CALIBRATION_IAT_CRC;
+    case SensorCalibrationTable::CoolantSensor:
+    default: //Obviously should never happen
+      return EEPROM_CALIBRATION_CLT_CRC;
+  }
+  return EEPROM_CALIBRATION_CLT_CRC;
 }
 
-/** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM.
-@param calibrationPageNum - Config page number
-*/
-uint32_t readCalibrationCRC32(uint8_t calibrationPageNum)
+void writeCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
+{
+  EEPROM.put(getSensorCalibrationCrcAddress(sensor), calibrationCRC);
+}
+
+/** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
+uint32_t readCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
-  uint16_t targetAddress;
-  switch(calibrationPageNum)
-  {
-    case O2_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_O2_CRC;
-      break;
-    case IAT_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_IAT_CRC;
-      break;
-    case CLT_CALIBRATION_PAGE:
-      targetAddress = EEPROM_CALIBRATION_CLT_CRC;
-      break;
-    default:
-      targetAddress = EEPROM_CALIBRATION_CLT_CRC; //Obviously should never happen
-      break;
-  }
-
-  EEPROM.get(targetAddress, crc32_val);
+  EEPROM.get(getSensorCalibrationCrcAddress(sensor), crc32_val);
   return crc32_val;
 }
 

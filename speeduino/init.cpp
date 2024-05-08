@@ -132,7 +132,7 @@ void initialiseAll(void)
     currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
     
     //Setup the calibration tables
-    loadCalibration();   
+    loadCalibrationTables();
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM

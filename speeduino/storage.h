@@ -122,11 +122,9 @@
 
 void writeAllConfig(void);
 void writeConfig(uint8_t pageNum);
-void writeCalibration(void);
-void writeCalibrationPage(uint8_t pageNum);
 
 void loadConfig(void);
-void loadCalibration(void);
+void loadCalibrationTables(void);
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 void EEPROMWriteRaw(uint16_t address, uint8_t data);
@@ -138,8 +136,27 @@ void storeLastBaro(uint8_t newValue);
 uint8_t readEEPROMVersion(void);
 void storeEEPROMVersion(uint8_t newVersion);
 
-void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);
-uint32_t readCalibrationCRC32(uint8_t calibrationPageNum);
+/** @brief Enum to identify sensor calibration tables */
+enum class SensorCalibrationTable : uint8_t {
+    /** @brief The coolant sensor calibration curve */
+    CoolantSensor = 0U,
+    /** @brief Intake Air Temperature (IAT) sensor calibration curve */
+    IntakeAirTempSensor = 1U,
+    /** @brief The Oxygen (O2) sensor calibration curve */
+    O2Sensor = 2U,
+};
+
+/** @brief Store the curves for all sensors in permanent storage */
+void writeCalibrationTables(void);
+
+/** @brief Store one sensor curve in permanent storage */
+void writeCalibrationTable(SensorCalibrationTable sensor);
+
+/** @brief Store the CRC for one sensor curve in permanent storage */
+void writeCalibrationCrc(SensorCalibrationTable sensor, uint32_t crc);
+
+/** @brief Retrieve the CRC for one sensor curve from permanent storage */
+uint32_t readCalibrationCrc(SensorCalibrationTable sensor);
 
 uint16_t getEEPROMSize(void);
 
@@ -190,16 +207,6 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CONFIG15_MAP   3199
 #define EEPROM_CONFIG15_START 3281
 #define EEPROM_CONFIG15_END   3457
-
-
-#define EEPROM_CALIBRATION_CLT_CRC  3674
-#define EEPROM_CALIBRATION_IAT_CRC  3678
-#define EEPROM_CALIBRATION_O2_CRC   3682
-
-//These were the values used previously when all calibration tables were 512 long. They need to be retained so the update process (202005 -> 202008) can work
-#define EEPROM_CALIBRATION_O2_OLD   2559
-#define EEPROM_CALIBRATION_IAT_OLD  3071
-#define EEPROM_CALIBRATION_CLT_OLD  3583
 
 #define EEPROM_DEFER_DELAY          MICROS_PER_SEC //1.0 second pause after large comms before writing to EEPROM
 
