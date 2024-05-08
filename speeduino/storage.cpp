@@ -592,6 +592,16 @@ uint8_t readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
 void storeEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
 
+
+void clearStorage(void) {
+  #if defined(FLASH_AS_EEPROM_h)
+    EEPROM.read(0); //needed for SPI eeprom emulation.
+    EEPROM.clear(); 
+  #else 
+    for (uint16_t i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write((eeprom_address_t)i, UINT8_MAX);}
+  #endif  
+}
+
 #if defined(CORE_AVR)
 #pragma GCC pop_options
 #endif

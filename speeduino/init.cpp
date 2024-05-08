@@ -21,9 +21,6 @@
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include "board_definition.h"
-#if defined(EEPROM_RESET_PIN)
-  #include EEPROM_LIB_H
-#endif
 #ifdef SD_LOGGING
   #include "SD_logger.h"
   #include "rtc_common.h"
@@ -35,6 +32,48 @@
 // This minimizes RAM usage at no performance cost
 #pragma GCC optimize ("Os") 
 #endif
+
+///
+/// @brief Allow the user to reset the firmware storage (aka EPROM).
+///
+/// This gives the user the opportunity to clear the permanent storage
+/// at start up. 
+///
+/// See https://github.com/noisymime/speeduino/pull/657
+///
+static void processResetStorageRequest(void) {
+#if defined(EEPROM_RESET_PIN)
+
+  constexpr uint32_t START_RESET_INTERVAL = MILLI_PER_SEC+50;
+  constexpr uint32_t MIN_BUTTON_PRESSED_INTERVAL = MILLI_PER_SEC/2;
+  constexpr uint32_t MAX_BUTTON_RELEASE_INTERVAL = MILLI_PER_SEC;
+  
+  uint32_t start_time = millis();
+  bool exit_erase_loop = false; 
+  pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
+
+  //only start routine when this pin is low because it is pulled low
+  while (digitalRead(EEPROM_RESET_PIN) != HIGH && (millis() - start_time)<START_RESET_INTERVAL)
+  {
+    //make sure the key is pressed for at least 0.5 second 
+    if ((millis() - start_time)>(MIN_BUTTON_PRESSED_INTERVAL)) {
+      //if key is pressed afterboot for 0.5 second make led turn off
+      digitalWrite(LED_BUILTIN, HIGH);
+
+      //see if the user reacts to the led turned off with removing the keypress within 1 second
+      while (((millis() - start_time)<MAX_BUTTON_RELEASE_INTERVAL) && (exit_erase_loop!=true)){
+
+        //if user let go of key within 1 second erase eeprom
+        if(digitalRead(EEPROM_RESET_PIN) != LOW){
+          clearStorage();
+          //if erase done exit while loop.
+          exit_erase_loop = true;
+        }
+      }
+    } 
+  }
+#endif
+}
 
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
@@ -69,48 +108,12 @@ void initialiseAll(void)
     //STM32 can not currently enabled
     #endif
 
-    /*
-    ***********************************************************************************************************
-    * EEPROM reset
-    */
-    #if defined(EEPROM_RESET_PIN) && !defined(UNIT_TEST)
-    uint32_t start_time = millis();
-    byte exit_erase_loop = false; 
-    pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
-
-    //only start routine when this pin is low because it is pulled low
-    while (digitalRead(EEPROM_RESET_PIN) != HIGH && (millis() - start_time)<1050)
-    {
-      //make sure the key is pressed for at least 0.5 second 
-      if ((millis() - start_time)>500) {
-        //if key is pressed afterboot for 0.5 second make led turn off
-        digitalWrite(LED_BUILTIN, HIGH);
-
-        //see if the user reacts to the led turned off with removing the keypress within 1 second
-        while (((millis() - start_time)<1000) && (exit_erase_loop!=true)){
-
-          //if user let go of key within 1 second erase eeprom
-          if(digitalRead(EEPROM_RESET_PIN) != LOW){
-            #if defined(FLASH_AS_EEPROM_h)
-              EEPROM.read(0); //needed for SPI eeprom emulation.
-              EEPROM.clear(); 
-            #else 
-              for (int i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write(i, 255);}
-            #endif
-            //if erase done exit while loop.
-            exit_erase_loop = true;
-          }
-        }
-      } 
-    }
-    #endif
-  
     // Unit tests should be independent of any stored configuration on the board!
 #if !defined(UNIT_TEST)
+    processResetStorageRequest();
     loadConfig();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 #endif
-
 
     //Always start with a clean slate on the bootloader capabilities level
     //This should be 0 until we hear otherwise from the 16u2
