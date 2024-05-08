@@ -128,8 +128,6 @@ void writeCalibrationPage(uint8_t pageNum);
 void loadConfig(void);
 void loadCalibration(void);
 
-void resetConfigPages(void);
-
 //These are utility functions that prevent other files from having to use EEPROM.h directly
 void EEPROMWriteRaw(uint16_t address, uint8_t data);
 uint8_t EEPROMReadRaw(uint16_t address);

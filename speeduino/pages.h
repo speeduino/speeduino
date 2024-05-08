@@ -27,6 +27,9 @@ constexpr uint8_t boostvvtPage2 = 15;
 constexpr uint8_t MIN_PAGE_NUM  = veSetPage;
 constexpr uint8_t MAX_PAGE_NUM  = (boostvvtPage2+1U);
 
+/** @brief Fill the tune (config pages & tables) with zeroes. */
+void setTuneToEmpty(void);
+
 // ============================== Per-byte page access ==========================
 
 /** @brief Gets a single value from a page, with data aligned as per the ini file */

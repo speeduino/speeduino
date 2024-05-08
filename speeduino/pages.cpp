@@ -392,10 +392,70 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
   return result;
 }
 
+// ========================= Set tune to empty support  ===================
+
+static void setTableRowToEmpty(table_row_iterator row)
+{
+  (void)memset(&*row, 0, row.size());
+}
+
+static void setTableValuesToEmpty(table_value_iterator it)
+{
+  while (!it.at_end())
+  {
+    setTableRowToEmpty(*it);
+    ++it;
+  }
+}
+
+static void setTableAxisToEmpty(table_axis_iterator it)
+{
+  while (!it.at_end())
+  {
+    *it = 0;
+    ++it;
+  }
+}
+
+static void setTableToEmpty(const page_iterator_t &entity)
+{
+  setTableAxisToEmpty(y_begin(entity));
+  setTableAxisToEmpty(x_begin(entity));
+  setTableValuesToEmpty(rows_begin(entity));
+}
+
+
+static void setEntityToEmpty(page_iterator_t entity) {
+  switch (entity.type)
+    {
+    case EntityType::Raw:
+        (void)memset(entity.pRaw, 0, entity.address.size);
+        break;
+
+    case EntityType::Table:
+        setTableToEmpty(entity);
+        break;
+
+    default:
+        // Do nothing
+        break;
+    }
+}
+
 
 // ====================================== External functions  ====================================
 
-uint16_t getPageSize(uint8_t pageNum)
+void __attribute__((noinline)) setTuneToEmpty(void) {
+  for (uint8_t page=MIN_PAGE_NUM; page<MAX_PAGE_NUM; ++page) {
+    page_iterator_t entity = page_begin(page);
+    while (entity.type!=EntityType::End) {
+      setEntityToEmpty(entity);
+      entity = advance(entity);
+    }
+  }
+}
+
+uint16_t getPageSize(byte pageNum)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
   return entity.address.start + entity.address.size;
