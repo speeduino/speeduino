@@ -589,7 +589,7 @@ void processSerialCommand(void)
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
       if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { setEepromWritePending(true); }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
@@ -598,7 +598,7 @@ void processSerialCommand(void)
       BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
       setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4)); //Add 25% more to the EEPROM defer time
       if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { setEepromWritePending(true); }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
