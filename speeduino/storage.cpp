@@ -105,16 +105,19 @@ static eeprom_address_t getEntityStartAddress(page_iterator_t entity) {
   return address;
 }
 
-bool isEepromWritePending(void)
-{
+bool isEepromWritePending(void) {
   return BIT_CHECK(currentStatus.status4, BIT_STATUS4_BURNPENDING);
+}
+
+void setEepromWritePending(bool isPending) {
+  BIT_WRITE(currentStatus.status4, BIT_STATUS4_BURNPENDING, isPending);
 }
 
 /** Write all config pages to EEPROM.
  */
 void writeAllConfig(void)
 {
-  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_BURNPENDING);
+  setEepromWritePending(false);
 
   uint8_t pageCount = getPageCount();
   uint8_t page = 0U;
@@ -280,7 +283,7 @@ void writeConfig(uint8_t pageNum)
     entity = advance(entity);
   }
 
-  BIT_WRITE(currentStatus.status4, BIT_STATUS4_BURNPENDING, !result.can_write());
+  setEepromWritePending(!result.can_write());
 }
 
 //  ================================= Internal read support ===============================
