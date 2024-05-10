@@ -113,9 +113,7 @@ void setEepromWritePending(bool isPending) {
   currentStatus.burnPending = isPending;
 }
 
-/** Write all config pages to EEPROM.
- */
-void writeAllConfig(void)
+void saveAllPages(void)
 {
   setEepromWritePending(false);
 
@@ -123,7 +121,7 @@ void writeAllConfig(void)
   uint8_t page = 0U;
   while (page<pageCount && !isEepromWritePending())
   {
-    writeConfig(page);
+    savePage(page);
     page = page + 1;
   }
 }
@@ -267,11 +265,7 @@ static write_location writeEntity(page_iterator_t entity, write_location locatio
 
 //  ================================= End write support ===============================
 
-/** Write a table or map to EEPROM storage.
-Takes the current configuration (config pages and maps)
-and writes them to EEPROM as per the layout defined in storage.h.
-*/
-void writeConfig(uint8_t pageNum)
+void savePage(uint8_t pageNum)
 {
   write_location result = { 0, 0, getMaxWriteBlockSize() };
 
@@ -372,10 +366,7 @@ static void loadPage(uint8_t pageNum) {
 
 //  ================================= End internal read support ===============================
 
-
-/** Load all config tables from storage.
- */
-void loadConfig(void)
+void loadAllPages(void)
 {
   uint8_t pageCount = getPageCount();
   for (uint8_t page = 0U; page<pageCount; ++page) {
@@ -383,12 +374,9 @@ void loadConfig(void)
   }
 }
 
-/** Read the calibration information from EEPROM.
-This is separate from the config load as the calibrations do not exist as pages within the ini file for Tuner Studio.
-*/
-void loadCalibrationTables(void)
+void loadAllCalibrationTables(void)
 {
-  // If you modify this function be sure to also modify writeCalibrationTables();
+  // If you modify this function be sure to also modify saveAllCalibrationTables();
   // it should be a mirror image of this function.
 
   EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
@@ -405,17 +393,17 @@ void loadCalibrationTables(void)
 This takes the values in the 3 calibration tables (Coolant, Inlet temp and O2)
 and saves them to the EEPROM.
 */
-void writeCalibrationTables(void)
+void saveAllCalibrationTables(void)
 {
-  // If you modify this function be sure to also modify loadCalibrationTables();
+  // If you modify this function be sure to also modify loadAllCalibrationTables();
   // it should be a mirror image of this function.
 
-  writeCalibrationTable(O2Sensor);
-  writeCalibrationTable(IntakeAirTempSensor);
-  writeCalibrationTable(CoolantSensor);
+  saveCalibrationTable(O2Sensor);
+  saveCalibrationTable(IntakeAirTempSensor);
+  saveCalibrationTable(CoolantSensor);
 }
 
-void writeCalibrationTable(SensorCalibrationTable sensor)
+void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == O2Sensor)
   {
@@ -452,13 +440,13 @@ static inline eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationT
   return EEPROM_CALIBRATION_CLT_CRC;
 }
 
-void writeCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
+void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
   EEPROM.put(getSensorCalibrationCrcAddress(sensor), calibrationCRC);
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
-uint32_t readCalibrationCrc(SensorCalibrationTable sensor)
+uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
   EEPROM.get(getSensorCalibrationCrcAddress(sensor), crc32_val);
@@ -473,19 +461,14 @@ uint16_t getEEPROMSize(void)
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
-//Simply an alias for EEPROM.update()
-void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
-uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
+void EEPROMWriteRaw(uint16_t address, byte data) { EEPROM.update(address, data); }
+byte EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
 
-/// Read last stored barometer reading from EEPROM.
-byte readLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
-/// Write last acquired arometer reading to EEPROM.
-void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
-/// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
-byte readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
-/// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
-void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+uint8_t loadLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
+void saveLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
 
+uint8_t loadEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
+void saveEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
 
 void clearStorage(void) {
   #if defined(FLASH_AS_EEPROM_h)
