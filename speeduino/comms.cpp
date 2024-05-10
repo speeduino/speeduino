@@ -57,6 +57,8 @@ void sendCompositeLog(void);
 
 #define SEND_OUTPUT_CHANNELS 48U
 
+#define COMMS_SD            defined(RTC_ENABLED) && defined(SD_LOGGING)
+
 //!@{
 /** @brief Hard coded response for some TS messages.
  * @attention Stored in flash (.text segment) and loaded on demand.
@@ -79,7 +81,7 @@ static uint16_t serialBytesRxTx = 0;
 static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
 using crc_t = uint32_t;
-#ifdef RTC_ENABLED
+#if COMMS_SD
 #undef SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
  * 
@@ -716,7 +718,7 @@ void processSerialCommand(void)
       uint8_t cmd = serialPayload[2];
       uint16_t offset = word(serialPayload[4], serialPayload[3]);
       uint16_t length = word(serialPayload[6], serialPayload[5]);
-#ifdef RTC_ENABLED      
+#if COMMS_SD     
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 #endif
@@ -732,7 +734,7 @@ void processSerialCommand(void)
         (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
         sendSerialPayloadNonBlocking(sizeof(codeVersion));
       }
-#ifdef RTC_ENABLED
+#if COMMS_SD
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
       {
         serialPayload[0] = SERIAL_RC_OK;
@@ -914,7 +916,7 @@ void processSerialCommand(void)
 
     case 'w':
     {
-#ifdef RTC_ENABLED
+#if COMMS_SD
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
