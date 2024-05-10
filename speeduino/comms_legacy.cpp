@@ -365,7 +365,7 @@ void legacySerialCommand(void)
       tableID = primarySerial.read(); //Not currently used for anything
 
       receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibrationTables(); //Store received values in EEPROM
+      saveAllCalibrationTables(); //Store received values in EEPROM
 
       break;
 
@@ -537,7 +537,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       if (targetPort.available() >= 2)
       {
         targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
+        savePage(targetPort.read());
         targetStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -548,7 +548,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       if (targetPort.available() >= 2)
       {
         targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
+        savePage(targetPort.read());
         targetStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -1221,11 +1221,11 @@ void receiveCalibration(byte tableID)
       
       pTargetTable->values[x] = temperatureAddOffset(tempValue);
       pTargetTable->axis[x] = (x * 32U);
-      writeCalibrationTables();
+      saveAllCalibrationTables();
     }
   }
 
-  writeCalibrationTables();
+  saveAllCalibrationTables();
 }
 
 /** Send 256 tooth log entries to primarySerial.
