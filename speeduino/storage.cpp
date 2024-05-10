@@ -42,14 +42,14 @@ extern EEPROM_t EEPROM;
 static constexpr eeprom_address_t EEPROM_DATA_VERSION = 0;
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-#define STORAGE_END 0xFFF       // Should be E2END?
-#define EEPROM_CALIBRATION_CLT_VALUES (STORAGE_END-sizeof(cltCalibration_values))
-#define EEPROM_CALIBRATION_CLT_BINS   (EEPROM_CALIBRATION_CLT_VALUES-sizeof(cltCalibration_bins))
-#define EEPROM_CALIBRATION_IAT_VALUES (EEPROM_CALIBRATION_CLT_BINS-sizeof(iatCalibration_values))
-#define EEPROM_CALIBRATION_IAT_BINS   (EEPROM_CALIBRATION_IAT_VALUES-sizeof(iatCalibration_bins))
-#define EEPROM_CALIBRATION_O2_VALUES  (EEPROM_CALIBRATION_IAT_BINS-sizeof(o2Calibration_values))
-#define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
-#define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
+static constexpr eeprom_address_t STORAGE_END = 0xFFF;       // Should be E2END?
+static constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(eeprom_address_t)sizeof(cltCalibration_values);
+static constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(eeprom_address_t)sizeof(cltCalibration_bins);
+static constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(eeprom_address_t)sizeof(iatCalibration_values);
+static constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(eeprom_address_t)sizeof(iatCalibration_bins);
+static constexpr eeprom_address_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(eeprom_address_t)sizeof(o2Calibration_values);
+static constexpr eeprom_address_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(eeprom_address_t)sizeof(o2Calibration_bins);
+static constexpr eeprom_address_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(eeprom_address_t)1);
 
 // Maps an entity to it's storage start address on the EEPROM.
 //
@@ -121,7 +121,7 @@ void saveAllPages(void)
   while (page<pageCount && !isEepromWritePending())
   {
     savePage(page);
-    page = page + 1;
+    page = page + 1U;
   }
 }
 
@@ -152,17 +152,17 @@ struct write_location {
     return { newAddress, counter, write_block_size };
   }
 
-  write_location& operator++()
+  write_location& operator++(void)
   {
     ++address;
     return *this;
   }
 
-  bool can_write() const
+  bool can_write(void) const
   {
     bool canWrite = false;
-    if(currentStatus.RPM > 0) { canWrite = (counter <= write_block_size); }
-    else { canWrite = (counter <= (write_block_size * 8)); } //Write to EEPROM more aggressively if the engine is not running
+    if(currentStatus.RPM > 0U) { canWrite = (counter <= write_block_size); }
+    else { canWrite = (counter <= (write_block_size * 8U)); } //Write to EEPROM more aggressively if the engine is not running
 
     return canWrite;
   }
@@ -188,7 +188,7 @@ static inline write_location write(table_value_iterator it, write_location locat
 {
   while (location.can_write() && !it.at_end())
   {
-    location = write(*it, location);
+    location = write(*it, location); //cppcheck-suppress misra-c2012-17.2
     ++it;
   }
   return location;
@@ -206,7 +206,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
   return location;
 }
 
-static inline write_location writeTable(void *pTable, table_type_t key, write_location location)
+static inline write_location writeTable(void *pTable, table_type_t key, const write_location &location)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
@@ -231,7 +231,7 @@ static uint8_t getMaxWriteBlockSize(void) {
     //maximum write block size based on the RPM.
     //This calculation is based on EEPROM writes taking approximately 4ms per byte
     //(Actual value is 3.8ms, so 4ms has some safety margin) 
-    if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
+    if(currentStatus.RPM > 65U) //Min RPM of 65 prevents overflow of uint8_t
     { 
       blockSize = (uint8_t)(15000U / currentStatus.RPM);
       blockSize = constrain(blockSize, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
@@ -292,7 +292,7 @@ static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst
   // The generic code in the #else branch works but this provides a 45% speed up on AVR
   size_t size = pLast-pFirst;
   eeprom_read_block(pFirst, (const void*)(size_t)address, size);
-  return address+size;
+  return address+(eeprom_address_t)size;
 #else
   for (; pFirst != pLast; ++address, (void)++pFirst)
   {
@@ -311,7 +311,7 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 {
   while (!it.at_end())
   {
-    address = load(*it, address);
+    address = load(*it, address); //cppcheck-suppress misra-c2012-17.2
     ++it;
   }
   return address; 
@@ -380,14 +380,14 @@ void loadAllCalibrationTables(void)
   // If you modify this function be sure to also modify saveAllCalibrationTables();
   // it should be a mirror image of this function.
 
-  EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
   
-  EEPROM.get(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
 
-  EEPROM.get(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -408,18 +408,20 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == O2Sensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
   }
   else if(sensor == IntakeAirTempSensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
   }
   else if(sensor == CoolantSensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  } else {
+    // Unknown sensor identifier - do nothing but keep MISRA checker happy
   }
 }
 
@@ -463,7 +465,7 @@ uint16_t getEEPROMSize(void)
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
 void EEPROMWriteRaw(uint16_t address, byte data) { EEPROM.update(address, data); }
-byte EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
+byte EEPROMReadRaw(uint16_t address) { return (byte)EEPROM.read(address); }
 
 uint8_t loadLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
 void saveLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
