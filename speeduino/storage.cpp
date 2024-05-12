@@ -29,6 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "table3d_axis_io.h"
 #include "sensors.h"
 #include "utilities.h"
+#include "unit_testing.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 // Should be defined in a CPP file elsewhere. Usually the board CPP file.
@@ -52,11 +53,16 @@ static constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_
 static constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
 static constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
 
+#if defined(UNIT_TEST)
+eeprom_address_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
+uint16_t STORAGE_SIZE = STORAGE_END;
+#endif
+
 // Maps an entity to it's storage start address on the EEPROM.
 //
 // This is *THE* single source of truth for mapping the tune
 // (I.e page entities) to EEPROM locations.
-static eeprom_address_t getEntityStartAddress(page_iterator_t entity) {
+TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
   struct entity_storage_map_t {
       void *pEntity;
       uint16_t eepromStartAddress;
@@ -247,11 +253,11 @@ static write_location writeEntity(page_iterator_t entity, write_location locatio
   if (location.address>(eeprom_address_t)0U) {
     switch (entity.type) {
     case Raw:
-        return write_range((byte *)entity.pData, (byte *)entity.pData+entity.size, location);
+      location = write_range((byte *)entity.pData, (byte *)entity.pData+entity.size, location);
       break;
       
     case Table:
-        return writeTable(entity.pData, entity.table_key, location);
+      location = writeTable(entity.pData, entity.table_key, location);
       break;
     
     case NoEntity:
@@ -341,21 +347,21 @@ static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_
 
 static eeprom_address_t loadPageEntity(page_iterator_t entity, eeprom_address_t address) {
   switch (entity.type)
-    {
-    case Raw:
-        return load_range(address, (byte *)entity.pData, (byte *)entity.pData+entity.size);
-        break;
+  {
+  case Raw:
+      address = load_range(address, (byte *)entity.pData, (byte *)entity.pData+entity.size);
+      break;
 
-    case Table:
-        return loadTable(entity.pData, entity.table_key, address);
-        break;
+  case Table:
+      address = loadTable(entity.pData, entity.table_key, address);
+      break;
 
-    case NoEntity:
-    default:
-        // Do nothing
-        return address;
-        break;
-    }
+  case NoEntity:
+  default:
+      // Do nothing
+      break;
+  }
+  return address;
 }
 
 static void loadPage(uint8_t pageNum) {
@@ -424,7 +430,7 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
   }
 }
 
-static inline eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
+TESTABLE_INLINE_STATIC eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
   constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_CRC = 3674;
   constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_CRC = 3678;
   constexpr eeprom_address_t EEPROM_CALIBRATION_O2_CRC = 3682;
