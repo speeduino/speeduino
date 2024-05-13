@@ -63,6 +63,36 @@ uint16_t STORAGE_SIZE = STORAGE_END;
 // This is *THE* single source of truth for mapping the tune
 // (I.e page entities) to EEPROM locations.
 TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
+  static constexpr eeprom_address_t EEPROM_CONFIG1_MAP    = 3;
+  static constexpr eeprom_address_t EEPROM_CONFIG2_START  = 291;
+  static constexpr eeprom_address_t EEPROM_CONFIG3_MAP    = 421;
+  static constexpr eeprom_address_t EEPROM_CONFIG4_START  = 709;
+  static constexpr eeprom_address_t EEPROM_CONFIG5_MAP    = 839;
+  static constexpr eeprom_address_t EEPROM_CONFIG6_START  = 1127;
+  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP1   = 1257;
+  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP2   = 1339;
+  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP3   = 1421;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP1   = 1503;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP2   = 1553;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP3   = 1603;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP4   = 1653;
+  static constexpr eeprom_address_t EEPROM_CONFIG9_START  = 1710;
+  static constexpr eeprom_address_t EEPROM_CONFIG10_START = 1902;
+  static constexpr eeprom_address_t EEPROM_CONFIG11_MAP   = 2096;
+  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP   = 2387;
+  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP2  = 2469;
+  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP3  = 2551;
+  static constexpr eeprom_address_t EEPROM_CONFIG13_START = 2580;
+  static constexpr eeprom_address_t EEPROM_CONFIG14_MAP   = 2710;
+  //This is OUT OF ORDER as Page 8 was expanded to add fuel trim tables 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP5   = 3001;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP6   = 3051;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP7   = 3101;
+  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP8   = 3151;
+  //Page 15 added after OUT OF ORDER page 8
+  static constexpr eeprom_address_t EEPROM_CONFIG15_MAP   = 3199;
+  static constexpr eeprom_address_t EEPROM_CONFIG15_START = 3281;
+
   struct entity_storage_map_t {
       void *pEntity;
       uint16_t eepromStartAddress;
