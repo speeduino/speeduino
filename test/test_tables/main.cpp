@@ -2,14 +2,13 @@
 
 void runAllTableTests(void)
 {
-    extern void testTables(void);
+    extern void testTables3d(void);
     extern void testTable2d(void);
+    extern void testAlgorithms3D(void);
 
-    extern void testTables(void);
-    extern void testTable2d(void);
-
-    testTables();
+    testTables3d();
     testTable2d();
+    testAlgorithms3D();
 }
 
 DEVICE_TEST(runAllTableTests)
