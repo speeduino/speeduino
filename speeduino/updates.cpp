@@ -74,21 +74,25 @@ void doUpdates(void)
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
   if(loadEEPROMVersion() == 5)
   {
+    static constexpr int EEPROM_CONFIG10_END_V6 = 2094;
+    static constexpr int PAGE_5PLUS_SHIFT_DISTANCE = 128;
+    static constexpr int PAGE_5PLUS_BLOCK_SIZE = 1152;
+
     //Data after page 4 has to move back 128 bytes
-    for(int x=0; x < 1152; x++)
+    for(int x=0; x < PAGE_5PLUS_BLOCK_SIZE; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 128; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - x;
+      uint16_t startMem = endMem - PAGE_5PLUS_SHIFT_DISTANCE; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
     //The remaining data only has to move back 64 bytes
-    for(int x=0; x < 352; x++)
+    static constexpr int BLOCK_SIZE = 352;
+    static constexpr int SHIFT_DISTANCE = 64;
+    for(int x=0; x < BLOCK_SIZE; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - 1152 - x;
-      int startMem = endMem - 64; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - PAGE_5PLUS_BLOCK_SIZE - x;
+      uint16_t startMem = endMem - SHIFT_DISTANCE; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
 
     saveEEPROMVersion(6);
@@ -98,12 +102,14 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 6)
   {
     //Data after page 8 has to move back 82 bytes
-    for(int x=0; x < 529; x++)
+    static constexpr int EEPROM_CONFIG10_END_V7 = 2094;
+    static constexpr int SHIFT_DISTANCE = 82;
+    static constexpr int BLOCK_SIZE = 529;
+    for(int x=0; x < BLOCK_SIZE; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 82; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V7 - x;
+      uint16_t startMem = endMem - SHIFT_DISTANCE; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
 
     saveEEPROMVersion(7);
@@ -375,7 +381,6 @@ void doUpdates(void)
 
     saveAllPages();
     saveEEPROMVersion(14);
-
   }
 
   if(loadEEPROMVersion() == 14)
@@ -385,9 +390,9 @@ void doUpdates(void)
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
     
     //These were the values used previously when all calibration tables were 512 long. They need to be retained so the update process (202005 -> 202008) can work
-    constexpr eeprom_address_t EEPROM_CALIBRATION_O2_OLD = 2559;
-    constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_OLD = 3071;
-    constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_OLD = 3583;
+    constexpr int EEPROM_CALIBRATION_O2_OLD = 2559;
+    constexpr int EEPROM_CALIBRATION_IAT_OLD = 3071;
+    constexpr int EEPROM_CALIBRATION_CLT_OLD = 3583;
 
     int y;
     for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
@@ -462,9 +467,12 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
-    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    static constexpr int EEPROM_CONFIG14_END_V16 = 2998;
+    static constexpr int EEPROM_CONFIG13_START_V16 = 2580;
+    static constexpr int SHIFT_DISTANCE = 112;
+    for(int x=EEPROM_CONFIG14_END_V16; x>=EEPROM_CONFIG13_START_V16; x--)
     {
-      EEPROMWriteRaw(x, EEPROMReadRaw(x-112));
+      EEPROMWriteRaw(x, EEPROMReadRaw(x-SHIFT_DISTANCE));
     }
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
