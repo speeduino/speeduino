@@ -1,7 +1,6 @@
 // #include <string.h> // memcpy
 #include <unity.h>
 #include <stdio.h>
-#include "tests_tables.h"
 #include "table3d.h"
 #include "../test_utils.h"
 
@@ -58,23 +57,6 @@ void setup_TestTable(void)
          500 |  700 |  900 | 1200 | 1600 | 2000 | 2500 | 3100 | 3500 | 4100 | 4700 | 5300 | 5900 | 6500 | 6750 | 7000
   */
   populate_table_P(testTable, tempXAxis, tempYAxis, values);
-}
-
-void testTables()
-{
-  SET_UNITY_FILENAME() {
-
-  RUN_TEST(test_tableLookup_50pct);
-  RUN_TEST(test_tableLookup_exact1Axis);
-  RUN_TEST(test_tableLookup_exact2Axis);
-  RUN_TEST(test_tableLookup_overMaxX);
-  RUN_TEST(test_tableLookup_overMaxY);
-  RUN_TEST(test_tableLookup_underMinX);
-  RUN_TEST(test_tableLookup_underMinY);
-  RUN_TEST(test_tableLookup_roundUp);
-  //RUN_TEST(test_all_incrementing);
-
-  }  
 }
 
 void test_tableLookup_50pct(void)
@@ -198,4 +180,21 @@ void test_all_incrementing(void)
       tempVE = newVE;
     }
   }
+}
+
+void testTables3d()
+{
+  SET_UNITY_FILENAME() {
+
+  RUN_TEST(test_tableLookup_50pct);
+  RUN_TEST(test_tableLookup_exact1Axis);
+  RUN_TEST(test_tableLookup_exact2Axis);
+  RUN_TEST(test_tableLookup_overMaxX);
+  RUN_TEST(test_tableLookup_overMaxY);
+  RUN_TEST(test_tableLookup_underMinX);
+  RUN_TEST(test_tableLookup_underMinY);
+  RUN_TEST(test_tableLookup_roundUp);
+  //RUN_TEST(test_all_incrementing);  
+
+  }  
 }
