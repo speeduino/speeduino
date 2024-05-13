@@ -2,8 +2,9 @@
 #include <unity.h>
 #include <avr/sleep.h>
 
-#include "tests_tables.h"
-#include "test_table2d.h"
+extern void testTables3d(void);
+extern void testTable2d(void);
+extern void testAlgorithms3D(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -19,8 +20,9 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testTables();
+    testTables3d();
     testTable2d();
+    testAlgorithms3D();
 
     UNITY_END(); // stop unit testing
 
