@@ -17,6 +17,26 @@
 #include "units.h"
 #include "preprocessor.h"
 
+void tableValueAdd(table_row_iterator &row, void* pContext) { 
+  static_assert(sizeof(pContext)>=sizeof(table3d_value_t), "");
+  *row = *row + (*(table3d_value_t*)pContext); 
+}
+
+void tableValueMultiply(table_row_iterator &row, void* pContext) { 
+  static_assert(sizeof(pContext)>=sizeof(table3d_value_t), "");
+  *row = *row * (*(table3d_value_t*)pContext); 
+}
+
+void tableAxisMultiply(table_axis_iterator &axis, void* pContext) { 
+  static_assert(sizeof(pContext)>=sizeof(table3d_axis_t), "");
+  *axis = *axis * (*(table3d_axis_t*)pContext); 
+}
+
+void tableAxisDivide(table_axis_iterator &axis, void* pContext) { 
+  static_assert(sizeof(pContext)>=sizeof(table3d_axis_t), "");
+  *axis = *axis / (*(table3d_axis_t*)pContext); 
+}
+
 void doUpdates(void)
 {
   #define CURRENT_DATA_VERSION    25
@@ -26,18 +46,7 @@ void doUpdates(void)
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(loadEEPROMVersion() == 2)
   {
-    auto table_it = ignitionTable.values.begin();
-    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
-    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
-    {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row + 40;
-        ++row;
-      }      
-      ++table_it;
-    }
+    for_each(ignitionTable.values.begin(), tableValueAdd, (void*)40);
     saveAllPages();
     saveEEPROMVersion(3);
   }
@@ -485,17 +494,7 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
-    auto table_it = vvtTable.values.begin();
-    while (!table_it.at_end())
-    {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row << 1;
-        ++row;
-      }      
-      ++table_it;
-    }
+    for_each(vvtTable.values.begin(), tableValueMultiply, (void*)2);
 
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
     configPage10.vvtCLminDuty = configPage10.vvtCLminDuty << 1;
@@ -556,16 +555,16 @@ void doUpdates(void)
     // Each table Y axis need to be updated as well if TPS is the source
     if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
     {
-      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
-      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
-      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
-      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
-      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
-      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
-      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
-      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
-      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
-      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+      for_each(fuelTable.axisY.begin(),  tableAxisMultiply, (void*)4);
+      for_each(afrTable.axisY.begin(),   tableAxisMultiply, (void*)4);
+      for_each(trim1Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim2Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim3Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim4Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim5Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim6Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim7Table.axisY.begin(), tableAxisMultiply, (void*)4);
+      for_each(trim8Table.axisY.begin(), tableAxisMultiply, (void*)4);
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)
@@ -574,22 +573,22 @@ void doUpdates(void)
         }
       }
     }
-    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
-    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
-    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
-    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { for_each(ignitionTable.axisY.begin(), tableAxisMultiply, (void*)4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { for_each(fuelTable2.axisY.begin(), tableAxisMultiply, (void*)4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { for_each(ignitionTable2.axisY.begin(), tableAxisMultiply, (void*)4); }
 
+    for_each(boostTable.axisY.begin(), tableAxisMultiply, (void*)2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
     if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
-      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
-      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      for_each(vvtTable.axisY.begin(),  tableAxisMultiply, (void*)2);
+      for_each(vvt2Table.axisY.begin(), tableAxisMultiply, (void*)2);
     }
     else
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
-      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
-      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      for_each(vvtTable.axisY.begin(),  tableAxisDivide, (void*)2);
+      for_each(vvt2Table.axisY.begin(), tableAxisDivide, (void*)2);
     }
 
 
@@ -645,37 +644,18 @@ void doUpdates(void)
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
     //This makes the boostcontrol fully backwards compatible.  
-    auto table_it = boostTableLookupDuty.values.begin();
-    while (!table_it.at_end())
-    {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = 50*2;
-        ++row;
-      }      
-      ++table_it;
-    }
+    auto setBoostDutyValue = [](table_row_iterator &row, void*) { *row = 50*2; };
+    for_each(boostTableLookupDuty.values.begin(), setBoostDutyValue, nullptr);
 
     //Set some sensible values at the RPM axis
-    auto table_X = boostTableLookupDuty.axisX.begin();
     uint16_t i = 0;
-    while (!table_X.at_end())
-    {
-      ++i;
-      *table_X = 1000+(500*i);
-      ++table_X;
-    }
+    auto setXAxis= [](table_axis_iterator &it, void* pI) { ++(*(uint16_t*)pI); *it = 1000+(500*(*(uint16_t*)pI)); };
+    for_each(boostTableLookupDuty.axisX.begin(), setXAxis, &i);
 
     //Set some sensible values at the boosttarget axis
-    auto table_Y = boostTableLookupDuty.axisY.begin();
     i = 0;
-    while (!table_Y.at_end())
-    {
-      ++i;
-      *table_Y = (120 + 10*i);
-      ++table_Y;
-    }
+    auto setYAxis= [](table_axis_iterator &it, void* pI) { ++(*(uint16_t*)pI); *it = (120 + 10*(*(uint16_t*)pI)); };
+    for_each(boostTableLookupDuty.axisX.begin(), setYAxis, &i);
 
     //AFR Protection added, add default values
     configPage9.afrProtectEnabled = 0; //Disable by default
@@ -743,7 +723,19 @@ void doUpdates(void)
   {
     //202402
     
-    if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) { multiplyTableValue(wmiMapPage, 2); } //Increased PWM resolution from 0-100 to 0-200 to match VVT
+    if( configPage10.wmiMode >= WMI_MODE_OPENLOOP ) {
+      for_each(wmiTable.axisX.begin(),    tableAxisMultiply, (void*)2);
+      for_each(wmiTable.axisY.begin(),    tableAxisMultiply, (void*)2);
+      for_each(wmiTable.values.begin(),   tableValueMultiply, (void*)2);
+
+      for_each(vvt2Table.axisX.begin(),   tableAxisMultiply, (void*)2);
+      for_each(vvt2Table.axisY.begin(),   tableAxisMultiply, (void*)2);
+      for_each(vvt2Table.values.begin(),  tableValueMultiply, (void*)2);
+
+      for_each(dwellTable.axisX.begin(),  tableAxisMultiply, (void*)2);
+      for_each(dwellTable.axisY.begin(),  tableAxisMultiply, (void*)2);
+      for_each(dwellTable.values.begin(), tableValueMultiply, (void*)2);
+    }
 
     //Default values for pulsed hw test modes
     configPage13.hwTestInjDuration = 8;
@@ -833,42 +825,4 @@ void doUpdates(void)
 
   //Check to see if someone has downgraded versions:
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
-}
-
-void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it * multiplier; 
-    ++y_it;
-  }
-}
-
-void divideTableLoad(void *pTable, table_type_t key, uint8_t divisor)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
-    ++y_it;
-  }
-}
-
-void multiplyTableValue(uint8_t pageNum, uint8_t multiplier)
-{
-  uint16_t count = getPageSize(pageNum);
-  for (uint16_t i = 0; i < count; i++)
-  {
-    setPageValue(pageNum, i, (uint8_t)(getPageValue(pageNum, i) * multiplier));
-  }
-}
-
-void divideTableValue(uint8_t pageNum, uint8_t divisor)
-{
-  uint16_t count = getPageSize(pageNum);
-  for (uint16_t i = 0; i < count; i++)
-  {
-    setPageValue(pageNum, i, (uint8_t)(getPageValue(pageNum, i) / divisor));
-  }
 }
