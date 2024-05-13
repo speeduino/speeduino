@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "tests_tables.h"
 #include "table3d.h"
+#include "../test_utils.h"
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
@@ -113,7 +114,7 @@ void setup_TestTable(void)
 
 void testTables()
 {
-  Unity.TestFile = __FILE__;
+  SET_UNITY_FILENAME() {
 
   RUN_TEST(test_tableLookup_50pct);
   RUN_TEST(test_tableLookup_exact1Axis);
@@ -124,7 +125,8 @@ void testTables()
   RUN_TEST(test_tableLookup_underMinY);
   RUN_TEST(test_tableLookup_roundUp);
   //RUN_TEST(test_all_incrementing);
-  
+
+  }  
 }
 
 void test_tableLookup_50pct(void)

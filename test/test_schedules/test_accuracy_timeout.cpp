@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
-
+#include "../test_utils.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
 
@@ -133,7 +133,7 @@ void test_accuracy_timeout_ign8(void)
 
 void test_accuracy_timeout(void)
 {
-    Unity.TestFile = __FILE__;
+  SET_UNITY_FILENAME() {
 
     RUN_TEST(test_accuracy_timeout_inj1);
     RUN_TEST(test_accuracy_timeout_inj2);
@@ -168,4 +168,5 @@ void test_accuracy_timeout(void)
 #if IGN_CHANNELS >= 8
     RUN_TEST(test_accuracy_timeout_ign8);
 #endif
+  }
 }

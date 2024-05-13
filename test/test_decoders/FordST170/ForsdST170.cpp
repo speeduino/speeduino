@@ -4,6 +4,7 @@
 #include "FordST170.h"
 #include "scheduler.h"
 #include "schedule_calcs.h"
+#include "../../test_utils.h"
 
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;
@@ -159,7 +160,7 @@ void test_fordst170_newIgn_12_trigNeg360_1()
 
 void testFordST170()
 {
-    Unity.TestFile = __FILE__;
+    SET_UNITY_FILENAME() {
 
     RUN_TEST(test_fordst170_newIgn_12_trig0_1);
     RUN_TEST(test_fordst170_newIgn_12_trig90_1);
@@ -170,4 +171,6 @@ void testFordST170()
     RUN_TEST(test_fordst170_newIgn_12_trigNeg180_1);
     RUN_TEST(test_fordst170_newIgn_12_trigNeg270_1);
     RUN_TEST(test_fordst170_newIgn_12_trigNeg360_1);
+    
+    }
 }

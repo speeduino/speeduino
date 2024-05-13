@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
-
+#include "../test_utils.h"
 #include "scheduler.h"
 
 void test_status_initial_off_inj1(void)
@@ -118,7 +118,7 @@ void test_status_initial_off_ign8(void)
 
 void test_status_initial_off(void)
 {
-    Unity.TestFile = __FILE__;
+  SET_UNITY_FILENAME() {
 
     RUN_TEST(test_status_initial_off_inj1);
     RUN_TEST(test_status_initial_off_inj2);
@@ -153,4 +153,5 @@ void test_status_initial_off(void)
 #if IGN_CHANNELS >= 8
     RUN_TEST(test_status_initial_off_ign8);
 #endif
+  }
 }

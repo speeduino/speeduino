@@ -2,10 +2,11 @@
 #include <speeduino.h>
 #include <unity.h>
 #include "test_staging.h"
+#include "../test_utils.h"
 
 void testStaging(void)
 {
-  Unity.TestFile = __FILE__;
+  SET_UNITY_FILENAME() {
 
   RUN_TEST(test_Staging_Off);
   RUN_TEST(test_Staging_4cyl_Auto_Inactive);
@@ -13,6 +14,7 @@ void testStaging(void)
   RUN_TEST(test_Staging_4cyl_Auto_50pct);
   RUN_TEST(test_Staging_4cyl_Auto_33pct);
   RUN_TEST(test_Staging_4cyl_Table_50pct);
+  }
 }
 
 void test_Staging_setCommon()

@@ -2,12 +2,13 @@
 #include <speeduino.h>
 #include <unity.h>
 #include "test_PW.h"
+#include "../test_utils.h"
 
 #define PW_ALLOWED_ERROR  30
 
 void testPW(void)
 {
-  Unity.TestFile = __FILE__;
+  SET_UNITY_FILENAME() {
 
   RUN_TEST(test_PW_No_Multiply);
   RUN_TEST(test_PW_MAP_Multiply);
@@ -18,6 +19,7 @@ void testPW(void)
   RUN_TEST(test_PW_4Cyl_PW0);
   RUN_TEST(test_PW_Limit_Long_Revolution);
   RUN_TEST(test_PW_Limit_90pct);
+  }
 }
 
 int16_t REQ_FUEL;
