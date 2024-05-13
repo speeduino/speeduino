@@ -128,4 +128,24 @@ table_axis_iterator x_rbegin(void *pTable, table_type_t key);
 table_axis_iterator y_begin(void *pTable, table_type_t key);
 
 table_axis_iterator y_rbegin(void *pTable, table_type_t key);
+
+/**
+ * @brief Convenience function: apply an operation to all elements of a table axis.
+ * 
+ * @param axis_it The axis elements
+ * @param pOperation Operation to apply
+ * @param pContext Any additional context required by the context operation
+ */
+void for_each(table_axis_iterator axis_it, void(*pOperation)(table_axis_iterator &, void*), void *pContext);
+
+/**
+ * @brief Convenience function: apply an operation to all elements of a table.
+ * 
+ * @param value_it The table values
+ * @param pOperation Operation to apply
+ * @param pContext Any additional context required by the context operation
+ */
+void for_each(table_value_iterator value_it, void(*pOperation)(table_row_iterator &, void*), void *pContext);
+
+
 /** @} */
