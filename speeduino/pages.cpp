@@ -415,34 +415,15 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
 // ========================= Set tune to empty support  ===================
 
-static void setTableRowToEmpty(table_row_iterator row)
-{
-  (void)memset(&*row, 0, row.size());
-}
-
-static void setTableValuesToEmpty(table_value_iterator it)
-{
-  while (!it.at_end())
-  {
-    setTableRowToEmpty(*it);
-    ++it;
-  }
-}
-
-static void setTableAxisToEmpty(table_axis_iterator it)
-{
-  while (!it.at_end())
-  {
-    *it = 0;
-    ++it;
-  }
-}
+static constexpr byte EMPTY_VALUE = 0U;
 
 static void setTableToEmpty(const page_iterator_t &entity)
 {
-  setTableAxisToEmpty(y_begin(entity));
-  setTableAxisToEmpty(x_begin(entity));
-  setTableValuesToEmpty(rows_begin(entity));
+  auto setAxisEmpty = [](table_axis_iterator &it, void*) { *it = EMPTY_VALUE; };
+  for_each(y_begin(entity), setAxisEmpty, nullptr);
+  for_each(x_begin(entity), setAxisEmpty, nullptr);
+  auto setValueEmpty = [](table_row_iterator &row, void*) { *row = EMPTY_VALUE; };
+  for_each(rows_begin(entity), setValueEmpty, nullptr);
 }
 
 
@@ -450,7 +431,7 @@ static void setEntityToEmpty(page_iterator_t entity) {
   switch (entity.type)
     {
     case Raw:
-        (void)memset(entity.pData, 0, entity.size);
+        (void)memset(entity.pData, EMPTY_VALUE, entity.size);
         break;
 
     case Table:
