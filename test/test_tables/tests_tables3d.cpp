@@ -142,6 +142,7 @@ static void test_all_incrementing(void)
     }
   }
 }
+
 extern table3d_dim_t linear_bin_search(const table3d_axis_t *array, 
                             const table3d_dim_t length,
                             const table3d_axis_t value);
@@ -246,7 +247,7 @@ static void test_bilinear_interpolation(void) {
   TEST_ASSERT_EQUAL(22U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR*3U, QU1X8_QTR*3U));
 }
 
-void testTables()
+void testTables3d()
 {
   SET_UNITY_FILENAME() {
 
