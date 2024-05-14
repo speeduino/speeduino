@@ -65,11 +65,9 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
     #define BOARD_H "board_teensy41.h"
-    #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8

@@ -18,8 +18,9 @@
   #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
   #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
-  #define BOARD_MAX_DIGITAL_PINS 34
-  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
+  #define BOARD_MAX_DIGITAL_PINS 57
+  #define BOARD_MAX_IO_PINS 57
+  #define BOARD_MAX_ADC_PINS  26 //Number of analog pins
   #ifdef USE_SPI_EEPROM
     #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
     typedef uint16_t eeprom_address_t;
