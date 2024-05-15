@@ -153,7 +153,8 @@ void jumpToBootloader();
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
   using eeprom_address_t = uint16_t;
   class SPI_EEPROM_Class;
-  using EEPROM_t = SPI_EEPROM_Class;    
+  using EEPROM_t = SPI_EEPROM_Class; 
+  #define MAX_BLOCK_WRITE_BYTES 20
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
   #define EEPROM_LIB_H "src/FRAM/Fram.h"
   using eeprom_address_t = uint16_t;
@@ -167,6 +168,9 @@ void jumpToBootloader();
   #if defined(STM32F401xC)
     #define SMALL_FLASH_MODE
   #endif
+#endif
+#if !defined(MAX_BLOCK_WRITE_BYTES)
+    #define MAX_BLOCK_WRITE_BYTES 64
 #endif
 
 
