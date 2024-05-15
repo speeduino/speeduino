@@ -196,11 +196,7 @@ struct write_location {
 
   bool can_write(void) const
   {
-    bool canWrite = false;
-    if(currentStatus.RPM > 0U) { canWrite = (counter <= write_block_size); }
-    else { canWrite = (counter <= (write_block_size * 8U)); } //Write to EEPROM more aggressively if the engine is not running
-
-    return canWrite;
+    return counter <= write_block_size;
   }
 };
 
@@ -254,25 +250,31 @@ static inline write_location writeTable(void *pTable, table_type_t key, const wr
 static uint8_t getMaxWriteBlockSize(void) {
   // External fixed sized
 #if defined(MAX_BLOCK_WRITE_BYTES)
-  return MAX_BLOCK_WRITE_BYTES;
+  uint8_t blockSize = MAX_BLOCK_WRITE_BYTES;
 #else
   // Dynamically determine size
   uint8_t blockSize = 18;
   if(BIT_CHECK(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT)) { blockSize = 8; } //If comms compatibility mode is on, slow the burn rate down even further
-
-  #ifdef CORE_AVR
-    //In order to prevent missed pulses during EEPROM writes on AVR, scale the
-    //maximum write block size based on the RPM.
-    //This calculation is based on EEPROM writes taking approximately 4ms per byte
-    //(Actual value is 3.8ms, so 4ms has some safety margin) 
-    if(currentStatus.RPM > 65U) //Min RPM of 65 prevents overflow of uint8_t
-    { 
-      blockSize = (uint8_t)(15000U / currentStatus.RPM);
-      blockSize = constrain(blockSize, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
-    }
-  #endif
-  return blockSize;
 #endif
+
+#ifdef CORE_AVR
+  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+  //maximum write block size based on the RPM.
+  //This calculation is based on EEPROM writes taking approximately 4ms per byte
+  //(Actual value is 3.8ms, so 4ms has some safety margin) 
+  if(currentStatus.RPM > 65U) //Min RPM of 65 prevents overflow of uint8_t
+  { 
+    blockSize = (uint8_t)(15000U / currentStatus.RPM);
+    blockSize = constrain(blockSize, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
+  }
+#endif
+
+  //Write to EEPROM more aggressively if the engine is not running
+  if(currentStatus.RPM==0U) {
+    blockSize = blockSize * 8;
+  } 
+ 
+ return blockSize;
 }
 
 
