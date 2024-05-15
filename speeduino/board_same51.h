@@ -19,6 +19,7 @@
     #include EEPROM_LIB_H
     using eeprom_address_t = int;
     using EEPROM_t = SPI_EEPROM_Class;    
+    #define MAX_BLOCK_WRITE_BYTES 20
   #else
     #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
     using eeprom_address_t = int;
