@@ -252,12 +252,11 @@ static inline write_location writeTable(void *pTable, table_type_t key, const wr
 //If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
 //the rest of the system can hang)
 static uint8_t getMaxWriteBlockSize(void) {
-#if defined(USE_SPI_EEPROM)
-  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
-  return 20; //This needs tuning
-#elif defined(CORE_STM32) || defined(CORE_TEENSY)
-  return 64;
+  // External fixed sized
+#if defined(MAX_BLOCK_WRITE_BYTES)
+  return MAX_BLOCK_WRITE_BYTES;
 #else
+  // Dynamically determine size
   uint8_t blockSize = 18;
   if(BIT_CHECK(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT)) { blockSize = 8; } //If comms compatibility mode is on, slow the burn rate down even further
 
