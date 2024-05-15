@@ -29,6 +29,7 @@
   using eeprom_address_t = int;
   class EEPROMClass;
   using EEPROM_t = EEPROMClass;
+  #define MAX_BLOCK_WRITE_BYTES 64
   #define RTC_ENABLED
   #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
   #define RTC_LIB_H "TimeLib.h"
