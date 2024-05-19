@@ -2,9 +2,10 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "pages.h"
+#include "storage.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
-extern const eeprom_address_t MAX_PAGE_ADDRESS;
+extern const uint16_t MAX_PAGE_ADDRESS;
 extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
 extern const uint16_t STORAGE_SIZE;
 
@@ -94,6 +95,6 @@ static void test_no_entity_overlap(void) {
 void test_layout(void) {
     Unity.TestFile = __FILE__;    
     
-    RUN_TEST(test_getEntityStartAddress_invalid_entity);
-    RUN_TEST(test_no_entity_overlap);
+    RUN_TEST_P(test_getEntityStartAddress_invalid_entity);
+    RUN_TEST_P(test_no_entity_overlap);
 }
