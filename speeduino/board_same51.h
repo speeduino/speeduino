@@ -18,18 +18,10 @@
   #define SERIAL_BUFFER_SIZE 257 //Size of the serial buffer used by new comms protocol. Additional 1 byte is for flag
   #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #ifdef USE_SPI_EEPROM
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    #include EEPROM_LIB_H
-    using eeprom_address_t = int;
-    using EEPROM_t = SPI_EEPROM_Class;    
     #define MAX_BLOCK_WRITE_BYTES 20
-  #else
-    #define EEPROM_LIB_H "src/FlashStorage/FlashAsEEPROM.h"
-    using eeprom_address_t = int;
-    class EEPROMClass;
-    using EEPROM_t = EEPROMClass;    
   #endif
   #define RTC_LIB_H "TimeLib.h"
+  void initialiseStorage(void);
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
