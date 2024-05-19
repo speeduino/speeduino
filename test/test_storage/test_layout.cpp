@@ -4,7 +4,7 @@
 #include "pages.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
-extern const eeprom_address_t MAX_PAGE_ADDRESS;
+extern const uint16_t MAX_PAGE_ADDRESS;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
     config10 localPage10;
@@ -76,6 +76,6 @@ static void test_no_entity_overlap(void) {
 void test_layout(void) {
     Unity.TestFile = __FILE__;    
     
-    RUN_TEST(test_getEntityStartAddress_invalid_entity);
-    RUN_TEST(test_no_entity_overlap);
+    RUN_TEST_P(test_getEntityStartAddress_invalid_entity);
+    RUN_TEST_P(test_no_entity_overlap);
 }
