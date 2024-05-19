@@ -16,6 +16,34 @@
 //   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 //   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 // #endif
+#include "storage_api.h"
+#include "storage.h"
+
+namespace EEPROMApi {
+#ifdef USE_SPI_EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#else
+  #include <EEPROM.h>
+#endif
+
+  static inline byte read(uint16_t address) {
+    return EEPROM.read(address);
+  }
+  static inline void write(uint16_t address, byte val) {
+    EEPROM.write(address, val);
+  }
+  static inline uint16_t length(void) {
+    return EEPROM.length();
+  }
+}
+
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = EEPROMApi::read,
+    .write = EEPROMApi::write,
+    .length = EEPROMApi::length,
+  });
+}
 
 
 void initBoard(uint32_t baudRate)

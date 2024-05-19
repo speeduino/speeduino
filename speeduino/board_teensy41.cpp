@@ -8,6 +8,30 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include "storage_api.h"
+#include "storage.h"
+
+namespace EEPROMApi {
+  #include <EEPROM.h>
+
+  static inline byte read(uint16_t address) {
+    return EEPROM.read(address);
+  }
+  static inline void write(uint16_t address, byte val) {
+    EEPROM.write(address, val);
+  }
+  static inline uint16_t length(void) {
+    return EEPROM.length();
+  }
+}
+
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = EEPROMApi::read,
+    .write = EEPROMApi::write,
+    .length = EEPROMApi::length,
+  });
+}
 
 static void PIT_isr();
 static void TMR1_isr(void);
