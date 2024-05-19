@@ -4,6 +4,8 @@
 #include <avr/sleep.h>
 
 extern void test_layout(void);
+extern void testStorageApi(void);
+
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -17,6 +19,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     test_layout();
+    testStorageApi();
     
     UNITY_END(); // stop unit testing
 

@@ -4,7 +4,7 @@ Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
 /** @file
- * @brief Lower level ConfigPage*, Table2D, Table3D and EEPROM storage operations.
+ * @brief Lower level ConfigPage* and Table3D storage operations.
  * 
  * Storage notes
  * =============
@@ -29,10 +29,6 @@ A full copy of the license may be found in the projects root directory
 #include "table3d_axis_io.h"
 #include "utilities.h"
 #include "unit_testing.h"
-#include EEPROM_LIB_H //This is defined in the board .h files
-
-// Should be defined in a CPP file elsewhere. Usually the board CPP file.
-extern EEPROM_t EEPROM;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -40,20 +36,39 @@ extern EEPROM_t EEPROM;
 #pragma GCC optimize ("Os") 
 #endif
 
-static constexpr eeprom_address_t EEPROM_DATA_VERSION = 0;
+static byte default_read(uint16_t) {
+  return 0U;
+}
+static void default_write(uint16_t, byte) {
+  ;
+}
+static uint16_t default_length(void) {
+  return 0U;
+}
+static storage_api_t externalApi = {
+    .read = default_read,
+    .write = default_write,
+    .length = default_length,
+  };
+
+static constexpr uint16_t EEPROM_DATA_VERSION = 0;
+
+void setStorageAPI(const storage_api_t &api) {
+  externalApi = api;
+}
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-static constexpr eeprom_address_t STORAGE_END = 0xFFF;       // Should be E2END?
-static constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(eeprom_address_t)sizeof(cltCalibration_values);
-static constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(eeprom_address_t)sizeof(cltCalibration_bins);
-static constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(eeprom_address_t)sizeof(iatCalibration_values);
-static constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(eeprom_address_t)sizeof(iatCalibration_bins);
-static constexpr eeprom_address_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(eeprom_address_t)sizeof(o2Calibration_values);
-static constexpr eeprom_address_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(eeprom_address_t)sizeof(o2Calibration_bins);
-static constexpr eeprom_address_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(eeprom_address_t)1);
+static constexpr uint16_t STORAGE_END = 0xFFF;       // Should be E2END?
+static constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(uint16_t)sizeof(cltCalibration_values);
+static constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(cltCalibration_bins);
+static constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(uint16_t)sizeof(iatCalibration_values);
+static constexpr uint16_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(iatCalibration_bins);
+static constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(o2Calibration_values);
+static constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(o2Calibration_bins);
+static constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
 
 #if defined(UNIT_TEST)
-eeprom_address_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
+uint16_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
 uint16_t STORAGE_SIZE = STORAGE_END;
 #endif
 
@@ -62,35 +77,35 @@ uint16_t STORAGE_SIZE = STORAGE_END;
 // This is *THE* single source of truth for mapping the tune
 // (I.e page entities) to EEPROM locations.
 TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
-  static constexpr eeprom_address_t EEPROM_CONFIG1_MAP    = 3;
-  static constexpr eeprom_address_t EEPROM_CONFIG2_START  = 291;
-  static constexpr eeprom_address_t EEPROM_CONFIG3_MAP    = 421;
-  static constexpr eeprom_address_t EEPROM_CONFIG4_START  = 709;
-  static constexpr eeprom_address_t EEPROM_CONFIG5_MAP    = 839;
-  static constexpr eeprom_address_t EEPROM_CONFIG6_START  = 1127;
-  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP1   = 1257;
-  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP2   = 1339;
-  static constexpr eeprom_address_t EEPROM_CONFIG7_MAP3   = 1421;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP1   = 1503;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP2   = 1553;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP3   = 1603;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP4   = 1653;
-  static constexpr eeprom_address_t EEPROM_CONFIG9_START  = 1710;
-  static constexpr eeprom_address_t EEPROM_CONFIG10_START = 1902;
-  static constexpr eeprom_address_t EEPROM_CONFIG11_MAP   = 2096;
-  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP   = 2387;
-  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP2  = 2469;
-  static constexpr eeprom_address_t EEPROM_CONFIG12_MAP3  = 2551;
-  static constexpr eeprom_address_t EEPROM_CONFIG13_START = 2580;
-  static constexpr eeprom_address_t EEPROM_CONFIG14_MAP   = 2710;
+  static constexpr uint16_t EEPROM_CONFIG1_MAP    = 3;
+  static constexpr uint16_t EEPROM_CONFIG2_START  = 291;
+  static constexpr uint16_t EEPROM_CONFIG3_MAP    = 421;
+  static constexpr uint16_t EEPROM_CONFIG4_START  = 709;
+  static constexpr uint16_t EEPROM_CONFIG5_MAP    = 839;
+  static constexpr uint16_t EEPROM_CONFIG6_START  = 1127;
+  static constexpr uint16_t EEPROM_CONFIG7_MAP1   = 1257;
+  static constexpr uint16_t EEPROM_CONFIG7_MAP2   = 1339;
+  static constexpr uint16_t EEPROM_CONFIG7_MAP3   = 1421;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP1   = 1503;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP2   = 1553;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP3   = 1603;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP4   = 1653;
+  static constexpr uint16_t EEPROM_CONFIG9_START  = 1710;
+  static constexpr uint16_t EEPROM_CONFIG10_START = 1902;
+  static constexpr uint16_t EEPROM_CONFIG11_MAP   = 2096;
+  static constexpr uint16_t EEPROM_CONFIG12_MAP   = 2387;
+  static constexpr uint16_t EEPROM_CONFIG12_MAP2  = 2469;
+  static constexpr uint16_t EEPROM_CONFIG12_MAP3  = 2551;
+  static constexpr uint16_t EEPROM_CONFIG13_START = 2580;
+  static constexpr uint16_t EEPROM_CONFIG14_MAP   = 2710;
   //This is OUT OF ORDER as Page 8 was expanded to add fuel trim tables 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP5   = 3001;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP6   = 3051;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP7   = 3101;
-  static constexpr eeprom_address_t EEPROM_CONFIG8_MAP8   = 3151;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP5   = 3001;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP6   = 3051;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP7   = 3101;
+  static constexpr uint16_t EEPROM_CONFIG8_MAP8   = 3151;
   //Page 15 added after OUT OF ORDER page 8
-  static constexpr eeprom_address_t EEPROM_CONFIG15_MAP   = 3199;
-  static constexpr eeprom_address_t EEPROM_CONFIG15_START = 3281;
+  static constexpr uint16_t EEPROM_CONFIG15_MAP   = 3199;
+  static constexpr uint16_t EEPROM_CONFIG15_START = 3281;
 
   struct entity_storage_map_t {
       void *pEntity;
@@ -133,7 +148,7 @@ TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
   while ((pMapEntry!=entityMapEnd) && (entity.pData!=pgm_read_ptr(&pMapEntry->pEntity))) {
     ++pMapEntry;
   }
-  eeprom_address_t address = 0U;
+  uint16_t address = 0U;
   if (pMapEntry!=entityMapEnd) {
     address = pgm_read_word(&(pMapEntry->eepromStartAddress));
   }
@@ -163,62 +178,18 @@ void saveAllPages(void)
 
 //  ================================= Internal write support ===============================
 
-struct write_location {
-  eeprom_address_t address; // EEPROM address to write next
-  uint16_t counter; // Number of bytes written
-  uint8_t write_block_size; // Maximum number of bytes to write
-
-  /** Update byte to EEPROM by first comparing content and the need to write it.
-  We only ever write to the EEPROM where the new value is different from the currently stored byte
-  This is due to the limited write life of the EEPROM (Approximately 100,000 writes)
-  */
-  void update(uint8_t value)
-  {
-    if (EEPROM.read(address)!=value)
-    {
-      EEPROM.write(address, value);
-      ++counter;
-    }
-  }
-
-  /** Create a copy with a different write address.
-   * Allows chaining of instances.
-   */
-  write_location changeWriteAddress(eeprom_address_t newAddress) const {
-    return { newAddress, counter, write_block_size };
-  }
-
-  write_location& operator++(void)
-  {
-    ++address;
-    return *this;
-  }
-
-  bool can_write(void) const
-  {
-    return counter <= write_block_size;
-  }
+struct write_location{
+  uint16_t address;
+  uint16_t maxWrites;
 };
-
-static inline write_location write_range(const byte *pStart, const byte *pEnd, write_location location)
+static inline write_location write(const table_row_iterator &row, const write_location &location)
 {
-  while ( location.can_write() && pStart!=pEnd)
-  {
-    location.update(*pStart);
-    ++pStart; 
-    ++location;
-  }
-  return location;
-}
-
-static inline write_location write(const table_row_iterator &row, write_location location)
-{
-  return write_range(&*row, row.end(), location);
+  return { (uint16_t)(location.address+row.size()), updateBlockLimitWriteOps(externalApi, location.address, &*row, row.end(), location.maxWrites) };
 }
 
 static inline write_location write(table_value_iterator it, write_location location)
 {
-  while (location.can_write() && !it.at_end())
+  while (location.maxWrites>0U && !it.at_end())
   {
     location = write(*it, location); //cppcheck-suppress misra-c2012-17.2
     ++it;
@@ -229,20 +200,22 @@ static inline write_location write(table_value_iterator it, write_location locat
 static inline write_location write(table_axis_iterator it, write_location location)
 {
   const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
-  while (location.can_write() && !it.at_end())
+  while (location.maxWrites>0U && !it.at_end())
   {
-    location.update(converter.to_byte(*it));
-    ++location;
+    if (update(externalApi, location.address, converter.to_byte(*it))) {
+      --location.maxWrites;
+    }
+    ++location.address;
     ++it;
   }
   return location;
 }
 
-static inline write_location writeTable(void *pTable, table_type_t key, const write_location &location)
+static inline uint16_t writeTable(void *pTable, table_type_t key, uint16_t address, uint16_t maxWrites)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
-                  write(rows_begin(pTable, key), location)));
+                  write(rows_begin(pTable, key), { address, maxWrites }))).maxWrites;
 }
 
 //The maximum number of write operations that will be performed in one go.
@@ -279,15 +252,15 @@ static uint8_t getMaxWriteBlockSize(void) {
 }
 
 
-static write_location writeEntity(page_iterator_t entity, write_location location) {
-  if (location.address>(eeprom_address_t)0U) {
+static uint16_t writeEntity(page_iterator_t entity, uint16_t address, uint16_t maxWrites) {
+  if (address>0U) {
     switch (entity.type) {
     case Raw:
-      location = write_range((byte *)entity.pData, (byte *)entity.pData+entity.size, location);
+      maxWrites = updateBlockLimitWriteOps(externalApi, address, (byte *)entity.pData, ((byte *)entity.pData)+entity.size, maxWrites);
       break;
       
     case Table:
-      location = writeTable(entity.pData, entity.table_key, location);
+      maxWrites = writeTable(entity.pData, entity.table_key, address, maxWrites);
       break;
     
     case NoEntity:
@@ -296,7 +269,7 @@ static write_location writeEntity(page_iterator_t entity, write_location locatio
       break;
   }
   }
-  return location;
+  return maxWrites;
 }
 
 
@@ -304,47 +277,26 @@ static write_location writeEntity(page_iterator_t entity, write_location locatio
 
 void savePage(uint8_t pageNum)
 {
-  write_location result = { 0, 0, getMaxWriteBlockSize() };
+  uint16_t maxWrites = getMaxWriteBlockSize();
 
   page_iterator_t entity = page_begin(pageNum);
-  while ((entity.type!=End) && (result.can_write())) {
-    result = writeEntity(entity, result.changeWriteAddress(getEntityStartAddress(entity)));
+  while ((entity.type!=End) && (maxWrites>0U)) {
+    maxWrites = writeEntity(entity, getEntityStartAddress(entity), maxWrites);
 
     entity = advance(entity);
   }
 
-  setEepromWritePending(!result.can_write());
+  setEepromWritePending(maxWrites==0);
 }
 
 //  ================================= Internal read support ===============================
 
-/** Load range of bytes form EEPROM offset to memory.
- * @param address - start offset in EEPROM
- * @param pFirst - Start memory address
- * @param pLast - End memory address
- */
-static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst, const byte *pLast)
+static inline uint16_t load(table_row_iterator row, uint16_t address)
 {
-#if defined(CORE_AVR)
-  // The generic code in the #else branch works but this provides a 45% speed up on AVR
-  size_t size = pLast-pFirst;
-  eeprom_read_block(pFirst, (const void*)(size_t)address, size);
-  return address+(eeprom_address_t)size;
-#else
-  for (; pFirst != pLast; ++address, (void)++pFirst)
-  {
-    *pFirst = EEPROM.read(address);
-  }
-  return address;
-#endif
+  return loadBlock(externalApi, address, &*row, row.end());
 }
 
-static inline eeprom_address_t load(table_row_iterator row, eeprom_address_t address)
-{
-  return load_range(address, &*row, row.end());
-}
-
-static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t address)
+static inline uint16_t load(table_value_iterator it, uint16_t address)
 {
   while (!it.at_end())
   {
@@ -354,12 +306,12 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
   return address; 
 }
 
-static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
+static inline uint16_t load(table_axis_iterator it, uint16_t address)
 {
     const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
   while (!it.at_end())
   {
-    *it = converter.from_byte(EEPROM.read(address));
+    *it = converter.from_byte(externalApi.read(address));
     ++address;
     ++it;
   }
@@ -367,7 +319,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 }
 
 
-static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_address_t address)
+static inline uint16_t loadTable(void *pTable, table_type_t key, uint16_t address)
 {
   return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 
@@ -375,11 +327,11 @@ static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_
 }
 
 
-static eeprom_address_t loadPageEntity(page_iterator_t entity, eeprom_address_t address) {
+static uint16_t loadPageEntity(page_iterator_t entity, uint16_t address) {
   switch (entity.type)
   {
   case Raw:
-      address = load_range(address, (byte *)entity.pData, (byte *)entity.pData+entity.size);
+      address = loadBlock(externalApi, address, (byte *)entity.pData, (byte *)entity.pData+entity.size);
       break;
 
   case Table:
@@ -417,14 +369,14 @@ void loadAllCalibrationTables(void)
   // If you modify this function be sure to also modify saveAllCalibrationTables();
   // it should be a mirror image of this function.
 
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  loadObject(externalApi, EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
+  loadObject(externalApi, EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
   
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  loadObject(externalApi, EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
+  loadObject(externalApi, EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
 
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-  EEPROM.get((eeprom_address_t)EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  loadObject(externalApi, EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
+  loadObject(externalApi, EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -445,27 +397,27 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == O2Sensor)
   {
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+    updateObject(externalApi, o2Calibration_bins, EEPROM_CALIBRATION_O2_BINS);
+    updateObject(externalApi, o2Calibration_values, EEPROM_CALIBRATION_O2_VALUES);
   }
   else if(sensor == IntakeAirTempSensor)
   {
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+    updateObject(externalApi, iatCalibration_bins, EEPROM_CALIBRATION_IAT_BINS);
+    updateObject(externalApi, iatCalibration_values, EEPROM_CALIBRATION_IAT_VALUES);
   }
   else if(sensor == CoolantSensor)
   {
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-    EEPROM.put((eeprom_address_t)EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+    updateObject(externalApi, cltCalibration_bins, EEPROM_CALIBRATION_CLT_BINS);
+    updateObject(externalApi, cltCalibration_values, EEPROM_CALIBRATION_CLT_VALUES);
   } else {
     // Unknown sensor identifier - do nothing but keep MISRA checker happy
   }
 }
 
-TESTABLE_INLINE_STATIC eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
-  constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_CRC = 3674;
-  constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_CRC = 3678;
-  constexpr eeprom_address_t EEPROM_CALIBRATION_O2_CRC = 3682;
+TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
+  constexpr uint16_t EEPROM_CALIBRATION_CLT_CRC = 3674;
+  constexpr uint16_t EEPROM_CALIBRATION_IAT_CRC = 3678;
+  constexpr uint16_t EEPROM_CALIBRATION_O2_CRC = 3682;
 
   switch(sensor)
   {
@@ -482,41 +434,35 @@ TESTABLE_INLINE_STATIC eeprom_address_t getSensorCalibrationCrcAddress(SensorCal
 
 void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
-  EEPROM.put(getSensorCalibrationCrcAddress(sensor), calibrationCRC);
+  updateObject(externalApi, calibrationCRC, getSensorCalibrationCrcAddress(sensor));
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
 uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
-  EEPROM.get(getSensorCalibrationCrcAddress(sensor), crc32_val);
-  return crc32_val;
+  return loadObject(externalApi, getSensorCalibrationCrcAddress(sensor), crc32_val);
 }
 
 uint16_t getEEPROMSize(void)
 {
-  return EEPROM.length();
+  return externalApi.length();
 }
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
-void EEPROMWriteRaw(uint16_t address, byte data) { EEPROM.update(address, data); }
-byte EEPROMReadRaw(uint16_t address) { return (byte)EEPROM.read(address); }
+void EEPROMWriteRaw(uint16_t address, byte data) { (void)update(externalApi, address, data); }
+byte EEPROMReadRaw(uint16_t address) { return externalApi.read(address); }
 
-uint8_t loadLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
-void saveLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+uint8_t loadLastBaro(void) { return EEPROMReadRaw(EEPROM_LAST_BARO); }
+void saveLastBaro(uint8_t newValue) { EEPROMWriteRaw(EEPROM_LAST_BARO, newValue); }
 
-uint8_t loadEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
-void saveEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+uint8_t loadEEPROMVersion(void) { return EEPROMReadRaw(EEPROM_DATA_VERSION); }
+void saveEEPROMVersion(uint8_t newVersion) { EEPROMWriteRaw(EEPROM_DATA_VERSION, newVersion); }
 
 void clearStorage(void) {
-  #if defined(FLASH_AS_EEPROM_h)
-    EEPROM.read(0); //needed for SPI eeprom emulation.
-    EEPROM.clear(); 
-  #else 
-    for (uint16_t i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write((eeprom_address_t)i, UINT8_MAX);}
-  #endif  
+  for (uint16_t i = 0 ; i < getEEPROMSize() ; i++) { EEPROMWriteRaw((uint16_t)i, UINT8_MAX);} 
 }
 
 #if defined(CORE_AVR)

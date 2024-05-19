@@ -6,6 +6,7 @@
 ***********************************************************************************************************
 * General
 */
+  void initialiseStorage(void);
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
@@ -22,16 +23,8 @@
   #define BOARD_MAX_IO_PINS 57
   #define BOARD_MAX_ADC_PINS  26 //Number of analog pins
   #ifdef USE_SPI_EEPROM
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    using eeprom_address_t = uint16_t;
-    class SPI_EEPROM_Class;
-    using EEPROM_t = SPI_EEPROM_Class;
     #define MAX_BLOCK_WRITE_BYTES 20
   #else
-    #define EEPROM_LIB_H <EEPROM.h>
-    using eeprom_address_t = int;
-    class EEPROMClass;
-    using EEPROM_t = EEPROMClass;
     #define MAX_BLOCK_WRITE_BYTES 64
   #endif
   #define RTC_ENABLED
