@@ -33,3 +33,21 @@ __attribute__((noinline)) uint16_t loadBlock(const storage_api_t &api, int16_t a
   }
   return address;
 }
+
+__attribute__((noinline)) void fillBlock(const storage_api_t &api, uint16_t address, uint16_t length, byte value) {
+  for (uint16_t end=address+length; address<end; ++address) {
+    (void)update(api, address, value);
+  }
+}
+
+__attribute__((noinline)) void clearStorage(const storage_api_t &api) {
+#if defined(STORAGE_API_CUSTOM_CLEAR)
+  if (api.clear!=nullptr) {
+    api.clear();
+  } else {
+    fillBlock(api, 0, api.length(), UINT8_MAX);
+  }
+#else
+  fillBlock(api, 0, api.length(), UINT8_MAX);
+#endif
+}
