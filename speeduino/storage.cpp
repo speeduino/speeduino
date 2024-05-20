@@ -49,6 +49,9 @@ static storage_api_t externalApi = {
     .read = default_read,
     .write = default_write,
     .length = default_length,
+#if defined(STORAGE_API_CUSTOM_CLEAR)
+    .clear = nullptr,
+#endif    
   };
 
 static constexpr uint16_t EEPROM_DATA_VERSION = 0;
@@ -455,10 +458,6 @@ void saveLastBaro(uint8_t newValue) { update(getStorageAPI(), EEPROM_LAST_BARO, 
 
 uint8_t loadEEPROMVersion(void) { return getStorageAPI().read(EEPROM_DATA_VERSION); }
 void saveEEPROMVersion(uint8_t newVersion) { update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); }
-
-void clearStorage(void) {
-  for (uint16_t i = 0 ; i < getStorageAPI().length() ; i++) { update(getStorageAPI(), (uint16_t)i, UINT8_MAX);} 
-}
 
 #if defined(CORE_AVR)
 #pragma GCC pop_options
