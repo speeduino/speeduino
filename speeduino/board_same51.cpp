@@ -9,6 +9,9 @@
                           SPIconfig);
 #else
   #include "src/FlashStorage/FlashAsEEPROM.h"
+#if !defined(STORAGE_API_CUSTOM_CLEAR)
+#error Flash requires custom clear
+#endif
 #endif
 
 namespace EEPROMApi {
@@ -21,6 +24,12 @@ namespace EEPROMApi {
   static inline uint16_t length(void) {
     return EEPROM.length();
   }
+#if defined(STORAGE_API_CUSTOM_CLEAR)
+  static inline void clear(void) {    
+    EEPROM.read(0); //needed for SPI eeprom emulation.
+    EEPROM.clear(); 
+  }
+#endif
 }
 
 void initialiseStorage(void) {
@@ -28,6 +37,11 @@ void initialiseStorage(void) {
     .read = EEPROMApi::read,
     .write = EEPROMApi::write,
     .length = EEPROMApi::length,
+#if defined(STORAGE_API_CUSTOM_CLEAR)
+    .clear = EEPROMApi::clear,
+#else
+    .clear = nullptr,
+#endif    
   });
 }
 
