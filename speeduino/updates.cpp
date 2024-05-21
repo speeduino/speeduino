@@ -81,26 +81,17 @@ void doUpdates(void)
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
   if(loadEEPROMVersion() == 5)
   {
-    static constexpr int EEPROM_CONFIG10_END_V6 = 2094;
-    static constexpr int PAGE_5PLUS_SHIFT_DISTANCE = 128;
-    static constexpr int PAGE_5PLUS_BLOCK_SIZE = 1152;
+    //Data after page 4 has to move up 128 bytes
+    static constexpr uint16_t PAGE5_V5_START = 815;
+    static constexpr uint16_t PAGE5_V5_SHIFT_DISTANCE = 128;
+    static constexpr uint16_t PAGE5_V5_BLOCK_SIZE = 1152;
+    moveBlock(getStorageAPI(), PAGE5_V5_START+PAGE5_V5_SHIFT_DISTANCE, PAGE5_V5_START, PAGE5_V5_BLOCK_SIZE);
 
-    //Data after page 4 has to move back 128 bytes
-    for(int x=0; x < PAGE_5PLUS_BLOCK_SIZE; x++)
-    {
-      uint16_t endMem = EEPROM_CONFIG10_END_V6 - x;
-      uint16_t startMem = endMem - PAGE_5PLUS_SHIFT_DISTANCE; //
-      update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
-    }
-    //The remaining data only has to move back 64 bytes
-    static constexpr int BLOCK_SIZE = 352;
-    static constexpr int SHIFT_DISTANCE = 64;
-    for(int x=0; x < BLOCK_SIZE; x++)
-    {
-      uint16_t endMem = EEPROM_CONFIG10_END_V6 - PAGE_5PLUS_BLOCK_SIZE - x;
-      uint16_t startMem = endMem - SHIFT_DISTANCE; //
-      update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
-    }
+    //The remaining data only has to move up 64 bytes
+    static constexpr uint16_t OTHER_V5_START = 527;
+    static constexpr uint16_t OTHER_V5_SHIFT_DISTANCE = 64;
+    static constexpr uint16_t OTHER_V5_BLOCK_SIZE = 352;
+    moveBlock(getStorageAPI(), OTHER_V5_START+OTHER_V5_SHIFT_DISTANCE, OTHER_V5_START, OTHER_V5_BLOCK_SIZE);
 
     saveEEPROMVersion(6);
     loadAllPages(); //Reload the config after changing everything in EEPROM
@@ -108,16 +99,11 @@ void doUpdates(void)
   //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
   if(loadEEPROMVersion() == 6)
   {
-    //Data after page 8 has to move back 82 bytes
-    static constexpr int EEPROM_CONFIG10_END_V7 = 2094;
-    static constexpr int SHIFT_DISTANCE = 82;
-    static constexpr int BLOCK_SIZE = 529;
-    for(int x=0; x < BLOCK_SIZE; x++)
-    {
-      uint16_t endMem = EEPROM_CONFIG10_END_V7 - x;
-      uint16_t startMem = endMem - SHIFT_DISTANCE; //
-      update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
-    }
+    //Data after page 8 has to move up 82 bytes
+    static constexpr uint16_t PAGE9_V6_START = 1484;
+    static constexpr uint16_t PAGE9_V6_SHIFT_DISTANCE = 82;
+    static constexpr uint16_t PAGE9_V6_BLOCK_SIZE = 529;
+    moveBlock(getStorageAPI(), PAGE9_V6_START+PAGE9_V6_SHIFT_DISTANCE, PAGE9_V6_START, PAGE9_V6_BLOCK_SIZE);
 
     saveEEPROMVersion(7);
     loadAllPages(); //Reload the config after changing everything in EEPROM
@@ -474,13 +460,11 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
-    static constexpr int EEPROM_CONFIG14_END_V16 = 2998;
-    static constexpr int EEPROM_CONFIG13_START_V16 = 2580;
-    static constexpr int SHIFT_DISTANCE = 112;
-    for(int x=EEPROM_CONFIG14_END_V16; x>=EEPROM_CONFIG13_START_V16; x--)
-    {
-      update(getStorageAPI(), x, getStorageAPI().read(x-SHIFT_DISTANCE));
-    }
+    static constexpr int PAGE14_V16_END = 2998;
+    static constexpr int PAGE14_V16_START = 2580;
+    static constexpr int PAGE14_V16_BLOCK_SIZE = PAGE14_V16_START - PAGE14_V16_END;
+    static constexpr int PAGE14_V16_SHIFT_DISTANCE = 112;
+    moveBlock(getStorageAPI(), PAGE14_V16_START+PAGE14_V16_SHIFT_DISTANCE, PAGE14_V16_START, PAGE14_V16_BLOCK_SIZE);
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
