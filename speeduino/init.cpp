@@ -2568,7 +2568,7 @@ void setPinMapping(byte boardID)
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        // = PB7;  //NRF_CS
+        pinCoil6 = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
         pinCoil2 = PB9; //
         // = PB9;  //
