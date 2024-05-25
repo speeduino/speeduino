@@ -479,18 +479,18 @@ void serialReceive(void)
     //New command received
     //Need at least 2 bytes to read the length of the command
     byte highByte = (byte)primarySerial.peek();
-
+    constexpr byte DTR_RESET = (byte)0xF0U;
     //Check for DTR reset byte. This is sent by Windows upon initial connection and causes issues if treated as the first real byte. It should simply be ignored. See https://github.com/speeduino/speeduino/issues/1112
-    if(highByte == 0xF0) { primarySerial.read(); return; }
+    if(highByte == DTR_RESET) { (void)primarySerial.read(); return; }
 
     //Check if the command is legacy using the call/response mechanism
-    if(highByte == 'F')
+    if(highByte == (byte)'F')
     {
       //F command is always allowed as it provides the initial serial protocol version. 
       legacySerialCommand();
       return;
     }
-    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (currentStatus.allowLegacyComms) )
+    else if( (((highByte >= (byte)'A') && (highByte <= (byte)'z')) || (highByte == (byte)'?')) && (currentStatus.allowLegacyComms) )
     {
       //Handle legacy cases here
       legacySerialCommand();
@@ -604,7 +604,7 @@ void processSerialCommand(void)
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       currentStatus.commCompat = true; //Force the compat mode
-      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4)); //Add 25% more to the EEPROM defer time
+      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4U)); //Add 25% more to the EEPROM defer time
       burnSinglePage(serialPayload[2]);      
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
@@ -897,17 +897,17 @@ void processSerialCommand(void)
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      if(cmd == O2Sensor)
+      if(cmd == (uint8_t)O2Sensor)
       {
         loadO2CalibrationChunk(offset, calibrationLength);
         sendReturnCodeMsg(SERIAL_RC_OK);
         primarySerial.flush(); //This is safe because engine is assumed to not be running during calibration
       }
-      else if(cmd == IntakeAirTempSensor)
+      else if(cmd == (uint8_t)IntakeAirTempSensor)
       {
         processTemperatureCalibrationTableUpdate(calibrationLength, IntakeAirTempSensor, iatCalibrationTable.values, iatCalibrationTable.axis);
       }
-      else if(cmd == CoolantSensor)
+      else if(cmd == (uint8_t)CoolantSensor)
       {
         processTemperatureCalibrationTableUpdate(calibrationLength, CoolantSensor, cltCalibrationTable.values, cltCalibrationTable.axis);
       }
