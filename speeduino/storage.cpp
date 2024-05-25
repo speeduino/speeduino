@@ -36,11 +36,13 @@ A full copy of the license may be found in the projects root directory
 #pragma GCC optimize ("Os") 
 #endif
 
-static byte default_read(uint16_t) {
+static byte default_read(uint16_t address) {
+  UNUSED(address);
   return 0U;
 }
-static void default_write(uint16_t, byte) {
-  ;
+static void default_write(uint16_t address, byte value) {
+  UNUSED(address);
+  UNUSED(value);
 }
 static uint16_t default_length(void) {
   return 0U;
@@ -253,7 +255,7 @@ static uint8_t getMaxWriteBlockSize(void) {
 
   //Write to EEPROM more aggressively if the engine is not running
   if(currentStatus.RPM==0U) {
-    blockSize = blockSize * 8;
+    blockSize = blockSize * 8U;
   } 
  
  return blockSize;
@@ -294,7 +296,7 @@ void savePage(uint8_t pageNum)
     entity = advance(entity);
   }
 
-  setEepromWritePending(maxWrites==0);
+  setEepromWritePending(maxWrites==0U);
 }
 
 //  ================================= Internal read support ===============================
@@ -456,10 +458,10 @@ uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
 uint8_t loadLastBaro(void) { return getStorageAPI().read(EEPROM_LAST_BARO); }
-void saveLastBaro(uint8_t newValue) { update(getStorageAPI(), EEPROM_LAST_BARO, newValue); }
+void saveLastBaro(uint8_t newValue) { (void)update(getStorageAPI(), EEPROM_LAST_BARO, newValue); }
 
 uint8_t loadEEPROMVersion(void) { return getStorageAPI().read(EEPROM_DATA_VERSION); }
-void saveEEPROMVersion(uint8_t newVersion) { update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); }
+void saveEEPROMVersion(uint8_t newVersion) { (void)update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); }
 
 #if defined(CORE_AVR)
 #pragma GCC pop_options
