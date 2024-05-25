@@ -423,11 +423,9 @@ static constexpr byte EMPTY_VALUE = 0U;
 
 static void setTableToEmpty(const page_iterator_t &entity)
 {
-  auto setAxisEmpty = [](table_axis_iterator &it, void*) { *it = EMPTY_VALUE; };
-  for_each(y_begin(entity), setAxisEmpty, nullptr);
-  for_each(x_begin(entity), setAxisEmpty, nullptr);
-  auto setValueEmpty = [](table_row_iterator &row, void*) { *row = EMPTY_VALUE; };
-  for_each(rows_begin(entity), setValueEmpty, nullptr);
+  for_each(y_begin(entity), setAxis, (table3d_axis_t)EMPTY_VALUE);
+  for_each(x_begin(entity), setAxis, (table3d_axis_t)EMPTY_VALUE);
+  for_each(rows_begin(entity), setValue, (table3d_value_t)EMPTY_VALUE);
 }
 
 
