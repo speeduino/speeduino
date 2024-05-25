@@ -166,7 +166,7 @@ void legacySerialCommand(void)
             while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
             if(primarySerial.available()) 
             { 
-              update(getStorageAPI(), x, primarySerial.read());
+              (void)update(getStorageAPI(), x, primarySerial.read());
             }
             else 
             {
