@@ -59,17 +59,17 @@ __attribute__((noinline)) void clearStorage(const storage_api_t &api) {
     // Must copy in reverse to handle overlapping blocks.
     dest += size;
     source += size;
-    while(size!=0) {
+    while(size!=0U) {
       --dest;
       --source;
-      update(api, dest, api.read(source));
+      (void)update(api, dest, api.read(source));
       --size;
     }
   } else {
     // Source is after dest - in other words we are moving the block *down* the address space
     // Must use in-order copy to handle overlapping blocks.
-    while(size!=0) {
-      update(api, dest, api.read(source));
+    while(size!=0U) {
+      (void)update(api, dest, api.read(source));
       ++dest;
       ++source;
       --size;

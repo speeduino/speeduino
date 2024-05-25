@@ -49,24 +49,3 @@ table_axis_iterator y_rbegin(void *pTable, table_type_t key)
   #define CTA_GET_Y_ITERATOR_DEFAULT ({ return table_axis_iterator(NULL, NULL); })      
   CONCRETE_TABLE_ACTION(key, CTA_GET_Y_RITERATOR, CTA_GET_Y_ITERATOR_DEFAULT, pTable);
 }
-
-void for_each(table_axis_iterator axis_it, void(*pOperation)(table_axis_iterator &, void*), void *pContext) {
-  while(!axis_it.at_end())
-  {
-    pOperation(axis_it, pContext); 
-    ++axis_it;
-  }
-}
-
-void for_each(table_value_iterator value_it, void(*pOperation)(table_row_iterator &, void*), void *pContext) {
-  while(!value_it.at_end())
-  {
-    table_row_iterator row = *value_it;
-    while (!row.at_end())
-    {
-      pOperation(row, pContext);
-      ++row;
-    }  
-    ++value_it;
-  }
-}

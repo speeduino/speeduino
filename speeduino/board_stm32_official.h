@@ -42,7 +42,7 @@
 #define TIMER_RESOLUTION 4
 
 #ifndef word
-  #define word(h, l) ((h << 8) | l) //word() function not defined for this platform in the main library
+  #define word(h, l) (((h) << 8) | (l)) //word() function not defined for this platform in the main library
 #endif  
   
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
