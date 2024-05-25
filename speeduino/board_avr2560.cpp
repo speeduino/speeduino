@@ -116,23 +116,23 @@ void initBoard(void)
 
 }
 
+static inline uint16_t getHeapStartAddress(void) {
+  extern int *__brkval;
+  if(__brkval == nullptr) {
+    extern int __heap_start; 
+    return (uint16_t)&__heap_start; 
+  } 
+    
+  return (uint16_t)__brkval;
+}
+
 /*
   Returns how much free dynamic memory exists (between heap and stack)
   This function is one big MISRA violation. MISRA advisories forbid directly poking at memory addresses, however there is no other way of determining heap size on embedded systems.
 */
-uint16_t freeRam(void)
-{
-    extern int __heap_start, *__brkval;
-    int currentVal;
-    uint16_t v;
-
-    if(__brkval == 0) { currentVal = (int) &__heap_start; }
-    else { currentVal = (int) __brkval; }
-
-    //Old version:
-    //return (uint16_t) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-    /* cppcheck-suppress misra-c2012-11.4 ; DEVIATION(D3) */
-    return (uint16_t) &v - currentVal; //cppcheck-suppress misra-c2012-11.4
+uint16_t freeRam(void) {
+    char top;
+    return (uint16_t)&top-getHeapStartAddress();
 }
 
 void doSystemReset(void) { return; }

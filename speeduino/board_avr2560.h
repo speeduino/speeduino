@@ -40,9 +40,11 @@
   #endif
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
+  #define USE_SERIAL3
   //Mega 2561 MCU does not have a serial3 available. 
-  #if not defined(__AVR_ATmega2561__)
-    #define USE_SERIAL3
+  #if defined(__AVR_ATmega2561__)
+  // Our MISRA checker is confused by #ifndef :-(
+  #undef USE_SERIAL3
   #endif
 
 /*
