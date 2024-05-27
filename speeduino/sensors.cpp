@@ -20,6 +20,7 @@ A full copy of the license may be found in the projects root directory
 #include "auxiliaries.h"
 #include "utilities.h"
 #include "unit_testing.h"
+#include "board_definition.h"
 
 /**
  * @brief A specialist function to map a value in the range [0, 1023] (I.e. 10-bit) to a different range.
