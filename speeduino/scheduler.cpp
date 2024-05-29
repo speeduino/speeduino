@@ -394,7 +394,7 @@ static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
   pSchedule->endScheduleSetByDecoder = false;
   ignitionCount = ignitionCount + 1U; //Increment the ignition counter
   int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
-  currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
+  currentStatus.actualDwell = (uint16_t)DWELL_AVERAGE( elapsed );
 }
 
 /** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */
