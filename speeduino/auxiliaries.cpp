@@ -708,7 +708,8 @@ void boostControl(void)
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
         {
-          currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
+          currentStatus.flexBoostCorrection = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
+          currentStatus.boostTarget += currentStatus.flexBoostCorrection;
         }
         else
         {
