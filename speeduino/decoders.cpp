@@ -479,7 +479,7 @@ void triggerSetup_missingTooth(void)
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * (configPage4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
-  if( (configPage4.TrigSpeed == CRANK_SPEED) &&  ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) ) ) { BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY); }
+  if( (configPage4.TrigSpeed == CRANK_SPEED) && ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage6.vvtEnabled > 0)) ) { BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY); }
   else { BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); }
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
@@ -639,8 +639,9 @@ void triggerSec_missingTooth(void)
         break;
 
       case SEC_TRIGGER_POLL:
-        //Poll is effectively the same as SEC_TRIGGER_SINGLE, however we do not reset revolutionOne or change the filter
+        //Poll is effectively the same as SEC_TRIGGER_SINGLE, however we do not reset revolutionOne
         //We do still need to record the angle for VVT though
+        triggerSecFilterTime = curGap2 >> 1; //Next secondary filter is half the current gap
         triggerRecordVVT1Angle();
         break;
 
