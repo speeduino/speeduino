@@ -57,7 +57,9 @@ void sendCompositeLog(void);
 
 #define SEND_OUTPUT_CHANNELS 48U
 
-#define COMMS_SD            defined(RTC_ENABLED) && defined(SD_LOGGING)
+#if defined(RTC_ENABLED) && defined(SD_LOGGING)
+  #define COMMS_SD            
+#endif
 
 //!@{
 /** @brief Hard coded response for some TS messages.
@@ -81,7 +83,7 @@ static uint16_t serialBytesRxTx = 0;
 static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
 using crc_t = uint32_t;
-#if COMMS_SD
+#ifdef COMMS_SD
 #undef SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
  * 
@@ -718,7 +720,7 @@ void processSerialCommand(void)
       uint8_t cmd = serialPayload[2];
       uint16_t offset = word(serialPayload[4], serialPayload[3]);
       uint16_t length = word(serialPayload[6], serialPayload[5]);
-#if COMMS_SD     
+#ifdef COMMS_SD     
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 #endif
@@ -734,7 +736,7 @@ void processSerialCommand(void)
         (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
         sendSerialPayloadNonBlocking(sizeof(codeVersion));
       }
-#if COMMS_SD
+#ifdef COMMS_SD
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
       {
         serialPayload[0] = SERIAL_RC_OK;
@@ -916,7 +918,7 @@ void processSerialCommand(void)
 
     case 'w':
     {
-#if COMMS_SD
+#ifdef COMMS_SD
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
@@ -979,6 +981,8 @@ void processSerialCommand(void)
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
+            /*
+            TODO: Need to write test routine
             uint32_t sector;
             uint8_t sector1 = serialPayload[7];
             uint8_t sector2 = serialPayload[8];
@@ -994,6 +998,7 @@ void processSerialCommand(void)
             uint8_t testSize3 = serialPayload[13];
             uint8_t testSize4 = serialPayload[14];
             testSize = (testSize1 << 24) | (testSize2 << 16) | (testSize3 << 8) | testSize4; 
+            */
 
             sendReturnCodeMsg(SERIAL_RC_OK);
 
