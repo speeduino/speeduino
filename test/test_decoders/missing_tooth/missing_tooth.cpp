@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "missing_tooth.h"
 #include "schedule_calcs.h"
+#include "../../test_utils.h"
 
 void test_setup_36_1()
 {
@@ -344,6 +345,8 @@ void test_missingtooth_newIgn_4()
 
 void testMissingTooth()
 {
+   SET_UNITY_FILENAME() {
+
   RUN_TEST(test_missingtooth_newIgn_36_1_trig0_1);
   RUN_TEST(test_missingtooth_newIgn_36_1_trig90_1);
   RUN_TEST(test_missingtooth_newIgn_36_1_trig180_1);
@@ -366,4 +369,5 @@ void testMissingTooth()
 
   //RUN_TEST(test_missingtooth_newIgn_60_2_trig181_2);
   //RUN_TEST(test_missingtooth_newIgn_60_2_trig182_2);
+   }
 }

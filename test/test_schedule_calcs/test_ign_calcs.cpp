@@ -4,6 +4,7 @@
 #include "schedule_calcs.h"
 #include "crankMaths.h"
 #include "decoders.h"
+#include "../test_utils.h"
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
@@ -612,7 +613,10 @@ void test_rotary_channel_calcs(void)
 
 void test_calc_ign_timeout(void)
 {
+  SET_UNITY_FILENAME() {
+
     RUN_TEST(test_calc_ign_timeout_360);
     RUN_TEST(test_calc_ign_timeout_720);
     RUN_TEST(test_rotary_channel_calcs);
+  }
 }

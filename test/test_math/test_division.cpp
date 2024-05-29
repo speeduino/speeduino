@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "crankMaths.h"
 #include "../timer.hpp"
+#include "../test_utils.h"
 
 
 template <typename T>
@@ -222,6 +223,8 @@ void test_maths_div100_s32_perf(void)
 }
 
 void testDivision(void) {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_maths_div100_U16);
   RUN_TEST(test_maths_div100_U32);
   RUN_TEST(test_maths_div100_S16);
@@ -232,4 +235,5 @@ void testDivision(void) {
   RUN_TEST(test_maths_div360);
   RUN_TEST(test_maths_div100_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
+  }
 }

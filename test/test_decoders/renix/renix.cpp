@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "renix.h"
 #include "schedule_calcs.h"
+#include "../../test_utils.h"
 
 void test_setup_renix44()
 {
@@ -310,6 +311,8 @@ void test_Renix_newIgn_66_trig181_2()
 
 void testRenix()
 {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_Renix_newIgn_44_trig0_1);
   RUN_TEST(test_Renix_newIgn_44_trig90_1);
   RUN_TEST(test_Renix_newIgn_44_trig180_1);
@@ -332,5 +335,5 @@ void testRenix()
 
   RUN_TEST(test_Renix_newIgn_66_trig0_2);
   RUN_TEST(test_Renix_newIgn_66_trig181_2);
-           
+  }           
 }
