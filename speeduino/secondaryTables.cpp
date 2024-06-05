@@ -14,7 +14,7 @@
 static inline uint8_t getVE2(void)
 {
   currentStatus.fuelLoad2 = getLoad(configPage10.fuel2Algorithm, currentStatus);
-  return get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+  return get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, (table3d_axis_t)currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 static inline bool fuelModeCondSwitchRpmActive(void) {
@@ -88,7 +88,7 @@ void calculateSecondaryFuel(void)
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(void) {
   currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
-  return (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, currentStatus.RPM) - INT16_C(OFFSET_IGNITION);  
+  return (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, (table3d_axis_t)currentStatus.RPM) - INT16_C(OFFSET_IGNITION);  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)
