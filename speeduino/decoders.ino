@@ -4802,7 +4802,7 @@ void triggerSetup_Jeep1994CNP4cyl()
  * 
  * */
 void triggerPri_Jeep1994CNP4cyl()
-{
+
   if(toothCurrentCount == 17) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
@@ -4837,7 +4837,6 @@ void triggerPri_Jeep1994CNP4cyl()
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime; //end of if cam resets tooth count then start with tooth 1 knowing it's been 120 degrees, else tooth count increment
   } //end of Sync Check and custom filter since trigger pattern gaps vary angles
-}
 /** Jeep 4cyl 1990s Secondary.
  * 
  * */
