@@ -5,6 +5,9 @@
 #include "schedule_calcs.h"
 #include "scheduledIO.h"
 #include "../test_utils.h"
+#include "storage.h"
+
+void prepareForInitialiseAll(uint8_t boardId);
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
 {
@@ -74,6 +77,7 @@ static void cylinder1_stroke4_seq_odd(void)
 
 static void run_1_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 1;
   configPage2.strokes = FOUR_STROKE;
 
@@ -115,6 +119,7 @@ static void cylinder2_stroke4_seq_odd(void)
 
 static void run_2_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 2;
   configPage2.strokes = FOUR_STROKE;
 
@@ -155,6 +160,7 @@ static void cylinder3_stroke4_wasted_odd(void)
 
 static void run_3_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 3;
   configPage2.strokes = FOUR_STROKE;
 
@@ -201,6 +207,7 @@ static void cylinder4_stroke4_seq_odd(void)
 
 static void run_4_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;
 
@@ -229,6 +236,7 @@ static void cylinder5_stroke4_wasted_even(void)
 
 static void run_5_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 5;
   configPage2.strokes = FOUR_STROKE;
 
@@ -261,6 +269,7 @@ static void cylinder6_stroke4_wasted_even(void)
 
 static void run_6_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 6;
   configPage2.strokes = FOUR_STROKE;
 
@@ -294,6 +303,7 @@ static void cylinder8_stroke4_wasted_even(void)
 
 static void run_8_cylinder_4stroke_tests(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 8;
   configPage2.strokes = FOUR_STROKE;
 
@@ -303,6 +313,7 @@ static void run_8_cylinder_4stroke_tests(void)
 
 static void test_partial_sync(void)
 {
+  prepareForInitialiseAll(3U);
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
@@ -325,6 +336,8 @@ static void test_partial_sync(void)
 
 void testIgnitionScheduleInit()
 {
+  SET_UNITY_FILENAME() {
+
   run_1_cylinder_4stroke_tests();
   run_2_cylinder_4stroke_tests();
   run_3_cylinder_4stroke_tests();
@@ -334,4 +347,5 @@ void testIgnitionScheduleInit()
   run_8_cylinder_4stroke_tests();
 
   RUN_TEST_P(test_partial_sync);
+  }
 }

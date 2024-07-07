@@ -2,10 +2,13 @@
 #include <corrections.h>
 #include <unity.h>
 #include "test_corrections.h"
+#include "../test_utils.h"
 
 
 void testCorrections()
 {
+  SET_UNITY_FILENAME() {
+
   test_corrections_WUE();
   test_corrections_dfco();
   test_corrections_TAE(); //TPS based accel enrichment corrections
@@ -21,6 +24,7 @@ void testCorrections()
   RUN_TEST(test_corrections_launch); //Not written yet
   RUN_TEST(test_corrections_dfco); //Not written yet
   */
+  }
 }
 
 void test_corrections_WUE_active(void)

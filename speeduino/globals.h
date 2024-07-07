@@ -65,11 +65,9 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
     #define BOARD_H "board_teensy41.h"
-    #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
@@ -176,6 +174,7 @@
 #define BIT_TIMER_10HZ            2
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
+#define BIT_TIMER_200HZ           6
 #define BIT_TIMER_1KHZ            7
 
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
@@ -218,7 +217,7 @@
 #define IAT_CALIBRATION_PAGE  1U
 #define CLT_CALIBRATION_PAGE  0U
 
-// note the sequence of these defines which refernce the bits used in a byte has moved when the third trigger & engine cycle was incorporated
+// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
 #define COMPOSITE_LOG_SEC   1
 #define COMPOSITE_LOG_THIRD 2 
@@ -254,6 +253,7 @@
 #define SEC_TRIGGER_4_1     1
 #define SEC_TRIGGER_POLL    2
 #define SEC_TRIGGER_5_3_2   3
+#define SEC_TRIGGER_TOYOTA_3  4
 
 #define ROTARY_IGN_FC       0
 #define ROTARY_IGN_FD       1
@@ -517,7 +517,7 @@ extern byte triggerInterrupt;
 extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
 
-extern bool initialisationComplete; //Tracks whether the setup() function has run completely
+
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
@@ -525,12 +525,8 @@ extern unsigned long revolutionTime; //The time in uS that one revolution would 
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
 extern volatile unsigned long ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
-extern bool clutchTrigger;
-extern bool previousClutchTrigger;
 extern volatile uint32_t toothHistory[TOOTH_LOG_SIZE];
 extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
-extern volatile bool fpPrimed; //Tracks whether or not the fuel pump priming has been completed yet
-extern volatile bool injPrimed; //Tracks whether or not the injector priming has been completed yet
 extern volatile unsigned int toothHistoryIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
@@ -554,10 +550,7 @@ extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 extern byte maxIgnOutputs;            /**< Number of ignition outputs being used by the current tune configuration */
 extern byte maxInjOutputs;            /**< Number of injection outputs being used by the current tune configuration */
-
-
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
-
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;
 
@@ -575,8 +568,16 @@ extern volatile byte LOOP_TIMER;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
-  volatile bool hasSync; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
-    This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
+  This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  bool initialisationComplete : 1; //Tracks whether the setup() function has run completely
+  bool clutchTrigger : 1;
+  bool previousClutchTrigger : 1;
+  volatile bool fpPrimed : 1; //Tracks whether or not the fuel pump priming has been completed yet
+  volatile bool injPrimed : 1; //Tracks whether or not the injector priming has been completed yet
+  volatile bool tachoSweepEnabled : 1;
+  volatile bool tachoAlt : 1;
+    
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
   long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
@@ -604,8 +605,8 @@ struct statuses {
   int batADC;
   int O2ADC;
   int O2_2ADC;
-  int dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
-  volatile int16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
+  uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
+  volatile uint16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */
   byte battery10;     /**< The current BRV in volts (multiplied by 10. Eg 12.5V = 125) */
   int8_t advance;     /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
@@ -858,8 +859,7 @@ struct config2 {
 
   byte canBMWCluster : 1;
   byte canVAGCluster : 1;
-  byte enableCluster1 : 1;
-  byte enableCluster2 : 1;
+  byte canWBO : 2 ;
   byte vssAuxCh : 4;
 
   byte decelAmount;
@@ -907,8 +907,8 @@ struct config4 {
   byte triggerFilter : 2; //The mode of trigger filter being used (0=Off, 1=Light (Not currently used), 2=Normal, 3=Aggressive)
   byte ignCranklock : 1; //Whether or not the ignition timing during cranking is locked to a CAS (crank) pulse. Only currently valid for Basic distributor and 4G63.
 
-  byte dwellCrank;    ///< Dwell time whilst cranking
-  byte dwellRun;      ///< Dwell time whilst running
+  uint8_t dwellCrank;    ///< Dwell time whilst cranking
+  uint8_t dwellRun;      ///< Dwell time whilst running
   byte triggerTeeth;  ///< The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; ///< The size of the tooth gap (ie number of missing teeth)
   byte crankRPM;      ///< RPM below which the engine is considered to be cranking
@@ -1143,7 +1143,7 @@ struct config9 {
 
   byte afrProtectEnabled : 2; /* < AFR protection enabled status. 0 = disabled, 1 = fixed mode, 2 = table mode */
   byte afrProtectMinMAP; /* < Minimum MAP. Stored value is divided by 2. Increments of 2 kPa, maximum 511 (?) kPa */
-  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divded by 100. Increments of 100 RPM, maximum 25500 RPM */
+  byte afrProtectMinRPM; /* < Minimum RPM. Stored value is divided by 100. Increments of 100 RPM, maximum 25500 RPM */
   byte afrProtectMinTPS; /* < Minimum TPS. */
   byte afrProtectDeviation; /* < Maximum deviation from AFR target table. Stored value is multiplied by 10 */
   byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */
@@ -1439,8 +1439,8 @@ struct config15 {
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
   
-  //Bytes 98-255
-  byte Unused15_98_255[150];
+  //Bytes 106-255
+  byte Unused15_106_255[150];
 
 #if defined(CORE_AVR)
   };
@@ -1467,8 +1467,8 @@ extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
 extern byte ignitionOutputControl; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinTrigger; //The CAS pin
-extern byte pinTrigger2; //The Cam Sensor pin
-extern byte pinTrigger3;	//the 2nd cam sensor pin
+extern byte pinTrigger2; //The Cam Sensor pin known as secondary input
+extern byte pinTrigger3;	//the 2nd cam sensor pin known as tertiary input
 extern byte pinTPS;//TPS input pin
 extern byte pinMAP; //MAP sensor pin
 extern byte pinEMAP; //EMAP sensor pin

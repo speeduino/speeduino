@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "HardwareTimer.h"
 #include "timers.h"
+#include "comms_secondary.h"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -90,6 +91,11 @@ STM32RTC& rtc = STM32RTC::getInstance();
       #define FLASH_LENGTH 8192
     #endif
     delay(10);
+
+    #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
+    #define Serial2 Serial1
+    #endif
+    pSecondarySerial = &Serial2;
 
     /*
     ***********************************************************************************************************

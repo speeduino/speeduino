@@ -26,6 +26,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #endif
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+volatile byte loop5ms;
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -36,11 +37,8 @@ volatile unsigned int dwellLimit_uS;
 
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
-volatile bool tachoSweepEnabled;
-volatile bool tachoAlt = false;
 volatile uint16_t tachoSweepIncr;
 volatile uint16_t tachoSweepAccum;
-
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
@@ -51,6 +49,7 @@ volatile uint8_t testIgnitionPulseCount = 0;
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
+  loop5ms = 0;
   loop33ms = 0;
   loop66ms = 0;
   loop100ms = 0;
@@ -79,6 +78,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   ms_counter++;
 
   //Increment Loop Counters
+  loop5ms++;
   loop33ms++;
   loop66ms++;
   loop100ms++;
@@ -88,12 +88,21 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //Overdwell check
   uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) {
+  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) 
+  {
     applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
+#if IGN_CHANNELS >= 2
     applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 3
     applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 4
     applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
+#endif
+#if IGN_CHANNELS >= 5
     applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
+#endif
 #if IGN_CHANNELS >= 6
     applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
 #endif
@@ -108,9 +117,9 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
   // See if we're in power-on sweep mode
-  if( tachoSweepEnabled )
+  if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -130,7 +139,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   if(tachoOutputFlag == READY)
   {
     //Check for half speed tacho
-    if( (configPage2.tachoDiv == 0) || (tachoAlt == true) ) 
+    if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
     { 
       TACHO_PULSE_LOW();
       //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
@@ -142,7 +151,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       //Don't run on this pulse (Half speed tacho)
       tachoOutputFlag = TACHO_INACTIVE;
     }
-    tachoAlt = !tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
+    currentStatus.tachoAlt = !currentStatus.tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
   else if(tachoOutputFlag == ACTIVE)
   {
@@ -152,6 +161,13 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       TACHO_PULSE_HIGH();
       tachoOutputFlag = TACHO_INACTIVE;
     }
+  }
+
+  //200Hz loop
+  if (loop5ms == 5)
+  {
+    loop5ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
   }  
 
   //30Hz loop
@@ -207,7 +223,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
-    if ( (injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); injPrimed = true; }
+    if ( (currentStatus.injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); currentStatus.injPrimed = true; }
     seclx10++;
   }
 
@@ -253,12 +269,12 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     }
 
     //Check whether fuel pump priming is complete
-    if(fpPrimed == false)
+    if(currentStatus.fpPrimed == false)
     {
       //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
       if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
       {
-        fpPrimed = true; //Mark the priming as being completed
+        currentStatus.fpPrimed = true; //Mark the priming as being completed
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
@@ -304,11 +320,10 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
-      if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
-      else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
-      currentStatus.fuelTemp = div100( (int16_t)(((4224 * (long)flexPulseWidth) >> 10) - 8125) );
+      flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
+      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
-
   }
 
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough

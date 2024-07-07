@@ -269,7 +269,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 
     case 60: statusValue = currentStatus.fuelLoad; break;
     case 61: statusValue = currentStatus.ignLoad; break;
-    case 62: statusValue = currentStatus.dwell; break;
+    case 62: statusValue = (int16_t)currentStatus.dwell; break;
     case 63: statusValue = currentStatus.CLIdleTarget; break;
     case 64: statusValue = currentStatus.mapDOT; break;
     case 65: statusValue = currentStatus.vvt1Angle; break;

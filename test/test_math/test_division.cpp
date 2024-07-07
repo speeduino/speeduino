@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "crankMaths.h"
 #include "../timer.hpp"
+#include "../test_utils.h"
 
 
 template <typename T>
@@ -107,6 +108,7 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(0, 0));
 
@@ -121,6 +123,7 @@ void test_maths_udiv_32_16(void)
   assert_udiv_32_16(MICROS_PER_MIN, 7590);  // 7905 RPM
   assert_udiv_32_16(MICROS_PER_MIN, 7715);  // 7777 RPM  
   assert_udiv_32_16(MICROS_PER_MIN, 3333);  // 18000 RPM  
+#endif
 }
 
 
@@ -130,6 +133,7 @@ void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16_closest(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
 
@@ -145,13 +149,18 @@ void test_maths_udiv_32_16_closest(void)
   assert_udiv_32_16(MICROS_PER_MIN, 7590);  // 7905 RPM
   assert_udiv_32_16(MICROS_PER_MIN, 7715);  // 7777 RPM  
   assert_udiv_32_16(MICROS_PER_MIN, 3333);  // 18000 RPM  
+#endif
 }
 
+#if defined(ARDUINO_ARCH_AVR)
 static uint32_t indexToDividend(int16_t index) {
   return (uint32_t)index  + (UINT16_MAX*index);
 }
+#endif
+
 void test_maths_udiv_32_16_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     uint16_t iters = 32;
     uint16_t start_index = UINT16_MAX/3;
     uint16_t end_index = UINT16_MAX/3*2;
@@ -167,10 +176,12 @@ void test_maths_udiv_32_16_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 void test_maths_div100_s16_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr int16_t iters = 1;
     constexpr int16_t start_index = -10000;
     constexpr int16_t end_index = -1;
@@ -186,11 +197,13 @@ void test_maths_div100_s16_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 
 void test_maths_div100_s32_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr int32_t iters = 1;
     constexpr int32_t start_index = -1439190;
     constexpr int32_t end_index = -1;
@@ -206,9 +219,12 @@ void test_maths_div100_s32_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 void testDivision(void) {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_maths_div100_U16);
   RUN_TEST(test_maths_div100_U32);
   RUN_TEST(test_maths_div100_S16);
@@ -219,4 +235,5 @@ void testDivision(void) {
   RUN_TEST(test_maths_div360);
   RUN_TEST(test_maths_div100_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
+  }
 }

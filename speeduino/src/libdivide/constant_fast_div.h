@@ -81,8 +81,8 @@
 * Wrapper for *signed* 16-bit DIVISION by a *POSITIVE* compile time constant. 
 * E.g. FAST_DIV16(-value, 777)
 *
-* This only works for positive parmeters :-(
-* A negative number results in a hypen in the macro name, which is not allowed
+* This only works for positive parameters :-(
+* A negative number results in a hyphen in the macro name, which is not allowed
 */
 #define S16_MAGIC(d) CONCAT(CONCAT(S16LD_DENOM_, d), _MAGIC)
 #define S16_MORE(d) CONCAT(CONCAT(S16LD_DENOM_, d), _MORE)
@@ -92,8 +92,8 @@
 * Wrapper for *signed* 16-bit DIVISION by a *NEGATIVE* compile time constant. 
 * E.g. FAST_DIV16_NEG(-value, 777) // <-- It's converted to negative. Really.
 *
-* This only works for positive parmeters :-(
-* A negative number results in a hypen in the macro name, which is not allowed
+* This only works for positive parameters :-(
+* A negative number results in a hyphen in the macro name, which is not allowed
 */
 #define S16_MAGIC_NEG(d) CONCAT(CONCAT(S16LD_DENOM_MINUS_, d), _MAGIC)
 #define S16_MORE_NEG(d) CONCAT(CONCAT(S16LD_DENOM_MINUS_, d), _MORE)

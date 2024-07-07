@@ -8,8 +8,8 @@
  * Winbond SPI flash memory modules. As of version 2.0 it also works with internal
  * flash memory of the STM32F407. In its current form it enables reading
  * and writing individual bytes as if it where an AVR EEPROM. When the begin() 
- * fuction is called for the first time it will "format" the flash chip. 
- * !!!!THIS DISTROYS ANY EXISTING DATA ON THE FLASH!!!!
+ * function is called for the first time it will "format" the flash chip. 
+ * !!!!THIS DESTROYS ANY EXISTING DATA ON THE FLASH!!!!
  *  
  * This Library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ FLASH_EEPROM_BaseClass::FLASH_EEPROM_BaseClass(EEPROM_Emulation_Config config)
     //Class indicating if the emulated EEPROM flash is initialized  
    _EmulatedEEPROMAvailable=false;
 
-    //Class variable storing number of ones counted in adres translation block
+    //Class variable storing number of ones counted in address translation block
     _nrOfOnes = 0;
 
     //Class variable storing what sector we are working in.
@@ -99,7 +99,7 @@ byte FLASH_EEPROM_BaseClass::read(uint16_t addressEEPROM){
     //read address translation part
     readFlashBytes(_addressFLASH, _ReadWriteBuffer, _Addres_Translation_Size);
 
-    //calculate address of the valid data by couting the bits in the Address translation section
+    //calculate address of the valid data by counting the bits in the Address translation section
     _nrOfOnes = count(_ReadWriteBuffer, _Addres_Translation_Size);
     
     //Bring number of ones within specification of buffer size. 
@@ -134,7 +134,7 @@ int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val){
       //Check if section is full and an erase must be performed.
       if (_nrOfOnes < _Addres_Translation_Size + 1){
 
-        //First read all the values in this sector that will get distroyed when erasing
+        //First read all the values in this sector that will get destroyed when erasing
         byte tempBuf[_config.EEPROM_Bytes_Per_Sector];
         for(uint16_t i = 0; i<_config.EEPROM_Bytes_Per_Sector; i++){
             uint16_t TempEEPROMaddress = (_sectorFlash*_config.EEPROM_Bytes_Per_Sector) + i;
@@ -155,22 +155,22 @@ int8_t FLASH_EEPROM_BaseClass::write(uint16_t addressEEPROM, byte val){
         //Do not forget to write the new value!
         write(addressEEPROM, val);
 
-        //Return we have writen a whole sector. 
+        //Return we have written a whole sector. 
         return 0xFF;
         
       }
 
-      //determine the adress of the byte in the address translation section where one bit must be reset when writing new values 
+      //determine the address of the byte in the address translation section where one bit must be reset when writing new values 
       uint8_t AdressInAddressTranslation = (_nrOfOnes - 1)/8;
 
-      //write the new adress translation value at the new location in buffer
+      //write the new address translation value at the new location in buffer
       _ReadWriteBuffer[AdressInAddressTranslation] <<= 1;
 
       //Write the new EEPROM value at the new location in the buffer.
       _nrOfOnes--; 
       _ReadWriteBuffer[_nrOfOnes] = val;
 
-      //Write the buffer to the undelying flash storage. 
+      //Write the buffer to the underlying flash storage. 
       // writeFlashBytes(_addressFLASH, _ReadWriteBuffer, _Flash_Size_Per_EEPROM_Byte);
 
       //Write actual value part of the buffer to flash   
@@ -268,7 +268,7 @@ byte SPI_EEPROM_Class::read(uint16_t addressEEPROM){
 int8_t SPI_EEPROM_Class::begin(SPIClass &_spi, uint8_t pinSPIFlash_CS=6){
     pinMode(pinSPIFlash_CS, OUTPUT);
     bool flashavailable;
-    flashavailable = winbondSPIFlash.begin(_W25Q16,_spi, pinSPIFlash_CS);
+    flashavailable = winbondSPIFlash.begin(winbondFlashClass::partNumber::autoDetect, _spi, pinSPIFlash_CS);
     return FLASH_EEPROM_BaseClass::initialize(flashavailable);
 }    
 
@@ -293,7 +293,7 @@ int8_t SPI_EEPROM_Class::eraseFlashSector(uint32_t address, uint32_t length){
 
 #endif
 
-//THIS IS NOT WORKING! FOR STM32F103 YOU CAN ONLY WRITE IN JUST ERASED HALFWORDS(UINT16_T). THE PHILISOPHY IS FLAWWED THERE.
+//THIS IS NOT WORKING! FOR STM32F103 YOU CAN ONLY WRITE IN JUST ERASED HALFWORDS(UINT16_T). THE PHILOSOPHY IS FLAWWED THERE.
 //#if defined(STM32F103xB)
 
 // InternalSTM32F1_EEPROM_Class::InternalSTM32F1_EEPROM_Class(EEPROM_Emulation_Config config):FLASH_EEPROM_BaseClass(config)

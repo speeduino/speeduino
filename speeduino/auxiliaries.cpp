@@ -87,7 +87,7 @@ Air Conditioning Control
 */
 void initialiseAirCon(void)
 {
-  if( (configPage15.airConEnable&1) == 1 &&
+  if( (configPage15.airConEnable) == 1 &&
       pinAirConRequest != 0 &&
       pinAirConComp != 0 )
   {
@@ -217,7 +217,7 @@ bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  bool acReqPinStatus = ( ((configPage15.airConReqPol&1)==1) ? 
+  bool acReqPinStatus = ( ((configPage15.airConReqPol)==1) ? 
                              !!(*aircon_req_pin_port & aircon_req_pin_mask) :
                              !(*aircon_req_pin_port & aircon_req_pin_mask));
   BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
@@ -346,7 +346,7 @@ void fanControl(void)
 
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
-           ((configPage15.airConTurnsFanOn&1) == 1 &&
+           ((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
@@ -387,7 +387,7 @@ void fanControl(void)
       else
       {
         byte tempFanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
-        if((configPage15.airConTurnsFanOn&1) == 1 &&
+        if((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {
           // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
@@ -485,7 +485,7 @@ void initialiseAuxPWM(void)
     #elif defined(CORE_TEENSY35)
       vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #elif defined(CORE_TEENSY41)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming fro TS to allow for up to 512hz
+      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
@@ -511,6 +511,7 @@ void initialiseAuxPWM(void)
     vvtTimeHold = false;
     if (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
+  
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
     // config wmi pwm output to use vvt output
@@ -701,19 +702,22 @@ void boostControl(void)
       { 
         if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
-      } 
-      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
-      {
+
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
         if( configPage2.flexEnabled == 1 )
         {
-          currentStatus.boostTarget += table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);;
+          currentStatus.flexBoostCorrection = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
+          currentStatus.boostTarget += currentStatus.flexBoostCorrection;
+          currentStatus.boostTarget = constrain(currentStatus.boostTarget, 0, 511);
         }
         else
         {
           currentStatus.flexBoostCorrection = 0;
         }
+      } 
 
+      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
+      {
         if(currentStatus.boostTarget > 0)
         {
           //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
@@ -892,51 +896,79 @@ void vvtControl(void)
       }
 
       //Set the PWM state based on the above lookups
-      if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
+      if( configPage10.wmiEnabled == 0 ) //Added possibility to use vvt and wmi at the same time
       {
-        //Make sure solenoid is off (0% duty)
-        VVT1_PIN_OFF();
-        VVT2_PIN_OFF();
-        vvt1_pwm_state = false;
-        vvt1_max_pwm = false;
-        vvt2_pwm_state = false;
-        vvt2_max_pwm = false;
-        DISABLE_VVT_TIMER();
-      }
-      else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
-      {
-        //Make sure solenoid is on (100% duty)
-        VVT1_PIN_ON();
-        VVT2_PIN_ON();
-        vvt1_pwm_state = true;
-        vvt1_max_pwm = true;
-        vvt2_pwm_state = true;
-        vvt2_max_pwm = true;
-        DISABLE_VVT_TIMER();
+        if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
+        {
+          //Make sure solenoid is off (0% duty)
+          VVT1_PIN_OFF();
+          VVT2_PIN_OFF();
+          vvt1_pwm_state = false;
+          vvt1_max_pwm = false;
+          vvt2_pwm_state = false;
+          vvt2_max_pwm = false;
+          DISABLE_VVT_TIMER();
+        }
+        else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
+        {
+          //Make sure solenoid is on (100% duty)
+          VVT1_PIN_ON();
+          VVT2_PIN_ON();
+          vvt1_pwm_state = true;
+          vvt1_max_pwm = true;
+          vvt2_pwm_state = true;
+          vvt2_max_pwm = true;
+          DISABLE_VVT_TIMER();
+        }
+        else
+        {
+          //Duty cycle is between 0 and 100. Make sure the timer is enabled
+          ENABLE_VVT_TIMER();
+          if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
+          if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
+        }
       }
       else
       {
-        //Duty cycle is between 0 and 100. Make sure the timer is enabled
-        ENABLE_VVT_TIMER();
-        if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
-        if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
+        if( currentStatus.vvt1Duty == 0 )
+        {
+          //Make sure solenoid is off (0% duty)
+          VVT1_PIN_OFF();
+          vvt1_pwm_state = false;
+          vvt1_max_pwm = false;
+        }
+        else if( currentStatus.vvt1Duty >= 200 )
+        {
+          //Make sure solenoid is on (100% duty)
+          VVT1_PIN_ON();
+          vvt1_pwm_state = true;
+          vvt1_max_pwm = true;
+        }
+        else
+        {
+          //Duty cycle is between 0 and 100. Make sure the timer is enabled
+          ENABLE_VVT_TIMER();
+          if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
+        }
       }
- 
     }
   }
   else 
   { 
-    // Disable timer channel
-    DISABLE_VVT_TIMER(); 
+    if (configPage10.wmiEnabled == 0)
+    {
+      // Disable timer channel
+      DISABLE_VVT_TIMER();
+      currentStatus.vvt2Duty = 0;
+      vvt2_pwm_value = 0;
+      vvt2_pwm_state = false;
+      vvt2_max_pwm = false;
+    }
     currentStatus.vvt1Duty = 0;
     vvt1_pwm_value = 0;
-    currentStatus.vvt2Duty = 0;
-    vvt2_pwm_value = 0;
     vvt1_pwm_state = false;
     vvt1_max_pwm = false;
-    vvt2_pwm_state = false;
-    vvt2_max_pwm = false;
-    vvtTimeHold=false;
+    vvtTimeHold = false;
   } 
 }
 
@@ -1001,23 +1033,23 @@ void wmiControl(void)
 {
   int wmiPW = 0;
   
-  // wmi can only work when vvt is disabled 
-  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
+  // wmi can only work when vvt2 is disabled 
+  if( (configPage10.vvt2Enabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
     if( WMI_TANK_IS_EMPTY() )
     {
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
         {
         case WMI_MODE_SIMPLE:
           // Simple mode - Output is turned on when preset boost level is reached
-          wmiPW = 100;
+          wmiPW = 200;
           break;
         case WMI_MODE_PROPORTIONAL:
           // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
-          wmiPW = map(currentStatus.MAP/2, configPage10.wmiMAP, configPage10.wmiMAP2, 0, 100);
+          wmiPW = map(currentStatus.MAP/2, configPage10.wmiMAP, configPage10.wmiMAP2, 0, 200);
           break;
         case WMI_MODE_OPENLOOP:
           //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
@@ -1025,39 +1057,44 @@ void wmiControl(void)
           break;
         case WMI_MODE_CLOSEDLOOP:
           // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
-          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 100;
+          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 200;
           break;
         default:
           // Wrong mode
           wmiPW = 0;
           break;
         }
-        if (wmiPW > 100) { wmiPW = 100; } //without this the duty can get beyond 100%
+        if (wmiPW > 200) { wmiPW = 200; } //without this the duty can get beyond 100%
       }
     }
     else { BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY); }
 
     currentStatus.wmiPW = wmiPW;
-    vvt1_pwm_value = percentage(currentStatus.wmiPW, vvt_pwm_max_count);
+    vvt2_pwm_value = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
 
     if(wmiPW == 0)
     {
       // Make sure water pump is off
-      VVT1_PIN_LOW();
-      DISABLE_VVT_TIMER();
+      VVT2_PIN_LOW();
+      vvt2_pwm_state = false;
+      vvt2_max_pwm = false;
+      if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       digitalWrite(pinWMIEnabled, LOW);
     }
     else
     {
       digitalWrite(pinWMIEnabled, HIGH);
-      if (wmiPW >= 100)
+      if (wmiPW >= 200)
       {
         // Make sure water pump is on (100% duty)
-        VVT1_PIN_HIGH();
-        DISABLE_VVT_TIMER();
+        VVT2_PIN_HIGH();
+        vvt2_pwm_state = true;
+        vvt2_max_pwm = true;
+        if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       }
       else
       {
+        vvt2_max_pwm = false;
         ENABLE_VVT_TIMER();
       }
     }

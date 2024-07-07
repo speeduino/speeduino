@@ -754,7 +754,7 @@ void STM32_CAN::enableFIFO(bool status)
   //Nothing to do here. The FIFO is on by default. This is just to work with code made for Teensy FlexCan.
 }
 
-/* Interupt functions 
+/* Interrupt functions 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 */
 

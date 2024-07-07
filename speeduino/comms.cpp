@@ -31,7 +31,7 @@ A full copy of the license may be found in the projects root directory
 
 // Forward declarations
 
-/** @brief Processes a message once it has been fully recieved */
+/** @brief Processes a message once it has been fully received */
 void processSerialCommand(void);
 
 /** @brief Should be called when ::serialStatusFlag == SERIAL_TRANSMIT_TOOTH_INPROGRESS, */
@@ -57,16 +57,20 @@ void sendCompositeLog(void);
 
 #define SEND_OUTPUT_CHANNELS 48U
 
+#if defined(RTC_ENABLED) && defined(SD_LOGGING)
+  #define COMMS_SD            
+#endif
+
 //!@{
 /** @brief Hard coded response for some TS messages.
  * @attention Stored in flash (.text segment) and loaded on demand.
  */
 constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
-constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','1','1','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '1', '1', '-', 'd', 'e', 'v'};
-//constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','1','0'} ; //Note no null terminator in array and statu variable at the start
-//constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '1', '0'};
+constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','5','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '5', '-', 'd', 'e', 'v'};
+//constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','2'} ; //Note no null terminator in array and statu variable at the start
+//constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '2'};
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 //!@}
 
@@ -79,7 +83,7 @@ static uint16_t serialBytesRxTx = 0;
 static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
 using crc_t = uint32_t;
-#ifdef RTC_ENABLED
+#ifdef COMMS_SD
 #undef SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
  * 
@@ -104,7 +108,7 @@ static inline bool isTimeout(void) {
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }
 
-// ====================================== Endianess Support =============================
+// ====================================== Endianness Support =============================
 
 /**
  * @brief      Flush all remaining bytes from the rx serial buffer
@@ -392,7 +396,7 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 }
 
 /**
- * @brief Convert 2 bytes into an offset temperature in degrees Celcius
+ * @brief Convert 2 bytes into an offset temperature in degrees Celsius
  * @attention Returned value will be offset CALIBRATION_TEMPERATURE_OFFSET
  */
 static uint16_t toTemperature(byte lo, byte hi)
@@ -438,7 +442,7 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 
-Comands are single byte (letter symbol) commands.
+Commands are single byte (letter symbol) commands.
 */
 void serialReceive(void)
 {
@@ -716,7 +720,7 @@ void processSerialCommand(void)
       uint8_t cmd = serialPayload[2];
       uint16_t offset = word(serialPayload[4], serialPayload[3]);
       uint16_t length = word(serialPayload[6], serialPayload[5]);
-#ifdef RTC_ENABLED      
+#ifdef COMMS_SD     
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
 #endif
@@ -732,7 +736,7 @@ void processSerialCommand(void)
         (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
         sendSerialPayloadNonBlocking(sizeof(codeVersion));
       }
-#ifdef RTC_ENABLED
+#ifdef COMMS_SD
       else if(cmd == SD_RTC_PAGE) //Request to read SD card RTC
       {
         serialPayload[0] = SERIAL_RC_OK;
@@ -914,7 +918,7 @@ void processSerialCommand(void)
 
     case 'w':
     {
-#ifdef RTC_ENABLED
+#ifdef COMMS_SD
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
@@ -977,6 +981,8 @@ void processSerialCommand(void)
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
+            /*
+            TODO: Need to write test routine
             uint32_t sector;
             uint8_t sector1 = serialPayload[7];
             uint8_t sector2 = serialPayload[8];
@@ -992,6 +998,7 @@ void processSerialCommand(void)
             uint8_t testSize3 = serialPayload[13];
             uint8_t testSize4 = serialPayload[14];
             testSize = (testSize1 << 24) | (testSize2 << 16) | (testSize3 << 8) | testSize4; 
+            */
 
             sendReturnCodeMsg(SERIAL_RC_OK);
 

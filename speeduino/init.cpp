@@ -8,6 +8,7 @@
 #include "speeduino.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "comms_CAN.h"
 #include "utilities.h"
 #include "scheduledIO.h"
 #include "scheduler.h"
@@ -50,8 +51,8 @@
  */
 void initialiseAll(void)
 {   
-    fpPrimed = false;
-    injPrimed = false;
+    currentStatus.fpPrimed = false;
+    currentStatus.injPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -117,10 +118,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
-    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startip
-    #if defined(secondarySerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-    #endif
+    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
     taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
@@ -294,30 +292,24 @@ void initialiseAll(void)
     //Setup the calibration tables
     loadCalibration();
 
-    #if defined (NATIVE_CAN_AVAILABLE)
-      configPage9.intcan_available = 1;   // device has internal canbus
-      //Teensy uses the Flexcan_T4 library to use the internal canbus
-      //enable local can interface
-      //setup can interface to 500k   
-      Can0.begin();
-      Can0.setBaudRate(500000);
-      Can0.enableFIFO();
-    #endif
+    
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
       //First time running on this board
-      resetConfigPages(); 
+      resetConfigPages();
       setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    /* Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs.
-     * Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14 */
-    #if defined(CORE_TEENSY35)
-      Can0.setRX(DEF);
-      Can0.setTX(DEF);
+    #if defined(NATIVE_CAN_AVAILABLE)
+      initCAN();
+    #endif
+
+    //Must come after setPinMapping() as secondary serial can be changed on a per board basis
+    #if defined(secondarySerial_AVAILABLE)
+      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
     #endif
 
     //End all coil charges to ensure no stray sparks on startup
@@ -579,6 +571,14 @@ void initialiseAll(void)
           channel2InjDegrees = 120;
           channel3InjDegrees = 240;
 
+          if(configPage2.injType == INJ_TYPE_PORT)
+          { 
+            //Force nSquirts to 2 for individual port injection. This prevents TunerStudio forcing the value to 3 even when this isn't wanted. 
+            currentStatus.nSquirts = 2;
+            if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 360; }
+            else { CRANK_ANGLE_MAX_INJ = 180; }
+          }
+          
           //Adjust the injection angles based on the number of squirts
           if (currentStatus.nSquirts > 2)
           {
@@ -726,7 +726,7 @@ void initialiseAll(void)
               channel8InjDegrees = channel4InjDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
-              //Put the staging output to the non-existant channel 5
+              //Put the staging output to the non-existent channel 5
               #if (INJ_CHANNELS >= 5)
               maxInjOutputs = 5;
               channel5InjDegrees = channel1InjDegrees;
@@ -977,7 +977,7 @@ void initialiseAll(void)
     //This is ONLY the case on 4 stroke systems
     if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
     {
-      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720; }
+      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = (720U / currentStatus.nSquirts); }
     }
     
     switch(configPage2.injLayout)
@@ -1341,19 +1341,19 @@ void initialiseAll(void)
       FUEL_PUMP_ON();
       currentStatus.fuelPumpOn = true;
     }
-    else { fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+    else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
     readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
     readTPS(false); // Need to read tps to detect flood clear state
 
     /* tacho sweep function. */
-    tachoSweepEnabled = (configPage2.useTachoSweep > 0);
+    currentStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
        tachoSweepIncr is also the number of tach pulses per second */
     tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
     
-    initialisationComplete = true;
+    currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 
 }
@@ -1367,6 +1367,8 @@ void setPinMapping(byte boardID)
   //Force set defaults. Will be overwritten below if needed.
   injectorOutputControl = OUTPUT_CONTROL_DIRECT;
   ignitionOutputControl = OUTPUT_CONTROL_DIRECT;
+
+  if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
 
   switch (boardID)
   {
@@ -1538,7 +1540,7 @@ void setPinMapping(byte boardID)
 
         pinTrigger = 20; //The CAS pin
         pinTrigger2 = 21; //The Cam Sensor pin
-        pinTrigger3 = 23;
+        pinTrigger3 = 24;
 
         pinStepperDir = 34;
         pinStepperStep = 35;
@@ -2165,6 +2167,43 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
+    case 42:
+      //Pin mappings for all BlitzboxBL49sp variants
+      pinInjector1 = 6; //Output pin injector 1
+      pinInjector2 = 7; //Output pin injector 2
+      pinInjector3 = 8; //Output pin injector 3
+      pinInjector4 = 9; //Output pin injector 4
+      pinCoil1 = 24; //Pin for coil 1
+      pinCoil2 = 25; //Pin for coil 2
+      pinCoil3 = 23; //Pin for coil 3
+      pinCoil4 = 22; //Pin for coil 4
+      pinTrigger = 19; //The CRANK Sensor pin
+      pinTrigger2 = 18; //The Cam Sensor pin
+      pinFlex = 20; // Flex sensor PLACEHOLDER value for now
+      pinTPS = A0; //TPS input pin
+      pinSpareTemp1 = A1; //LMM sensor pin
+      pinO2 = A2; //O2 Sensor pin
+      pinIAT = A3; //IAT sensor pin
+      pinCLT = A4; //CLT sensor pin
+      pinMAP = A7; //internal MAP sensor
+      pinBat = A6; //Battery reference voltage pin
+      pinBaro = A5; //external MAP/Baro sensor pin
+      pinO2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
+      pinLaunch = 2; //Can be overwritten below
+      pinTachOut = 10; //Tacho output pin
+      pinIdle1 = 11; //Single wire idle control
+      pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
+      pinFuelPump = 3; //Fuel pump output
+      pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
+      pinBoost = 13; //Boost control
+      pinSpareLOut1 = 49; //enable Wideband Lambda Heater
+      pinSpareLOut2 = 16; //low current output spare2 PLACEHOLDER value for now
+      pinSpareLOut3 = 17; //low current output spare3 PLACEHOLDER value for now
+      pinSpareLOut4 = 21; //low current output spare4 PLACEHOLDER value for now
+      pinFan = 12; //Pin for the fan output
+      pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+    break;
+    
     case 45:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
@@ -2333,9 +2372,21 @@ void setPinMapping(byte boardID)
       pinInjector3 = 12; //MISO
       pinInjector4 = 10; //CS for MC33810 1
       pinInjector5 = 9; //CS for MC33810 2
+      pinInjector6 = 9; //CS for MC33810 3
 
+      //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
+      pinCoil1 = 40;
+      pinCoil2 = 41;
+      /*
+      pinCoil3 = 55;
+      pinCoil4 = 55;
+      pinCoil5 = 55;
+      pinCoil6 = 55;
+      */
+      
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
+      pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
       pinFlex = A16; // Flex sensor
       pinMAP = A1; //MAP sensor pin
       pinBaro = A0; //Baro sensor pin
@@ -2369,6 +2420,8 @@ void setPinMapping(byte boardID)
         pinCLT = A20; //CLS sensor pin
         pinO2 = A21; //O2 Sensor pin
         pinO2_2 = A18; //Spare 2
+
+        pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
       #endif
 
       #if defined(CORE_TEENSY41)
@@ -2516,7 +2569,7 @@ void setPinMapping(byte boardID)
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        // = PB7;  //NRF_CS
+        pinCoil6 = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
         pinCoil2 = PB9; //
         // = PB9;  //
@@ -2841,17 +2894,19 @@ void setPinMapping(byte boardID)
   pinCTPS = pinTranslate(configPage2.CTPSPin);
   
   // Air conditioning control initialisation
-  if (((configPage15.airConCompPin&63) != 0) && ((configPage15.airConCompPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin&63); }
-  if (((configPage15.airConFanPin&63) != 0) && ((configPage15.airConFanPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin&63); }
-  if (((configPage15.airConReqPin&63) != 0) && ((configPage15.airConReqPin&63) < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin&63); }
-  
+  if ((configPage15.airConCompPin != 0) && (configPage15.airConCompPin < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin); }
+  if ((configPage15.airConFanPin != 0) && (configPage15.airConFanPin < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin); }
+  if ((configPage15.airConReqPin != 0) && (configPage15.airConReqPin < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin); }
+    
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
   if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_MAX_IO_PINS) )
   {
+    if (configPage4.resetControlPin!=0U) {
+      pinResetControl = pinTranslate(configPage4.resetControlPin);
+    }
     resetControl = configPage4.resetControlConfig;
-    pinResetControl = pinTranslate(configPage4.resetControlPin);
     setResetControlPinState();
     pinMode(pinResetControl, OUTPUT);
   }
@@ -2952,6 +3007,7 @@ void setPinMapping(byte boardID)
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
   {
     initMC33810();
+    if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
   }
 
 //CS pin number is now set in a compile flag. 
@@ -2986,6 +3042,16 @@ void setPinMapping(byte boardID)
       pinMode(pinBat, INPUT);
       pinMode(pinBaro, INPUT);
     #endif
+  #elif defined(CORE_TEENSY41)
+    //Teensy 4.1 has a weak pull down resistor that needs to be disabled for all analog pins. 
+    pinMode(pinMAP, INPUT_DISABLE);
+    pinMode(pinO2, INPUT_DISABLE);
+    pinMode(pinO2_2, INPUT_DISABLE);
+    pinMode(pinTPS, INPUT_DISABLE);
+    pinMode(pinIAT, INPUT_DISABLE);
+    pinMode(pinCLT, INPUT_DISABLE);
+    pinMode(pinBat, INPUT_DISABLE);
+    pinMode(pinBaro, INPUT_DISABLE);
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
@@ -3049,14 +3115,14 @@ void setPinMapping(byte boardID)
     }
   } 
 
-  if((pinAirConComp>0) && ((configPage15.airConEnable&1) == 1))
+  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
   {
     pinMode(pinAirConComp, OUTPUT);
   }
 
-  if((pinAirConRequest > 0) && ((configPage15.airConEnable&1) == 1) && (!pinIsOutput(pinAirConRequest)))
+  if((pinAirConRequest > 0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConRequest)))
   {
-    if((configPage15.airConReqPol&1) == 1)
+    if((configPage15.airConReqPol) == 1)
     {
       // Inverted
       // +5V is ON, Use external pull-down resistor for OFF
@@ -3070,7 +3136,7 @@ void setPinMapping(byte boardID)
     }
   }
 
-  if((pinAirConFan > 0) && ((configPage15.airConEnable&1) == 1) && ((configPage15.airConFanEnabled&1) == 1))
+  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
@@ -3168,11 +3234,6 @@ void initialiseTriggers(void)
   pinMode(pinTrigger, INPUT);
   pinMode(pinTrigger2, INPUT);
   pinMode(pinTrigger3, INPUT);
-
-  #if defined(CORE_TEENSY41)
-    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
-    setTriggerHysteresis();
-  #endif
 
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
@@ -3334,6 +3395,21 @@ void initialiseTriggers(void)
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_HONDA_J32:
+      triggerSetup_HondaJ32();
+      triggerHandler = triggerPri_HondaJ32;
+      triggerSecondaryHandler = triggerSec_HondaJ32;
+      getRPM = getRPM_HondaJ32;
+      getCrankAngle = getCrankAngle_HondaJ32;
+      triggerSetEndTeeth = triggerSetEndTeeth_HondaJ32;
+
+      primaryTriggerEdge = RISING; // Don't honor the config, always use rising edge 
+      secondaryTriggerEdge = RISING; // Unused
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);  // Suspect this line is not needed
       break;
 
     case DECODER_MIATA_9905:
@@ -3621,6 +3697,20 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;   
 
+    case DECODER_SUZUKI_K6A:
+      triggerSetup_SuzukiK6A();
+      triggerHandler = triggerPri_SuzukiK6A; // only primary, no secondary, trigger pattern is over 720 degrees
+      getRPM = getRPM_SuzukiK6A;
+      getCrankAngle = getCrankAngle_SuzukiK6A;
+      triggerSetEndTeeth = triggerSetEndTeeth_SuzukiK6A;
+
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;
@@ -3631,6 +3721,11 @@ void initialiseTriggers(void)
       else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
       break;
   }
+
+  #if defined(CORE_TEENSY41)
+    //Teensy 4 requires a HYSTERESIS flag to be set on the trigger pins to prevent false interrupts
+    setTriggerHysteresis();
+  #endif
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {
@@ -3649,6 +3744,32 @@ static inline bool isAnyFuelScheduleRunning(void) {
 #endif
 #if INJ_CHANNELS >= 8
       || fuelSchedule8.Status==RUNNING
+#endif
+      ;
+}
+
+static inline bool isAnyIgnScheduleRunning(void) {
+  return ignitionSchedule1.Status==RUNNING      
+#if IGN_CHANNELS >= 2 
+      || ignitionSchedule2.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 3 
+      || ignitionSchedule3.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 4       
+      || ignitionSchedule4.Status==RUNNING
+#endif      
+#if IGN_CHANNELS >= 5      
+      || ignitionSchedule5.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 6
+      || ignitionSchedule6.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 7
+      || ignitionSchedule7.Status==RUNNING
+#endif
+#if IGN_CHANNELS >= 8
+      || ignitionSchedule8.Status==RUNNING
 #endif
       ;
 }
@@ -3712,7 +3833,7 @@ void changeHalfToFullSync(void)
   interrupts();
 
   //Need to do another check for sparkMode as this function can be called from injection
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) )
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
   {
     CRANK_ANGLE_MAX_IGN = 720;
     maxIgnOutputs = configPage2.nCylinders;
