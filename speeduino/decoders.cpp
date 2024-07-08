@@ -6011,7 +6011,6 @@ void triggerSetup_XTZ(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
-  //MAX_STALL_TIME = (3333UL * 60); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   triggerFilterTime = 1500;
@@ -6109,13 +6108,6 @@ uint16_t getRPM_XTZ(void)
     if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
     else
     {
-      /*
-      noInterrupts();
-        revolutionTime = (toothLastToothTime - toothLastMinusOneToothTime)<<2; 
-      interrupts();
-      tempRPM = ((unsigned long) 6000000UL) / revolutionTime;
-      if(tempRPM >= MAX_RPM) tempRPM = currentStatus.RPM; //Sanity check
-      */
       tempRPM = stdGetRPM(CRANK_SPEED);
     }
   }
@@ -6140,7 +6132,6 @@ int getCrankAngle_XTZ(void)
   
   //Estimate the number of degrees travelled since the last tooth}
   elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
-  //crankAngle += timeToAngle(elapsedTime, CRANKMATH_METHOD_INTERVAL_REV);
   crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
 
   if (crankAngle >= 720) { crankAngle -= 720; }
