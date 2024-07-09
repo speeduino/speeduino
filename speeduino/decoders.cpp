@@ -792,7 +792,7 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(int endAngle
 void triggerSetEndTeeth_missingTooth(void)
 {
   uint8_t toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
+  if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
 
   ignition1EndTooth = calcEndTeeth_missingTooth(ignition1EndAngle, toothAdder);
   ignition2EndTooth = calcEndTeeth_missingTooth(ignition2EndAngle, toothAdder);
