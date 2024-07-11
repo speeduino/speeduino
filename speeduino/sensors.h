@@ -71,5 +71,6 @@ void readBat(void);
 void readBaro(void);
 void readMAP(void);
 void instanteneousMAPReading(void);
+uint8_t getAnalogKnock(void);
 
 #endif // SENSORS_H

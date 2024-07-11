@@ -372,14 +372,12 @@ void initialiseAll(void)
     //As above but for knock pulses
     if(configPage10.knock_mode == KNOCK_MODE_DIGITAL)
     {
-      configPage10.knock_pin = 21;
       if(configPage10.knock_pullup) { pinMode(configPage10.knock_pin, INPUT_PULLUP); }
       else { pinMode(configPage10.knock_pin, INPUT); }
 
       if(configPage10.knock_trigger == KNOCK_TRIGGER_HIGH) { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, RISING); }
       else { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, FALLING); }
     }
-    attachInterrupt(digitalPinToInterrupt(21), knockPulse, FALLING);
 
     //Once the configs have been loaded, a number of one time calculations can be completed
     req_fuel_uS = configPage2.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations

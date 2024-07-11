@@ -806,6 +806,28 @@ byte getOilPressure(void)
   return (byte)tempOilPressure;
 }
 
+uint8_t getAnalogKnock(void)
+{
+  uint16_t tempReading;
+  uint8_t pinKnock = A15; //Default value incase the user has not selected an analog pin in TunerStudio
+  if(configPage10.knock_pin >=47U)
+  {
+    pinKnock = pinTranslateAnalog(configPage10.knock_pin - 47U); //The knock_pin varialbe has both digital and analog pins listed. A0 is at position 47
+  }
+
+  //Perform ADC read
+  #if defined(ANALOG_ISR)
+    tempReading = AnChannel[pinKnock-A0];
+  #else
+    tempReading = analogRead(pinKnock);
+    tempReading = analogRead(pinKnock);
+  #endif
+
+  tempReading = fastMap1023toX(tempReading, 255);
+
+  return (uint8_t)tempReading;
+}
+
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second

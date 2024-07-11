@@ -889,6 +889,42 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   return ignSoftFlatValue;
 }
+
+
+uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
+{
+  uint8_t tmpKnockRetard = curKnockRetard;
+  //Check whether we are in knock recovery
+  if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
+  {
+    //Calculate how many recovery steps have occured since the 
+    uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
+    uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
+    int8_t recoveryTimingAdj = 0;
+    if(recoverySteps > knockLastRecoveryStep) 
+    { 
+      recoveryTimingAdj = (recoverySteps - knockLastRecoveryStep) * configPage10.knock_recoveryStep;
+      knockLastRecoveryStep = recoverySteps;
+    }
+
+    if(recoveryTimingAdj < currentStatus.knockRetard)
+    {
+      //Add the timing back in provided we haven't reached the end of the recovery period
+      tmpKnockRetard = currentStatus.knockRetard - recoveryTimingAdj;
+    }
+    else 
+    {
+      //Recovery is complete. Knock adjustment is set to 0 and we reset the knock status
+      tmpKnockRetard = 0;
+      BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+      knockStartTime = 0;
+      currentStatus.knockCount = 0;
+    }
+  }
+
+  return tmpKnockRetard;
+}
+
 /** Ignition knock (retard) correction.
  */
 int8_t correctionKnockTiming(int8_t advance)
@@ -918,35 +954,7 @@ int8_t correctionKnockTiming(int8_t advance)
             knockLastRecoveryStep = 0;
           }
         }
-
-        //Check whether we are in knock recovery
-        if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
-        {
-          //Calculate how many recovery steps have occured since the 
-          uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
-          uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
-          int8_t recoveryTimingAdj = 0;
-          if(recoverySteps > knockLastRecoveryStep) 
-          { 
-            recoveryTimingAdj = (recoverySteps - knockLastRecoveryStep) * configPage10.knock_recoveryStep;
-            knockLastRecoveryStep = recoverySteps;
-          }
-
-          
-          if(recoveryTimingAdj < currentStatus.knockRetard)
-          {
-            //Add the timing back in provided we haven't reached the end of the recovery period
-            tmpKnockRetard = currentStatus.knockRetard - recoveryTimingAdj;
-          }
-          else 
-          {
-            //Recovery is complete. Knock adjustment is set to 0 and we reset the knock status
-            tmpKnockRetard = 0;
-            BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
-            knockStartTime = 0;
-            currentStatus.knockCount = 0;
-          }
-        }
+        tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
       }
       else
       {
@@ -959,6 +967,45 @@ int8_t correctionKnockTiming(int8_t advance)
     }
 
     BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE); //Reset the knock pulse indicator
+  }
+  else if( (configPage10.knock_mode == KNOCK_MODE_ANALOG)  )
+  {
+    if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
+    {
+      //Check if additional knock events occured
+      //Additional knock events are when the step time has passed and the voltage remains above the threshold
+      if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+      {
+        //Sufficient time has passed, check the current knock value
+        uint16_t tmpKnockReading = getAnalogKnock();
+
+        if(tmpKnockReading > configPage10.knock_threshold)
+        {
+          currentStatus.knockCount++;
+          tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+          knockStartTime = micros();
+          knockLastRecoveryStep = 0;
+        }   
+      }
+      tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
+    }
+    else
+    {
+      //If not is not currently active, we read the analog pin every 30Hz
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ) ) 
+      { 
+        uint16_t tmpKnockReading = getAnalogKnock();
+
+        if(tmpKnockReading > configPage10.knock_threshold)
+        {
+          //Knock detected
+          knockStartTime = micros();
+          tmpKnockRetard = configPage10.knock_firstStep; //
+          BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+          knockLastRecoveryStep = 0;
+        }
+      }
+    }
   }
   
 
