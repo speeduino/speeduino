@@ -21,7 +21,7 @@ byte checkRevLimit(void)
   //Hardcut RPM limit
   byte currentLimitRPM = 255; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-  BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
@@ -31,10 +31,10 @@ byte checkRevLimit(void)
       currentLimitRPM = configPage4.HardRevLim;
       if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
       { 
-        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
-      else { BIT_CLEAR(currentStatus.spark, BIT_SPARK_HRDLIM); }
+      else { BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM); }
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
     {
@@ -42,7 +42,7 @@ byte checkRevLimit(void)
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.spark, BIT_SPARK_HRDLIM); //Legacy and likely to be removed at some point
+        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
     }
@@ -55,7 +55,7 @@ byte checkBoostLimit(void)
 {
   byte boostLimitActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-  BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
@@ -68,22 +68,22 @@ byte checkBoostLimit(void)
       switch(configPage6.boostCutType)
       {
         case 1:
-          BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
           BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
           BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
           break;
         case 2:
           BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
           break;
         case 3:
-          BIT_SET(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
           BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
           break;
         default:
           //Shouldn't ever happen, but just in case, disable all cuts
           BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.spark, BIT_SPARK_BOOSTCUT);
+          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
       }
       */
     }

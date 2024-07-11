@@ -17,7 +17,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    23
+  #define CURRENT_DATA_VERSION    24
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -750,6 +750,15 @@ void doUpdates(void)
 
     writeAllConfig();
     storeEEPROMVersion(23);
+  }
+
+  if(readEEPROMVersion() == 23)
+  {
+    //202405
+    configPage10.knock_mode = KNOCK_MODE_OFF;
+
+    writeAllConfig();
+    storeEEPROMVersion(24);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

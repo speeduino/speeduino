@@ -79,12 +79,12 @@ void calculateSecondaryFuel(void)
 void calculateSecondarySpark(void)
 {
   //Same as above but for the secondary ignition table
-  BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
   if(configPage10.spark2Mode > 0)
   { 
     if(configPage10.spark2Mode == SPARK2_MODE_MULTIPLY)
     {
-      BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE);
+      BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE);
       currentStatus.advance2 = getAdvance2();
       //make sure we don't have a negative value in the multiplier table (sharing a signed 8 bit table)
       if(currentStatus.advance2 < 0) { currentStatus.advance2 = 0; }
@@ -96,7 +96,7 @@ void calculateSecondarySpark(void)
     }
     else if(configPage10.spark2Mode == SPARK2_MODE_ADD)
     {
-      BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+      BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
       currentStatus.advance2 = getAdvance2();
       //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
       int16_t combinedAdvance = (int16_t)currentStatus.advance1 + (int16_t)currentStatus.advance2;
@@ -110,7 +110,7 @@ void calculateSecondarySpark(void)
       {
         if(currentStatus.RPM > configPage10.spark2SwitchValue)
         {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+          BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
           currentStatus.advance = currentStatus.advance2;
         }
@@ -119,7 +119,7 @@ void calculateSecondarySpark(void)
       {
         if(currentStatus.MAP > configPage10.spark2SwitchValue)
         {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+          BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
           currentStatus.advance = currentStatus.advance2;
         }
@@ -128,7 +128,7 @@ void calculateSecondarySpark(void)
       {
         if(currentStatus.TPS > configPage10.spark2SwitchValue)
         {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+          BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
           currentStatus.advance = currentStatus.advance2;
         }
@@ -137,7 +137,7 @@ void calculateSecondarySpark(void)
       {
         if(currentStatus.ethanolPct > configPage10.spark2SwitchValue)
         {
-          BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+          BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
           currentStatus.advance2 = getAdvance2();
           currentStatus.advance = currentStatus.advance2;
         }
@@ -147,7 +147,7 @@ void calculateSecondarySpark(void)
     {
       if(digitalRead(pinSpark2Input) == configPage10.spark2InputPolarity)
       {
-        BIT_SET(currentStatus.spark2, BIT_SPARK2_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+        BIT_SET(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
         currentStatus.advance2 = getAdvance2();
         currentStatus.advance = currentStatus.advance2;
       }

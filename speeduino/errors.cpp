@@ -20,7 +20,7 @@ byte setError(byte errorID)
   {
     errorCodes[errorCount] = errorID;
     errorCount++;
-    if(errorCount == 1) { BIT_SET(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
+    if(errorCount == 1) { BIT_SET(currentStatus.status2, BIT_STATUS2_ERROR); } //Enable the error indicator
   }
   return errorCount;
 }
@@ -45,7 +45,7 @@ void clearError(byte errorID)
     }
 
     errorCount--;
-    if(errorCount == 0) { BIT_CLEAR(currentStatus.spark, BIT_SPARK_ERROR); } //Enable the error indicator
+    if(errorCount == 0) { BIT_CLEAR(currentStatus.status2, BIT_STATUS2_ERROR); } //Enable the error indicator
   }
 }
 

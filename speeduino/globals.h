@@ -151,23 +151,23 @@
 #define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
-#define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
-#define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
-#define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
-#define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
-#define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_SPARK_ERROR           5  // Error is detected
-#define BIT_SPARK_IDLE            6  // idle on
-#define BIT_SPARK_SYNC            7  // Whether engine has sync or not
+#define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
+#define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
+#define BIT_STATUS2_HRDLIM          2  //Hard limiter indicator
+#define BIT_STATUS2_SFTLIM          3  //Soft limiter indicator
+#define BIT_STATUS2_BOOSTCUT        4  //Spark component of MAP based boost cut out
+#define BIT_STATUS2_ERROR           5  // Error is detected
+#define BIT_STATUS2_IDLE            6  // idle on
+#define BIT_STATUS2_SYNC            7  // Whether engine has sync or not
 
-#define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
-#define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
-#define BIT_SPARK2_SPARK2_ACTIVE  2
-#define BIT_SPARK2_UNUSED4        3
-#define BIT_SPARK2_UNUSED5        4
-#define BIT_SPARK2_UNUSED6        5
-#define BIT_SPARK2_UNUSED7        6
-#define BIT_SPARK2_UNUSED8        7
+#define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
+#define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
+#define BIT_STATUS5_SPARK2_ACTIVE  2
+#define BIT_STATUS5_KNOCK_ACTIVE   3
+#define BIT_STATUS5_KNOCK_PULSE    4
+#define BIT_STATUS5_UNUSED6        5
+#define BIT_STATUS5_UNUSED7        6
+#define BIT_STATUS5_UNUSED8        7
 
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
@@ -302,6 +302,9 @@
 #define KNOCK_MODE_OFF      0
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
+
+#define KNOCK_TRIGGER_HIGH  0
+#define KNOCK_TRIGGER_LOW   1
 
 #define FUEL2_MODE_OFF      0
 #define FUEL2_MODE_MULTIPLY 1
@@ -631,8 +634,10 @@ struct statuses {
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
   volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
-  volatile byte spark;   ///< Spark status/control indicator bits (launch control, boost cut, spark errors, See BIT_SPARK_* defines)
-  volatile byte spark2;  ///< Spark 2 ... (See also @ref config10 spark2* members and BIT_SPARK2_* defines)
+  volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
+  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
+  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
+  volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
@@ -659,7 +664,6 @@ struct statuses {
   uint16_t canin[16]; ///< 16bit raw value of selected canin data for channels 0-15
   uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it every time it's used (Config page value is stored divided by 10) */
-  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
@@ -671,7 +675,7 @@ struct statuses {
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   volatile byte syncLossCounter;
   byte knockRetard;
-  bool knockActive;
+  volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
   int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
@@ -687,7 +691,6 @@ struct statuses {
   byte engineProtectStatus;
   byte fanDuty;
   byte wmiPW;
-  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt2TargetAngle;
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)

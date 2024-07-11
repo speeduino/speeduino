@@ -44,9 +44,9 @@ byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 bool idleAdvActive = false;
 uint16_t AFRnextCycle;
 unsigned long knockStartTime;
-byte lastKnockCount;
-int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+uint8_t knockLastRecoveryStep;
+//int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+//int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint8_t aseTaper;
 uint8_t dfcoDelay;
 uint8_t idleAdvTaper;
@@ -61,7 +61,11 @@ void initialiseCorrections(void)
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
-  currentStatus.knockActive = false;
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE);
+  currentStatus.knockCount = 1;
+  knockLastRecoveryStep = 0;
+  knockStartTime = 0;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets spurious pulses after boot)  
 }
 
@@ -684,7 +688,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  advance = correctionKnock(advance);
+  advance = correctionKnockTiming(advance);
 
   advance = correctionDFCOignition(advance);
 
@@ -809,13 +813,13 @@ When some other mechanism is also present, wait until the engine is no more than
 int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
-  BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SFTLIM);
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
   {
     if (currentStatus.RPMdiv100 >= configPage4.SoftRevLim) //Softcut RPM limit
     {
-      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+      BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
       if( softLimitTime < configPage4.SoftLimMax )
       {
         if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
@@ -859,13 +863,13 @@ int8_t correctionSoftLaunch(int8_t advance)
   if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
   {
     currentStatus.launchingSoft = true;
-    BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
     ignSoftLaunchValue = configPage6.lnchRetard;
   }
   else
   {
     currentStatus.launchingSoft = false;
-    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   }
 
   return ignSoftLaunchValue;
@@ -878,48 +882,89 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   if(configPage6.flatSEnable && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     ignSoftFlatValue = configPage6.flatSRetard;
   }
-  else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
+  else { BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS); }
 
   return ignSoftFlatValue;
 }
 /** Ignition knock (retard) correction.
  */
-int8_t correctionKnock(int8_t advance)
+int8_t correctionKnockTiming(int8_t advance)
 {
-  byte knockRetard = 0;
-
-  //First check is to do the window calculations (Assuming knock is enabled)
-  if( configPage10.knock_mode != KNOCK_MODE_OFF )
-  {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
-  }
-
+  byte tmpKnockRetard = 0;
 
   if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
   {
     //
-    if(knockCounter > configPage10.knock_count)
+    if(currentStatus.knockCount >= configPage10.knock_count)
     {
-      if(currentStatus.knockActive == true)
+      if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
       {
-        //Knock retard is currently 
+        //Knock retard is currently active already.
+        tmpKnockRetard = currentStatus.knockRetard;
+
+        //Check if additional knock events occured
+        if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE))
+        {
+          //Check if the latest event was far enough after the initial knock event to pull further timing
+          if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+          {
+            //Recalculate the amount timing being pulled
+            currentStatus.knockCount++;
+            tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+            knockStartTime = micros();
+            knockLastRecoveryStep = 0;
+          }
+        }
+
+        //Check whether we are in knock recovery
+        if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
+        {
+          //Calculate how many recovery steps have occured since the 
+          uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
+          uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
+          int8_t recoveryTimingAdj = 0;
+          if(recoverySteps > knockLastRecoveryStep) 
+          { 
+            recoveryTimingAdj = (recoverySteps - knockLastRecoveryStep) * configPage10.knock_recoveryStep;
+            knockLastRecoveryStep = recoverySteps;
+          }
+
+          
+          if(recoveryTimingAdj < currentStatus.knockRetard)
+          {
+            //Add the timing back in provided we haven't reached the end of the recovery period
+            tmpKnockRetard = currentStatus.knockRetard - recoveryTimingAdj;
+          }
+          else 
+          {
+            //Recovery is complete. Knock adjustment is set to 0 and we reset the knock status
+            tmpKnockRetard = 0;
+            BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+            knockStartTime = 0;
+            currentStatus.knockCount = 0;
+          }
+        }
       }
       else
       {
-        //Knock needs to be activated
-        lastKnockCount = knockCounter;
+        //Knock currently inactive but needs to be active now
         knockStartTime = micros();
-        knockRetard = configPage10.knock_firstStep;
+        tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize); //
+        BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+        knockLastRecoveryStep = 0;
       }
     }
 
+    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE); //Reset the knock pulse indicator
   }
+  
 
-  return advance - knockRetard;
+  tmpKnockRetard = min(tmpKnockRetard, configPage10.knock_maxRetard); //Ensure the commanded retard is not higher than the maximum allowed.
+  currentStatus.knockRetard = tmpKnockRetard;
+  return advance - tmpKnockRetard;
 }
 
 /** Ignition DFCO taper correction.
