@@ -141,30 +141,41 @@ void writeByteReliableBlocking(byte value) {
   Serial.write(value);
 }
 
-// ====================================== Multibyte Primitive IO Support =============================
+// ====================================== Multibyte Primitive Types IO Support =============================
 
-/** @brief Read a uint32_t from Serial
- * 
- * @attention noinline is needed to prevent enlarging callers stack frame, which in turn throws
- * off free ram reporting.
- * */
-static __attribute__((noinline)) uint32_t readSerial32Timeout(void)
-{
-  union {
-    char raw[sizeof(uint32_t)];
-    uint32_t value;
-  } buffer;
+/** @brief Read from the serial port into the supplied buffer 
+ * @attention The buffer is filled in reverse, since TS comms is little-endian.
+*/
+static void readSerialTimeout(char *buffer, size_t length) {
   // Teensy 3.5: Serial.available() should only be used as a boolean test
   // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
-  size_t count=0;
-  while (count < sizeof(buffer.value)) {
+  while (length>0U) {
     if (Serial.available()!=0) {
-      buffer.raw[count++] =(byte)Serial.read();
+      buffer[--length] =(byte)Serial.read();
     } else if(isTimeout()) {
-      return 0;
+      return;
     } else { /* MISRA - no-op */ }
   }  
-  return reverse_bytes(buffer.value);
+}
+
+/**
+ * @brief Reads an integral type, timing out if necessary
+ * 
+ * @tparam TIntegral The integral type. E.g. uint16_t 
+ */
+template <typename TIntegral>
+static __attribute__((noinline)) TIntegral readSerialIntegralTimeout(void) {
+  // We use type punning to read into a buffer and convert to the appropriate type
+  union {
+    char raw[sizeof(TIntegral)];
+    TIntegral value;
+  } buffer;
+  readSerialTimeout(buffer.raw, sizeof(buffer.raw));
+
+  if(isTimeout()) {
+    return TIntegral();
+  }
+  return buffer.value;
 }
 
 /** @brief Write a uint32_t to Serial 
@@ -474,13 +485,12 @@ void serialReceive(void)
     }
     else
     {
-      Serial.read();
-      while(Serial.available() == 0) { /* Wait for the 2nd byte to be received (This will almost never happen) */ }
-
-      serialPayloadLength = word(highByte, Serial.read());
-      serialBytesRxTx = 2;
-      serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
       serialReceiveStartTime = millis();
+      serialPayloadLength = readSerialIntegralTimeout<uint16_t>();
+      if (!isTimeout()) {
+        serialBytesRxTx = 2;
+        serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
+      }
     }
   }
 
@@ -494,7 +504,7 @@ void serialReceive(void)
     }
     else
     {
-      uint32_t incomingCrc = readSerial32Timeout();
+      uint32_t incomingCrc = readSerialIntegralTimeout<uint32_t>();
       serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
 
       if (!isTimeout()) // CRC read can timeout also!
