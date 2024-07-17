@@ -29,6 +29,10 @@ A full copy of the license may be found in the projects root directory
   #include "SD_logger.h"
 #endif
 
+/** @defgroup group-serial-comms-impl Serial comms implementation
+ * @{
+ */
+
 // Forward declarations
 
 /** @brief Processes a message once it has been fully received */
@@ -40,49 +44,49 @@ void sendToothLog(void);
 /** @brief Should be called when ::serialStatusFlag == LOG_SEND_COMPOSITE */
 void sendCompositeLog(void);
 
-#define SERIAL_RC_OK        0x00 //!< Success
-#define SERIAL_RC_REALTIME  0x01 //!< Unused
-#define SERIAL_RC_PAGE      0x02 //!< Unused
+/// @defgroup group-serial-return-codes Serial return codes sent to TS
+/// @{
+static constexpr byte SERIAL_RC_OK         = 0x00; //!< Success
+static constexpr byte SERIAL_RC_REALTIME   = 0x01; //!< Unused
+static constexpr byte SERIAL_RC_PAGE       = 0x02; //!< Unused
+static constexpr byte SERIAL_RC_BURN_OK    = 0x04; //!< EEPROM write succeeded
+static constexpr byte SERIAL_RC_TIMEOUT    = 0x80; //!< Timeout error
+static constexpr byte SERIAL_RC_CRC_ERR    = 0x82; //!< CRC mismatch
+static constexpr byte SERIAL_RC_UKWN_ERR   = 0x83; //!< Unknown command
+static constexpr byte SERIAL_RC_RANGE_ERR  = 0x84; //!< Incorrect range. TS will not retry command
+static constexpr byte SERIAL_RC_BUSY_ERR   = 0x85; //!< TS will wait and retry
+///@}
 
-#define SERIAL_RC_BURN_OK   0x04 //!< EEPROM write succeeded
-
-#define SERIAL_RC_TIMEOUT   0x80 //!< Timeout error
-#define SERIAL_RC_CRC_ERR   0x82 //!< CRC mismatch
-#define SERIAL_RC_UKWN_ERR  0x83 //!< Unknown command
-#define SERIAL_RC_RANGE_ERR 0x84 //!< Incorrect range. TS will not retry command
-#define SERIAL_RC_BUSY_ERR  0x85 //!< TS will wait and retry
-
-#define SERIAL_LEN_SIZE     2U
-#define SERIAL_TIMEOUT      3000 //ms
-
-#define SEND_OUTPUT_CHANNELS 48U
+static constexpr uint8_t SEND_OUTPUT_CHANNELS = 48U; //!< Code for the "send output channels command"
 
 #if defined(RTC_ENABLED) && defined(SD_LOGGING)
   #define COMMS_SD            
 #endif
 
-//!@{
-/** @brief Hard coded response for some TS messages.
- * @attention Stored in flash (.text segment) and loaded on demand.
- */
-constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
-constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
-constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','5','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
-constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '5', '-', 'd', 'e', 'v'};
-//constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','2'} ; //Note no null terminator in array and statu variable at the start
-//constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '2'};
-constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
-//!@}
+/// @defgroup group-serial-hard-coded-responses Hard coded response for some TS messages
+/// @{
+static constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
+static constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
+static constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','5','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
+static constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '5', '-', 'd', 'e', 'v'};
+//static constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','2'} ; //Note no null terminator in array and statu variable at the start
+//static constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '2'};
+static constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
+/// @}
 
-/** @brief The number of bytes received or transmitted to date during nonblocking I/O.
- * 
- * @attention We can share one variable between rx & tx because we only support simpex serial comms. 
+/** 
+ * @brief The number of bytes received or transmitted to date during nonblocking I/O.
+ * @note We can share one variable between rx & tx because we only support simplex serial comms. 
  * I.e. we can only be receiving or transmitting at any one time.
  */
 static uint16_t serialBytesRxTx = 0; 
-static uint32_t serialReceiveStartTime = 0; //!< The time at which the serial receive started. Used for calculating whether a timeout has occurred */
-static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations */
+
+static constexpr uint32_t SERIAL_TIMEOUT = 3000; //!< Timeout threshold in milliseconds
+static uint32_t serialReceiveStartTime = 0; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
+
+static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations
 using crc_t = uint32_t;
+
 #ifdef COMMS_SD
 #undef SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
@@ -95,23 +99,24 @@ static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
 #endif
-static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
-static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
+static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
+static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
-// These minimize RAM usage at no performance cost
+// This minimizes RAM usage at no performance cost
 #pragma GCC optimize ("Os") 
 #endif
 
-static inline bool isTimeout(void) {
+/** @brief Has the current receive operation timed out? */
+static inline bool isRxTimeout(void) {
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }
 
 // ====================================== Endianness Support =============================
 
 /**
- * @brief      Flush all remaining bytes from the rx serial buffer
+ * @brief Flush all remaining bytes from the rx serial buffer
  */
 void flushRXbuffer(void)
 {
@@ -135,13 +140,13 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 
 void writeByteReliableBlocking(byte value) {
   // Some platforms (I'm looking at you Teensy 3.5) do not mimic the Arduino 1.0
-  // contract and synchronously block. 
+  // contract which synchronously blocks. 
   // https://github.com/PaulStoffregen/cores/blob/master/teensy3/usb_serial.c#L215
   while (!Serial.availableForWrite()) { /* Wait for the buffer to free up space */ }
   Serial.write(value);
 }
 
-// ====================================== Multibyte Primitive Types IO Support =============================
+// ====================================== Multibyte Primitive Type IO Support =============================
 
 /** @brief Read from the serial port into the supplied buffer 
  * @attention The buffer is filled in reverse, since TS comms is little-endian.
@@ -152,10 +157,10 @@ static void readSerialTimeout(char *buffer, size_t length) {
   while (length>0U) {
     if (Serial.available()!=0) {
       buffer[--length] =(byte)Serial.read();
-    } else if(isTimeout()) {
+    } else if(isRxTimeout()) {
       return;
     } else { /* MISRA - no-op */ }
-  }  
+  }
 }
 
 /**
@@ -172,7 +177,7 @@ static __attribute__((noinline)) TIntegral readSerialIntegralTimeout(void) {
   } buffer;
   readSerialTimeout(buffer.raw, sizeof(buffer.raw));
 
-  if(isTimeout()) {
+  if(isRxTimeout()) {
     return TIntegral();
   }
   return buffer.value;
@@ -240,6 +245,7 @@ static size_t writeNonBlocking(size_t start, uint32_t value)
  * This is supposed to be called multiple times for the same buffer until
  * it's all sent.
  * 
+ * @param buffer The buffer
  * @param start Index into the buffer to start sending at. [0, length)
  * @param length Total size of the buffer
  * @return Cumulative total number of bytes written . I.e. the next start value
@@ -487,8 +493,8 @@ void serialReceive(void)
     {
       serialReceiveStartTime = millis();
       serialPayloadLength = readSerialIntegralTimeout<uint16_t>();
-      if (!isTimeout()) {
-        serialBytesRxTx = 2;
+      if (!isRxTimeout()) {
+        serialBytesRxTx = sizeof(serialPayloadLength);
         serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
       }
     }
@@ -497,9 +503,9 @@ void serialReceive(void)
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
   while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
   {
-    if (serialBytesRxTx < (serialPayloadLength + SERIAL_LEN_SIZE) )
+    if (serialBytesRxTx < (serialPayloadLength + sizeof(serialPayloadLength)) )
     {
-      serialPayload[serialBytesRxTx - SERIAL_LEN_SIZE] = (byte)Serial.read();
+      serialPayload[serialBytesRxTx - sizeof(serialPayloadLength)] = (byte)Serial.read();
       serialBytesRxTx++;
     }
     else
@@ -507,7 +513,7 @@ void serialReceive(void)
       uint32_t incomingCrc = readSerialIntegralTimeout<uint32_t>();
       serialStatusFlag = SERIAL_INACTIVE; //The serial receive is now complete
 
-      if (!isTimeout()) // CRC read can timeout also!
+      if (!isRxTimeout()) // CRC read can timeout also!
       {
         if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
         {
@@ -526,13 +532,12 @@ void serialReceive(void)
   } //Data in serial buffer and serial receive in progress
 
   //Check for a timeout
-  if( isTimeout() )
+  if( isRxTimeout() )
   {
     serialStatusFlag = SERIAL_INACTIVE; //Reset the serial receive
 
     flushRXbuffer();
     sendReturnCodeMsg(SERIAL_RC_TIMEOUT);
-
   } //Timeout
 }
 
@@ -1179,3 +1184,5 @@ void sendCompositeLog(void)
 #if defined(CORE_AVR)
 #pragma GCC pop_options
 #endif
+
+///@}
