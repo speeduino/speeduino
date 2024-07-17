@@ -46,15 +46,15 @@ void sendCompositeLog(void);
 
 /// @defgroup group-serial-return-codes Serial return codes sent to TS
 /// @{
-static constexpr byte SERIAL_RC_OK         = 0x00; //!< Success
-static constexpr byte SERIAL_RC_REALTIME   = 0x01; //!< Unused
-static constexpr byte SERIAL_RC_PAGE       = 0x02; //!< Unused
-static constexpr byte SERIAL_RC_BURN_OK    = 0x04; //!< EEPROM write succeeded
-static constexpr byte SERIAL_RC_TIMEOUT    = 0x80; //!< Timeout error
-static constexpr byte SERIAL_RC_CRC_ERR    = 0x82; //!< CRC mismatch
-static constexpr byte SERIAL_RC_UKWN_ERR   = 0x83; //!< Unknown command
-static constexpr byte SERIAL_RC_RANGE_ERR  = 0x84; //!< Incorrect range. TS will not retry command
-static constexpr byte SERIAL_RC_BUSY_ERR   = 0x85; //!< TS will wait and retry
+static constexpr byte SERIAL_RC_OK         = 0x00U; //!< Success
+static constexpr byte SERIAL_RC_REALTIME   = 0x01U; //!< Unused
+static constexpr byte SERIAL_RC_PAGE       = 0x02U; //!< Unused
+static constexpr byte SERIAL_RC_BURN_OK    = 0x04U; //!< EEPROM write succeeded
+static constexpr byte SERIAL_RC_TIMEOUT    = 0x80U; //!< Timeout error
+static constexpr byte SERIAL_RC_CRC_ERR    = 0x82U; //!< CRC mismatch
+static constexpr byte SERIAL_RC_UKWN_ERR   = 0x83U; //!< Unknown command
+static constexpr byte SERIAL_RC_RANGE_ERR  = 0x84U; //!< Incorrect range. TS will not retry command
+static constexpr byte SERIAL_RC_BUSY_ERR   = 0x85U; //!< TS will wait and retry
 ///@}
 
 static constexpr uint8_t SEND_OUTPUT_CHANNELS = 48U; //!< Code for the "send output channels command"
@@ -297,7 +297,7 @@ static void sendReturnCodeMsg(byte returnCode)
 {
   serialWrite((uint16_t)sizeof(returnCode));
   writeByteReliableBlocking(returnCode);
-  serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
+  (void)serialWrite(CRC32_serial.crc32(&returnCode, sizeof(returnCode)));
 }
 
 // ====================================== Command/Action Support =============================
@@ -363,9 +363,9 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
   currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   serialPayload[0] = SERIAL_RC_OK;
-  for(byte x=0; x<packetLength; x++)
+  for(uint16_t x=0; x<packetLength; x++)
   {
-    serialPayload[x+1] = getTSLogEntry(offset+x); 
+    serialPayload[x+1U] = getTSLogEntry(offset+x); 
   }
   // Reset any flags that are being used to trigger page refreshes
   BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
@@ -404,7 +404,7 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     pCrcFun = &FastCRC32::crc32_upd;
   }
  
-  if( offset >= 1023 ) 
+  if( offset >= 1023U ) 
   {
     //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
     storeCalibrationCRC32(O2_CALIBRATION_PAGE, ~calibrationCRC);
@@ -474,7 +474,7 @@ void serialReceive(void)
   { 
     //New command received
     //Need at least 2 bytes to read the length of the command
-    byte highByte = (byte)Serial.peek();
+    char highByte = (char)Serial.peek();
 
     //Check if the command is legacy using the call/response mechanism
     if(highByte == 'F')
@@ -606,7 +606,7 @@ void processSerialCommand(void)
       uint32_t CRC32_val = reverse_bytes(calculatePageCRC32( serialPayload[2] ));
 
       serialPayload[0] = SERIAL_RC_OK;
-      (void)memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
+      (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);      
       break;
     }
@@ -662,7 +662,7 @@ void processSerialCommand(void)
       uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
-      (void)memcpy(&serialPayload[1], &CRC32_val, sizeof(CRC32_val));
+      (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));
       sendSerialPayloadNonBlocking(5);
       break;
     }
@@ -745,7 +745,7 @@ void processSerialCommand(void)
         generateLiveValues(offset, length);
         sendSerialPayloadNonBlocking(length + 1U);
       }
-      else if(cmd == 0x0f)
+      else if(cmd == 0x0fU)
       {
         //Request for signature
         (void)memcpy_P(serialPayload, codeVersion, sizeof(codeVersion) );
@@ -787,12 +787,6 @@ void processSerialCommand(void)
           serialPayload[6] = ((sectors >> 16) & 255);
           serialPayload[7] = ((sectors >> 8) & 255);
           serialPayload[8] = (sectors & 255);
-          /*
-          serialPayload[5] = 0;
-          serialPayload[6] = 0x20; //1gb dummy card
-          serialPayload[7] = 0;
-          serialPayload[8] = 0;
-          */
 
           //Max roots (Number of files)
           uint16_t numLogFiles = getNextSDLogFileNumber() - 2; // -1 because this returns the NEXT file name not the current one and -1 because TS expects a 0 based index
@@ -882,7 +876,7 @@ void processSerialCommand(void)
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger
       logItemsTransmitted = 0;
       if(currentStatus.toothLogEnabled == true) { sendToothLog(); } //Sends tooth log values as ints
-      else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog(); }
+      else if (currentStatus.compositeTriggerUsed > 0U) { sendCompositeLog(); }
       else { /* MISRA no-op */ }
       break;
 
@@ -996,7 +990,7 @@ void processSerialCommand(void)
           {
             //Perform a speed test on the SD card
             //First 4 bytes are the sector number to write to
-            /*
+            #if 0
             TODO: Need to write test routine
             uint32_t sector;
             uint8_t sector1 = serialPayload[7];
@@ -1013,7 +1007,7 @@ void processSerialCommand(void)
             uint8_t testSize3 = serialPayload[13];
             uint8_t testSize4 = serialPayload[14];
             testSize = (testSize1 << 24) | (testSize2 << 16) | (testSize3 << 8) | testSize4; 
-            */
+            #endif
 
             sendReturnCodeMsg(SERIAL_RC_OK);
 
@@ -1086,8 +1080,8 @@ void sendToothLog(void)
     }
   }
 
-  uint32_t CRC32_val = 0;
-  if(logItemsTransmitted == 0)
+  uint32_t CRC32_val = 0U;
+  if(logItemsTransmitted == 0U)
   {
     //Transmit the size of the packet
     (void)serialWrite((uint16_t)(sizeof(toothHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
@@ -1132,14 +1126,14 @@ void sendCompositeLog(void)
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
     {
-      toothHistory[toothHistoryIndex] = toothHistory[toothHistoryIndex-1]; //Composite logger needs a realistic time value to display correctly. Copy the last value
-      compositeLogHistory[toothHistoryIndex] = 0;
+      toothHistory[toothHistoryIndex] = toothHistory[toothHistoryIndex-1U]; //Composite logger needs a realistic time value to display correctly. Copy the last value
+      compositeLogHistory[toothHistoryIndex] = 0U;
       toothHistoryIndex++;
     }
   }
 
   uint32_t CRC32_val = 0;
-  if(logItemsTransmitted == 0)
+  if(logItemsTransmitted == 0U)
   { 
     //Transmit the size of the packet
     (void)serialWrite((uint16_t)(sizeof(toothHistory) + sizeof(compositeLogHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
@@ -1163,7 +1157,7 @@ void sendCompositeLog(void)
     }
 
     uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
-    CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
+    (void)CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
 
     //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
     writeByteReliableBlocking(compositeLogHistory[logItemsTransmitted]);
