@@ -494,7 +494,7 @@ void serialReceive(void)
       serialReceiveStartTime = millis();
       serialPayloadLength = readSerialIntegralTimeout<uint16_t>();
       if (!isRxTimeout()) {
-        serialBytesRxTx = sizeof(serialPayloadLength);
+        serialBytesRxTx = 0U;
         serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
       }
     }
@@ -503,10 +503,10 @@ void serialReceive(void)
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
   while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
   {
-    if (serialBytesRxTx < (serialPayloadLength + sizeof(serialPayloadLength)) )
+    if (serialBytesRxTx < serialPayloadLength )
     {
-      serialPayload[serialBytesRxTx - sizeof(serialPayloadLength)] = (byte)Serial.read();
-      serialBytesRxTx++;
+      serialPayload[serialBytesRxTx] = (byte)Serial.read();
+      ++serialBytesRxTx;
     }
     else
     {
