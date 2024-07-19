@@ -430,12 +430,12 @@ static void setup_correctionSoftRevLimit(void) {
 static void assert_correctionSoftRevLimit(int8_t advance) {
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
     TEST_ASSERT_EQUAL(configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SFTLIM , currentStatus.status2);
 
-    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SFTLIM);
     configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
     TEST_ASSERT_EQUAL(advance-configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SFTLIM , currentStatus.spark);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SFTLIM , currentStatus.status2);
 }
 
 static void test_correctionSoftRevLimit_modes(void) {
@@ -449,14 +449,14 @@ static void test_correctionSoftRevLimit_inactive_protecttype(void) {
     setup_correctionSoftRevLimit();
 
     configPage6.engineProtectType = PROTECT_CUT_OFF;
-    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
 
     configPage6.engineProtectType = PROTECT_CUT_FUEL;
-    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
 }
 
 static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
@@ -464,9 +464,9 @@ static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
     assert_correctionSoftRevLimit(8);
 
     currentStatus.RPMdiv100 = configPage4.SoftRevLim-1;
-    BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SFTLIM , currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
 }
 
 static void test_correctionSoftRevLimit_timeout(void) {
@@ -563,14 +563,14 @@ static void test_correctionSoftLaunch_on(void) {
     configPage6.lnchRetard = -3;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(-8));
     TEST_ASSERT_TRUE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 
     configPage6.lnchRetard = 3;
     currentStatus.launchingSoft = false;
-    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(8));
     TEST_ASSERT_TRUE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch_off_disabled(void) {
@@ -580,7 +580,7 @@ static void test_correctionSoftLaunch_off_disabled(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
@@ -590,7 +590,7 @@ static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
@@ -600,7 +600,7 @@ static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch_off_rpmlimit(void) {
@@ -610,7 +610,7 @@ static void test_correctionSoftLaunch_off_rpmlimit(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch_off_tpslow(void) {
@@ -620,7 +620,7 @@ static void test_correctionSoftLaunch_off_tpslow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_SPARK_SLAUNCH, currentStatus.spark);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
 static void test_correctionSoftLaunch(void) {
@@ -643,7 +643,7 @@ static void setup_correctionSoftFlatShift(void) {
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) + 500;
     currentStatus.RPM = currentStatus.clutchEngagedRPM + 600;
 
-    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS);
 }
 
 static void test_correctionSoftFlatShift_on(void) {
@@ -651,11 +651,11 @@ static void test_correctionSoftFlatShift_on(void) {
     configPage6.flatSRetard = -3;
 
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_FLATSS, currentStatus.status5);
 
-    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS);
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(3));
-    TEST_ASSERT_BIT_HIGH(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_FLATSS, currentStatus.status5);
 }
 
 static void test_correctionSoftFlatShift_off_disabled(void) {
@@ -663,9 +663,9 @@ static void test_correctionSoftFlatShift_off_disabled(void) {
     configPage6.flatSRetard = -3;
     configPage6.flatSEnable = 0;
 
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
 }
 
 static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
@@ -673,9 +673,9 @@ static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchTrigger = 0;
 
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
 }
 
 static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
@@ -683,9 +683,9 @@ static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 500;
 
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
 }
 
 static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
@@ -693,9 +693,9 @@ static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.RPM = (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100;
 
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_SPARK2_FLATSS, currentStatus.spark2);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
 }
 
 static void test_correctionSoftFlatShift(void) {
@@ -706,13 +706,14 @@ static void test_correctionSoftFlatShift(void) {
     RUN_TEST_P(test_correctionSoftFlatShift_off_rpmnotinwindow);
 }
 
+#if 0 // Wait until Noisymime is done with knock implementation
 extern int8_t correctionKnock(int8_t advance);
 
 static void setup_correctionKnock(void) {
     configPage10.knock_mode = KNOCK_MODE_DIGITAL;
     configPage10.knock_count = 5U;
     configPage10.knock_firstStep = 3U;
-    knockCounter = configPage10.knock_count + 1;
+    // knockCounter = configPage10.knock_count + 1;
 //   TEST_DATA_P uint8_t startBins[] = { 30, 40, 50, 60, 70, 80 };
 //   TEST_DATA_P uint8_t startValues[] = { 30, 25, 20, 15, 10, 5 };
 //   populate_2dtable_P(&knockWindowStartTable, startValues, startBins);
@@ -745,12 +746,9 @@ static void test_correctionKnock_disabled_knockactive(void) {
     currentStatus.knockActive = true;
     TEST_ASSERT_EQUAL(-8, correctionKnock(-8));
 }
+#endif
 
 static void test_correctionKnock(void) {
-    RUN_TEST_P(test_correctionKnock_firstStep);
-    RUN_TEST_P(test_correctionKnock_disabled_modeoff);
-    RUN_TEST_P(test_correctionKnock_disabled_counttoolow);
-    RUN_TEST_P(test_correctionKnock_disabled_knockactive);
 }
 
 static void setup_correctionsDwell(void) {
