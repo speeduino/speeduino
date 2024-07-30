@@ -2074,7 +2074,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
       pinFuelPump = 3; //Fuel pump output
       pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
-      pinBoost = 13; //Boost control
+      pinBoost = 5; //Boost control
       pinSpareLOut1 = 49; //enable Wideband Lambda Heater
       pinSpareLOut2 = 16; //low current output spare2 PLACEHOLDER value for now
       pinSpareLOut3 = 17; //low current output spare3 PLACEHOLDER value for now
