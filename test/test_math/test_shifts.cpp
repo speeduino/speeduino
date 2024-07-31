@@ -93,6 +93,7 @@ static void __attribute__((noinline)) optimizedTest(uint8_t index, uint32_t &che
 };      
 
 static void test_rshift_perf(void) {
+#if USE_OPTIMIZED_SHIFTS==1
     constexpr uint16_t iters = 128;
     constexpr uint8_t start_index = 1;
     constexpr uint8_t end_index = 16;
@@ -107,6 +108,7 @@ static void test_rshift_perf(void) {
     TEST_ASSERT_EQUAL(comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 void testBitShift() {

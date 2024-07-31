@@ -1220,7 +1220,6 @@ static void test_corrections_MAE_no_rpm_taper()
   MAP_time = MAPlast_time + 25000UL; 
   MAPlast = 40;
   currentStatus.MAP = 50;
-
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+132), accelValue);
@@ -1229,6 +1228,7 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // No change
   reset_AE();
+  MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 1000UL; 
   MAPlast = 40;
   currentStatus.MAP = 40;
@@ -1240,6 +1240,7 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Small change over small time period  
   reset_AE();
+  MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 1000UL; 
   MAPlast = 40;
   currentStatus.MAP = 41;
@@ -1251,17 +1252,19 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Small change over long (>UINT16_MAX) time period  
   reset_AE();
-  MAP_time = MAPlast_time + UINT16_MAX*2; 
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + UINT16_MAX*2UL; 
   MAPlast = 40;
   currentStatus.MAP = 41;
   accelValue = correctionAccel(); //Run the AE calcs
-  TEST_ASSERT_EQUAL(15, currentStatus.mapDOT);
-  TEST_ASSERT_EQUAL(100+72, accelValue);
+  TEST_ASSERT_EQUAL(7, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(100+70, accelValue);
 	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
 	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
 
   // Large change over small time period  
   reset_AE();
+  MAPlast_time = UINT16_MAX*2UL;
   MAP_time = MAPlast_time + 1000UL; 
   MAPlast = 10;
   currentStatus.MAP = 1000;
@@ -1273,11 +1276,12 @@ static void test_corrections_MAE_no_rpm_taper()
 
   // Large change over long (>UINT16_MAX) time period  
   reset_AE();
-  MAP_time = MAPlast_time + UINT16_MAX*2; 
+  MAPlast_time = UINT16_MAX*2UL;
+  MAP_time = MAPlast_time + UINT16_MAX*2UL; 
   MAPlast = 10;
   currentStatus.MAP = 1000;
   accelValue = correctionAccel(); //Run the AE calcs
-  TEST_ASSERT_EQUAL(14850, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(6930, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100+136, accelValue);
 	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged pn  
 	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
