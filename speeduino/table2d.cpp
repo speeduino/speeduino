@@ -20,7 +20,7 @@ static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSiz
   table.values = values;
   table.axisX = bins;
   table.lastInput = INT16_MAX;
-  table.lastBinUpperIndex = UINT8_MAX;
+  table.lastBinUpperIndex = 1U;
 }
 
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
