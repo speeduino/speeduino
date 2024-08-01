@@ -21,7 +21,6 @@ static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSiz
   table.axisX = bins;
   table.lastInput = INT16_MAX;
   table.lastXMax = UINT8_MAX;
-  table.lastXMin = UINT8_MAX;
 }
 
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
@@ -66,7 +65,6 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
   int16_t X = X_in;
   int16_t xMinValue, xMaxValue;
-  uint8_t xMin = 0;
   uint8_t xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
@@ -81,9 +79,9 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     returnValue = table2D_getRawValue(fromTable, xMax);
     valueFound = true;
   }
-  else if(X <= table2D_getAxisValue(fromTable, xMin))
+  else if(X <= table2D_getAxisValue(fromTable, 0U))
   {
-    returnValue = table2D_getRawValue(fromTable, xMin);
+    returnValue = table2D_getRawValue(fromTable, 0U);
     valueFound = true;
   }
   //Finally if none of that is found
@@ -93,11 +91,10 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
     //1st check is whether we're still in the same X bin as last time
     xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);
-    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastXMin);
+    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastXMax-1U);
     if ( (X <= xMaxValue) && (X > xMinValue) )
     {
       xMax = fromTable->lastXMax;
-      xMin = fromTable->lastXMin;
     }
     else
     {
@@ -119,8 +116,6 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
           // Value is in the current bin
           xMax = x;
           fromTable->lastXMax = xMax;
-          xMin = x-1U;
-          fromTable->lastXMin = xMin;
           break;
         }
         // Otherwise, continue to next bin
@@ -135,7 +130,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     int16_t n = xMaxValue - xMinValue;
 
     int16_t yMax = table2D_getRawValue(fromTable, xMax);
-    int16_t yMin = table2D_getRawValue(fromTable, xMin);
+    int16_t yMin = table2D_getRawValue(fromTable, xMax-1U);
 
     /* Float version (if m, yMax, yMin and n were float's)
        int yVal = (m * (yMax - yMin)) / n;
