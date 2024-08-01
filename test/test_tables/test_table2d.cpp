@@ -52,7 +52,7 @@ static void test_table2dLookup(table2D &table, TValue *data, TAxis *axis, uint8_
         char szMsg[128];
         sprintf(szMsg, "Loop: %d, VT %d, AT %d lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", i, table.valueSize, table.axisSize, lookupValue, data[i], data[i+1], binFrac);
         TEST_ASSERT_INT_WITHIN_MESSAGE(1U, expected, result, szMsg);
-        TEST_ASSERT_EQUAL(i+1, table.lastXMax);
+        TEST_ASSERT_EQUAL(i+1, table.lastBinUpperIndex);
     }
 }
 
