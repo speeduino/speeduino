@@ -20,8 +20,8 @@ static void construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSize
   table.values = values;
   table.axisX = bins;
   table.lastInput = INT16_MAX;
-  table.lastXMax = INT16_MAX;
-  table.lastXMin = INT16_MAX;
+  table.lastXMax = UINT8_MAX;
+  table.lastXMin = UINT8_MAX;
 }
 
 void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint8_t *bins) {
@@ -58,14 +58,14 @@ ie: Given a value on the X axis, it returns a Y value that corresponds to the po
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int table2D_getValue(struct table2D *fromTable, int X_in)
+int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 {
   //Orig memory usage = 5414
-  int returnValue = 0;
+  int16_t returnValue = 0;
   bool valueFound = false;
 
-  int X = X_in;
-  int xMinValue, xMaxValue;
+  int16_t X = X_in;
+  int16_t xMinValue, xMaxValue;
   int xMin = 0;
   int xMax = fromTable->xSize-1;
 
@@ -159,7 +159,7 @@ int table2D_getValue(struct table2D *fromTable, int X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
+int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
   int returnValue = 0;
 
@@ -178,7 +178,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in)
  * @param X_index 
  * @return int16_t 
  */
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index)
+int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
   int returnValue = 0;
 
