@@ -34,8 +34,8 @@ struct table2D {
   //int16_t *axisX16;
 
   //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int16_t lastXMax;
-  int16_t lastXMin;
+  uint8_t lastXMax;
+  uint8_t lastXMin;
 
   //Store the last input and output for caching
   int16_t lastInput;
