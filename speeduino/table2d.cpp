@@ -66,8 +66,8 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
   int16_t X = X_in;
   int16_t xMinValue, xMaxValue;
-  int xMin = 0;
-  int xMax = fromTable->xSize-1;
+  uint8_t xMin = 0;
+  uint8_t xMax = fromTable->xSize-1;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == getCacheTime()) )
@@ -103,9 +103,9 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     {
       //If we're not in the same bin, loop through to find where we are
       xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMaxValue in preparation for loop.
-      for (int x = fromTable->xSize-1; x > 0; x--)
+      for (uint8_t x = fromTable->xSize-1U; x > 0; x--)
       {
-        xMinValue = table2D_getAxisValue(fromTable, x-1); // fetch next Min
+        xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
 
         //Checks the case where the X value is exactly what was requested
         if (X == xMaxValue)
@@ -119,7 +119,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
           // Value is in the current bin
           xMax = x;
           fromTable->lastXMax = xMax;
-          xMin = x-1;
+          xMin = x-1U;
           fromTable->lastXMin = xMin;
           break;
         }
