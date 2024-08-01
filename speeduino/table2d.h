@@ -35,7 +35,7 @@ struct table2D {
 
   // Store the upper index of the bin we last found. This is used to make the next check faster
   // Since this is the *upper* index, it can never be 0.
-  uint8_t lastXMax;
+  uint8_t lastBinUpperIndex;
 
   //Store the last input and output for caching
   int16_t lastInput;
