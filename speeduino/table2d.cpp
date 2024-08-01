@@ -20,7 +20,7 @@ static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSiz
   table.values = values;
   table.axisX = bins;
   table.lastInput = INT16_MAX;
-  table.lastXMax = UINT8_MAX;
+  table.lastBinUpperIndex = UINT8_MAX;
 }
 
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
@@ -90,11 +90,11 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     fromTable->cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
 
     //1st check is whether we're still in the same X bin as last time
-    xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastXMax);
-    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastXMax-1U);
+    xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex);
+    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex-1U);
     if ( (X <= xMaxValue) && (X > xMinValue) )
     {
-      xMax = fromTable->lastXMax;
+      xMax = fromTable->lastBinUpperIndex;
     }
     else
     {
@@ -115,7 +115,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
         {
           // Value is in the current bin
           xMax = x;
-          fromTable->lastXMax = xMax;
+          fromTable->lastBinUpperIndex = xMax;
           break;
         }
         // Otherwise, continue to next bin
