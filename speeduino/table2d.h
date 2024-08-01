@@ -33,9 +33,9 @@ struct table2D {
   //int16_t *values16;
   //int16_t *axisX16;
 
-  //Store the last X and Y coordinates in the table. This is used to make the next check faster
+  // Store the upper index of the bin we last found. This is used to make the next check faster
+  // Since this is the *upper* index, it can never be 0.
   uint8_t lastXMax;
-  uint8_t lastXMin;
 
   //Store the last input and output for caching
   int16_t lastInput;
