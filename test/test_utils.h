@@ -7,7 +7,8 @@
 #include <unity.h>
 #include "table2d.h"
 #include "table3d.h"
-
+#include "maths.h"
+#
 template<size_t MAX_LEN, size_t N>
 constexpr void STR_LEN_CHECK(char const (&)[N]) 
 {
@@ -149,4 +150,13 @@ static inline void populate_2dtable_P(table2D *pTable, const TValue values[], co
 #else
   populate_2dtable(pTable, values, bins)
 #endif
+}
+
+template <typename T>
+T intermediate(T const& min, T const& max, uint8_t const& frac)
+{
+  if (max<min) {
+    return min - percentage(frac, (min - max));
+  }
+  return min + percentage(frac, (max - min));
 }
