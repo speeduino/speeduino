@@ -61,13 +61,11 @@ ie: Given a value on the X axis, it returns a Y value that corresponds to the po
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
+int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
 {
-  //Orig memory usage = 5414
   int16_t returnValue = 0;
   bool valueFound = false;
 
-  int16_t X = X_in;
   int16_t xMinValue, xMaxValue;
   uint8_t xMax = fromTable->length-1U;
 
@@ -78,12 +76,12 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     valueFound = true;
   }
   //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
-  else if(X >= table2D_getAxisValue(fromTable, xMax))
+  else if(X_in >= table2D_getAxisValue(fromTable, fromTable->xSize-1U))
   {
-    returnValue = table2D_getRawValue(fromTable, xMax);
+    returnValue = table2D_getRawValue(fromTable, fromTable->xSize-1U);
     valueFound = true;
   }
-  else if(X <= table2D_getAxisValue(fromTable, 0U))
+  else if(X_in <= table2D_getAxisValue(fromTable, 0U))
   {
     returnValue = table2D_getRawValue(fromTable, 0U);
     valueFound = true;
@@ -96,7 +94,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     //1st check is whether we're still in the same X bin as last time
     xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex);
     xMinValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex-1U);
-    if ( (X <= xMaxValue) && (X > xMinValue) )
+    if ( (X_in <= xMaxValue) && (X_in > xMinValue) )
     {
       xMax = fromTable->lastBinUpperIndex;
     }
@@ -109,17 +107,17 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
         xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
 
         //Checks the case where the X value is exactly what was requested
-        if (X == xMaxValue)
+        if (X_in == xMaxValue)
         {
           returnValue = table2D_getRawValue(fromTable, x); //Simply return the corresponding value
           valueFound = true;
           break;
         }
-        else if (X > xMinValue)
+        else if (X_in > xMinValue)
         {
           // Value is in the current bin
           xMax = x;
-          fromTable->lastBinUpperIndex = xMax;
+          fromTable->lastBinUpperIndex = x;
           break;
         } else {
           // Otherwise, continue to next bin
@@ -131,7 +129,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
   if (valueFound == false)
   {
-    int32_t m = (int32_t)X - (int32_t)xMinValue;
+    int32_t m = (int32_t)X_in - (int32_t)xMinValue;
     int32_t n = (int32_t)xMaxValue - (int32_t)xMinValue;
 
     int16_t yMax = table2D_getRawValue(fromTable, xMax);
