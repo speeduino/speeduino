@@ -69,7 +69,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
   int16_t X = X_in;
   int16_t xMinValue, xMaxValue;
-  uint8_t xMax = fromTable->length-1;
+  uint8_t xMax = fromTable->length-1U;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == getCacheTime()) )
@@ -103,8 +103,8 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     else
     {
       //If we're not in the same bin, loop through to find where we are
-      xMaxValue = table2D_getAxisValue(fromTable, fromTable->length-1); // init xMaxValue in preparation for loop.
-      for (uint8_t x = fromTable->length-1U; x > 0; x--)
+      xMaxValue = table2D_getAxisValue(fromTable, fromTable->length-1U); // init xMaxValue in preparation for loop.
+      for (uint8_t x = fromTable->length-1U; x > 0U; x--)
       {
         xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
 
@@ -121,27 +121,29 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
           xMax = x;
           fromTable->lastBinUpperIndex = xMax;
           break;
+        } else {
+          // Otherwise, continue to next bin
+          xMaxValue = xMinValue; // for the next bin, our Min is their Max
         }
-        // Otherwise, continue to next bin
-        xMaxValue = xMinValue; // for the next bin, our Min is their Max
       }
     }
   } //X_in same as last time
 
   if (valueFound == false)
   {
-    int16_t m = X - xMinValue;
-    int16_t n = xMaxValue - xMinValue;
+    int32_t m = (int32_t)X - (int32_t)xMinValue;
+    int32_t n = (int32_t)xMaxValue - (int32_t)xMinValue;
 
     int16_t yMax = table2D_getRawValue(fromTable, xMax);
     int16_t yMin = table2D_getRawValue(fromTable, xMax-1U);
+    int32_t yRange = (int32_t) yMax - (int32_t) yMin;
 
     /* Float version (if m, yMax, yMin and n were float's)
        int yVal = (m * (yMax - yMin)) / n;
     */
     
     //Non-Float version
-    int16_t yVal = ( ((int32_t) m) * (yMax-yMin) ) / n;
+    int16_t yVal = (int16_t)(( m * yRange ) / n);
     returnValue = yMin + yVal;
   }
 
@@ -165,7 +167,7 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
   if(fromTable->axisType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
   else if(fromTable->axisType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
   else if(fromTable->axisType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->axisX)[X_in]; }
-  
+  else { /* Keep MISRA checker happy*/ }  
 
   return returnValue;
 }
@@ -184,6 +186,7 @@ int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
   if(fromTable->valueType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
   else if(fromTable->valueType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
   else if(fromTable->valueType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->values)[X_index]; }
+  else { /* Keep MISRA checker happy*/ }  
 
   return returnValue;
 }
