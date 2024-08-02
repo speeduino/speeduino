@@ -134,7 +134,7 @@ static inline void populate_table_P(table3d_t &table,
 
 // Populate a 2d table with constant values
 static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
-  for (uint8_t index=0; index<pTable->xSize; ++index) {
+  for (uint8_t index=0; index<pTable->length; ++index) {
     ((uint8_t*)pTable->values)[index] = value;
     ((uint8_t*)pTable->axisX)[index] = bin;
   }
@@ -143,8 +143,8 @@ static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin)
 
 template <typename TValue, typename TBin>
 static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
-  memcpy(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy(pTable->values, values, pTable->xSize * sizeof(TValue));
+  memcpy(pTable->axisX, bins, pTable->length * sizeof(TBin));
+  memcpy(pTable->values, values, pTable->length * sizeof(TValue));
   pTable->cacheTime = UINT8_MAX;
 }
 
@@ -153,8 +153,8 @@ static inline void populate_2dtable(table2D *pTable, const TValue values[], cons
 template <typename TValue, typename TBin>
 static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
 #if defined(PROGMEM)
-  memcpy_P(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy_P(pTable->values, values, pTable->xSize * sizeof(TValue));
+  memcpy_P(pTable->axisX, bins, pTable->length * sizeof(TBin));
+  memcpy_P(pTable->values, values, pTable->length * sizeof(TValue));
   pTable->cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)

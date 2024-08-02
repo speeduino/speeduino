@@ -13,10 +13,14 @@ Note that this may clear some of the existing values of the table
 #include "globals.h"
 #endif
 
-static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSize, uint8_t length, const void *values, const void *bins) {
-  table.valueSize = valueSize;
-  table.axisSize = axisSize;
-  table.xSize = length;
+#define TYPE_INT8    1U
+#define TYPE_UINT8   2U
+#define TYPE_UINT16  3U
+
+static void _construct2dTable(table2D &table, uint8_t valueType, uint8_t axisType, uint8_t length, const void *values, const void *bins) {
+  table.valueType = valueType;
+  table.axisType = axisType;
+  table.length = length;
   table.values = values;
   table.axisX = bins;
   table.lastInput = INT16_MAX;
@@ -24,22 +28,22 @@ static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSiz
 }
 
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
-  _construct2dTable(table, SIZE_BYTE, SIZE_BYTE, length, values, bins);
+  _construct2dTable(table, TYPE_UINT8, TYPE_UINT8, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const int8_t *bins) {
-  _construct2dTable(table, SIZE_BYTE, SIZE_SIGNED_BYTE, length, values, bins);
+  _construct2dTable(table, TYPE_UINT8, TYPE_INT8, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint16_t *bins) {
-  _construct2dTable(table, SIZE_INT, SIZE_INT, length, values, bins);
+  _construct2dTable(table, TYPE_UINT16, TYPE_UINT16, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint16_t *bins) {
-  _construct2dTable(table, SIZE_BYTE, SIZE_INT, length, values, bins);
+  _construct2dTable(table, TYPE_UINT8, TYPE_UINT16, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint8_t *bins) {
-  _construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
+  _construct2dTable(table, TYPE_UINT16, TYPE_UINT8, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const int16_t *values, const uint8_t *bins) {
-  _construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
+  _construct2dTable(table, TYPE_UINT16, TYPE_UINT8, length, values, bins);
 }
 
 static inline uint8_t getCacheTime(void) {
@@ -65,7 +69,7 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
 
   int16_t X = X_in;
   int16_t xMinValue, xMaxValue;
-  uint8_t xMax = fromTable->xSize-1;
+  uint8_t xMax = fromTable->length-1;
 
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == getCacheTime()) )
@@ -99,8 +103,8 @@ int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in)
     else
     {
       //If we're not in the same bin, loop through to find where we are
-      xMaxValue = table2D_getAxisValue(fromTable, fromTable->xSize-1); // init xMaxValue in preparation for loop.
-      for (uint8_t x = fromTable->xSize-1U; x > 0; x--)
+      xMaxValue = table2D_getAxisValue(fromTable, fromTable->length-1); // init xMaxValue in preparation for loop.
+      for (uint8_t x = fromTable->length-1U; x > 0; x--)
       {
         xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
 
@@ -158,9 +162,9 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
 {
   int returnValue = 0;
 
-  if(fromTable->axisSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
-  else if(fromTable->axisSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
-  else if(fromTable->axisSize == SIZE_SIGNED_BYTE) { returnValue = ((int8_t*)fromTable->axisX)[X_in]; }
+  if(fromTable->axisType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
+  else if(fromTable->axisType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
+  else if(fromTable->axisType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->axisX)[X_in]; }
   
 
   return returnValue;
@@ -177,9 +181,9 @@ int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
 {
   int returnValue = 0;
 
-  if(fromTable->valueSize == SIZE_INT) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
-  else if(fromTable->valueSize == SIZE_BYTE) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
-  else if(fromTable->valueSize == SIZE_SIGNED_BYTE) { returnValue = ((int8_t*)fromTable->values)[X_index]; }
+  if(fromTable->valueType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
+  else if(fromTable->valueType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
+  else if(fromTable->valueType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->values)[X_index]; }
 
   return returnValue;
 }

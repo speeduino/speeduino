@@ -4,11 +4,7 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
-#include "globals.h"
-
-#define SIZE_SIGNED_BYTE    4
-#define SIZE_BYTE           8
-#define SIZE_INT            16
+#include <stdint.h>
 
 /**
  * @brief A polymorphic 2D table.
@@ -23,9 +19,9 @@ This file is used for everything related to maps/tables including their definiti
  */
 struct table2D {
   //Used 5414 RAM with original version
-  uint8_t valueSize;
-  uint8_t axisSize;
-  uint8_t xSize;
+  uint8_t valueType;
+  uint8_t axisType;
+  uint8_t length;
 
   const void *values;
   const void *axisX;

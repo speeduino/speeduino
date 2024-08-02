@@ -50,7 +50,7 @@ static void test_table2dLookup(table2D &table, TValue *data, TAxis *axis, uint8_
         TValue expected = map(lookupValue, axis[i], axis[i+1], data[i], data[i+1]);
         TValue result = (TValue)table2D_getValue(&table, lookupValue);
         char szMsg[128];
-        sprintf(szMsg, "Loop: %d, VT %d, AT %d lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", i, table.valueSize, table.axisSize, lookupValue, data[i], data[i+1], binFrac);
+        sprintf(szMsg, "Loop: %d, VT %d, AT %d lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", i, table.valueType, table.axisType, lookupValue, data[i], data[i+1], binFrac);
         TEST_ASSERT_INT_WITHIN_MESSAGE(1U, expected, result, szMsg);
         TEST_ASSERT_EQUAL(i+1, table.lastBinUpperIndex);
     }
@@ -97,7 +97,7 @@ static void test_table2dLookup_bin_edges(table2D &table, TValue *data, TAxis *ax
     for (uint8_t i=0; i<TEST_TABLE2D_SIZE; ++i) {
         TValue result = (TValue)table2D_getValue(&table, axis[i]);
         char szMsg[64];
-        sprintf(szMsg, "%d, %d lookup %d: %d", table.valueSize, table.axisSize, i, axis[i]);
+        sprintf(szMsg, "%d, %d lookup %d: %d", table.valueType, table.axisType, i, axis[i]);
         TEST_ASSERT_EQUAL_MESSAGE(data[i], result, szMsg);
         // sprintf(szMsg, "Index %d, lastBinUpperIndex: %d", i, table.lastBinUpperIndex);
         // TEST_MESSAGE(szMsg);
