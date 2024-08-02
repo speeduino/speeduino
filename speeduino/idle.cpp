@@ -98,18 +98,8 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_OL:
       //Case 2 is PWM open loop
-      iacPWMTable.xSize = 10;
-      iacPWMTable.valueSize = SIZE_BYTE;
-      iacPWMTable.axisSize = SIZE_BYTE;
-      iacPWMTable.values = configPage6.iacOLPWMVal;
-      iacPWMTable.axisX = configPage6.iacBins;
-
-
-      iacCrankDutyTable.xSize = 4;
-      iacCrankDutyTable.valueSize = SIZE_BYTE;
-      iacCrankDutyTable.axisSize = SIZE_BYTE;
-      iacCrankDutyTable.values = configPage6.iacCrankDuty;
-      iacCrankDutyTable.axisX = configPage6.iacCrankBins;
+      construct2dTable(iacPWMTable, configPage6.iacOLPWMVal, configPage6.iacBins);
+      construct2dTable(iacCrankDutyTable, configPage6.iacCrankDuty, configPage6.iacCrankBins);
 
       #if defined(CORE_AVR)
         idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -123,17 +113,8 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_OLCL:
       //Case 6 is PWM closed loop with open loop table used as feed forward
-      iacPWMTable.xSize = 10;
-      iacPWMTable.valueSize = SIZE_BYTE;
-      iacPWMTable.axisSize = SIZE_BYTE;
-      iacPWMTable.values = configPage6.iacOLPWMVal;
-      iacPWMTable.axisX = configPage6.iacBins;
-
-      iacCrankDutyTable.xSize = 4;
-      iacCrankDutyTable.valueSize = SIZE_BYTE;
-      iacCrankDutyTable.axisSize = SIZE_BYTE;
-      iacCrankDutyTable.values = configPage6.iacCrankDuty;
-      iacCrankDutyTable.axisX = configPage6.iacCrankBins;
+      construct2dTable(iacPWMTable, configPage6.iacOLPWMVal, configPage6.iacBins);
+      construct2dTable(iacCrankDutyTable, configPage6.iacCrankDuty, configPage6.iacCrankBins);
 
       #if defined(CORE_AVR)
         idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -153,11 +134,7 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
-      iacCrankDutyTable.xSize = 4;
-      iacCrankDutyTable.valueSize = SIZE_BYTE;
-      iacCrankDutyTable.axisSize = SIZE_BYTE;
-      iacCrankDutyTable.values = configPage6.iacCrankDuty;
-      iacCrankDutyTable.axisX = configPage6.iacCrankBins;
+      construct2dTable(iacCrankDutyTable, configPage6.iacCrankDuty, configPage6.iacCrankBins);
 
       #if defined(CORE_AVR)
         idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
@@ -177,17 +154,9 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_STEP_OL:
       //Case 2 is Stepper open loop
-      iacStepTable.xSize = 10;
-      iacStepTable.valueSize = SIZE_BYTE;
-      iacStepTable.axisSize = SIZE_BYTE;
-      iacStepTable.values = configPage6.iacOLStepVal;
-      iacStepTable.axisX = configPage6.iacBins;
+      construct2dTable(iacStepTable, configPage6.iacOLStepVal, configPage6.iacBins);
+      construct2dTable(iacCrankStepsTable, configPage6.iacCrankSteps, configPage6.iacCrankBins);
 
-      iacCrankStepsTable.xSize = 4;
-      iacCrankStepsTable.valueSize = SIZE_BYTE;
-      iacCrankStepsTable.axisSize = SIZE_BYTE;
-      iacCrankStepsTable.values = configPage6.iacCrankSteps;
-      iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
@@ -204,11 +173,8 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_STEP_CL:
       //Case 5 is Stepper closed loop
-      iacCrankStepsTable.xSize = 4;
-      iacCrankStepsTable.valueSize = SIZE_BYTE;
-      iacCrankStepsTable.axisSize = SIZE_BYTE;
-      iacCrankStepsTable.values = configPage6.iacCrankSteps;
-      iacCrankStepsTable.axisX = configPage6.iacCrankBins;
+		  construct2dTable(iacCrankStepsTable, configPage6.iacCrankSteps, configPage6.iacCrankBins);
+
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
@@ -231,17 +197,9 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_STEP_OLCL:
       //Case 7 is Stepper closed loop with open loop table used as feed forward
-      iacStepTable.xSize = 10;
-      iacStepTable.valueSize = SIZE_BYTE;
-      iacStepTable.axisSize = SIZE_BYTE;
-      iacStepTable.values = configPage6.iacOLStepVal;
-      iacStepTable.axisX = configPage6.iacBins;
+  		construct2dTable(iacStepTable, configPage6.iacOLStepVal, configPage6.iacBins);
+	  	construct2dTable(iacCrankStepsTable, configPage6.iacCrankSteps, configPage6.iacCrankBins);
 
-      iacCrankStepsTable.xSize = 4;
-      iacCrankStepsTable.valueSize = SIZE_BYTE;
-      iacCrankStepsTable.axisSize = SIZE_BYTE;
-      iacCrankStepsTable.values = configPage6.iacCrankSteps;
-      iacCrankStepsTable.axisX = configPage6.iacCrankBins;
       iacStepTime_uS = configPage6.iacStepTime * 1000;
       iacCoolTime_uS = configPage9.iacCoolTime * 1000;
 
