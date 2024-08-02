@@ -104,7 +104,7 @@ void initialiseAll(void)
     ***********************************************************************************************************
     * EEPROM reset
     */
-    #if defined(EEPROM_RESET_PIN)
+    #if defined(EEPROM_RESET_PIN) && !defined(UNIT_TEST)
     uint32_t start_time = millis();
     byte exit_erase_loop = false; 
     pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
@@ -173,7 +173,9 @@ void initialiseAll(void)
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    #if defined(NATIVE_CAN_AVAILABLE)
+    // Repeatedly initialising the CAN bus hangs the system when
+    // running initialsation tests on Teensy 3.5
+    #if defined(NATIVE_CAN_AVAILABLE) && !defined(UNIT_TEST)
       initCAN();
     #endif
 
