@@ -8,7 +8,8 @@
 #include <unity.h>
 #include "table2d.h"
 #include "table3d.h"
-
+#include "maths.h"
+#
 template<size_t MAX_LEN, size_t N>
 constexpr void STR_LEN_CHECK(char const (&)[N]) 
 {
@@ -160,4 +161,11 @@ static inline void populate_2dtable_P(table2D *pTable, const TValue values[], co
 #endif
 }
 
-void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
+template <typename T>
+T intermediate(T const& min, T const& max, uint8_t const& frac)
+{
+  if (max<min) {
+    return min - percentage(frac, (min - max));
+  }
+  return min + percentage(frac, (max - min));
+}
