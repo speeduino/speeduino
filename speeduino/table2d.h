@@ -69,6 +69,6 @@ void construct2dTable(table2D &table, const value_t (&values)[TSize], const axis
 int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in);
 int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index);
 
-int16_t table2D_getValue(struct table2D *fromTable, int16_t X_in);
+int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in);
 
 #endif // TABLE_H
