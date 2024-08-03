@@ -138,14 +138,14 @@ static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin)
     ((uint8_t*)pTable->values)[index] = value;
     ((uint8_t*)pTable->axisX)[index] = bin;
   }
-  pTable->cacheTime = UINT8_MAX;
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
 template <typename TValue, typename TBin>
 static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
   memcpy(pTable->axisX, bins, pTable->length * sizeof(TBin));
   memcpy(pTable->values, values, pTable->length * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
 // Populate a 2d table (from PROGMEM if available)
@@ -155,7 +155,7 @@ static inline void populate_2dtable_P(table2D *pTable, const TValue values[], co
 #if defined(PROGMEM)
   memcpy_P(pTable->axisX, bins, pTable->length * sizeof(TBin));
   memcpy_P(pTable->values, values, pTable->length * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+  pTable->cache.cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)
 #endif

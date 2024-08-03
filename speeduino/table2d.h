@@ -6,6 +6,20 @@ This file is used for everything related to maps/tables including their definiti
 
 #include <stdint.h>
 
+/// @cond
+// private to table2D implementation
+struct Table2DCache {
+  // Store the upper index of the bin we last found. This is used to make the next check faster
+  // Since this is the *upper* index, it can never be 0.
+  uint8_t lastBinUpperIndex;
+
+  //Store the last input and output for caching
+  int16_t lastInput;
+  int16_t lastOutput;
+  uint8_t cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+};
+/// @endcond
+
 /**
  * @brief A polymorphic 2D table.
  * 
@@ -26,17 +40,7 @@ struct table2D {
   const void *values;
   const void *axisX;
 
-  //int16_t *values16;
-  //int16_t *axisX16;
-
-  // Store the upper index of the bin we last found. This is used to make the next check faster
-  // Since this is the *upper* index, it can never be 0.
-  uint8_t lastBinUpperIndex;
-
-  //Store the last input and output for caching
-  int16_t lastInput;
-  int16_t lastOutput;
-  uint8_t cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  mutable Table2DCache cache;
 };
 
 /// @cond
@@ -66,9 +70,9 @@ void construct2dTable(table2D &table, const value_t (&values)[TSize], const axis
   _construct2dTable(table, TSize, values, bins);
 }
 
-int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in);
-int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index);
+int16_t table2D_getAxisValue(const struct table2D *fromTable, uint8_t index);
+int16_t table2D_getRawValue(const struct table2D *fromTable, uint8_t index);
 
-int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in);
+int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in);
 
 #endif // TABLE_H
