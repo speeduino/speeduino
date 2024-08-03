@@ -58,6 +58,60 @@ static inline bool cacheExpired(const Table2DCache &cache) {
   return (cache.cacheTime != getCacheTime());
 }
 
+struct Table2DBin {
+  uint8_t upperIndex;
+  int16_t upperValue;
+  int16_t lowerValue;
+};
+
+static inline int16_t range(const Table2DBin &bin) {
+  return bin.upperValue - bin.lowerValue;
+}
+
+static inline bool isInBin(int16_t value, const Table2DBin &bin) {
+  return (value <= bin.upperValue) && (value > bin.lowerValue);
+}
+
+template <typename TAxis>
+static inline Table2DBin constructBin(const TAxis *axis, uint8_t binUpperIndex) {
+  return { .upperIndex = binUpperIndex , .upperValue = (int16_t)axis[binUpperIndex], .lowerValue = (int16_t)axis[binUpperIndex-1U] }; 
+}
+
+static inline Table2DBin constructBin(const void* pArray, uint8_t typeFlag, uint8_t binUpperIndex) {
+  if(typeFlag == TYPE_UINT16) { 
+    return constructBin((const uint16_t*)pArray, binUpperIndex);
+  }
+  if(typeFlag == TYPE_UINT8) { 
+    return constructBin((const uint8_t*)pArray, binUpperIndex);
+  }
+  if(typeFlag == TYPE_INT8) { 
+    return constructBin((const int8_t*)pArray, binUpperIndex);
+  }
+
+  return Table2DBin();
+}  
+
+static inline Table2DBin getAxisBin(const struct table2D *fromTable, uint8_t binUpperIndex)
+{
+  return constructBin(fromTable->axisX, fromTable->axisType, binUpperIndex);
+}
+
+static inline Table2DBin getValueBin(const struct table2D *fromTable, uint8_t binUpperIndex)
+{
+  return constructBin(fromTable->values, fromTable->valueType, binUpperIndex);
+}
+
+static inline Table2DBin findAxisBin(const struct table2D *fromTable, const int16_t axisValue) {
+  // Loop from the upper end of the axis back down to the 1st bin [0,1]
+  Table2DBin xBin = getAxisBin(fromTable, fromTable->length-1U);
+  while ((!isInBin(axisValue, xBin)) && (xBin.upperIndex!=1U)) {
+    --xBin.upperIndex;
+    xBin = getAxisBin(fromTable, xBin.upperIndex);
+  }
+
+  return xBin;
+}
+
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table
 ie: Given a value on the X axis, it returns a Y value that corresponds to the point on the curve between the nearest two defined X values
@@ -67,91 +121,64 @@ Unfortunately this means many of the lines are duplicated depending on this
 */
 int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in)
 {
-  int16_t returnValue = 0;
-  bool valueFound = false;
-
-  int16_t xMinValue, xMaxValue;
-  uint8_t xMax = fromTable->length-1U;
-
   //Check whether the X input is the same as last time this ran
   if( (X_in == fromTable->cache.lastInput) && (!cacheExpired(fromTable->cache)) )
   {
-    returnValue = fromTable->cache.lastOutput;
-    valueFound = true;
+    return fromTable->cache.lastOutput;
   }
+
+  const uint8_t xMax = fromTable->length-1U;
+
   //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
-  else if(X_in >= table2D_getAxisValue(fromTable, fromTable->length-1U))
+  if(X_in >= table2D_getAxisValue(fromTable, xMax))
   {
-    returnValue = table2D_getRawValue(fromTable, fromTable->length-1U);
-    valueFound = true;
+    fromTable->cache.lastOutput = table2D_getRawValue(fromTable, xMax);
   }
   else if(X_in <= table2D_getAxisValue(fromTable, 0U))
   {
-    returnValue = table2D_getRawValue(fromTable, 0U);
-    valueFound = true;
+    fromTable->cache.lastOutput = table2D_getRawValue(fromTable, 0U);
   }
   //Finally if none of that is found
   else
   {
-    fromTable->cache.cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
-
-    //1st check is whether we're still in the same X bin as last time
-    xMaxValue = table2D_getAxisValue(fromTable, fromTable->cache.lastBinUpperIndex);
-    xMinValue = table2D_getAxisValue(fromTable, fromTable->cache.lastBinUpperIndex-1U);
-    if ( (X_in <= xMaxValue) && (X_in > xMinValue) )
+    // 1st check is whether we're still in the same X bin as last time
+    Table2DBin xBin = getAxisBin(fromTable, fromTable->cache.lastBinUpperIndex);
+    if (!isInBin(X_in, xBin))
     {
-      xMax = fromTable->cache.lastBinUpperIndex;
+      //If we're not in the same bin, search 
+      xBin = findAxisBin(fromTable, X_in);
     }
-    else
-    {
-      //If we're not in the same bin, loop through to find where we are
-      xMaxValue = table2D_getAxisValue(fromTable, fromTable->length-1U); // init xMaxValue in preparation for loop.
-      for (uint8_t x = fromTable->length-1U; x > 0U; x--)
-      {
-        //Checks the case where the X value is exactly what was requested
-        valueFound = X_in == xMaxValue;
-        if (valueFound)
-        {
-          returnValue = table2D_getRawValue(fromTable, x); //Simply return the corresponding value
-          break;
-        }
-        xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
-        if (X_in > xMinValue)
-        {
-          // Value is in the current bin
-          xMax = x;
-          fromTable->cache.lastBinUpperIndex = x;
-          break;
-        }
+
+    //Checks the case where the X value is exactly what was requested
+    if (X_in==xBin.upperValue) {
+      fromTable->cache.lastOutput = table2D_getRawValue(fromTable, xBin.upperIndex);
+      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+    } else if (isInBin(X_in, xBin)) {
+      // We assume the x-axis is in increasing order, so m & n will be >0.
+      uint16_t m = X_in - xBin.lowerValue;
+      uint16_t n = range(xBin);
+
+      Table2DBin valueBin = getValueBin(fromTable, xBin.upperIndex);
+      int32_t yRange = (int32_t)range(valueBin);
+
+      /* Float version (if m, yMax, yMin and n were float's)
+        int yVal = (m * (yMax - yMin)) / n;
+      */
       
-        // Otherwise, continue to next bin
-        xMaxValue = xMinValue; // for the next bin, our Min is their Max
-      }
+      //Non-Float version
+      int16_t yVal = (int16_t)(( m * yRange ) / n);
+      fromTable->cache.lastOutput = valueBin.lowerValue + yVal;
+      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+    } else {
+      // This should never happen, but if it does, return the last output
     }
-  } //X_in same as last time
 
-  if (valueFound == false)
-  {
-    int32_t m = (int32_t)X_in - (int32_t)xMinValue;
-    int32_t n = (int32_t)xMaxValue - (int32_t)xMinValue;
-
-    int16_t yMax = table2D_getRawValue(fromTable, xMax);
-    int16_t yMin = table2D_getRawValue(fromTable, xMax-1U);
-    int32_t yRange = (int32_t) yMax - (int32_t) yMin;
-
-    /* Float version (if m, yMax, yMin and n were float's)
-       int yVal = (m * (yMax - yMin)) / n;
-    */
-    
-    //Non-Float version
-    int16_t yVal = (int16_t)(( m * yRange ) / n);
-    returnValue = yMin + yVal;
+    fromTable->cache.cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
   }
 
   fromTable->cache.lastInput = X_in;
-  fromTable->cache.lastOutput = returnValue;
 
-  return returnValue;
+  return fromTable->cache.lastOutput;
 }
 
 /**
