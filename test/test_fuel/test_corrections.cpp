@@ -69,7 +69,7 @@ static void test_corrections_WUE_active_value(void)
   setup_wue_table();
 
   //Force invalidate the cache
-  WUETable.cacheTime = currentStatus.secl - 1;
+  WUETable.cache.cacheTime = currentStatus.secl - 1;
   
   //Value should be midway between 120 and 130 = 125
   TEST_ASSERT_EQUAL(125, correctionWUE() );
@@ -1547,7 +1547,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   configPage4.dfcoRPM = 100;
   configPage4.wueBins[9] = 100;
   configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value
-  WUETable.cacheTime = currentStatus.secl - 1;
+  WUETable.cache.cacheTime = currentStatus.secl - 1;
 
   configPage4.floodClear = 100;
 

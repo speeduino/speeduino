@@ -23,8 +23,8 @@ static void _construct2dTable(table2D &table, uint8_t valueType, uint8_t axisTyp
   table.length = length;
   table.values = values;
   table.axisX = bins;
-  table.lastInput = INT16_MAX;
-  table.lastBinUpperIndex = 1U;
+  table.cache.lastInput = INT16_MAX;
+  table.cache.lastBinUpperIndex = 1U;
 }
 
 void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
@@ -54,6 +54,10 @@ static inline uint8_t getCacheTime(void) {
 #endif
 }
 
+static inline bool cacheExpired(const Table2DCache &cache) {
+  return (cache.cacheTime != getCacheTime());
+}
+
 /*
 This function pulls a 1D linear interpolated (ie averaged) value from a 2D table
 ie: Given a value on the X axis, it returns a Y value that corresponds to the point on the curve between the nearest two defined X values
@@ -61,7 +65,7 @@ ie: Given a value on the X axis, it returns a Y value that corresponds to the po
 This function must take into account whether a table contains 8-bit or 16-bit values.
 Unfortunately this means many of the lines are duplicated depending on this
 */
-int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
+int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in)
 {
   int16_t returnValue = 0;
   bool valueFound = false;
@@ -70,15 +74,15 @@ int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
   uint8_t xMax = fromTable->length-1U;
 
   //Check whether the X input is the same as last time this ran
-  if( (X_in == fromTable->lastInput) && (fromTable->cacheTime == getCacheTime()) )
+  if( (X_in == fromTable->cache.lastInput) && (!cacheExpired(fromTable->cache)) )
   {
-    returnValue = fromTable->lastOutput;
+    returnValue = fromTable->cache.lastOutput;
     valueFound = true;
   }
   //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
-  else if(X_in >= table2D_getAxisValue(fromTable, fromTable->xSize-1U))
+  else if(X_in >= table2D_getAxisValue(fromTable, fromTable->length-1U))
   {
-    returnValue = table2D_getRawValue(fromTable, fromTable->xSize-1U);
+    returnValue = table2D_getRawValue(fromTable, fromTable->length-1U);
     valueFound = true;
   }
   else if(X_in <= table2D_getAxisValue(fromTable, 0U))
@@ -89,14 +93,14 @@ int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
   //Finally if none of that is found
   else
   {
-    fromTable->cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
+    fromTable->cache.cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
 
     //1st check is whether we're still in the same X bin as last time
-    xMaxValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex);
-    xMinValue = table2D_getAxisValue(fromTable, fromTable->lastBinUpperIndex-1U);
+    xMaxValue = table2D_getAxisValue(fromTable, fromTable->cache.lastBinUpperIndex);
+    xMinValue = table2D_getAxisValue(fromTable, fromTable->cache.lastBinUpperIndex-1U);
     if ( (X_in <= xMaxValue) && (X_in > xMinValue) )
     {
-      xMax = fromTable->lastBinUpperIndex;
+      xMax = fromTable->cache.lastBinUpperIndex;
     }
     else
     {
@@ -104,25 +108,24 @@ int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
       xMaxValue = table2D_getAxisValue(fromTable, fromTable->length-1U); // init xMaxValue in preparation for loop.
       for (uint8_t x = fromTable->length-1U; x > 0U; x--)
       {
-        xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
-
         //Checks the case where the X value is exactly what was requested
-        if (X_in == xMaxValue)
+        valueFound = X_in == xMaxValue;
+        if (valueFound)
         {
           returnValue = table2D_getRawValue(fromTable, x); //Simply return the corresponding value
-          valueFound = true;
           break;
         }
-        else if (X_in > xMinValue)
+        xMinValue = table2D_getAxisValue(fromTable, x-1U); // fetch next Min
+        if (X_in > xMinValue)
         {
           // Value is in the current bin
           xMax = x;
-          fromTable->lastBinUpperIndex = x;
+          fromTable->cache.lastBinUpperIndex = x;
           break;
-        } else {
-          // Otherwise, continue to next bin
-          xMaxValue = xMinValue; // for the next bin, our Min is their Max
         }
+      
+        // Otherwise, continue to next bin
+        xMaxValue = xMinValue; // for the next bin, our Min is their Max
       }
     }
   } //X_in same as last time
@@ -145,8 +148,8 @@ int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
     returnValue = yMin + yVal;
   }
 
-  fromTable->lastInput = X_in;
-  fromTable->lastOutput = returnValue;
+  fromTable->cache.lastInput = X_in;
+  fromTable->cache.lastOutput = returnValue;
 
   return returnValue;
 }
@@ -158,13 +161,13 @@ int16_t table2D_getValue(struct table2D *fromTable, const int16_t X_in)
  * @param X_in 
  * @return int16_t 
  */
-int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
+int16_t table2D_getAxisValue(const struct table2D *fromTable, uint8_t index)
 {
   int returnValue = 0;
 
-  if(fromTable->axisType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->axisX)[X_in]; }
-  else if(fromTable->axisType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->axisX)[X_in]; }
-  else if(fromTable->axisType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->axisX)[X_in]; }
+  if(fromTable->axisType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->axisX)[index]; }
+  else if(fromTable->axisType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->axisX)[index]; }
+  else if(fromTable->axisType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->axisX)[index]; }
   else { /* Keep MISRA checker happy*/ }  
 
   return returnValue;
@@ -177,13 +180,13 @@ int16_t table2D_getAxisValue(struct table2D *fromTable, uint8_t X_in)
  * @param X_index 
  * @return int16_t 
  */
-int16_t table2D_getRawValue(struct table2D *fromTable, uint8_t X_index)
+int16_t table2D_getRawValue(const struct table2D *fromTable, uint8_t index)
 {
   int returnValue = 0;
 
-  if(fromTable->valueType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->values)[X_index]; }
-  else if(fromTable->valueType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->values)[X_index]; }
-  else if(fromTable->valueType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->values)[X_index]; }
+  if(fromTable->valueType == TYPE_UINT16) { returnValue = ((int16_t*)fromTable->values)[index]; }
+  else if(fromTable->valueType == TYPE_UINT8) { returnValue = ((uint8_t*)fromTable->values)[index]; }
+  else if(fromTable->valueType == TYPE_INT8) { returnValue = ((int8_t*)fromTable->values)[index]; }
   else { /* Keep MISRA checker happy*/ }  
 
   return returnValue;
