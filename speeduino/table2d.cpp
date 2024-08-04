@@ -13,7 +13,7 @@ Note that this may clear some of the existing values of the table
 #include "globals.h"
 #endif
 
-static void construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSize, uint8_t length, void *values, void *bins) {
+static void _construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSize, uint8_t length, const void *values, const void *bins) {
   table.valueSize = valueSize;
   table.axisSize = axisSize;
   table.xSize = length;
@@ -24,23 +24,23 @@ static void construct2dTable(table2D &table, uint8_t valueSize, uint8_t axisSize
   table.lastXMin = UINT8_MAX;
 }
 
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint8_t *bins) {
-  construct2dTable(table, SIZE_BYTE, SIZE_BYTE, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
+  _construct2dTable(table, SIZE_BYTE, SIZE_BYTE, length, values, bins);
 }
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, int8_t *bins) {
-  construct2dTable(table, SIZE_BYTE, SIZE_SIGNED_BYTE, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const int8_t *bins) {
+  _construct2dTable(table, SIZE_BYTE, SIZE_SIGNED_BYTE, length, values, bins);
 }
-void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint16_t *bins) {
-  construct2dTable(table, SIZE_INT, SIZE_INT, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint16_t *bins) {
+  _construct2dTable(table, SIZE_INT, SIZE_INT, length, values, bins);
 }
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint16_t *bins) {
-  construct2dTable(table, SIZE_BYTE, SIZE_INT, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint16_t *bins) {
+  _construct2dTable(table, SIZE_BYTE, SIZE_INT, length, values, bins);
 }
-void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint8_t *bins) {
-  construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint8_t *bins) {
+  _construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
 }
-void construct2dTable(table2D &table, uint8_t length, int16_t *values, uint8_t *bins) {
-  construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
+void _construct2dTable(table2D &table, uint8_t length, const int16_t *values, const uint8_t *bins) {
+  _construct2dTable(table, SIZE_INT, SIZE_BYTE, length, values, bins);
 }
 
 static inline uint8_t getCacheTime(void) {

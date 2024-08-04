@@ -41,37 +41,37 @@ static inline
 #endif
 void construct2dTables(void) {
   //Repoint the 2D table structs to the config pages that were just loaded
-  construct2dTable(taeTable,                  _countof(configPage4.taeValues),                  configPage4.taeValues,                  configPage4.taeBins);
-  construct2dTable(maeTable,                  _countof(configPage4.maeRates),                   configPage4.maeRates,                   configPage4.maeBins);
-  construct2dTable(WUETable,                  _countof(configPage2.wueValues),                  configPage2.wueValues,                  configPage4.wueBins);
-  construct2dTable(ASETable,                  _countof(configPage2.asePct),                     configPage2.asePct,                     configPage2.aseBins);
-  construct2dTable(ASECountTable,             _countof(configPage2.aseCount),                   configPage2.aseCount,                   configPage2.aseBins);
-  construct2dTable(PrimingPulseTable,         _countof(configPage2.primePulse),                 configPage2.primePulse,                 configPage2.primeBins);
-  construct2dTable(crankingEnrichTable,       _countof(configPage10.crankingEnrichValues),      configPage10.crankingEnrichValues,      configPage10.crankingEnrichBins);
-  construct2dTable(dwellVCorrectionTable,     _countof(configPage4.dwellCorrectionValues),      configPage4.dwellCorrectionValues,      configPage6.voltageCorrectionBins);
-  construct2dTable(injectorVCorrectionTable,  _countof(configPage6.injVoltageCorrectionValues), configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
-  construct2dTable(IATDensityCorrectionTable, _countof(configPage6.airDenRates),                configPage6.airDenRates,                configPage6.airDenBins);
-  construct2dTable(baroFuelTable,             _countof(configPage4.baroFuelValues),             configPage4.baroFuelValues,             configPage4.baroFuelBins);
-  construct2dTable(IATRetardTable,            _countof(configPage4.iatRetValues),               configPage4.iatRetValues,               configPage4.iatRetBins);
-  construct2dTable(CLTAdvanceTable,           _countof(configPage4.cltAdvValues),               configPage4.cltAdvValues,               configPage4.cltAdvBins);
-  construct2dTable(idleTargetTable,           _countof(configPage6.iacCLValues),                configPage6.iacCLValues,                configPage6.iacBins);
-  construct2dTable(idleAdvanceTable,          _countof(configPage4.idleAdvValues),              configPage4.idleAdvValues,              configPage4.idleAdvBins);
-  construct2dTable(rotarySplitTable,          _countof(configPage10.rotarySplitValues),         configPage10.rotarySplitValues,         configPage10.rotarySplitBins);
-  construct2dTable(flexFuelTable,             _countof(configPage10.flexFuelAdj),               configPage10.flexFuelAdj,               configPage10.flexFuelBins);
-  construct2dTable(flexAdvTable,              _countof(configPage10.flexAdvAdj),                configPage10.flexAdvAdj,                configPage10.flexAdvBins);
-  construct2dTable(fuelTempTable,             _countof(configPage10.fuelTempValues),            configPage10.fuelTempValues,            configPage10.fuelTempBins);
-  construct2dTable(oilPressureProtectTable,   _countof(configPage10.oilPressureProtMins),       configPage10.oilPressureProtMins,       configPage10.oilPressureProtRPM);
-  construct2dTable(coolantProtectTable,       _countof(configPage9.coolantProtRPM),             configPage9.coolantProtRPM,             configPage9.coolantProtTemp);
-  construct2dTable(fanPWMTable,               _countof(configPage9.PWMFanDuty),                 configPage9.PWMFanDuty,                 configPage6.fanPWMBins);
-  construct2dTable(wmiAdvTable,               _countof(configPage10.wmiAdvAdj),                 configPage10.wmiAdvAdj,                 configPage10.wmiAdvBins);
-  construct2dTable(rollingCutTable,           _countof(configPage15.rollingProtCutPercent),     configPage15.rollingProtCutPercent,     configPage15.rollingProtRPMDelta);
-  construct2dTable(injectorAngleTable,        _countof(configPage2.injAng),                     configPage2.injAng,                     configPage2.injAngRPM);
-  construct2dTable(flexBoostTable,            _countof(configPage10.flexBoostAdj),              configPage10.flexBoostAdj,              configPage10.flexBoostBins);
-  construct2dTable(knockWindowStartTable,      _countof(configPage10.knock_window_angle),        configPage10.knock_window_angle, configPage10.knock_window_rpms);
-  construct2dTable(knockWindowDurationTable,   _countof(configPage10.knock_window_dur),          configPage10.knock_window_dur,   configPage10.knock_window_rpms);
-  construct2dTable(cltCalibrationTable,       _countof(cltCalibration_values), cltCalibration_values, cltCalibration_bins);
-  construct2dTable(iatCalibrationTable,       _countof(iatCalibration_values), iatCalibration_values, iatCalibration_bins);
-  construct2dTable(o2CalibrationTable,        _countof(o2Calibration_values),  o2Calibration_values,  o2Calibration_bins);
+  construct2dTable(taeTable,                  configPage4.taeValues,                  configPage4.taeBins);
+  construct2dTable(maeTable,                  configPage4.maeRates,                   configPage4.maeBins);
+  construct2dTable(WUETable,                  configPage2.wueValues,                  configPage4.wueBins);
+  construct2dTable(ASETable,                  configPage2.asePct,                     configPage2.aseBins);
+  construct2dTable(ASECountTable,             configPage2.aseCount,                   configPage2.aseBins);
+  construct2dTable(PrimingPulseTable,         configPage2.primePulse,                 configPage2.primeBins);
+  construct2dTable(crankingEnrichTable,       configPage10.crankingEnrichValues,      configPage10.crankingEnrichBins);
+  construct2dTable(dwellVCorrectionTable,     configPage4.dwellCorrectionValues,      configPage6.voltageCorrectionBins);
+  construct2dTable(injectorVCorrectionTable,  configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
+  construct2dTable(IATDensityCorrectionTable, configPage6.airDenRates,                configPage6.airDenBins);
+  construct2dTable(baroFuelTable,             configPage4.baroFuelValues,             configPage4.baroFuelBins);
+  construct2dTable(IATRetardTable,            configPage4.iatRetValues,               configPage4.iatRetBins);
+  construct2dTable(CLTAdvanceTable,           configPage4.cltAdvValues,               configPage4.cltAdvBins);
+  construct2dTable(idleTargetTable,           configPage6.iacCLValues,                configPage6.iacBins);
+  construct2dTable(idleAdvanceTable,          configPage4.idleAdvValues,              configPage4.idleAdvBins);
+  construct2dTable(rotarySplitTable,          configPage10.rotarySplitValues,         configPage10.rotarySplitBins);
+  construct2dTable(flexFuelTable,             configPage10.flexFuelAdj,               configPage10.flexFuelBins);
+  construct2dTable(flexAdvTable,              configPage10.flexAdvAdj,                configPage10.flexAdvBins);
+  construct2dTable(fuelTempTable,             configPage10.fuelTempValues,            configPage10.fuelTempBins);
+  construct2dTable(oilPressureProtectTable,   configPage10.oilPressureProtMins,       configPage10.oilPressureProtRPM);
+  construct2dTable(coolantProtectTable,       configPage9.coolantProtRPM,             configPage9.coolantProtTemp);
+  construct2dTable(fanPWMTable,               configPage9.PWMFanDuty,                 configPage6.fanPWMBins);
+  construct2dTable(wmiAdvTable,               configPage10.wmiAdvAdj,                 configPage10.wmiAdvBins);
+  construct2dTable(rollingCutTable,           configPage15.rollingProtCutPercent,     configPage15.rollingProtRPMDelta);
+  construct2dTable(injectorAngleTable,        configPage2.injAng,                     configPage2.injAngRPM);
+  construct2dTable(flexBoostTable,            configPage10.flexBoostAdj,              configPage10.flexBoostBins);
+  construct2dTable(knockWindowStartTable,     configPage10.knock_window_angle,        configPage10.knock_window_rpms);
+  construct2dTable(knockWindowDurationTable,  configPage10.knock_window_dur,          configPage10.knock_window_rpms);
+  construct2dTable(cltCalibrationTable,       cltCalibration_values,                  cltCalibration_bins);
+  construct2dTable(iatCalibrationTable,       iatCalibration_values,                  iatCalibration_bins);
+  construct2dTable(o2CalibrationTable,        o2Calibration_values,                   o2Calibration_bins);
 }
 
 /** Initialise Speeduino for the main loop.
