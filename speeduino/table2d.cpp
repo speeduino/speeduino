@@ -38,7 +38,7 @@ void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, c
   construct2dTable(table, OpaqueArray::TYPE_UINT16, OpaqueArray::TYPE_UINT8, length, values, bins);
 }
 void _construct2dTable(table2D &table, uint8_t length, const int16_t *values, const uint8_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT16, OpaqueArray::TYPE_UINT8, length, values, bins);
+  construct2dTable(table, OpaqueArray::TYPE_INT16, OpaqueArray::TYPE_UINT8, length, values, bins);
 }
 
 static inline uint8_t getCacheTime(void) {
@@ -58,11 +58,12 @@ static inline bool cacheExpired(const Table2DCache &cache) {
 #define OPAQUE_ARRAY_DISPATCH(opaqueArray, action, ...) \
   if((opaqueArray).type == OpaqueArray::TYPE_UINT8) { return (action)((const uint8_t*)((opaqueArray).data), __VA_ARGS__); } \
   if((opaqueArray).type == OpaqueArray::TYPE_UINT16) { return (action)((const uint16_t*)((opaqueArray).data), __VA_ARGS__); } \
-  if((opaqueArray).type == OpaqueArray::TYPE_INT8) { return (action)((const int8_t*)((opaqueArray).data), __VA_ARGS__); }
+  if((opaqueArray).type == OpaqueArray::TYPE_INT8) { return (action)((const int8_t*)((opaqueArray).data), __VA_ARGS__); } \
+  if((opaqueArray).type == OpaqueArray::TYPE_INT16) { return (action)((const int16_t*)((opaqueArray).data), __VA_ARGS__); }
 
 template <typename TArray>
-static inline TArray getValue(const TArray *axis, uint8_t index) {
-  return axis[index];
+static inline TArray getValue(const TArray *array, uint8_t index) {
+  return array[index];
 }
  
 static inline int16_t getValue(const OpaqueArray &array, uint8_t index) {
@@ -140,7 +141,7 @@ int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in)
     xBin = findAxisBin(fromTable, X_in);
   }
 
-  // We are exactly at the bin upper bound, so need to interpolate
+  // We are exactly at the bin upper bound, so no need to interpolate
   if (X_in==xBin.upperValue) {
     fromTable->cache.lastOutput = getValue(fromTable->values, xBin.upperIndex);
     fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
