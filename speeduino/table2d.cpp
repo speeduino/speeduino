@@ -8,6 +8,7 @@ A full copy of the license may be found in the projects root directory
 Because the size of the table is dynamic, this function is required to reallocate the array sizes
 Note that this may clear some of the existing values of the table
 */
+#include <Arduino.h>
 #include "table2d.h"
 #if !defined(UNIT_TEST)
 #include "globals.h"
@@ -131,53 +132,34 @@ int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in)
 
   const uint8_t xMax = fromTable->length-1U;
 
-  //If the requested X value is greater/small than the maximum/minimum bin, simply return that value
-  if(X_in >= getValue(fromTable->axis, xMax))
+  // 1st check is whether we're still in the same X bin as last time
+  Table2DBin xBin = getAxisBin(fromTable, fromTable->cache.lastBinUpperIndex);
+  if (!isInBin(X_in, xBin))
   {
+    //If we're not in the same bin, search 
+    xBin = findAxisBin(fromTable, X_in);
+  }
+
+  // We are exactly at the bin upper bound, so need to interpolate
+  if (X_in==xBin.upperValue) {
+    fromTable->cache.lastOutput = getValue(fromTable->values, xBin.upperIndex);
+    fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+  // Within the bin, interpolate
+  } else if (isInBin(X_in, xBin)) {
+    const Table2DBin valueBin = getValueBin(fromTable, xBin.upperIndex);
+    fromTable->cache.lastOutput = (int16_t)map(X_in, xBin.lowerValue, xBin.upperValue, valueBin.lowerValue, valueBin.upperValue);
+    fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+  // Above max axis value, clip to max data value
+  } else if(X_in >= getValue(fromTable->axis, xMax)) {
     fromTable->cache.lastOutput = getValue(fromTable->values, xMax);
-  }
-  else if(X_in <= getValue(fromTable->axis, 0U))
-  {
+    fromTable->cache.lastBinUpperIndex = xMax;
+  // Only choice left is below min axis value, clip to min data value
+  } else {
     fromTable->cache.lastOutput = getValue(fromTable->values, 0U);
-  }
-  //Finally if none of that is found
-  else
-  {
-    // 1st check is whether we're still in the same X bin as last time
-    Table2DBin xBin = getAxisBin(fromTable, fromTable->cache.lastBinUpperIndex);
-    if (!isInBin(X_in, xBin))
-    {
-      //If we're not in the same bin, search 
-      xBin = findAxisBin(fromTable, X_in);
-    }
-
-    //Checks the case where the X value is exactly what was requested
-    if (X_in==xBin.upperValue) {
-      fromTable->cache.lastOutput = getValue(fromTable->values, xBin.upperIndex);
-      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
-    } else if (isInBin(X_in, xBin)) {
-      // We assume the x-axis is in increasing order, so m & n will be >0.
-      uint16_t m = X_in - xBin.lowerValue;
-      uint16_t n = range(xBin);
-
-      Table2DBin valueBin = getValueBin(fromTable, xBin.upperIndex);
-      int32_t yRange = (int32_t)range(valueBin);
-
-      /* Float version (if m, yMax, yMin and n were float's)
-        int yVal = (m * (yMax - yMin)) / n;
-      */
-      
-      //Non-Float version
-      int16_t yVal = (int16_t)(( m * yRange ) / n);
-      fromTable->cache.lastOutput = valueBin.lowerValue + yVal;
-      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
-    } else {
-      // This should never happen, but if it does, return the last output
-    }
-
-    fromTable->cache.cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
+    fromTable->cache.lastBinUpperIndex = 1U;
   }
 
+  fromTable->cache.cacheTime = getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
   fromTable->cache.lastInput = X_in;
 
   return fromTable->cache.lastOutput;
