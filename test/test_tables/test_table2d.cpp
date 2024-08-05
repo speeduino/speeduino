@@ -43,7 +43,7 @@ static void setup_test_subjects(void)
 }
 
 template <typename TValue, typename TAxis>
-static void test_table2dLookup(table2D &table, TValue *data, TAxis *axis, uint8_t binFrac)
+static void test_table2dLookup(const table2D &table, const TValue *data, const TAxis *axis, uint8_t binFrac)
 {
     for (uint8_t i=0; i<TEST_TABLE2D_SIZE-1U; ++i) {
         TAxis lookupValue = intermediate(axis[i], axis[i+1], binFrac);
@@ -93,15 +93,14 @@ static void test_table2dLookup_bin_66(void)
 }
 
 template <typename TValue, typename TAxis>
-static void test_table2dLookup_bin_edges(table2D &table, TValue *data, TAxis *axis) {
+static void test_table2dLookup_bin_edges(const table2D &table, const TValue *data, const TAxis *axis) {
     for (uint8_t i=0; i<TEST_TABLE2D_SIZE; ++i) {
         TValue result = (TValue)table2D_getValue(&table, axis[i]);
         char szMsg[64];
         sprintf(szMsg, "%d, %d lookup %d: %d", table.values.typeIndicator, table.axis.typeIndicator, i, axis[i]);
         TEST_ASSERT_EQUAL_MESSAGE(data[i], result, szMsg);
-        // sprintf(szMsg, "Index %d, lastBinUpperIndex: %d", i, table.lastBinUpperIndex);
-        // TEST_MESSAGE(szMsg);
-        // TEST_ASSERT_EQUAL_MESSAGE((i==0 || i==1) ? 1 : i+1, table.lastBinUpperIndex, szMsg);
+        sprintf(szMsg, "%d, %d lookup %d", table.values.typeIndicator, table.axis.typeIndicator, i);
+        TEST_ASSERT_EQUAL_MESSAGE(i==0  ? 1 : i, table.cache.lastBinUpperIndex, szMsg);
     }
 }
 
@@ -118,7 +117,7 @@ static void test_table2dLookup_bin_edges(void)
 }
 
 template <typename TValue, typename TAxis>
-static void test_table2dLookup_overMax(table2D &table, TValue *data, TAxis *axis) {
+static void test_table2dLookup_overMax(const table2D &table, const TValue *data, const TAxis *axis) {
     TValue result = (TValue)table2D_getValue(&table, axis[TEST_TABLE2D_SIZE-1]+1);
     TEST_ASSERT_EQUAL(data[TEST_TABLE2D_SIZE-1], result);
 }
@@ -136,9 +135,10 @@ static void test_table2dLookup_overMax(void)
 }
 
 template <typename TValue, typename TAxis>
-static void test_table2dLookup_underMin(table2D &table, TValue *data, TAxis *axis) {
+static void test_table2dLookup_underMin(const table2D &table, const TValue *data, const TAxis *axis) {
     TValue result = (TValue)table2D_getValue(&table, axis[0]-1);
     TEST_ASSERT_EQUAL(data[0], result);
+    TEST_ASSERT_EQUAL(1, table.cache.lastBinUpperIndex);
 }
 
 static void test_table2dLookup_underMin(void)
