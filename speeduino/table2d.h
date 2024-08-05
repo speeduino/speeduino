@@ -8,6 +8,8 @@ This file is used for everything related to maps/tables including their definiti
 
 /// @cond
 // private to table2D implementation
+
+// The 2D table cache
 struct Table2DCache {
   // Store the upper index of the bin we last found. This is used to make the next check faster
   // Since this is the *upper* index, it can never be 0.
@@ -18,6 +20,20 @@ struct Table2DCache {
   int16_t lastOutput;
   uint8_t cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 };
+
+// Captures the concept of an opaque array
+// (at some point this needs to be replaced with C++ templates)
+struct OpaqueArray {
+  enum TypeIndicator {
+    TYPE_UINT8,
+    TYPE_INT8,
+    TYPE_UINT16,
+    TYPE_INT16,
+  };
+  TypeIndicator type;
+  const void *data;
+};
+
 /// @endcond
 
 /**
@@ -32,13 +48,10 @@ struct Table2DCache {
  *    * Signed or unsigned.
  */
 struct table2D {
-  //Used 5414 RAM with original version
-  uint8_t valueType;
-  uint8_t axisType;
   uint8_t length;
 
-  const void *values;
-  const void *axisX;
+  OpaqueArray values;
+  OpaqueArray axis;
 
   mutable Table2DCache cache;
 };
