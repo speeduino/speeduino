@@ -13,6 +13,7 @@
 #include "sensors.h"
 #include "updates.h"
 #include "pages.h"
+#include "comms_CAN.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates(void)
@@ -623,8 +624,7 @@ void doUpdates(void)
     configPage6.tachoMode = 0;
 
     //CAN broadcast introduced
-    configPage2.canBMWCluster = 0;
-    configPage2.canVAGCluster = 0;
+    configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_OFF;
     
     configPage15.boostDCWhenDisabled = 0;
     configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
@@ -756,6 +756,11 @@ void doUpdates(void)
   {
     //202405
     configPage10.knock_mode = KNOCK_MODE_OFF;
+
+    //Change the CAN Broadcast settings to be a selection
+    //Note that 1 preference will be lost if both BMW AND VAG protocols were enabled, but that is not a likely combination.
+    if(configPage2.unused1_126_1 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_BMW; } //unused1_126_1 was canBMWCluster
+    if(configPage2.unused1_126_2 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_VAG; } //unused1_126_2 was canVAGCluster
 
     writeAllConfig();
     storeEEPROMVersion(24);

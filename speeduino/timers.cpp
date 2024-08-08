@@ -27,6 +27,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
+volatile byte loop20ms;
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -50,6 +51,7 @@ void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop5ms = 0;
+  loop20ms = 0;
   loop33ms = 0;
   loop66ms = 0;
   loop100ms = 0;
@@ -79,6 +81,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
 
   //Increment Loop Counters
   loop5ms++;
+  loop20ms++;
   loop33ms++;
   loop66ms++;
   loop100ms++;
@@ -164,11 +167,18 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //200Hz loop
-  if (loop5ms == 5)
+  if(loop5ms == 5)
   {
     loop5ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
-  }  
+  }
+
+  //50Hz loop
+  if(loop20ms == 20)
+  {
+    loop20ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_50HZ);
+  }
 
   //30Hz loop
   if (loop33ms == 33)

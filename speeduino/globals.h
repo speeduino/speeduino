@@ -174,6 +174,7 @@
 #define BIT_TIMER_10HZ            2
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
+#define BIT_TIMER_50HZ            5
 #define BIT_TIMER_200HZ           6
 #define BIT_TIMER_1KHZ            7
 
@@ -862,8 +863,8 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte canBMWCluster : 1;
-  byte canVAGCluster : 1;
+  byte unused1_126_1 : 1;
+  byte unused1_126_2 : 1;
   byte canWBO : 2 ;
   byte vssAuxCh : 4;
 
@@ -972,7 +973,8 @@ struct config4 {
   byte vvt2PWMdir : 1;
   byte inj4cylPairing : 2;
   byte dwellErrCorrect : 1;
-  byte unusedBits4 : 4;
+  byte CANBroadcastProtocol : 3;
+  byte unusedBits4 : 1;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
   byte vvtMinClt;

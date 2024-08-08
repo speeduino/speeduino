@@ -208,7 +208,44 @@ void loop(void)
         BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
       #endif
     }
-    
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_50HZ);
+
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(50);
+      #endif
+
+    }
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      boostControl();
+      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
+      vvtControl();
+      //Water methanol injection
+      wmiControl();
+      #if TPS_READ_FREQUENCY == 30
+        readTPS();
+      #endif
+      if (configPage2.canWBO == 0)
+      {
+        readO2();
+        readO2_2();
+      }
+      
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(30);
+      #endif
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+      #endif
+
+      //Check for any outstanding EEPROM writes.
+      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+    }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -225,11 +262,12 @@ void loop(void)
 
       checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(15);
+      #endif
+
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
-
-      
-
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
@@ -244,37 +282,13 @@ void loop(void)
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(10);
+      #endif
+
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
-    }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
-    {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
-      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      boostControl();
-      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
-      vvtControl();
-      //Water methanol injection
-      wmiControl();
-      #if defined(NATIVE_CAN_AVAILABLE)
-      if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
-      if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
-      #endif
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
-      if (configPage2.canWBO == 0)
-      {
-        readO2();
-        readO2_2();
-      }      
-      #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
-      #endif
-
-      //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
