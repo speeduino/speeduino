@@ -1,6 +1,5 @@
 #ifndef COMMS_CAN_H
 #define COMMS_CAN_H
-#if defined(NATIVE_CAN_AVAILABLE)
 
 //For BMW e46/e39/e38, rover and mini other CAN instrument clusters
 #define CAN_BMW_ASC1 0x153 //Rx message from ACS unit that includes speed
@@ -33,6 +32,8 @@
 #define CAN_WBO_RUSEFI 1
 
 #define TS_CAN_OFFSET 0x100
+
+#if defined(NATIVE_CAN_AVAILABLE)
 
 void initCAN();
 int CAN_read();
