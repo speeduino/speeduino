@@ -81,7 +81,7 @@ static constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
  */
 static uint16_t serialBytesRxTx = 0; 
 
-static constexpr uint32_t SERIAL_TIMEOUT = 3000; //!< Timeout threshold in milliseconds
+static constexpr uint16_t SERIAL_TIMEOUT = 700; //!< Timeout threshold in milliseconds
 static uint32_t serialReceiveStartTime = 0; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
 
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations
