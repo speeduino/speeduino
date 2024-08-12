@@ -32,6 +32,8 @@ jobs:
           fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
+          sketch-paths: |
+            - speeduino
           platforms: |
             - source-url: ${{ matrix.board.source-url }}
               name: ${{ matrix.board.family-name }}
