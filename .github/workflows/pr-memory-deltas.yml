@@ -34,7 +34,7 @@ jobs:
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
           sketch-paths: |
-            - speeduino
+            - speeduino/speeduino.ino
           verbose: true
           platforms: |
             - source-url: ${{ matrix.board.source-url }}
