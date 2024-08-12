@@ -18,7 +18,7 @@ jobs:
             # This suffix will be used to define a unique name for the sketches report artifact.
             artifact-name-suffix: arduino-avr-mega
             family-name: arduino:avr
-            source-url: ''
+            source-url: https://github.com/arduino/ArduinoCore-avr.git
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: arduino-avr-teensy35
             family-name: teensy:avr
@@ -33,7 +33,6 @@ jobs:
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
           platforms: |
-            - name: ${{ matrix.board.family-name }}
             - source-url: ${{ matrix.board.source-url }}
               name: ${{ matrix.board.family-name }}
 
