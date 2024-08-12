@@ -19,9 +19,13 @@ jobs:
             # This suffix will be used to define a unique name for the sketches report artifact.
             artifact-name-suffix: arduino-avr-mega
             family-name: arduino:avr
-            source-url: ''
+            platform:
+              name: arduino:avr
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: arduino-avr-teensy35
+            platform:
+              name: teensy:avr
+              source-url: https://www.pjrc.com/teensy/package_teensy_index.json
             family-name: teensy:avr
             source-url: https://www.pjrc.com/teensy/package_teensy_index.json
 
@@ -36,9 +40,11 @@ jobs:
           sketch-paths: |
             - speeduino/speeduino.ino
           verbose: true
-          platforms: |
-            - source-url: ${{ matrix.board.source-url }}
-              name: ${{ matrix.board.family-name }}
+          #platforms: |
+          #  - source-url: ${{ matrix.board.source-url }}
+          #    name: ${{ matrix.board.family-name }}
+          platforms: | 
+            - ${{ matrix.board.platform }}
           libraries: |
             - name: Time
 
