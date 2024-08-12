@@ -25,7 +25,7 @@ jobs:
             artifact-name-suffix: arduino-avr-teensy35
             platform: |
               source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-              name: teensy:avr
+                name: teensy:avr
             family-name: teensy:avr
             source-url: https://www.pjrc.com/teensy/package_teensy_index.json
 
