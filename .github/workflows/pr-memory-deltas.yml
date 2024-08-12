@@ -43,8 +43,7 @@ jobs:
           #platforms: |
           #  - source-url: ${{ matrix.board.source-url }}
           #    name: ${{ matrix.board.family-name }}
-          platforms: | 
-            - ${{ matrix.board.platform }}
+          platforms: ${{ matrix.board.platform }}
           libraries: |
             - name: Time
 
