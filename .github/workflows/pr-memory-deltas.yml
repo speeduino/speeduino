@@ -29,9 +29,10 @@ jobs:
           fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
-          platforms:
+          platforms: |
             - name: ${{ matrix.board.fqbn }}
-              source-url: ${{ matrix.board.source-url }}
+            - source-url: ${{ matrix.board.source-url }}
+              name: ${{ matrix.board.fqbn }}
 
       # This step is needed to pass the size data to the report job.
       - name: Upload sketches report to workflow artifact
