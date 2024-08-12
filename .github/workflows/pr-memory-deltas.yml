@@ -19,11 +19,11 @@ jobs:
             # This suffix will be used to define a unique name for the sketches report artifact.
             artifact-name-suffix: arduino-avr-mega
             family-name: arduino:avr
-            platform: >
+            platform: |
               name: arduino:avr
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: arduino-avr-teensy35
-            platform: >
+            platform: |
               source-url: https://www.pjrc.com/teensy/package_teensy_index.json
               name: teensy:avr
             family-name: teensy:avr
