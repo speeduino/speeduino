@@ -21,13 +21,25 @@ jobs:
             family-name: arduino:avr
             platform: |
               name: arduino:avr
+            compile-flags: |
+              - --build-property
+              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
           - fqbn: teensy:avr:teensy35
-            artifact-name-suffix: arduino-avr-teensy35
+            artifact-name-suffix: teensy-avr-teensy35
             platform: |
               source-url: https://www.pjrc.com/teensy/package_teensy_index.json
                 name: teensy:avr
-            family-name: teensy:avr
-            source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+            compile-flags: |
+              - --build-property
+              - compiler.cpp.extra_flags=""
+          - fqbn: STMicroelectronics:stm32:GenF4
+            artifact-name-suffix: stm32-avr-stm32f4
+            platform: |
+              - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+                name: STMicroelectronics:stm32
+            compile-flags: |
+              - --build-property
+              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128"
 
     steps:
       - uses: actions/checkout@v4
@@ -40,11 +52,10 @@ jobs:
           sketch-paths: |
             - speeduino/speeduino.ino
           verbose: true
-          #platforms: |
-          #  - source-url: ${{ matrix.board.source-url }}
-          #    name: ${{ matrix.board.family-name }}
           platforms: |
-            - ${{ matrix.board.platform }}
+            ${{ matrix.board.platform }}
+          cli-compile-flags: |
+            ${{ matrix.board.compile-flags }}
 
 
       # This step is needed to pass the size data to the report job.
