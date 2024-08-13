@@ -1692,7 +1692,7 @@ void checkLaunchAndFlatShift()
   BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
   currentStatus.flatShiftingHard = false;
 
-  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS)  &&  ( (configPage2.vssMode > 0) && (currentStatus.vss <= configPage10.lnchCtrlVss) ) ) 
   { 
     //Check whether RPM is above the launch limit
     uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
