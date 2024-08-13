@@ -23,7 +23,7 @@ jobs:
               - name: arduino:avr
             compile-flags: |
               - --build-property
-              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE
+              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99
             lib_deps: |
               - name: Time
           - fqbn: teensy:avr:teensy35
