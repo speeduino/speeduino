@@ -36,6 +36,16 @@ jobs:
               - build..extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
+          - fqbn: teensy:avr:teensy41
+            artifact-name-suffix: teensy-avr-teensy41
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: |
+              - --build-property
+              - build..extra_flags="-Wall"
+            lib_deps: |
+              - name: SDfat
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -43,27 +53,7 @@ jobs:
                 name: STMicroelectronics:stm32
             compile-flags: |
               - --build-property
-              - build.extra_flags='-DUSE_LIBDIVIDE'
-              - --build-property
-              - build.extra_flags='-std=gnu++11'
-              - --build-property
-              - build.extra_flags='-UBOARD_MAX_IO_PINS'
-              - --build-property
-              - build.extra_flags='-DENABLE_HWSERIAL2'
-              - --build-property
-              - build.extra_flags='-DENABLE_HWSERIAL3'
-              - --build-property
-              - build.extra_flags='-DUSBCON'
-              - --build-property
-              - build.extra_flags='-DHAL_PCD_MODULE_ENABLED'
-              - --build-property
-              - build.extra_flags='-DUSBD_USE_CDC'
-              - --build-property
-              - build.extra_flags='-DHAL_CAN_MODULE_ENABLED'
-              - --build-property
-              - build.extra_flags='-DSERIAL_TX_BUFFER_SIZE=128'
-              - --build-property
-              - build.extra_flags='-DSERIAL_RX_BUFFER_SIZE=128'
+              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++11 -UBOARD_MAX_IO_PINS
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
