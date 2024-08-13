@@ -1,7 +1,7 @@
 name: Calculate memory deltas
 
 on:
-  #- push
+  - push
   - pull_request
 
 env:
