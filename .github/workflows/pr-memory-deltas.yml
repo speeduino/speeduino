@@ -1,0 +1,106 @@
+name: Calculate memory deltas
+
+on:
+  - push
+  - pull_request
+
+env:
+  # It's convenient to set variables for values used multiple times in the workflow.
+  SKETCHES_REPORTS_PATH: sketches-reports
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          # Each element in the sequence produces a matrix job:
+          - fqbn: arduino:avr:mega
+            # This suffix will be used to define a unique name for the sketches report artifact.
+            artifact-name-suffix: arduino-avr-mega
+            family-name: arduino:avr
+            platform: |
+              - name: arduino:avr
+            compile-flags: |
+              - --build-property
+              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99
+            lib_deps: |
+              - name: Time
+          - fqbn: teensy:avr:teensy35
+            artifact-name-suffix: teensy-avr-teensy35
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: |
+              - --build-property
+              - build..extra_flags="-Wall"
+            lib_deps: |
+              - name: SDfat
+          - fqbn: teensy:avr:teensy41
+            artifact-name-suffix: teensy-avr-teensy41
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: |
+              - --build-property
+              - build..extra_flags="-Wall"
+            lib_deps: |
+              - name: SDfat
+          - fqbn: STMicroelectronics:stm32:GenF4
+            artifact-name-suffix: stm32-avr-stm32f4
+            platform: |
+              - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+                name: STMicroelectronics:stm32
+                version: 2.7.1
+            compile-flags: |
+              - --build-property
+              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++11 -UBOARD_MAX_IO_PINS
+            lib_deps: |
+              - name: "STM32duino RTC"
+                version: 1.2.0
+              - name: SdFat
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/compile-sketches@v1.1.1
+        with:
+          fqbn: ${{ matrix.board.fqbn }}
+          enable-deltas-report: true
+          sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
+          sketch-paths: |
+            - speeduino/speeduino.ino
+          platforms: |
+            ${{ matrix.board.platform }}
+          cli-compile-flags: |
+            ${{ matrix.board.compile-flags }}
+          libraries: |
+            ${{ matrix.board.lib_deps }}
+
+
+      # This step is needed to pass the size data to the report job.
+      - name: Upload sketches report to workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sketches-reports-${{ matrix.board.artifact-name-suffix }}
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+
+  # When using a matrix to compile for multiple boards, it's necessary to use a separate job for the deltas report
+  report:
+    needs: compile # Wait for the compile job to finish to get the data for the report
+    if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
+    runs-on: ubuntu-latest
+
+    steps:
+      # This step is needed to get the size data produced by the compile jobs
+      - name: Download sketches reports artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # All workflow artifacts will be downloaded to this location.
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+
+      - uses: arduino/report-size-deltas@v1
+        with:
+          sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
