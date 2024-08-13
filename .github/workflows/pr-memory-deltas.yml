@@ -24,12 +24,6 @@ jobs:
             compile-flags: |
               - --build-property
               - build.extra_flags=-DPLATFORMIO
-              - --build-property
-              - build.extra_flags=-DUSE_LIBDIVIDE
-              - --build-property
-              - build.extra_flags=-O3
-              - --build-property
-              - build.extra_flags=-std=c99
             lib_deps: |
               - name: Time
           - fqbn: teensy:avr:teensy35
