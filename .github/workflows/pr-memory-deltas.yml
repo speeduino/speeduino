@@ -23,13 +23,13 @@ jobs:
               - name: arduino:avr
             compile-flags: |
               - --build-property
-              - build.extra_flags='-DUSE_LIBDIVIDE'
+              - build.extra_flags=-DPLATFORMIO
               - --build-property
-              - build.extra_flags='-DPLATFORMIO'
+              - build.extra_flags=-DUSE_LIBDIVIDE
               - --build-property
-              - build.extra_flags='-O3'
+              - build.extra_flags=-O3
               - --build-property
-              - build.extra_flags='-std=c99'
+              - build.extra_flags=-std=c99
             lib_deps: |
               - name: Time
           - fqbn: teensy:avr:teensy35
@@ -49,7 +49,7 @@ jobs:
                 name: STMicroelectronics:stm32
             compile-flags: |
               - --build-property
-              - build..extra_flags='-DUSE_LIBDIVIDE'
+              - build.extra_flags='-DUSE_LIBDIVIDE'
               - --build-property
               - build.extra_flags='-std=gnu++11'
               - --build-property
