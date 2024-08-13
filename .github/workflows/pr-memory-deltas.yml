@@ -43,11 +43,11 @@ jobs:
                 name: STMicroelectronics:stm32
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128"
+              - compiler.cpp.extra_flags='-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128'
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
-                name: SdFat
+              - name: SdFat
 
     steps:
       - uses: actions/checkout@v4
