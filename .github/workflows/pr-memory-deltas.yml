@@ -1,3 +1,5 @@
+name: Calculate memory deltas
+
 on:
   - push
   - pull_request
