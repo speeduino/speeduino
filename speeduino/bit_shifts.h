@@ -671,7 +671,7 @@ uint32_t rshift<15U>(uint32_t a)
  * @brief Rounded arithmetic right shift
  * 
  * Right shifting throws away bits. When use for fixed point division, this
- * effecitvely rounds down (towards zero). To round-to-the-nearest-integer
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
  * when right-shifting by S, just add in 2 power b−1 (which is the 
  * fixed-point equivalent of 0.5) first
  *  

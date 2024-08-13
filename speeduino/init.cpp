@@ -174,7 +174,7 @@ void initialiseAll(void)
     else { setPinMapping(configPage2.pinMapping); }
 
     // Repeatedly initialising the CAN bus hangs the system when
-    // running initialsation tests on Teensy 3.5
+    // running initialisation tests on Teensy 3.5
     #if defined(NATIVE_CAN_AVAILABLE) && !defined(UNIT_TEST)
       initCAN();
     #endif

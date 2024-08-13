@@ -2332,7 +2332,7 @@ void triggerPri_HondaJ32(void)
       // Teeth 14 and 22 are about 18 rather than 15 degrees so don't update last_gap with this unusual spacing
       lastGap = curGap;
     }
-    // else toothCurrentCount == 14 or 22.  Take no futher action. 
+    // else toothCurrentCount == 14 or 22.  Take no further action. 
   }
   else // we do not have sync yet. While syncing, treat tooth 14 and 22 as normal teeth
   {
@@ -4970,7 +4970,7 @@ void triggerPri_Vmax(void)
 void triggerSec_Vmax(void)
 // Needs to be enabled in main()
 {
-  return;// No need for now. The only thing it could help to sync more quikly or confirm position.
+  return;// No need for now. The only thing it could help to sync more quickly or confirm position.
 } // End Sec Trigger
 
 

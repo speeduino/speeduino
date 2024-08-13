@@ -809,10 +809,10 @@ byte getOilPressure(void)
 uint8_t getAnalogKnock(void)
 {
   uint16_t tempReading;
-  uint8_t pinKnock = A15; //Default value incase the user has not selected an analog pin in TunerStudio
+  uint8_t pinKnock = A15; //Default value in case the user has not selected an analog pin in TunerStudio
   if(configPage10.knock_pin >=47U)
   {
-    pinKnock = pinTranslateAnalog(configPage10.knock_pin - 47U); //The knock_pin varialbe has both digital and analog pins listed. A0 is at position 47
+    pinKnock = pinTranslateAnalog(configPage10.knock_pin - 47U); //The knock_pin variable has both digital and analog pins listed. A0 is at position 47
   }
 
   //Perform ADC read

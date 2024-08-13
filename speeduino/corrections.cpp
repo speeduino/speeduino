@@ -917,7 +917,7 @@ uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
   //Check whether we are in knock recovery
   if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
   {
-    //Calculate how many recovery steps have occured since the 
+    //Calculate how many recovery steps have occurred since the 
     uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
     uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
     int8_t recoveryTimingAdj = 0;
@@ -961,7 +961,7 @@ int8_t correctionKnockTiming(int8_t advance)
         //Knock retard is currently active already.
         tmpKnockRetard = currentStatus.knockRetard;
 
-        //Check if additional knock events occured
+        //Check if additional knock events occurred
         if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE))
         {
           //Check if the latest event was far enough after the initial knock event to pull further timing
@@ -992,7 +992,7 @@ int8_t correctionKnockTiming(int8_t advance)
   {
     if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
     {
-      //Check if additional knock events occured
+      //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
       if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
       {
