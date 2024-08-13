@@ -23,7 +23,13 @@ jobs:
               - name: arduino:avr
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -DPLATFORMIO -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
+              - build.extra_flags='-DUSE_LIBDIVIDE'
+              - --build-property
+              - build.extra_flags='-DPLATFORMIO'
+              - --build-property
+              - build.extra_flags='-O3'
+              - --build-property
+              - build.extra_flags='-std=c99'
             lib_deps: |
               - name: Time
           - fqbn: teensy:avr:teensy35
@@ -33,9 +39,9 @@ jobs:
                 name: teensy:avr
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags="-Wall"
+              - build..extra_flags="-Wall"
             lib_deps: |
-              - name: EEPROM
+              - name: SDfat
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -43,7 +49,27 @@ jobs:
                 name: STMicroelectronics:stm32
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags='-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128'
+              - build..extra_flags='-DUSE_LIBDIVIDE'
+              - --build-property
+              - build.extra_flags='-std=gnu++11'
+              - --build-property
+              - build.extra_flags='-UBOARD_MAX_IO_PINS'
+              - --build-property
+              - build.extra_flags='-DENABLE_HWSERIAL2'
+              - --build-property
+              - build.extra_flags='-DENABLE_HWSERIAL3'
+              - --build-property
+              - build.extra_flags='-DUSBCON'
+              - --build-property
+              - build.extra_flags='-DHAL_PCD_MODULE_ENABLED'
+              - --build-property
+              - build.extra_flags='-DUSBD_USE_CDC'
+              - --build-property
+              - build.extra_flags='-DHAL_CAN_MODULE_ENABLED'
+              - --build-property
+              - build.extra_flags='-DSERIAL_TX_BUFFER_SIZE=128'
+              - --build-property
+              - build.extra_flags='-DSERIAL_RX_BUFFER_SIZE=128'
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
