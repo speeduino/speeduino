@@ -24,14 +24,18 @@ jobs:
             compile-flags: |
               - --build-property
               - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
+            lib_deps: |
+              - name: Time
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
               source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-                name: teensy:avr
+              name: teensy:avr
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags=""
+              - compiler.cpp.extra_flags="-Wall"
+            lib_deps: |
+              - name: FlexCAN_T4
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -40,6 +44,9 @@ jobs:
             compile-flags: |
               - --build-property
               - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128"
+            lib_deps: |
+              - name: stm32duino/STM32duino RTC 
+                version: 1.2.0
 
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +63,8 @@ jobs:
             ${{ matrix.board.platform }}
           cli-compile-flags: |
             ${{ matrix.board.compile-flags }}
+          libraries: |
+            ${{ matrix.board.lib_deps }}
 
 
       # This step is needed to pass the size data to the report job.
