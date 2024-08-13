@@ -103,4 +103,5 @@ jobs:
 
       - uses: arduino/report-size-deltas@v1
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
