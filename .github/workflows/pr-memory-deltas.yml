@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: arduino/compile-sketches@v1.1.1
+      - uses: arduino/compile-sketches@v1.1.2
         with:
           fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
