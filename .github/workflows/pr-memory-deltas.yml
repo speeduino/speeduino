@@ -23,7 +23,7 @@ jobs:
               - name: arduino:avr
             compile-flags: |
               - --build-property
-              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
+              - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -DPLATFORMIO -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
             lib_deps: |
               - name: Time
           - fqbn: teensy:avr:teensy35
@@ -47,6 +47,7 @@ jobs:
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
+                name: SdFat
 
     steps:
       - uses: actions/checkout@v4
