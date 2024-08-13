@@ -29,8 +29,8 @@ jobs:
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
-              source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-              name: teensy:avr
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
             compile-flags: |
               - --build-property
               - compiler.cpp.extra_flags="-Wall"
@@ -45,7 +45,7 @@ jobs:
               - --build-property
               - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -std=gnu++11 -UBOARD_MAX_IO_PINS -DENABLE_HWSERIAL2 -DENABLE_HWSERIAL3 -DUSBCON -DHAL_PCD_MODULE_ENABLED -DUSBD_USE_CDC -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128"
             lib_deps: |
-              - name: stm32duino/STM32duino RTC 
+              - name: "STM32duino RTC"
                 version: 1.2.0
 
     steps:
