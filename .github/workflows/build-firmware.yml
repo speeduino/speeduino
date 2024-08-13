@@ -47,7 +47,7 @@ jobs:
       run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
 
     - name: Upload to Speeduino server
-      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime' && github.ref_name == 'master'
+      if: github.event_name != 'pull_request' && github.repository_owner == 'speeduino' && github.ref_name == 'master'
       env:
         WEB_PWD: ${{ secrets.WEB_PWD }}
       run: |
@@ -61,7 +61,7 @@ jobs:
 
     - name: Discord Notification (Build Failed)
       uses: rjstone/discord-webhook-notify@v1
-      if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
+      if: failure() && github.event_name != 'pull_request' && github.repository_owner == 'speeduino'
       with:
           severity: error
           avatarUrl: https://avatars.githubusercontent.com/u/9919?v=4&size=48
