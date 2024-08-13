@@ -20,7 +20,7 @@ jobs:
             artifact-name-suffix: arduino-avr-mega
             family-name: arduino:avr
             platform: |
-              name: arduino:avr
+              - name: arduino:avr
             compile-flags: |
               - --build-property
               - compiler.cpp.extra_flags="-DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99"
@@ -35,7 +35,7 @@ jobs:
               - --build-property
               - compiler.cpp.extra_flags="-Wall"
             lib_deps: |
-              - name: FlexCAN_T4
+              - name: EEPROM
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
