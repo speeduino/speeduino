@@ -52,7 +52,7 @@
 #define MAX_LOG_FILES     9999
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
-#define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10) //Allow for 10 entries in the ringbuffer. Will need tuning
+#define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10+123) //Allow for 10 entries in the ringbuffer. Will need tuning
 
 /*
 Standard FAT16/32
