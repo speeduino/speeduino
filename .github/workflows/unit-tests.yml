@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     # Only try to run hardware unit tests on the upstream repository
-    if: github.repository_owner == 'noisymime'
+    if: github.repository_owner == 'speeduino'
 
     runs-on: ubuntu-latest
 
