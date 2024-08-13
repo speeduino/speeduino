@@ -70,7 +70,6 @@ jobs:
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
           sketch-paths: |
             - speeduino/speeduino.ino
-          verbose: true
           platforms: |
             ${{ matrix.board.platform }}
           cli-compile-flags: |
