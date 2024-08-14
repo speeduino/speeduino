@@ -30,6 +30,7 @@
 
 
 #define CAN_WBO_RUSEFI 1
+#define CAN_WBO_AEM 2
 
 #define TS_CAN_OFFSET 0x100
 
