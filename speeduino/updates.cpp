@@ -762,6 +762,9 @@ void doUpdates(void)
     if(configPage2.unused1_126_1 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_BMW; } //unused1_126_1 was canBMWCluster
     if(configPage2.unused1_126_2 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_VAG; } //unused1_126_2 was canVAGCluster
 
+    //VSS max limit on launch control
+    configPage10.lnchCtrlVss = 255;
+
     writeAllConfig();
     storeEEPROMVersion(24);
   }

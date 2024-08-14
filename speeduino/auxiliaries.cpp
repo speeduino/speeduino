@@ -708,7 +708,7 @@ void boostControl(void)
         {
           currentStatus.flexBoostCorrection = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
           currentStatus.boostTarget += currentStatus.flexBoostCorrection;
-          currentStatus.boostTarget = min(currentStatus.boostTarget, (uint16_t)511);
+          currentStatus.boostTarget = min(currentStatus.boostTarget, (uint16_t)511U);
         }
         else
         {

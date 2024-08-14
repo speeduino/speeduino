@@ -550,11 +550,14 @@ static void setup_correctionSoftLaunch(void) {
     configPage6.flatSArm = 20;
     configPage6.lnchSoftLim = 40;
     configPage10.lnchCtrlTPS = 80;
+    configPage10.lnchCtrlVss = 50;
+    configPage2.vssMode = 2;
     
     currentStatus.clutchTrigger = 1;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 100;
     currentStatus.RPM = ((configPage6.lnchSoftLim) * 100) + 100;
     currentStatus.TPS = configPage10.lnchCtrlTPS + 1;
+    currentStatus.vss = 30;
 }
 
 static void test_correctionSoftLaunch_on(void) {
@@ -623,6 +626,15 @@ static void test_correctionSoftLaunch_off_tpslow(void) {
     TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
 }
 
+static void test_correctionSoftLaunch_off_vsslimit(void) {
+    setup_correctionSoftLaunch();
+    currentStatus.vss = 100; //VSS above limit of 80
+
+    TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
+    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
+    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+}
+
 static void test_correctionSoftLaunch(void) {
     RUN_TEST_P(test_correctionSoftLaunch_on);
     RUN_TEST_P(test_correctionSoftLaunch_off_disabled);
@@ -630,6 +642,7 @@ static void test_correctionSoftLaunch(void) {
     RUN_TEST_P(test_correctionSoftLaunch_off_clutchrpmlow);
     RUN_TEST_P(test_correctionSoftLaunch_off_rpmlimit);
     RUN_TEST_P(test_correctionSoftLaunch_off_tpslow);
+    RUN_TEST_P(test_correctionSoftLaunch_off_vsslimit);
 }
 
 extern int8_t correctionSoftFlatShift(int8_t advance);
