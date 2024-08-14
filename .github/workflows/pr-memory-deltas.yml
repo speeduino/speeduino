@@ -4,6 +4,10 @@ on:
   - push
   - pull_request
 
+permissions:
+  pull-requests: write
+  issues: write
+
 env:
   # It's convenient to set variables for values used multiple times in the workflow.
   SKETCHES_REPORTS_PATH: sketches-reports
@@ -104,4 +108,5 @@ jobs:
 
       - uses: arduino/report-size-deltas@v1
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
