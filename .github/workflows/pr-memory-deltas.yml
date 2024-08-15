@@ -4,9 +4,7 @@ on:
   - push
   - pull_request
 
-permissions:
-  pull-requests: write
-  issues: write
+permissions: write-all
 
 env:
   # It's convenient to set variables for values used multiple times in the workflow.
@@ -15,6 +13,7 @@ env:
 jobs:
   compile:
     runs-on: ubuntu-latest
+    permissions: write-all
 
     strategy:
       fail-fast: false
@@ -97,6 +96,7 @@ jobs:
     needs: compile # Wait for the compile job to finish to get the data for the report
     if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
     runs-on: ubuntu-latest
+    permissions: write-all
 
     steps:
       # This step is needed to get the size data produced by the compile jobs
@@ -108,5 +108,4 @@ jobs:
 
       - uses: arduino/report-size-deltas@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
