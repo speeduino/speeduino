@@ -172,7 +172,9 @@ void receiveCANwbo()
         if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
           currentStatus.O2 = 250;
         }
-        currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+        else {
+          currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+        }
       }
     }
   }
