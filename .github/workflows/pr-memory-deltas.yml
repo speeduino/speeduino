@@ -2,7 +2,7 @@ name: Calculate memory deltas
 
 on:
   - push
-  - pull_request
+  - pull_request_target
 
 permissions: write-all
 
