@@ -17,8 +17,8 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
-      - name: Comment size delta reports to PRs
-        uses: arduino/report-size-deltas@v1.1.0
+      - name: Comment size deltas reports to PRs
+        uses: arduino/report-size-deltas@v1
         with:
           # The name of the workflow artifact created by the sketch compilation workflow
-          sketches-reports-source: sketches-reports
+          sketches-reports-source: ^sketches-report-.+
