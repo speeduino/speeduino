@@ -63,9 +63,11 @@ jobs:
               - name: SdFat
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: arduino/compile-sketches@v1.1.2
+      - name: Compile platforms
+        uses: arduino/compile-sketches@v1.1.2
         with:
           fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
@@ -80,10 +82,9 @@ jobs:
           libraries: |
             ${{ matrix.board.lib_deps }}
 
-
       # This step is needed to pass the size data to the report job.
       - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.SKETCHES_REPORTS_PATH }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
