@@ -169,12 +169,9 @@ void receiveCANwbo()
       inLambda = (word(inMsg.buf[0], inMsg.buf[1])); //Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
       if(BIT_CHECK(inMsg.buf[6], 7)) //Checking if lambda is valid
       {
-        if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
-          currentStatus.O2 = 250;
-        }
-        else {
-          currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
-        }
+        inLambda = (inLambda * configPage2.stoich) / 10000; //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+        if (inLambda > 250) { currentStatus.O2 = 250; } //Check if we don't overflow the 8bit O2 variable
+        else { currentStatus.O2 = inLambda & 0xFF; }
       }
     }
   }
