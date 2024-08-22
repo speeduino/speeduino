@@ -19,7 +19,7 @@ byte checkEngineProtect(void)
 byte checkRevLimit(void)
 {
   //Hardcut RPM limit
-  byte currentLimitRPM = 255; //Default to no limit (In case PROTECT_CUT_OFF is selected)
+  byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
   BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);

@@ -490,9 +490,9 @@ void readTPS(bool useFilter)
     //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
-    tempADC = 255 - currentStatus.tpsADC; //Reverse the ADC values
-    uint16_t tempTPSMax = 255 - configPage2.tpsMax;
-    uint16_t tempTPSMin = 255 - configPage2.tpsMin;
+    tempADC = UINT8_MAX - currentStatus.tpsADC; //Reverse the ADC values
+    uint16_t tempTPSMax = UINT8_MAX - configPage2.tpsMax;
+    uint16_t tempTPSMin = UINT8_MAX - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
     if (tempADC > tempTPSMax) { tempADC = tempTPSMax; }

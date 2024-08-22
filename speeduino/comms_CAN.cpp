@@ -170,8 +170,8 @@ void receiveCANwbo()
       if(BIT_CHECK(inMsg.buf[6], 7)) //Checking if lambda is valid
       {
         inLambda = (inLambda * configPage2.stoich) / 10000; //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
-        if (inLambda > 250) { currentStatus.O2 = 250; } //Check if we don't overflow the 8bit O2 variable
-        else { currentStatus.O2 = inLambda & 0xFF; }
+        if (inLambda > UINT8_MAX) { currentStatus.O2 = UINT8_MAX; } //Check if we don't overflow the 8bit O2 variable
+        else { currentStatus.O2 = inLambda; }
       }
     }
   }
@@ -213,7 +213,7 @@ void DashMessage(uint16_t DashMessageID)
     case CAN_BMW_DME2:
       temp_TPS = map(currentStatus.TPS, 0, 200, 1, 254);//TPS value conversion (from 0x01 to 0xFE)
       temp_CLT = (((currentStatus.coolant - CALIBRATION_TEMPERATURE_OFFSET) + 48)*4/3); //CLT conversion (actual value to add is 48.373, but close enough)
-      if (temp_CLT > 255) { temp_CLT = 255; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
+      if (temp_CLT > UINT8_MAX) { temp_CLT = UINT8_MAX; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
 
       outMsg.len = 8;
       outMsg.buf[0] = 0x11;  //Multiplexed Information
@@ -530,7 +530,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         uint16_t temp_tpsPC;
         temp_tpsPC = currentStatus.TPS;
         obdcalcA = (temp_tpsPC <<8) / 200;     // (tpsPC *256) /200;
-        if (obdcalcA > 255){ obdcalcA = 255;}
+        if (obdcalcA > UINT8_MAX){ obdcalcA = UINT8_MAX;}
         outMsg.buf[0] =  0x03;                    // sending 3 bytes
         outMsg.buf[1] =  0x41;                    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
         outMsg.buf[2] =  0x11;                    // pid code

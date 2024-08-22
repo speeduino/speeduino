@@ -47,7 +47,7 @@ void doUpdates(void)
     configPage9.realtime_base_address = 336;
 
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
-    if(configPage4.sparkDur == 255) { configPage4.sparkDur = 10; }
+    if(configPage4.sparkDur == UINT8_MAX) { configPage4.sparkDur = 10; }
 
     writeAllConfig();
     storeEEPROMVersion(4);
@@ -348,17 +348,17 @@ void doUpdates(void)
     configPage2.aeColdTaperMax = 100;
 
     //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
-    if(configPage6.idleKP >= 8) { configPage6.idleKP = 255; }
+    if(configPage6.idleKP >= 8) { configPage6.idleKP = UINT8_MAX; }
     else { configPage6.idleKP = configPage6.idleKP<<5; }
-    if(configPage6.idleKI >= 8) { configPage6.idleKI = 255; }
+    if(configPage6.idleKI >= 8) { configPage6.idleKI = UINT8_MAX; }
     else { configPage6.idleKI = configPage6.idleKI<<5; }
-    if(configPage6.idleKD >= 8) { configPage6.idleKD = 255; }
+    if(configPage6.idleKD >= 8) { configPage6.idleKD = UINT8_MAX; }
     else { configPage6.idleKD = configPage6.idleKD<<5; }
-    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = 255; }
+    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = UINT8_MAX; }
     else { configPage10.vvtCLKP = configPage10.vvtCLKP<<5; }
-    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = 255; }
+    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = UINT8_MAX; }
     else { configPage10.vvtCLKI = configPage10.vvtCLKI<<5; }
-    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = 255; }
+    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = UINT8_MAX; }
     else { configPage10.vvtCLKD = configPage10.vvtCLKD<<5; }
 
     //Cranking enrichment to run taper added. Default it to 0,1 secs

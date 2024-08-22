@@ -13,16 +13,16 @@ void calculateSecondaryFuel(void)
       currentStatus.VE2 = getVE2();
       //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       uint16_t combinedVE = ((uint16_t)currentStatus.VE1 * (uint16_t)currentStatus.VE2) / 100;
-      if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
-      else { currentStatus.VE = 255; }
+      if(combinedVE <= UINT8_MAX) { currentStatus.VE = combinedVE; }
+      else { currentStatus.VE = UINT8_MAX; }
     }
     else if(configPage10.fuel2Mode == FUEL2_MODE_ADD)
     {
       currentStatus.VE2 = getVE2();
       //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
       uint16_t combinedVE = (uint16_t)currentStatus.VE1 + (uint16_t)currentStatus.VE2;
-      if(combinedVE <= 255) { currentStatus.VE = combinedVE; }
-      else { currentStatus.VE = 255; }
+      if(combinedVE <= UINT8_MAX) { currentStatus.VE = combinedVE; }
+      else { currentStatus.VE = UINT8_MAX; }
     }
     else if(configPage10.fuel2Mode == FUEL2_MODE_CONDITIONAL_SWITCH )
     {

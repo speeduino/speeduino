@@ -665,7 +665,7 @@ void idleControl(void)
         {
           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
         }
-        if( ((uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+        if( ((uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
         doStep();
       }
@@ -744,7 +744,7 @@ void idleControl(void)
         {
           idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
         }
-        if( ( (uint16_t)configPage9.iacMaxSteps * 3) > 255 ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+        if( ( (uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
         else { currentStatus.idleLoad = idleStepper.curIdleStep; }
         doStep();
       }

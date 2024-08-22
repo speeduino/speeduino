@@ -233,7 +233,8 @@ byte correctionASE(void)
       }
       
       //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
+      if(ASEValue > UINT8_MAX) { ASEValue = UINT8_MAX; }
+      
       if(ASEValue < 0) { ASEValue = 0; }
       ASEValue = (byte)ASEValue;
     }
