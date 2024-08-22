@@ -127,8 +127,7 @@ void sendCANBroadcast(uint8_t frequency)
 
 void receiveCANwbo() 
 {
-  // Currently only RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
-  if(configPage2.canWBO == CAN_WBO_RUSEFI)
+  if(configPage2.canWBO == CAN_WBO_RUSEFI) //RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
   {
     outMsg.id = 0xEF50000;
     outMsg.flags.extended = 1;
@@ -159,6 +158,20 @@ void receiveCANwbo()
           default:
           break;
         }
+      }
+    }
+  }
+  else if(configPage2.canWBO == CAN_WBO_AEM) //AEM 30-0300 X-Series UEGO Gauge
+  {
+    if(inMsg.id == 0x180)  //AEM wideband default ID1 message id
+    {
+      uint32_t inLambda;
+      inLambda = (word(inMsg.buf[0], inMsg.buf[1])); //Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
+      if(BIT_CHECK(inMsg.buf[6], 7)) //Checking if lambda is valid
+      {
+        inLambda = (inLambda * configPage2.stoich) / 10000; //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+        if (inLambda > 250) { currentStatus.O2 = 250; } //Check if we don't overflow the 8bit O2 variable
+        else { currentStatus.O2 = inLambda & 0xFF; }
       }
     }
   }
