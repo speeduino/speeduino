@@ -16,6 +16,7 @@ sendcancommand is called when a command is to be sent either to serial3
 ,to the external Can interface, or to the onboard/attached can interface
 */
 #include "globals.h"
+#include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "maths.h"
@@ -32,6 +33,17 @@ SECONDARY_SERIAL_T* pSecondarySerial;
 void secondserial_Command(void)
 {
   #if defined(secondarySerial_AVAILABLE)
+
+  //If the selected protocol is Tuner Studio then everything is routed via the primary serial functions but with the output diverted to the secondary serial interface
+  if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO)
+  {
+    pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
+    serialReceive();
+    while(secondarySerial.available()) { secondarySerial.read(); }
+    return;
+  }
+
+
   if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = secondarySerial.read(); }
 
   switch (currentSecondaryCommand)

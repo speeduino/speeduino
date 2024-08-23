@@ -101,6 +101,7 @@ static uint32_t SDreadCompletedSectors = 0;
 #endif
 static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent
+Stream* pPrimarySerial;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -120,7 +121,7 @@ static inline bool isRxTimeout(void) {
  */
 void flushRXbuffer(void)
 {
-  while (Serial.available() > 0) { Serial.read(); }
+  while (primarySerial.available() > 0) { primarySerial.read(); }
 }
 
 /** @brief Reverse the byte order of a uint32_t
@@ -141,9 +142,9 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 void writeByteReliableBlocking(byte value) {
   // Some platforms (I'm looking at you Teensy 3.5) do not mimic the Arduino 1.0
   // contract which synchronously blocks. 
-  // https://github.com/PaulStoffregen/cores/blob/master/teensy3/usb_serial.c#L215
-  while (!Serial.availableForWrite()) { /* Wait for the buffer to free up space */ }
-  Serial.write(value);
+  // https://github.com/PaulStoffregen/cores/blob/master/teensy3/usb_primarySerial.c#L215
+  while (!primarySerial.availableForWrite()) { /* Wait for the buffer to free up space */ }
+  primarySerial.write(value);
 }
 
 // ====================================== Multibyte Primitive Type IO Support =============================
@@ -155,8 +156,8 @@ static void readSerialTimeout(char *buffer, size_t length) {
   // Teensy 3.5: Serial.available() should only be used as a boolean test
   // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
   while (length>0U) {
-    if (Serial.available()!=0) {
-      buffer[--length] =(byte)Serial.read();
+    if (primarySerial.available()!=0) {
+      buffer[--length] =(byte)primarySerial.read();
     } else if(isRxTimeout()) {
       return;
     } else { /* MISRA - no-op */ }
@@ -214,9 +215,9 @@ static uint16_t writeNonBlocking(const byte *buffer, size_t length)
   uint16_t bytesTransmitted = 0;
 
   while (bytesTransmitted<length 
-        && Serial.availableForWrite() != 0 
+        && primarySerial.availableForWrite() != 0 
         // Just in case
-        && Serial.write(buffer[bytesTransmitted]) == 1)
+        && primarySerial.write(buffer[bytesTransmitted]) == 1)
   {
     bytesTransmitted++;
   }
@@ -470,11 +471,11 @@ void serialReceive(void)
     return;
   }
 
-  if (Serial.available()!=0 && serialStatusFlag == SERIAL_INACTIVE)
+  if (primarySerial.available()!=0 && serialStatusFlag == SERIAL_INACTIVE)
   { 
     //New command received
     //Need at least 2 bytes to read the length of the command
-    char highByte = (char)Serial.peek();
+    char highByte = (char)primarySerial.peek();
 
     //Check if the command is legacy using the call/response mechanism
     if(highByte == 'F')
@@ -501,11 +502,11 @@ void serialReceive(void)
   }
 
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
-  while( (Serial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
+  while( (primarySerial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
   {
     if (serialBytesRxTx < serialPayloadLength )
     {
-      serialPayload[serialBytesRxTx] = (byte)Serial.read();
+      serialPayload[serialBytesRxTx] = (byte)primarySerial.read();
       ++serialBytesRxTx;
     }
     else
@@ -822,8 +823,6 @@ void processSerialCommand(void)
           }
           serialPayload[payloadIndex] = lowByte(SDcurrentDirChunk);
           serialPayload[payloadIndex + 1] = highByte(SDcurrentDirChunk);
-          //Serial.print("Index:");
-          //Serial.print(payloadIndex);
 
           sendSerialPayloadNonBlocking(payloadIndex + 2);
         }
@@ -890,7 +889,7 @@ void processSerialCommand(void)
       {
         loadO2CalibrationChunk(offset, calibrationLength);
         sendReturnCodeMsg(SERIAL_RC_OK);
-        Serial.flush(); //This is safe because engine is assumed to not be running during calibration
+        primarySerial.flush(); //This is safe because engine is assumed to not be running during calibration
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
@@ -911,16 +910,16 @@ void processSerialCommand(void)
       if (resetControl != RESET_CONTROL_DISABLED)
       {
       #ifndef SMALL_FLASH_MODE
-        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Comms halted. Next byte will reset the Arduino.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Comms halted. Next byte will reset the Arduino.")); }
       #endif
 
-        while (Serial.available() == 0) { }
+        while (primarySerial.available() == 0) { }
         digitalWrite(pinResetControl, LOW);
       }
       else
       {
       #ifndef SMALL_FLASH_MODE
-        if (serialStatusFlag == SERIAL_INACTIVE) { Serial.println(F("Reset control is currently disabled.")); }
+        if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Reset control is currently disabled.")); }
       #endif
       }
       break;
@@ -1096,7 +1095,7 @@ void sendToothLog(void)
   for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
   {
     //Check whether the tx buffer still has space
-    if(Serial.availableForWrite() < 4) 
+    if(primarySerial.availableForWrite() < 4) 
     { 
       //tx buffer is full. Store the current state so it can be resumed later
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS;
@@ -1149,7 +1148,7 @@ void sendCompositeLog(void)
   for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
   {
     //Check whether the tx buffer still has space
-    if((uint16_t)Serial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
+    if((uint16_t)primarySerial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
     { 
       //tx buffer is full. Store the current state so it can be resumed later
       serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS;

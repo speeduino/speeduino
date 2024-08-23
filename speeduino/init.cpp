@@ -7,6 +7,7 @@
 #include "updates.h"
 #include "speeduino.h"
 #include "timers.h"
+#include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "utilities.h"
@@ -156,6 +157,7 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
+    pPrimarySerial = &Serial; //Default to standard Serial interface
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
