@@ -30,6 +30,12 @@
   #include "rtc_common.h"
 #endif
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 #if !defined(UNIT_TEST)
 static inline 
 #endif
@@ -3845,3 +3851,7 @@ void changeFullToHalfSync(void)
     }
   }
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif

@@ -30,6 +30,12 @@ sendcancommand is called when a command is to be sent either to serial3
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 void secondserial_Command(void)
 {
   #if defined(secondarySerial_AVAILABLE)
@@ -234,3 +240,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
   UNUSED(sourcecanAddress);
 #endif
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
