@@ -383,22 +383,22 @@ void doUpdates(void)
     //202008
 
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
-    int y;
-    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
-    {
-      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
-      cltCalibration_values[x] = EEPROM.read(y);
-      cltCalibration_bins[x] = (x * 32);
+    // int y;
+    // for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    // {
+      // y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
+      // cltCalibration_values[x] = EEPROM.read(y);
+      // cltCalibration_bins[x] = (x * 32);
 
-      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
-      iatCalibration_values[x] = EEPROM.read(y);
-      iatCalibration_bins[x] = (x * 32);
+      // y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
+      // iatCalibration_values[x] = EEPROM.read(y);
+      // iatCalibration_bins[x] = (x * 32);
 
-      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
-      o2Calibration_values[x] = EEPROM.read(y);
-      o2Calibration_bins[x] = (x * 32);
-    }
-    writeCalibration();
+      // y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
+      // o2Calibration_values[x] = EEPROM.read(y);
+      // o2Calibration_bins[x] = (x * 32);
+    // }
+    // writeCalibration();
 
     //Oil and fuel pressure inputs were introduced. Disable them both by default
     configPage10.oilPressureProtEnbl = false;

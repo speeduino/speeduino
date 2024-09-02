@@ -893,11 +893,11 @@ void processSerialCommand(void)
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibration_values, iatCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, configPage16.iatCalibration_values, configPage16.iatCalibration_bins);
       }
       else if(cmd == CLT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibration_values, cltCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, configPage16.cltCalibration_values, configPage16.cltCalibration_bins);
       }
       else
       {

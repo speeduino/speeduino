@@ -69,9 +69,9 @@ void construct2dTables(void) {
   construct2dTable(flexBoostTable,            _countof(configPage10.flexBoostAdj),              configPage10.flexBoostAdj,              configPage10.flexBoostBins);
   construct2dTable(knockWindowStartTable,      _countof(configPage10.knock_window_angle),        configPage10.knock_window_angle, configPage10.knock_window_rpms);
   construct2dTable(knockWindowDurationTable,   _countof(configPage10.knock_window_dur),          configPage10.knock_window_dur,   configPage10.knock_window_rpms);
-  construct2dTable(cltCalibrationTable,       _countof(cltCalibration_values), cltCalibration_values, cltCalibration_bins);
-  construct2dTable(iatCalibrationTable,       _countof(iatCalibration_values), iatCalibration_values, iatCalibration_bins);
-  construct2dTable(o2CalibrationTable,        _countof(o2Calibration_values),  o2Calibration_values,  o2Calibration_bins);
+  construct2dTable(cltCalibrationTable,       _countof(configPage16.cltCalibration_values), configPage16.cltCalibration_values, configPage16.cltCalibration_bins);
+  construct2dTable(iatCalibrationTable,       _countof(configPage16.iatCalibration_values), configPage16.iatCalibration_values, configPage16.iatCalibration_bins);
+  construct2dTable(o2CalibrationTable,        _countof(configPage16.o2Calibration_values),  configPage16.o2Calibration_values,  configPage16.o2Calibration_bins);
 }
 
 /** Initialise Speeduino for the main loop.
@@ -169,6 +169,7 @@ void initialiseAll(void)
     //Repoint the 2D table structs to the config pages that were just loaded
     construct2dTables();
     
+
     //Setup the calibration tables
     loadCalibration();   
 
