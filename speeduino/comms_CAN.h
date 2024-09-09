@@ -20,6 +20,7 @@
 #define CAN_HALTECH_PW      0x364 //Pulsewidth 1-4. 50Hz
 #define CAN_HALTECH_LAMBDA  0x368 //Lambda 1-4. 20Hz
 #define CAN_HALTECH_TRIGGER 0x369 //Trigger Counter, sync level, sync error count. 20Hz
+#define CAN_HALTECH_VSS     0x370 //VSS, current gear and inlet cam angles. 20Hz
 #define CAN_HALTECH_DATA4   0x372 //Baro, BatteryV, Target boost. 10Hz
 #define CAN_HALTECH_DATA5   0x3E0 //IAT, CLT, Fuel Temp, Oil Temp. 10Hz
 
