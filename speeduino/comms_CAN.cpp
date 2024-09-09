@@ -192,6 +192,8 @@ void DashMessage(uint16_t DashMessageID)
   uint16_t temp_VVT2;
   uint16_t temp_fuelLoad;
   uint16_t temp_fuelTemp;
+  int16_t temp_fuelPressure;
+  int16_t temp_oilPressure;
   int16_t temp_Advance;
   uint16_t temp_DutyCycle;
   uint16_t temp_Lambda;
@@ -285,11 +287,13 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_DATA2:
       temp_fuelLoad = currentStatus.fuelLoad * 10U;
+      temp_fuelPressure = (currentStatus.fuelPressure * 10) - 1013; //Signed value, scale 0.1, with 101.3kPa (1 atmosphere) offset
+      temp_oilPressure = (currentStatus.oilPressure * 10) - 1013;   //Signed value, scale 0.1, with 101.3kPa (1 atmosphere) offset
       outMsg.len = 8;
-      outMsg.buf[0] = 0x00; //Fuel pressure
-      outMsg.buf[1] = 0x00;
-      outMsg.buf[2] = 0x00; //Oil Pressure
-      outMsg.buf[3] = 0x00;
+      outMsg.buf[0] = highByte(temp_fuelPressure); //Fuel pressure
+      outMsg.buf[1] = lowByte(temp_fuelPressure);
+      outMsg.buf[2] = highByte(temp_oilPressure); //Oil Pressure
+      outMsg.buf[3] = lowByte(temp_oilPressure);
       outMsg.buf[4] = highByte(temp_fuelLoad);
       outMsg.buf[5] = lowByte(temp_fuelLoad);
       outMsg.buf[6] = 0x00; //Wastegate pressure
@@ -358,8 +362,8 @@ void DashMessage(uint16_t DashMessageID)
       temp_BoostTarget = currentStatus.boostTarget * 10U;
       temp_Baro = currentStatus.baro * 10U;
       outMsg.len = 8;
-      outMsg.buf[0] = currentStatus.battery10;
-      outMsg.buf[1] = 0x00; //High byte for battery voltage, which is not used (Max battery voltage is 25.5 or 255)
+      outMsg.buf[0] = 0x00; //High byte for battery voltage, which is not used (Max battery voltage is 25.5 or 255)
+      outMsg.buf[1] = currentStatus.battery10;
       outMsg.buf[2] = 0x00; //Unused
       outMsg.buf[3] = 0x00; //Unused
       outMsg.buf[4] = highByte(temp_BoostTarget);
