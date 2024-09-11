@@ -12,6 +12,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #if defined(NATIVE_CAN_AVAILABLE)
 #include "comms_CAN.h"
 #include "utilities.h"
+#include "maths.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;
@@ -192,8 +193,8 @@ void DashMessage(uint16_t DashMessageID)
   uint16_t temp_VVT2;
   uint16_t temp_fuelLoad;
   uint16_t temp_fuelTemp;
-  int16_t temp_fuelPressure;
-  int16_t temp_oilPressure;
+  uint16_t temp_fuelPressure;
+  uint16_t temp_oilPressure;
   int16_t temp_Advance;
   uint16_t temp_DutyCycle;
   uint16_t temp_Lambda;
@@ -287,8 +288,8 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_DATA2:
       temp_fuelLoad = currentStatus.fuelLoad * 10U;
-      temp_fuelPressure = (currentStatus.fuelPressure * 10) - 1013; //Signed value, scale 0.1, with 101.3kPa (1 atmosphere) offset
-      temp_oilPressure = (currentStatus.oilPressure * 10) - 1013;   //Signed value, scale 0.1, with 101.3kPa (1 atmosphere) offset
+      temp_fuelPressure = div100(currentStatus.fuelPressure * 6894UL) + 1013; //Convert from PSI to KPA and add 101.3kPa (1 atmosphere) offset. 0.1 scale
+      temp_oilPressure = div100(currentStatus.oilPressure * 6894UL) + 1013; //Convert from PSI to KPA and add 101.3kPa (1 atmosphere) offset. 0.1 scale
       outMsg.len = 8;
       outMsg.buf[0] = highByte(temp_fuelPressure); //Fuel pressure
       outMsg.buf[1] = lowByte(temp_fuelPressure);
