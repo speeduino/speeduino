@@ -1014,7 +1014,7 @@ struct config4 {
   byte idleAdvBins[6];
   byte idleAdvValues[6];
 
-  byte engineProtectMaxRPM;
+  byte engineProtectMinRPM;
 
   int16_t vvt2CL0DutyAng;
   byte vvt2PWMdir : 1;
