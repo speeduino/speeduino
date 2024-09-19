@@ -764,6 +764,10 @@ void doUpdates(void)
 
     //VSS max limit on launch control
     configPage10.lnchCtrlVss = 255;
+    
+    //Default all existing tunes to GM flex sensors
+    configPage2.flexFreqLow = 50;
+    configPage2.flexFreqHigh = 150;
 
     writeAllConfig();
     storeEEPROMVersion(24);

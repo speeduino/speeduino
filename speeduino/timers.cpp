@@ -298,15 +298,15 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     if(configPage2.flexEnabled == true)
     {
       byte tempEthPct = 0; 
-      if(flexCounter < 50)
+      if(flexCounter < configPage2.flexFreqLow)
       {
         tempEthPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
-      else if (flexCounter > 151) //1 pulse buffer
+      else if (flexCounter > (configPage2.flexFreqHigh + 1) ) //1 pulse buffer
       {
 
-        if(flexCounter < 169)
+        if(flexCounter < (configPage2.flexFreqLow + 19)) //20Hz above the max freq is considered an error condition. Everything below that should be treated as max value
         {
           tempEthPct = 100;
           flexCounter = 0;
@@ -320,7 +320,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       }
       else
       {
-        tempEthPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        tempEthPct = flexCounter - configPage2.flexFreqLow; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
 
