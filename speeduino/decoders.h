@@ -50,6 +50,11 @@
 #define BIT_DECODER_VALID_TRIGGER       5 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 #define BIT_DECODER_TOOTH_ANG_CORRECT   6 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
 
+#define TRIGGER_FILTER_OFF              0
+#define TRIGGER_FILTER_LITE             1
+#define TRIGGER_FILTER_MEDIUM           2
+#define TRIGGER_FILTER_AGGRESSIVE       3
+
 //220 bytes free
 extern volatile uint8_t decoderState;
 

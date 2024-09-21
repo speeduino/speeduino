@@ -392,13 +392,34 @@ static __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
  * Sets the new filter time based on the current settings.
  * This ONLY works for even spaced decoders.
  */
-static inline void setFilter(unsigned long curGap)
+static void setFilter(unsigned long curGap)
 {
+  /*
   if(configPage4.triggerFilter == 0) { triggerFilterTime = 0; } //trigger filter is turned off.
   else if(configPage4.triggerFilter == 1) { triggerFilterTime = curGap >> 2; } //Lite filter level is 25% of previous gap
   else if(configPage4.triggerFilter == 2) { triggerFilterTime = curGap >> 1; } //Medium filter level is 50% of previous gap
   else if (configPage4.triggerFilter == 3) { triggerFilterTime = (curGap * 3) >> 2; } //Aggressive filter level is 75% of previous gap
   else { triggerFilterTime = 0; } //trigger filter is turned off.
+  */
+
+  switch(configPage4.triggerFilter)
+  {
+    case TRIGGER_FILTER_OFF: 
+      triggerFilterTime = 0;
+      break;
+    case TRIGGER_FILTER_LITE: 
+      triggerFilterTime = curGap >> 2;
+      break;
+    case TRIGGER_FILTER_MEDIUM: 
+      triggerFilterTime = curGap >> 1;
+      break;
+    case TRIGGER_FILTER_AGGRESSIVE: 
+      triggerFilterTime = (curGap * 3) >> 2;
+      break;
+    default:
+      triggerFilterTime = 0;
+      break;
+  }
 }
 
 /**
@@ -909,12 +930,14 @@ void triggerPri_DualWheel(void)
       if( (configPage2.perToothIgn == true) && (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+        uint16_t currentTooth;
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
-          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
+          currentTooth = (configPage4.triggerTeeth + toothCurrentCount); 
         }
-        else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
+        else{ currentTooth = toothCurrentCount; }
+        checkPerToothTiming(crankAngle, currentTooth);
       }
    } //Trigger filter
 }
@@ -1121,8 +1144,9 @@ void triggerPri_BasicDistributor(void)
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       crankAngle = ignitionLimits((crankAngle));
-      if(toothCurrentCount > (triggerActualTeeth/2) ) { checkPerToothTiming(crankAngle, (toothCurrentCount - (triggerActualTeeth/2))); }
-      else { checkPerToothTiming(crankAngle, toothCurrentCount); }
+      uint16_t currentTooth = toothCurrentCount;
+      if(toothCurrentCount > (triggerActualTeeth/2) ) { currentTooth = (toothCurrentCount - (triggerActualTeeth/2)); }
+      checkPerToothTiming(crankAngle, currentTooth);
     }
 
     toothLastMinusOneToothTime = toothLastToothTime;
