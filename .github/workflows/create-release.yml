@@ -53,7 +53,7 @@ jobs:
         curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini"                "https://speeduino.com:2078/$TAG_NAME.ini"
 
         wget https://speeduino.com/fw/versions
-        sed -i "1s/^/$TAG_NAME\n/"" versions
+        sed -i "1s/^/$TAG_NAME\n/" versions
         curl --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./versions"                               "https://speeduino.com:2078/versions"
         
     

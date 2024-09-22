@@ -35,8 +35,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
         pip install wheel
-        platformio update
-        platformio platform update
+        platformio upgrade
+        platformio pkg update
         
     - name: Run Unit Tests
       env:
