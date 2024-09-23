@@ -208,7 +208,44 @@ void loop(void)
         BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
       #endif
     }
-    
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_50HZ);
+
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(50);
+      #endif
+
+    }
+    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
+    {
+      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
+      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
+      boostControl();
+      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
+      vvtControl();
+      //Water methanol injection
+      wmiControl();
+      #if TPS_READ_FREQUENCY == 30
+        readTPS();
+      #endif
+      if (configPage2.canWBO == 0)
+      {
+        readO2();
+        readO2_2();
+      }
+      
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(30);
+      #endif
+
+      #ifdef SD_LOGGING
+        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+      #endif
+
+      //Check for any outstanding EEPROM writes.
+      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+    }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
@@ -225,11 +262,12 @@ void loop(void)
 
       checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(15);
+      #endif
+
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > TOOTH_LOG_SIZE) { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
-
-      
-
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
@@ -244,37 +282,13 @@ void loop(void)
       currentStatus.vss = getSpeed();
       currentStatus.gear = getGear();
 
+      #if defined(NATIVE_CAN_AVAILABLE)
+      sendCANBroadcast(10);
+      #endif
+
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
-    }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
-    {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
-      //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      boostControl();
-      //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
-      vvtControl();
-      //Water methanol injection
-      wmiControl();
-      #if defined(NATIVE_CAN_AVAILABLE)
-      if (configPage2.canBMWCluster == true) { sendBMWCluster(); }
-      if (configPage2.canVAGCluster == true) { sendVAGCluster(); }
-      #endif
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
-      if (configPage2.canWBO == 0)
-      {
-        readO2();
-        readO2_2();
-      }      
-      #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
-      #endif
-
-      //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
@@ -434,6 +448,7 @@ void loop(void)
 
       //Begin the fuel calculation
       //Calculate an injector pulsewidth from the VE
+      currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
       currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
@@ -1199,47 +1214,47 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  uint16_t iVE, iCorrections;
+  uint16_t iVE;
   uint16_t iMAP = 100;
   uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
-
-  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  byte bitShift = 7;
-  if (corrections > 511 ) { bitShift = 6; }
-  if (corrections > 1023) { bitShift = 5; }
-  
+ 
   //iVE = ((unsigned int)VE << 7) / 100;
-  iVE = div100(((uint16_t)VE << 7));
+  iVE = div100(((uint16_t)VE << 7U));
 
   //Check whether either of the multiply MAP modes is turned on
   //if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = div100( ((uint16_t)MAP << 7U) ); }
-  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7) / currentStatus.baro; }
+  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7U) / currentStatus.baro; }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+    iAFR = ((unsigned int)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    iAFR = ((unsigned int)configPage2.stoich << 7) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    iAFR = ((unsigned int)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
-  //iCorrections = (corrections << bitShift) / 100;
-  iCorrections = div100((corrections << bitShift));
 
-
-  uint32_t intermediate = ((uint32_t)REQ_FUEL * (uint32_t)iVE) >> 7; //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { intermediate = (intermediate * (uint32_t)iMAP) >> 7; }
+  uint32_t intermediate = rshift<7U>((uint32_t)REQ_FUEL * (uint32_t)iVE); //Need to use an intermediate value to avoid overflowing the long
+  if ( configPage2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = (intermediate * (uint32_t)iAFR) >> 7;  
+    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);  
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    intermediate = (intermediate * (uint32_t)iAFR) >> 7;
+    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);
   }
-  
-  intermediate = (intermediate * (uint32_t)iCorrections) >> bitShift;
+
+  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
+  if (corrections < 512 ) { 
+    intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
+  } else if (corrections < 1024 ) { 
+    intermediate = rshift<6U>(intermediate * div100(lshift<6U>(corrections)));
+  } else {
+    intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
+  }
+
   if (intermediate != 0)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
@@ -1674,10 +1689,10 @@ void checkLaunchAndFlatShift()
 
   //Default flags to off
   currentStatus.launchingHard = false; 
-  BIT_CLEAR(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
   currentStatus.flatShiftingHard = false;
 
-  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
+  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS)  &&  ( (configPage2.vssMode > 0) && (currentStatus.vss <= configPage10.lnchCtrlVss) ) ) 
   { 
     //Check whether RPM is above the launch limit
     uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
@@ -1687,7 +1702,7 @@ void checkLaunchAndFlatShift()
     {
       //HardCut rev limit for 2-step launch control.
       currentStatus.launchingHard = true; 
-      BIT_SET(currentStatus.spark, BIT_SPARK_HLAUNCH); 
+      BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
     }
   } 
   else 

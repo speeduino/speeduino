@@ -65,11 +65,9 @@
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35
     #define BOARD_H "board_teensy35.h"
-    #define BOARD_MAX_ADC_PINS  22 //Number of analog pins
   #elif defined(__IMXRT1062__)
     #define CORE_TEENSY41
     #define BOARD_H "board_teensy41.h"
-    #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
   #endif
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
@@ -153,29 +151,30 @@
 #define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
 
 //Define masks for spark variable
-#define BIT_SPARK_HLAUNCH         0  //Hard Launch indicator
-#define BIT_SPARK_SLAUNCH         1  //Soft Launch indicator
-#define BIT_SPARK_HRDLIM          2  //Hard limiter indicator
-#define BIT_SPARK_SFTLIM          3  //Soft limiter indicator
-#define BIT_SPARK_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_SPARK_ERROR           5  // Error is detected
-#define BIT_SPARK_IDLE            6  // idle on
-#define BIT_SPARK_SYNC            7  // Whether engine has sync or not
+#define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
+#define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
+#define BIT_STATUS2_HRDLIM          2  //Hard limiter indicator
+#define BIT_STATUS2_SFTLIM          3  //Soft limiter indicator
+#define BIT_STATUS2_BOOSTCUT        4  //Spark component of MAP based boost cut out
+#define BIT_STATUS2_ERROR           5  // Error is detected
+#define BIT_STATUS2_IDLE            6  // idle on
+#define BIT_STATUS2_SYNC            7  // Whether engine has sync or not
 
-#define BIT_SPARK2_FLATSH         0  //Flat shift hard cut
-#define BIT_SPARK2_FLATSS         1  //Flat shift soft cut
-#define BIT_SPARK2_SPARK2_ACTIVE  2
-#define BIT_SPARK2_UNUSED4        3
-#define BIT_SPARK2_UNUSED5        4
-#define BIT_SPARK2_UNUSED6        5
-#define BIT_SPARK2_UNUSED7        6
-#define BIT_SPARK2_UNUSED8        7
+#define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
+#define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
+#define BIT_STATUS5_SPARK2_ACTIVE  2
+#define BIT_STATUS5_KNOCK_ACTIVE   3
+#define BIT_STATUS5_KNOCK_PULSE    4
+#define BIT_STATUS5_UNUSED6        5
+#define BIT_STATUS5_UNUSED7        6
+#define BIT_STATUS5_UNUSED8        7
 
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
 #define BIT_TIMER_10HZ            2
 #define BIT_TIMER_15HZ            3
 #define BIT_TIMER_30HZ            4
+#define BIT_TIMER_50HZ            5
 #define BIT_TIMER_200HZ           6
 #define BIT_TIMER_1KHZ            7
 
@@ -210,10 +209,12 @@
 #define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
 
 #ifndef UNIT_TEST 
-#define TOOTH_LOG_SIZE      127
+#define TOOTH_LOG_SIZE      127U
 #else
-#define TOOTH_LOG_SIZE      1
+#define TOOTH_LOG_SIZE      1U
 #endif
+// Some code relies on TOOTH_LOG_SIZE being uint8_t.
+static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 
 #define O2_CALIBRATION_PAGE   2U
 #define IAT_CALIBRATION_PAGE  1U
@@ -278,8 +279,10 @@
 #define EVEN_FIRE           0
 #define ODD_FIRE            1
 
-#define EGO_ALGORITHM_SIMPLE  0
-#define EGO_ALGORITHM_PID     2
+#define EGO_ALGORITHM_SIMPLE   0U
+#define EGO_ALGORITHM_INVALID1 1U
+#define EGO_ALGORITHM_PID      2U
+#define EGO_ALGORITHM_NONE     3U
 
 #define STAGING_MODE_TABLE  0
 #define STAGING_MODE_AUTO   1
@@ -305,6 +308,9 @@
 #define KNOCK_MODE_DIGITAL  1
 #define KNOCK_MODE_ANALOG   2
 
+#define KNOCK_TRIGGER_HIGH  0
+#define KNOCK_TRIGGER_LOW   1
+
 #define FUEL2_MODE_OFF      0
 #define FUEL2_MODE_MULTIPLY 1
 #define FUEL2_MODE_ADD      2
@@ -327,10 +333,10 @@
 #define SPARK2_CONDITION_TPS 2
 #define SPARK2_CONDITION_ETH 3
 
-#define RESET_CONTROL_DISABLED             0
-#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1
-#define RESET_CONTROL_PREVENT_ALWAYS       2
-#define RESET_CONTROL_SERIAL_COMMAND       3
+#define RESET_CONTROL_DISABLED             0U
+#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1U
+#define RESET_CONTROL_PREVENT_ALWAYS       2U
+#define RESET_CONTROL_SERIAL_COMMAND       3U
 
 #define OPEN_LOOP_BOOST     0
 #define CLOSED_LOOP_BOOST   1
@@ -523,7 +529,7 @@ extern byte triggerInterrupt3;
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
-extern unsigned long revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+extern uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
 extern volatile unsigned long ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
@@ -633,8 +639,10 @@ struct statuses {
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
   volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
-  volatile byte spark;   ///< Spark status/control indicator bits (launch control, boost cut, spark errors, See BIT_SPARK_* defines)
-  volatile byte spark2;  ///< Spark 2 ... (See also @ref config10 spark2* members and BIT_SPARK2_* defines)
+  volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
+  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
+  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
+  volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
@@ -661,7 +669,6 @@ struct statuses {
   uint16_t canin[16]; ///< 16bit raw value of selected canin data for channels 0-15
   uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it every time it's used (Config page value is stored divided by 10) */
-  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
@@ -673,7 +680,7 @@ struct statuses {
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   volatile byte syncLossCounter;
   byte knockRetard;
-  bool knockActive;
+  volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
   int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
@@ -689,7 +696,6 @@ struct statuses {
   byte engineProtectStatus;
   byte fanDuty;
   byte wmiPW;
-  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt2TargetAngle;
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
@@ -859,8 +865,8 @@ struct config2 {
   byte idleAdvVss;
   byte mapSwitchPoint;
 
-  byte canBMWCluster : 1;
-  byte canVAGCluster : 1;
+  byte unused1_126_1 : 1;
+  byte unused1_126_2 : 1;
   byte canWBO : 2 ;
   byte vssAuxCh : 4;
 
@@ -871,6 +877,13 @@ struct config2 {
 #else
   } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
 #endif
+
+#define IDLEADVANCE_MODE_OFF      0U
+#define IDLEADVANCE_MODE_ADDED    1U
+#define IDLEADVANCE_MODE_SWITCHED 2U
+
+#define IDLEADVANCE_ALGO_TPS      0U
+#define IDLEADVANCE_ALGO_CTPS     1U
 
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
@@ -962,7 +975,8 @@ struct config4 {
   byte vvt2PWMdir : 1;
   byte inj4cylPairing : 2;
   byte dwellErrCorrect : 1;
-  byte unusedBits4 : 4;
+  byte CANBroadcastProtocol : 3;
+  byte unusedBits4 : 1;
   byte ANGLEFILTER_VVT;
   byte FILTER_FLEX;
   byte vvtMinClt;
@@ -1329,9 +1343,11 @@ struct config10 {
   byte spark2InputPolarity : 1;
   byte spark2InputPullup : 1;
 
+  //Byte 190
   byte oilPressureProtTime;
 
-  byte unused11_191_191;
+  //Byte 191
+  byte lnchCtrlVss;
 
 #if defined(CORE_AVR)
   };

@@ -1,6 +1,14 @@
 #!/bin/bash
+# uncomment to echo *fully* expanded script commands to terminal
+# set -x
 
-script_folder="$(dirname $(readlink -f $0))"
+
+get_abs_filename() {
+  # $1 : relative filename
+  echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+}
+
+script_folder=$(get_abs_filename "$(dirname $(readlink -f $0))")
 
 # Initialize variables with defaults
 source_folder="$script_folder/../speeduino" # -s, --source
@@ -27,6 +35,12 @@ function parse_command_line() {
 }
 
 parse_command_line "$@"
+
+# Have to use absolute paths for source:
+# 1. CPPCheck (or the shell) expands globs to absolute paths.
+# 2. CPPCheck matches paths from the command line using simple string comparisons
+#   2.1. E.g. exclusion folders
+source_folder=$(get_abs_filename "$source_folder")
 
 cppcheck_bin="${cppcheck_path}/cppcheck"
 cppcheck_misra="${cppcheck_path}/addons/misra.py"

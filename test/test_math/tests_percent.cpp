@@ -2,6 +2,7 @@
 #include "test_fp_support.h"
 #include "maths.h"
 #include "../timer.hpp"
+#include "../test_utils.h"
 
 static void test_percent(uint8_t percent, uint16_t value) {
   assert_rounded_div((uint32_t)percent*value, 100, percentage(percent, value));
@@ -107,10 +108,13 @@ void test_maths_percentage_perf(void)
 
 void testPercent()
 {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_maths_percent_U8);
   RUN_TEST(test_maths_percent_U16);
   RUN_TEST(test_maths_halfpercent_U8);
   RUN_TEST(test_maths_halfpercent_U16);
   RUN_TEST(test_maths_halfPercentage_perf);
   RUN_TEST(test_maths_percentage_perf);
+  }
 }

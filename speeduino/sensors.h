@@ -20,9 +20,6 @@
 #define BARO_MIN      65
 #define BARO_MAX      108
 
-#define KNOCK_MODE_DIGITAL  1
-#define KNOCK_MODE_ANALOG   2
-
 #define VSS_GEAR_HYSTERESIS 10
 #define VSS_SAMPLES         4 //Must be a power of 2 and smaller than 255
 
@@ -39,8 +36,6 @@ extern volatile unsigned long flexPulseWidth;
 #endif
 
 #define ADMUX_DEFAULT_CONFIG  0x40 //AVCC reference, ADC0 input, right adjusted, ADC enabled
-
-extern volatile byte knockCounter;
 
 extern unsigned int MAPcount; //Number of samples taken in the current MAP cycle
 extern uint32_t MAPcurRev; //Tracks which revolution we're sampling on
@@ -60,6 +55,7 @@ void initialiseADC(void);
 void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
 void readO2_2(void);
 void flexPulse(void);
+void knockPulse(void);
 uint32_t vssGetPulseGap(byte toothHistoryIndex);
 void vssPulse(void);
 uint16_t getSpeed(void);
@@ -75,5 +71,6 @@ void readBat(void);
 void readBaro(void);
 void readMAP(void);
 void instanteneousMAPReading(void);
+uint8_t getAnalogKnock(void);
 
 #endif // SENSORS_H

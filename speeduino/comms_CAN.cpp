@@ -12,6 +12,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #if defined(NATIVE_CAN_AVAILABLE)
 #include "comms_CAN.h"
 #include "utilities.h"
+#include "maths.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;
@@ -57,27 +58,79 @@ void CAN_write()
   Can0.write(outMsg);
 }
 
-void sendBMWCluster()
+void sendCANBroadcast(uint8_t frequency)
 {
-  DashMessage(CAN_BMW_DME1);
-  Can0.write(outMsg);
-  DashMessage(CAN_BMW_DME2);
-  Can0.write(outMsg);
-  DashMessage(CAN_BMW_DME4);
-  Can0.write(outMsg);
+  switch(configPage4.CANBroadcastProtocol)
+  {
+    case CAN_BROADCAST_PROTOCOL_OFF:
+      break;
+    case CAN_BROADCAST_PROTOCOL_BMW:
+      if(frequency == 30)
+      {
+        outMsg.flags.extended = 0; //Make sure to set this to standard
+        DashMessage(CAN_BMW_DME1);
+        Can0.write(outMsg);
+        DashMessage(CAN_BMW_DME2);
+        Can0.write(outMsg);
+      }
+      else if(frequency == 10)
+      {
+        outMsg.flags.extended = 0; //Make sure to set this to standard
+        DashMessage(CAN_BMW_DME4);
+        Can0.write(outMsg);
+      }
+      break;
+    case CAN_BROADCAST_PROTOCOL_VAG:
+      //All VAG broadcasts are at 30Hz
+      if(frequency == 30)
+      {
+        outMsg.flags.extended = 0; //Make sure to set this to standard
+        DashMessage(CAN_VAG_RPM);
+        Can0.write(outMsg);
+        DashMessage(CAN_VAG_VSS);
+        Can0.write(outMsg);
+      }
+      break;
+    case CAN_BROADCAST_PROTOCOL_HALTECH:
+      //Haltech has broadcasts over multiple frequencies
+      if(frequency == 50)
+      {
+        DashMessage(CAN_HALTECH_DATA1);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_DATA2);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_DATA3);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_PW);
+        Can0.write(outMsg);
+      }
+      else if(frequency == 15)
+      {
+        //Note: Haltech lists these as being 20Hz messages, but as we don't have a 20Hz flag we'll use 15Hz instead
+        DashMessage(CAN_HALTECH_LAMBDA);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_TRIGGER);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_VSS);
+        Can0.write(outMsg);
+      }
+      else if(frequency == 10)
+      {
+        DashMessage(CAN_HALTECH_DATA4);
+        Can0.write(outMsg);
+        DashMessage(CAN_HALTECH_DATA5);
+        Can0.write(outMsg);
+      }
+      break;
+    
+    default:
+      break;
+  }
 }
 
-void sendVAGCluster()
-{
-  DashMessage(CAN_VAG_RPM);
-  Can0.write(outMsg);
-  DashMessage(CAN_VAG_VSS);
-  Can0.write(outMsg);
-}
 void receiveCANwbo() 
 {
-  // Currently only RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
-  if(configPage2.canWBO == CAN_WBO_RUSEFI)
+  if(configPage2.canWBO == CAN_WBO_RUSEFI) //RusEFI CAN Wideband supported: https://github.com/mck1117/wideband
   {
     outMsg.id = 0xEF50000;
     outMsg.flags.extended = 1;
@@ -85,28 +138,24 @@ void receiveCANwbo()
     outMsg.buf[0] = currentStatus.battery10; // We don't do any conversion since factor is 0.1 and speeduino value is x10
     outMsg.buf[1] = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ? 0x1 : 0x0; // Enable heater once engine is running (ie. above cranking rpm), this condition can be changed to CLT above certain temp and so on.
     Can0.write(outMsg);
+    outMsg.flags.extended = 0; //Make sure to set this back to standard to avoid future problems
     if ((inMsg.id == 0x190 || inMsg.id == 0x192))
     {
       uint32_t inLambda;
       inLambda = (word(inMsg.buf[3], inMsg.buf[2])); // Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
       if(inMsg.buf[1] == 0x1) // Checking if lambda is valid
       {
+        inLambda = (inLambda * configPage2.stoich) / 10000; // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
         switch(inMsg.id)
         {
           case 0x190:
-          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
-            currentStatus.O2 = 250;
-            break;
-          }
-          currentStatus.O2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          if (inLambda > 250) { currentStatus.O2 = 250; } //Check if we don't overflow the 8bit O2 variable
+          else { currentStatus.O2 = inLambda & 0xFF; }
           break;
 
           case 0x192:
-          if ((inLambda * configPage2.stoich / 10000) > 250) { //Check if we dont overflow the 8bit O2 variable
-            currentStatus.O2 = 250;
-            break;
-          }
-          currentStatus.O2_2 = (unsigned int)(inLambda * configPage2.stoich / 10000); // Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+          if (inLambda > 250) { currentStatus.O2_2 = 250; } //Check if we don't overflow the 8bit O2 variable
+          else { currentStatus.O2_2 = inLambda & 0xFF; }
           break;
 
           default:
@@ -115,17 +164,49 @@ void receiveCANwbo()
       }
     }
   }
+  else if(configPage2.canWBO == CAN_WBO_AEM) //AEM 30-0300 X-Series UEGO Gauge
+  {
+    if(inMsg.id == 0x180)  //AEM wideband default ID1 message id
+    {
+      uint32_t inLambda;
+      inLambda = (word(inMsg.buf[0], inMsg.buf[1])); //Combining 2 bytes of data into single variable factor is 0.0001 so lambda 1 comes in as 10K
+      if(BIT_CHECK(inMsg.buf[6], 7)) //Checking if lambda is valid
+      {
+        inLambda = (inLambda * configPage2.stoich) / 10000; //Multiplying lambda by stoich ratio to get AFR and dividing it by 10000 to get correct value
+        if (inLambda > UINT8_MAX) { currentStatus.O2 = UINT8_MAX; } //Check if we don't overflow the 8bit O2 variable
+        else { currentStatus.O2 = inLambda; }
+      }
+    }
+  }
 }
-// switch case for gathering all data to message based on CAN Id.
+
+// All supported definitions/protocols for CAN Dash broadcasts
 void DashMessage(uint16_t DashMessageID)
 {
+  uint16_t temp_TPS;
+  uint16_t temp_MAP;
+  uint16_t temp_Baro;
+  uint16_t temp_CLT;
+  uint16_t temp_IAT;
+  uint16_t temp_VSS;
+  uint16_t temp_VVT1;
+  uint16_t temp_VVT2;
+  uint16_t temp_fuelLoad;
+  uint16_t temp_fuelTemp;
+  uint16_t temp_fuelPressure;
+  uint16_t temp_oilPressure;
+  int16_t temp_Advance;
+  uint16_t temp_DutyCycle;
+  uint16_t temp_Lambda;
+  uint16_t temp_BoostTarget;
+
+  outMsg.id = DashMessageID;
   switch (DashMessageID)
   {
     case CAN_BMW_DME1:
       uint32_t temp_RPM;
-      temp_RPM = currentStatus.RPM * 64;  //RPM conversion is currentStatus.RPM * 6.4, but this does it without floats.
-      temp_RPM = temp_RPM / 10;
-      outMsg.id = DashMessageID;
+      temp_RPM = currentStatus.RPM * 64UL;  //RPM conversion is currentStatus.RPM * 6.4, but this does it without floats.
+      temp_RPM = temp_RPM / 10U;
       outMsg.len = 8;
       outMsg.buf[0] = 0x05;  //bitfield, Bit0 = 1 = terminal 15 on detected, Bit2 = 1 = the ASC message ASC1 was received within the last 500 ms and contains no plausibility errors
       outMsg.buf[1] = 0x0C;  //Indexed Engine Torque in % of C_TQ_STND TBD do torque calculation.
@@ -138,29 +219,23 @@ void DashMessage(uint16_t DashMessageID)
     break;
 
     case CAN_BMW_DME2:
-      uint8_t temp_TPS;
-      uint8_t temp_BARO;
-      uint16_t temp_CLT;
       temp_TPS = map(currentStatus.TPS, 0, 200, 1, 254);//TPS value conversion (from 0x01 to 0xFE)
       temp_CLT = (((currentStatus.coolant - CALIBRATION_TEMPERATURE_OFFSET) + 48)*4/3); //CLT conversion (actual value to add is 48.373, but close enough)
-      if (temp_CLT > 255) { temp_CLT = 255; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
-      temp_BARO = currentStatus.baro;
+      if (temp_CLT > UINT8_MAX) { temp_CLT = UINT8_MAX; } //CLT conversion can yield to higher values than what fits to byte, so limit the maximum value to 255.
 
-      outMsg.id = DashMessageID;
-      outMsg.len = 7;
+      outMsg.len = 8;
       outMsg.buf[0] = 0x11;  //Multiplexed Information
       outMsg.buf[1] = temp_CLT;
-      outMsg.buf[2] = temp_BARO;
+      outMsg.buf[2] = currentStatus.baro;
       outMsg.buf[3] = 0x08;  //bitfield, Bit0 = 0 = Clutch released, Bit 3 = 1 = engine running
       outMsg.buf[4] = 0x00;  //TPS_VIRT_CRU_CAN (Not used)
-      outMsg.buf[5] = temp_TPS;
+      outMsg.buf[5] = (uint8_t)temp_TPS;
       outMsg.buf[6] = 0x00;  //bitfield, Bit0 = 0 = brake not actuated, Bit1 = 0 = brake switch system OK etc...
       outMsg.buf[7] = 0x00;  //not used, but set to zero just in case.
     break;
 
-    case 0x545:       //fuel consumption and CEl light for BMW e46/e39/e38 instrument cluster
+    case CAN_BMW_DME4:       //fuel consumption and CEl light for BMW e46/e39/e38 instrument cluster
                       //fuel consumption calculation not implemented yet. But this still needs to be sent to get rid of the CEL and EML fault lights on the dash.
-      outMsg.id = DashMessageID;
       outMsg.len = 5;
       outMsg.buf[0] = 0x00;  //Check engine light (binary 10), Cruise light (binary 1000), EML (binary 10000).
       outMsg.buf[1] = 0x00;  //LSB Fuel consumption
@@ -170,9 +245,8 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[4] = 0x7E; //this is oil temp
     break;
 
-    case 0x280:       //RPM for VW instrument cluster
+    case CAN_VAG_RPM:       //RPM for VW instrument cluster
       temp_RPM =  currentStatus.RPM * 4; //RPM conversion
-      outMsg.id = DashMessageID;
       outMsg.len = 8;
       outMsg.buf[0] = 0x49;
       outMsg.buf[1] = 0x0E;
@@ -184,10 +258,8 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[7] = 0x0E;
     break;
 
-    case 0x5A0:       //VSS for VW instrument cluster
-      uint16_t temp_VSS;
-      temp_VSS =  currentStatus.vss * 133; //VSS conversion
-      outMsg.id = DashMessageID;
+    case CAN_VAG_VSS:       //VSS for VW instrument cluster
+      temp_VSS =  currentStatus.vss * 133U; //VSS conversion
       outMsg.len = 8;
       outMsg.buf[0] = 0xFF;
       outMsg.buf[1] = lowByte(temp_VSS);
@@ -197,6 +269,123 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[5] = 0x00;
       outMsg.buf[6] = 0x00;
       outMsg.buf[7] = 0xAD;
+    break;
+
+    case CAN_HALTECH_DATA1:
+      temp_MAP = currentStatus.MAP * 10U;
+      temp_TPS = currentStatus.TPS * 5U; //TPS value to 0.1. TPS is already in 0.5 increments, so multiply by 5
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(currentStatus.RPM);
+      outMsg.buf[1] = lowByte(currentStatus.RPM);
+      outMsg.buf[2] = highByte(temp_MAP);
+      outMsg.buf[3] = lowByte(temp_MAP);
+      outMsg.buf[4] = highByte(temp_TPS);
+      outMsg.buf[5] = lowByte(temp_TPS);
+      //Next 2 bytes are coolant pressure, not supported
+      outMsg.buf[6] = 0x00;
+      outMsg.buf[7] = 0x00;
+    break;
+
+    case CAN_HALTECH_DATA2:
+      temp_fuelLoad = currentStatus.fuelLoad * 10U;
+      temp_fuelPressure = div100(currentStatus.fuelPressure * 6894UL) + 1013; //Convert from PSI to KPA and add 101.3kPa (1 atmosphere) offset. 0.1 scale
+      temp_oilPressure = div100(currentStatus.oilPressure * 6894UL) + 1013; //Convert from PSI to KPA and add 101.3kPa (1 atmosphere) offset. 0.1 scale
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(temp_fuelPressure); //Fuel pressure
+      outMsg.buf[1] = lowByte(temp_fuelPressure);
+      outMsg.buf[2] = highByte(temp_oilPressure); //Oil Pressure
+      outMsg.buf[3] = lowByte(temp_oilPressure);
+      outMsg.buf[4] = highByte(temp_fuelLoad);
+      outMsg.buf[5] = lowByte(temp_fuelLoad);
+      outMsg.buf[6] = 0x00; //Wastegate pressure
+      outMsg.buf[7] = 0x00;
+    break;
+
+    case CAN_HALTECH_DATA3:
+      temp_Advance = currentStatus.advance * 10U; //Note: Signed value
+      //Convert PW into duty cycle
+      temp_DutyCycle = (currentStatus.PW1 * 100UL * currentStatus.nSquirts) / revolutionTime; 
+      if (configPage2.strokes == FOUR_STROKE) { temp_DutyCycle = temp_DutyCycle / 2U; }
+
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(temp_DutyCycle);
+      outMsg.buf[1] = lowByte(temp_DutyCycle);
+      outMsg.buf[2] = 0x00; //TODO: Staging Duty Cycle. 
+      outMsg.buf[3] = 0x00;
+      outMsg.buf[4] = highByte(temp_Advance);
+      outMsg.buf[5] = lowByte(temp_Advance);
+      outMsg.buf[6] = 0x00; //Unused
+      outMsg.buf[7] = 0x00; //Unused
+    break;
+
+    case CAN_HALTECH_PW:
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(currentStatus.PW1);
+      outMsg.buf[1] = lowByte(currentStatus.PW1);
+      outMsg.buf[2] = highByte(currentStatus.PW2);
+      outMsg.buf[3] = lowByte(currentStatus.PW2);
+      outMsg.buf[4] = highByte(currentStatus.PW3);
+      outMsg.buf[5] = lowByte(currentStatus.PW3);
+      outMsg.buf[6] = highByte(currentStatus.PW4);
+      outMsg.buf[7] = lowByte(currentStatus.PW4);
+    break;
+
+    case CAN_HALTECH_LAMBDA:
+      temp_Lambda = (currentStatus.O2 * 1000U) / configPage2.stoich;
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(temp_Lambda);
+      outMsg.buf[1] = lowByte(temp_Lambda);
+      temp_Lambda = (currentStatus.O2_2 * 1000U) / configPage2.stoich;
+      outMsg.buf[2] = highByte(temp_Lambda);
+      outMsg.buf[3] = lowByte(temp_Lambda);
+      outMsg.buf[4] = 0x00; //Lambda 3
+      outMsg.buf[5] = 0x00; //Lambda 3
+      outMsg.buf[6] = 0x00; //Lambda 4
+      outMsg.buf[7] = 0x00; //Lambda 4
+    break;
+
+    case CAN_HALTECH_VSS:
+      temp_VSS = currentStatus.vss * 10U;
+      temp_VVT1 = currentStatus.vvt1Angle * 10U;
+      temp_VVT2 = currentStatus.vvt2Angle * 10U;
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(temp_VSS);
+      outMsg.buf[1] = lowByte(temp_VSS);
+      outMsg.buf[2] = 0x00;
+      outMsg.buf[3] = currentStatus.gear;
+      outMsg.buf[4] = highByte(temp_VVT1);
+      outMsg.buf[5] = lowByte(temp_VVT1);
+      outMsg.buf[6] = highByte(temp_VVT2);
+      outMsg.buf[7] = lowByte(temp_VVT2);
+    break;
+
+    case CAN_HALTECH_DATA4:
+      temp_BoostTarget = currentStatus.boostTarget * 10U;
+      temp_Baro = currentStatus.baro * 10U;
+      outMsg.len = 8;
+      outMsg.buf[0] = 0x00; //High byte for battery voltage, which is not used (Max battery voltage is 25.5 or 255)
+      outMsg.buf[1] = currentStatus.battery10;
+      outMsg.buf[2] = 0x00; //Unused
+      outMsg.buf[3] = 0x00; //Unused
+      outMsg.buf[4] = highByte(temp_BoostTarget);
+      outMsg.buf[5] = lowByte(temp_BoostTarget);
+      outMsg.buf[6] = highByte(temp_Baro);
+      outMsg.buf[7] = lowByte(temp_Baro);
+    break;
+
+    case CAN_HALTECH_DATA5:
+      temp_CLT = (currentStatus.coolant + 273U) * 10U; //Convert to Kelvin and adjust to 0.1
+      temp_IAT = (currentStatus.IAT + 273U) * 10U; //Convert to Kelvin and adjust to 0.1
+      temp_fuelTemp = (currentStatus.fuelTemp + 273U) * 10U; //Convert to Kelvin and adjust to 0.1
+      outMsg.len = 8;
+      outMsg.buf[0] = highByte(temp_CLT);
+      outMsg.buf[1] = lowByte(temp_CLT);
+      outMsg.buf[2] = highByte(temp_IAT);
+      outMsg.buf[3] = lowByte(temp_IAT);
+      outMsg.buf[4] = highByte(temp_fuelTemp);
+      outMsg.buf[5] = lowByte(temp_fuelTemp);
+      outMsg.buf[6] = 0x00; //Oil Temperature
+      outMsg.buf[7] = 0x00; //Oil Temperature
     break;
 
     default:
@@ -258,6 +447,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
   uint16_t obdcalcH16;    //used in calcs  
 
   outMsg.len = 8;
+  outMsg.flags.extended = 0; //Make sure to set this to standard
   
   if (PIDmode == 0x01)
   {
@@ -364,7 +554,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         uint16_t temp_tpsPC;
         temp_tpsPC = currentStatus.TPS;
         obdcalcA = (temp_tpsPC <<8) / 200;     // (tpsPC *256) /200;
-        if (obdcalcA > 255){ obdcalcA = 255;}
+        if (obdcalcA > UINT8_MAX){ obdcalcA = UINT8_MAX;}
         outMsg.buf[0] =  0x03;                    // sending 3 bytes
         outMsg.buf[1] =  0x41;                    // Same as query, except that 40h is added to the mode value. So:41h = show current data ,42h = freeze frame ,etc.
         outMsg.buf[2] =  0x11;                    // pid code

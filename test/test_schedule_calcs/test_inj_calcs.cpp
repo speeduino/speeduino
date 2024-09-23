@@ -3,6 +3,7 @@
 #include "test_calcs_common.h"
 #include "schedule_calcs.h"
 #include "crankMaths.h"
+#include "../test_utils.h"
 
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 
@@ -279,6 +280,9 @@ static void test_calc_inj_timeout_720()
 // 
 void test_calc_inj_timeout(void)
 {
+  SET_UNITY_FILENAME() {
+
     RUN_TEST(test_calc_inj_timeout_360);
     RUN_TEST(test_calc_inj_timeout_720);
+  }
 }

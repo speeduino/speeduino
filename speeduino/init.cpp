@@ -7,6 +7,7 @@
 #include "updates.h"
 #include "speeduino.h"
 #include "timers.h"
+#include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "utilities.h"
@@ -28,6 +29,50 @@
   #include "SD_logger.h"
   #include "rtc_common.h"
 #endif
+
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
+#if !defined(UNIT_TEST)
+static inline 
+#endif
+void construct2dTables(void) {
+  //Repoint the 2D table structs to the config pages that were just loaded
+  construct2dTable(taeTable,                  _countof(configPage4.taeValues),                  configPage4.taeValues,                  configPage4.taeBins);
+  construct2dTable(maeTable,                  _countof(configPage4.maeRates),                   configPage4.maeRates,                   configPage4.maeBins);
+  construct2dTable(WUETable,                  _countof(configPage2.wueValues),                  configPage2.wueValues,                  configPage4.wueBins);
+  construct2dTable(ASETable,                  _countof(configPage2.asePct),                     configPage2.asePct,                     configPage2.aseBins);
+  construct2dTable(ASECountTable,             _countof(configPage2.aseCount),                   configPage2.aseCount,                   configPage2.aseBins);
+  construct2dTable(PrimingPulseTable,         _countof(configPage2.primePulse),                 configPage2.primePulse,                 configPage2.primeBins);
+  construct2dTable(crankingEnrichTable,       _countof(configPage10.crankingEnrichValues),      configPage10.crankingEnrichValues,      configPage10.crankingEnrichBins);
+  construct2dTable(dwellVCorrectionTable,     _countof(configPage4.dwellCorrectionValues),      configPage4.dwellCorrectionValues,      configPage6.voltageCorrectionBins);
+  construct2dTable(injectorVCorrectionTable,  _countof(configPage6.injVoltageCorrectionValues), configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
+  construct2dTable(IATDensityCorrectionTable, _countof(configPage6.airDenRates),                configPage6.airDenRates,                configPage6.airDenBins);
+  construct2dTable(baroFuelTable,             _countof(configPage4.baroFuelValues),             configPage4.baroFuelValues,             configPage4.baroFuelBins);
+  construct2dTable(IATRetardTable,            _countof(configPage4.iatRetValues),               configPage4.iatRetValues,               configPage4.iatRetBins);
+  construct2dTable(CLTAdvanceTable,           _countof(configPage4.cltAdvValues),               configPage4.cltAdvValues,               configPage4.cltAdvBins);
+  construct2dTable(idleTargetTable,           _countof(configPage6.iacCLValues),                configPage6.iacCLValues,                configPage6.iacBins);
+  construct2dTable(idleAdvanceTable,          _countof(configPage4.idleAdvValues),              configPage4.idleAdvValues,              configPage4.idleAdvBins);
+  construct2dTable(rotarySplitTable,          _countof(configPage10.rotarySplitValues),         configPage10.rotarySplitValues,         configPage10.rotarySplitBins);
+  construct2dTable(flexFuelTable,             _countof(configPage10.flexFuelAdj),               configPage10.flexFuelAdj,               configPage10.flexFuelBins);
+  construct2dTable(flexAdvTable,              _countof(configPage10.flexAdvAdj),                configPage10.flexAdvAdj,                configPage10.flexAdvBins);
+  construct2dTable(fuelTempTable,             _countof(configPage10.fuelTempValues),            configPage10.fuelTempValues,            configPage10.fuelTempBins);
+  construct2dTable(oilPressureProtectTable,   _countof(configPage10.oilPressureProtMins),       configPage10.oilPressureProtMins,       configPage10.oilPressureProtRPM);
+  construct2dTable(coolantProtectTable,       _countof(configPage9.coolantProtRPM),             configPage9.coolantProtRPM,             configPage9.coolantProtTemp);
+  construct2dTable(fanPWMTable,               _countof(configPage9.PWMFanDuty),                 configPage9.PWMFanDuty,                 configPage6.fanPWMBins);
+  construct2dTable(wmiAdvTable,               _countof(configPage10.wmiAdvAdj),                 configPage10.wmiAdvAdj,                 configPage10.wmiAdvBins);
+  construct2dTable(rollingCutTable,           _countof(configPage15.rollingProtCutPercent),     configPage15.rollingProtCutPercent,     configPage15.rollingProtRPMDelta);
+  construct2dTable(injectorAngleTable,        _countof(configPage2.injAng),                     configPage2.injAng,                     configPage2.injAngRPM);
+  construct2dTable(flexBoostTable,            _countof(configPage10.flexBoostAdj),              configPage10.flexBoostAdj,              configPage10.flexBoostBins);
+  construct2dTable(knockWindowStartTable,      _countof(configPage10.knock_window_angle),        configPage10.knock_window_angle, configPage10.knock_window_rpms);
+  construct2dTable(knockWindowDurationTable,   _countof(configPage10.knock_window_dur),          configPage10.knock_window_dur,   configPage10.knock_window_rpms);
+  construct2dTable(cltCalibrationTable,       _countof(cltCalibration_values), cltCalibration_values, cltCalibration_bins);
+  construct2dTable(iatCalibrationTable,       _countof(iatCalibration_values), iatCalibration_values, iatCalibration_bins);
+  construct2dTable(o2CalibrationTable,        _countof(o2Calibration_values),  o2Calibration_values,  o2Calibration_bins);
+}
 
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
@@ -66,7 +111,7 @@ void initialiseAll(void)
     ***********************************************************************************************************
     * EEPROM reset
     */
-    #if defined(EEPROM_RESET_PIN)
+    #if defined(EEPROM_RESET_PIN) && !defined(UNIT_TEST)
     uint32_t start_time = millis();
     byte exit_erase_loop = false; 
     pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
@@ -118,193 +163,27 @@ void initialiseAll(void)
   #endif
 
     Serial.begin(115200);
+    pPrimarySerial = &Serial; //Default to standard Serial interface
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
-    taeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
-    taeTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    taeTable.xSize = 4;
-    taeTable.values = configPage4.taeValues;
-    taeTable.axisX = configPage4.taeBins;
-    maeTable.valueSize = SIZE_BYTE; //Set this table to use byte values
-    maeTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    maeTable.xSize = 4;
-    maeTable.values = configPage4.maeRates;
-    maeTable.axisX = configPage4.maeBins;
-    WUETable.valueSize = SIZE_BYTE; //Set this table to use byte values
-    WUETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    WUETable.xSize = 10;
-    WUETable.values = configPage2.wueValues;
-    WUETable.axisX = configPage4.wueBins;
-    ASETable.valueSize = SIZE_BYTE;
-    ASETable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    ASETable.xSize = 4;
-    ASETable.values = configPage2.asePct;
-    ASETable.axisX = configPage2.aseBins;
-    ASECountTable.valueSize = SIZE_BYTE;
-    ASECountTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    ASECountTable.xSize = 4;
-    ASECountTable.values = configPage2.aseCount;
-    ASECountTable.axisX = configPage2.aseBins;
-    PrimingPulseTable.valueSize = SIZE_BYTE;
-    PrimingPulseTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    PrimingPulseTable.xSize = 4;
-    PrimingPulseTable.values = configPage2.primePulse;
-    PrimingPulseTable.axisX = configPage2.primeBins;
-    crankingEnrichTable.valueSize = SIZE_BYTE;
-    crankingEnrichTable.axisSize = SIZE_BYTE;
-    crankingEnrichTable.xSize = 4;
-    crankingEnrichTable.values = configPage10.crankingEnrichValues;
-    crankingEnrichTable.axisX = configPage10.crankingEnrichBins;
-
-    dwellVCorrectionTable.valueSize = SIZE_BYTE;
-    dwellVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    dwellVCorrectionTable.xSize = 6;
-    dwellVCorrectionTable.values = configPage4.dwellCorrectionValues;
-    dwellVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
-    injectorVCorrectionTable.valueSize = SIZE_BYTE;
-    injectorVCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    injectorVCorrectionTable.xSize = 6;
-    injectorVCorrectionTable.values = configPage6.injVoltageCorrectionValues;
-    injectorVCorrectionTable.axisX = configPage6.voltageCorrectionBins;
-    injectorAngleTable.valueSize = SIZE_INT;
-    injectorAngleTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    injectorAngleTable.xSize = 4;
-    injectorAngleTable.values = configPage2.injAng;
-    injectorAngleTable.axisX = configPage2.injAngRPM;
-    IATDensityCorrectionTable.valueSize = SIZE_BYTE;
-    IATDensityCorrectionTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    IATDensityCorrectionTable.xSize = 9;
-    IATDensityCorrectionTable.values = configPage6.airDenRates;
-    IATDensityCorrectionTable.axisX = configPage6.airDenBins;
-    baroFuelTable.valueSize = SIZE_BYTE;
-    baroFuelTable.axisSize = SIZE_BYTE;
-    baroFuelTable.xSize = 8;
-    baroFuelTable.values = configPage4.baroFuelValues;
-    baroFuelTable.axisX = configPage4.baroFuelBins;
-    IATRetardTable.valueSize = SIZE_BYTE;
-    IATRetardTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    IATRetardTable.xSize = 6;
-    IATRetardTable.values = configPage4.iatRetValues;
-    IATRetardTable.axisX = configPage4.iatRetBins;
-    CLTAdvanceTable.valueSize = SIZE_BYTE;
-    CLTAdvanceTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    CLTAdvanceTable.xSize = 6;
-    CLTAdvanceTable.values = (byte*)configPage4.cltAdvValues;
-    CLTAdvanceTable.axisX = configPage4.cltAdvBins;
-    idleTargetTable.valueSize = SIZE_BYTE;
-    idleTargetTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    idleTargetTable.xSize = 10;
-    idleTargetTable.values = configPage6.iacCLValues;
-    idleTargetTable.axisX = configPage6.iacBins;
-    idleAdvanceTable.valueSize = SIZE_BYTE;
-    idleAdvanceTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    idleAdvanceTable.xSize = 6;
-    idleAdvanceTable.values = (byte*)configPage4.idleAdvValues;
-    idleAdvanceTable.axisX = configPage4.idleAdvBins;
-    rotarySplitTable.valueSize = SIZE_BYTE;
-    rotarySplitTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    rotarySplitTable.xSize = 8;
-    rotarySplitTable.values = configPage10.rotarySplitValues;
-    rotarySplitTable.axisX = configPage10.rotarySplitBins;
-
-    flexFuelTable.valueSize = SIZE_BYTE;
-    flexFuelTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    flexFuelTable.xSize = 6;
-    flexFuelTable.values = configPage10.flexFuelAdj;
-    flexFuelTable.axisX = configPage10.flexFuelBins;
-    flexAdvTable.valueSize = SIZE_BYTE;
-    flexAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    flexAdvTable.xSize = 6;
-    flexAdvTable.values = configPage10.flexAdvAdj;
-    flexAdvTable.axisX = configPage10.flexAdvBins;
-    flexBoostTable.valueSize = SIZE_INT;
-    flexBoostTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins (NOTE THIS IS DIFFERENT TO THE VALUES!!)
-    flexBoostTable.xSize = 6;
-    flexBoostTable.values = configPage10.flexBoostAdj;
-    flexBoostTable.axisX = configPage10.flexBoostBins;
-    fuelTempTable.valueSize = SIZE_BYTE;
-    fuelTempTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    fuelTempTable.xSize = 6;
-    fuelTempTable.values = configPage10.fuelTempValues;
-    fuelTempTable.axisX = configPage10.fuelTempBins;
-
-    knockWindowStartTable.valueSize = SIZE_BYTE;
-    knockWindowStartTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowStartTable.xSize = 6;
-    knockWindowStartTable.values = configPage10.knock_window_angle;
-    knockWindowStartTable.axisX = configPage10.knock_window_rpms;
-    knockWindowDurationTable.valueSize = SIZE_BYTE;
-    knockWindowDurationTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    knockWindowDurationTable.xSize = 6;
-    knockWindowDurationTable.values = configPage10.knock_window_dur;
-    knockWindowDurationTable.axisX = configPage10.knock_window_rpms;
-
-    oilPressureProtectTable.valueSize = SIZE_BYTE;
-    oilPressureProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    oilPressureProtectTable.xSize = 4;
-    oilPressureProtectTable.values = configPage10.oilPressureProtMins;
-    oilPressureProtectTable.axisX = configPage10.oilPressureProtRPM;
-
-    coolantProtectTable.valueSize = SIZE_BYTE;
-    coolantProtectTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    coolantProtectTable.xSize = 6;
-    coolantProtectTable.values = configPage9.coolantProtRPM;
-    coolantProtectTable.axisX = configPage9.coolantProtTemp;
-
-
-    fanPWMTable.valueSize = SIZE_BYTE;
-    fanPWMTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    fanPWMTable.xSize = 4;
-    fanPWMTable.values = configPage9.PWMFanDuty;
-    fanPWMTable.axisX = configPage6.fanPWMBins;
-
-    rollingCutTable.valueSize = SIZE_BYTE;
-    rollingCutTable.axisSize = SIZE_SIGNED_BYTE; //X axis is SIGNED for this table. 
-    rollingCutTable.xSize = 4;
-    rollingCutTable.values = configPage15.rollingProtCutPercent;
-    rollingCutTable.axisX = configPage15.rollingProtRPMDelta;
-
-    wmiAdvTable.valueSize = SIZE_BYTE;
-    wmiAdvTable.axisSize = SIZE_BYTE; //Set this table to use byte axis bins
-    wmiAdvTable.xSize = 6;
-    wmiAdvTable.values = configPage10.wmiAdvAdj;
-    wmiAdvTable.axisX = configPage10.wmiAdvBins;
-
-    cltCalibrationTable.valueSize = SIZE_INT;
-    cltCalibrationTable.axisSize = SIZE_INT;
-    cltCalibrationTable.xSize = 32;
-    cltCalibrationTable.values = cltCalibration_values;
-    cltCalibrationTable.axisX = cltCalibration_bins;
-
-    iatCalibrationTable.valueSize = SIZE_INT;
-    iatCalibrationTable.axisSize = SIZE_INT;
-    iatCalibrationTable.xSize = 32;
-    iatCalibrationTable.values = iatCalibration_values;
-    iatCalibrationTable.axisX = iatCalibration_bins;
-
-    o2CalibrationTable.valueSize = SIZE_BYTE;
-    o2CalibrationTable.axisSize = SIZE_INT;
-    o2CalibrationTable.xSize = 32;
-    o2CalibrationTable.values = o2Calibration_values;
-    o2CalibrationTable.axisX = o2Calibration_bins;
+    construct2dTables();
     
     //Setup the calibration tables
-    loadCalibration();
-
-    
+    loadCalibration();   
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM
     {
       //First time running on this board
       resetConfigPages();
-      configPage4.triggerTeeth = 4; //Avoiddiv by 0 when start decoders
       setPinMapping(3); //Force board to v0.4
     }
     else { setPinMapping(configPage2.pinMapping); }
 
-    #if defined(NATIVE_CAN_AVAILABLE)
+    // Repeatedly initialising the CAN bus hangs the system when
+    // running initialisation tests on Teensy 3.5
+    #if defined(NATIVE_CAN_AVAILABLE) && !defined(UNIT_TEST)
       initCAN();
     #endif
 
@@ -369,6 +248,15 @@ void initialiseAll(void)
     if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
       attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
+    }
+    //As above but for knock pulses
+    if(configPage10.knock_mode == KNOCK_MODE_DIGITAL)
+    {
+      if(configPage10.knock_pullup) { pinMode(configPage10.knock_pin, INPUT_PULLUP); }
+      else { pinMode(configPage10.knock_pin, INPUT); }
+
+      if(configPage10.knock_trigger == KNOCK_TRIGGER_HIGH) { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, RISING); }
+      else { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, FALLING); }
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
@@ -1369,6 +1257,8 @@ void setPinMapping(byte boardID)
   injectorOutputControl = OUTPUT_CONTROL_DIRECT;
   ignitionOutputControl = OUTPUT_CONTROL_DIRECT;
 
+  if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
+
   switch (boardID)
   {
     //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
@@ -2194,7 +2084,7 @@ void setPinMapping(byte boardID)
       pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
       pinFuelPump = 3; //Fuel pump output
       pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
-      pinBoost = 13; //Boost control
+      pinBoost = 5; //Boost control
       pinSpareLOut1 = 49; //enable Wideband Lambda Heater
       pinSpareLOut2 = 16; //low current output spare2 PLACEHOLDER value for now
       pinSpareLOut3 = 17; //low current output spare3 PLACEHOLDER value for now
@@ -2568,7 +2458,7 @@ void setPinMapping(byte boardID)
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        // = PB7;  //NRF_CS
+        pinCoil6 = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
         pinCoil2 = PB9; //
         // = PB9;  //
@@ -3396,6 +3286,21 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_HONDA_J32:
+      triggerSetup_HondaJ32();
+      triggerHandler = triggerPri_HondaJ32;
+      triggerSecondaryHandler = triggerSec_HondaJ32;
+      getRPM = getRPM_HondaJ32;
+      getCrankAngle = getCrankAngle_HondaJ32;
+      triggerSetEndTeeth = triggerSetEndTeeth_HondaJ32;
+
+      primaryTriggerEdge = RISING; // Don't honor the config, always use rising edge 
+      secondaryTriggerEdge = RISING; // Unused
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);  // Suspect this line is not needed
+      break;
+
     case DECODER_MIATA_9905:
       triggerSetup_Miata9905();
       triggerHandler = triggerPri_Miata9905;
@@ -3946,3 +3851,7 @@ void changeFullToHalfSync(void)
     }
   }
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif

@@ -40,6 +40,7 @@
 #define DECODER_RENIX             24
 #define DECODER_ROVERMEMS		      25
 #define DECODER_SUZUKI_K6A        26
+#define DECODER_HONDA_J32         27
 
 #define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 #define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
@@ -48,6 +49,11 @@
 #define BIT_DECODER_HAS_FIXED_CRANKING  4
 #define BIT_DECODER_VALID_TRIGGER       5 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 #define BIT_DECODER_TOOTH_ANG_CORRECT   6 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
+
+#define TRIGGER_FILTER_OFF              0
+#define TRIGGER_FILTER_LITE             1
+#define TRIGGER_FILTER_MEDIUM           2
+#define TRIGGER_FILTER_AGGRESSIVE       3
 
 //220 bytes free
 extern volatile uint8_t decoderState;
@@ -133,6 +139,13 @@ void triggerSec_HondaD17(void);
 uint16_t getRPM_HondaD17(void);
 int getCrankAngle_HondaD17(void);
 void triggerSetEndTeeth_HondaD17(void);
+
+void triggerSetup_HondaJ32(void);
+void triggerPri_HondaJ32(void);
+void triggerSec_HondaJ32(void);
+uint16_t getRPM_HondaJ32(void);
+int getCrankAngle_HondaJ32(void);
+void triggerSetEndTeeth_HondaJ32(void);
 
 void triggerSetup_Miata9905(void);
 void triggerPri_Miata9905(void);
@@ -294,23 +307,6 @@ extern byte checkSyncToothCount; //How many teeth must've been seen on this revo
 extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
-
-typedef uint32_t UQ24X8_t;
-constexpr uint8_t UQ24X8_Shift = 8U;
-
-/** @brief uS per degree at current RPM in UQ24.8 fixed point */
-extern UQ24X8_t microsPerDegree;
-constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
-
-typedef uint16_t UQ1X15_t;
-constexpr uint8_t UQ1X15_Shift = 15U;
-
-/** @brief Degrees per uS in UQ1.15 fixed point.
- * 
- * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
- */
-extern UQ1X15_t degreesPerMicro;
-constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
 extern uint16_t ignition1EndTooth;
 extern uint16_t ignition2EndTooth;

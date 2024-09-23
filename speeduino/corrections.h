@@ -9,6 +9,7 @@ All functions in the gamma file return
 
 void initialiseCorrections(void);
 uint16_t correctionsFuel(void);
+uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6);
 byte correctionWUE(void); //Warmup enrichment
 uint16_t correctionCranking(void); //Cranking enrichment
 byte correctionASE(void); //After Start Enrichment
@@ -24,12 +25,12 @@ byte correctionLaunch(void); //Launch control correction
 byte correctionDFCOfuel(void); //DFCO taper correction
 bool correctionDFCO(void); //Decelleration fuel cutoff
 
-
 int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t advance);
 int8_t correctionCrankingFixedTiming(int8_t advance);
 int8_t correctionFlexTiming(int8_t advance);
 int8_t correctionWMITiming(int8_t advance);
+int8_t correctionKnockTiming(int8_t advance);
 int8_t correctionIATretard(int8_t advance);
 int8_t correctionCLTadvance(int8_t advance);
 int8_t correctionIdleAdvance(int8_t advance);
@@ -46,10 +47,6 @@ extern byte activateMAPDOT; //The mapDOT value seen when the MAE was activated.
 extern byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated. 
 
 extern uint16_t AFRnextCycle;
-extern unsigned long knockStartTime;
-extern byte lastKnockCount;
-extern int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-extern int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 extern uint8_t aseTaper;
 extern uint8_t dfcoDelay;
 extern uint8_t idleAdvTaper;

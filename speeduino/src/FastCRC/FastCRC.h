@@ -40,7 +40,11 @@
 
 
 // Set this to 0 for smaller 32BIT-CRC-Tables:
-#define CRC_BIGTABLES 1
+#if defined(__AVR_ATmega2560__)
+  #define CRC_BIGTABLES 0
+#else
+  #define CRC_BIGTABLES 1
+#endif
 
 
 #if !defined(FastCRC_h)
