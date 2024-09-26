@@ -6,6 +6,7 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
     triggerSetup_SuzukiK6A();
     configPage4.triggerAngle = 0U;
 
+    extern volatile unsigned long toothLastToothTime;
     toothLastToothTime = micros() - 150U;
     toothCurrentCount = toothNum;
     // Allow some variance since the algorithm relies on calling micros();

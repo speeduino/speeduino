@@ -166,15 +166,11 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
-      toothLastToothTime = 0;
-      toothLastSecToothTime = 0;
-      //toothLastMinusOneToothTime = 0;
+      resetDecoder();
       currentStatus.hasSync = false;
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       currentStatus.startRevolutions = 0;
-      toothSystemCount = 0;
-      secondaryToothCount = 0;
       initialiseMAPBaro();
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;

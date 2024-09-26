@@ -43,6 +43,7 @@ A full copy of the license may be found in the projects root directory
 #include "crankMaths.h"
 #include "timers.h"
 #include "schedule_calcs.h"
+#include "unit_testing.h"
 
 void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
 uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
@@ -67,12 +68,12 @@ volatile unsigned long curGap3;
 volatile unsigned long lastGap;
 volatile unsigned long targetGap;
 
-unsigned long MAX_STALL_TIME = MICROS_PER_SEC/2U; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
+TESTABLE_STATIC unsigned long MAX_STALL_TIME = MICROS_PER_SEC/2U; //The maximum time (in uS) that the system will continue to function before the engine is considered stalled/stopped. This is unique to each decoder, depending on the number of teeth etc. 500000 (half a second) is used as the default value, most decoders will be much less.
 volatile uint16_t toothCurrentCount = 0; //The current number of teeth (Once sync has been achieved, this can never actually be 0
-volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
+static volatile byte toothSystemCount = 0; //Used for decoders such as Audi 135 where not every tooth is used for calculating crank angle. This variable stores the actual number of teeth, not the number being used to calculate crank angle
 volatile unsigned long toothSystemLastToothTime = 0; //As below, but used for decoders where not every tooth count is used for calculation
-volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
-volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
+TESTABLE_STATIC volatile unsigned long toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
+static volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
 volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
 volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
@@ -85,7 +86,7 @@ volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros(
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 volatile bool revolutionLastOne = 0; // used to identify in the rover pattern which has a non unique primary trigger something unique - has the secondary tooth changed.
 
-volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
+static volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 volatile unsigned int secondaryLastToothCount = 0; // used to identify in the rover pattern which has a non unique primary trigger something unique - has the secondary tooth changed.
 volatile unsigned long secondaryLastToothTime = 0; //The time (micros()) that the last tooth was registered (Cam input)
 volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
@@ -346,6 +347,12 @@ bool engineIsRunning(uint32_t curTime) {
   return false; // Just here to avoid compiler warning.
 }
 
+void resetDecoder(void) {
+  toothLastSecToothTime = 0;
+  toothLastToothTime = 0;
+  toothSystemCount = 0;
+  secondaryToothCount = 0;
+}
 
 #if defined(UNIT_TEST)
 bool SetRevolutionTime(uint32_t revTime)
