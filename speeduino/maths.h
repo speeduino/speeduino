@@ -310,29 +310,39 @@ constexpr const T& clamp(const T& v, const T& lo, const T& hi){
     return v<lo ? lo : hi<v ? hi : v;
 }
 
+/// @cond
+
+template <typename T, typename TPrime>
+static inline T LOW_PASS_FILTER_8BIT(T input, uint8_t alpha, T prior) {
+  // Intermediate steps are for MISRA compliance
+  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
+  static constexpr T ALPHA_MAX = (T)256;
+  T inv_alpha = ALPHA_MAX - (T)alpha;
+  TPrime prior_alpha = (prior * (TPrime)alpha);
+  TPrime preshift = (input * (TPrime)inv_alpha) + prior_alpha;
+  return (T)(preshift / ALPHA_MAX); // Division should resolve to a shift & avoids a MISRA violation
+}
+
+/// @endcond
+
 /**
- * @brief Simple low pass IIR filter for U16 values
+ * @brief Simple low pass IIR filter 16-bit values
  * 
  * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
  * But removes the use of floats and uses 8 bits of fixed precision.
+ * 
+ * @param input incoming unfiltered value
+ * @param alpha filter factor. 0=off, 255=full smoothing (0.00 to 0.99 in float, 0-99%)
+ * @param prior previous *filtered* value.
+ * @return uint16_t The filtered input
  */
 static inline uint16_t LOW_PASS_FILTER(uint16_t input, uint8_t alpha, uint16_t prior) {
-  // Intermediate steps are for MISRA compliance
-  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
-  uint16_t inv_alpha = 256U - (uint16_t)alpha;
-  uint32_t prior_alpha = (prior * (uint32_t)alpha);
-  uint32_t preshift = (input * (uint32_t)inv_alpha) + prior_alpha;
-  return preshift >> 8U;
+    return LOW_PASS_FILTER_8BIT<uint16_t, uint32_t>(input, alpha, prior);
 }
 
 /** @brief Simple low pass IIR filter for S16 values */
 static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prior) {
-  // Intermediate steps are for MISRA compliance
-  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
-  int16_t inv_alpha = 256 - (int16_t)alpha;
-  int32_t prior_alpha = (prior * (int32_t)alpha);
-  int32_t preshift = ((input * (int32_t)inv_alpha) + prior_alpha);
-  return (uint32_t)preshift >> 8U;
+    return LOW_PASS_FILTER_8BIT<int16_t, int32_t>(input, alpha, prior);
 }
 
 #endif
