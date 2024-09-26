@@ -85,6 +85,7 @@ static constexpr uint16_t SERIAL_TIMEOUT = 700; //!< Timeout threshold in millis
 static uint32_t serialReceiveStartTime = 0; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
 
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations
+static FastCRC32 CRC32_calibration; //!< Support accumulation of a CRC during calibration loads. Must be a separate instance to CRC32_serial due to calibration data being sent in multiple packets
 using crc_t = uint32_t;
 
 #ifdef COMMS_SD
@@ -400,7 +401,7 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     }
 
     //Update the CRC
-    calibrationCRC = (CRC32_serial.*pCrcFun)(&serialPayload[x+7U], 1, false);
+    calibrationCRC = (CRC32_calibration.*pCrcFun)(&serialPayload[x+7U], 1, false);
     // Subsequent passes through the loop, we need to UPDATE the CRC
     pCrcFun = &FastCRC32::crc32_upd;
   }
@@ -444,7 +445,7 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
       values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
       bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
-    storeCalibrationCRC32(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+    storeCalibrationCRC32(calibrationPage, CRC32_calibration.crc32(&serialPayload[7], 64));
     writeCalibrationPage(calibrationPage);
     sendReturnCodeMsg(SERIAL_RC_OK);
   }
