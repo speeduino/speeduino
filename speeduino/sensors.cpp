@@ -243,26 +243,10 @@ void initialiseADC(void)
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
 
-static inline bool isValidMapSensorReading(uint16_t reading) {
-  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
-}
-
-static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t prior) {
-  uint16_t tempReading = readMAPSensor(pin);
-
-  //Error check
-  if (isValidMapSensorReading(tempReading)) { 
-    return LOW_PASS_FILTER(tempReading, alpha, prior);
-  }
-  return prior;
-}
-
 static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapMax) {
   int16_t mapped = fastMap10Bit(mapADC, mapMin, mapMax); //Get the current MAP value
   return max((int16_t)0, mapped);  //Sanity check
 }
-
-
 
 static inline void resetMAPLast(map_last_read_t &lastRead) {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
@@ -280,13 +264,11 @@ static inline void instanteneousMAPReading(map_last_read_t &lastReading, map_adc
 {
   resetMAPLast(lastReading);
 
-  priorADCReadings.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, priorADCReadings.mapADC);
   currentStatus.MAP = mapADCToMAP(priorADCReadings.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   
   //Repeat for EMAP if it's enabled
-  if(configPage6.useEMAP == true)
+  if(priorADCReadings.emapADC!=UINT16_MAX)
   {
-    priorADCReadings.emapADC = readFilteredMapADC(pinEMAP, configPage4.ADCFILTER_MAP, priorADCReadings.emapADC);
     currentStatus.EMAP = mapADCToMAP(priorADCReadings.emapADC, configPage2.EMAPMin, configPage2.EMAPMax);
   }
 }
@@ -300,16 +282,8 @@ struct map_cycle_average_t {
 
 static inline void cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_average, map_adc_readings_t &priorADCReadings) {
   ++cycle_average.sampleCount;
-
-  priorADCReadings.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, priorADCReadings.mapADC);
   cycle_average.mapAdcRunningTotal += priorADCReadings.mapADC; //Add the current reading onto the total
-
-  //Repeat for EMAP if it's enabled
-  if(configPage6.useEMAP == true)
-  {
-    priorADCReadings.emapADC = readFilteredMapADC(pinEMAP, configPage4.ADCFILTER_MAP, priorADCReadings.emapADC);
-    cycle_average.emapAdcRunningTotal += priorADCReadings.emapADC; //Add the current reading onto the totak
-  }
+  cycle_average.emapAdcRunningTotal += priorADCReadings.emapADC; //Add the current reading onto the totak
 }
 
 static inline void cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
@@ -321,7 +295,7 @@ static inline void cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_
     currentStatus.MAP = mapADCToMAP(priorADCReadings.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
 
     //If EMAP is enabled, the process is identical to the above
-    if(configPage6.useEMAP == true)
+    if(priorADCReadings.emapADC!=UINT16_MAX)
     {
       priorADCReadings.emapADC = udiv_32_16(cycle_average.emapAdcRunningTotal, cycle_average.sampleCount); //Note that the MAP count can be reused here as it will always be the same count.
       currentStatus.EMAP = mapADCToMAP(priorADCReadings.emapADC, configPage2.EMAPMin, configPage2.EMAPMax);
@@ -374,16 +348,12 @@ struct map_cycle_min_t {
   uint16_t mapMinimum;
 };
 
-static inline void cycleMinimumAccumulate(map_cycle_min_t &cycle_min) {
-  uint16_t tempReading = readMAPSensor(pinMAP);
-  //Error check
-  if( isValidMapSensorReading(tempReading) ) {
-    //Check whether the current reading is lower than the running minimum
-    cycle_min.mapMinimum = min(tempReading, cycle_min.mapMinimum); 
-  }
+static inline void cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_adc_readings_t &priorADCReadings) {
+  //Check whether the current reading is lower than the running minimum
+  cycle_min.mapMinimum = min(priorADCReadings.mapADC, cycle_min.mapMinimum); 
 }
 
-static inline void cycleMinimumEndCycle(map_cycle_min_t &cycle_min, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline void cycleMinimumEndCycle(map_cycle_min_t &cycle_min, map_last_read_t &lastReading) {
   resetMAPLast(lastReading);
 
   currentStatus.MAP = mapADCToMAP(cycle_min.mapMinimum, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
@@ -402,10 +372,10 @@ static inline void cycleMinimumMAPReading(map_cycle_min_t &cycle_min, map_last_r
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if ( isCycleCurrent(cycle_min) ) {
-      cycleMinimumAccumulate(cycle_min);
+      cycleMinimumAccumulate(cycle_min, priorADCReadings);
     } else {
       //Reaching here means that the last cycle has completed and the MAP value should be calculated
-      cycleMinimumEndCycle(cycle_min, lastReading, priorADCReadings);
+      cycleMinimumEndCycle(cycle_min, lastReading);
     }
   }
   else 
@@ -421,8 +391,7 @@ struct map_event_average_t {
   uint32_t currentIgnitionEventIndex;
 };
 
-static inline void eventAverageAccumulate(map_event_average_t &eventAverage, map_adc_readings_t &priorADCReadings) {
-  priorADCReadings.mapADC = readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, priorADCReadings.mapADC);
+static inline void eventAverageAccumulate(map_event_average_t &eventAverage, const map_adc_readings_t &priorADCReadings) {
   eventAverage.mapAdcRunningTotal += priorADCReadings.mapADC; //Add the current reading onto the total
   ++eventAverage.sampleCount;
 }
@@ -499,8 +468,32 @@ static void initialiseMAP(void) {
   (void)memset(&mapAlgorithmState, 0, sizeof(mapAlgorithmState));
 }
 
+static inline bool isValidMapSensorReading(uint16_t reading) {
+  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
+}
+
+static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t prior) {
+  uint16_t tempReading = readMAPSensor(pin);
+
+  //Error check
+  if (isValidMapSensorReading(tempReading)) { 
+    return LOW_PASS_FILTER(tempReading, alpha, prior);
+  }
+  return prior;
+}
+
+static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previousReadings) {
+  return {
+    readFilteredMapADC(pinMAP, configPage4.ADCFILTER_MAP, previousReadings.mapADC),
+    (configPage6.useEMAP ? readFilteredMapADC(pinEMAP, configPage4.ADCFILTER_MAP, previousReadings.emapADC) : UINT16_MAX)
+  };
+}
+
 void readMAP(void)
 {
+  // Read sensor(s)
+  mapAlgorithmState.priorADCReadings = readMapSensors(mapAlgorithmState.priorADCReadings);
+
   //MAP Sampling system
   switch(configPage2.mapSample)
   {
