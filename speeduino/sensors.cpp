@@ -14,7 +14,6 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "comms.h"
 #include "idle.h"
-#include "errors.h"
 #include "corrections.h"
 #include "pages.h"
 #include "decoders.h"

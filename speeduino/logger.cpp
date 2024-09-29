@@ -1,6 +1,5 @@
 #include "globals.h"
 #include "logger.h"
-#include "errors.h"
 #include "decoders.h"
 #include "init.h"
 #include "maths.h"
@@ -120,7 +119,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 73: statusValue = highByte(currentStatus.canin[15]); break;
 
     case 74: statusValue = currentStatus.tpsADC; break;
-    case 75: statusValue = getNextError(); break;
+    case 75: statusValue = 0U /*getNextError()*/; break;
 
     case 76: statusValue = lowByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
     case 77: statusValue = highByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -258,7 +257,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 50: statusValue = currentStatus.canin[15]; break;
     
     case 51: statusValue = currentStatus.tpsADC; break;
-    case 52: statusValue = getNextError(); break;
+    case 52: statusValue = 0U /*getNextError()*/; break;
 
     case 53: statusValue = currentStatus.PW1; break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
     case 54: statusValue = currentStatus.PW2; break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -425,7 +424,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 72: statusValue = highByte(currentStatus.canin[15]); break;
 
     case 73: statusValue = currentStatus.tpsADC; break;
-    case 74: statusValue = getNextError(); break; // errorNum (0:1), currentError(2:7)
+    case 74: statusValue = 0U /*getNextError()*/; break; // errorNum (0:1), currentError(2:7)
 
     case 75: statusValue = currentStatus.launchCorrection; break;
     case 76: statusValue = lowByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
