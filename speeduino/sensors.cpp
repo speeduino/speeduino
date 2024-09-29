@@ -504,22 +504,19 @@ void readMAP(void)
   //MAP Sampling system
   switch(configPage2.mapSample)
   {
-    case 1:
-      //Average of a cycle
+    case MAPSamplingCycleAverage:
       cycleAverageMAPReading(mapAlgorithmState.cycle_average, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
       break;
 
-    case 2:
-      //Minimum reading in a cycle
+    case MAPSamplingCycleMinimum:
       cycleMinimumMAPReading(mapAlgorithmState.cycle_min, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
       break;
 
-    case 3:
-      //Average of an ignition event
+    case MAPSamplingIgnitionEventAverage:
       eventAverageMAPReading(mapAlgorithmState.event_average, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
       break; 
 
-    case 0:
+    case MAPSamplingInstantaneous:
     default:
       instanteneousMAPReading(mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
     break;

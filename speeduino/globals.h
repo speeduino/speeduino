@@ -702,6 +702,13 @@ static inline bool HasAnySync(const statuses &status) {
   return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
 }
 
+enum MAPSamplingMethod {
+  MAPSamplingInstantaneous = 0, 
+  MAPSamplingCycleAverage = 1, 
+  MAPSamplingCycleMinimum = 2,
+  MAPSamplingIgnitionEventAverage= 3,
+};
+
 /** Page 2 of the config - mostly variables that are required for fuel.
  * These are "non-live" EFI setting, engine and "system" variables that remain fixed once sent
  * (and stored to e.g. EEPROM) from configuration/tuning SW (from outside by USBserial/bluetooth).
@@ -748,7 +755,7 @@ struct config2 {
   uint16_t injAng[4];
 
   //config1 in ini
-  byte mapSample : 2;  ///< MAP sampling method (0=Instantaneous, 1=Cycle Average, 2=Cycle Minimum, 4=Ign. event average, See sensors.ino)
+  MAPSamplingMethod mapSample : 2;  ///< MAP sampling method (0=Instantaneous, 1=Cycle Average, 2=Cycle Minimum, 4=Ign. event average, See sensors.ino)
   byte strokes : 1;    ///< Engine cycle type: four-stroke (0) / two-stroke (1)
   byte injType : 1;    ///< Injector type 0=Port (INJ_TYPE_PORT), 1=Throttle Body / TBI (INJ_TYPE_TBODY)
   byte nCylinders : 4; ///< Number of cylinders
