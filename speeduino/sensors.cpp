@@ -248,22 +248,13 @@ static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapM
   return max((int16_t)0, mapped);  //Sanity check
 }
 
-static inline void resetMAPLast(map_last_read_t &lastRead) {
-  //Update the calculation times and last value. These are used by the MAP based Accel enrich
-  lastRead.lastMAPValue = currentStatus.MAP;
-  lastRead.previousReadingTime = lastRead.lastReadingTime;
-  lastRead.lastReadingTime = micros();
-}
-
 struct map_adc_readings_t {
   uint16_t mapADC;
   uint16_t emapADC;
 };
 
-static inline void instanteneousMAPReading(map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings)
+static inline bool instanteneousMAPReading(map_adc_readings_t &priorADCReadings)
 {
-  resetMAPLast(lastReading);
-
   currentStatus.MAP = mapADCToMAP(priorADCReadings.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
   
   //Repeat for EMAP if it's enabled
@@ -271,6 +262,8 @@ static inline void instanteneousMAPReading(map_last_read_t &lastReading, map_adc
   {
     currentStatus.EMAP = mapADCToMAP(priorADCReadings.emapADC, configPage2.EMAPMin, configPage2.EMAPMax);
   }
+
+  return true;
 }
 
 struct map_cycle_average_t {
@@ -280,10 +273,13 @@ struct map_cycle_average_t {
   uint16_t sampleCount;
 };
 
-static inline void cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_average, map_adc_readings_t &priorADCReadings) {
+static inline bool cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_average, map_adc_readings_t &priorADCReadings) {
   ++cycle_average.sampleCount;
-  cycle_average.mapAdcRunningTotal += priorADCReadings.mapADC; //Add the current reading onto the total
-  cycle_average.emapAdcRunningTotal += priorADCReadings.emapADC; //Add the current reading onto the totak
+  cycle_average.mapAdcRunningTotal += priorADCReadings.mapADC; 
+  cycle_average.emapAdcRunningTotal += priorADCReadings.emapADC;
+
+  // We are *not* ready to derive new maps readings yet
+  return false;
 }
 
 static inline void reset(map_cycle_average_t &cycle_average) {
@@ -293,11 +289,9 @@ static inline void reset(map_cycle_average_t &cycle_average) {
   cycle_average.curRev = currentStatus.startRevolutions;
 }
 
-static inline void cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline bool cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_adc_readings_t &priorADCReadings) {
   if( (cycle_average.mapAdcRunningTotal != 0UL) && (cycle_average.sampleCount != 0U) )
   {
-    resetMAPLast(lastReading);
-
     priorADCReadings.mapADC = udiv_32_16(cycle_average.mapAdcRunningTotal, cycle_average.sampleCount);
     currentStatus.MAP = mapADCToMAP(priorADCReadings.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
 
@@ -308,10 +302,11 @@ static inline void cycleAverageEndCycle(map_cycle_average_t &cycle_average, map_
       currentStatus.EMAP = mapADCToMAP(priorADCReadings.emapADC, configPage2.EMAPMin, configPage2.EMAPMax);
     }
     reset(cycle_average);
-  } else { 
-    reset(cycle_average);
-    instanteneousMAPReading(lastReading, priorADCReadings); 
+    return true;
   }
+  
+    reset(cycle_average);
+  return instanteneousMAPReading(priorADCReadings); 
 }
 
 static inline bool isCycleCurrent(uint32_t curRev) {
@@ -325,25 +320,22 @@ static inline bool isCycleCurrent(const map_cycle_average_t &cycle_avg) {
   return isCycleCurrent(cycle_avg.curRev);
 }
 
-static inline void cycleAverageMAPReading(map_cycle_average_t &cycle_average, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline bool cycleAverageMAPReading(map_cycle_average_t &cycle_average, map_adc_readings_t &priorADCReadings) {
   if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && HasAnySync(currentStatus) && (currentStatus.startRevolutions > 1U) )
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if( isCycleCurrent(cycle_average) ) {
-      cycleAverageMAPReadingAccumulate(cycle_average, priorADCReadings);
-    } else {
-      //Reaching here means that the last cycle has completed and the MAP value should be calculated
-      cycleAverageEndCycle(cycle_average, lastReading, priorADCReadings);
+      return cycleAverageMAPReadingAccumulate(cycle_average, priorADCReadings);
     }
-  }
-  else 
-  {
+      //Reaching here means that the last cycle has completed and the MAP value should be calculated
+    return cycleAverageEndCycle(cycle_average, priorADCReadings);
+    }
+  
     //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
     cycle_average.mapAdcRunningTotal = priorADCReadings.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
     cycle_average.emapAdcRunningTotal = priorADCReadings.emapADC;
     cycle_average.sampleCount = 1U;
-    instanteneousMAPReading(lastReading, priorADCReadings);
-  }
+  return instanteneousMAPReading(priorADCReadings);
 }
 
 struct map_cycle_min_t {
@@ -351,41 +343,41 @@ struct map_cycle_min_t {
   uint16_t mapMinimum;
 };
 
-static inline void cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_adc_readings_t &priorADCReadings) {
+static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_adc_readings_t &priorADCReadings) {
   //Check whether the current reading is lower than the running minimum
   cycle_min.mapMinimum = min(priorADCReadings.mapADC, cycle_min.mapMinimum); 
+
+  // We are *not* ready to derive new maps readings yet
+  return false;
 }
 
-static inline void cycleMinimumEndCycle(map_cycle_min_t &cycle_min, map_last_read_t &lastReading) {
-  resetMAPLast(lastReading);
-
+static inline bool cycleMinimumEndCycle(map_cycle_min_t &cycle_min) {
   currentStatus.MAP = mapADCToMAP(cycle_min.mapMinimum, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
 
   cycle_min.curRev = currentStatus.startRevolutions; //Reset the current rev count
   cycle_min.mapMinimum = VALID_MAP_MAX; //Reset the latest value so the next reading will always be lower
+
+  return true;
 }
 
 static inline bool isCycleCurrent(const map_cycle_min_t &cycle_min) {
   return isCycleCurrent(cycle_min.curRev);
 }
 
-static inline void cycleMinimumMAPReading(map_cycle_min_t &cycle_min, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline bool cycleMinimumMAPReading(map_cycle_min_t &cycle_min, map_adc_readings_t &priorADCReadings) {
   if (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) 
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if ( isCycleCurrent(cycle_min) ) {
-      cycleMinimumAccumulate(cycle_min, priorADCReadings);
-    } else {
-      //Reaching here means that the last cycle has completed and the MAP value should be calculated
-      cycleMinimumEndCycle(cycle_min, lastReading);
+      return cycleMinimumAccumulate(cycle_min, priorADCReadings);
     }
-  }
-  else 
-  {
+      //Reaching here means that the last cycle has completed and the MAP value should be calculated
+    return cycleMinimumEndCycle(cycle_min);
+    }
+
     //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
     cycle_min.mapMinimum = priorADCReadings.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
-    instanteneousMAPReading(lastReading, priorADCReadings);
-  }
+  return instanteneousMAPReading(priorADCReadings);
 }
 
 struct map_event_average_t {
@@ -394,9 +386,12 @@ struct map_event_average_t {
   uint32_t currentIgnitionEventIndex;
 };
 
-static inline void eventAverageAccumulate(map_event_average_t &eventAverage, const map_adc_readings_t &priorADCReadings) {
+static inline bool eventAverageAccumulate(map_event_average_t &eventAverage, const map_adc_readings_t &priorADCReadings) {
   eventAverage.mapAdcRunningTotal += priorADCReadings.mapADC; //Add the current reading onto the total
   ++eventAverage.sampleCount;
+
+  // We are *not* ready to derive new maps readings yet
+  return false;
 }
 
 static inline bool isIgnitionEventValid(const map_event_average_t &eventAverage) {
@@ -413,20 +408,18 @@ static inline void reset(map_event_average_t &eventAverage) {
   eventAverage.currentIgnitionEventIndex = ignitionCount;
 }
 
-static inline void eventAverageEndEvent(map_event_average_t &eventAverage, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline bool eventAverageEndEvent(map_event_average_t &eventAverage, map_adc_readings_t &priorADCReadings) {
   //Sanity check
   if( (eventAverage.mapAdcRunningTotal != 0U) && (eventAverage.sampleCount != 0U) && isIgnitionEventValid(eventAverage) )
   {
-    resetMAPLast(lastReading);
-
     priorADCReadings.mapADC = udiv_32_16(eventAverage.mapAdcRunningTotal, eventAverage.sampleCount);
     currentStatus.MAP = mapADCToMAP(priorADCReadings.mapADC, configPage2.mapMin, configPage2.mapMax); //Get the current MAP value
     reset(eventAverage);
+    return true;
   }
-  else { 
+  
     reset(eventAverage);
-    instanteneousMAPReading(lastReading, priorADCReadings); 
-  }
+  return instanteneousMAPReading(priorADCReadings); 
 }
 
 static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverage) {
@@ -436,21 +429,21 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
   return false; // Just here to avoid compiler warning.
 }
 
-static inline void eventAverageMAPReading(map_event_average_t &eventAverage, map_last_read_t &lastReading, map_adc_readings_t &priorADCReadings) {
+static inline bool eventAverageMAPReading(map_event_average_t &eventAverage, map_adc_readings_t &priorADCReadings) {
   //Average of an ignition event
   if ( (currentStatus.RPMdiv100 > configPage2.mapSwitchPoint) && HasAnySync(currentStatus) && (currentStatus.startRevolutions > 1U) && (! currentStatus.engineProtectStatus) ) //If the engine isn't running, fall back to instantaneous reads
   {
     if( isIgnitionEventCurrent(eventAverage) ) { //Watch for a change in the ignition counter to determine whether we're still on the same event
-      eventAverageAccumulate(eventAverage, priorADCReadings);
-    } else {
-      //Reaching here means that the next ignition event has occurred and the MAP value should be calculated
-      eventAverageEndEvent(eventAverage, lastReading, priorADCReadings);
+      return eventAverageAccumulate(eventAverage, priorADCReadings);
     }
-  } else {
+    
+      //Reaching here means that the next ignition event has occurred and the MAP value should be calculated
+    return eventAverageEndEvent(eventAverage, priorADCReadings);
+    }
+  
     eventAverage.mapAdcRunningTotal = priorADCReadings.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
     eventAverage.sampleCount = 1;
-    instanteneousMAPReading(lastReading, priorADCReadings);
-  }
+  return instanteneousMAPReading(priorADCReadings);
 }
 
 struct map_algorithm_t {
@@ -496,30 +489,43 @@ static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previo
   };
 }
 
-void readMAP(void)
-{
-  // Read sensor(s)
-  mapAlgorithmState.priorADCReadings = readMapSensors(mapAlgorithmState.priorADCReadings);
-
+static inline bool processMapReadings(MAPSamplingMethod sampleMethod, map_adc_readings_t &readings) {
   //MAP Sampling system
-  switch(configPage2.mapSample)
+  switch(sampleMethod)
   {
     case MAPSamplingCycleAverage:
-      cycleAverageMAPReading(mapAlgorithmState.cycle_average, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
+      return cycleAverageMAPReading(mapAlgorithmState.cycle_average, readings);
       break;
 
     case MAPSamplingCycleMinimum:
-      cycleMinimumMAPReading(mapAlgorithmState.cycle_min, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
+      return cycleMinimumMAPReading(mapAlgorithmState.cycle_min, readings);
       break;
 
     case MAPSamplingIgnitionEventAverage:
-      eventAverageMAPReading(mapAlgorithmState.event_average, mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
+      return eventAverageMAPReading(mapAlgorithmState.event_average, readings);
       break; 
 
     case MAPSamplingInstantaneous:
     default:
-      instanteneousMAPReading(mapAlgorithmState.lastReading, mapAlgorithmState.priorADCReadings);
+      return instanteneousMAPReading(readings);
     break;
+  }
+}
+
+static inline void resetMAPLast(map_last_read_t &lastRead, uint16_t oldMAPValue) {
+  //Update the calculation times and last value. These are used by the MAP based Accel enrich
+  lastRead.lastMAPValue = oldMAPValue;
+  lastRead.previousReadingTime = lastRead.lastReadingTime;
+  lastRead.lastReadingTime = micros();
+}
+
+void readMAP(void)
+{
+  // Read sensor(s)
+  mapAlgorithmState.priorADCReadings = readMapSensors(mapAlgorithmState.priorADCReadings);
+  uint16_t oldMAPValue = currentStatus.MAP;
+  if (processMapReadings(configPage2.mapSample, mapAlgorithmState.priorADCReadings)) {
+    resetMAPLast(mapAlgorithmState.lastReading, oldMAPValue);
   }
 }
 
