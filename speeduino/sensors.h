@@ -56,12 +56,6 @@ void readBaro(void);
 void initialiseMAPBaro(void);
 
 void readMAP(void);
-// Used by unit tests
-struct map_last_read_t {
-  uint16_t lastMAPValue;        // kPA
-  uint32_t lastReadingTime;     // µS
-  uint32_t previousReadingTime; // µS
-};
 
 uint8_t getAnalogKnock(void);
 

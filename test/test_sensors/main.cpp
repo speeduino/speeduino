@@ -5,6 +5,7 @@
 #define UNITY_EXCLUDE_DETAILS
 
 extern void test_fastMap10Bit(void);
+extern void test_map_sampling(void);
 
 void setup()
 {
@@ -17,6 +18,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     test_fastMap10Bit();
+    test_map_sampling();
     
     UNITY_END(); // stop unit testing
 }
