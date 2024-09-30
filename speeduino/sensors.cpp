@@ -446,7 +446,7 @@ static inline bool isValidMapSensorReading(uint16_t reading) {
   return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
 }
 
-static inline uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior) {
+TESTABLE_INLINE_STATIC uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior) {
   //Error check
   if (isValidMapSensorReading(reading)) { 
     return LOW_PASS_FILTER(reading, alpha, prior);
@@ -461,7 +461,7 @@ static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t p
 static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previousReadings, const config4 &page4, bool useEMAP) {
   return {
     readFilteredMapADC(pinMAP, page4.ADCFILTER_MAP, previousReadings.mapADC),
-    (useEMAP ? readFilteredMapADC(pinEMAP, page4.ADCFILTER_MAP, previousReadings.emapADC) : UINT16_MAX)
+    (uint16_t)(useEMAP ? readFilteredMapADC(pinEMAP, page4.ADCFILTER_MAP, previousReadings.emapADC) : UINT16_MAX)
   };
 }
 
