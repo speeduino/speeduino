@@ -109,9 +109,11 @@ static void test_cycleAverageMAPReading(void) {
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(1400/3, test_data.sensorReadings.emapADC);
 
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.mapAdcRunningTotal);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.emapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_NOT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(500, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_NOT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(700, test_data.cycle_average.emapAdcRunningTotal);
 }
 
 static void test_cycleAverageMAPReading_nosamples(void) {
@@ -130,9 +132,9 @@ static void test_cycleAverageMAPReading_nosamples(void) {
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.mapAdcRunningTotal);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.emapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
 }
 
 extern bool cycleMinimumMAPReading(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings);
@@ -195,7 +197,9 @@ static void test_cycleMinimumMAPReading(void) {
   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(50U, test_data.sensorReadings.mapADC);
 
-  TEST_ASSERT_EQUAL_UINT(1022, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_NOT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(300, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
 extern bool canUseEventAverage(const statuses &current, const config2 &page2);
@@ -299,8 +303,9 @@ static void test_eventAverageMAPReading(void) {
   TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
 
-  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_NOT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(500, test_data.event_average.mapAdcRunningTotal);
 }
 
 static void test_eventAverageMAPReading_nosamples(void) {
@@ -319,8 +324,8 @@ static void test_eventAverageMAPReading_nosamples(void) {
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 
-  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
-  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 }
 
 extern uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior);

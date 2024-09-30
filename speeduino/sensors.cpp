@@ -258,16 +258,20 @@ static inline bool cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_a
   return false;
 }
 
-static inline void reset(const statuses &current, map_cycle_average_t &cycle_average) {
+static inline void reset(const statuses &current, map_cycle_average_t &cycle_average, const map_adc_readings_t &sensorReadings) {
   cycle_average.sampleCount = 0U;
   cycle_average.mapAdcRunningTotal = 0U;
   cycle_average.emapAdcRunningTotal = 0U;
   cycle_average.cycleStartIndex = (uint8_t)current.startRevolutions;
+  (void)cycleAverageMAPReadingAccumulate(cycle_average, sensorReadings);
 }
 
 static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
   if( (cycle_average.mapAdcRunningTotal != 0UL) && (cycle_average.sampleCount != 0U) )
   {
+    // Record this since we're about to overwrite it....
+    map_adc_readings_t rawReadings = sensorReadings;
+
     sensorReadings.mapADC = udiv_32_16(cycle_average.mapAdcRunningTotal, cycle_average.sampleCount);
 
     //If EMAP is enabled, the process is identical to the above
@@ -275,12 +279,12 @@ static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_avera
     {
       sensorReadings.emapADC = udiv_32_16(cycle_average.emapAdcRunningTotal, cycle_average.sampleCount); //Note that the MAP count can be reused here as it will always be the same count.
     }
-    reset(current, cycle_average);
+    reset(current, cycle_average, rawReadings);
     // We can now derive new map values
     return true;
   }
   
-  reset(current, cycle_average);
+  reset(current, cycle_average, sensorReadings);
   return instanteneousMAPReading(); 
 }
 
@@ -314,9 +318,7 @@ TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, cons
   }
   
   //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
-  cycle_average.mapAdcRunningTotal = sensorReadings.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to cycle average.
-  cycle_average.emapAdcRunningTotal = sensorReadings.emapADC;
-  cycle_average.sampleCount = 1U;
+  reset(current, cycle_average, sensorReadings);
   return instanteneousMAPReading();
 }
 
@@ -328,11 +330,19 @@ static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_
   return false;
 }
 
+static inline void reset(const statuses &current, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
+  cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
+  cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+}
+
 static inline bool cycleMinimumEndCycle(const statuses &current, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
+  // Record this since we're about to overwrite it....
+  map_adc_readings_t rawReadings = sensorReadings;
+
   sensorReadings.mapADC = cycle_min.mapMinimum;
 
-  cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
-  cycle_min.mapMinimum = VALID_MAP_MAX; //Reset the latest value so the next reading will always be lower
+  reset(current, cycle_min, rawReadings);
+
   // We can now derive new map values
   return true;
 }
@@ -352,7 +362,7 @@ TESTABLE_INLINE_STATIC bool cycleMinimumMAPReading(const statuses &current, cons
   }
 
   //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
-  cycle_min.mapMinimum = sensorReadings.mapADC;  //Keep updating the MAPrunningValue to give it head start when switching to cycle minimum.
+  reset(current, cycle_min, sensorReadings);
   return instanteneousMAPReading();
 }
 
@@ -371,24 +381,27 @@ static inline bool isIgnitionEventValid(const map_event_average_t &eventAverage)
   return false; // Just here to avoid compiler warning.
 }
 
-static inline void reset(map_event_average_t &eventAverage) {
+static inline void reset(map_event_average_t &eventAverage, const map_adc_readings_t &sensorReadings) {
   // Reset for next cycle.
   eventAverage.mapAdcRunningTotal = 0U;
   eventAverage.sampleCount = 0U;
   eventAverage.eventStartIndex = (uint8_t)ignitionCount;
+  (void)eventAverageAccumulate(eventAverage, sensorReadings);
 }
 
 static inline bool eventAverageEndEvent(map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
   //Sanity check
   if( (eventAverage.mapAdcRunningTotal != 0U) && (eventAverage.sampleCount != 0U) && isIgnitionEventValid(eventAverage) )
   {
+    // Record this since we're about to overwrite it....
+    map_adc_readings_t rawReadings = sensorReadings;
     sensorReadings.mapADC = udiv_32_16(eventAverage.mapAdcRunningTotal, eventAverage.sampleCount);
-    reset(eventAverage);
+    reset(eventAverage, rawReadings);
     // We can now derive new map values
     return true;
   }
   
-  reset(eventAverage);
+  reset(eventAverage, sensorReadings);
   return instanteneousMAPReading(); 
 }
 
@@ -419,8 +432,7 @@ TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, cons
     return eventAverageEndEvent(eventAverage, sensorReadings);
   }
 
-  eventAverage.mapAdcRunningTotal = sensorReadings.mapADC; //Keep updating the MAPrunningValue to give it head start when switching to ignition event average.
-  eventAverage.sampleCount = 1;
+  reset(eventAverage, sensorReadings);
   return instanteneousMAPReading();
 }
 
