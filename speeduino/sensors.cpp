@@ -249,7 +249,7 @@ TESTABLE_INLINE_STATIC bool instanteneousMAPReading(void)
   return true;
 }
 
-static inline bool cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
+static inline bool cycleAverageMAPReadingAccumulate(map_cycle_average_t &cycle_average, const map_adc_readings_t &sensorReadings) {
   ++cycle_average.sampleCount;
   cycle_average.mapAdcRunningTotal += sensorReadings.mapADC; 
   cycle_average.emapAdcRunningTotal += sensorReadings.emapADC;
@@ -296,7 +296,10 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_avera
 }
 
 TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2) {
-  return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySync(current) && (current.startRevolutions > 1U);
+  ATOMIC() {
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U);
+  }
+  return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
@@ -353,7 +356,6 @@ TESTABLE_INLINE_STATIC bool cycleMinimumMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-
 static inline bool eventAverageAccumulate(map_event_average_t &eventAverage, const map_adc_readings_t &sensorReadings) {
   eventAverage.mapAdcRunningTotal += sensorReadings.mapADC; //Add the current reading onto the total
   ++eventAverage.sampleCount;
@@ -399,7 +401,10 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 
 
 TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
-  return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySync(current) && (current.startRevolutions > 1U) && (!current.engineProtectStatus);
+  ATOMIC() {
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!current.engineProtectStatus);
+  }
+  return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {

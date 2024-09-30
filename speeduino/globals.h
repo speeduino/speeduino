@@ -25,9 +25,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
+#include <SimplyAtomic.h>
 #include "table2d.h"
 #include "table3d.h"
-#include <assert.h>
 #include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -698,8 +698,19 @@ struct statuses {
   byte airConStatus;
 };
 
-static inline bool HasAnySync(const statuses &status) {
+/**
+ * @brief Non-atomic version of HasAnySync. **Should only be called in an ATOMIC() block***
+ * 
+ */
+static inline bool HasAnySyncUnsafe(const statuses &status) {
   return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
+}
+
+static inline bool HasAnySync(const statuses &status) {
+  ATOMIC() {
+    return HasAnySyncUnsafe(status);
+  }
+  return false; // Just here to avoid compiler warning.
 }
 
 enum MAPSamplingMethod {
