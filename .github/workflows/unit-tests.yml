@@ -38,12 +38,14 @@ jobs:
         platformio upgrade
         platformio pkg update
         
+    - name: Install SimAVR
+      run: |
+        sudo apt update
+        sudo apt-get install -y simavr
+        
     - name: Run Unit Tests
-      env:
-        PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
       run: | 
-        platformio run -e megaatmega2560
-        platformio remote test --force-remote --environment megaatmega2560
+        platformio test -v -e megaatmega2560_sim_unittest_ubuntu
 
     - name: Discord Notification (Unit Tests Failed)
       uses: rjstone/discord-webhook-notify@v1
