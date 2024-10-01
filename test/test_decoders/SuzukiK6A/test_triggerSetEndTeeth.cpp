@@ -1,6 +1,7 @@
-#include <decoders.h>
-#include <globals.h>
 #include <unity.h>
+#include "decoders.h"
+#include "globals.h"
+#include "../../test_utils.h"
 #include "schedule_calcs.h"
 
 static void test_setup_SuzukiK6A()
@@ -271,23 +272,26 @@ void test_K6A_newIgn_trigNeg366()
 
 void testSuzukiK6A_setEndTeeth()
 {
-  RUN_TEST(test_k6A_newIgn_trig0_1);
-  RUN_TEST(test_k6A_newIgn_trig90_1);
-  RUN_TEST(test_k6A_newIgn_trig180_1);
-  RUN_TEST(test_k6A_newIgn_trig270_1);
-  RUN_TEST(test_k6A_newIgn_trig360_1);
-  RUN_TEST(test_k6A_newIgn_trigNeg90_1);
-  RUN_TEST(test_k6A_newIgn_trigNeg180_1);
-  RUN_TEST(test_k6A_newIgn_trigNeg270_1);
-  RUN_TEST(test_k6A_newIgn_trigNeg360_1);
+  SET_UNITY_FILENAME() {
 
-  RUN_TEST(test_k6A_newIgn_trig0_2);
-  RUN_TEST(test_k6A_newIgn_trig90_2);
-  RUN_TEST(test_k6A_newIgn_trig180_2);
-  RUN_TEST(test_k6A_newIgn_trig270_2);
-  RUN_TEST(test_K6A_newIgn_trig366);
-  RUN_TEST(test_k6A_newIgn_trigNeg90_2);
-  RUN_TEST(test_k6A_newIgn_trigNeg180_2);
-  RUN_TEST(test_k6A_newIgn_trigNeg270_2);
-  RUN_TEST(test_K6A_newIgn_trigNeg366);          
+    RUN_TEST(test_k6A_newIgn_trig0_1);
+    RUN_TEST(test_k6A_newIgn_trig90_1);
+    RUN_TEST(test_k6A_newIgn_trig180_1);
+    RUN_TEST(test_k6A_newIgn_trig270_1);
+    RUN_TEST(test_k6A_newIgn_trig360_1);
+    RUN_TEST(test_k6A_newIgn_trigNeg90_1);
+    RUN_TEST(test_k6A_newIgn_trigNeg180_1);
+    RUN_TEST(test_k6A_newIgn_trigNeg270_1);
+    RUN_TEST(test_k6A_newIgn_trigNeg360_1);
+
+    RUN_TEST(test_k6A_newIgn_trig0_2);
+    RUN_TEST(test_k6A_newIgn_trig90_2);
+    RUN_TEST(test_k6A_newIgn_trig180_2);
+    RUN_TEST(test_k6A_newIgn_trig270_2);
+    RUN_TEST(test_K6A_newIgn_trig366);
+    RUN_TEST(test_k6A_newIgn_trigNeg90_2);
+    RUN_TEST(test_k6A_newIgn_trigNeg180_2);
+    RUN_TEST(test_k6A_newIgn_trigNeg270_2);
+    RUN_TEST(test_K6A_newIgn_trigNeg366);
+  }
 }

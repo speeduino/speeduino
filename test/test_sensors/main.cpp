@@ -1,13 +1,11 @@
 #include <Arduino.h>
 #include <unity.h>
-#include "tests_crankmaths.h"
 
-extern void testPercent(void);
-extern void testDivision(void);
-extern void testBitShift(void);
-extern void test_LOW_PASS_FILTER(void);
 
 #define UNITY_EXCLUDE_DETAILS
+
+extern void test_fastMap10Bit(void);
+extern void test_map_sampling(void);
 
 void setup()
 {
@@ -19,12 +17,9 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testCrankMaths();
-    testPercent();
-    testDivision();
-    testBitShift();
-    test_LOW_PASS_FILTER();
-
+    test_fastMap10Bit();
+    test_map_sampling();
+    
     UNITY_END(); // stop unit testing
 }
 

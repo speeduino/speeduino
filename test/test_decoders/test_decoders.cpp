@@ -11,6 +11,8 @@
 #include "NGC/test_ngc.h"
 #include "SuzukiK6A/SuzukiK6A.h"
 
+extern void testDecoder_General(void);
+
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -29,6 +31,7 @@ void setup()
     testNGC();
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
+    testDecoder_General();
 
     UNITY_END(); // stop unit testing
 }

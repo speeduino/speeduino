@@ -1,4 +1,5 @@
 #include <unity.h>
+#include "../../test_utils.h"
 #include "decoders.h"
 #include "init.h"
 
@@ -6,6 +7,7 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
     triggerSetup_SuzukiK6A();
     configPage4.triggerAngle = 0U;
 
+    extern volatile unsigned long toothLastToothTime;
     toothLastToothTime = micros() - 150U;
     toothCurrentCount = toothNum;
     // Allow some variance since the algorithm relies on calling micros();
@@ -54,13 +56,17 @@ static void test_k6a_getCrankAngle_tooth8(void) {
 
 void testSuzukiK6A_getCrankAngle()
 {
-    RUN_TEST(test_k6a_getCrankAngle_tooth0);
-    RUN_TEST(test_k6a_getCrankAngle_tooth1);
-    RUN_TEST(test_k6a_getCrankAngle_tooth2);
-    RUN_TEST(test_k6a_getCrankAngle_tooth3);
-    RUN_TEST(test_k6a_getCrankAngle_tooth4);
-    RUN_TEST(test_k6a_getCrankAngle_tooth5);
-    RUN_TEST(test_k6a_getCrankAngle_tooth6);
-    RUN_TEST(test_k6a_getCrankAngle_tooth7);
-    RUN_TEST(test_k6a_getCrankAngle_tooth8);
+    SET_UNITY_FILENAME() {
+
+        RUN_TEST(test_k6a_getCrankAngle_tooth0);
+        RUN_TEST(test_k6a_getCrankAngle_tooth1);
+        RUN_TEST(test_k6a_getCrankAngle_tooth2);
+        RUN_TEST(test_k6a_getCrankAngle_tooth3);
+        RUN_TEST(test_k6a_getCrankAngle_tooth4);
+        RUN_TEST(test_k6a_getCrankAngle_tooth5);
+        RUN_TEST(test_k6a_getCrankAngle_tooth6);
+        RUN_TEST(test_k6a_getCrankAngle_tooth7);
+        RUN_TEST(test_k6a_getCrankAngle_tooth8);
+
+    }
 }
