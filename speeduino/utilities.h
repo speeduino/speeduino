@@ -62,5 +62,8 @@ int16_t ProgrammableIOGetData(uint16_t index);
 #define PP_INC_10 11
 #define PP_INC_11 12
 #define PP_INC_12 13
+#define PP_INC_14 15
+#define PP_INC_15 16
+#define PP_INC_16 17
 
 #endif // UTILS_H
