@@ -55,24 +55,23 @@ uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
 uint8_t dfcoTaper;
 
-TESTABLE_CONSTEXPR table2D taeTable(_countof(configPage4.taeValues), configPage4.taeValues, configPage4.taeBins);
-TESTABLE_CONSTEXPR table2D maeTable(_countof(configPage4.maeRates), configPage4.maeRates, configPage4.maeBins);
-TESTABLE_CONSTEXPR table2D WUETable(_countof(configPage2.wueValues), configPage2.wueValues, configPage4.wueBins);
-TESTABLE_CONSTEXPR table2D ASETable(_countof(configPage2.asePct), configPage2.asePct, configPage2.aseBins);
-TESTABLE_CONSTEXPR table2D ASECountTable(_countof(configPage2.aseCount), configPage2.aseCount, configPage2.aseBins);
-TESTABLE_CONSTEXPR table2D crankingEnrichTable(_countof(configPage10.crankingEnrichValues), configPage10.crankingEnrichValues, configPage10.crankingEnrichBins);
-TESTABLE_CONSTEXPR table2D dwellVCorrectionTable(_countof(configPage4.dwellCorrectionValues), configPage4.dwellCorrectionValues, configPage6.voltageCorrectionBins);
-TESTABLE_CONSTEXPR table2D injectorVCorrectionTable(_countof(configPage6.injVoltageCorrectionValues), configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
-TESTABLE_CONSTEXPR table2D IATDensityCorrectionTable(_countof(configPage6.airDenRates), configPage6.airDenRates, configPage6.airDenBins);
-TESTABLE_CONSTEXPR table2D baroFuelTable(_countof(configPage4.baroFuelValues), configPage4.baroFuelValues, configPage4.baroFuelBins);
-TESTABLE_CONSTEXPR table2D IATRetardTable(_countof(configPage4.iatRetValues), configPage4.iatRetValues, configPage4.iatRetBins);
-TESTABLE_CONSTEXPR table2D idleAdvanceTable(_countof(configPage4.idleAdvValues), configPage4.idleAdvValues, configPage4.idleAdvBins);
-TESTABLE_CONSTEXPR table2D CLTAdvanceTable(_countof(configPage4.cltAdvValues), configPage4.cltAdvValues, configPage4.cltAdvBins);
-TESTABLE_CONSTEXPR table2D flexFuelTable(_countof(configPage10.flexFuelAdj), configPage10.flexFuelAdj, configPage10.flexFuelBins);
-TESTABLE_CONSTEXPR table2D flexAdvTable(_countof(configPage10.flexAdvAdj), configPage10.flexAdvAdj, configPage10.flexAdvBins);
-TESTABLE_CONSTEXPR table2D flexBoostTable(_countof(configPage10.flexBoostAdj), configPage10.flexBoostAdj, configPage10.flexBoostBins);
-TESTABLE_CONSTEXPR table2D fuelTempTable(_countof(configPage10.fuelTempValues), configPage10.fuelTempValues, configPage10.fuelTempBins);
-TESTABLE_CONSTEXPR table2D wmiAdvTable(_countof(configPage10.wmiAdvAdj), configPage10.wmiAdvAdj, configPage10.wmiAdvBins);
+TESTABLE_CONSTEXPR table2du8u8_4 taeTable(configPage4.taeValues, configPage4.taeBins);
+TESTABLE_CONSTEXPR table2du8u8_4 maeTable(configPage4.maeRates, configPage4.maeBins);
+TESTABLE_CONSTEXPR table2du8u8_10 WUETable(configPage2.wueValues, configPage4.wueBins);
+TESTABLE_CONSTEXPR table2du8u8_4 ASETable(configPage2.asePct, configPage2.aseBins);
+TESTABLE_CONSTEXPR table2du8u8_4 ASECountTable(configPage2.aseCount, configPage2.aseBins);
+TESTABLE_CONSTEXPR table2du8u8_4 crankingEnrichTable(configPage10.crankingEnrichValues, configPage10.crankingEnrichBins);
+TESTABLE_CONSTEXPR table2du8u8_6 dwellVCorrectionTable(configPage4.dwellCorrectionValues, configPage6.voltageCorrectionBins);
+TESTABLE_CONSTEXPR table2du8u8_6 injectorVCorrectionTable(configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
+TESTABLE_CONSTEXPR table2du8u8_9 IATDensityCorrectionTable(configPage6.airDenRates, configPage6.airDenBins);
+TESTABLE_CONSTEXPR table2du8u8_8 baroFuelTable(configPage4.baroFuelValues, configPage4.baroFuelBins);
+TESTABLE_CONSTEXPR table2du8u8_6 IATRetardTable(configPage4.iatRetValues, configPage4.iatRetBins);
+TESTABLE_CONSTEXPR table2du8u8_6 idleAdvanceTable(configPage4.idleAdvValues, configPage4.idleAdvBins);
+TESTABLE_CONSTEXPR table2du8u8_6 CLTAdvanceTable(configPage4.cltAdvValues, configPage4.cltAdvBins);
+TESTABLE_CONSTEXPR table2du8u8_6 flexFuelTable(configPage10.flexFuelAdj, configPage10.flexFuelBins);
+TESTABLE_CONSTEXPR table2du8u8_6 flexAdvTable(configPage10.flexAdvAdj, configPage10.flexAdvBins);
+TESTABLE_CONSTEXPR table2du8u8_6 fuelTempTable(configPage10.fuelTempValues, configPage10.fuelTempBins);
+TESTABLE_CONSTEXPR table2du8u8_6 wmiAdvTable(configPage10.wmiAdvAdj, configPage10.wmiAdvBins);
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
@@ -165,17 +164,16 @@ byte correctionWUE(void)
 {
   byte WUEValue;
   //Possibly reduce the frequency this runs at (Costs about 50 loops per second)
-  //if (currentStatus.coolant > (WUETable.axisX[9] - CALIBRATION_TEMPERATURE_OFFSET))
-  if (currentStatus.coolant > (table2D_getAxisValue(&WUETable, 9) - CALIBRATION_TEMPERATURE_OFFSET))
+  if (currentStatus.coolant > (WUETable.axis[WUETable.size()-1U] - CALIBRATION_TEMPERATURE_OFFSET))
   {
     //This prevents us doing the 2D lookup if we're already up to temp
     BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = table2D_getRawValue(&WUETable, 9);
+    WUEValue = WUETable.values[WUETable.size()-1U];
   }
   else
   {
     BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = table2D_getValue(&WUETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    WUEValue = table2D_getValue(&WUETable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
   }
 
   return WUEValue;
@@ -190,7 +188,7 @@ uint16_t correctionCranking(void)
   //Check if we are actually cranking
   if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = table2D_getValue(&crankingEnrichTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
     crankingEnrichTaper = 0;
   }
@@ -198,7 +196,7 @@ uint16_t correctionCranking(void)
   //If we're not cranking, check if if cranking enrichment tapering to ASE should be done
   else if ( crankingEnrichTaper < configPage10.crankingEnrichTaper )
   {
-    crankingValue = table2D_getValue(&crankingEnrichTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+    crankingValue = table2D_getValue(&crankingEnrichTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
     //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
     unsigned long taperStart = (unsigned long) crankingValue * 100 / currentStatus.ASEValue;
@@ -225,10 +223,10 @@ byte correctionASE(void)
   {
     if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
     {
-      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
         BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-        ASEValue = 100 + table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+        ASEValue = 100 + table2D_getValue(&ASETable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
         aseTaper = 0;
       }
       else
@@ -236,7 +234,7 @@ byte correctionASE(void)
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
           BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
-          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET), 0);
+          ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)), 0);
           aseTaper++;
         }
         else
@@ -358,7 +356,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&maeTable, currentStatus.mapDOT / 10); //The x-axis of mae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&maeTable, (uint8_t)(currentStatus.mapDOT / 10)); //The x-axis of mae table is divided by 10 to fit values in byte.
   
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
@@ -424,7 +422,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&taeTable, currentStatus.tpsDOT / 10); //The x-axis of tae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&taeTable, (uint8_t)(currentStatus.tpsDOT / 10)); //The x-axis of tae table is divided by 10 to fit values in byte.
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
             uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
@@ -503,7 +501,7 @@ This corrects for changes in air density from movement of the temperature.
 byte correctionIATDensity(void)
 {
   byte IATValue = 100;
-  IATValue = table2D_getValue(&IATDensityCorrectionTable, currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
+  IATValue = table2D_getValue(&IATDensityCorrectionTable, (uint8_t)(currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
 
   return IATValue;
 }
@@ -603,7 +601,7 @@ byte correctionFuelTemp(void)
 
   if (configPage2.flexEnabled == 1)
   {
-    fuelTempValue = table2D_getValue(&fuelTempTable, currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET);
+    fuelTempValue = table2D_getValue(&fuelTempTable, (uint8_t)(currentStatus.fuelTemp + CALIBRATION_TEMPERATURE_OFFSET));
   }
   return fuelTempValue;
 }
@@ -774,7 +772,7 @@ int8_t correctionWMITiming(int8_t advance)
   {
     if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPM >= configPage10.wmiRPM) && (currentStatus.MAP/2 >= configPage10.wmiMAP) && ((currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
     {
-      return (int16_t) advance + table2D_getValue(&wmiAdvTable, currentStatus.MAP/2) - OFFSET_IGNITION; //Negative values are achieved with offset
+      return advance + (int8_t)table2D_getValue(&wmiAdvTable, (uint8_t)(currentStatus.MAP/2)) - OFFSET_IGNITION; //Negative values are achieved with offset
     }
   }
   return advance;
@@ -783,7 +781,7 @@ int8_t correctionWMITiming(int8_t advance)
  */
 int8_t correctionIATretard(int8_t advance)
 {
-  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, currentStatus.IAT);
+  int8_t advanceIATadjust = table2D_getValue(&IATRetardTable, (uint8_t)currentStatus.IAT);
 
   return advance - advanceIATadjust;
 }
@@ -793,7 +791,7 @@ int8_t correctionCLTadvance(int8_t advance)
 {
   int8_t ignCLTValue = advance;
   //Adjust the advance based on CLT.
-  int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) - 15;
+  int8_t advanceCLTadjust = (int16_t)(table2D_getValue(&CLTAdvanceTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) - 15;
   ignCLTValue = (advance + advanceCLTadjust);
   
   return ignCLTValue;
@@ -821,7 +819,7 @@ int8_t correctionIdleAdvance(int8_t advance)
       }
       else
       {
-        int8_t advanceIdleAdjust = (int16_t)(table2D_getValue(&idleAdvanceTable, idleRPMdelta)) - 15;
+        int8_t advanceIdleAdjust = (int8_t)table2D_getValue(&idleAdvanceTable, (uint8_t)idleRPMdelta) - 15;
         if(configPage2.idleAdvEnabled == 1) { ignIdleValue = (advance + advanceIdleAdjust); }
         else if(configPage2.idleAdvEnabled == 2) { ignIdleValue = advanceIdleAdjust; }
       }

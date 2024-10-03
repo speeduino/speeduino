@@ -283,7 +283,7 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-static constexpr table2D PrimingPulseTable(_countof(configPage2.primePulse), configPage2.primePulse, configPage2.primeBins);
+static constexpr table2du8u8_4 PrimingPulseTable(configPage2.primePulse, configPage2.primeBins);
 
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
@@ -291,7 +291,7 @@ static constexpr table2D PrimingPulseTable(_countof(configPage2.primePulse), con
  */
 extern void beginInjectorPriming(void)
 {
-  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET);
+  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET));
   if( (primingValue > 0) && (currentStatus.TPS <= configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.

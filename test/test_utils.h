@@ -133,28 +133,29 @@ static inline void populate_table_P(table3d_t &table,
 }
 
 // Populate a 2d table with constant values
-static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
-  for (uint8_t index=0; index<pTable->length; ++index) {
-    ((uint8_t*)pTable->values.data)[index] = value;
-    ((uint8_t*)pTable->axis.data)[index] = bin;
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, value_t value, axis_t bin) {
+  for (uint8_t index=0; index<sizeT; ++index) {
+    (value_t&)(pTable->values[index]) = value;
+    (axis_t&)(pTable->axis[index]) = bin;
   }
   pTable->cache.cacheTime = UINT8_MAX;
 }
 
-template <typename TValue, typename TBin>
-static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
-  memcpy(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
-  memcpy(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, const value_t values[], const axis_t bins[]) {
+  memcpy((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
+  memcpy((void*)pTable->values, values, sizeT * sizeof(value_t));
   pTable->cache.cacheTime = UINT8_MAX;
 }
 
 // Populate a 2d table (from PROGMEM if available)
 // You would typically declare the 2 source arrays using TEST_DATA_P
-template <typename TValue, typename TBin>
-static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable_P(table2D<axis_t, value_t, sizeT> *pTable, const value_t values[], const axis_t bins[]) {
 #if defined(PROGMEM)
-  memcpy_P(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
-  memcpy_P(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
+  memcpy_P((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
+  memcpy_P((void*)pTable->values, values, sizeT * sizeof(value_t));
   pTable->cache.cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)

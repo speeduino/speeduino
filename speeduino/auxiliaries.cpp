@@ -54,7 +54,7 @@ uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
 #endif
-static constexpr table2D fanPWMTable(_countof(configPage9.PWMFanDuty), configPage9.PWMFanDuty, configPage6.fanPWMBins);
+static constexpr table2du8u8_4 fanPWMTable(configPage9.PWMFanDuty, configPage6.fanPWMBins);
 
 bool acIsEnabled;
 bool acStandAloneFanIsEnabled;
@@ -73,7 +73,7 @@ bool vvtIsHot;
 bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static constexpr table2D flexBoostTable(_countof(configPage10.flexBoostAdj), configPage10.flexBoostAdj, configPage10.flexBoostBins);
+static constexpr table2du8s16_6 flexBoostTable(configPage10.flexBoostAdj, configPage10.flexBoostBins);
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -389,7 +389,7 @@ void fanControl(void)
       }
       else
       {
-        byte tempFanDuty = table2D_getValue(&fanPWMTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //In normal situation read PWM duty from the table
+        byte tempFanDuty = table2D_getValue(&fanPWMTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {

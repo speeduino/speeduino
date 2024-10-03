@@ -61,10 +61,10 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 
-static constexpr table2D injectorAngleTable(_countof(configPage2.injAng), configPage2.injAng, configPage2.injAngRPM);
-static constexpr table2D rotarySplitTable(_countof(configPage10.rotarySplitValues), configPage10.rotarySplitValues, configPage10.rotarySplitBins);
-static constexpr table2D rollingCutTable(_countof(configPage15.rollingProtCutPercent), configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
-static constexpr table2D idleTargetTable(_countof(configPage6.iacCLValues), configPage6.iacCLValues, configPage6.iacBins);
+static constexpr table2du8u16_4 injectorAngleTable(configPage2.injAng, configPage2.injAngRPM);
+static constexpr table2du8u8_8 rotarySplitTable(configPage10.rotarySplitValues, configPage10.rotarySplitBins);
+static constexpr table2di8u8_4 rollingCutTable(configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
+static constexpr table2du8u8_10 idleTargetTable(configPage6.iacCLValues, configPage6.iacBins);
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 
@@ -313,7 +313,7 @@ void __attribute__((always_inline)) loop(void)
       //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
       if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
-        currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
+        currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)); //All temps are offset by 40 degrees
         if(BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON)) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
       }
 
@@ -841,7 +841,7 @@ void __attribute__((always_inline)) loop(void)
           uint8_t cutPercent = 0;
           int16_t rpmDelta = currentStatus.RPM - maxAllowedRPM;
           if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
-          else { cutPercent = table2D_getValue(&rollingCutTable, (rpmDelta / 10) ); } //
+          else { cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); } //
           
 
           for(uint8_t x=0; x<max(maxIgnOutputs, maxInjOutputs); x++)
@@ -1352,7 +1352,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       else if(configPage4.sparkMode == IGN_MODE_ROTARY)
       {
         byte splitDegrees = 0;
-        splitDegrees = table2D_getValue(&rotarySplitTable, currentStatus.ignLoad);
+        splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)currentStatus.ignLoad);
 
         //The trailing angles are set relative to the leading ones
         calculateIgnitionTrailingRotary(dwellAngle, splitDegrees, ignition1EndAngle, &ignition3EndAngle, &ignition3StartAngle);
