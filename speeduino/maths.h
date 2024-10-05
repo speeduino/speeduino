@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "globals.h"
+#include "bit_shifts.h"
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -13,7 +14,7 @@
 #include "src/libdivide/constant_fast_div.h"
 #endif
 
-extern uint8_t random1to100(void);
+uint8_t random1to100(void);
 
 /**
  * @defgroup group-rounded-div Rounding integer division
@@ -80,7 +81,7 @@ extern uint8_t random1to100(void);
 /**
  * @brief Rounded \em unsigned integer division
  * 
- * This is slighty faster than the signed version (DIV_ROUND_CLOSEST(n, d, t))
+ * This is slightly faster than the signed version (DIV_ROUND_CLOSEST(n, d, t))
  * 
  * @warning For performance reasons, this macro does not promote integers.
  * So it will overflow if n>MAX(t)-(d/2).
@@ -91,26 +92,19 @@ extern uint8_t random1to100(void);
  */
 #define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
 
-/**
- * @brief Rounded arithmetic right shift
- * 
- * Right shifting throws away bits. When use for fixed point division, this
- * effecitvely rounds down (towards zero). To round-to-the-nearest-integer
- * when right-shifting by S, just add in 2 power S−1 (which is the 
- * fixed-point equivalent of 0.5) first
- * 
- * @param n The value to shift
- * @param s The shift distance in bits
- */
-#define RSHIFT_ROUND(n, s) (((n)+(1UL<<(s-1UL)))>>(s))
 ///@}
 
 /** @brief Test whether the parameter is an integer or not. */
 #define IS_INTEGER(d) ((d) == (int32_t)(d))
 
-/**
- * @defgroup group-div100 Optimised integer divison by 100
+/** 
  * @{
+ * @brief Performance optimised integer division by 100. I.e. same as n/100
+ * 
+ * Uses the rounding behaviour controlled by @ref DIV_ROUND_BEHAVIOR
+ * 
+ * @param n Dividend to divide by 100
+ * @return n/100, with rounding behavior applied
  */
 static inline uint16_t div100(uint16_t n) {
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
@@ -156,7 +150,7 @@ static inline int32_t div100(int32_t n) {
     }
     return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
 #else
-    return DIV_ROUND_CLOSEST(n, UINT32_C(100), int32_t);
+    return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
 }
 #endif
@@ -183,9 +177,11 @@ static inline uint32_t div360(uint32_t n) {
  * @param value The value to operate on
  * @return uint32_t 
  */
-static inline uint16_t percentage(uint8_t percent, uint16_t value) {
-    return (uint16_t)div100((uint32_t)value * (uint32_t)percent);
+static inline uint32_t percentage(uint8_t percent, uint32_t value) 
+{
+    return (uint32_t)div100((uint32_t)value * (uint32_t)percent);
 }
+
 
 /**
  * @brief Integer based half-percentage calculation.
@@ -218,12 +214,6 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     if (value>max) { return value - nudgeAmount; }
     return value;
 }
-
-//This is a dedicated function that specifically handles the case of mapping 0-1023 values into a 0 to X range
-//This is a common case because it means converting from a standard 10-bit analog input to a byte or 10-bit analog into 0-511 (Eg the temperature readings)
-#define fastMap1023toX(x, out_max) ( ((uint32_t)(x) * (out_max)) >> 10)
-//This is a new version that allows for out_min
-#define fastMap10Bit(x, out_min, out_max) ( ( ((uint32_t)(x) * ((out_max)-(out_min))) >> 10 ) + (out_min))
 
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
 
@@ -302,6 +292,57 @@ static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
 #else
     return (uint16_t)UDIV_ROUND_CLOSEST(dividend, (uint32_t)divisor, uint32_t);
 #endif
+}
+
+/**
+ * @brief clamps a given value between the minimum and maximum thresholds.
+ * 
+ * Uses operator< to compare the values.
+ * 
+ * @tparam T Any type that supports operator<
+ * @param v The value to clamp 
+ * @param lo The minimum threshold
+ * @param hi The maximum threshold
+ * @return if v compares less than lo, returns lo; otherwise if hi compares less than v, returns hi; otherwise returns v.
+ */
+template<class T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi){
+    return v<lo ? lo : hi<v ? hi : v;
+}
+
+/// @cond
+
+template <typename T, typename TPrime>
+static inline T LOW_PASS_FILTER_8BIT(T input, uint8_t alpha, T prior) {
+  // Intermediate steps are for MISRA compliance
+  // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
+  static constexpr T ALPHA_MAX = (T)256;
+  T inv_alpha = ALPHA_MAX - (T)alpha;
+  TPrime prior_alpha = (prior * (TPrime)alpha);
+  TPrime preshift = (input * (TPrime)inv_alpha) + prior_alpha;
+  return (T)(preshift / ALPHA_MAX); // Division should resolve to a shift & avoids a MISRA violation
+}
+
+/// @endcond
+
+/**
+ * @brief Simple low pass IIR filter 16-bit values
+ * 
+ * This is effectively implementing the smooth filter from playground.arduino.cc/Main/Smooth
+ * But removes the use of floats and uses 8 bits of fixed precision.
+ * 
+ * @param input incoming unfiltered value
+ * @param alpha filter factor. 0=off, 255=full smoothing (0.00 to 0.99 in float, 0-99%)
+ * @param prior previous *filtered* value.
+ * @return uint16_t The filtered input
+ */
+static inline uint16_t LOW_PASS_FILTER(uint16_t input, uint8_t alpha, uint16_t prior) {
+    return LOW_PASS_FILTER_8BIT<uint16_t, uint32_t>(input, alpha, prior);
+}
+
+/** @brief Simple low pass IIR filter for S16 values */
+static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prior) {
+    return LOW_PASS_FILTER_8BIT<int16_t, int32_t>(input, alpha, prior);
 }
 
 #endif

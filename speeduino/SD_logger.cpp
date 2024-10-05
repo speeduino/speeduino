@@ -405,10 +405,10 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
 
     //Sector number (4 bytes) - This byte order might be backwards
     uint32_t sector = logFile.firstSector();
-    buffer[18] = ((sector) & 255);
-    buffer[19] = ((sector >> 8) & 255);
-    buffer[20] = ((sector >> 16) & 255);
-    buffer[21] = ((sector >> 24) & 255);
+    buffer[18] = ((sector) & UINT8_MAX);
+    buffer[19] = ((sector >> 8) & UINT8_MAX);
+    buffer[20] = ((sector >> 16) & UINT8_MAX);
+    buffer[21] = ((sector >> 24) & UINT8_MAX);
 
     //Unsure on the below 6 bytes, possibly last accessed or modified date/time?
     buffer[22] = 0;
@@ -420,10 +420,10 @@ bool getSDLogFileDetails(uint8_t* buffer, uint16_t logNumber)
 
     //File size (4 bytes). Little endian
     uint32_t size = logFile.fileSize();
-    buffer[28] = ((size) & 255);
-    buffer[29] = ((size >> 8) & 255);
-    buffer[30] = ((size >> 16) & 255);
-    buffer[31] = ((size >> 24) & 255);
+    buffer[28] = ((size) & UINT8_MAX);
+    buffer[29] = ((size >> 8) & UINT8_MAX);
+    buffer[30] = ((size >> 16) & UINT8_MAX);
+    buffer[31] = ((size >> 24) & UINT8_MAX);
 
   }
 

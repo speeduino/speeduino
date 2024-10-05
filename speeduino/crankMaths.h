@@ -10,8 +10,23 @@
  * @param angle A crank angle in degrees
  * @return int16_t 
  */
-static inline int16_t ignitionLimits(int16_t angle) {
+static inline int16_t ignitionLimits(int16_t angle)
+{
     return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+}
+
+/**
+ * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_INJ]
+ * 
+ * @param angle A crank angle in degrees
+ * @return int16_t 
+ */
+static inline int16_t injectorLimits(int16_t angle)
+{
+    int16_t tempAngle = angle;
+    if(tempAngle < 0) { tempAngle = tempAngle + CRANK_ANGLE_MAX_INJ; }
+    while(tempAngle > CRANK_ANGLE_MAX_INJ ) { tempAngle -= CRANK_ANGLE_MAX_INJ; }
+    return tempAngle;
 }
 
 /** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
@@ -32,6 +47,13 @@ static inline int16_t ignitionLimits(int16_t angle) {
 #define MIN_RPM ((MICROS_PER_DEG_1_RPM/(UINT16_MAX/16UL))+1UL)
 
 /**
+ * @brief Set the revolution time, from which some of the degree<-->angle conversions are derived
+ * 
+ * @param revolutionTime The crank revolution time.
+ */
+void setAngleConverterRevolutionTime(uint32_t revolutionTime);
+
+/**
  * @name Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
  * 
@@ -41,39 +63,17 @@ static inline int16_t ignitionLimits(int16_t angle) {
  * @param angle Angle in degrees
  * @return Time interval in uS
  */
-///@{
-/** @brief Converts based on the time one degree of rotation takes 
- * 
- * Inverse of timeToAngleDegPerMicroSec
-*/
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
-
-/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
- * 
- * Inverse of timeToAngleIntervalTooth
-*/
-uint32_t angleToTimeIntervalTooth(uint16_t angle);
-///@}
 
 /**
  * @name Converts a time interval in microsecods to the equivalent degrees of angular (crank)
  * rotation at current RPM.
  *
+ * Inverse of angleToTimeMicroSecPerDegree
+ *
  * @param time Time interval in uS
  * @return Angle in degrees
  */
-///@{
-/** @brief Converts based on the the interval on time one degree of rotation takes 
- * 
- * Inverse of angleToTimeMicroSecPerDegree
-*/
 uint16_t timeToAngleDegPerMicroSec(uint32_t time);
-
-/** @brief Converts based on the time interval between the 2 most recently detected decoder teeth 
- * 
- * Inverse of angleToTimeIntervalTooth
-*/
-uint16_t timeToAngleIntervalTooth(uint32_t time);
-///@}
 
 #endif

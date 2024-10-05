@@ -45,7 +45,7 @@ class PID
 
 
   //Display functions ****************************************************************
-	int16_t GetKp();						  // These functions query the pid for interal values.
+	int16_t GetKp();						  // These functions query the pid for internal values.
 	int16_t GetKi();						  //  they were created mainly for the pid front-end,
 	int16_t GetKd();						  // where it's important to know what is actually
 	int GetMode();						  //  inside the PID.
@@ -216,7 +216,7 @@ class integerPID_ideal
 	int controllerDirection;
 
     long *myInput;              //
-    uint16_t *myOutput;         //   This is a percentage figure multipled by 100 (To give 2 points of precision)
+    uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)
     uint16_t *mySetpoint;       //
     uint16_t *mySensitivity;
     byte *mySampleTime;

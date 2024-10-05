@@ -44,9 +44,9 @@ byte activateTPSDOT; //The tpsDOT value seen when the MAE was activated.
 bool idleAdvActive = false;
 uint16_t AFRnextCycle;
 unsigned long knockStartTime;
-byte lastKnockCount;
-int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+uint8_t knockLastRecoveryStep;
+//int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
+//int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
 uint8_t aseTaper;
 uint8_t dfcoDelay;
 uint8_t idleAdvTaper;
@@ -57,11 +57,24 @@ uint8_t dfcoTaper;
  */
 void initialiseCorrections(void)
 {
-  egoPID.SetMode(AUTOMATIC); //Turn O2 PID on
+  PID_output = 0L;
+  PID_O2 = 0L;
+  PID_AFRTarget = 0L;
+  // Toggling between modes resets the PID internal state
+  // This is required by the unit tests
+  // TODO: modify PID code to provide a method to reset it. 
+  egoPID.SetMode(AUTOMATIC);
+  egoPID.SetMode(MANUAL);
+  egoPID.SetMode(AUTOMATIC);
+
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
-  currentStatus.knockActive = false;
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE);
+  currentStatus.knockCount = 1;
+  knockLastRecoveryStep = 0;
+  knockStartTime = 0;
   currentStatus.battery10 = 125; //Set battery voltage to sensible value for dwell correction for "flying start" (else ignition gets spurious pulses after boot)  
 }
 
@@ -100,7 +113,7 @@ uint16_t correctionsFuel(void)
   if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
   {
     inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
-    currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
+    //currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
   }
   if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
   {
@@ -129,46 +142,6 @@ uint16_t correctionsFuel(void)
 
   if(sumCorrections > 1500) { sumCorrections = 1500; } //This is the maximum allowable increase during cranking
   return (uint16_t)sumCorrections;
-}
-
-/*
-correctionsTotal() calls all the other corrections functions and combines their results.
-This is the only function that should be called from anywhere outside the file
-*/
-static inline byte correctionsFuel_new(void)
-{
-  uint32_t sumCorrections = 100;
-  byte numCorrections = 0;
-
-  //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
-  currentStatus.wueCorrection = correctionWUE(); numCorrections++;
-  currentStatus.ASEValue = correctionASE(); numCorrections++;
-  uint16_t correctionCrankingValue = correctionCranking(); numCorrections++;
-  currentStatus.AEamount = correctionAccel(); numCorrections++;
-  uint8_t correctionFloodClearValue = correctionFloodClear(); numCorrections++;
-  currentStatus.egoCorrection = correctionAFRClosedLoop(); numCorrections++;
-
-  currentStatus.batCorrection = correctionBatVoltage(); numCorrections++;
-  currentStatus.iatCorrection = correctionIATDensity(); numCorrections++;
-  currentStatus.baroCorrection = correctionBaro(); numCorrections++; 
-  currentStatus.flexCorrection = correctionFlex(); numCorrections++;
-  currentStatus.launchCorrection = correctionLaunch(); numCorrections++;
-
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
-
-  sumCorrections = currentStatus.wueCorrection \
-                  + currentStatus.ASEValue \
-                  + correctionCrankingValue \
-                  + currentStatus.AEamount \
-                  + correctionFloodClearValue \
-                  + currentStatus.batCorrection \
-                  + currentStatus.iatCorrection \
-                  + currentStatus.baroCorrection \
-                  + currentStatus.flexCorrection \
-                  + currentStatus.launchCorrection;
-  return (sumCorrections);
-
 }
 
 /** Warm Up Enrichment (WUE) corrections.
@@ -260,7 +233,8 @@ byte correctionASE(void)
       }
       
       //Safety checks
-      if(ASEValue > 255) { ASEValue = 255; }
+      if(ASEValue > UINT8_MAX) { ASEValue = UINT8_MAX; }
+      
       if(ASEValue < 0) { ASEValue = 0; }
       ASEValue = (byte)ASEValue;
     }
@@ -294,8 +268,8 @@ uint16_t correctionAccel(void)
   if(configPage2.aeMode == AE_MODE_MAP)
   {
     //Get the MAP rate change
-    MAP_change = (currentStatus.MAP - MAPlast);
-    currentStatus.mapDOT = (MICROS_PER_SEC / (MAP_time - MAPlast_time)) * MAP_change; //This is the % per second that the MAP has moved
+    MAP_change = getMAPDelta();
+    currentStatus.mapDOT = (MICROS_PER_SEC / getMAPDeltaTime()) * MAP_change; //This is the % per second that the MAP has moved
     //currentStatus.mapDOT = 15 * MAP_change; //This is the kpa per second that the MAP has moved
   }
   else if(configPage2.aeMode == AE_MODE_TPS)
@@ -620,6 +594,26 @@ byte correctionFuelTemp(void)
   return fuelTempValue;
 }
 
+
+// ============================= Air Fuel Ratio (AFR) correction =============================
+
+uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
+  //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
+  if (page2.incorporateAFR == true) {
+    return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM);
+  }
+  if (page6.egoType!=EGO_TYPE_OFF) 
+  {
+    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    //Note that this should only run after the sensor warmup delay when using Include AFR option,
+    if( current.runSecs > page6.ego_sdelay) { 
+      return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM); 
+    }
+    return current.O2; //Catch all
+  }
+  return current.afrTarget;
+}
+
 /** Lookup the AFR target table and perform either a simple or PID adjustment based on this.
 
 Simple (Best suited to narrowband sensors):
@@ -635,18 +629,9 @@ PID (Best suited to wideband sensors):
 */
 byte correctionAFRClosedLoop(void)
 {
-  byte AFRValue = 100;
-  
-  if( (configPage6.egoType > 0) || (configPage2.incorporateAFR == true) ) //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
-  {
-    currentStatus.afrTarget = currentStatus.O2; //Catch all in case the below doesn't run. This prevents the Include AFR option from doing crazy things if the AFR target conditions aren't met. This value is changed again below if all conditions are met.
+  byte AFRValue = 100U;
 
-    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
-    //Note that this should only run after the sensor warmup delay when using Include AFR option, but on Incorporate AFR option it needs to be done at all times
-    if( (currentStatus.runSecs > configPage6.ego_sdelay) || (configPage2.incorporateAFR == true) ) { currentStatus.afrTarget = get3DTableValue(&afrTable, currentStatus.fuelLoad, currentStatus.RPM); } //Perform the target lookup
-  }
-  
-  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent interator wind-up.
+  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent iterator wind-up.
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     
@@ -655,7 +640,7 @@ byte correctionAFRClosedLoop(void)
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) && ( currentStatus.MAP <= (configPage9.egoMAPMax * 2U) ) && ( currentStatus.MAP >= (configPage9.egoMAPMin * 2U) ) )
+      if( (currentStatus.coolant > (int)(configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) && ( currentStatus.MAP <= (configPage9.egoMAPMax * 2) ) && ( currentStatus.MAP >= (configPage9.egoMAPMin * 2) ) )
       {
 
         //Check which algorithm is used, simple or PID
@@ -724,7 +709,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  advance = correctionKnock(advance);
+  advance = correctionKnockTiming(advance);
 
   advance = correctionDFCOignition(advance);
 
@@ -849,13 +834,13 @@ When some other mechanism is also present, wait until the engine is no more than
 int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
-  BIT_CLEAR(currentStatus.spark, BIT_SPARK_SFTLIM);
+  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SFTLIM);
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
   {
     if (currentStatus.RPMdiv100 >= configPage4.SoftRevLim) //Softcut RPM limit
     {
-      BIT_SET(currentStatus.spark, BIT_SPARK_SFTLIM);
+      BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
       if( softLimitTime < configPage4.SoftLimMax )
       {
         if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
@@ -896,16 +881,21 @@ int8_t correctionSoftLaunch(int8_t advance)
 {
   byte ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
-  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) )
+  if(  configPage6.launchEnabled && currentStatus.clutchTrigger && \
+      (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && \
+      (currentStatus.RPM > ((unsigned int)(configPage6.lnchSoftLim) * 100)) && \
+      (currentStatus.TPS >= configPage10.lnchCtrlTPS) && \
+      ( (configPage2.vssMode == 0) || ((configPage2.vssMode > 0) && (currentStatus.vss <= configPage10.lnchCtrlVss)) ) \
+    )
   {
     currentStatus.launchingSoft = true;
-    BIT_SET(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
     ignSoftLaunchValue = configPage6.lnchRetard;
   }
   else
   {
     currentStatus.launchingSoft = false;
-    BIT_CLEAR(currentStatus.spark, BIT_SPARK_SLAUNCH);
+    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
   }
 
   return ignSoftLaunchValue;
@@ -918,48 +908,136 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   if(configPage6.flatSEnable && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
-    BIT_SET(currentStatus.spark2, BIT_SPARK2_FLATSS);
+    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
     ignSoftFlatValue = configPage6.flatSRetard;
   }
-  else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
+  else { BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS); }
 
   return ignSoftFlatValue;
 }
-/** Ignition knock (retard) correction.
- */
-int8_t correctionKnock(int8_t advance)
-{
-  byte knockRetard = 0;
 
-  //First check is to do the window calculations (Assuming knock is enabled)
-  if( configPage10.knock_mode != KNOCK_MODE_OFF )
+
+uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
+{
+  uint8_t tmpKnockRetard = curKnockRetard;
+  //Check whether we are in knock recovery
+  if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
   {
-    knockWindowMin = table2D_getValue(&knockWindowStartTable, currentStatus.RPMdiv100);
-    knockWindowMax = knockWindowMin + table2D_getValue(&knockWindowDurationTable, currentStatus.RPMdiv100);
+    //Calculate how many recovery steps have occurred since the 
+    uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
+    uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
+    int8_t recoveryTimingAdj = 0;
+    if(recoverySteps > knockLastRecoveryStep) 
+    { 
+      recoveryTimingAdj = (recoverySteps - knockLastRecoveryStep) * configPage10.knock_recoveryStep;
+      knockLastRecoveryStep = recoverySteps;
+    }
+
+    if(recoveryTimingAdj < currentStatus.knockRetard)
+    {
+      //Add the timing back in provided we haven't reached the end of the recovery period
+      tmpKnockRetard = currentStatus.knockRetard - recoveryTimingAdj;
+    }
+    else 
+    {
+      //Recovery is complete. Knock adjustment is set to 0 and we reset the knock status
+      tmpKnockRetard = 0;
+      BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+      knockStartTime = 0;
+      currentStatus.knockCount = 0;
+    }
   }
 
+  return tmpKnockRetard;
+}
+
+/** Ignition knock (retard) correction.
+ */
+int8_t correctionKnockTiming(int8_t advance)
+{
+  byte tmpKnockRetard = 0;
 
   if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL)  )
   {
     //
-    if(knockCounter > configPage10.knock_count)
+    if(currentStatus.knockCount >= configPage10.knock_count)
     {
-      if(currentStatus.knockActive == true)
+      if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
       {
-        //Knock retard is currently 
+        //Knock retard is currently active already.
+        tmpKnockRetard = currentStatus.knockRetard;
+
+        //Check if additional knock events occurred
+        if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE))
+        {
+          //Check if the latest event was far enough after the initial knock event to pull further timing
+          if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+          {
+            //Recalculate the amount timing being pulled
+            currentStatus.knockCount++;
+            tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+            knockStartTime = micros();
+            knockLastRecoveryStep = 0;
+          }
+        }
+        tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
       }
       else
       {
-        //Knock needs to be activated
-        lastKnockCount = knockCounter;
+        //Knock currently inactive but needs to be active now
         knockStartTime = micros();
-        knockRetard = configPage10.knock_firstStep;
+        tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize); //
+        BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+        knockLastRecoveryStep = 0;
       }
     }
 
+    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE); //Reset the knock pulse indicator
   }
+  else if( (configPage10.knock_mode == KNOCK_MODE_ANALOG)  )
+  {
+    if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
+    {
+      //Check if additional knock events occurred
+      //Additional knock events are when the step time has passed and the voltage remains above the threshold
+      if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+      {
+        //Sufficient time has passed, check the current knock value
+        uint16_t tmpKnockReading = getAnalogKnock();
 
-  return advance - knockRetard;
+        if(tmpKnockReading > configPage10.knock_threshold)
+        {
+          currentStatus.knockCount++;
+          tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+          knockStartTime = micros();
+          knockLastRecoveryStep = 0;
+        }   
+      }
+      tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
+    }
+    else
+    {
+      //If not is not currently active, we read the analog pin every 30Hz
+      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ) ) 
+      { 
+        uint16_t tmpKnockReading = getAnalogKnock();
+
+        if(tmpKnockReading > configPage10.knock_threshold)
+        {
+          //Knock detected
+          knockStartTime = micros();
+          tmpKnockRetard = configPage10.knock_firstStep; //
+          BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+          knockLastRecoveryStep = 0;
+        }
+      }
+    }
+  }
+  
+
+  tmpKnockRetard = min(tmpKnockRetard, configPage10.knock_maxRetard); //Ensure the commanded retard is not higher than the maximum allowed.
+  currentStatus.knockRetard = tmpKnockRetard;
+  return advance - tmpKnockRetard;
 }
 
 /** Ignition DFCO taper correction.

@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include <unity.h>
-
+#include "../test_utils.h"
 #include "scheduler.h"
 
 #define TIMEOUT 1000
@@ -172,6 +172,8 @@ void test_status_running_to_off_ign8(void)
 
 void test_status_running_to_off(void)
 {
+  SET_UNITY_FILENAME() {
+
     RUN_TEST(test_status_running_to_off_inj1);
     RUN_TEST(test_status_running_to_off_inj2);
     RUN_TEST(test_status_running_to_off_inj3);
@@ -189,4 +191,5 @@ void test_status_running_to_off(void)
     RUN_TEST(test_status_running_to_off_ign6);
     RUN_TEST(test_status_running_to_off_ign7);
     RUN_TEST(test_status_running_to_off_ign8);
+  }
 }

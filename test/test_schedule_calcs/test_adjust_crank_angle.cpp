@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "schedule_calcs.h"
+#include "../test_utils.h"
 
 static void nullIgnCallback(void) {};
 
@@ -75,7 +76,10 @@ void test_adjust_crank_angle_running()
 
 void test_adjust_crank_angle()
 {
+  SET_UNITY_FILENAME() {
+
     RUN_TEST(test_adjust_crank_angle_pending_below_minrevolutions);
     RUN_TEST(test_adjust_crank_angle_pending_above_minrevolutions);
     RUN_TEST(test_adjust_crank_angle_running);
+  }
 }

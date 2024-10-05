@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     # Only try to run hardware unit tests on the upstream repository
-    if: github.repository_owner == 'noisymime'
+    if: github.repository_owner == 'speeduino'
 
     runs-on: ubuntu-latest
 
@@ -26,17 +26,17 @@ jobs:
         platform: x32
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.7'
+        python-version: '3.10'
 
     - name: Install PlatformIO
       run: |
         python -m pip install --upgrade pip
         pip install --upgrade platformio
         pip install wheel
-        platformio update
-        platformio platform update
+        platformio upgrade
+        platformio pkg update
         
     - name: Run Unit Tests
       env:

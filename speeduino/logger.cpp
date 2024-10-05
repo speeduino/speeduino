@@ -1,6 +1,5 @@
 #include "globals.h"
 #include "logger.h"
-#include "errors.h"
 #include "decoders.h"
 #include "init.h"
 #include "maths.h"
@@ -70,7 +69,7 @@ byte getTSLogEntry(uint16_t byteNum)
 
     case 30: statusValue = lowByte(currentStatus.boostTarget >> 1U); break; //Divide boost target by 2 to fit in a byte
     case 31: statusValue = lowByte(div100(currentStatus.boostDuty)); break;
-    case 32: statusValue = currentStatus.spark; break; //Spark related bitfield
+    case 32: statusValue = currentStatus.status2; break; //Spark related bitfield
 
     //rpmDOT must be sent as a signed integer
     case 33: statusValue = lowByte(currentStatus.rpmDOT); break;
@@ -120,7 +119,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 73: statusValue = highByte(currentStatus.canin[15]); break;
 
     case 74: statusValue = currentStatus.tpsADC; break;
-    case 75: statusValue = getNextError(); break;
+    case 75: statusValue = 0U /*getNextError()*/; break;
 
     case 76: statusValue = lowByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
     case 77: statusValue = highByte(currentStatus.PW1); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -174,6 +173,9 @@ byte getTSLogEntry(uint16_t byteNum)
     case 124: statusValue = currentStatus.airConStatus; break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
+    case 127: statusValue = currentStatus.status5; break;
+    case 128: statusValue = currentStatus.knockCount; break;
+    case 129: statusValue = currentStatus.knockRetard; break;
     default: statusValue = 0; // MISRA check
   }
 
@@ -227,7 +229,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 
     case 24: statusValue = currentStatus.boostTarget; break;
     case 25: statusValue = currentStatus.boostDuty; break;
-    case 26: statusValue = currentStatus.spark; break; //Spark related bitfield
+    case 26: statusValue = currentStatus.status2; break; //Spark related bitfield
     case 27: statusValue = currentStatus.rpmDOT; break;
     case 28: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
     case 29: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
@@ -255,7 +257,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 50: statusValue = currentStatus.canin[15]; break;
     
     case 51: statusValue = currentStatus.tpsADC; break;
-    case 52: statusValue = getNextError(); break;
+    case 52: statusValue = 0U /*getNextError()*/; break;
 
     case 53: statusValue = currentStatus.PW1; break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
     case 54: statusValue = currentStatus.PW2; break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -269,7 +271,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 
     case 60: statusValue = currentStatus.fuelLoad; break;
     case 61: statusValue = currentStatus.ignLoad; break;
-    case 62: statusValue = currentStatus.dwell; break;
+    case 62: statusValue = (int16_t)currentStatus.dwell; break;
     case 63: statusValue = currentStatus.CLIdleTarget; break;
     case 64: statusValue = currentStatus.mapDOT; break;
     case 65: statusValue = currentStatus.vvt1Angle; break;
@@ -298,6 +300,9 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 88: statusValue = currentStatus.fanDuty; break;
     case 89: statusValue = currentStatus.airConStatus; break;
     case 90: statusValue = currentStatus.actualDwell; break;
+    case 91: statusValue = currentStatus.status5; break;
+    case 92: statusValue = currentStatus.knockCount; break;
+    case 93: statusValue = currentStatus.knockRetard; break;
     default: statusValue = 0; // MISRA check
   }
 
@@ -338,7 +343,7 @@ float getReadableFloatLogEntry(uint16_t logIndex)
 uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 {
   uint8_t statusValue = 0;
-  currentStatus.spark ^= (-currentStatus.hasSync ^ currentStatus.spark) & (1U << BIT_SPARK_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   switch(byteNum)
   {
@@ -375,7 +380,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 
     case 29: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
     case 30: statusValue = (byte)(currentStatus.boostDuty / 100); break;
-    case 31: statusValue = currentStatus.spark; break; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
+    case 31: statusValue = currentStatus.status2; break; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
     case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
     case 33: statusValue = highByte(currentStatus.rpmDOT); break;
     case 34: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
@@ -419,7 +424,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 72: statusValue = highByte(currentStatus.canin[15]); break;
 
     case 73: statusValue = currentStatus.tpsADC; break;
-    case 74: statusValue = getNextError(); break; // errorNum (0:1), currentError(2:7)
+    case 74: statusValue = 0U /*getNextError()*/; break; // errorNum (0:1), currentError(2:7)
 
     case 75: statusValue = currentStatus.launchCorrection; break;
     case 76: statusValue = lowByte(currentStatus.PW2); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.

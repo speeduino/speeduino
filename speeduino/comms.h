@@ -21,6 +21,9 @@
   #define TABLE_BLOCKING_FACTOR 64
 #endif
 
+extern Stream *pPrimarySerial;
+#define primarySerial (*pPrimarySerial)
+
 /**
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.

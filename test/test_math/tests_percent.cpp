@@ -2,6 +2,7 @@
 #include "test_fp_support.h"
 #include "maths.h"
 #include "../timer.hpp"
+#include "../test_utils.h"
 
 static void test_percent(uint8_t percent, uint16_t value) {
   assert_rounded_div((uint32_t)percent*value, 100, percentage(percent, value));
@@ -62,6 +63,7 @@ void test_maths_halfpercent_U16(void)
 
 void test_maths_halfPercentage_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr int16_t iters = 4;
     constexpr uint8_t start_index = 3;
     constexpr uint8_t end_index = 99;
@@ -78,11 +80,13 @@ void test_maths_halfPercentage_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 
 void test_maths_percentage_perf(void)
 {
+#if defined(ARDUINO_ARCH_AVR)
     constexpr uint16_t iters = 4;
     constexpr uint8_t start_index = 3;
     constexpr uint8_t end_index = 99;
@@ -99,14 +103,18 @@ void test_maths_percentage_perf(void)
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 }
 
 void testPercent()
 {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_maths_percent_U8);
   RUN_TEST(test_maths_percent_U16);
   RUN_TEST(test_maths_halfpercent_U8);
   RUN_TEST(test_maths_halfpercent_U16);
   RUN_TEST(test_maths_halfPercentage_perf);
   RUN_TEST(test_maths_percentage_perf);
+  }
 }
