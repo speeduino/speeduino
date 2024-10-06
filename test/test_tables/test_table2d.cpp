@@ -25,22 +25,13 @@ static uint16_t table2d_axis_u16[TEST_TABLE2D_SIZE] = {
     123, 2539, 5531, 7537, 11329, 16363, 21323, 26357, 32029,
 };
 
-static table2D table2d_u8_u8;
-static table2D table2d_u8_u16;
-static table2D table2d_u16_u8;
-static table2D table2d_u16_u16;
-static table2D table2d_u8_i8;
-static table2D table2d_i16_u8;
+static table2D table2d_u8_u8(_countof(table2d_data_u8), table2d_data_u8, table2d_axis_u8);
+static table2D table2d_u8_u16(_countof(table2d_data_u8), table2d_data_u8, table2d_axis_u16);
+static table2D table2d_u16_u8(_countof(table2d_data_u16), table2d_data_u16, table2d_axis_u8);
+static table2D table2d_u16_u16(_countof(table2d_data_u16), table2d_data_u16, table2d_axis_u16);
+static table2D table2d_u8_i8(_countof(table2d_data_u8), table2d_data_u8, table2d_axis_i8);
+static table2D table2d_i16_u8(_countof(table2d_data_i16), table2d_data_i16, table2d_axis_u8);
 
-static void setup_test_subjects(void)
-{
-    construct2dTable(table2d_u8_u8, table2d_data_u8, table2d_axis_u8);
-    construct2dTable(table2d_u8_u16, table2d_data_u8, table2d_axis_u16);
-    construct2dTable(table2d_u16_u8, table2d_data_u16, table2d_axis_u8);
-    construct2dTable(table2d_u16_u16, table2d_data_u16, table2d_axis_u16);
-    construct2dTable(table2d_u8_i8, table2d_data_u8, table2d_axis_i8);
-    construct2dTable(table2d_i16_u8, table2d_data_i16, table2d_axis_u8);
-}
 
 template <typename TValue, typename TAxis>
 static void test_table2dLookup(const table2D &table, const TValue *data, const TAxis *axis, uint8_t binFrac)
@@ -50,7 +41,7 @@ static void test_table2dLookup(const table2D &table, const TValue *data, const T
         TValue expected = map(lookupValue, axis[i], axis[i+1], data[i], data[i+1]);
         TValue result = (TValue)table2D_getValue(&table, lookupValue);
         char szMsg[128];
-        sprintf(szMsg, "Loop: %d, VT %d, AT %d lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", i, table.values.typeIndicator, table.axis.typeIndicator, lookupValue, data[i], data[i+1], binFrac);
+        sprintf(szMsg, "Loop: %d, VT %d, AT %d lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", i, table.values.type, table.axis.type, lookupValue, data[i], data[i+1], binFrac);
         TEST_ASSERT_INT_WITHIN_MESSAGE(1U, expected, result, szMsg);
         TEST_ASSERT_EQUAL(i+1, table.cache.lastBinUpperIndex);
     }
@@ -58,8 +49,6 @@ static void test_table2dLookup(const table2D &table, const TValue *data, const T
 
 static void test_table2dLookup_bin_midpoints(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup(table2d_u8_u8, table2d_data_u8, table2d_axis_u8, 50U);
     test_table2dLookup(table2d_u8_u16, table2d_data_u8, table2d_axis_u16, 50U);
     test_table2dLookup(table2d_u16_u8, table2d_data_u16, table2d_axis_u8, 50U);
@@ -70,8 +59,6 @@ static void test_table2dLookup_bin_midpoints(void)
 
 static void test_table2dLookup_bin_33(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup(table2d_u8_u8, table2d_data_u8, table2d_axis_u8, 33U);
     test_table2dLookup(table2d_u8_u16, table2d_data_u8, table2d_axis_u16, 33U);
     test_table2dLookup(table2d_u16_u8, table2d_data_u16, table2d_axis_u8, 33U);
@@ -82,8 +69,6 @@ static void test_table2dLookup_bin_33(void)
 
 static void test_table2dLookup_bin_66(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup(table2d_u8_u8, table2d_data_u8, table2d_axis_u8, 66U);
     test_table2dLookup(table2d_u8_u16, table2d_data_u8, table2d_axis_u16, 66U);
     test_table2dLookup(table2d_u16_u8, table2d_data_u16, table2d_axis_u8, 66U);
@@ -97,17 +82,15 @@ static void test_table2dLookup_bin_edges(const table2D &table, const TValue *dat
     for (uint8_t i=0; i<TEST_TABLE2D_SIZE; ++i) {
         TValue result = (TValue)table2D_getValue(&table, axis[i]);
         char szMsg[64];
-        sprintf(szMsg, "%d, %d lookup %d: %d", table.values.typeIndicator, table.axis.typeIndicator, i, axis[i]);
+        sprintf(szMsg, "%d, %d lookup %d: %d", table.values.type, table.axis.type, i, axis[i]);
         TEST_ASSERT_EQUAL_MESSAGE(data[i], result, szMsg);
-        sprintf(szMsg, "%d, %d lookup %d", table.values.typeIndicator, table.axis.typeIndicator, i);
+        sprintf(szMsg, "%d, %d lookup %d", table.values.type, table.axis.type, i);
         TEST_ASSERT_EQUAL_MESSAGE(i==0  ? 1 : i, table.cache.lastBinUpperIndex, szMsg);
     }
 }
 
 static void test_table2dLookup_bin_edges(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup_bin_edges(table2d_u8_u8, table2d_data_u8, table2d_axis_u8);
     test_table2dLookup_bin_edges(table2d_u8_u16, table2d_data_u8, table2d_axis_u16);
     test_table2dLookup_bin_edges(table2d_u16_u8, table2d_data_u16, table2d_axis_u8);
@@ -124,8 +107,6 @@ static void test_table2dLookup_overMax(const table2D &table, const TValue *data,
 
 static void test_table2dLookup_overMax(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup_overMax(table2d_u8_u8, table2d_data_u8, table2d_axis_u8);
     test_table2dLookup_overMax(table2d_u8_u16, table2d_data_u8, table2d_axis_u16);
     test_table2dLookup_overMax(table2d_u16_u8, table2d_data_u16, table2d_axis_u8);
@@ -143,8 +124,6 @@ static void test_table2dLookup_underMin(const table2D &table, const TValue *data
 
 static void test_table2dLookup_underMin(void)
 {
-    setup_test_subjects();
-
     test_table2dLookup_underMin(table2d_u8_u8, table2d_data_u8, table2d_axis_u8);
     test_table2dLookup_underMin(table2d_u8_u16, table2d_data_u8, table2d_axis_u16);
     test_table2dLookup_underMin(table2d_u16_u8, table2d_data_u16, table2d_axis_u8);
@@ -156,8 +135,6 @@ static void test_table2dLookup_underMin(void)
 
 static void test_table2d_all_decrementing(void)
 {
-    setup_test_subjects();
-
     uint8_t u8_u8_result_last = UINT8_MAX;
     for (uint8_t loop=table2d_axis_u8[0]; loop<=table2d_axis_u8[TEST_TABLE2D_SIZE-1]; ++loop)
     {

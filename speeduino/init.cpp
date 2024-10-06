@@ -36,44 +36,6 @@
 #pragma GCC optimize ("Os") 
 #endif
 
-#if !defined(UNIT_TEST)
-static inline 
-#endif
-void construct2dTables(void) {
-  //Repoint the 2D table structs to the config pages that were just loaded
-  construct2dTable(taeTable,                  configPage4.taeValues,                  configPage4.taeBins);
-  construct2dTable(maeTable,                  configPage4.maeRates,                   configPage4.maeBins);
-  construct2dTable(WUETable,                  configPage2.wueValues,                  configPage4.wueBins);
-  construct2dTable(ASETable,                  configPage2.asePct,                     configPage2.aseBins);
-  construct2dTable(ASECountTable,             configPage2.aseCount,                   configPage2.aseBins);
-  construct2dTable(PrimingPulseTable,         configPage2.primePulse,                 configPage2.primeBins);
-  construct2dTable(crankingEnrichTable,       configPage10.crankingEnrichValues,      configPage10.crankingEnrichBins);
-  construct2dTable(dwellVCorrectionTable,     configPage4.dwellCorrectionValues,      configPage6.voltageCorrectionBins);
-  construct2dTable(injectorVCorrectionTable,  configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
-  construct2dTable(IATDensityCorrectionTable, configPage6.airDenRates,                configPage6.airDenBins);
-  construct2dTable(baroFuelTable,             configPage4.baroFuelValues,             configPage4.baroFuelBins);
-  construct2dTable(IATRetardTable,            configPage4.iatRetValues,               configPage4.iatRetBins);
-  construct2dTable(CLTAdvanceTable,           configPage4.cltAdvValues,               configPage4.cltAdvBins);
-  construct2dTable(idleTargetTable,           configPage6.iacCLValues,                configPage6.iacBins);
-  construct2dTable(idleAdvanceTable,          configPage4.idleAdvValues,              configPage4.idleAdvBins);
-  construct2dTable(rotarySplitTable,          configPage10.rotarySplitValues,         configPage10.rotarySplitBins);
-  construct2dTable(flexFuelTable,             configPage10.flexFuelAdj,               configPage10.flexFuelBins);
-  construct2dTable(flexAdvTable,              configPage10.flexAdvAdj,                configPage10.flexAdvBins);
-  construct2dTable(fuelTempTable,             configPage10.fuelTempValues,            configPage10.fuelTempBins);
-  construct2dTable(oilPressureProtectTable,   configPage10.oilPressureProtMins,       configPage10.oilPressureProtRPM);
-  construct2dTable(coolantProtectTable,       configPage9.coolantProtRPM,             configPage9.coolantProtTemp);
-  construct2dTable(fanPWMTable,               configPage9.PWMFanDuty,                 configPage6.fanPWMBins);
-  construct2dTable(wmiAdvTable,               configPage10.wmiAdvAdj,                 configPage10.wmiAdvBins);
-  construct2dTable(rollingCutTable,           configPage15.rollingProtCutPercent,     configPage15.rollingProtRPMDelta);
-  construct2dTable(injectorAngleTable,        configPage2.injAng,                     configPage2.injAngRPM);
-  construct2dTable(flexBoostTable,            configPage10.flexBoostAdj,              configPage10.flexBoostBins);
-  construct2dTable(knockWindowStartTable,     configPage10.knock_window_angle,        configPage10.knock_window_rpms);
-  construct2dTable(knockWindowDurationTable,  configPage10.knock_window_dur,          configPage10.knock_window_rpms);
-  construct2dTable(cltCalibrationTable,       cltCalibration_values,                  cltCalibration_bins);
-  construct2dTable(iatCalibrationTable,       iatCalibration_values,                  iatCalibration_bins);
-  construct2dTable(o2CalibrationTable,        o2Calibration_values,                   o2Calibration_bins);
-}
-
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
  * - Initialise and set sizes of 3D tables
@@ -170,10 +132,7 @@ void initialiseAll(void)
 #endif
     pPrimarySerial = &Serial; //Default to standard Serial interface
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
-
-    //Repoint the 2D table structs to the config pages that were just loaded
-    construct2dTables();
-    
+   
     //Setup the calibration tables
     loadCalibration();   
 
