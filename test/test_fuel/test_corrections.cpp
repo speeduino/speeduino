@@ -8,12 +8,9 @@
 #include "speeduino.h"
 #include "sensors_map_structs.h"
 
-extern void construct2dTables(void);
-
 extern byte correctionWUE(void);
 
 static void setup_wue_table(void) {
-  construct2dTables();
   initialiseCorrections();
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
@@ -86,7 +83,6 @@ static void test_corrections_WUE(void)
 extern uint16_t correctionCranking(void);
 
 static void setup_correctionCranking_table(void) {
-  construct2dTables();
   initialiseCorrections();
 
   uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
@@ -100,7 +96,6 @@ static void setup_correctionCranking_table(void) {
 }
 
 static void test_corrections_cranking_inactive(void) {
-  construct2dTables();
   initialiseCorrections();
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
@@ -200,7 +195,6 @@ extern uint8_t correctionASE(void);
 
 static void test_corrections_ASE_inactive_cranking(void)
 {
-  construct2dTables();
   initialiseCorrections();
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
 
@@ -210,7 +204,6 @@ static void test_corrections_ASE_inactive_cranking(void)
 }
 
 static inline void setup_correctionASE(void) {
-  construct2dTables();
   initialiseCorrections();
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
@@ -327,7 +320,6 @@ static void setup_valid_ego_cycle(void) {
 }
 
 static void setup_ego_simple(void) {
-  construct2dTables();
   initialiseCorrections();
 
   configPage6.egoType = EGO_TYPE_NARROW;
@@ -613,7 +605,6 @@ static void test_corrections_closedloop(void)
 uint8_t correctionFlex(void);
 
 static void setupFlexFuelTable(void) {
-  construct2dTables();
   initialiseCorrections();
 
   TEST_DATA_P uint8_t bins[] = { 0, 10, 30, 50, 60, 70 };
@@ -638,7 +629,6 @@ static void test_corrections_flex_flex_on(void) {
 uint8_t correctionFuelTemp(void);
 
 static void setupFuelTempTable(void) {
-  construct2dTables();
   initialiseCorrections();
 
   TEST_DATA_P uint8_t bins[] = { 0, 10, 30, 50, 60, 70 };
@@ -671,7 +661,6 @@ static void test_corrections_flex(void)
 uint8_t correctionBatVoltage(void);
 
 static void setup_battery_correction(void) {
-  construct2dTables();
   initialiseCorrections();
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
@@ -742,7 +731,6 @@ extern bool correctionDFCO(void);
 
 static void setup_DFCO_on_taper_off_no_delay()
 {
-  construct2dTables();
   initialiseCorrections();
 
   //Sets all the required conditions to have the DFCO be active
@@ -948,7 +936,6 @@ static void reset_AE(void) {
 }
 
 static void setup_AE(void) {
-  construct2dTables();
   initialiseCorrections();
 
   //Divided by 100
@@ -1599,7 +1586,6 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
 }
 
 static void test_corrections_correctionsFuel_clip_limit(void) {
-  construct2dTables();
   initialiseCorrections();
 
   populate_2dtable(&injectorVCorrectionTable, 255, 100);

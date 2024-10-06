@@ -6,8 +6,6 @@
 #include "../test_utils.h"
 #include "sensors.h"
 
-extern void construct2dTables(void);
-
 extern int8_t correctionFixedTiming(int8_t advance);
 
 static void test_correctionFixedTiming_inactive(void) {
@@ -34,7 +32,6 @@ static void test_correctionFixedTiming(void) {
 extern int8_t correctionCLTadvance(int8_t advance);
 
 static void setup_clt_advance_table(void) {
-  construct2dTables();
   initialiseCorrections();
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -99,7 +96,6 @@ static void test_correctionCrankingFixedTiming(void) {
 extern int8_t correctionFlexTiming(int8_t advance);
 
 static void setup_flexAdv(void) {
-  construct2dTables();
   initialiseCorrections();
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -136,7 +132,6 @@ static void test_correctionFlexTiming(void) {
 extern int8_t correctionWMITiming(int8_t advance);
 
 static void setup_WMIAdv(void) {
-    construct2dTables();
     initialiseCorrections();
 
     configPage10.wmiEnabled= 1;
@@ -238,7 +233,6 @@ static void test_correctionWMITiming(void) {
 extern int8_t correctionIATretard(int8_t advance);
 
 static void setup_IATRetard(void) {
-  construct2dTables();
   initialiseCorrections();
 
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
@@ -275,7 +269,6 @@ static void setup_idleadv_ctps(void) {
 }
 
 static void setup_correctionIdleAdvance(void) {
-    construct2dTables();
     initialiseCorrections();
 
     TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
@@ -412,7 +405,6 @@ static void test_correctionIdleAdvance(void) {
 extern int8_t correctionSoftRevLimit(int8_t advance);
 
 static void setup_correctionSoftRevLimit(void) {
-    construct2dTables();
     initialiseCorrections();
 
     configPage6.engineProtectType = PROTECT_CUT_IGN;
@@ -765,7 +757,6 @@ static void test_correctionKnock(void) {
 }
 
 static void setup_correctionsDwell(void) {
-    construct2dTables();
     initialiseCorrections();
     
     configPage4.sparkDur = 10;
