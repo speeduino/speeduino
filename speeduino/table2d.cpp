@@ -14,32 +14,7 @@ Note that this may clear some of the existing values of the table
 #include "globals.h"
 #endif
 
-static void construct2dTable(table2D &table, OpaqueArray::TypeIndicator valueType, OpaqueArray::TypeIndicator axisType, uint8_t length, const void *values, const void *bins) {
-  table.values = { valueType, values };
-  table.axis = { axisType, bins };
-  table.length = length;
-  table.cache.lastInput = INT16_MAX;
-  table.cache.lastBinUpperIndex = 1U;
-}
 
-void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint8_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT8, OpaqueArray::TYPE_UINT8, length, values, bins);
-}
-void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const int8_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT8, OpaqueArray::TYPE_INT8, length, values, bins);
-}
-void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint16_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT16, OpaqueArray::TYPE_UINT16, length, values, bins);
-}
-void _construct2dTable(table2D &table, uint8_t length, const uint8_t *values, const uint16_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT8, OpaqueArray::TYPE_UINT16, length, values, bins);
-}
-void _construct2dTable(table2D &table, uint8_t length, const uint16_t *values, const uint8_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_UINT16, OpaqueArray::TYPE_UINT8, length, values, bins);
-}
-void _construct2dTable(table2D &table, uint8_t length, const int16_t *values, const uint8_t *bins) {
-  construct2dTable(table, OpaqueArray::TYPE_INT16, OpaqueArray::TYPE_UINT8, length, values, bins);
-}
 
 static inline uint8_t getCacheTime(void) {
 #if !defined(UNIT_TEST)
