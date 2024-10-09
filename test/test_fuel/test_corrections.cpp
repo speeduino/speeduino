@@ -9,6 +9,7 @@
 #include "sensors_map_structs.h"
 
 extern byte correctionWUE(void);
+extern table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
@@ -81,6 +82,7 @@ static void test_corrections_WUE(void)
 }
 
 extern uint16_t correctionCranking(void);
+extern table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 
 static void setup_correctionCranking_table(void) {
   initialiseCorrections();
@@ -202,6 +204,9 @@ static void test_corrections_ASE_inactive_cranking(void)
   TEST_ASSERT_EQUAL(100U, correctionASE());
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_ASE, currentStatus.engine);
 }
+
+extern table2D ASETable; ///< 4 bin After Start Enrichment map (2D)
+extern table2D ASECountTable; ///< 4 bin After Start duration map (2D)
 
 static inline void setup_correctionASE(void) {
   initialiseCorrections();
@@ -603,6 +608,7 @@ static void test_corrections_closedloop(void)
 }
 
 uint8_t correctionFlex(void);
+extern table2D flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 
 static void setupFlexFuelTable(void) {
   initialiseCorrections();
@@ -627,6 +633,7 @@ static void test_corrections_flex_flex_on(void) {
 }
 
 uint8_t correctionFuelTemp(void);
+extern table2D fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 
 static void setupFuelTempTable(void) {
   initialiseCorrections();
@@ -659,6 +666,7 @@ static void test_corrections_flex(void)
 }
 
 uint8_t correctionBatVoltage(void);
+extern table2D injectorVCorrectionTable; ///< 6 bin injector voltage correction (2D)
 
 static void setup_battery_correction(void) {
   initialiseCorrections();
@@ -953,6 +961,8 @@ static void setup_AE(void) {
   reset_AE();
 }
 
+extern table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
+
 static void setup_TAE()
 {
   setup_AE();
@@ -1166,6 +1176,9 @@ extern map_last_read_t& getMapLast(void);
 
 //**********************************************************************************************************************
 //Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
+
+extern table2D maeTable;
+
 static void setup_MAE(void)
 {
   setup_AE();
@@ -1502,6 +1515,9 @@ extern byte correctionIATDensity(void);
 #endif
  
 extern byte correctionBaro(void);
+
+extern table2D IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
+extern table2D baroFuelTable; ///< 8 bin baro correction curve (2D)
 
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
