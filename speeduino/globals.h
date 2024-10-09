@@ -240,8 +240,6 @@ extern struct table2D flexFuelTable;  //6 bin flex fuel correction table for fue
 extern struct table2D flexAdvTable;   //6 bin flex fuel correction table for timing advance (2D)
 extern struct table2D flexBoostTable; //6 bin flex fuel correction table for boost adjustments (2D)
 extern struct table2D fuelTempTable;  //6 bin fuel temperature correction table for fuel adjustments (2D)
-extern struct table2D knockWindowStartTable;
-extern struct table2D knockWindowDurationTable;
 extern struct table2D oilPressureProtectTable;
 extern struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 extern struct table2D coolantProtectTable; //6 bin coolant temperature protection table for engine protection (2D)
