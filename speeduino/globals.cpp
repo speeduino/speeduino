@@ -45,8 +45,6 @@ struct table2D flexFuelTable(_countof(configPage10.flexFuelAdj), configPage10.fl
 struct table2D flexAdvTable(_countof(configPage10.flexAdvAdj), configPage10.flexAdvAdj, configPage10.flexAdvBins);
 struct table2D flexBoostTable(_countof(configPage10.flexBoostAdj), configPage10.flexBoostAdj, configPage10.flexBoostBins);
 struct table2D fuelTempTable(_countof(configPage10.fuelTempValues), configPage10.fuelTempValues, configPage10.fuelTempBins);
-struct table2D knockWindowStartTable(_countof(configPage10.knock_window_angle), configPage10.knock_window_angle, configPage10.knock_window_rpms);
-struct table2D knockWindowDurationTable(_countof(configPage10.knock_window_dur), configPage10.knock_window_dur, configPage10.knock_window_rpms);
 struct table2D oilPressureProtectTable(_countof(configPage10.oilPressureProtMins), configPage10.oilPressureProtMins, configPage10.oilPressureProtRPM);
 struct table2D wmiAdvTable(_countof(configPage10.wmiAdvAdj), configPage10.wmiAdvAdj, configPage10.wmiAdvBins);
 struct table2D coolantProtectTable(_countof(configPage9.coolantProtRPM), configPage9.coolantProtRPM, configPage9.coolantProtTemp);
