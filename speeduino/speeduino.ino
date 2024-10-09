@@ -60,7 +60,14 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
+
+static constexpr table2D injectorAngleTable(_countof(configPage2.injAng), configPage2.injAng, configPage2.injAngRPM);
+static constexpr table2D rotarySplitTable(_countof(configPage10.rotarySplitValues), configPage10.rotarySplitValues, configPage10.rotarySplitBins);
+static constexpr table2D rollingCutTable(_countof(configPage15.rollingProtCutPercent), configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
+static constexpr table2D idleTargetTable(_countof(configPage6.iacCLValues), configPage6.iacCLValues, configPage6.iacBins);
+
 #ifndef UNIT_TEST // Scope guard for unit testing
+
 void setup(void)
 {
   currentStatus.initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely

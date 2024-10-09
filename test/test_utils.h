@@ -143,8 +143,8 @@ static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin)
 
 template <typename TValue, typename TBin>
 static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
-  memcpy(pTable->axis.data, bins, pTable->length * sizeof(TBin));
-  memcpy(pTable->values.data, values, pTable->length * sizeof(TValue));
+  memcpy(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
+  memcpy(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
   pTable->cache.cacheTime = UINT8_MAX;
 }
 
@@ -153,8 +153,8 @@ static inline void populate_2dtable(table2D *pTable, const TValue values[], cons
 template <typename TValue, typename TBin>
 static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
 #if defined(PROGMEM)
-  memcpy_P(pTable->axis.data, bins, pTable->length * sizeof(TBin));
-  memcpy_P(pTable->values.data, values, pTable->length * sizeof(TValue));
+  memcpy_P(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
+  memcpy_P(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
   pTable->cache.cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)

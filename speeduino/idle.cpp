@@ -40,11 +40,11 @@ volatile PINMASK_TYPE idle2_pin_mask;
 volatile PORT_TYPE *idleUpOutput_pin_port;
 volatile PINMASK_TYPE idleUpOutput_pin_mask;
 
-static struct table2D iacPWMTable(_countof(configPage6.iacOLPWMVal), configPage6.iacOLPWMVal, configPage6.iacBins);
-static struct table2D iacStepTable(_countof(configPage6.iacOLStepVal), configPage6.iacOLStepVal, configPage6.iacBins);
+static constexpr table2D iacPWMTable(_countof(configPage6.iacOLPWMVal), configPage6.iacOLPWMVal, configPage6.iacBins);
+static constexpr table2D iacStepTable(_countof(configPage6.iacOLStepVal), configPage6.iacOLStepVal, configPage6.iacBins);
 //Open loop tables specifically for cranking
-static struct table2D iacCrankStepsTable(_countof(configPage6.iacCrankSteps), configPage6.iacCrankSteps, configPage6.iacCrankBins);
-static struct table2D iacCrankDutyTable(_countof(configPage6.iacCrankDuty), configPage6.iacCrankDuty, configPage6.iacCrankBins);
+static constexpr table2D iacCrankStepsTable(_countof(configPage6.iacCrankSteps), configPage6.iacCrankSteps, configPage6.iacCrankBins);
+static constexpr table2D iacCrankDutyTable(_countof(configPage6.iacCrankDuty), configPage6.iacCrankDuty, configPage6.iacCrankBins);
 
 /*
 These functions cover the PWM and stepper idle control

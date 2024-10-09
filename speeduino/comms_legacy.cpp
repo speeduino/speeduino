@@ -1200,7 +1200,6 @@ void receiveCalibration(byte tableID)
       break;
     case 2:
       //O2 table
-      //pnt_TargetTable = (byte *)&o2CalibrationTable;
       pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
       pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
       OFFSET = 0;

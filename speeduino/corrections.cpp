@@ -29,6 +29,8 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
+#include "unit_testing.h"
+#include "utilities.h"
 #include "src/PID_v1/PID_v1.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
@@ -52,6 +54,25 @@ uint8_t dfcoDelay;
 uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
 uint8_t dfcoTaper;
+
+TESTABLE_CONSTEXPR table2D taeTable(_countof(configPage4.taeValues), configPage4.taeValues, configPage4.taeBins);
+TESTABLE_CONSTEXPR table2D maeTable(_countof(configPage4.maeRates), configPage4.maeRates, configPage4.maeBins);
+TESTABLE_CONSTEXPR table2D WUETable(_countof(configPage2.wueValues), configPage2.wueValues, configPage4.wueBins);
+TESTABLE_CONSTEXPR table2D ASETable(_countof(configPage2.asePct), configPage2.asePct, configPage2.aseBins);
+TESTABLE_CONSTEXPR table2D ASECountTable(_countof(configPage2.aseCount), configPage2.aseCount, configPage2.aseBins);
+TESTABLE_CONSTEXPR table2D crankingEnrichTable(_countof(configPage10.crankingEnrichValues), configPage10.crankingEnrichValues, configPage10.crankingEnrichBins);
+TESTABLE_CONSTEXPR table2D dwellVCorrectionTable(_countof(configPage4.dwellCorrectionValues), configPage4.dwellCorrectionValues, configPage6.voltageCorrectionBins);
+TESTABLE_CONSTEXPR table2D injectorVCorrectionTable(_countof(configPage6.injVoltageCorrectionValues), configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
+TESTABLE_CONSTEXPR table2D IATDensityCorrectionTable(_countof(configPage6.airDenRates), configPage6.airDenRates, configPage6.airDenBins);
+TESTABLE_CONSTEXPR table2D baroFuelTable(_countof(configPage4.baroFuelValues), configPage4.baroFuelValues, configPage4.baroFuelBins);
+TESTABLE_CONSTEXPR table2D IATRetardTable(_countof(configPage4.iatRetValues), configPage4.iatRetValues, configPage4.iatRetBins);
+TESTABLE_CONSTEXPR table2D idleAdvanceTable(_countof(configPage4.idleAdvValues), configPage4.idleAdvValues, configPage4.idleAdvBins);
+TESTABLE_CONSTEXPR table2D CLTAdvanceTable(_countof(configPage4.cltAdvValues), configPage4.cltAdvValues, configPage4.cltAdvBins);
+TESTABLE_CONSTEXPR table2D flexFuelTable(_countof(configPage10.flexFuelAdj), configPage10.flexFuelAdj, configPage10.flexFuelBins);
+TESTABLE_CONSTEXPR table2D flexAdvTable(_countof(configPage10.flexAdvAdj), configPage10.flexAdvAdj, configPage10.flexAdvBins);
+TESTABLE_CONSTEXPR table2D flexBoostTable(_countof(configPage10.flexBoostAdj), configPage10.flexBoostAdj, configPage10.flexBoostBins);
+TESTABLE_CONSTEXPR table2D fuelTempTable(_countof(configPage10.fuelTempValues), configPage10.fuelTempValues, configPage10.fuelTempBins);
+TESTABLE_CONSTEXPR table2D wmiAdvTable(_countof(configPage10.wmiAdvAdj), configPage10.wmiAdvAdj, configPage10.wmiAdvBins);
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */

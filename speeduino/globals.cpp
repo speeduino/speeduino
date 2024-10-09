@@ -24,32 +24,7 @@ trimTable3d trim6Table; ///< 6x6 Fuel trim 6 map
 trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
-struct table2D taeTable(_countof(configPage4.taeValues), configPage4.taeValues, configPage4.taeBins);
-struct table2D maeTable(_countof(configPage4.maeRates), configPage4.maeRates, configPage4.maeBins);
-struct table2D WUETable(_countof(configPage2.wueValues), configPage2.wueValues, configPage4.wueBins);
-struct table2D ASETable(_countof(configPage2.asePct), configPage2.asePct, configPage2.aseBins);
-struct table2D ASECountTable(_countof(configPage2.aseCount), configPage2.aseCount, configPage2.aseBins);
-struct table2D PrimingPulseTable(_countof(configPage2.primePulse), configPage2.primePulse, configPage2.primeBins);
-struct table2D crankingEnrichTable(_countof(configPage10.crankingEnrichValues), configPage10.crankingEnrichValues, configPage10.crankingEnrichBins);
-struct table2D dwellVCorrectionTable(_countof(configPage4.dwellCorrectionValues), configPage4.dwellCorrectionValues, configPage6.voltageCorrectionBins);
-struct table2D injectorVCorrectionTable(_countof(configPage6.injVoltageCorrectionValues), configPage6.injVoltageCorrectionValues, configPage6.voltageCorrectionBins);
-struct table2D injectorAngleTable(_countof(configPage2.injAng), configPage2.injAng, configPage2.injAngRPM);
-struct table2D IATDensityCorrectionTable(_countof(configPage6.airDenRates), configPage6.airDenRates, configPage6.airDenBins);
-struct table2D baroFuelTable(_countof(configPage4.baroFuelValues), configPage4.baroFuelValues, configPage4.baroFuelBins);
-struct table2D IATRetardTable(_countof(configPage4.iatRetValues), configPage4.iatRetValues, configPage4.iatRetBins);
-struct table2D idleTargetTable(_countof(configPage6.iacCLValues), configPage6.iacCLValues, configPage6.iacBins);
-struct table2D idleAdvanceTable(_countof(configPage4.idleAdvValues), configPage4.idleAdvValues, configPage4.idleAdvBins);
-struct table2D CLTAdvanceTable(_countof(configPage4.cltAdvValues), configPage4.cltAdvValues, configPage4.cltAdvBins);
-struct table2D rotarySplitTable(_countof(configPage10.rotarySplitValues), configPage10.rotarySplitValues, configPage10.rotarySplitBins);
-struct table2D flexFuelTable(_countof(configPage10.flexFuelAdj), configPage10.flexFuelAdj, configPage10.flexFuelBins);
-struct table2D flexAdvTable(_countof(configPage10.flexAdvAdj), configPage10.flexAdvAdj, configPage10.flexAdvBins);
-struct table2D flexBoostTable(_countof(configPage10.flexBoostAdj), configPage10.flexBoostAdj, configPage10.flexBoostBins);
-struct table2D fuelTempTable(_countof(configPage10.fuelTempValues), configPage10.fuelTempValues, configPage10.fuelTempBins);
-struct table2D oilPressureProtectTable(_countof(configPage10.oilPressureProtMins), configPage10.oilPressureProtMins, configPage10.oilPressureProtRPM);
-struct table2D wmiAdvTable(_countof(configPage10.wmiAdvAdj), configPage10.wmiAdvAdj, configPage10.wmiAdvBins);
-struct table2D coolantProtectTable(_countof(configPage9.coolantProtRPM), configPage9.coolantProtRPM, configPage9.coolantProtTemp);
-struct table2D fanPWMTable(_countof(configPage9.PWMFanDuty), configPage9.PWMFanDuty, configPage6.fanPWMBins);
-struct table2D rollingCutTable(_countof(configPage15.rollingProtCutPercent), configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
+
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
 volatile PORT_TYPE *inj1_pin_port;
@@ -239,13 +214,10 @@ struct config15 configPage15;
 
 uint16_t cltCalibration_bins[32];
 uint16_t cltCalibration_values[32];
-struct table2D cltCalibrationTable(_countof(cltCalibration_values), cltCalibration_values, cltCalibration_bins);
 uint16_t iatCalibration_bins[32];
 uint16_t iatCalibration_values[32];
-struct table2D iatCalibrationTable(_countof(iatCalibration_values), iatCalibration_values, iatCalibration_bins);
 uint16_t o2Calibration_bins[32];
 uint8_t o2Calibration_values[32];
-struct table2D o2CalibrationTable(_countof(o2Calibration_values), o2Calibration_values, o2Calibration_bins); 
 
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
 bool pinIsOutput(byte pin)

@@ -2,8 +2,11 @@
 #include "globals.h"
 #include "engineProtection.h"
 #include "maths.h"
+#include "utilities.h"
 
 byte oilProtStartTime = 0;
+static constexpr table2D oilPressureProtectTable(_countof(configPage10.oilPressureProtMins), configPage10.oilPressureProtMins, configPage10.oilPressureProtRPM);
+static constexpr table2D coolantProtectTable(_countof(configPage9.coolantProtRPM), configPage9.coolantProtRPM, configPage9.coolantProtTemp);
 
 byte checkEngineProtect(void)
 {
