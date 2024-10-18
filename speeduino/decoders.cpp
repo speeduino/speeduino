@@ -5290,7 +5290,7 @@ void triggerPri_RoverMEMS()
     {   
       //Begin the missing tooth detection
       targetGap = (3 * (toothLastToothTime - toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-      currentStatus.hasSync = true;  
+      //currentStatus.hasSync = true;  
       if ( curGap > targetGap) // we've found a gap
       {
         roverMEMSTeethSeen = roverMEMSTeethSeen << 2; // add the space for the gap and the tooth we've just seen so shift 2 bits
@@ -5387,10 +5387,7 @@ void triggerPri_RoverMEMS()
         else if(toothCurrentCount > triggerActualTeeth+1) // no patterns match after a rotation when we only need 32 teeth to match, we've lost sync
         {
           currentStatus.hasSync = false;
-          if(secondaryToothCount > 0)
-            BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC);
-          else
-            BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
           currentStatus.syncLossCounter++;              
         }
       }
@@ -5425,8 +5422,7 @@ static void triggerRoverMEMSCommon(void)
     toothOneTime = curTime;
     revolutionOne = !revolutionOne; //Flip sequential revolution tracker   
   }
-         
-  //if Sequential fuel or ignition is in use, further checks are needed before determining sync
+
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
   {
     //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
@@ -5439,12 +5435,9 @@ static void triggerRoverMEMSCommon(void)
     else if(currentStatus.hasSync != true) 
     { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
   }
-  else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
-          
-  if(currentStatus.hasSync == true)
-  { currentStatus.startRevolutions++; }
-  else 
-  { currentStatus.startRevolutions = 0; }
+  else { currentStatus.hasSync = false;  BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we  set half sync bit
+
+  currentStatus.startRevolutions++;  
 }
 
 
