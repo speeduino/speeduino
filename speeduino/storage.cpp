@@ -25,12 +25,12 @@ A full copy of the license may be found in the projects root directory
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define STORAGE_END 0xFFF       // Should be E2END?
-#define EEPROM_CALIBRATION_CLT_VALUES (STORAGE_END-sizeof(cltCalibration_values))
-#define EEPROM_CALIBRATION_CLT_BINS   (EEPROM_CALIBRATION_CLT_VALUES-sizeof(cltCalibration_bins))
-#define EEPROM_CALIBRATION_IAT_VALUES (EEPROM_CALIBRATION_CLT_BINS-sizeof(iatCalibration_values))
-#define EEPROM_CALIBRATION_IAT_BINS   (EEPROM_CALIBRATION_IAT_VALUES-sizeof(iatCalibration_bins))
-#define EEPROM_CALIBRATION_O2_VALUES  (EEPROM_CALIBRATION_IAT_BINS-sizeof(o2Calibration_values))
-#define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(o2Calibration_bins))
+#define EEPROM_CALIBRATION_CLT_VALUES (STORAGE_END-sizeof(configPage16.cltCalibration_values))
+#define EEPROM_CALIBRATION_CLT_BINS   (EEPROM_CALIBRATION_CLT_VALUES-sizeof(configPage16.cltCalibration_bins))
+#define EEPROM_CALIBRATION_IAT_VALUES (EEPROM_CALIBRATION_CLT_BINS-sizeof(configPage16.iatCalibration_values))
+#define EEPROM_CALIBRATION_IAT_BINS   (EEPROM_CALIBRATION_IAT_VALUES-sizeof(configPage16.iatCalibration_bins))
+#define EEPROM_CALIBRATION_O2_VALUES  (EEPROM_CALIBRATION_IAT_BINS-sizeof(configPage16.o2Calibration_values))
+#define EEPROM_CALIBRATION_O2_BINS    (EEPROM_CALIBRATION_O2_VALUES-sizeof(configPage16.o2Calibration_bins))
 #define EEPROM_LAST_BARO              (EEPROM_CALIBRATION_O2_BINS-1)
 
 
@@ -324,6 +324,13 @@ void writeConfig(uint8_t pageNum)
       -----------------------------------------------------*/
       result = write_range((byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15), result.changeWriteAddress(EEPROM_CONFIG15_START));
       break;
+	  
+	case O2IATCLTPage:
+      /*---------------------------------------------------
+      | Config page 16 (See storage.h for data layout)
+      -----------------------------------------------------*/
+      result = write_range((byte *)&configPage16, (byte *)&configPage16+sizeof(configPage16), result.changeWriteAddress(EEPROM_CONFIG16_START));
+      break;
 
     default:
       break;
@@ -481,6 +488,12 @@ void loadConfig(void)
   load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));  
 
   //*********************************************************************************************************************************************************************************
+  
+   //*********************************************************************************************************************************************************************************
+  //CONFIG PAGE (16) This is an alternate way to view and calibrate CLT, IAT and O2 tables. - HRW
+  load_range(EEPROM_CONFIG16_START, (byte *)&configPage16, (byte *)&configPage16+sizeof(configPage16));  
+
+  //*********************************************************************************************************************************************************************************
 }
 
 /** Read the calibration information from EEPROM.
@@ -491,14 +504,14 @@ void loadCalibration(void)
   // If you modify this function be sure to also modify writeCalibration();
   // it should be a mirror image of this function.
 
-  EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  EEPROM.get(EEPROM_CALIBRATION_O2_BINS, configPage16.o2Calibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_O2_VALUES, configPage16.o2Calibration_values);
   
-  EEPROM.get(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  EEPROM.get(EEPROM_CALIBRATION_IAT_BINS, configPage16.iatCalibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_IAT_VALUES, configPage16.iatCalibration_values);
 
-  EEPROM.get(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-  EEPROM.get(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  EEPROM.get(EEPROM_CALIBRATION_CLT_BINS, configPage16.cltCalibration_bins);
+  EEPROM.get(EEPROM_CALIBRATION_CLT_VALUES, configPage16.cltCalibration_values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -510,32 +523,32 @@ void writeCalibration(void)
   // If you modify this function be sure to also modify loadCalibration();
   // it should be a mirror image of this function.
 
-  EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-  EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+  EEPROM.put(EEPROM_CALIBRATION_O2_BINS, configPage16.o2Calibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, configPage16.o2Calibration_values);
   
-  EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-  EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+  EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, configPage16.iatCalibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, configPage16.iatCalibration_values);
 
-  EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-  EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+  EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, configPage16.cltCalibration_bins);
+  EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, configPage16.cltCalibration_values);
 }
 
 void writeCalibrationPage(uint8_t pageNum)
 {
   if(pageNum == O2_CALIBRATION_PAGE)
   {
-    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2Calibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2Calibration_values);
+    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, configPage16.o2Calibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, configPage16.o2Calibration_values);
   }
   else if(pageNum == IAT_CALIBRATION_PAGE)
   {
-    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibration_values);
+    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, configPage16.iatCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, configPage16.iatCalibration_values);
   }
   else if(pageNum == CLT_CALIBRATION_PAGE)
   {
-    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibration_bins);
-    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibration_values);
+    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, configPage16.cltCalibration_bins);
+    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, configPage16.cltCalibration_values);
   }
 }
 

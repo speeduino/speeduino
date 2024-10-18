@@ -110,7 +110,7 @@
  * | 3682       |4           | O2 Calibration CRC32                 |                                    |
  * | 3686       |56          | Page CRC32 sums (4x14)               | Last first, 14 -> 1                |
  * | 3742       |1           | Baro value saved at init             | @ref EEPROM_LAST_BARO              |
- * | 3743       |64          | O2 Calibration Bins                  | @ref EEPROM_CALIBRATION_O2_BINS    |
+ * | 3743       |64          | O2 Calibration Bins                  | @ref EEPROM_CALIBRATION_O2_BINS    | @ref EEPROM_CONFIG16_START 
  * | 3807       |32          | O2 Calibration Values                | @ref EEPROM_CALIBRATION_O2_VALUES  |
  * | 3839       |64          | IAT Calibration Bins                 | @ref EEPROM_CALIBRATION_IAT_BINS   |
  * | 3903       |64          | IAT Calibration Values               | @ref EEPROM_CALIBRATION_IAT_VALUES |
@@ -186,6 +186,9 @@ extern uint32_t deferEEPROMWritesUntil;
 #define EEPROM_CONFIG15_START 3281
 #define EEPROM_CONFIG15_END   3457
 
+//Page 16 for alternate method of viewing CLT IAT and O2 Tables
+#define EEPROM_CONFIG16_START 3743
+#define EEPROM_CONFIG16_END   4095
 
 #define EEPROM_CALIBRATION_CLT_CRC  3674
 #define EEPROM_CALIBRATION_IAT_CRC  3678
