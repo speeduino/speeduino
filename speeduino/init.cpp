@@ -242,13 +242,13 @@ void initialiseAll(void)
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
     if(configPage2.flexEnabled > 0)
     {
-      attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE);
+      if(!pinIsReserved(pinFlex)) { attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); }
       currentStatus.ethanolPct = 0;
     }
     //Same as above, but for the VSS input
     if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
-      attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING);
+      if(!pinIsReserved(pinVSS)) { attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING); }
     }
     //As above but for knock pulses
     if(configPage10.knock_mode == KNOCK_MODE_DIGITAL)
@@ -256,8 +256,11 @@ void initialiseAll(void)
       if(configPage10.knock_pullup) { pinMode(configPage10.knock_pin, INPUT_PULLUP); }
       else { pinMode(configPage10.knock_pin, INPUT); }
 
-      if(configPage10.knock_trigger == KNOCK_TRIGGER_HIGH) { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, RISING); }
-      else { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, FALLING); }
+      if(!pinIsReserved(configPage10.knock_pin)) 
+      { 
+        if(configPage10.knock_trigger == KNOCK_TRIGGER_HIGH) { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, RISING); }
+        else { attachInterrupt(digitalPinToInterrupt(configPage10.knock_pin), knockPulse, FALLING); }
+      }
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
