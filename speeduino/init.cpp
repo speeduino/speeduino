@@ -2337,7 +2337,7 @@ void setPinMapping(byte boardID)
         pinTrigger2 = 21; //The Cam Sensor pin
 
         pinFuelPump = 5; //Fuel pump output
-        pinTachOut = 8; //Tacho output pin
+        pinTachOut = 0; //Tacho output pin
 
         pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
 
