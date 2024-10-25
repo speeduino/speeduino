@@ -459,7 +459,7 @@ void serialReceive(void)
     byte highByte = (byte)Serial.peek();
 
     //Check for DTR reset byte. This is sent by Windows upon initial connection and causes issues if treated as the first real byte. It should simply be ignored. See https://github.com/speeduino/speeduino/issues/1112
-    if(highByte == 0xF0) { return; }
+    if(highByte == 0xF0) { primarySerial.read(); return; }
 
     //Check if the command is legacy using the call/response mechanism
     if(highByte == 'F')
