@@ -66,7 +66,7 @@ constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
 //constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','3','1','1','-','d','e','v'} ; //Note no null terminator in array and statu variable at the start
 //constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '3', '.', '1', '1', '-', 'd', 'e', 'v'};
 constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','4','0','2'} ; //Note no null terminator in array and statu variable at the start
-constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '2','.','2'};
+constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '4', '.', '0', '2','.','3'};
 constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
 //!@}
 
@@ -459,7 +459,7 @@ void serialReceive(void)
     byte highByte = (byte)Serial.peek();
 
     //Check for DTR reset byte. This is sent by Windows upon initial connection and causes issues if treated as the first real byte. It should simply be ignored. See https://github.com/speeduino/speeduino/issues/1112
-    if(highByte == 0xF0) { primarySerial.read(); return; }
+    if(highByte == 0xF0) { Serial.read(); return; }
 
     //Check if the command is legacy using the call/response mechanism
     if(highByte == 'F')
