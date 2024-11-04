@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "globals.h"
 #include "bit_shifts.h"
+#include "utilities.h"
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -173,11 +174,42 @@ static inline uint32_t div360(uint32_t n) {
 
 /// @cond
 // Helper function, private to percentageApprox - do not use directly.
-template <uint8_t bitShift>
+// Computes value * (percent/100) using bitsPrecision
+template <uint8_t bitsPrecision>
 static inline uint32_t _percentageApprox(uint16_t percent, uint32_t value) {
-  uint16_t iPercent = div100((uint16_t)(percent << bitShift));
-  return rshift<bitShift>(value * (uint32_t)iPercent);
+  uint16_t iPercent = div100((uint16_t)(percent << bitsPrecision));
+  return rshift<bitsPrecision>(value * (uint32_t)iPercent);
 }
+
+struct PctApproxPrecisionThreshold {
+    uint16_t percentThreshold;
+    uint8_t bitsPrecision;
+};
+
+// To keep the percentage within 16-bits (for performance), we have to scale the precision based on the percentage.
+// I.e. the larger the percentage, the smaller the precision has to be (and vice-versa).
+//
+// We could use __builtin_clz() and use the leading zero count as the precision: but that is slow:
+//  * AVR doesn't have a clz ASM instruction, so __builtin_clz() is implemented in software
+//  * The algorithm below applies some compile time optimizations via templates.
+//
+// Note that this array is constexpr & only referenced at compile time.
+static constexpr PctApproxPrecisionThreshold PCT_APPROX_PRECISIONS[] = { 
+    // These must be in ascending order
+    // More array elememnts = slower, but more accurate.
+    // I ran various test cases to find the optimal balance of speed and
+    // accuracy: 4 thresholds seemed to be the sweet spot.
+    { 128U, 9U },
+    { 256U, 8U },
+    { 512U, 7U },
+    { 1024U, 6U },
+};
+
+#define TRY_SHIFT_THRESHOLD(threshold, percent, value) \
+    if ((percent)<(threshold).percentThreshold) { \
+        return _percentageApprox<(threshold).bitsPrecision>((percent), (value)); \
+    }
+
 /// @endcond
 
 /**
@@ -200,19 +232,24 @@ static inline uint32_t _percentageApprox(uint16_t percent, uint32_t value) {
  * ^       | ^             | <c>percentageApprox(79, 2371)</c> -> 1870
  */
 static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
-    if (percent>1023U) {
-        return _percentageApprox<5U>(percent, value);
-    }
-    if (percent>511U) {
-        return _percentageApprox<6U>(percent, value);
-    }
-    if (percent>255U) {
-        return _percentageApprox<7U>(percent, value);
-    }
-    if (percent>127U) {
-        return _percentageApprox<8U>(percent, value);
-    }
-    return _percentageApprox<9U>(percent, value);
+    // Manual loop unrolling so that PCT_APPROX_PRECISIONS is only referenced at compile time.
+    TRY_SHIFT_THRESHOLD(PCT_APPROX_PRECISIONS[0], percent, value)
+    TRY_SHIFT_THRESHOLD(PCT_APPROX_PRECISIONS[1], percent, value)
+    TRY_SHIFT_THRESHOLD(PCT_APPROX_PRECISIONS[2], percent, value)
+    TRY_SHIFT_THRESHOLD(PCT_APPROX_PRECISIONS[3], percent, value)
+
+    static constexpr uint8_t LAST_ARRAY_INDEX = _countof(PCT_APPROX_PRECISIONS)-1U;
+    static constexpr uint8_t FINAL_PRECISION = PCT_APPROX_PRECISIONS[LAST_ARRAY_INDEX].bitsPrecision-1U;
+    return _percentageApprox<FINAL_PRECISION>(percent, value);
+}
+
+/**
+ * @brief Slightly faster version of percentageApprox(uint16_t, uint32_t), since we know percent<256.
+ */
+static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) {
+    static_assert((PCT_APPROX_PRECISIONS[1U].percentThreshold-1U)==(uint16_t)UINT8_MAX, "");
+    TRY_SHIFT_THRESHOLD(PCT_APPROX_PRECISIONS[0U], percent, value)
+    return _percentageApprox<PCT_APPROX_PRECISIONS[1U].bitsPrecision>(percent, value);
 }
 
 /**
