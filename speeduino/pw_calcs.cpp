@@ -1,5 +1,6 @@
 #include "pw_calcs.h"
 #include "unit_testing.h"
+#include "maths.h"
 
 TESTABLE_STATIC uint16_t req_fuel_uS = 0U; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 
@@ -32,8 +33,8 @@ void initialisePWCalcs(void)
         stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
         stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
     */
-    stagedPriReqFuelPct = (100U * totalInjector) / configPage10.stagedInjSizePri;
-    stagedSecReqFuelPct = (100U * totalInjector) / configPage10.stagedInjSizeSec;
+    stagedPriReqFuelPct = udiv_32_16(100UL * totalInjector, configPage10.stagedInjSizePri);
+    stagedSecReqFuelPct = udiv_32_16(100UL * totalInjector ,configPage10.stagedInjSizeSec);
   }
   else
   {
