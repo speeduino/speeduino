@@ -27,6 +27,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
+volatile byte loop20ms;
 volatile byte loop33ms;
 volatile byte loop66ms;
 volatile byte loop100ms;
@@ -50,6 +51,7 @@ void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop5ms = 0;
+  loop20ms = 0;
   loop33ms = 0;
   loop66ms = 0;
   loop100ms = 0;
@@ -79,6 +81,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
 
   //Increment Loop Counters
   loop5ms++;
+  loop20ms++;
   loop33ms++;
   loop66ms++;
   loop100ms++;
@@ -164,11 +167,18 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //200Hz loop
-  if (loop5ms == 5)
+  if(loop5ms == 5)
   {
     loop5ms = 0; //Reset counter
     BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
-  }  
+  }
+
+  //50Hz loop
+  if(loop20ms == 20)
+  {
+    loop20ms = 0; //Reset counter
+    BIT_SET(TIMER_mask, BIT_TIMER_50HZ);
+  }
 
   //30Hz loop
   if (loop33ms == 33)
@@ -251,7 +261,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     //If the engine is running or cranking, we need to update the run time counter.
     if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
-      if (currentStatus.runSecs <= 254) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
+      if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
@@ -288,43 +298,42 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     if(configPage2.flexEnabled == true)
     {
       byte tempEthPct = 0; 
-      if(flexCounter < 50)
+      if(flexCounter < configPage2.flexFreqLow)
       {
-        tempEthPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
-        flexCounter = 0;
+        tempEthPct = 0U; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        flexCounter = 0U;
       }
-      else if (flexCounter > 151) //1 pulse buffer
+      else if (flexCounter > (configPage2.flexFreqHigh + 1) ) //1 pulse buffer
       {
 
-        if(flexCounter < 169)
+        if(flexCounter < (configPage2.flexFreqLow + 19)) //20Hz above the max freq is considered an error condition. Everything below that should be treated as max value
         {
-          tempEthPct = 100;
-          flexCounter = 0;
+          tempEthPct = 100U;
+          flexCounter = 0U;
         }
         else
         {
           //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
-          tempEthPct = 0;
-          flexCounter = 0;
+          tempEthPct = 0U;
+          flexCounter = 0U;
         }
       }
       else
       {
-        tempEthPct = flexCounter - 50; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        tempEthPct = flexCounter - configPage2.flexFreqLow; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
         flexCounter = 0;
       }
 
       //Off by 1 error check
-      if (tempEthPct == 1) { tempEthPct = 0; }
+      if (tempEthPct == 1U) { tempEthPct = 0U; }
 
-      currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
+      currentStatus.ethanolPct = (uint8_t)LOW_PASS_FILTER((uint16_t)tempEthPct, configPage4.FILTER_FLEX, (uint16_t)currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
-      if(flexPulseWidth > 5000) { flexPulseWidth = 5000; }
-      else if(flexPulseWidth < 1000) { flexPulseWidth = 1000; }
-      currentStatus.fuelTemp = div100( (int16_t)(((4224 * (long)flexPulseWidth) >> 10) - 8125) );
+      flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
+      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
-
   }
 
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough

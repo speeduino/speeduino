@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "dual_wheel.h"
 #include "schedule_calcs.h"
+#include "../../test_utils.h"
 
 
 void test_setup_dualwheel_12_1()
@@ -324,6 +325,8 @@ void test_dualwheel_newIgn_4()
 
 void testDualWheel()
 {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST(test_dualwheel_newIgn_12_1_trig0_1);
   RUN_TEST(test_dualwheel_newIgn_12_1_trig90_1);
   RUN_TEST(test_dualwheel_newIgn_12_1_trig180_1);
@@ -347,4 +350,6 @@ void testDualWheel()
 */
   //RUN_TEST(test_dualwheel_newIgn_60_2_trig181_2);
   //RUN_TEST(test_dualwheel_newIgn_60_2_trig182_2);
+
+  }
 }

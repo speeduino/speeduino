@@ -982,6 +982,8 @@ static void test_partial_sync(void)
 
 void testFuelScheduleInit()
 {
+  SET_UNITY_FILENAME() {
+
   run_1_cylinder_4stroke_tests();
   run_1_cylinder_2stroke_tests();
   run_2_cylinder_4stroke_tests();
@@ -999,4 +1001,5 @@ void testFuelScheduleInit()
   run_oddfire_tests();
 
   RUN_TEST_P(test_partial_sync);
+  }
 }

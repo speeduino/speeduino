@@ -16,6 +16,12 @@ A full copy of the license may be found in the projects root directory
 
 #define EEPROM_DATA_VERSION   0
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 #define STORAGE_END 0xFFF       // Should be E2END?
@@ -625,3 +631,7 @@ void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
 byte readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
 void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif

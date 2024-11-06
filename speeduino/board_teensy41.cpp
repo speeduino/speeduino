@@ -224,6 +224,7 @@ void PIT_isr()
   else if(interrupt2) { PIT_TFLG1 = 1; boostInterrupt(); }
   else if(interrupt3) { PIT_TFLG2 = 1; vvtInterrupt();   }
   else if(interrupt4) { PIT_TFLG3 = 1; oneMSInterval();  }
+  asm volatile ("dsb") ;
 }
 
 void TMR1_isr(void)

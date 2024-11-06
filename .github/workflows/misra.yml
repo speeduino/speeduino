@@ -40,7 +40,7 @@ jobs:
         ls $GITHUB_WORKSPACE/misra/.results/
         
     - name: Save output to Gist
-      if: github.event_name != 'pull_request' && github.repository_owner == 'noisymime'
+      if: github.event_name != 'pull_request' && github.repository_owner == 'speeduino'
       env:
         MISRA_GIST: ${{ secrets.MISRA_GIST }}
         VIOLATIONS: ${{ env.VIOLATIONS }}

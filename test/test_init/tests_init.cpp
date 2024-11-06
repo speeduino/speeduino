@@ -304,6 +304,8 @@ void test_initialisation_input_user_pin_does_not_override_outputpin(void)
 
 void testInitialisation()
 {
+  SET_UNITY_FILENAME() {
+
   RUN_TEST_P(test_initialisation_complete);
   RUN_TEST_P(test_initialisation_ports);
   RUN_TEST_P(test_initialisation_outputs_V03);
@@ -316,4 +318,5 @@ void testInitialisation()
   RUN_TEST_P(test_initialisation_outputs_reset_control_override_board_default);
   RUN_TEST_P(test_initialisation_user_pin_override_board_default);
   RUN_TEST_P(test_initialisation_input_user_pin_does_not_override_outputpin);
+  }
 }

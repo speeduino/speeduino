@@ -16,10 +16,10 @@ sendcancommand is called when a command is to be sent either to serial3
 ,to the external Can interface, or to the onboard/attached can interface
 */
 #include "globals.h"
+#include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "maths.h"
-#include "errors.h"
 #include "utilities.h"
 #include "comms_legacy.h"
 #include "logger.h"
@@ -29,9 +29,26 @@ sendcancommand is called when a command is to be sent either to serial3
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 void secondserial_Command(void)
 {
   #if defined(secondarySerial_AVAILABLE)
+
+  //If the selected protocol is Tuner Studio then everything is routed via the primary serial functions but with the output diverted to the secondary serial interface
+  if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO)
+  {
+    pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
+    serialReceive();
+    //while(secondarySerial.available()) { secondarySerial.read(); } //Reported to cause potential issues on stm32
+    return;
+  }
+
+
   if ( serialSecondaryStatusFlag == SERIAL_INACTIVE )  { currentSecondaryCommand = secondarySerial.read(); }
 
   switch (currentSecondaryCommand)
@@ -97,34 +114,6 @@ void secondserial_Command(void)
     case 'k':   //placeholder for new can interface (toucan etc) commands
 
         break;
-        
-    case 'L':
-    {
-      //uint8_t Llength;
-      while (secondarySerial.available() == 0) { }
-      uint8_t canListen = secondarySerial.read();
-
-      if (canListen == 0)
-      {
-        //command request failed and/or data/device was not available
-        break;
-      }
-
-      while (secondarySerial.available() == 0) { }
-      /*
-      Unclear what the below is trying to achieve. Commenting out for now to avoid compiler warnings for unused variables
-      Llength = secondarySerial.read();             // next the number of bytes expected value
-      uint8_t Lbuffer[8];                     //8 byte buffer to store incoming can data
-
-      for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-      {
-        while (secondarySerial.available() == 0){}
-        // receive all x bytes into "Lbuffer"
-        Lbuffer[Lcount] = secondarySerial.read();
-      }
-      */
-      break;
-    }
 
     case 'M':
       legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
@@ -222,3 +211,7 @@ void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint
   UNUSED(sourcecanAddress);
 #endif
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif

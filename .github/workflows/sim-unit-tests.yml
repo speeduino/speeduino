@@ -1,0 +1,34 @@
+name: Unit Tests
+
+on:
+  # Trigger the workflow on pull request
+  pull_request:
+  # Or push to non-master branch
+  push:
+    branches-ignore: [ master ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  Simulator-Unit-Test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+        pip install wheel
+        platformio upgrade
+        platformio pkg update
+
+    - name: Run Simulator Unit Tests
+      run: | 
+        platformio test -v -e megaatmega2560_sim_unittest

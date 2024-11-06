@@ -4,6 +4,7 @@
 typedef uint8_t byte;
 #include "test_table2d.h"
 #include "table2d.h"
+#include "../test_utils.h"
 
 
 static constexpr uint8_t TEST_TABLE2D_SIZE = 9;
@@ -147,9 +148,12 @@ void test_table2d_all_decrementing(void)
 
 void testTable2d()
 {
+  SET_UNITY_FILENAME() {
+
     RUN_TEST(test_table2dLookup_50pct);
     RUN_TEST(test_table2dLookup_exactAxis);
     RUN_TEST(test_table2dLookup_overMax);
     RUN_TEST(test_table2dLookup_underMin);
     RUN_TEST(test_table2d_all_decrementing); 
+  }
 }

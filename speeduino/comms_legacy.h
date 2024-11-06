@@ -7,8 +7,8 @@
  * 
  */
 
-#ifndef COMMS_H
-#define COMMS_H
+#ifndef COMMS_LEGACY_H
+#define COMMS_LEGACY_H
 
 /** \enum SerialStatus
  * @brief The current state of serial communication
@@ -85,4 +85,4 @@ void testComm(void);
 void sendToothLog_legacy(byte startOffset);
 void sendCompositeLog_legacy(byte startOffset);
 
-#endif // COMMS_H
+#endif // COMMS_LEGACY_H

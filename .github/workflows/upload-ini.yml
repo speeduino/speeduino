@@ -21,7 +21,7 @@ jobs:
 
   upload:
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'noisymime'
+    if: github.repository_owner == 'speeduino'
     needs: validate
 
     steps:

@@ -13,11 +13,12 @@
 #include "sensors.h"
 #include "updates.h"
 #include "pages.h"
+#include "comms_CAN.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    23
+  #define CURRENT_DATA_VERSION    24
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -46,7 +47,7 @@ void doUpdates(void)
     configPage9.realtime_base_address = 336;
 
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
-    if(configPage4.sparkDur == 255) { configPage4.sparkDur = 10; }
+    if(configPage4.sparkDur == UINT8_MAX) { configPage4.sparkDur = 10; }
 
     writeAllConfig();
     storeEEPROMVersion(4);
@@ -347,17 +348,17 @@ void doUpdates(void)
     configPage2.aeColdTaperMax = 100;
 
     //New PID resolution, old resolution was 100% for each increase, 100% now is stored as 32
-    if(configPage6.idleKP >= 8) { configPage6.idleKP = 255; }
+    if(configPage6.idleKP >= 8) { configPage6.idleKP = UINT8_MAX; }
     else { configPage6.idleKP = configPage6.idleKP<<5; }
-    if(configPage6.idleKI >= 8) { configPage6.idleKI = 255; }
+    if(configPage6.idleKI >= 8) { configPage6.idleKI = UINT8_MAX; }
     else { configPage6.idleKI = configPage6.idleKI<<5; }
-    if(configPage6.idleKD >= 8) { configPage6.idleKD = 255; }
+    if(configPage6.idleKD >= 8) { configPage6.idleKD = UINT8_MAX; }
     else { configPage6.idleKD = configPage6.idleKD<<5; }
-    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = 255; }
+    if(configPage10.vvtCLKP >= 8) { configPage10.vvtCLKP = UINT8_MAX; }
     else { configPage10.vvtCLKP = configPage10.vvtCLKP<<5; }
-    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = 255; }
+    if(configPage10.vvtCLKI >= 8) { configPage10.vvtCLKI = UINT8_MAX; }
     else { configPage10.vvtCLKI = configPage10.vvtCLKI<<5; }
-    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = 255; }
+    if(configPage10.vvtCLKD >= 8) { configPage10.vvtCLKD = UINT8_MAX; }
     else { configPage10.vvtCLKD = configPage10.vvtCLKD<<5; }
 
     //Cranking enrichment to run taper added. Default it to 0,1 secs
@@ -623,8 +624,7 @@ void doUpdates(void)
     configPage6.tachoMode = 0;
 
     //CAN broadcast introduced
-    configPage2.canBMWCluster = 0;
-    configPage2.canVAGCluster = 0;
+    configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_OFF;
     
     configPage15.boostDCWhenDisabled = 0;
     configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
@@ -750,6 +750,27 @@ void doUpdates(void)
 
     writeAllConfig();
     storeEEPROMVersion(23);
+  }
+
+  if(readEEPROMVersion() == 23)
+  {
+    //202405
+    configPage10.knock_mode = KNOCK_MODE_OFF;
+
+    //Change the CAN Broadcast settings to be a selection
+    //Note that 1 preference will be lost if both BMW AND VAG protocols were enabled, but that is not a likely combination.
+    if(configPage2.unused1_126_1 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_BMW; } //unused1_126_1 was canBMWCluster
+    if(configPage2.unused1_126_2 == true) { configPage4.CANBroadcastProtocol = CAN_BROADCAST_PROTOCOL_VAG; } //unused1_126_2 was canVAGCluster
+
+    //VSS max limit on launch control
+    configPage10.lnchCtrlVss = 255;
+    
+    //Default all existing tunes to GM flex sensors
+    configPage2.flexFreqLow = 50;
+    configPage2.flexFreqHigh = 150;
+
+    writeAllConfig();
+    storeEEPROMVersion(24);
   }
   
   //Final check is always for 255 and 0 (Brand new arduino)

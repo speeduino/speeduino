@@ -19,8 +19,9 @@
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
   #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
-  #define BOARD_MAX_DIGITAL_PINS 34
-  #define BOARD_MAX_IO_PINS 34 //digital pins + analog channels + 1
+  #define BOARD_MAX_DIGITAL_PINS 54
+  #define BOARD_MAX_IO_PINS 54
+  #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
   #define EEPROM_LIB_H <EEPROM.h>
   typedef int eeprom_address_t;
   #define RTC_ENABLED
@@ -82,14 +83,14 @@
   #define IGN7_COMPARE  TMR4_COMP12
   #define IGN8_COMPARE  TMR4_COMP13
 
-  static inline void FUEL1_TIMER_ENABLE(void)  {TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN;} //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
-  static inline void FUEL2_TIMER_ENABLE(void)  {TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL3_TIMER_ENABLE(void)  {TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL4_TIMER_ENABLE(void)  {TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL5_TIMER_ENABLE(void)  {TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL6_TIMER_ENABLE(void)  {TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL7_TIMER_ENABLE(void)  {TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
-  static inline void FUEL8_TIMER_ENABLE(void)  {TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL1_TIMER_ENABLE(void)  {TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; TMR1_CSCTRL0 |= TMR_CSCTRL_TCF1EN;} //Write 1 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
+  static inline void FUEL2_TIMER_ENABLE(void)  {TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; TMR1_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL3_TIMER_ENABLE(void)  {TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; TMR1_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL4_TIMER_ENABLE(void)  {TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; TMR1_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL5_TIMER_ENABLE(void)  {TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; TMR3_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL6_TIMER_ENABLE(void)  {TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; TMR3_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL7_TIMER_ENABLE(void)  {TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; TMR3_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void FUEL8_TIMER_ENABLE(void)  {TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; TMR3_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
   static inline void FUEL1_TIMER_DISABLE(void)  {TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;} //Write 0 to the TCFIEN (Channel Interrupt Enable) bit of channel 0 Status/Control
   static inline void FUEL2_TIMER_DISABLE(void)  {TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
@@ -100,23 +101,23 @@
   static inline void FUEL7_TIMER_DISABLE(void)  {TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
   static inline void FUEL8_TIMER_DISABLE(void)  {TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-    static inline void IGN1_TIMER_ENABLE(void)  {TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN2_TIMER_ENABLE(void)  {TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN3_TIMER_ENABLE(void)  {TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN4_TIMER_ENABLE(void)  {TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN5_TIMER_ENABLE(void)  {TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN6_TIMER_ENABLE(void)  {TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN7_TIMER_ENABLE(void)  {TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
-    static inline void IGN8_TIMER_ENABLE(void)  {TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN1_TIMER_ENABLE(void)  {TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; TMR2_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN2_TIMER_ENABLE(void)  {TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; TMR2_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN3_TIMER_ENABLE(void)  {TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; TMR2_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN4_TIMER_ENABLE(void)  {TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; TMR2_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN5_TIMER_ENABLE(void)  {TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; TMR4_CSCTRL0 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN6_TIMER_ENABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; TMR4_CSCTRL1 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN7_TIMER_ENABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; TMR4_CSCTRL2 |= TMR_CSCTRL_TCF1EN;}
+  static inline void IGN8_TIMER_ENABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; TMR4_CSCTRL3 |= TMR_CSCTRL_TCF1EN;}
 
-    static inline void IGN1_TIMER_DISABLE(void)  {TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN2_TIMER_DISABLE(void)  {TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN3_TIMER_DISABLE(void)  {TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN4_TIMER_DISABLE(void)  {TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN5_TIMER_DISABLE(void)  {TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN6_TIMER_DISABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
-    static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN1_TIMER_DISABLE(void)  {TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN2_TIMER_DISABLE(void)  {TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN3_TIMER_DISABLE(void)  {TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN4_TIMER_DISABLE(void)  {TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN5_TIMER_DISABLE(void)  {TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN6_TIMER_DISABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
+  static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
   //Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
   //#define TMR_PRESCALE  128
