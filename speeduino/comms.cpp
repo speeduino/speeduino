@@ -80,8 +80,8 @@ static constexpr byte testCommsResponse[] PROGMEM = { SERIAL_RC_OK, 255 };
  */
 static uint16_t serialBytesRxTx = 0; 
 
-static constexpr uint16_t SERIAL_TIMEOUT = 700; //!< Timeout threshold in milliseconds
-static uint32_t serialReceiveStartTime = 0; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
+static constexpr uint16_t SERIAL_TIMEOUT = 400; //!< Timeout threshold in milliseconds
+uint32_t serialReceiveStartTime = 0; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
 
 static FastCRC32 CRC32_serial; //!< Support accumulation of a CRC during non-blocking operations
 static FastCRC32 CRC32_calibration; //!< Support accumulation of a CRC during calibration loads. Must be a separate instance to CRC32_serial due to calibration data being sent in multiple packets
@@ -110,7 +110,8 @@ Stream* pPrimarySerial;
 #endif
 
 /** @brief Has the current receive operation timed out? */
-static inline bool isRxTimeout(void) {
+inline bool isRxTimeout(void) 
+{
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }
 
@@ -139,7 +140,8 @@ static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 
 // ====================================== Blocking IO Support ================================
 
-void writeByteReliableBlocking(byte value) {
+void writeByteReliableBlocking(byte value) 
+{
   // Some platforms (I'm looking at you Teensy 3.5) do not mimic the Arduino 1.0
   // contract which synchronously blocks. 
   // https://github.com/PaulStoffregen/cores/blob/master/teensy3/usb_primarySerial.c#L215
@@ -155,12 +157,9 @@ void writeByteReliableBlocking(byte value) {
 static void readSerialTimeout(char *buffer, size_t length) {
   // Teensy 3.5: Serial.available() should only be used as a boolean test
   // See https://www.pjrc.com/teensy/td_serial.html#singlebytepackets
-  while (length>0U) {
-    if (primarySerial.available()!=0) {
-      buffer[--length] =(byte)primarySerial.read();
-    } else if(isRxTimeout()) {
-      return;
-    } else { /* MISRA - no-op */ }
+  while( (length > 0U) && (!isRxTimeout()) )
+  {
+    if(primarySerial.available() != 0) { buffer[--length] = (byte)primarySerial.read(); } 
   }
 }
 
@@ -170,7 +169,8 @@ static void readSerialTimeout(char *buffer, size_t length) {
  * @tparam TIntegral The integral type. E.g. uint16_t 
  */
 template <typename TIntegral>
-static __attribute__((noinline)) TIntegral readSerialIntegralTimeout(void) {
+static __attribute__((noinline)) TIntegral readSerialIntegralTimeout(void) 
+{
   // We use type punning to read into a buffer and convert to the appropriate type
   union {
     char raw[sizeof(TIntegral)];
@@ -497,7 +497,8 @@ void serialReceive(void)
     {
       serialReceiveStartTime = millis();
       serialPayloadLength = readSerialIntegralTimeout<uint16_t>();
-      if (!isRxTimeout()) {
+      if (!isRxTimeout()) 
+      {
         serialBytesRxTx = 0U;
         serialStatusFlag = SERIAL_RECEIVE_INPROGRESS; //Flag the serial receive as being in progress
       }

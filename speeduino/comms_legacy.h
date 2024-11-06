@@ -7,8 +7,8 @@
  * 
  */
 
-#ifndef COMMS_H
-#define COMMS_H
+#ifndef COMMS_LEGACY_H
+#define COMMS_LEGACY_H
 
 /** \enum SerialStatus
  * @brief The current state of serial communication

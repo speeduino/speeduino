@@ -44,7 +44,7 @@ void secondserial_Command(void)
   {
     pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
     serialReceive();
-    while(secondarySerial.available()) { secondarySerial.read(); }
+    //while(secondarySerial.available()) { secondarySerial.read(); } //Reported to cause potential issues on stm32
     return;
   }
 
@@ -114,34 +114,6 @@ void secondserial_Command(void)
     case 'k':   //placeholder for new can interface (toucan etc) commands
 
         break;
-        
-    case 'L':
-    {
-      //uint8_t Llength;
-      while (secondarySerial.available() == 0) { }
-      uint8_t canListen = secondarySerial.read();
-
-      if (canListen == 0)
-      {
-        //command request failed and/or data/device was not available
-        break;
-      }
-
-      while (secondarySerial.available() == 0) { }
-      /*
-      Unclear what the below is trying to achieve. Commenting out for now to avoid compiler warnings for unused variables
-      Llength = secondarySerial.read();             // next the number of bytes expected value
-      uint8_t Lbuffer[8];                     //8 byte buffer to store incoming can data
-
-      for (uint8_t Lcount = 0; Lcount <Llength ;Lcount++)
-      {
-        while (secondarySerial.available() == 0){}
-        // receive all x bytes into "Lbuffer"
-        Lbuffer[Lcount] = secondarySerial.read();
-      }
-      */
-      break;
-    }
 
     case 'M':
       legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
