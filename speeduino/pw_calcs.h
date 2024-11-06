@@ -12,15 +12,6 @@
 /** @brief Runs any initialization required by this module */
 void initialisePWCalcs(void);
 
-/**
- * @brief Recalculates the required fuel based on the parameter
- * 
- * Should be called whenever the injector layout changes.
- * 
- * @param injLayout The injector layout, as per the enum
- */
-void calculateRequiredFuel(InjectorLayout injLayout);
-
 /** @brief Result of pulse width calculation */
 struct pulseWidths {
   /** @brief Primary pulse width in µS */

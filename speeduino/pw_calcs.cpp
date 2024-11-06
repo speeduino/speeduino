@@ -2,8 +2,6 @@
 #include "unit_testing.h"
 #include "maths.h"
 
-TESTABLE_STATIC uint16_t req_fuel_uS = 0U; /**< The required fuel variable (As calculated by TunerStudio) in uS */
-
 /** @name Staging
  * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
  * 
@@ -41,21 +39,21 @@ void initialisePWCalcs(void)
     stagedPriReqFuelPct = 0;
     stagedSecReqFuelPct = 0;
   }
-
-  calculateRequiredFuel(configPage2.injLayout);
 }
 
-void calculateRequiredFuel(InjectorLayout injLayout) {
-  req_fuel_uS = configPage2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
-  if ((configPage2.strokes == FOUR_STROKE) && ((injLayout!= INJ_SEQUENTIAL) || (configPage2.nCylinders > INJ_CHANNELS)))
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2) {
+  uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
+  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout!= INJ_SEQUENTIAL) || (page2.nCylinders > INJ_CHANNELS)))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
     //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
     //If we're doing more than 1 squirt per cycle then we need to split the amount accordingly.
     //(Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the
     //stroke to make the single squirt on)
-    req_fuel_uS = req_fuel_uS / 2U; 
+    reqFuel = reqFuel / 2U; 
   }
+
+  return reqFuel;
 }
 
 static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax)
@@ -254,5 +252,5 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t
 }
 
 pulseWidths computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections) {
-  return computePulseWidths(req_fuel_uS, VE, MAP, corrections);
+  return computePulseWidths(calculateRequiredFuel(configPage2), VE, MAP, corrections);
 }

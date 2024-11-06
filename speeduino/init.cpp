@@ -3644,8 +3644,6 @@ void changeHalfToFullSync(void)
   if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
   {
     CRANK_ANGLE_MAX_INJ = 720;
-    calculateRequiredFuel(INJ_SEQUENTIAL);
-    
     fuelSchedule1.pStartFunction = openInjector1;
     fuelSchedule1.pEndFunction = closeInjector1;
     fuelSchedule2.pStartFunction = openInjector2;
@@ -3742,7 +3740,6 @@ void changeFullToHalfSync(void)
   if(configPage2.injLayout == INJ_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_INJ = 360;
-    calculateRequiredFuel(INJ_PAIRED);
     switch (configPage2.nCylinders)
     {
       case 4:

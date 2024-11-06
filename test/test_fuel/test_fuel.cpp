@@ -7,6 +7,7 @@
 #include "test_corrections.h"
 #include "test_PW.h"
 #include "test_staging.h"
+extern void testCalculateRequiredFuel(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -23,6 +24,7 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testCorrections();
+    testCalculateRequiredFuel();
     testPW();
     testStaging();
 
