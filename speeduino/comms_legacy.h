@@ -85,4 +85,4 @@ void testComm(void);
 void sendToothLog_legacy(byte startOffset);
 void sendCompositeLog_legacy(byte startOffset);
 
-#endif // COMMS_H
+#endif // COMMS_LEGACY_H

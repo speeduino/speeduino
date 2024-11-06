@@ -110,7 +110,7 @@ Stream* pPrimarySerial;
 #endif
 
 /** @brief Has the current receive operation timed out? */
-inline bool isRxTimeout(void) 
+bool isRxTimeout(void) 
 {
   return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
 }

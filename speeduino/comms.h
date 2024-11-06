@@ -40,6 +40,6 @@ void serialTransmit(void);
  * 
  * @return true if the serial command has been waiting too long
 */
-inline bool isRxTimeout(void);
+bool isRxTimeout(void);
 
 #endif // COMMS_H
