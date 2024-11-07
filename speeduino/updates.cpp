@@ -26,7 +26,8 @@ void doUpdates(void)
   if(readEEPROMVersion() == 2)
   {
     auto table_it = ignitionTable.values.begin();
-    while (!table_it.at_end())
+    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
+    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
     {
       auto row = *table_it;
       while (!row.at_end())
@@ -768,6 +769,20 @@ void doUpdates(void)
     //Default all existing tunes to GM flex sensors
     configPage2.flexFreqLow = 50;
     configPage2.flexFreqHigh = 150;
+
+    //Realign configPage10 to correct unaligned pointer warnings
+    //Move boostIntv from position 27 to 25
+    uint8_t origBoostIntv = ((uint8_t *)&configPage10)[27];
+    ((uint8_t *)&configPage10)[27] = ((uint8_t *)&configPage10)[26];
+    ((uint8_t *)&configPage10)[26] = ((uint8_t *)&configPage10)[25];
+    ((uint8_t *)&configPage10)[25] = origBoostIntv;
+    //Move lnchCtrlTPS from position 32 to 74
+    uint8_t origlnchCtrlTPS= ((uint8_t *)&configPage10)[32];
+    for(byte x=32U; x<74U; x++)
+    {
+      ((uint8_t *)&configPage10)[x] = ((uint8_t *)&configPage10)[x+1];
+    }
+    ((uint8_t *)&configPage10)[74] = origlnchCtrlTPS;
 
     writeAllConfig();
     storeEEPROMVersion(24);

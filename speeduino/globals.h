@@ -887,7 +887,7 @@ struct config2 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 #define IDLEADVANCE_MODE_OFF      0U
@@ -997,7 +997,7 @@ struct config4 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 6 of the config - mostly variables that are required for AFR targets and closed loop.
@@ -1099,7 +1099,7 @@ struct config6 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 9 of the config - mostly deals with CANBUS control.
@@ -1180,7 +1180,7 @@ struct config9 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 10 - No specific purpose. Created initially for the cranking enrich curve.
@@ -1188,7 +1188,7 @@ struct config9 {
 See ini file for further info (Config Page 11 in the ini).
 */
 struct config10 {
-  byte crankingEnrichBins[4]; //Bytes 0-4
+  byte crankingEnrichBins[4]; //Bytes 0-3
   byte crankingEnrichValues[4]; //Bytes 4-7
 
   //Byte 8
@@ -1200,22 +1200,22 @@ struct config10 {
   byte rotarySplitValues[8]; //Bytes 9-16
   byte rotarySplitBins[8]; //Bytes 17-24
 
-  uint16_t boostSens; //Bytes 25-26
-  byte boostIntv; //Byte 27
+  byte boostIntv; //Byte 25
+  uint16_t boostSens; //Bytes 26-27
   uint16_t stagedInjSizePri; //Bytes 28-29
   uint16_t stagedInjSizeSec; //Bytes 30-31
-  byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6]; //Bytes 33-38
-  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
-  uint8_t flexFuelBins[6]; //Bytes 51-56
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
-  uint8_t flexAdvBins[6]; //Bytes 63-68
+  uint8_t flexBoostBins[6]; //Bytes 32-37
+  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 38-49
+  uint8_t flexFuelBins[6]; //Bytes 50-55
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 56-61
+  uint8_t flexAdvBins[6]; //Bytes 62-67
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
-                            //Bytes 69-74
+                            //Bytes 68-73
 
   //Byte 75
+  byte lnchCtrlTPS; //Byte 74
   byte n2o_enable : 2;
   byte n2o_arming_pin : 6;
   byte n2o_minCLT; //Byte 76
@@ -1364,7 +1364,7 @@ struct config10 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(2))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 /** Config for programmable I/O comparison operation (between 2 vars).
  * Operations are implemented in utilities.ino (@ref checkProgrammableIO()).
@@ -1425,7 +1425,7 @@ struct config13 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /**
@@ -1475,7 +1475,7 @@ struct config15 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 extern byte pinInjector1; //Output pin injector 1

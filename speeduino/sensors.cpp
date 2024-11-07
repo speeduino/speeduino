@@ -880,7 +880,7 @@ void flexPulse(void)
  */
 void knockPulse(void)
 {
-  if( (currentStatus.MAP < (configPage10.knock_maxMAP*2U)) && (currentStatus.RPMdiv100 < configPage10.knock_maxRPM) )
+  if( (currentStatus.MAP < (configPage10.knock_maxMAP*2)) && (currentStatus.RPMdiv100 < configPage10.knock_maxRPM) )
   {
     if(!BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE)) { currentStatus.knockCount++; } //If knock is not currently active we count every pulse. If knock is already active then additional pulses will be counted in correctionKnockTiming()
     BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE);
