@@ -149,8 +149,6 @@ void testPW(void)
   RUN_TEST_P(test_PW_Large_Correction);
   RUN_TEST_P(test_PW_Very_Large_Correction);
   RUN_TEST_P(test_PW_4Cyl_PW0);
-  RUN_TEST_P(test_PW_Limit_Long_Revolution);
-  RUN_TEST_P(test_PW_Limit_90pct);
   RUN_TEST_P(test_PW_batt_correction);
   RUN_TEST_P(test_PW_ae_adder);
   RUN_TEST_P(test_PW_nitrous_stage1);
@@ -272,33 +270,4 @@ void test_PW_4Cyl_PW0(void)
   applyPulseWidths(computePulseWidths(REQ_FUEL, VE, MAP, corrections));
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
-}
-
-extern uint16_t calculatePWLimit(void);
-
-//Tests the PW Limit calculation for a normal scenario
-void test_PW_Limit_90pct(void)
-{
-  test_PW_setCommon_NoStage();
-
-  currentStatus.revolutionTime = 10000UL; //6000 rpm
-  configPage2.dutyLim = 90;
-
-  //Duty limit of 90% for 10,000uS should give 9,000
-  TEST_ASSERT_INT32_WITHIN(4, 9000, calculatePWLimit());
-}
-
-//Tests the PW Limit calculation when the revolution time is greater than the max UINT16 value
-//Occurs at approx. 915rpm
-void test_PW_Limit_Long_Revolution(void)
-{
-  test_PW_setCommon_NoStage();
-
-  currentStatus.revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
-  configPage2.dutyLim = 90;
-  configPage2.strokes = TWO_STROKE;
-  currentStatus.nSquirts = 1U;
-
-  //Duty limit of 90% for 100,000uS should give 90,000, but as this would overflow the PW value, this should default to UINT16 Max
-  TEST_ASSERT_EQUAL(UINT16_MAX, calculatePWLimit());
 }

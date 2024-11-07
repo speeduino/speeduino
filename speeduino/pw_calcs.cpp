@@ -56,48 +56,48 @@ TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2) {
   return reqFuel;
 }
 
-static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax)
+static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax, const statuses &current)
 {
-  return (uint16_t)map(currentStatus.RPMdiv100, minRPM, maxRPM, adderMin, adderMax)*UINT16_C(100);
+  return (uint16_t)map(current.RPMdiv100, minRPM, maxRPM, adderMin, adderMax)*UINT16_C(100);
 }
 
 //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
-static inline uint16_t pwApplyNitrous(uint16_t pw)
+static inline uint16_t pwApplyNitrous(uint16_t pw, const statuses &current)
 {
-  if (currentStatus.nitrous_status!=NITROUS_OFF && pw!=0U)
+  if (current.nitrous_status!=NITROUS_OFF && pw!=0U)
   {
-    if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( (current.nitrous_status == NITROUS_STAGE1) || (current.nitrous_status == NITROUS_BOTH) )
     {
-      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage1_minRPM, configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage1_adderMin, configPage10.n2o_stage1_adderMax);
+      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage1_minRPM, configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage1_adderMin, configPage10.n2o_stage1_adderMax, current);
     }
-    if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( (current.nitrous_status == NITROUS_STAGE2) || (current.nitrous_status == NITROUS_BOTH) )
     {
-      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage2_minRPM, configPage10.n2o_stage2_maxRPM, configPage10.n2o_stage2_adderMin, configPage10.n2o_stage2_adderMax);
+      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage2_minRPM, configPage10.n2o_stage2_maxRPM, configPage10.n2o_stage2_adderMin, configPage10.n2o_stage2_adderMax, current);
     }
   }
 
   return pw;
 }
 
-static inline uint32_t pwApplyMapMode(uint32_t intermediate, uint16_t MAP) {
+static inline uint32_t pwApplyMapMode(uint32_t intermediate, uint16_t MAP, const statuses &current) {
   if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
     uint16_t mutiplier = div100((uint16_t)(MAP << 7U));
     return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-     uint16_t mutiplier = (MAP << 7U) / currentStatus.baro; 
+     uint16_t mutiplier = (MAP << 7U) / current.baro; 
     return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   return intermediate;
 }
 
-static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate) {
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    uint16_t mutiplier = ((uint16_t)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate, const statuses &current) {
+  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (current.runSecs > configPage6.ego_sdelay) ) {
+    uint16_t mutiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
     return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    uint16_t mutiplier = ((uint16_t)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+    uint16_t mutiplier = ((uint16_t)configPage2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
     return rshift<7U>(intermediate * (uint32_t)mutiplier); 
   }
   return intermediate;
@@ -119,16 +119,16 @@ static inline uint32_t pwIncludeOpenTime(uint32_t intermediate, uint16_t injOpen
   return intermediate;
 }
 
-static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL) {
+static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL, const statuses &current) {
   // If intermediate is not 0, we need to add Acceleration Enrichment pct increase if the engine
   // is accelerating (0 typically indicates that one of the full fuel cuts is active)
-  if ((intermediate != 0U) && BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) && (configPage2.aeApplyMode == AE_MODE_ADDER)) {
-    return intermediate + percentage(currentStatus.AEamount - 100U, REQ_FUEL);
+  if ((intermediate != 0U) && BIT_CHECK(current.engine, BIT_ENGINE_ACC) && (configPage2.aeApplyMode == AE_MODE_ADDER)) {
+    return intermediate + percentage(current.AEamount - 100U, REQ_FUEL);
   }
   return intermediate;
 }
 
-static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime) {
+static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, const statuses &current) {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
@@ -139,23 +139,24 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
           pwApplyAFRMultiplier(
             pwApplyMapMode(
               pwComputeInitial(REQ_FUEL, VE), 
-              MAP)), 
-          corrections), 
-        injOpenTime), 
-        REQ_FUEL);
+              MAP, current),
+            current), 
+        corrections), 
+      injOpenTime), 
+      REQ_FUEL, current);
 
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate));
+  return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate), current);
 }  
 
-TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(void)
+TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const statuses &current)
 {
-  uint32_t tempLimit = percentageApprox(configPage2.dutyLim, currentStatus.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  uint32_t tempLimit = percentageApprox(page2.dutyLim, current.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
+  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
 
   //Optimise for power of two divisions where possible
-  switch(currentStatus.nSquirts)
+  switch(current.nSquirts)
   {
     case 1:
       //No action needed
@@ -171,7 +172,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(void)
       break;
     default:
       //Non-PoT squirts value. Perform (slow) uint32_t division
-      tempLimit = tempLimit / currentStatus.nSquirts;
+      tempLimit = tempLimit / current.nSquirts;
       break;
   }
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
@@ -248,7 +249,7 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
 TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
   // Convert injector open time from tune to microseconds & apply voltage correction if required
   uint16_t injOpenTime = configPage2.injOpen * (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME ? currentStatus.batCorrection : 100U); 
-  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime), calculatePWLimit(), injOpenTime);
+  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
 }
 
 pulseWidths computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections) {
