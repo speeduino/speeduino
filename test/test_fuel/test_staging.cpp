@@ -33,7 +33,7 @@ void test_Staging_setCommon()
   configPage2.battVCorMode = BATTV_COR_MODE_WHOLE; 
   // Turns off pwLimit
   configPage2.dutyLim = 100;
-  revolutionTime = 10000;
+  currentStatus.revolutionTime = 10000;
   currentStatus.nSquirts = 1;
   configPage2.strokes = FOUR_STROKE;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
@@ -66,7 +66,7 @@ void test_Staging_Off(void)
 
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE));
   TEST_ASSERT_NOT_EQUAL(0, pw.primary);
@@ -85,7 +85,7 @@ void test_Staging_4cyl_Auto_Inactive(void)
   //90% duty cycle at 6000rpm
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
 
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
@@ -110,7 +110,7 @@ void test_Staging_4cyl_Table_Inactive(void)
 
   //90% duty cycle at 6000rpm
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   //PW 1 and 2 should be normal, 3 and 4 should be 0 as that testPW is below the pwLimit
   //PW1/2 should be (PW - openTime) * staged_req_fuel_mult_pri = (3000 - 1000) * 3.0 = 6000
@@ -128,7 +128,7 @@ void test_Staging_4cyl_Auto_50pct(void)
   test_Staging_setCommon();
 
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(4000, 100, 100, 200);
   TEST_ASSERT_INT32_WITHIN(3, 9000, pw.primary);
   TEST_ASSERT_INT32_WITHIN(3, 9000, pw.secondary);
@@ -144,7 +144,7 @@ void test_Staging_4cyl_Auto_33pct(void)
   test_Staging_setCommon();
 
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(3000, 100, 100, 200);
   //PW 1 and 2 should be maxed out at the pwLimit, 3 and 4 should be based on their relative size
   TEST_ASSERT_INT32_WITHIN(3, 9000, pw.primary);
@@ -170,7 +170,7 @@ void test_Staging_4cyl_Table_50pct(void)
   currentStatus.fuelLoad += 1;
 
   configPage2.dutyLim = 90;
-  revolutionTime = 5000;
+  currentStatus.revolutionTime = 5000;
   pulseWidths pw = computePulseWidths(1000, 100, 100, 200);
   TEST_ASSERT_INT32_WITHIN(3, 4000, pw.primary);
   TEST_ASSERT_INT32_WITHIN(3, 2500, pw.secondary);

@@ -20,7 +20,7 @@ static void test_PW_setCommon_NoStage(void)
   corrections = 113;
   // Turns off pwLimit
   configPage2.dutyLim = 100;
-  revolutionTime = UINT16_MAX;
+  currentStatus.revolutionTime = UINT16_MAX;
   currentStatus.nSquirts = 1;
   // No staging
   configPage10.stagingEnabled = false;
@@ -281,7 +281,7 @@ void test_PW_Limit_90pct(void)
 {
   test_PW_setCommon_NoStage();
 
-  revolutionTime = 10000UL; //6000 rpm
+  currentStatus.revolutionTime = 10000UL; //6000 rpm
   configPage2.dutyLim = 90;
 
   //Duty limit of 90% for 10,000uS should give 9,000
@@ -294,7 +294,7 @@ void test_PW_Limit_Long_Revolution(void)
 {
   test_PW_setCommon_NoStage();
 
-  revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
+  currentStatus.revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
   configPage2.dutyLim = 90;
   configPage2.strokes = TWO_STROKE;
   currentStatus.nSquirts = 1U;

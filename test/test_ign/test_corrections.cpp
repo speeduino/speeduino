@@ -776,7 +776,7 @@ static void setup_correctionsDwell(void) {
     currentStatus.actualDwell = 770;
     currentStatus.battery10 = 95;
 
-    revolutionTime = 666;
+    currentStatus.revolutionTime = 666;
 
     TEST_DATA_P uint8_t bins[] = { 60,  70,  80,  90,  100, 110 };
     TEST_DATA_P uint8_t values[] = { 130, 125, 120, 115, 110, 90 };
@@ -824,7 +824,7 @@ static void test_correctionsDwell_wasted_nopertooth_largerevolutiontime(void) {
 
     currentStatus.dwellCorrection = 55;
     currentStatus.battery10 = 105;
-    revolutionTime = 5000;
+    currentStatus.revolutionTime = 5000;
     TEST_ASSERT_EQUAL(800, correctionsDwell(800));
 }
 

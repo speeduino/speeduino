@@ -150,7 +150,7 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
 
 TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(void)
 {
-  uint32_t tempLimit = percentageApprox(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  uint32_t tempLimit = percentageApprox(configPage2.dutyLim, currentStatus.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
   if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
 
