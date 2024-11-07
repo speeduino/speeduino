@@ -522,7 +522,7 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   
 /** A (single) multi-tooth wheel with one of more 'missing' teeth.
 * The first tooth after the missing one is considered number 1 and is the basis for the trigger angle.
-* Note: This decoder does not currently support dual wheel (ie missing tooth + single tooth on cam).
+* Optionally a cam signal can be added to provide a sequential reference. 
 * @defgroup dec_miss Missing tooth wheel
 * @{
 */
