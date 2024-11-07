@@ -50,11 +50,9 @@ byte getTSLogEntry(uint16_t byteNum)
     case 25: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
     
     case 26: 
-      if(currentStatus.loopsPerSecond > 60000U) { currentStatus.loopsPerSecond = 60000U;}
       statusValue = lowByte(currentStatus.loopsPerSecond); 
       break;
     case 27: 
-      if(currentStatus.loopsPerSecond > 60000U) { currentStatus.loopsPerSecond = 60000U;}
       statusValue = highByte(currentStatus.loopsPerSecond); 
       break;
     

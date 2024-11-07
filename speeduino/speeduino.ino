@@ -99,7 +99,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
 // it to inline, so we need to suppress the resulting warning.
 void __attribute__((always_inline)) loop(void)
 {
-      mainLoopCount++;
+      if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms
