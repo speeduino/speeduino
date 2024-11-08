@@ -252,6 +252,6 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t
   return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
 }
 
-pulseWidths computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections) {
-  return computePulseWidths(calculateRequiredFuel(configPage2), VE, MAP, corrections);
+pulseWidths computePulseWidths(const config2 &page2, statuses &current) {
+  return computePulseWidths(calculateRequiredFuel(page2), current.VE, current.MAP, current.corrections);
 }

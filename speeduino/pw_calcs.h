@@ -34,4 +34,4 @@ struct pulseWidths {
  * @param corrections Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
  * @return pulseWidths The primary and secondary injector pulse width in uS
  */
-pulseWidths computePulseWidths(uint8_t VE, uint16_t MAP, uint16_t corrections);
+pulseWidths computePulseWidths(const config2 &page2, statuses &current);

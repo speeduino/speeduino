@@ -514,7 +514,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      pulseWidths pw = computePulseWidths(currentStatus.VE, currentStatus.MAP, currentStatus.corrections);
+      pulseWidths pw = computePulseWidths(configPage2, currentStatus);
       applyPulseWidths(pw);
 
       int injector1StartAngle = 0;
