@@ -268,8 +268,20 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t
                           injOpenTime,
                           configPage2,
                           configPage10,
-                          currentStatus);}
+                          currentStatus);
+}
 
-pulseWidths computePulseWidths(const config2 &page2, statuses &current) {
-  return computePulseWidths(calculateRequiredFuel(page2), current.VE, current.MAP, current.corrections);
+// This function is only required so the unit tests can easily control REQ_FUEL
+TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
+  uint16_t injOpenTime = calculateOpenTime(page2, current);
+  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, injOpenTime, page2, page6, page10, current), 
+                          calculatePWLimit(page2, current), 
+                          injOpenTime,
+                          page2,
+                          page10,
+                          current);
+}
+
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
+  return computePulseWidths(calculateRequiredFuel(page2), page2, page6, page10, current);
 }

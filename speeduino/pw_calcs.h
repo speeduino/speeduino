@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "maths.h"
 #include "globals.h"
 
 /**
@@ -27,11 +26,12 @@ struct pulseWidths {
 };
 
 /**
- * @brief This function calculates the required pulsewidth time (in us) given the current system state
+ * @brief This function calculates the required pulsewidth time (in µS) given the current tune & system state
  * 
- * @param VE Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
- * @param MAP In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
- * @param corrections Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
+ * @param page2 Tune settings 
+ * @param page6 Tune settings
+ * @param page10 Tune settings
+ * @param current Current systen state
  * @return pulseWidths The primary and secondary injector pulse width in uS
  */
-pulseWidths computePulseWidths(const config2 &page2, statuses &current);
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current);

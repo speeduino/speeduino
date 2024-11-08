@@ -3,120 +3,83 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "pw_calcs.h"
+#include "pw_test_context.h"
 
 #define PW_ALLOWED_ERROR  30
 
-static int16_t REQ_FUEL;
-static byte VE;
-static long MAP;
-static uint16_t corrections;
+extern pulseWidths computePulseWidths(uint16_t REQ_FUEL, const config2 &page2, const config6 &page6, const config10 &page10, statuses &current);
 
-static void test_PW_setCommon_NoStage(void)
-{
-  // initialiseAll();
-  REQ_FUEL = 1060;
-  VE = 130;
-  MAP = 94;
-  corrections = 113;
-  // Turns off pwLimit
-  configPage2.dutyLim = 100;
-  currentStatus.revolutionTime = UINT16_MAX;
-  currentStatus.nSquirts = 1;
-  // No staging
-  configPage10.stagingEnabled = false;
-  // Nitrous off
-  currentStatus.nitrous_status = NITROUS_OFF;
+// Convenience function
+static pulseWidths computePulseWidths(uint16_t REQ_FUEL, ComputePulseWidthsContext &context) {
+  return computePulseWidths(REQ_FUEL, context.page2, context.page6, context.page10, context.current);
+}
 
-  configPage2.injOpen = 10;
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
-  currentStatus.batCorrection = 100;
-  
-  initialisePWCalcs();
+static ComputePulseWidthsContext getBasicFullContext(void) {
+  auto context = getBasicPwContext();
+  context.page2.injOpen = 10;
+  context.current.MAP = 94;
+  context.current.VE = 130U;
+  context.current.corrections = 113U;
+  return context;
 }
 
 static constexpr uint16_t NO_MULTIPLY_EXPECTED = 2557U;
 
-static void test_setup_noMultiply(void) {
-  configPage2.multiplyMAP = 0;
-  configPage2.includeAFR = 0;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
-}
-
-extern pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections);
-
 static void test_PW_batt_correction(void) {
   // Same as test_PW_No_Multiply, but we apply battery correction to open time
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
+  auto context = getBasicFullContext();
 
-  configPage2.battVCorMode = BATTV_COR_MODE_OPENTIME;
-  currentStatus.batCorrection = 50U;
-  uint16_t expectedOffset = (configPage2.injOpen*(100-currentStatus.batCorrection));
+  context.page2.battVCorMode = BATTV_COR_MODE_OPENTIME;
+  context.current.batCorrection = 50U;
+  uint16_t expectedOffset = (context.page2.injOpen*(100-context.current.batCorrection));
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED - expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 static void test_PW_ae_adder(void) {
+  auto context = getBasicFullContext();
+
   // Same as test_PW_No_Multiply, but we add in acceleration enrichment
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
+  BIT_SET(context.current.engine, BIT_ENGINE_ACC);
+  context.page2.aeApplyMode = AE_MODE_ADDER;
+  context.current.AEamount = 105U;
+  uint16_t reqFuel = 1060U;
+  uint16_t expectedOffset = (reqFuel*(context.current.AEamount-100U))/100;
 
-  BIT_SET(currentStatus.engine, BIT_ENGINE_ACC);
-  configPage2.aeApplyMode = AE_MODE_ADDER;
-  currentStatus.AEamount = 105U;
-  uint16_t expectedOffset = (REQ_FUEL*(currentStatus.AEamount-100U))/100;
-
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(reqFuel, context);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
-}
-
-static void test_setup_nitrous_stage1(void) {
-  configPage10.n2o_stage1_minRPM = 20; // RPM/100
-  configPage10.n2o_stage1_maxRPM = 30; // RPM/100
-  configPage10.n2o_stage1_adderMin = 11; // milliseconds
-  configPage10.n2o_stage1_adderMax = 3; // milliseconds
 }
 
 static void test_PW_nitrous_stage1(void) {
   // Same as test_PW_No_Multiply, but we add in nitrous
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
-
-  currentStatus.nitrous_status = NITROUS_STAGE1;
-  currentStatus.RPMdiv100 = 24;
-  test_setup_nitrous_stage1();
+  auto context = getBasicFullContext();
+  
+  context.current.nitrous_status = NITROUS_STAGE1;
+  context.current.RPMdiv100 = 24;
+  setup_nitrous_stage1(context.page10, context.current);
   uint16_t expectedOffset = 820; // uS (3*100)+(1.0-(2350-(20*100))/((30-20)*100))*((11-3)*100)
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
-static void test_setup_nitrous_stage2(void) {
-  configPage10.n2o_stage2_minRPM = 25; // RPM/100
-  configPage10.n2o_stage2_maxRPM = 30; // RPM/100
-  configPage10.n2o_stage2_adderMin = 7; // milliseconds
-  configPage10.n2o_stage2_adderMax = 1; // milliseconds
-}
-
 static void test_PW_nitrous_stage2(void) {
   // Same as test_PW_No_Multiply, but we add in nitrous
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
+  auto context = getBasicFullContext();
 
-  currentStatus.nitrous_status = NITROUS_STAGE2;
-  currentStatus.RPMdiv100 = 27;
-  test_setup_nitrous_stage2();
+  context.current.nitrous_status = NITROUS_STAGE2;
+  context.current.RPMdiv100 = 27;
+  setup_nitrous_stage2(context.page10, context.current);
   uint16_t expectedOffset = 520; // uS (1*100)+(1.0-(2650-(25*100))/((30-25)*100))*((7-1)*100)
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
@@ -124,15 +87,15 @@ static void test_PW_nitrous_stage2(void) {
 
 static void test_PW_nitrous_stageboth(void) {
   // Same as test_PW_No_Multiply, but we add in nitrous
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
+  auto context = getBasicFullContext();
 
-  currentStatus.nitrous_status = NITROUS_BOTH;
-  currentStatus.RPMdiv100 = 27;
-  test_setup_nitrous_stage2();
+  setup_nitrous_stage1(context.page10, context.current);
+  setup_nitrous_stage2(context.page10, context.current);
+  context.current.RPMdiv100 = 27;
+  context.current.nitrous_status = NITROUS_BOTH;
   uint16_t expectedOffset = 520+580; // uS
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
@@ -159,59 +122,58 @@ void testPW(void)
 
 void test_PW_No_Multiply()
 {
-  test_PW_setCommon_NoStage();
-  test_setup_noMultiply();
+  auto context = getBasicFullContext();
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_MAP_Multiply()
 {
-  test_PW_setCommon_NoStage();
+  auto context = getBasicFullContext();
 
-  configPage2.multiplyMAP = 1;
-  currentStatus.baro = 103;
-  configPage2.includeAFR = 0;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
+  context.page2.multiplyMAP = 1;
+  context.current.baro = 103;
+  context.page2.includeAFR = 0;
+  context.page2.incorporateAFR = 0;
+  context.page2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_MAP_Multiply_Compatibility()
 {
-  test_PW_setCommon_NoStage();
+  auto context = getBasicFullContext();
 
-  configPage2.multiplyMAP = 2; //Divide MAP reading by 100 rather than by Baro reading
-  currentStatus.baro = 103;
-  configPage2.includeAFR = 0;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
+  context.page2.multiplyMAP = 2; //Divide MAP reading by 100 rather than by Baro reading
+  context.current.baro = 103;
+  context.page2.includeAFR = 0;
+  context.page2.incorporateAFR = 0;
+  context.page2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
 void test_PW_AFR_Multiply()
 {
-  test_PW_setCommon_NoStage();
+  auto context = getBasicFullContext();
 
-  configPage2.multiplyMAP = 0;
-  currentStatus.baro = 100;
-  configPage2.includeAFR = 1;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
-  configPage6.egoType = 2; //Set O2 sensor type to wideband
-  currentStatus.runSecs = 20; configPage6.ego_sdelay = 10; //Ensure that the run time is longer than the O2 warmup time
-  currentStatus.O2 = 150;
-  currentStatus.afrTarget = 147;
+  context.page2.multiplyMAP = 0;
+  context.current.baro = 100;
+  context.page2.includeAFR = 1;
+  context.page2.incorporateAFR = 0;
+  context.page2.aeApplyMode = 0;
+  context.page6.egoType = 2; //Set O2 sensor type to wideband
+  context.current.runSecs = 20; configPage6.ego_sdelay = 10; //Ensure that the run time is longer than the O2 warmup time
+  context.current.O2 = 150;
+  context.current.afrTarget = 147;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2588, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -226,15 +188,15 @@ void test_PW_AFR_Multiply()
 void test_PW_Large_Correction()
 {
   //This is the same as the test_PW_No_Multiply, but with correction changed to 600
-  test_PW_setCommon_NoStage();
-  corrections = 600;
+  auto context = getBasicFullContext();
+  
+  context.current.corrections = 600;
+  context.page2.multiplyMAP = 0;
+  context.page2.includeAFR = 0;
+  context.page2.incorporateAFR = 0;
+  context.page2.aeApplyMode = 0;
 
-  configPage2.multiplyMAP = 0;
-  configPage2.includeAFR = 0;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
-
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -242,15 +204,16 @@ void test_PW_Large_Correction()
 void test_PW_Very_Large_Correction()
 {
   //This is the same as the test_PW_No_Multiply, but with correction changed to 1500
-  test_PW_setCommon_NoStage();
-  corrections = 1500;
+  auto context = getBasicFullContext();
+  
+  context.current.corrections = 1500;
 
-  configPage2.multiplyMAP = 0;
-  configPage2.includeAFR = 0;
-  configPage2.incorporateAFR = 0;
-  configPage2.aeApplyMode = 0;
+  context.page2.multiplyMAP = 0;
+  context.page2.includeAFR = 0;
+  context.page2.incorporateAFR = 0;
+  context.page2.aeApplyMode = 0;
 
-  pulseWidths result = computePulseWidths(REQ_FUEL, VE, MAP, corrections);
+  pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result.primary); //Additional allowed error here 
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
@@ -261,13 +224,13 @@ extern void applyPulseWidths(const pulseWidths &pulseWidths);
 //This test is for a 4 cylinder using paired injection where only INJ 1 and 2 should have PW > 0
 void test_PW_4Cyl_PW0(void)
 {
-  test_PW_setCommon_NoStage();
+  auto context = getBasicFullContext();
 
-  configPage2.nCylinders = 4;
-  configPage2.injLayout = INJ_PAIRED;
-  configPage10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
+  context.page2.nCylinders = 4;
+  context.page2.injLayout = INJ_PAIRED;
+  context.page10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
 
-  applyPulseWidths(computePulseWidths(REQ_FUEL, VE, MAP, corrections));
+  applyPulseWidths(computePulseWidths(1060, context));
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }
