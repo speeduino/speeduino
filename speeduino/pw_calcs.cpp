@@ -16,11 +16,11 @@
 static uint16_t stagedPriReqFuelPct = 0;
 static uint16_t stagedSecReqFuelPct = 0; 
 
-void initialisePWCalcs(void)
+TESTABLE_INLINE_STATIC void initialisePWCalcs(const config10 &page10)
 {
-  if(configPage10.stagingEnabled == true)
+  if(page10.stagingEnabled == true)
   {
-    uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
+    uint32_t totalInjector = page10.stagedInjSizePri + page10.stagedInjSizeSec;
     /*
         These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
         Eg:
@@ -31,14 +31,18 @@ void initialisePWCalcs(void)
         stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
         stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
     */
-    stagedPriReqFuelPct = udiv_32_16(100UL * totalInjector, configPage10.stagedInjSizePri);
-    stagedSecReqFuelPct = udiv_32_16(100UL * totalInjector ,configPage10.stagedInjSizeSec);
+    stagedPriReqFuelPct = udiv_32_16(100UL * totalInjector, page10.stagedInjSizePri);
+    stagedSecReqFuelPct = udiv_32_16(100UL * totalInjector ,page10.stagedInjSizeSec);
   }
   else
   {
     stagedPriReqFuelPct = 0;
     stagedSecReqFuelPct = 0;
   }
+}
+
+void initialisePWCalcs(void) {
+ initialisePWCalcs(configPage10);
 }
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2) {
@@ -182,11 +186,11 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
   return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
 }
 
-static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime) {
+static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const statuses &current) {
   //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
   uint32_t pwPrimaryStaged = percentage(stagedPriReqFuelPct, primaryPW - injOpenTime);
 
-  uint8_t stagingSplit = get3DTableValue(&stagingTable, currentStatus.fuelLoad, currentStatus.RPM);
+  uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
   if(stagingSplit > 0U) 
   { 
     uint32_t pwSecondaryStaged = percentage(stagedSecReqFuelPct, primaryPW - injOpenTime); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
@@ -220,31 +224,31 @@ static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLi
   return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
 }
 
-static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime) {
+TESTABLE_INLINE_STATIC pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current) {
   pulseWidths widths = { primaryPW, 0U };
 
   if (primaryPW!=0U) {
     //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-    if ( (configPage10.stagingEnabled == true) && (configPage2.nCylinders <= INJ_CHANNELS || configPage2.injType == INJ_TYPE_TBODY)) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+    if ( (page10.stagingEnabled == true) && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY)) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
     {
       //Scale the 'full' pulsewidth by each of the injector capacities
-      if(configPage10.stagingMode == STAGING_MODE_TABLE) {
-        widths = applyStagingModeTable(primaryPW, injOpenTime);
-      } else if(configPage10.stagingMode == STAGING_MODE_AUTO) {
+      if(page10.stagingMode == STAGING_MODE_TABLE) {
+        widths = applyStagingModeTable(primaryPW, injOpenTime, current);
+      } else if(page10.stagingMode == STAGING_MODE_AUTO) {
         widths = applyStagingModeAuto(primaryPW, pwLimit, injOpenTime);
       } else {
         // Unknown staging mode - accept default & keep MISRA checker happy.
       }
     }
     //Apply the pwLimit if staging is disabled and engine is not cranking
-    else if( (!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK))) { 
+    else if( (!BIT_CHECK(current.engine, BIT_ENGINE_CRANK))) { 
       widths = { min(primaryPW, pwLimit), 0U };
     } else {
       // No staging needed - accept default & keep MISRA checker happy.
     }
   }
 
-  BIT_WRITE(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE, widths.secondary!=0U);
+  BIT_WRITE(current.status4, BIT_STATUS4_STAGING_ACTIVE, widths.secondary!=0U);
 
   return widths;
 }
@@ -259,8 +263,12 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t
   currentStatus.VE = VE;
   currentStatus.MAP = MAP;
   currentStatus.corrections = corrections; 
-  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, injOpenTime, configPage2, configPage6, configPage10, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
-}
+  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, injOpenTime, configPage2, configPage6, configPage10, currentStatus), 
+                          calculatePWLimit(configPage2, currentStatus), 
+                          injOpenTime,
+                          configPage2,
+                          configPage10,
+                          currentStatus);}
 
 pulseWidths computePulseWidths(const config2 &page2, statuses &current) {
   return computePulseWidths(calculateRequiredFuel(page2), current.VE, current.MAP, current.corrections);
