@@ -246,9 +246,13 @@ static inline pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit,
   return widths;
 }
 
-TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
+TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
   // Convert injector open time from tune to microseconds & apply voltage correction if required
-  uint16_t injOpenTime = configPage2.injOpen * (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME ? currentStatus.batCorrection : 100U); 
+  return page2.injOpen * (page2.battVCorMode == BATTV_COR_MODE_OPENTIME ? current.batCorrection : 100U); 
+}
+
+TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
+  uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
   return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
 }
 
