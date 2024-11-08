@@ -11,6 +11,7 @@ extern void testCalculateRequiredFuel(void);
 extern void testCalculatePWLimit(void);
 extern void testCalculateOpenTime(void);
 extern void testPwApplyNitrous(void);
+extern void testComputePrimaryPulseWidth(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -31,6 +32,7 @@ void setup()
     testCalculatePWLimit();
     testCalculateOpenTime();
     testPwApplyNitrous();
+    testComputePrimaryPulseWidth();
     testPW();
     testStaging();
 

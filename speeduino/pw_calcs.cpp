@@ -79,26 +79,29 @@ TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page
   return pw;
 }
 
-static inline uint32_t pwApplyMapMode(uint32_t intermediate, uint16_t MAP, const statuses &current) {
-  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
-    uint16_t mutiplier = div100((uint16_t)(MAP << 7U));
-    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
+static inline uint32_t pwApplyMapMode(uint32_t intermediate, const config2 &page2, const statuses &current) {
+  if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
+    uint16_t multiplier = div100((uint16_t)((uint16_t)current.MAP << 7U));
+    return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
-  if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-     uint16_t mutiplier = (MAP << 7U) / current.baro; 
-    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
+  if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
+     uint16_t multiplier = ((uint16_t)current.MAP << 7U) / current.baro; 
+    return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
   return intermediate;
 }
 
-static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate, const statuses &current) {
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (current.runSecs > configPage6.ego_sdelay) ) {
-    uint16_t mutiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
-    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
-  }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    uint16_t mutiplier = ((uint16_t)configPage2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
-    return rshift<7U>(intermediate * (uint32_t)mutiplier); 
+static inline uint32_t pwApplyAFRMultiplier(uint32_t intermediate, const config2 &page2, const config6 &page6, const statuses &current) {
+  if (page2.includeAFR == true) {
+    if ((page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
+      uint16_t multiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
+      return rshift<7U>(intermediate * (uint32_t)multiplier); 
+    }
+  } else {
+    if ( (page2.incorporateAFR == true) ) {
+      uint16_t multiplier = ((uint16_t)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+      return rshift<7U>(intermediate * (uint32_t)multiplier); 
+    }
   }
   return intermediate;
 }
@@ -119,16 +122,16 @@ static inline uint32_t pwIncludeOpenTime(uint32_t intermediate, uint16_t injOpen
   return intermediate;
 }
 
-static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL, const statuses &current) {
+static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL, const config2 &page2, const statuses &current) {
   // If intermediate is not 0, we need to add Acceleration Enrichment pct increase if the engine
   // is accelerating (0 typically indicates that one of the full fuel cuts is active)
-  if ((intermediate != 0U) && BIT_CHECK(current.engine, BIT_ENGINE_ACC) && (configPage2.aeApplyMode == AE_MODE_ADDER)) {
+  if ((intermediate != 0U) && BIT_CHECK(current.engine, BIT_ENGINE_ACC) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
     return intermediate + percentage(current.AEamount - 100U, REQ_FUEL);
   }
   return intermediate;
 }
 
-static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
+TESTABLE_INLINE_STATIC uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
@@ -138,12 +141,12 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
         pwApplyCorrections(
           pwApplyAFRMultiplier(
             pwApplyMapMode(
-              pwComputeInitial(REQ_FUEL, VE), 
-              MAP, current),
-            current), 
-        corrections), 
+              pwComputeInitial(REQ_FUEL, current.VE), 
+              page2, current),
+            page2, page6, current), 
+        current.corrections), 
       injOpenTime), 
-      REQ_FUEL, current);
+      REQ_FUEL, page2, current);
 
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
   return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate), page10, current);
@@ -253,7 +256,10 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
 
 TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
   uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
-  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, configPage10, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
+  currentStatus.VE = VE;
+  currentStatus.MAP = MAP;
+  currentStatus.corrections = corrections; 
+  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, injOpenTime, configPage2, configPage6, configPage10, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
 }
 
 pulseWidths computePulseWidths(const config2 &page2, statuses &current) {
