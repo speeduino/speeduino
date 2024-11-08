@@ -10,6 +10,7 @@
 extern void testCalculateRequiredFuel(void);
 extern void testCalculatePWLimit(void);
 extern void testCalculateOpenTime(void);
+extern void testPwApplyNitrous(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -29,6 +30,7 @@ void setup()
     testCalculateRequiredFuel();
     testCalculatePWLimit();
     testCalculateOpenTime();
+    testPwApplyNitrous();
     testPW();
     testStaging();
 

@@ -62,17 +62,17 @@ static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM
 }
 
 //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
-static inline uint16_t pwApplyNitrous(uint16_t pw, const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page10, const statuses &current)
 {
   if (current.nitrous_status!=NITROUS_OFF && pw!=0U)
   {
     if( (current.nitrous_status == NITROUS_STAGE1) || (current.nitrous_status == NITROUS_BOTH) )
     {
-      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage1_minRPM, configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage1_adderMin, configPage10.n2o_stage1_adderMax, current);
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage1_minRPM, page10.n2o_stage1_maxRPM, page10.n2o_stage1_adderMin, page10.n2o_stage1_adderMax, current);
     }
     if( (current.nitrous_status == NITROUS_STAGE2) || (current.nitrous_status == NITROUS_BOTH) )
     {
-      pw = pw + calcNitrousStagePulseWidth(configPage10.n2o_stage2_minRPM, configPage10.n2o_stage2_maxRPM, configPage10.n2o_stage2_adderMin, configPage10.n2o_stage2_adderMax, current);
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage2_minRPM, page10.n2o_stage2_maxRPM, page10.n2o_stage2_adderMin, page10.n2o_stage2_adderMax, current);
     }
   }
 
@@ -128,7 +128,7 @@ static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL, con
   return intermediate;
 }
 
-static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, const statuses &current) {
+static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
@@ -146,7 +146,7 @@ static inline uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, u
       REQ_FUEL, current);
 
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate), current);
+  return pwApplyNitrous((uint16_t)(intermediate>UINT16_MAX ? UINT16_MAX : intermediate), page10, current);
 }  
 
 TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const statuses &current)
@@ -253,7 +253,7 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
 
 TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
   uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
-  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
+  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, VE, MAP, corrections, injOpenTime, configPage10, currentStatus), calculatePWLimit(configPage2, currentStatus), injOpenTime);
 }
 
 pulseWidths computePulseWidths(const config2 &page2, statuses &current) {
