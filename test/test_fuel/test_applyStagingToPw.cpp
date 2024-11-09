@@ -4,7 +4,6 @@
 #include "pw_calcs.h"
 
 extern pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current);
-extern void initialisePWCalcs(const config10 &page10);
 
 static pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   return applyStagingToPw(primaryPW, pwLimit, injOpenTime, context.page2, context.page10, context.current);
@@ -21,7 +20,6 @@ static ComputePulseWidthsContext getStageContext(uint8_t mode) {
   context.page10.stagedInjSizeSec = 500; // 1.5x
   context.current.fuelLoad = 50;
   BIT_CLEAR(context.current.status4, BIT_STATUS4_STAGING_ACTIVE);
-  initialisePWCalcs(context.page10);
 
   return context;
 }

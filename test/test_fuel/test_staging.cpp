@@ -53,8 +53,6 @@ void test_Staging_setCommon()
   */
   configPage10.stagedInjSizePri = 250;
   configPage10.stagedInjSizeSec = 500;
-
-  initialisePWCalcs();
 }
 
 void test_Staging_Off(void)

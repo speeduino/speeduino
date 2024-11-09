@@ -1211,8 +1211,6 @@ void initialiseAll(void)
        tachoSweepIncr is also the number of tach pulses per second */
     tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
     
-    initialisePWCalcs();
-
     currentStatus.initialisationComplete = true;
 
     digitalWrite(LED_BUILTIN, HIGH);

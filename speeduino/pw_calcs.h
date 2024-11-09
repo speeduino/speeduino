@@ -8,9 +8,6 @@
  * @brief Pulse width calculations
  */
 
-/** @brief Runs any initialization required by this module */
-void initialisePWCalcs(void);
-
 /** @brief Result of pulse width calculation */
 struct pulseWidths {
   /** @brief Primary pulse width in µS */

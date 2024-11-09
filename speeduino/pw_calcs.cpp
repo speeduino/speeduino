@@ -2,49 +2,6 @@
 #include "unit_testing.h"
 #include "maths.h"
 
-/** @name Staging
- * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
- * 
- * Eg:
- *  - Pri injectors are 250cc
- *  - Sec injectors are 500cc
- *  - Total injector capacity = 750cc
- * 
- *  - stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
- *  - stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
-*/
-static uint16_t stagedPriReqFuelPct = 0;
-static uint16_t stagedSecReqFuelPct = 0; 
-
-TESTABLE_INLINE_STATIC void initialisePWCalcs(const config10 &page10)
-{
-  if(page10.stagingEnabled == true)
-  {
-    uint32_t totalInjector = page10.stagedInjSizePri + page10.stagedInjSizeSec;
-    /*
-        These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
-        Eg:
-        Pri injectors are 250cc
-        Sec injectors are 500cc
-        Total injector capacity = 750cc
-
-        stagedPriReqFuelPct = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
-        stagedSecReqFuelPct = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
-    */
-    stagedPriReqFuelPct = udiv_32_16(100UL * totalInjector, page10.stagedInjSizePri);
-    stagedSecReqFuelPct = udiv_32_16(100UL * totalInjector ,page10.stagedInjSizeSec);
-  }
-  else
-  {
-    stagedPriReqFuelPct = 0;
-    stagedSecReqFuelPct = 0;
-  }
-}
-
-void initialisePWCalcs(void) {
- initialisePWCalcs(configPage10);
-}
-
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
   if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout!= INJ_SEQUENTIAL) || (page2.nCylinders > INJ_CHANNELS)))
@@ -186,14 +143,28 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
   return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
 }
 
-static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const statuses &current) {
-  //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-  uint32_t pwPrimaryStaged = percentage(stagedPriReqFuelPct, primaryPW - injOpenTime);
+static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  // Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. 
+  // It is added on again after that calculation. 
+  primaryPW = primaryPW - injOpenTime;
+  uint32_t totalInjector = page10.stagedInjSizePri + page10.stagedInjSizeSec;
+  return ((uint32_t)primaryPW)*totalInjector;
+}
+
+static inline uint32_t calcStagePrimaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  return fast_div(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizePri);
+}
+static inline uint32_t calcStageSecondaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  return fast_div(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizeSec);
+}
+
+static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
+  uint32_t pwPrimaryStaged = calcStagePrimaryPw(primaryPW, injOpenTime, page10);
 
   uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
   if(stagingSplit > 0U) 
   { 
-    uint32_t pwSecondaryStaged = percentage(stagedSecReqFuelPct, primaryPW - injOpenTime); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+    uint32_t pwSecondaryStaged = calcStageSecondaryPw(primaryPW, injOpenTime, page10);
     uint32_t primary = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTime;
     uint32_t secondary = percentage(stagingSplit, pwSecondaryStaged) + injOpenTime;
     return { 
@@ -205,16 +176,15 @@ static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t inj
   return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
 }
 
-static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime) {
-  //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-  uint32_t pwPrimaryStaged = percentage(stagedPriReqFuelPct, primaryPW - injOpenTime);
+static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10) {
+  uint32_t pwPrimaryStaged = calcStagePrimaryPw(primaryPW, injOpenTime, page10);
 
   //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
   //If they exceed their limit, the extra duty is passed to the secondaries
   if(pwPrimaryStaged > pwLimit)
   {
     uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-    uint32_t secondary = udiv_32_16(extraPW * stagedSecReqFuelPct, stagedPriReqFuelPct) + injOpenTime;
+    uint32_t secondary = fast_div(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
     return { 
       pwLimit,
       (uint16_t)min(secondary, (uint32_t)UINT16_MAX),
@@ -233,9 +203,9 @@ TESTABLE_INLINE_STATIC pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t
     {
       //Scale the 'full' pulsewidth by each of the injector capacities
       if(page10.stagingMode == STAGING_MODE_TABLE) {
-        widths = applyStagingModeTable(primaryPW, injOpenTime, current);
+        widths = applyStagingModeTable(primaryPW, injOpenTime, page10, current);
       } else if(page10.stagingMode == STAGING_MODE_AUTO) {
-        widths = applyStagingModeAuto(primaryPW, pwLimit, injOpenTime);
+        widths = applyStagingModeAuto(primaryPW, pwLimit, injOpenTime, page10);
       } else {
         // Unknown staging mode - accept default & keep MISRA checker happy.
       }
