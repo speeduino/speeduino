@@ -296,13 +296,10 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
-
 static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
   return divisor>(uint16_t)(dividend>>16U);
 }
 
-#endif
 /**
  * @brief Optimised division: uint32_t/uint16_t => uint16_t
  * 
@@ -322,7 +319,7 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
 #if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
 
-    if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
+    if (divisor==0U) { return UINT16_MAX; }
 
     #define INDEX_REG "r16"
 
@@ -358,6 +355,12 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 #endif
 }
 
+static inline uint32_t fast_div(uint32_t dividend, uint16_t divisor) {
+  if (udiv_is16bit_result(dividend, divisor)) {
+    return udiv_32_16(dividend, divisor);
+  }
+  return dividend / divisor;    
+}
 
 /**
  * @brief Same as udiv_32_16(), except this will round to nearest integer 
