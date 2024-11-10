@@ -144,9 +144,6 @@ static void test_computePrimaryPulseWidth_AeAdder(void) {
   context = getIncludeAeContext();
   context.page2.aeApplyMode = AE_MODE_MULTIPLIER;
   TEST_ASSERT_EQUAL(750, computePrimaryPulseWidth(1000, 75, 1, 100, 0, context));
-
-  context = getIncludeAeContext();
-  TEST_ASSERT_EQUAL(0, computePrimaryPulseWidth(1000, 75, 1, 0, 0, context));
 }
 
 static void test_computePrimaryPulseWidth_Nitrous(void) {

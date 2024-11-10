@@ -22,10 +22,10 @@ static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM
   return (uint16_t)map(current.RPMdiv100, minRPM, maxRPM, adderMin, adderMax)*UINT16_C(100);
 }
 
-//Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
+// Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
 TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page10, const statuses &current)
 {
-  if (current.nitrous_status!=NITROUS_OFF && pw!=0U)
+  if (current.nitrous_status!=NITROUS_OFF)
   {
     if( (current.nitrous_status == NITROUS_STAGE1) || (current.nitrous_status == NITROUS_BOTH) )
     {
@@ -76,17 +76,12 @@ static inline uint32_t pwComputeInitial(uint16_t REQ_FUEL, uint8_t VE) {
 }
 
 static inline uint32_t pwIncludeOpenTime(uint32_t intermediate, uint16_t injOpen) {
-  // If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
-  if (intermediate != 0U) {
     return intermediate + injOpen; //Add the injector opening time
-  }
-  return intermediate;
 }
 
 static inline uint32_t pwIncludeAe(uint32_t intermediate, uint16_t REQ_FUEL, const config2 &page2, const statuses &current) {
-  // If intermediate is not 0, we need to add Acceleration Enrichment pct increase if the engine
-  // is accelerating (0 typically indicates that one of the full fuel cuts is active)
-  if ((intermediate != 0U) && BIT_CHECK(current.engine, BIT_ENGINE_ACC) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
+  // We need to add Acceleration Enrichment pct increase if the engine is accelerating
+  if (BIT_CHECK(current.engine, BIT_ENGINE_ACC) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
     return intermediate + percentage(current.AEamount - 100U, REQ_FUEL);
   }
   return intermediate;
@@ -240,7 +235,11 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, const c
 }
 
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
+  // Zero typically indicates that one of the full fuel cuts is active
+  if (current.corrections!=0U) {
   return computePulseWidths(calculateRequiredFuel(page2), page2, page6, page10, current);
+  }
+  return { 0U, 0U };
 }
 
 
@@ -370,6 +369,7 @@ void setFuelChannelPulseWidths(uint8_t maxFuelChannels, const pulseWidths &pulse
         break;
     }
   } else {
+    if (pulseWidths.primary!=0U) {
     #define ASSIGN_PRIMARY_OR_ZERO(index) \
       current.PW ## index = ((maxFuelChannels) >= (uint8_t)(index)) ? pulseWidths.primary : 0U;
     ASSIGN_PRIMARY_OR_ZERO(2)
@@ -379,5 +379,6 @@ void setFuelChannelPulseWidths(uint8_t maxFuelChannels, const pulseWidths &pulse
     ASSIGN_PRIMARY_OR_ZERO(6)
     ASSIGN_PRIMARY_OR_ZERO(7)
     ASSIGN_PRIMARY_OR_ZERO(8)
+    }
   } 
 }
