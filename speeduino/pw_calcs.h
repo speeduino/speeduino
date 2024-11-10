@@ -28,7 +28,17 @@ struct pulseWidths {
  * @param page2 Tune settings 
  * @param page6 Tune settings
  * @param page10 Tune settings
- * @param current Current systen state
+ * @param current Current system state
  * @return pulseWidths The primary and secondary injector pulse width in uS
  */
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current);
+
+/**
+ * @brief Apply the calculated pulse widths to the current system state
+ * 
+ * @param maxFuelChannels Max # of channels to set when *not* staging
+ * @param pulseWidths Result of computePulseWidths()
+ * @param page2 Tune settings
+ * @param current Current system state
+ */
+void setFuelChannelPulseWidths(uint8_t maxFuelChannels, const pulseWidths &pulseWidths, const config2 &page2, statuses &current);

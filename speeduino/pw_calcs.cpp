@@ -228,19 +228,6 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
   return page2.injOpen * (page2.battVCorMode == BATTV_COR_MODE_OPENTIME ? current.batCorrection : 100U); 
 }
 
-TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections) {
-  uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
-  currentStatus.VE = VE;
-  currentStatus.MAP = MAP;
-  currentStatus.corrections = corrections; 
-  return applyStagingToPw(computePrimaryPulseWidth(REQ_FUEL, injOpenTime, configPage2, configPage6, configPage10, currentStatus), 
-                          calculatePWLimit(configPage2, currentStatus), 
-                          injOpenTime,
-                          configPage2,
-                          configPage10,
-                          currentStatus);
-}
-
 // This function is only required so the unit tests can easily control REQ_FUEL
 TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
   uint16_t injOpenTime = calculateOpenTime(page2, current);
@@ -254,4 +241,143 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, const c
 
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
   return computePulseWidths(calculateRequiredFuel(page2), page2, page6, page10, current);
+}
+
+
+void setFuelChannelPulseWidths(uint8_t maxFuelChannels, const pulseWidths &pulseWidths, const config2 &page2, statuses &current)
+{
+  current.PW1 = pulseWidths.primary;
+  current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
+  
+  if (pulseWidths.secondary!=0U && maxFuelChannels>1U) {
+    //Allocate the primary and secondary pulse widths based on the fuel configuration
+    switch (page2.nCylinders) 
+    {
+      case 1:
+        //Nothing required for 1 cylinder, channels are correct already
+        break;
+      case 2:
+        //Primary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
+        current.PW2 = pulseWidths.primary;
+        current.PW3 = pulseWidths.secondary;
+        current.PW4 = pulseWidths.secondary;
+        break;
+      case 3:
+        current.PW2 = pulseWidths.primary;
+        current.PW3 = pulseWidths.primary;
+
+        //6 channels required for 'normal' 3 cylinder staging support
+        #if INJ_CHANNELS >= 6
+          //Primary pulsewidth on channels 1, 2 and 3, secondary on channels 4, 5 and 6
+          current.PW4 = pulseWidths.secondary;
+          current.PW5 = pulseWidths.secondary;
+          current.PW6 = pulseWidths.secondary;
+        #else
+          //If there are not enough channels, then primary pulsewidth is on channels 1, 2 and 3, secondary on channel 4
+          current.PW4 = pulseWidths.secondary;
+        #endif
+        break;
+      case 4:
+        if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
+        {
+          //Staging with 4 cylinders semi/sequential requires 8 total channels
+          #if INJ_CHANNELS >= 8
+            current.PW2 = pulseWidths.primary;
+            current.PW3 = pulseWidths.primary;
+            current.PW4 = pulseWidths.primary;
+
+            current.PW5 = pulseWidths.secondary;
+            current.PW6 = pulseWidths.secondary;
+            current.PW7 = pulseWidths.secondary;
+            current.PW8 = pulseWidths.secondary;
+          #else
+            //This is an invalid config as there are not enough outputs to support sequential + staging
+            //Put the staging output to the non-existent channel 5
+            current.PW5 = pulseWidths.secondary;
+          #endif
+        }
+        else
+        {
+          current.PW2 = pulseWidths.primary;
+          current.PW3 = pulseWidths.secondary;
+          current.PW4 = pulseWidths.secondary;
+        }
+        break;
+        
+      case 5:      
+          current.PW2 = pulseWidths.primary;
+          current.PW3 = pulseWidths.primary;
+          current.PW4 = pulseWidths.primary;
+
+        //No easily supportable 5 cylinder staging option unless there are at least 5 channels
+        #if INJ_CHANNELS >= 5
+          if (page2.injLayout != INJ_SEQUENTIAL)
+          {
+            current.PW5 = pulseWidths.secondary;
+          }
+          #if INJ_CHANNELS >= 6
+            current.PW6 = pulseWidths.secondary;
+          #endif
+        #endif
+        break;
+
+      case 6:
+        #if INJ_CHANNELS >= 6
+          //8 cylinder staging only if not sequential
+          if (page2.injLayout != INJ_SEQUENTIAL)
+          {
+            current.PW4 = pulseWidths.secondary;
+            current.PW5 = pulseWidths.secondary;
+            current.PW6 = pulseWidths.secondary;
+          }
+          #if INJ_CHANNELS >= 8
+          else
+            {
+              current.PW4 = pulseWidths.primary;
+              current.PW5 = pulseWidths.primary;
+              current.PW6 = pulseWidths.primary;
+              //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
+              current.PW7 = pulseWidths.secondary;
+              current.PW8 = pulseWidths.secondary;
+            }
+          #endif
+        #endif
+        current.PW2 = pulseWidths.primary;
+        current.PW3 = pulseWidths.primary;
+        break;
+
+      case 8:
+        #if INJ_CHANNELS >= 8
+          //8 cylinder staging only if not sequential
+          if (page2.injLayout != INJ_SEQUENTIAL)
+          {
+            current.PW5 = pulseWidths.secondary;
+            current.PW6 = pulseWidths.secondary;
+            current.PW7 = pulseWidths.secondary;
+            current.PW8 = pulseWidths.secondary;
+          }
+        #endif
+        current.PW2 = pulseWidths.primary;
+        current.PW3 = pulseWidths.primary;
+        current.PW4 = pulseWidths.primary;
+        break;
+
+      default:
+        //Assume 4 cylinder non-seq for default
+        current.PW2 = pulseWidths.primary;
+        current.PW3 = pulseWidths.secondary;
+        current.PW4 = pulseWidths.secondary;
+        break;
+    }
+  } else {
+    #define ASSIGN_PRIMARY_OR_ZERO(index) \
+      current.PW ## index = ((maxFuelChannels) >= (uint8_t)(index)) ? pulseWidths.primary : 0U;
+    ASSIGN_PRIMARY_OR_ZERO(2)
+    ASSIGN_PRIMARY_OR_ZERO(3)
+    ASSIGN_PRIMARY_OR_ZERO(4)
+    ASSIGN_PRIMARY_OR_ZERO(5)
+    ASSIGN_PRIMARY_OR_ZERO(6)
+    ASSIGN_PRIMARY_OR_ZERO(7)
+    ASSIGN_PRIMARY_OR_ZERO(8)
+  } 
 }

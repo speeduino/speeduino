@@ -1,18 +1,16 @@
-#include <globals.h>
-#include <init.h>
 #include <Arduino.h>
 #include <unity.h>
 #include <avr/sleep.h>
 
 #include "test_corrections.h"
 #include "test_PW.h"
-#include "test_staging.h"
 extern void testCalculateRequiredFuel(void);
 extern void testCalculatePWLimit(void);
 extern void testCalculateOpenTime(void);
 extern void testPwApplyNitrous(void);
 extern void testComputePrimaryPulseWidth(void);
 extern void testApplyStagingToPw(void);
+extern void testsetFuelChannelPulseWidths(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -36,7 +34,7 @@ void setup()
     testComputePrimaryPulseWidth();
     testApplyStagingToPw();
     testPW();
-    testStaging();
+    testsetFuelChannelPulseWidths();
 
     UNITY_END(); // stop unit testing
 

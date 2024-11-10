@@ -111,7 +111,6 @@ void testPW(void)
   RUN_TEST_P(test_PW_AFR_Multiply);
   RUN_TEST_P(test_PW_Large_Correction);
   RUN_TEST_P(test_PW_Very_Large_Correction);
-  RUN_TEST_P(test_PW_4Cyl_PW0);
   RUN_TEST_P(test_PW_batt_correction);
   RUN_TEST_P(test_PW_ae_adder);
   RUN_TEST_P(test_PW_nitrous_stage1);
@@ -216,21 +215,4 @@ void test_PW_Very_Large_Correction()
   pulseWidths result = computePulseWidths(1060, context);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result.primary); //Additional allowed error here 
   TEST_ASSERT_EQUAL(0, result.secondary);
-}
-
-extern void applyPulseWidths(const pulseWidths &pulseWidths);
-
-//Test that unused pulse width values are set to 0
-//This test is for a 4 cylinder using paired injection where only INJ 1 and 2 should have PW > 0
-void test_PW_4Cyl_PW0(void)
-{
-  auto context = getBasicFullContext();
-
-  context.page2.nCylinders = 4;
-  context.page2.injLayout = INJ_PAIRED;
-  context.page10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
-
-  applyPulseWidths(computePulseWidths(1060, context));
-  TEST_ASSERT_EQUAL(0, currentStatus.PW3);
-  TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }
