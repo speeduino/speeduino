@@ -189,27 +189,30 @@ static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLi
   return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
 }
 
+static inline bool canApplyStaging(const config2 &page2, const config10 &page10) {
+    //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+ return  (page10.stagingEnabled == true) 
+      && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
+}
+
 TESTABLE_INLINE_STATIC pulseWidths applyStagingToPw(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current) {
   pulseWidths widths = { primaryPW, 0U };
 
-  if (primaryPW!=0U) {
-    //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-    if ( (page10.stagingEnabled == true) && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY)) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
-    {
-      //Scale the 'full' pulsewidth by each of the injector capacities
-      if(page10.stagingMode == STAGING_MODE_TABLE) {
-        widths = applyStagingModeTable(primaryPW, injOpenTime, page10, current);
-      } else if(page10.stagingMode == STAGING_MODE_AUTO) {
-        widths = applyStagingModeAuto(primaryPW, pwLimit, injOpenTime, page10);
-      } else {
-        // Unknown staging mode - accept default & keep MISRA checker happy.
-      }
-    }
-    //Apply the pwLimit if staging is disabled and engine is not cranking
-    else if( (!BIT_CHECK(current.engine, BIT_ENGINE_CRANK))) { 
+  // Apply the pwLimit if staging is disabled and engine is not cranking
+  if (!canApplyStaging(page2, page10)) {
+    if(!BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) { 
+      // This will be the likely path in the majority of cases,
+      // so we put this first in the 'if' chain
       widths = { min(primaryPW, pwLimit), 0U };
+    } 
+  } else { // Staging is go!
+    //Scale the 'full' pulsewidth by each of the injector capacities
+    if(page10.stagingMode == STAGING_MODE_TABLE) {
+      widths = applyStagingModeTable(primaryPW, injOpenTime, page10, current);
+    } else if(page10.stagingMode == STAGING_MODE_AUTO) {
+      widths = applyStagingModeAuto(primaryPW, pwLimit, injOpenTime, page10);
     } else {
-      // No staging needed - accept default & keep MISRA checker happy.
+      // Unknown staging mode - accept default & keep MISRA checker happy.
     }
   }
 
@@ -237,7 +240,7 @@ TESTABLE_INLINE_STATIC pulseWidths computePulseWidths(uint16_t REQ_FUEL, const c
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, statuses &current) {
   // Zero typically indicates that one of the full fuel cuts is active
   if (current.corrections!=0U) {
-  return computePulseWidths(calculateRequiredFuel(page2), page2, page6, page10, current);
+    return computePulseWidths(calculateRequiredFuel(page2), page2, page6, page10, current);
   }
   return { 0U, 0U };
 }
@@ -370,15 +373,15 @@ void setFuelChannelPulseWidths(uint8_t maxFuelChannels, const pulseWidths &pulse
     }
   } else {
     if (pulseWidths.primary!=0U) {
-    #define ASSIGN_PRIMARY_OR_ZERO(index) \
-      current.PW ## index = ((maxFuelChannels) >= (uint8_t)(index)) ? pulseWidths.primary : 0U;
-    ASSIGN_PRIMARY_OR_ZERO(2)
-    ASSIGN_PRIMARY_OR_ZERO(3)
-    ASSIGN_PRIMARY_OR_ZERO(4)
-    ASSIGN_PRIMARY_OR_ZERO(5)
-    ASSIGN_PRIMARY_OR_ZERO(6)
-    ASSIGN_PRIMARY_OR_ZERO(7)
-    ASSIGN_PRIMARY_OR_ZERO(8)
+      #define ASSIGN_PRIMARY_OR_ZERO(index) \
+        current.PW ## index = ((maxFuelChannels) >= (uint8_t)(index)) ? pulseWidths.primary : 0U;
+      ASSIGN_PRIMARY_OR_ZERO(2)
+      ASSIGN_PRIMARY_OR_ZERO(3)
+      ASSIGN_PRIMARY_OR_ZERO(4)
+      ASSIGN_PRIMARY_OR_ZERO(5)
+      ASSIGN_PRIMARY_OR_ZERO(6)
+      ASSIGN_PRIMARY_OR_ZERO(7)
+      ASSIGN_PRIMARY_OR_ZERO(8)
     }
   } 
 }
