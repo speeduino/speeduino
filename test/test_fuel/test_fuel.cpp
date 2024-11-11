@@ -8,6 +8,7 @@
 #include "test_PW.h"
 #include "test_staging.h"
 extern void testPwApplyNitrous(void);
+extern void testCalculatePWLimit(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -25,6 +26,7 @@ void setup()
 
     testCorrections();
     testPwApplyNitrous();
+    testCalculatePWLimit();
     testPW();
     testStaging();
 
