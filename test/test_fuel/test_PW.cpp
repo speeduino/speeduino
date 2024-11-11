@@ -1,24 +1,9 @@
 #include <globals.h>
 #include <speeduino.h>
 #include <unity.h>
-#include "test_PW.h"
-// #include "init.h"
 #include "../test_utils.h"
 
 #define PW_ALLOWED_ERROR  30
-
-void testPW(void)
-{
-  SET_UNITY_FILENAME() {
-    RUN_TEST_P(test_PW_No_Multiply);
-    RUN_TEST_P(test_PW_MAP_Multiply);
-    RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
-    RUN_TEST_P(test_PW_AFR_Multiply);
-    RUN_TEST_P(test_PW_Large_Correction);
-    RUN_TEST_P(test_PW_Very_Large_Correction);
-    RUN_TEST_P(test_PW_4Cyl_PW0);
-  }
-}
 
 int16_t REQ_FUEL;
 byte VE;
@@ -147,4 +132,17 @@ void test_PW_4Cyl_PW0(void)
   loop();
   TEST_ASSERT_EQUAL(0, currentStatus.PW3);
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
+}
+
+void testPW(void)
+{
+  SET_UNITY_FILENAME() {
+    RUN_TEST_P(test_PW_No_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply);
+    RUN_TEST_P(test_PW_MAP_Multiply_Compatibility);
+    RUN_TEST_P(test_PW_AFR_Multiply);
+    RUN_TEST_P(test_PW_Large_Correction);
+    RUN_TEST_P(test_PW_Very_Large_Correction);
+    RUN_TEST_P(test_PW_4Cyl_PW0);
+  }
 }
