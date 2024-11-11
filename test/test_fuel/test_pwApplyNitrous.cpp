@@ -1,5 +1,7 @@
 #include <unity.h>
 #include "../test_utils.h"
+#include "config_pages.h"
+#include "statuses.h"
 
 extern uint16_t pwApplyNitrous(uint16_t pw, const config10 &page10, const statuses &current);
 
