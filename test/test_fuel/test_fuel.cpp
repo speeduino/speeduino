@@ -5,8 +5,8 @@
 #include <avr/sleep.h>
 
 #include "test_corrections.h"
-#include "test_PW.h"
 #include "test_staging.h"
+extern void testPW(void);
 extern void testPwApplyNitrous(void);
 extern void testCalculatePWLimit(void);
 
