@@ -46,6 +46,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "load_source.h"
+#include "unit_testing.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -65,6 +66,32 @@ static constexpr table2D injectorAngleTable(_countof(configPage2.injAng), config
 static constexpr table2D rotarySplitTable(_countof(configPage10.rotarySplitValues), configPage10.rotarySplitValues, configPage10.rotarySplitBins);
 static constexpr table2D rollingCutTable(_countof(configPage15.rollingProtCutPercent), configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
 static constexpr table2D idleTargetTable(_countof(configPage6.iacCLValues), configPage6.iacCLValues, configPage6.iacBins);
+
+static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax, const statuses &current)
+{
+  int16_t adderRange = (maxRPM - minRPM) * 100;
+  int16_t adderPercent = ((current.RPM - (minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
+  adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
+  return (adderMax + percentage(adderPercent, (adderMin - adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
+}
+
+//Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
+TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page10, const statuses &current)
+{
+  if (current.nitrous_status!=NITROUS_OFF && pw!=0U)
+  {
+    if( (current.nitrous_status == NITROUS_STAGE1) || (current.nitrous_status == NITROUS_BOTH) )
+    {
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage1_minRPM, page10.n2o_stage1_maxRPM, page10.n2o_stage1_adderMin, page10.n2o_stage1_adderMax, current);
+    }
+    if( (current.nitrous_status == NITROUS_STAGE2) || (current.nitrous_status == NITROUS_BOTH) )
+    {
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage2_minRPM, page10.n2o_stage2_maxRPM, page10.n2o_stage2_adderMin, page10.n2o_stage2_adderMax, current);
+    }
+  }
+
+  return pw;
+}
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 
@@ -462,23 +489,8 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS);
-
-      //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
-      if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
-      { 
-        int16_t adderRange = (configPage10.n2o_stage1_maxRPM - configPage10.n2o_stage1_minRPM) * 100;
-        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage1_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
-        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
-        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage1_adderMax + percentage(adderPercent, (configPage10.n2o_stage1_adderMin - configPage10.n2o_stage1_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
-      }
-      if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
-      {
-        int16_t adderRange = (configPage10.n2o_stage2_maxRPM - configPage10.n2o_stage2_minRPM) * 100;
-        int16_t adderPercent = ((currentStatus.RPM - (configPage10.n2o_stage2_minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
-        adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
-        currentStatus.PW1 = currentStatus.PW1 + (configPage10.n2o_stage2_adderMax + percentage(adderPercent, (configPage10.n2o_stage2_adderMin - configPage10.n2o_stage2_adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
-      }
+      currentStatus.PW1 = pwApplyNitrous(PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS), 
+                                         configPage10, currentStatus);
 
       int injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
