@@ -51,7 +51,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include "units.h"
 
-uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
@@ -67,6 +66,21 @@ static table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.
 static table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 static table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 static table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
+
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
+  uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
+  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || BIT_CHECK(current.status3, BIT_STATUS3_HALFSYNC)))
+  {
+    //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+    //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
+    //If we're doing more than 1 squirt per cycle then we need to split the amount accordingly.
+    //(Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the
+    //stroke to make the single squirt on)
+    reqFuel = reqFuel / 2U; 
+  }
+
+  return reqFuel;
+}
 
 static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax, const statuses &current)
 {
@@ -599,7 +613,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS, configPage10, currentStatus);
+      currentStatus.PW1 = PW(calculateRequiredFuel(configPage2, currentStatus), currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS, configPage10, currentStatus);
 
       int injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
