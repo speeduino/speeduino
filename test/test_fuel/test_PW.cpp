@@ -1,7 +1,6 @@
-#include <globals.h>
-#include <speeduino.h>
 #include <unity.h>
 #include "../test_utils.h"
+#include <globals.h>
 
 #define PW_ALLOWED_ERROR  30
 
@@ -31,7 +30,6 @@ void test_PW_setCommon()
   currentStatus.nitrous_status = NITROUS_OFF;
 
   configPage2.injOpen = 10;
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   currentStatus.batCorrection = 100;
 }
 
@@ -185,7 +183,7 @@ static void test_PW_ae_adder(void) {
   test_PW_setCommon();
   setup_basic_pw();
 
-  BIT_SET(currentStatus.engine, BIT_ENGINE_ACC);
+  currentStatus.isAcceleratingTPS = true;
   configPage2.aeApplyMode = AE_MODE_ADDER;
   currentStatus.AEamount = 105U;
   uint16_t expectedOffset = (REQ_FUEL*(currentStatus.AEamount-100U))/100;
