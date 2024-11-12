@@ -31,7 +31,6 @@ void test_PW_setCommon()
   currentStatus.nitrous_status = NITROUS_OFF;
 
   configPage2.injOpen = 10;
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   currentStatus.batCorrection = 100;
 }
 

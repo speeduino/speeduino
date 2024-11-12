@@ -9,6 +9,7 @@
 extern void testPW(void);
 extern void testPwApplyNitrous(void);
 extern void testCalculatePWLimit(void);
+extern void testCalculateRequiredFuel(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -27,6 +28,7 @@ void setup()
     testCorrections();
     testPwApplyNitrous();
     testCalculatePWLimit();
+    testCalculateRequiredFuel();
     testPW();
     testStaging();
 
