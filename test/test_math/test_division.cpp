@@ -8,7 +8,7 @@
 
 template <typename T>
 static void test_div100(T testValue) {
-  assert_rounded_div(testValue, 100, div100(testValue));
+  assert_rounded_div(testValue, (T)100, div100(testValue));
 }
 
 template <typename T>
@@ -55,10 +55,10 @@ void test_maths_div100_S16(void)
   test_div100_Seed<int16_t>(-100);
   test_div100_Seed<int16_t>(-10000);
 
-  test_div100<int16_t>(INT16_MIN+100);
+  test_div100<int16_t>((int16_t)(INT16_MIN+100));
 
   // We expect this to fail - the rounding doesn't do integer promotion
-  TEST_ASSERT_EQUAL_UINT16(327U, div100((int16_t)INT16_MIN));
+  TEST_ASSERT_EQUAL_INT16(327, div100((int16_t)INT16_MIN));
 }
 
 void test_maths_div100_S32(void)
@@ -84,7 +84,7 @@ void test_maths_div100_S32(void)
 }
 
 static void test_div360(uint32_t testValue) {
-  assert_rounded_div(testValue, 360, div360(testValue));
+  assert_rounded_div(testValue, (uint32_t)360U, div360(testValue));
 }
 void test_maths_div360(void)
 {
@@ -128,7 +128,7 @@ void test_maths_udiv_32_16(void)
 
 
 void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
-    assert_rounded_div(dividend, divisor, udiv_32_16_closest(dividend, divisor));
+    assert_rounded_div(dividend, (uint32_t)divisor, (uint32_t)udiv_32_16_closest(dividend, divisor));
 }
 
 void test_maths_udiv_32_16_closest(void)
