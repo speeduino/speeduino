@@ -4,11 +4,11 @@
 #include "../timer.hpp"
 #include "../test_utils.h"
 
-static void test_percent(uint8_t percent, uint16_t value) {
-  assert_rounded_div((uint32_t)percent*value, 100, percentage(percent, value));
+static void test_percent(uint16_t percent, uint32_t value) {
+  assert_rounded_div((uint32_t)percent*value, (uint32_t)100U, percentage(percent, value));
 }
 
-void test_maths_percent_U8(void)
+void test_maths_percent_U8_U8(void)
 {
   uint8_t percentOf = 77;
   test_percent(0, percentOf);
@@ -20,7 +20,7 @@ void test_maths_percent_U8(void)
   test_percent(125, percentOf);
 }
 
-void test_maths_percent_U16(void)
+void test_maths_percent_U8_U16(void)
 {
   uint16_t percentOf = 33333;
   test_percent(0, percentOf);
@@ -32,9 +32,24 @@ void test_maths_percent_U16(void)
   test_percent(125, percentOf);
 }
 
+void test_maths_percent_U16_U32(void)
+{
+  uint32_t percentOf = UINT16_MAX*37UL;
+  test_percent(0, percentOf);
+  test_percent(33, percentOf);
+  test_percent(50, percentOf);
+  test_percent(66, percentOf);
+  test_percent(75, percentOf);
+  test_percent(100, percentOf);
+  test_percent(125, percentOf);
+  test_percent(256, percentOf);
+  // The fuel corrections can be very high
+  test_percent(1000, percentOf);
+  test_percent(1500, percentOf);
+}
 
 static void test_halfPercentage(uint8_t percent, uint16_t value) {
-  assert_rounded_div((int32_t)percent*value, 200, halfPercentage(percent, value));
+  assert_rounded_div((uint32_t)percent*value, (uint32_t)200U, (uint32_t)halfPercentage(percent, value));
 }
 
 void test_maths_halfpercent_U8(void)
@@ -63,7 +78,7 @@ void test_maths_halfpercent_U16(void)
 
 static void test_percentApprox(uint8_t percent, uint16_t value) {
   uint8_t delta = ((uint32_t)percent*value)/100; // 1% allowable delta
-  assert_rounded_div((uint32_t)percent*value, 100, percentageApprox(percent, value), delta);
+  assert_rounded_div((uint32_t)percent*value, (uint32_t)100U, percentageApprox(percent, value), delta);
 }
 
 static void test_maths_percentApprox(void)
@@ -142,8 +157,9 @@ void testPercent()
 {
   SET_UNITY_FILENAME() {
 
-  RUN_TEST(test_maths_percent_U8);
-  RUN_TEST(test_maths_percent_U16);
+  RUN_TEST(test_maths_percent_U8_U8);
+  RUN_TEST(test_maths_percent_U8_U16);
+  RUN_TEST(test_maths_percent_U16_U32);
   RUN_TEST(test_maths_halfpercent_U8);
   RUN_TEST(test_maths_halfpercent_U16);
   RUN_TEST(test_maths_halfPercentage_perf);
