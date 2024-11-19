@@ -159,7 +159,7 @@ void initialiseAll(void)
     
   #ifdef SD_LOGGING
     initRTC();
-    initSD();
+    if(configPage13.onboard_log_file_style) { initSD(); }
   #endif
 
     Serial.begin(115200);
