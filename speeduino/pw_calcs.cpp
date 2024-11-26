@@ -344,3 +344,8 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
   } 
 
 }
+
+uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
+  // Convert injector open time from tune to microseconds & apply voltage correction if required
+  return page2.injOpen * (page2.battVCorMode == BATTV_COR_MODE_OPENTIME ? current.batCorrection : 100U); 
+}
