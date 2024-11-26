@@ -12,6 +12,7 @@ extern void testCalculateRequiredFuel(void);
 extern void testApplyPwLimit(void);
 extern void testCalculateSecondaryPw(void);
 extern void testApplyPwToInjectorChannels(void);
+extern void testCalculateOpenTime(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -34,6 +35,7 @@ void setup()
     testApplyPwLimit();
     testCalculateSecondaryPw();
     testApplyPwToInjectorChannels();
+    testCalculateOpenTime();
     testPW();
 
     UNITY_END(); // stop unit testing
