@@ -62,11 +62,6 @@ static constexpr table2D rotarySplitTable(_countof(configPage10.rotarySplitValue
 static constexpr table2D rollingCutTable(_countof(configPage15.rollingProtCutPercent), configPage15.rollingProtCutPercent, configPage15.rollingProtRPMDelta);
 static constexpr table2D idleTargetTable(_countof(configPage6.iacCLValues), configPage6.iacCLValues, configPage6.iacBins);
 
-TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
-  // Convert injector open time from tune to microseconds & apply voltage correction if required
-  return page2.injOpen * current.batCorrection; 
-}
-
 #ifndef UNIT_TEST // Scope guard for unit testing
 
 void setup(void)
