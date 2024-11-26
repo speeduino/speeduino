@@ -13,6 +13,7 @@ extern void testApplyPwLimit(void);
 extern void testCalculateSecondaryPw(void);
 extern void testApplyPwToInjectorChannels(void);
 extern void testCalculateOpenTime(void);
+extern void testCalcPrimaryPulseWidth(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -36,6 +37,7 @@ void setup()
     testCalculateSecondaryPw();
     testApplyPwToInjectorChannels();
     testCalculateOpenTime();
+    testCalcPrimaryPulseWidth();
     testComputePulseWidths();
 
     UNITY_END(); // stop unit testing
