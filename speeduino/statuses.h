@@ -232,6 +232,7 @@ struct statuses {
   byte TS_SD_Status; //TunerStudios SD card status
   byte airConStatus;
   uint8_t systemTemp;
+  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 };
 
 /**
