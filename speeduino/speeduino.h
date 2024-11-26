@@ -22,6 +22,4 @@ int8_t getAdvance1(void);
 void calculateIgnitionAngles(uint16_t dwellAngle);
 void checkLaunchAndFlatShift();
 
-extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
-
 #endif
