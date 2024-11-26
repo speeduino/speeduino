@@ -82,53 +82,54 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-TESTABLE_INLINE_STATIC uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t PW(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
   uint16_t iMAP = 100;
   uint16_t iAFR = 147;
+  uint16_t REQ_FUEL = calculateRequiredFuel(page2, current);
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
  
   //Check whether either of the multiply MAP modes is turned on
-  //if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
-  if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = div100( ((uint16_t)MAP << 7U) ); }
-  else if( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)MAP << 7U) / currentStatus.baro; }
+  //if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
+  if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = div100( ((uint16_t)current.MAP << 7U) ); }
+  else if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)current.MAP << 7U) / current.baro; }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
-    iAFR = ((unsigned int)currentStatus.O2 << 7U) / currentStatus.afrTarget;  //Include AFR (vs target) if enabled
+  if ( (page2.includeAFR == true) && (page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
+    iAFR = ((unsigned int)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
   }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
-    iAFR = ((unsigned int)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+  if ( (page2.incorporateAFR == true) && (page2.includeAFR == false) ) {
+    iAFR = ((unsigned int)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
 
-  uint32_t intermediate = percentageApprox(VE, REQ_FUEL); //Need to use an intermediate value to avoid overflowing the long
-  if ( configPage2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
+  uint32_t intermediate = percentageApprox(current.VE, REQ_FUEL); //Need to use an intermediate value to avoid overflowing the long
+  if ( page2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
   
-  if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
+  if ( (page2.includeAFR == true) && (page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
     //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
     intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);  
   }
-  if ( (configPage2.incorporateAFR == true) && (configPage2.includeAFR == false) ) {
+  if ( (page2.incorporateAFR == true) && (page2.includeAFR == false) ) {
     intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);
   }
 
   //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  intermediate = percentageApprox(corrections, intermediate);
+  intermediate = percentageApprox(current.corrections, intermediate);
 
   if (intermediate != 0)
   {
     //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
-    intermediate += injOpen; //Add the injector opening time
+    intermediate += injOpenTime; //Add the injector opening time
     //AE calculation only when ACC is active.
-    if (currentStatus.isAcceleratingTPS)
+    if (current.isAcceleratingTPS)
     {
       //AE Adds % of req_fuel
-      if ( configPage2.aeApplyMode == AE_MODE_ADDER )
+      if ( page2.aeApplyMode == AE_MODE_ADDER )
         {
-          intermediate += div100(((uint32_t)REQ_FUEL) * (currentStatus.AEamount - 100U));
+          intermediate += div100(((uint32_t)REQ_FUEL) * (current.AEamount - 100U));
         }
     }
 
@@ -139,7 +140,6 @@ TESTABLE_INLINE_STATIC uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t cor
   }
   return pwApplyNitrous((unsigned int)intermediate, page10, current);
 }
-
 
 // Apply the pwLimit if staging is disabled and engine is not cranking
 TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
@@ -367,14 +367,12 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
   return page2.injOpen * current.batCorrection; 
 }
 
-pulseWidths computePulseWidths(byte VE, long MAP, uint16_t corrections, const config2 &page2, const config10 &page10, statuses &current) {
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   uint16_t pwLimit = calculatePWLimit(page2, current);
   uint16_t injOpenTime = calculateOpenTime(page2, current);
-  uint16_t primaryPw = applyPwLimits(PW( calculateRequiredFuel(page2, current), 
-                                        VE, 
-                                        MAP, 
-                                        corrections, 
-                                        injOpenTime, 
+  uint16_t primaryPw = applyPwLimits(PW(injOpenTime, 
+                                        page2,
+                                        page6,
                                         page10, 
                                         current),
                                       pwLimit,
