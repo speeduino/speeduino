@@ -53,9 +53,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include "units.h"
 
-
-uint16_t inj_opentime_uS = 0;
-
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
 uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
@@ -65,6 +62,11 @@ static table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.
 static table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 static table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 static table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
+
+TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
+  // Convert injector open time from tune to microseconds & apply voltage correction if required
+  return page2.injOpen * current.batCorrection; 
+}
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 
@@ -465,18 +467,19 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
+      uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
       uint16_t primaryPw = applyPwLimits(PW( calculateRequiredFuel(configPage2, currentStatus), 
                                             currentStatus.VE, 
                                             currentStatus.MAP, 
                                             currentStatus.corrections, 
-                                            inj_opentime_uS, 
+                                            injOpenTime, 
                                             configPage10, 
                                             currentStatus),
                                           pwLimit,
-                                          inj_opentime_uS,
+                                          injOpenTime,
                                           configPage10,
                                           currentStatus);
-      auto pulse_widths = calculateSecondaryPw(primaryPw, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
+      auto pulse_widths = calculateSecondaryPw(primaryPw, pwLimit, injOpenTime, configPage2, configPage10, currentStatus);
       BIT_WRITE(currentStatus.status4, BIT_STATUS4_STAGING_ACTIVE, pulse_widths.secondary!=0U);
       applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);
 
@@ -909,7 +912,7 @@ void __attribute__((always_inline)) loop(void)
 
 
 #if INJ_CHANNELS >= 1
-      if( (maxInjOutputs >= 1) && (currentStatus.PW1 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
+      if( (maxInjOutputs >= 1) && (currentStatus.PW1 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
       {
         uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, injector1StartAngle, crankAngle);
         if (timeOut>0U)
@@ -933,7 +936,7 @@ void __attribute__((always_inline)) loop(void)
         |------------------------------------------------------------------------------------------
         */
 #if INJ_CHANNELS >= 2
-        if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
+        if( (maxInjOutputs >= 2) && (currentStatus.PW2 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, injector2StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -947,7 +950,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 3
-        if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
+        if( (maxInjOutputs >= 3) && (currentStatus.PW3 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, injector3StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -961,7 +964,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 4
-        if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
+        if( (maxInjOutputs >= 4) && (currentStatus.PW4 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, injector4StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -975,7 +978,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 5
-        if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
+        if( (maxInjOutputs >= 5) && (currentStatus.PW5 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, injector5StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -989,7 +992,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 6
-        if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
+        if( (maxInjOutputs >= 6) && (currentStatus.PW6 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, injector6StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -1003,7 +1006,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 7
-        if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
+        if( (maxInjOutputs >= 7) && (currentStatus.PW7 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, injector7StartAngle, crankAngle);
           if ( timeOut>0U )
@@ -1017,7 +1020,7 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if INJ_CHANNELS >= 8
-        if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
+        if( (maxInjOutputs >= 8) && (currentStatus.PW8 != 0U) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
         {
           uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, injector8StartAngle, crankAngle);
           if ( timeOut>0U )
