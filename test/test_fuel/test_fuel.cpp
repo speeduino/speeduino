@@ -5,7 +5,7 @@
 #include <avr/sleep.h>
 
 #include "test_corrections.h"
-extern void testPW(void);
+extern void testComputePulseWidths(void);
 extern void testPwApplyNitrous(void);
 extern void testCalculatePWLimit(void);
 extern void testCalculateRequiredFuel(void);
@@ -36,7 +36,7 @@ void setup()
     testCalculateSecondaryPw();
     testApplyPwToInjectorChannels();
     testCalculateOpenTime();
-    testPW();
+    testComputePulseWidths();
 
     UNITY_END(); // stop unit testing
 
