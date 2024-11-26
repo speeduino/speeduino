@@ -57,11 +57,6 @@ uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
-TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
-  // Convert injector open time from tune to microseconds & apply voltage correction if required
-  return page2.injOpen * (page2.battVCorMode == BATTV_COR_MODE_OPENTIME ? current.batCorrection : 100U); 
-}
-
 #ifndef UNIT_TEST // Scope guard for unit testing
 void setup(void)
 {
