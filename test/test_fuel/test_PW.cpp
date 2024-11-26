@@ -16,7 +16,7 @@ int injOpen;
 void test_PW_setCommon()
 {
   // initialiseAll();
-  REQ_FUEL = 1060;
+  REQ_FUEL = 1100;
   VE = 130;
   MAP = 94;
   corrections = 113;
@@ -49,7 +49,7 @@ void test_PW_No_Multiply()
   currentStatus.revolutionTime = 10000UL; //6000 rpm
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
+  TEST_ASSERT_EQUAL(2618, result);
 }
 
 void test_PW_MAP_Multiply()
@@ -64,7 +64,7 @@ void test_PW_MAP_Multiply()
   configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2400, result);
+  TEST_ASSERT_EQUAL(2466, result);
 }
 
 void test_PW_MAP_Multiply_Compatibility()
@@ -79,7 +79,7 @@ void test_PW_MAP_Multiply_Compatibility()
   configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2449, result);
+  TEST_ASSERT_EQUAL(2516, result);
 }
 
 void test_PW_AFR_Multiply()
@@ -99,7 +99,7 @@ void test_PW_AFR_Multiply()
 
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2588, result);
+  TEST_ASSERT_EQUAL(2643, result);
 }
 
 /*
@@ -123,7 +123,7 @@ void test_PW_Large_Correction()
   configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 9268, result);
+  TEST_ASSERT_EQUAL(9586, result);
 }
 
 void test_PW_Very_Large_Correction()
@@ -140,7 +140,7 @@ void test_PW_Very_Large_Correction()
   configPage2.aeApplyMode = 0;
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 21670, result); //Additional allowed error here 
+  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR+30, 22465, result); //Additional allowed error here 
 }
 
 void test_PW_Zero_Correction()
@@ -177,7 +177,7 @@ void test_PW_4Cyl_PW0(void)
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }
 
-static constexpr uint16_t NO_MULTIPLY_EXPECTED = 2557U;
+static constexpr uint16_t NO_MULTIPLY_EXPECTED = 2618U;
 
 
 static void test_PW_ae_adder(void) {
@@ -192,7 +192,7 @@ static void test_PW_ae_adder(void) {
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
   TEST_ASSERT_GREATER_THAN(PW_ALLOWED_ERROR, expectedOffset);
-  TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, NO_MULTIPLY_EXPECTED + expectedOffset, result);
+  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED + expectedOffset, result);
 }
 
 
