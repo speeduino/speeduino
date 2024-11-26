@@ -128,7 +128,7 @@ static ComputePulseWidthsContext getIncludeAeContext(void) {
   auto context = getBasicPwContext();
   context.page2.aeApplyMode = AE_MODE_ADDER;
   context.current.AEamount = 105U;
-  BIT_SET(context.current.engine, BIT_ENGINE_ACC);
+  context.current.isAcceleratingTPS = true;
   return context;
 }
 
@@ -147,7 +147,7 @@ static void test_calcPrimaryPulseWidth_AeAdder(void) {
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();
-  BIT_CLEAR(context.current.engine, BIT_ENGINE_ACC);
+  context.current.isAcceleratingTPS = false;
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();
