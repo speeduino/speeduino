@@ -69,59 +69,64 @@ static table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPa
 static table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 static table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
 
-TESTABLE_INLINE_STATIC void calculateStaging(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current) {
-  current.PW1 = primaryPw;
-  //Calculate staging pulsewidths if used
-  //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
-  if( (page10.stagingEnabled == true) && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY) && (current.PW1 > injOpenTime) ) //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)
+TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current) {
+  uint16_t secondaryPW = 0U;
+  if(canApplyStaging(page2, page10) && (primaryPw!=0U) )
   {
     //Scale the 'full' pulsewidth by each of the injector capacities
-    current.PW1 -= injOpenTime; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint32_t tempPW1 = div100((uint32_t)current.PW1 * staged_req_fuel_mult_pri);
+    primaryPw -= injOpenTime; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
+    uint32_t tempPW1 = div100((uint32_t)primaryPw * staged_req_fuel_mult_pri);
 
     if(page10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint32_t tempPW3 = div100((uint32_t)current.PW1 * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
+      uint32_t tempPW3 = div100((uint32_t)primaryPw * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
 
       uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
-      current.PW1 = div100((100U - stagingSplit) * tempPW1);
-      current.PW1 += injOpenTime; 
+      primaryPw = div100((100U - stagingSplit) * tempPW1);
+      primaryPw += injOpenTime; 
 
       //PW2 is used temporarily to hold the secondary injector pulsewidth. It will be assigned to the correct channel below
       if(stagingSplit > 0) 
       { 
-        current.stagingActive = true; //Set the staging active flag
-        current.PW2 = div100(stagingSplit * tempPW3); 
-        current.PW2 += injOpenTime;
+        secondaryPW = div100(stagingSplit * tempPW3); 
+        secondaryPW += injOpenTime;
       }
       else
       {
-        current.stagingActive = false; //Clear the staging active flag
-        current.PW2 = 0; 
+        secondaryPW = 0; 
       }
     }
     else if(page10.stagingMode == STAGING_MODE_AUTO)
     {
-      current.PW1 = tempPW1;
+      primaryPw = tempPW1;
       //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
       //If they exceed their limit, the extra duty is passed to the secondaries
       if(tempPW1 > pwLimit)
       {
-        current.stagingActive = true; //Set the staging active flag
         uint32_t extraPW = tempPW1 - pwLimit + injOpenTime; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-        current.PW1 = pwLimit;
-        current.PW2 = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
-        current.PW2 += injOpenTime;
+        primaryPw = pwLimit;
+        secondaryPW = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
+        secondaryPW += injOpenTime;
       }
       else 
       {
         //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
-        current.PW1 += injOpenTime; //Add the open time back in
-        current.stagingActive = false; //Clear the staging active flag 
-        current.PW2 = 0; //Secondary PW is simply set to 0 as it is not required
+        primaryPw += injOpenTime; //Add the open time back in
+        secondaryPW = 0; //Secondary PW is simply set to 0 as it is not required
       } 
     }
+  }
 
+  return { primaryPw, secondaryPW };
+}
+
+TESTABLE_INLINE_STATIC void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current) {
+  current.PW1 = pulse_widths.primary;
+  current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
+
+  if(pulse_widths.secondary != 0U)
+  {
+    current.PW2 = pulse_widths.secondary;
     //Allocate the primary and secondary pulse widths based on the fuel configuration
     switch (page2.nCylinders) 
     {
@@ -151,21 +156,20 @@ TESTABLE_INLINE_STATIC void calculateStaging(uint16_t primaryPw, uint16_t pwLimi
       case 4:
         if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
         {
-          //Staging with 4 cylinders semi/sequential requires 8 total channels
-          #if INJ_CHANNELS >= 8
-            current.PW5 = current.PW2;
-            current.PW6 = current.PW2;
-            current.PW7 = current.PW2;
-            current.PW8 = current.PW2;
-
-            current.PW2 = current.PW1;
-            current.PW3 = current.PW1;
-            current.PW4 = current.PW1;
-          #else
-            //This is an invalid config as there are not enough outputs to support sequential + staging
-            //Put the staging output to the non-existent channel 5
-            current.PW5 = current.PW2;
-          #endif
+          current.PW2 = current.PW1;
+          current.PW3 = current.PW1;
+          current.PW4 = current.PW1;
+        //Staging with 4 cylinders semi/sequential requires 8 total channels
+        #if INJ_CHANNELS >= 8
+          current.PW5 = current.PW2;
+          current.PW6 = current.PW2;
+          current.PW7 = current.PW2;
+          current.PW8 = current.PW2;
+        #elif INJ_CHANNELS >= 5
+          //This is an invalid config as there are not enough outputs to support sequential + staging
+          //Put the staging output to the non-existent channel 5
+          current.PW5 = current.PW2;
+        #endif
         }
         else
         {
@@ -187,12 +191,14 @@ TESTABLE_INLINE_STATIC void calculateStaging(uint16_t primaryPw, uint16_t pwLimi
           #endif
         #endif
         
-          current.PW2 = current.PW1;
-          current.PW3 = current.PW1;
-          current.PW4 = current.PW1;
+        current.PW2 = current.PW1;
+        current.PW3 = current.PW1;
+        current.PW4 = current.PW1;
         break;
 
       case 6:
+        current.PW2 = current.PW1;
+        current.PW3 = current.PW1;
         #if INJ_CHANNELS >= 6
           //8 cylinder staging only if not sequential
           if (page2.injLayout != INJ_SEQUENTIAL)
@@ -214,8 +220,6 @@ TESTABLE_INLINE_STATIC void calculateStaging(uint16_t primaryPw, uint16_t pwLimi
             }
           #endif
         #endif
-        current.PW2 = current.PW1;
-        current.PW3 = current.PW1;
         break;
 
       case 8:
@@ -687,8 +691,9 @@ void __attribute__((always_inline)) loop(void)
                                           inj_opentime_uS,
                                           configPage10,
                                           currentStatus);
-
-      calculateStaging(primaryPw, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
+      auto pulse_widths = calculateSecondaryPw(primaryPw, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
+      currentStatus.stagingActive = pulse_widths.secondary!=0U;
+      applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
