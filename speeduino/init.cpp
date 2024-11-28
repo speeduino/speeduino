@@ -2753,36 +2753,36 @@ void setPinMapping(byte boardID)
   if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinFuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
   if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinOilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
-  pinReassign(&pinLaunch, configPage6.launchPin);
-  pinReassign(&pinIgnBypass, configPage4.ignBypassPin);
-  pinReassign(&pinTachOut, configPage2.tachoPin);
-  pinReassign(&pinFuelPump, configPage4.fuelPumpPin);
-  pinReassign(&pinFan, configPage6.fanPin);
-  pinReassign(&pinBoost, configPage6.boostPin);
-  pinReassign(&pinVVT_1, configPage6.vvt1Pin);
-  pinReassign(&pinFuel2Input, configPage10.fuel2InputPin);
-  pinReassign(&pinSpark2Input, configPage10.spark2InputPin);
-  pinReassign(&pinVSS, configPage2.vssPin);  
-  pinReassign(&pinWMIEmpty, configPage10.wmiEmptyPin);
-  pinReassign(&pinWMIIndicator, configPage10.wmiIndicatorPin);
-  pinReassign(&pinWMIEnabled, configPage10.wmiEnabledPin);
-  pinReassign(&pinVVT_2, configPage10.vvt2Pin);
-  if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) ) { pinReassign(&pinSDEnable, configPage13.onboard_log_tr5_Epin_pin); }
+  pinIntputReassign(pinLaunch, configPage6.launchPin);
+  pinIntputReassign(pinIgnBypass, configPage4.ignBypassPin);
+  pinOutputReassign(pinTachOut, configPage2.tachoPin);
+  pinOutputReassign(pinFuelPump, configPage4.fuelPumpPin);
+  pinOutputReassign(pinFan, configPage6.fanPin);
+  pinOutputReassign(pinBoost, configPage6.boostPin);
+  pinOutputReassign(pinVVT_1, configPage6.vvt1Pin);
+  pinIntputReassign(pinFuel2Input, configPage10.fuel2InputPin);
+  pinIntputReassign(pinSpark2Input, configPage10.spark2InputPin);
+  pinOutputReassign(pinVSS, configPage2.vssPin);  
+  pinIntputReassign(pinWMIEmpty, configPage10.wmiEmptyPin);
+  pinOutputReassign(pinWMIIndicator, configPage10.wmiIndicatorPin);
+  pinOutputReassign(pinWMIEnabled, configPage10.wmiEnabledPin);
+  pinOutputReassign(pinVVT_2, configPage10.vvt2Pin);
+  if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) ) { pinOutputReassign(pinSDEnable, configPage13.onboard_log_tr5_Epin_pin); }
   
   //Currently there's no default pin for Idle Up
-  if(!pinReassign(&pinIdleUp, configPage2.idleUpPin)) { pinIdleUp = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  if(!pinIntputReassign(pinIdleUp, configPage2.idleUpPin)) { pinIdleUp = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
 
   //Currently there's no default pin for Idle Up Output
-  if(!pinReassign(&pinIdleUpOutput, configPage2.idleUpOutputPin)) { pinIdleUpOutput = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  if(!pinOutputReassign(pinIdleUpOutput, configPage2.idleUpOutputPin)) { pinIdleUpOutput = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
 
   //Currently there's no default pin for closed throttle position sensor
-  if(!pinReassign(&pinCTPS, configPage2.CTPSPin)) { pinCTPS = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  if(!pinIntputReassign(pinCTPS, configPage2.CTPSPin)) { pinCTPS = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
   
   // Air conditioning control initialisation
-  pinReassign(&pinAirConComp, configPage15.airConCompPin);
-  pinReassign(&pinAirConFan, configPage15.airConFanPin);
-  pinReassign(&pinAirConRequest, configPage15.airConReqPin);
-    
+  pinIntputReassign(pinAirConComp, configPage15.airConCompPin);
+  pinOutputReassign(pinAirConFan, configPage15.airConFanPin);
+  pinIntputReassign(pinAirConRequest, configPage15.airConReqPin);
+
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
