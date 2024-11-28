@@ -34,7 +34,7 @@ void setResetControlPinState(void);
 byte pinTranslate(byte rawPin);
 byte pinTranslateAnalog(byte rawPin);
 bool pinOutputReassign(byte &rawPin, byte pin);
-bool pinIntputReassign(byte &rawPin, byte pin);
+bool pinInputReassign(byte &rawPin, byte pin);
 void initialiseProgrammableIO(void);
 void checkProgrammableIO(void);
 int16_t ProgrammableIOGetData(uint16_t index);

@@ -2753,35 +2753,35 @@ void setPinMapping(byte boardID)
   if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinFuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
   if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinOilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
   if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
-  pinIntputReassign(pinLaunch, configPage6.launchPin);
-  pinIntputReassign(pinIgnBypass, configPage4.ignBypassPin);
+  pinInputReassign(pinLaunch, configPage6.launchPin);
+  pinInputReassign(pinIgnBypass, configPage4.ignBypassPin);
   pinOutputReassign(pinTachOut, configPage2.tachoPin);
   pinOutputReassign(pinFuelPump, configPage4.fuelPumpPin);
   pinOutputReassign(pinFan, configPage6.fanPin);
   pinOutputReassign(pinBoost, configPage6.boostPin);
   pinOutputReassign(pinVVT_1, configPage6.vvt1Pin);
-  pinIntputReassign(pinFuel2Input, configPage10.fuel2InputPin);
-  pinIntputReassign(pinSpark2Input, configPage10.spark2InputPin);
+  pinInputReassign(pinFuel2Input, configPage10.fuel2InputPin);
+  pinInputReassign(pinSpark2Input, configPage10.spark2InputPin);
   pinOutputReassign(pinVSS, configPage2.vssPin);  
-  pinIntputReassign(pinWMIEmpty, configPage10.wmiEmptyPin);
+  pinInputReassign(pinWMIEmpty, configPage10.wmiEmptyPin);
   pinOutputReassign(pinWMIIndicator, configPage10.wmiIndicatorPin);
   pinOutputReassign(pinWMIEnabled, configPage10.wmiEnabledPin);
   pinOutputReassign(pinVVT_2, configPage10.vvt2Pin);
   if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) ) { pinOutputReassign(pinSDEnable, configPage13.onboard_log_tr5_Epin_pin); }
   
   //Currently there's no default pin for Idle Up
-  if(!pinIntputReassign(pinIdleUp, configPage2.idleUpPin)) { pinIdleUp = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  if(!pinInputReassign(pinIdleUp, configPage2.idleUpPin)) { pinIdleUp = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
 
   //Currently there's no default pin for Idle Up Output
   if(!pinOutputReassign(pinIdleUpOutput, configPage2.idleUpOutputPin)) { pinIdleUpOutput = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
 
   //Currently there's no default pin for closed throttle position sensor
-  if(!pinIntputReassign(pinCTPS, configPage2.CTPSPin)) { pinCTPS = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  if(!pinInputReassign(pinCTPS, configPage2.CTPSPin)) { pinCTPS = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
   
   // Air conditioning control initialisation
-  pinIntputReassign(pinAirConComp, configPage15.airConCompPin);
+  pinInputReassign(pinAirConComp, configPage15.airConCompPin);
   pinOutputReassign(pinAirConFan, configPage15.airConFanPin);
-  pinIntputReassign(pinAirConRequest, configPage15.airConReqPin);
+  pinInputReassign(pinAirConRequest, configPage15.airConReqPin);
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
