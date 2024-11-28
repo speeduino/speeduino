@@ -879,7 +879,7 @@ int8_t correctionNitrous(int8_t advance)
  */
 int8_t correctionSoftLaunch(int8_t advance)
 {
-  byte ignSoftLaunchValue = advance;
+  uint8_t ignSoftLaunchValue = advance;
   //SoftCut rev limit for 2-step launch control.
   if(  configPage6.launchEnabled && currentStatus.clutchTrigger && \
       (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && \
