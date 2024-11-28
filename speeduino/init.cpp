@@ -2786,7 +2786,7 @@ void setPinMapping(byte boardID)
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
-  if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_MAX_IO_PINS) && !pinIsOutput(configPage4.resetControlPin) )
+  if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_MAX_IO_PINS) && !pinIsReserved(configPage4.resetControlPin) )
   {
     if (configPage4.resetControlPin != 0U) {
       pinResetControl = pinTranslate(configPage4.resetControlPin);
@@ -2988,7 +2988,7 @@ void setPinMapping(byte boardID)
   if( (configPage10.wmiEnabled > 0) && (!pinIsOutput(pinWMIEnabled)) )
   {
     pinMode(pinWMIEnabled, OUTPUT);
-    if( (configPage10.wmiIndicatorEnabled > 0) && (!pinIsOutput(pinWMIIndicator)) )
+    if( (configPage10.wmiIndicatorEnabled > 0) && (!pinIsReserved(pinWMIIndicator)) )
     {
       pinMode(pinWMIIndicator, OUTPUT);
       if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
@@ -3000,7 +3000,7 @@ void setPinMapping(byte boardID)
     }
   } 
 
-  if( (pinAirConComp>0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConComp)) )
+  if( (pinAirConComp>0) && ((configPage15.airConEnable) == 1) && (!pinIsReserved(pinAirConComp)) )
   {
     pinMode(pinAirConComp, OUTPUT);
   }
@@ -3021,7 +3021,7 @@ void setPinMapping(byte boardID)
     }
   }
 
-  if( (pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1) && (!pinIsOutput(pinAirConFan)) )
+  if( (pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1) && (!pinIsReserved(pinAirConFan)) )
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
