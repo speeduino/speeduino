@@ -90,6 +90,53 @@ byte pinTranslateAnalog(byte rawPin)
   return outputPin;
 }
 
+/** Check if new pin assignment is valid before changing it.
+* It also check if the pin is protected, when protected change the pin to boad max
+* @param rawPin - Pin function to be reassigned
+* @param pin - Intended pin number
+*/
+bool pinOutputReassign(byte &rawPin, byte pin)
+{
+  bool reassigned = false;
+  if( (pin != 0) && (pin < BOARD_MAX_IO_PINS) )
+  {
+    rawPin = pinTranslate(pin);
+    reassigned = true;
+  }
+
+  //On STM32 wrong board layout can lock up the board, check and reassign every forbidden pin use
+  if( pinIsReserved(rawPin) )
+  {
+    rawPin = BOARD_MAX_IO_PINS; //Invalid pin, protect against board lock up
+    reassigned = false; //Already the default value but it can be changed on the previous check
+  }
+
+  return reassigned;
+}
+
+/** Check if new pin assignment is valid before changing it.
+* It also check if the pin is protected, when protected change the pin to boad max
+* @param rawPin - Pin function to be reassigned
+* @param pin - Intended pin number
+*/
+bool pinInputReassign(byte &rawPin, byte pin)
+{
+  bool reassigned = false;
+  if( (pin != 0) && (pin < BOARD_MAX_IO_PINS) && !pinIsOutput(pin) )
+  {
+    rawPin = pinTranslate(pin);
+    reassigned = true;
+  }
+
+  //On STM32 wrong board layout can lock up the board, check and reassign every forbidden pin use
+  if( pinIsReserved(rawPin) )
+  {
+    rawPin = BOARD_MAX_IO_PINS; //Invalid pin, protect against board lock up
+    reassigned = false; //Already the default value but it can be changed on the previous check
+  }
+
+  return reassigned;
+}
 
 void setResetControlPinState(void)
 {
