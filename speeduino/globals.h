@@ -25,9 +25,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <Arduino.h>
+#include <SimplyAtomic.h>
 #include "table2d.h"
 #include "table3d.h"
-#include <assert.h>
 #include "src/FastCRC/FastCRC.h"
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -205,9 +205,6 @@
 #define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
 #define BIT_AIRCON_UNUSED8        7
 
-#define VALID_MAP_MAX 1022 //The largest ADC value that is valid for the MAP sensor
-#define VALID_MAP_MIN 2 //The smallest ADC value that is valid for the MAP sensor
-
 #ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127U
 #else
@@ -304,9 +301,9 @@ static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 #define AE_MODE_MULTIPLIER  0
 #define AE_MODE_ADDER       1
 
-#define KNOCK_MODE_OFF      0
-#define KNOCK_MODE_DIGITAL  1
-#define KNOCK_MODE_ANALOG   2
+#define KNOCK_MODE_OFF      0U
+#define KNOCK_MODE_DIGITAL  1U
+#define KNOCK_MODE_ANALOG   2U
 
 #define KNOCK_TRIGGER_HIGH  0
 #define KNOCK_TRIGGER_LOW   1
@@ -589,14 +586,12 @@ struct statuses {
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
   long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
-  uint16_t mapADC;
-  int baroADC;
+  uint16_t baroADC;
   long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
   int16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
-  uint16_t EMAPADC;
-  byte baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
-  byte TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  byte tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
+  uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
+  uint8_t tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
   int16_t tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Note that is signed value, because TPSdot can be also negative */
   byte TPSlast; /**< The previous TPS reading */
   int16_t mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Note that is signed value, because MAPdot can be also negative */
@@ -604,15 +599,14 @@ struct statuses {
   byte VE;     /**< The current VE value being used in the fuel calculation. Can be the same as VE1 or VE2, or a calculated value of both. */
   byte VE1;    /**< The VE value from fuel table 1 */
   byte VE2;    /**< The VE value from fuel table 2, if in use (and required conditions are met) */
-  byte O2;     /**< Primary O2 sensor reading */
-  byte O2_2;   /**< Secondary O2 sensor reading */
+  uint8_t O2;     /**< Primary O2 sensor reading */
+  uint8_t O2_2;   /**< Secondary O2 sensor reading */
   int coolant; /**< Coolant temperature reading */
-  int cltADC;
+  uint16_t cltADC;
   int IAT;     /**< Inlet air temperature reading */
-  int iatADC;
-  int batADC;
-  int O2ADC;
-  int O2_2ADC;
+  uint16_t iatADC;
+  uint16_t O2ADC;
+  uint16_t O2_2ADC;
   uint16_t dwell;          ///< dwell (coil primary winding/circuit on) time (in ms * 10 ? See @ref correctionsDwell)
   volatile uint16_t actualDwell;    ///< actual dwell time if new ignition mode is used (in uS)
   byte dwellCorrection; /**< The amount of correction being applied to the dwell time (in unit ...). */
@@ -654,7 +648,7 @@ struct statuses {
   unsigned int PW8; ///< In uS
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
-  volatile uint32_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
+  volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
   bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   uint16_t freeRAM;
@@ -704,9 +698,27 @@ struct statuses {
   byte airConStatus;
 };
 
-static inline bool HasAnySync(const statuses &status) {
+/**
+ * @brief Non-atomic version of HasAnySync. **Should only be called in an ATOMIC() block***
+ * 
+ */
+static inline bool HasAnySyncUnsafe(const statuses &status) {
   return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
 }
+
+static inline bool HasAnySync(const statuses &status) {
+  ATOMIC() {
+    return HasAnySyncUnsafe(status);
+  }
+  return false; // Just here to avoid compiler warning.
+}
+
+enum MAPSamplingMethod {
+  MAPSamplingInstantaneous = 0, 
+  MAPSamplingCycleAverage = 1, 
+  MAPSamplingCycleMinimum = 2,
+  MAPSamplingIgnitionEventAverage= 3,
+};
 
 /** Page 2 of the config - mostly variables that are required for fuel.
  * These are "non-live" EFI setting, engine and "system" variables that remain fixed once sent
@@ -754,7 +766,7 @@ struct config2 {
   uint16_t injAng[4];
 
   //config1 in ini
-  byte mapSample : 2;  ///< MAP sampling method (0=Instantaneous, 1=Cycle Average, 2=Cycle Minimum, 4=Ign. event average, See sensors.ino)
+  MAPSamplingMethod mapSample : 2;  ///< MAP sampling method (0=Instantaneous, 1=Cycle Average, 2=Cycle Minimum, 4=Ign. event average, See sensors.ino)
   byte strokes : 1;    ///< Engine cycle type: four-stroke (0) / two-stroke (1)
   byte injType : 1;    ///< Injector type 0=Port (INJ_TYPE_PORT), 1=Throttle Body / TBI (INJ_TYPE_TBODY)
   byte nCylinders : 4; ///< Number of cylinders
@@ -875,7 +887,7 @@ struct config2 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 #define IDLEADVANCE_MODE_OFF      0U
@@ -985,7 +997,7 @@ struct config4 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bi systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 6 of the config - mostly variables that are required for AFR targets and closed loop.
@@ -1087,7 +1099,7 @@ struct config6 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 9 of the config - mostly deals with CANBUS control.
@@ -1168,7 +1180,7 @@ struct config9 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /** Page 10 - No specific purpose. Created initially for the cranking enrich curve.
@@ -1176,7 +1188,7 @@ struct config9 {
 See ini file for further info (Config Page 11 in the ini).
 */
 struct config10 {
-  byte crankingEnrichBins[4]; //Bytes 0-4
+  byte crankingEnrichBins[4]; //Bytes 0-3
   byte crankingEnrichValues[4]; //Bytes 4-7
 
   //Byte 8
@@ -1188,22 +1200,22 @@ struct config10 {
   byte rotarySplitValues[8]; //Bytes 9-16
   byte rotarySplitBins[8]; //Bytes 17-24
 
-  uint16_t boostSens; //Bytes 25-26
-  byte boostIntv; //Byte 27
+  byte boostIntv; //Byte 25
+  uint16_t boostSens; //Bytes 26-27
   uint16_t stagedInjSizePri; //Bytes 28-29
   uint16_t stagedInjSizeSec; //Bytes 30-31
-  byte lnchCtrlTPS; //Byte 32
 
-  uint8_t flexBoostBins[6]; //Bytes 33-38
-  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 39-50
-  uint8_t flexFuelBins[6]; //Bytes 51-56
-  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 57-62
-  uint8_t flexAdvBins[6]; //Bytes 63-68
+  uint8_t flexBoostBins[6]; //Bytes 32-37
+  int16_t flexBoostAdj[6];  //kPa to be added to the boost target @ current ethanol (negative values allowed). Bytes 38-49
+  uint8_t flexFuelBins[6]; //Bytes 50-55
+  uint8_t flexFuelAdj[6];   //Fuel % @ current ethanol (typically 100% @ 0%, 163% @ 100%). Bytes 56-61
+  uint8_t flexAdvBins[6]; //Bytes 62-67
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%). NOTE: THIS SHOULD BE A SIGNED VALUE BUT 2d TABLE LOOKUP NOT WORKING WITH IT CURRENTLY!
                             //And another three corn rows die.
-                            //Bytes 69-74
+                            //Bytes 68-73
 
   //Byte 75
+  byte lnchCtrlTPS; //Byte 74
   byte n2o_enable : 2;
   byte n2o_arming_pin : 6;
   byte n2o_minCLT; //Byte 76
@@ -1352,7 +1364,7 @@ struct config10 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(2))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 /** Config for programmable I/O comparison operation (between 2 vars).
  * Operations are implemented in utilities.ino (@ref checkProgrammableIO()).
@@ -1413,7 +1425,7 @@ struct config13 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 /**
@@ -1463,7 +1475,7 @@ struct config15 {
 #if defined(CORE_AVR)
   };
 #else
-  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
 extern byte pinInjector1; //Output pin injector 1

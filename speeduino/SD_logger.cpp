@@ -264,7 +264,6 @@ constexpr const char* header_table[] PROGMEM = {  header_0,\
                                               header_121,\
                                               */
                                             };
-#define SD_LOG_NUM_FIELDS   91 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 
 static_assert(sizeof(header_table) == (sizeof(char*) * SD_LOG_NUM_FIELDS), "Number of header table titles must match number of log fields");
 
@@ -502,30 +501,34 @@ void writeSDLogEntry()
 
   if(SD_status == SD_STATUS_ACTIVE)
   {
-    //Write the timestamp (x.yyy seconds format)
-    uint32_t duration = millis() - logStartTime;
-    uint32_t seconds = duration / 1000;
-    uint32_t milliseconds = duration % 1000;
-    rb.print(seconds);
-    rb.print('.');
-    if (milliseconds < 100) { rb.print("0"); }
-    if (milliseconds < 10) { rb.print("0"); }
-    rb.print(milliseconds);
-    rb.print(',');
-
-    //Write the line to the ring buffer
-    for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
+    //Check that there is enough free space in the ring buffer to write the entry
+    if(rb.bytesFree() > SD_LOG_ENTRY_TOTAL_BYTES)
     {
-      #if FPU_MAX_SIZE >= 32
-        float entryValue = getReadableFloatLogEntry(x);
-        if(IS_INTEGER(entryValue)) { rb.print((uint16_t)entryValue); }
-        else { rb.print(entryValue); }
-      #else
-        rb.print(getReadableLogEntry(x));
-      #endif
-      if(x < (SD_LOG_NUM_FIELDS - 1)) { rb.print(","); }
+      //Write the timestamp (x.yyy seconds format)
+      uint32_t duration = millis() - logStartTime;
+      uint32_t seconds = duration / 1000;
+      uint32_t milliseconds = duration % 1000;
+      rb.print(seconds);
+      rb.print('.');
+      if (milliseconds < 100) { rb.print("0"); }
+      if (milliseconds < 10) { rb.print("0"); }
+      rb.print(milliseconds);
+      rb.print(',');
+
+      //Write the line to the ring buffer
+      for(byte x=0; x<SD_LOG_NUM_FIELDS; x++)
+      {
+        #if FPU_MAX_SIZE >= 32
+          float entryValue = getReadableFloatLogEntry(x);
+          if(IS_INTEGER(entryValue)) { rb.print((uint16_t)entryValue); }
+          else { rb.print(entryValue); }
+        #else
+          rb.print(getReadableLogEntry(x));
+        #endif
+        if(x < (SD_LOG_NUM_FIELDS - 1)) { rb.print(","); }
+      }
+      rb.println("");
     }
-    rb.println("");
 
     //Check if write to SD from ringbuffer is needed
     //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
