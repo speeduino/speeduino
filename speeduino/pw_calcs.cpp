@@ -55,7 +55,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
 {
   uint32_t tempLimit = percentageApprox(page2.dutyLim, current.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
   //Optimise for power of two divisions where possible
   switch(current.nSquirts)  {
     case 1:
@@ -240,7 +240,7 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
   current.PW1 = current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
 
   #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pw) \
-    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? pw : 0U;
+    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? (pw) : 0U;
 
   // The PW calcs already applied the logic to enable staging or not. If there is a valid
   // secondary PW, staging is enabled 
