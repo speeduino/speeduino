@@ -63,7 +63,7 @@ static void test_PW_nitrous_stageboth(void) {
   context.current.nitrous_status = NITROUS_BOTH;
 
   pulseWidths result = computePulseWidths(context);
-  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED+NITROUS_STAGE1_ADDPW+NITROUS_STAGE2_ADDPW-300, result.primary);
+  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED+NITROUS_STAGE1_BOTH+NITROUS_STAGE2_ADDPW, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
