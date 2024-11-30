@@ -41,10 +41,10 @@
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
   #ifndef INJ_CHANNELS
-    #define INJ_CHANNELS 4
+    #define INJ_CHANNELS 4U
   #endif
   #ifndef IGN_CHANNELS
-    #define IGN_CHANNELS 5
+    #define IGN_CHANNELS 5U
   #endif
 
   #if defined(__AVR_ATmega2561__)
@@ -109,8 +109,6 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
-
-#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MICROS_PER_SEC INT32_C(1000000)
 #define MICROS_PER_MIN INT32_C(MICROS_PER_SEC*60U)
