@@ -59,11 +59,11 @@ static void test_PW_nitrous_stageboth(void) {
 
   setup_nitrous_stage1(context.page10, context.current);
   setup_nitrous_stage2(context.page10, context.current);
-  context.current.RPMdiv100 = 27;
+  // context.current.RPMdiv100 = context.current.RPM/100U;
   context.current.nitrous_status = NITROUS_BOTH;
 
   pulseWidths result = computePulseWidths(context);
-  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED+1600, result.primary);
+  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED+NITROUS_STAGE1_ADDPW+NITROUS_STAGE2_ADDPW-300, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
