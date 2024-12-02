@@ -2824,7 +2824,7 @@ void setPinMapping(byte boardID)
   if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
   {
     #if defined(CORE_STM32)
-    //Protect against wrong board layout selection, set pin to itsef to force a protection check
+    //Protect against wrong board layout selection, set pin to itself to force a protection check
     pinOutputReassign(pinCoil1, pinCoil1);
     pinOutputReassign(pinCoil2, pinCoil2);
     pinOutputReassign(pinCoil3, pinCoil3);
@@ -2881,7 +2881,7 @@ void setPinMapping(byte boardID)
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
   {
     #if defined(CORE_STM32)
-    //Protect against wrong board layout selection, set pin to itsef to force a protection check
+    //Protect against wrong board layout selection, set pin to itself to force a protection check
     pinOutputReassign(pinInjector1, pinInjector1);
     pinOutputReassign(pinInjector2, pinInjector2);
     pinOutputReassign(pinInjector3, pinInjector3);
@@ -3073,7 +3073,7 @@ void setPinMapping(byte boardID)
   }  
 
   #if defined(CORE_STM32)
-  //Protect against wrong board layout selection, set pin to itsef to force a protection check
+  //Protect against wrong board layout selection, set pin to itself to force a protection check
   pinInputReassign(pinTrigger, pinTrigger);
   pinInputReassign(pinTrigger2, pinTrigger2);
   pinInputReassign(pinTrigger3, pinTrigger3);
