@@ -215,9 +215,9 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   schedule.duration = duration;
 
   //Need to check that the timeout doesn't exceed the overflow
-  COMPARE_TYPE timeout_timer_compare;
-  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS on a mega2560, other boards will be different) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous squirts
-  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+  COMPARE_TYPE timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);
+  //if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS on a mega2560, other boards will be different) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous squirts
+  //else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
@@ -233,9 +233,11 @@ void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigne
 {
   //If the schedule is already running, we can set the next schedule so it is ready to go
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  noInterrupts();
   schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
+  interrupts();
 }
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
@@ -243,9 +245,9 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   schedule.duration = duration;
 
   //Need to check that the timeout doesn't exceed the overflow
-  COMPARE_TYPE timeout_timer_compare;
-  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
-  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+  COMPARE_TYPE timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);
+  //if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
+  //else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
 
   noInterrupts();
   schedule.startCompare = schedule.counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
@@ -260,9 +262,11 @@ void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout,
 {
   //If the schedule is already running, we can set the next schedule so it is ready to go
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  noInterrupts();
   schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
+  interrupts();
 }
 
 

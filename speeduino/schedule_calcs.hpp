@@ -27,12 +27,15 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
 
 static inline uint32_t _calculateInjectorTimeout(const FuelSchedule &schedule, uint16_t openAngle, uint16_t crankAngle) {
   int16_t delta = openAngle - crankAngle;
-  if (delta<0)
+
+  if (delta < 0)
   {
-    if ((schedule.Status == RUNNING) && (delta>-CRANK_ANGLE_MAX_INJ)) 
+    //if ( (schedule.Status == RUNNING) && (delta > -CRANK_ANGLE_MAX_INJ)) 
+    if ( (schedule.Status == RUNNING) ) 
     { 
       // Guaranteed to be >0
-      delta = delta + CRANK_ANGLE_MAX_INJ; 
+      //delta = delta + CRANK_ANGLE_MAX_INJ; 
+      while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
     }
     else
     {
@@ -51,10 +54,12 @@ static inline int _adjustToInjChannel(int angle, int channelInjDegrees) {
 
 static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int channelInjDegrees, int openAngle, int crankAngle)
 {
-  if (channelInjDegrees==0) {
-    return _calculateInjectorTimeout(schedule, openAngle, crankAngle);
-  }
-  return _calculateInjectorTimeout(schedule, _adjustToInjChannel(openAngle, channelInjDegrees), _adjustToInjChannel(crankAngle, channelInjDegrees));
+  uint32_t tempTimeout = 0;
+
+  if (channelInjDegrees == 0 || true) { tempTimeout = _calculateInjectorTimeout(schedule, openAngle, crankAngle); }
+  else { tempTimeout = _calculateInjectorTimeout(schedule, _adjustToInjChannel(openAngle, channelInjDegrees), _adjustToInjChannel(crankAngle, channelInjDegrees)); }
+
+  return tempTimeout;
 }
 
 static inline void calculateIgnitionAngle(const uint16_t dwellAngle, const uint16_t channelIgnDegrees, int8_t advance, int *pEndAngle, int *pStartAngle)
@@ -75,6 +80,7 @@ static inline void calculateIgnitionTrailingRotary(uint16_t dwellAngle, int rota
 
 static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) {
   int16_t delta = startAngle - crankAngle;
+  /*
   if (delta<0)
   {
     if ((schedule.Status == RUNNING) && (delta>-CRANK_ANGLE_MAX_IGN)) 
@@ -84,9 +90,12 @@ static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedul
     }
     else
     {
-      return 0;
+      return 0U;
     }
   }
+  */
+  while(delta < 0) { delta += CRANK_ANGLE_MAX_IGN; }
+
   return angleToTimeMicroSecPerDegree(delta);
 }
 
@@ -98,7 +107,8 @@ static inline uint16_t _adjustToIgnChannel(int angle, int channelInjDegrees) {
 
 static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
 {
-  if (channelIgnDegrees==0) {
+  if (channelIgnDegrees == 0 || true) 
+  {
       return _calculateIgnitionTimeout(schedule, startAngle, crankAngle);
   }
   return _calculateIgnitionTimeout(schedule, _adjustToIgnChannel(startAngle, channelIgnDegrees), _adjustToIgnChannel(crankAngle, channelIgnDegrees));
@@ -106,7 +116,8 @@ static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule
 
 #define MIN_CYCLES_FOR_ENDCOMPARE 6
 
-inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) {
+inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) 
+{
   if( (schedule.Status == RUNNING) ) { 
     SET_COMPARE(schedule.compare, schedule.counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ) ); 
   }

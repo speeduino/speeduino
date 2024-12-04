@@ -150,13 +150,19 @@ struct IgnitionSchedule {
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) {
-  if(schedule.Status != RUNNING) { //Check that we're not already part way through a schedule
-    _setIgnitionScheduleRunning(schedule, timeout, duration);
-  }
-  // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-  else if(timeout < MAX_TIMER_PERIOD){
-    _setIgnitionScheduleNext(schedule, timeout, duration);
+inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) 
+{
+  if((timeout+duration) < MAX_TIMER_PERIOD)
+  {
+    if(schedule.Status != RUNNING) 
+    { //Check that we're not already part way through a schedule
+      _setIgnitionScheduleRunning(schedule, timeout, duration);
+    }
+    // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+    else if(timeout < MAX_TIMER_PERIOD)
+    {
+      _setIgnitionScheduleNext(schedule, timeout, duration);
+    }
   }
 }
 
@@ -202,13 +208,16 @@ void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigne
 
 inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
 {
-  if(schedule.Status != RUNNING) 
-  { //Check that we're not already part way through a schedule
-    _setFuelScheduleRunning(schedule, timeout, duration);
-  }
-  else if(timeout < MAX_TIMER_PERIOD) 
+  if((timeout+duration) < MAX_TIMER_PERIOD)
   {
-    _setFuelScheduleNext(schedule, timeout, duration);
+    if(schedule.Status != RUNNING) 
+    { //Check that we're not already part way through a schedule
+      _setFuelScheduleRunning(schedule, timeout, duration);
+    }
+    else
+    {
+      _setFuelScheduleNext(schedule, timeout, duration);
+    }
   }
 }
 
