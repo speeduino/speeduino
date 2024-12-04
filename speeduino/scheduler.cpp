@@ -222,7 +222,7 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
   schedule.startCompare = schedule.counter + timeout_timer_compare;
-  schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
+  //schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
   SET_COMPARE(schedule.compare, schedule.startCompare); //Use the B compare unit of timer 3
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
@@ -235,7 +235,8 @@ void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigne
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
   noInterrupts();
   schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-  schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+  schedule.duration = duration; //This is safe as duration is not used again after the schedule is already running
+  //schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
   interrupts();
 }
@@ -338,7 +339,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
       if(schedule.hasNextSchedule == true)
       {
         SET_COMPARE(schedule.compare, schedule.nextStartCompare);
-        SET_COMPARE(schedule.endCompare, schedule.nextEndCompare);
+        //SET_COMPARE(schedule.endCompare, schedule.nextEndCompare); //End compare set not required as this will be set from the duration when the next ISR is called
         schedule.Status = PENDING;
         schedule.hasNextSchedule = false;
       }

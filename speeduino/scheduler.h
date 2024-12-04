@@ -187,14 +187,14 @@ struct FuelSchedule {
   {
   }
 
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
+  volatile unsigned long duration;///< Scheduled duration (uS)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
+  //volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
   void (*pStartFunction)(void);
   void (*pEndFunction)(void);  
   COMPARE_TYPE nextStartCompare;
-  COMPARE_TYPE nextEndCompare;
+  //COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
 
   counter_t &counter;  // Reference to the counter register. E.g. TCNT3
@@ -208,7 +208,7 @@ void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigne
 
 inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
 {
-  if((timeout+duration) < MAX_TIMER_PERIOD)
+  if((timeout) < MAX_TIMER_PERIOD)
   {
     if(schedule.Status != RUNNING) 
     { //Check that we're not already part way through a schedule
