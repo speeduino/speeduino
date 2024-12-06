@@ -152,14 +152,14 @@ void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout,
 
 inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) 
 {
-  if((timeout+duration) < MAX_TIMER_PERIOD)
+  if((timeout) < MAX_TIMER_PERIOD)
   {
     if(schedule.Status != RUNNING) 
     { //Check that we're not already part way through a schedule
       _setIgnitionScheduleRunning(schedule, timeout, duration);
     }
     // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-    else if(timeout < MAX_TIMER_PERIOD)
+    else
     {
       _setIgnitionScheduleNext(schedule, timeout, duration);
     }
