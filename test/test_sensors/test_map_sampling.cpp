@@ -1,5 +1,6 @@
 #include <unity.h>
 #include "../test_utils.h"
+#include "globals.h"
 #include "sensors_map_structs.h"
 
 static void test_instantaneous(void) {

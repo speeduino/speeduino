@@ -19,7 +19,7 @@ static void test_defaultPendingToRunning(void) {
     schedule.Status = PENDING;
     startCount = 0;
     endCount = 0;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    ATOMIC() {
         IGN1_TIMER_DISABLE();
         schedule.Duration = uS_TO_TIMER_COMPARE(2048); 
 #if defined(CORE_AVR)        
@@ -70,7 +70,7 @@ static void test_defaultRunningToPending(void) {
     startCount = 0;
     endCount = 0;
    
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    ATOMIC() {
         IGN1_TIMER_DISABLE();
         schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(2048); 
 
