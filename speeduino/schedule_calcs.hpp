@@ -32,7 +32,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
 
   if (delta < 0)
   {
-    if ( (schedule.Status == RUNNING) ) 
+    if ( (schedule.Status == RUNNING) || (schedule.Status == OFF) ) 
     { 
       while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
       tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta);
@@ -91,7 +91,6 @@ static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule
   {
       return _calculateIgnitionTimeout(schedule, startAngle, crankAngle);
   }
-    if(channelIgnDegrees == 540) { currentStatus.canin[0] = startAngle; }
   return _calculateIgnitionTimeout(schedule, _adjustToIgnChannel(startAngle, channelIgnDegrees), _adjustToIgnChannel(crankAngle, channelIgnDegrees));
 }
 
