@@ -15,12 +15,11 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
   uint16_t startAngle = (uint16_t)injAngle + (uint16_t)injChannelDegrees;
-  // Avoid underflow
-  while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; }
-  // Guaranteed to be >=0.
-  startAngle = startAngle - pwDegrees;
-  // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
-  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; }
+  
+  while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
+  startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
+  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
+  if((CRANK_ANGLE_MAX_INJ - startAngle) == 1) { startAngle = 0; } //Prevent off by 1 error than can cause a pulse to be skipped if startAngle is -1 TDC (Equvalent)
 
   return startAngle;
 }
