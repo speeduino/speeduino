@@ -19,7 +19,6 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
   startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
   while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
-  if((CRANK_ANGLE_MAX_INJ - startAngle) == 1) { startAngle = 0; } //Prevent off by 1 error than can cause a pulse to be skipped if startAngle is -1 TDC (Equvalent)
 
   return startAngle;
 }
@@ -29,16 +28,15 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
   uint32_t tempTimeout = 0;
   int16_t delta = openAngle - crankAngle;
 
-  if (delta < 0)
+  if ( (schedule.Status == RUNNING) || (schedule.Status == OFF)) 
   {
-    if ( (schedule.Status == RUNNING) || (schedule.Status == OFF) ) 
-    { 
+    if (delta < 0)
+    {
       while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
-      tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta);
     }
+    tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta);
   }
-  else { tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta); }
-
+  
   return tempTimeout;
 }
 

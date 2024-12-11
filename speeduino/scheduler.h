@@ -190,11 +190,9 @@ struct FuelSchedule {
   volatile unsigned long duration;///< Scheduled duration (uS)
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  //volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
   void (*pStartFunction)(void);
   void (*pEndFunction)(void);  
   COMPARE_TYPE nextStartCompare;
-  //COMPARE_TYPE nextEndCompare;
   volatile bool hasNextSchedule = false;
 
   counter_t &counter;  // Reference to the counter register. E.g. TCNT3
