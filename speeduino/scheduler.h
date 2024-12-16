@@ -42,6 +42,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define SCHEDULER_H
 
 #include "globals.h"
+#include "crankMaths.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
@@ -212,7 +213,8 @@ inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedul
     { //Check that we're not already part way through a schedule
       _setFuelScheduleRunning(schedule, timeout, duration);
     }
-    else
+    //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
+    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
     {
       _setFuelScheduleNext(schedule, timeout, duration);
     }

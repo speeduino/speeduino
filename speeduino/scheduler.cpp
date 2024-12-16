@@ -212,15 +212,14 @@ void initialiseSchedulers()
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
+  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+  noInterrupts();
+
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
   else { schedule.duration = duration; }
 
-  COMPARE_TYPE timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);
-
-  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-  noInterrupts();
-  schedule.startCompare = schedule.counter + timeout_timer_compare;
+  schedule.startCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
   SET_COMPARE(schedule.compare, schedule.startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
@@ -229,15 +228,13 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
 
 void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  //If the schedule is already running, we can set the next schedule so it is ready to go
-  //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
   noInterrupts();
-  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
   if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
   else { schedule.duration = duration; }
 
+  schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
   schedule.hasNextSchedule = true;
   interrupts();
 }
