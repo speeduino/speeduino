@@ -160,7 +160,7 @@ inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule 
       _setIgnitionScheduleRunning(schedule, timeout, duration);
     }
     // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-    else
+    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
     {
       _setIgnitionScheduleNext(schedule, timeout, duration);
     }
