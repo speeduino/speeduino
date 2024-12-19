@@ -212,18 +212,15 @@ void initialiseSchedulers()
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  schedule.duration = duration;
-
-  //Need to check that the timeout doesn't exceed the overflow
-  COMPARE_TYPE timeout_timer_compare;
-  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS on a mega2560, other boards will be different) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous squirts
-  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
-
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   noInterrupts();
-  schedule.startCompare = schedule.counter + timeout_timer_compare;
-  schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration);
-  SET_COMPARE(schedule.compare, schedule.startCompare); //Use the B compare unit of timer 3
+
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
+  else { schedule.duration = duration; }
+
+  schedule.startCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
+  SET_COMPARE(schedule.compare, schedule.startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
   schedule.pTimerEnable();
@@ -231,25 +228,28 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
 
 void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  //If the schedule is already running, we can set the next schedule so it is ready to go
-  //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  noInterrupts();
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  //Duration can safely be set here as the schedule is already running at the previous duration value already used
+  if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
+  else { schedule.duration = duration; }
+
   schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-  schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
   schedule.hasNextSchedule = true;
+  interrupts();
 }
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  schedule.duration = duration;
+  //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell timess should never get that long, but it's here for safety
+  if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
+  else { schedule.duration = duration; }
 
-  //Need to check that the timeout doesn't exceed the overflow
-  COMPARE_TYPE timeout_timer_compare;
-  if (timeout > MAX_TIMER_PERIOD) { timeout_timer_compare = uS_TO_TIMER_COMPARE( (MAX_TIMER_PERIOD - 1) ); } // If the timeout is >4x (Each tick represents 4uS) the maximum allowed value of unsigned int (65535), the timer compare value will overflow when applied causing erratic behaviour such as erroneous sparking.
-  else { timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout); } //Normal case
+  COMPARE_TYPE timeout_timer_compare = uS_TO_TIMER_COMPARE(timeout);
 
   noInterrupts();
   schedule.startCompare = schedule.counter + timeout_timer_compare; //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-  if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
+  //if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(schedule.duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
   SET_COMPARE(schedule.compare, schedule.startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   interrupts();
@@ -260,9 +260,12 @@ void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout,
 {
   //If the schedule is already running, we can set the next schedule so it is ready to go
   //This is required in cases of high rpm and high DC where there otherwise would not be enough time to set the schedule
+  noInterrupts();
   schedule.nextStartCompare = schedule.counter + uS_TO_TIMER_COMPARE(timeout);
-  schedule.nextEndCompare = schedule.nextStartCompare + uS_TO_TIMER_COMPARE(duration);
+  if(duration >= MAX_TIMER_PERIOD) { schedule.duration = MAX_TIMER_PERIOD - 1; }
+  else { schedule.duration = duration; }
   schedule.hasNextSchedule = true;
+  interrupts();
 }
 
 
@@ -327,21 +330,20 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
   }
   else if (schedule.Status == RUNNING)
   {
-      schedule.pEndFunction();
-      schedule.Status = OFF; //Turn off the schedule
+    schedule.pEndFunction();
+    schedule.Status = OFF; //Turn off the schedule
 
-      //If there is a next schedule queued up, activate it
-      if(schedule.hasNextSchedule == true)
-      {
-        SET_COMPARE(schedule.compare, schedule.nextStartCompare);
-        SET_COMPARE(schedule.endCompare, schedule.nextEndCompare);
-        schedule.Status = PENDING;
-        schedule.hasNextSchedule = false;
-      }
-      else 
-      { 
-        schedule.pTimerDisable(); 
-      }
+    //If there is a next schedule queued up, activate it
+    if(schedule.hasNextSchedule == true)
+    {
+      SET_COMPARE(schedule.compare, schedule.nextStartCompare); //Flip the next start compare time to be the current one. The duration of this next pulse will already have been set in _setFuelScheduleNext()
+      schedule.Status = PENDING;
+      schedule.hasNextSchedule = false;
+    }
+    else
+    { 
+      schedule.pTimerDisable(); 
+    }
   }
   else if (schedule.Status == OFF) 
   { 
