@@ -167,7 +167,6 @@ struct Schedule {
   volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   void (*pStartCallback)(void);        ///< Start Callback function for schedule
   void (*pEndCallback)(void);          ///< End Callback function for schedule
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
 
   COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
