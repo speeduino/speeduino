@@ -170,7 +170,7 @@ struct Schedule {
   {
   }
 
-  volatile unsigned long duration; ///< Scheduled duration (uS ?)
+  volatile COMPARE_TYPE duration;  ///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   voidVoidCallback pStartCallback; ///< Start Callback function for schedule
   voidVoidCallback pEndCallback;   ///< End Callback function for schedule
