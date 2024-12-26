@@ -41,6 +41,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <SimplyAtomic.h>
 #include "globals.h"
 #include "crankMaths.h"
 
@@ -177,6 +178,10 @@ struct Schedule {
   void (&pTimerEnable)();   ///< **Reference** to the timer enable function
 };
 
+
+void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
+
+
 /** Ignition schedule.
  */
 struct IgnitionSchedule : public Schedule {
@@ -189,20 +194,22 @@ struct IgnitionSchedule : public Schedule {
 };
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
 
 inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) 
 {
   if((timeout) < MAX_TIMER_PERIOD)
   {
-    if(schedule.Status != RUNNING) 
-    { //Check that we're not already part way through a schedule
-      _setIgnitionScheduleRunning(schedule, timeout, duration);
-    }
-    // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
+    ATOMIC() 
     {
-      _setIgnitionScheduleNext(schedule, timeout, duration);
+      if(schedule.Status != RUNNING) 
+      { //Check that we're not already part way through a schedule
+        _setIgnitionScheduleRunning(schedule, timeout, duration);
+      }
+      // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
+      else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
+      {
+        _setScheduleNext(schedule, timeout, duration);
+      }
     }
   }
 }
@@ -218,20 +225,22 @@ struct FuelSchedule : public Schedule {
 };
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
 
 inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
 {
   if((timeout) < MAX_TIMER_PERIOD)
   {
-    if(schedule.Status != RUNNING) 
-    { //Check that we're not already part way through a schedule
-      _setFuelScheduleRunning(schedule, timeout, duration);
-    }
-    //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
+    ATOMIC() 
     {
-      _setFuelScheduleNext(schedule, timeout, duration);
+      if(schedule.Status != RUNNING) 
+      { //Check that we're not already part way through a schedule
+        _setFuelScheduleRunning(schedule, timeout, duration);
+      }
+      //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
+      else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
+      {
+        _setScheduleNext(schedule, timeout, duration);
+      }
     }
   }
 }
