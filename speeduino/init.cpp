@@ -183,7 +183,8 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseSchedulers();
+    initialiseFuelSchedulers();
+    initialiseIgnitionSchedulers();
     //initialiseDisplay();
     initialiseIdle(true);
     initialiseFan();
@@ -3645,6 +3646,10 @@ void initialiseTriggers(void)
   }
 
   boardInitPins();
+  
+  // The schedulers are all configured & pins are mapped - so start the schedulers
+  startIgnitionSchedulers();
+  startFuelSchedulers();
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {

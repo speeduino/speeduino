@@ -52,15 +52,24 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
 //#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
 
-void initialiseSchedulers(void);
-void beginInjectorPriming(void);
+void initialiseIgnitionSchedulers(void);
 
-void disableFuelSchedule(byte channel);
-void disableIgnSchedule(byte channel);
-void disableAllFuelSchedules(void);
-void disableAllIgnSchedules(void);
+void startIgnitionSchedulers(void);
+void stopIgnitionSchedulers(void);
+void disableIgnSchedule(uint8_t channel);
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
+void disableAllIgnSchedules(void);
+
+void initialiseFuelSchedulers(void);
+
+void startFuelSchedulers(void);
+void stopFuelSchedulers(void);
+
+void beginInjectorPriming(void);
+
+void disableFuelSchedule(uint8_t channel);
+void disableAllFuelSchedules(void);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -154,12 +163,9 @@ struct Schedule {
    * @param counter A <b>reference</b> to the timer counter
    * @param compare A <b>reference</b> to the timer comparator
    */
-  Schedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(void), void (&_pTimerEnable)(void))
+  Schedule( counter_t &counter, compare_t &compare)
   : _counter(counter)
   , _compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
   {
   }
 
@@ -173,8 +179,6 @@ struct Schedule {
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();  ///< **Reference** to the timer disable function
-  void (&pTimerEnable)();   ///< **Reference** to the timer enable function
 };
 
 
