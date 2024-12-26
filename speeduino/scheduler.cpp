@@ -290,7 +290,7 @@ void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
   schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
   schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  schedule.hasNextSchedule = true;
+  schedule.Status = RUNNING_WITHNEXT;
 }
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
@@ -304,7 +304,7 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
-  if( (ignitionSchedule1.Status == RUNNING) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
+  if( (isRunning(ignitionSchedule1)) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   {
     ATOMIC() {
@@ -362,18 +362,22 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); //Doing this here prevents a potential overflow on restarts
   }
-  else if (schedule.Status == RUNNING)
+  else if (isRunning(schedule))
   {
     schedule.pEndCallback();
-    schedule.Status = OFF; //Turn off the schedule
 
     //If there is a next schedule queued up, activate it
-    if(schedule.hasNextSchedule == true)
+    if(schedule.Status==RUNNING_WITHNEXT)
     {
       SET_COMPARE(schedule._compare, schedule.nextStartCompare); //Flip the next start compare time to be the current one. The duration of this next pulse will already have been set in _setFuelScheduleNext()
       schedule.Status = PENDING;
-      schedule.hasNextSchedule = false;
+    } else {
+      schedule.Status = OFF; //Turn off the schedule
     }
+  }
+  else
+  {
+    // Schedule is off, so do nothing but keep the MISRA checker happy
   }
 } 
 
@@ -482,22 +486,26 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule._compare, schedule.endCompare); }
     else { SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); } //Doing this here prevents a potential overflow on restarts
   }
-  else if (schedule.Status == RUNNING)
+  else if (isRunning(schedule))
   {
     schedule.pEndCallback();
-    schedule.Status = OFF; //Turn off the schedule
     schedule.endScheduleSetByDecoder = false;
-    ignitionCount = ignitionCount + 1; //Increment the ignition counter
+    ignitionCount = ignitionCount + 1U; //Increment the ignition counter
     currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
 
     //If there is a next schedule queued up, activate it
-    if(schedule.hasNextSchedule == true)
+    if(schedule.Status==RUNNING_WITHNEXT)
     {
       SET_COMPARE(schedule._compare, schedule.nextStartCompare);
       schedule.Status = PENDING;
-      schedule.hasNextSchedule = false;
+    } else {
+      schedule.Status = OFF; //Turn off the schedule
     }
   }
+  else
+  {
+    // Schedule is off, so do nothing but keep the MISRA checker happy
+  }  
 }
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
@@ -586,99 +594,59 @@ void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a functio
   }
 #endif
 
+static void disableSchedule(Schedule &schedule)
+{
+  ATOMIC() {
+    if(schedule.Status == PENDING) { 
+      schedule.Status = OFF; 
+    } else if(schedule.Status == RUNNING_WITHNEXT) { 
+      schedule.Status = RUNNING; 
+    } else {
+      // Must be off already :-)
+    }
+  }
+}
 void disableFuelSchedule(uint8_t channel)
 {
-  noInterrupts();
   switch(channel)
   {
-    case 0:
-      if(fuelSchedule1.Status == PENDING) { fuelSchedule1.Status = OFF; }
-      else if(fuelSchedule1.Status == RUNNING) { fuelSchedule1.hasNextSchedule = false; }
-      break;
-    case 1:
-      if(fuelSchedule2.Status == PENDING) { fuelSchedule2.Status = OFF; }
-      else if(fuelSchedule2.Status == RUNNING) { fuelSchedule2.hasNextSchedule = false; }
-      break;
-    case 2: 
-      if(fuelSchedule3.Status == PENDING) { fuelSchedule3.Status = OFF; }
-      else if(fuelSchedule3.Status == RUNNING) { fuelSchedule3.hasNextSchedule = false; }
-      break;
-    case 3:
-      if(fuelSchedule4.Status == PENDING) { fuelSchedule4.Status = OFF; }
-      else if(fuelSchedule4.Status == RUNNING) { fuelSchedule4.hasNextSchedule = false; }
-      break;
-    case 4:
+    case 0: disableSchedule(fuelSchedule1); break;
+    case 1: disableSchedule(fuelSchedule2); break;
+    case 2: disableSchedule(fuelSchedule3); break;
+    case 3: disableSchedule(fuelSchedule4); break;
 #if (INJ_CHANNELS >= 5)
-      if(fuelSchedule5.Status == PENDING) { fuelSchedule5.Status = OFF; }
-      else if(fuelSchedule5.Status == RUNNING) { fuelSchedule5.hasNextSchedule = false; }
+    case 4: disableSchedule(fuelSchedule5); break;
 #endif
-      break;
-    case 5:
 #if (INJ_CHANNELS >= 6)
-      if(fuelSchedule6.Status == PENDING) { fuelSchedule6.Status = OFF; }
-      else if(fuelSchedule6.Status == RUNNING) { fuelSchedule6.hasNextSchedule = false; }
+    case 5: disableSchedule(fuelSchedule6); break;
 #endif
-      break;
-    case 6:
 #if (INJ_CHANNELS >= 7)
-      if(fuelSchedule7.Status == PENDING) { fuelSchedule7.Status = OFF; }
-      else if(fuelSchedule7.Status == RUNNING) { fuelSchedule7.hasNextSchedule = false; }
+    case 6: disableSchedule(fuelSchedule7); break;
 #endif
-      break;
-    case 7:
 #if (INJ_CHANNELS >= 8)
-      if(fuelSchedule8.Status == PENDING) { fuelSchedule8.Status = OFF; }
-      else if(fuelSchedule8.Status == RUNNING) { fuelSchedule8.hasNextSchedule = false; }
+    case 7: disableSchedule(fuelSchedule8); break;
 #endif
-      break;
   }
-  interrupts();
 }
 void disableIgnSchedule(uint8_t channel)
 {
-  noInterrupts();
   switch(channel)
   {
-    case 0:
-      if(ignitionSchedule1.Status == PENDING) { ignitionSchedule1.Status = OFF; }
-      else if(ignitionSchedule1.Status == RUNNING) { ignitionSchedule1.hasNextSchedule = false; }
-      break;
-    case 1:
-      if(ignitionSchedule2.Status == PENDING) { ignitionSchedule2.Status = OFF; }
-      else if(ignitionSchedule2.Status == RUNNING) { ignitionSchedule2.hasNextSchedule = false; }
-      break;
-    case 2: 
-      if(ignitionSchedule3.Status == PENDING) { ignitionSchedule3.Status = OFF; }
-      else if(ignitionSchedule3.Status == RUNNING) { ignitionSchedule3.hasNextSchedule = false; }
-      break;
-    case 3:
-      if(ignitionSchedule4.Status == PENDING) { ignitionSchedule4.Status = OFF; }
-      else if(ignitionSchedule4.Status == RUNNING) { ignitionSchedule4.hasNextSchedule = false; }
-      break;
-    case 4:
-      if(ignitionSchedule5.Status == PENDING) { ignitionSchedule5.Status = OFF; }
-      else if(ignitionSchedule5.Status == RUNNING) { ignitionSchedule5.hasNextSchedule = false; }
-      break;
+    case 0: disableSchedule(ignitionSchedule1); break;
+    case 1: disableSchedule(ignitionSchedule2); break;
+    case 2: disableSchedule(ignitionSchedule3); break;
+    case 3: disableSchedule(ignitionSchedule4); break;
+    case 4: disableSchedule(ignitionSchedule5); break;
 #if IGN_CHANNELS >= 6      
-    case 5:
-      if(ignitionSchedule6.Status == PENDING) { ignitionSchedule6.Status = OFF; }
-      else if(ignitionSchedule6.Status == RUNNING) { ignitionSchedule6.hasNextSchedule = false; }
-      break;
+    case 5: disableSchedule(ignitionSchedule6); break;
 #endif
 #if IGN_CHANNELS >= 7      
-    case 6:
-      if(ignitionSchedule7.Status == PENDING) { ignitionSchedule7.Status = OFF; }
-      else if(ignitionSchedule7.Status == RUNNING) { ignitionSchedule7.hasNextSchedule = false; }
-      break;
+    case 6: disableSchedule(ignitionSchedule7); break;
 #endif
 #if IGN_CHANNELS >= 8      
-    case 7:
-      if(ignitionSchedule8.Status == PENDING) { ignitionSchedule8.Status = OFF; }
-      else if(ignitionSchedule8.Status == RUNNING) { ignitionSchedule8.hasNextSchedule = false; }
-      break;
+    case 7: disableSchedule(ignitionSchedule8); break;
 #endif
   }
-  interrupts();
 }
 
 void disableAllFuelSchedules()
