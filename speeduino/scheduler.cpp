@@ -289,7 +289,7 @@ void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
   schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
-  schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
+  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
   schedule.hasNextSchedule = true;
 }
 
@@ -297,7 +297,7 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
 {
   //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell times should never get that long, but it's here for safety
   schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
-  COMPARE_TYPE startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
   SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
 }

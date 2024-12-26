@@ -164,18 +164,18 @@ struct Schedule {
    * @param counter A <b>reference</b> to the timer counter
    * @param compare A <b>reference</b> to the timer comparator
    */
-  Schedule( counter_t &counter, compare_t &compare)
-  : _counter(counter)
-  , _compare(compare)
+  constexpr Schedule(counter_t &counter, compare_t &compare)
+    : _counter(counter)
+    , _compare(compare) 
   {
-  }
+  }  
 
-  volatile COMPARE_TYPE duration;  ///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  voidVoidCallback pStartCallback; ///< Start Callback function for schedule
-  voidVoidCallback pEndCallback;   ///< End Callback function for schedule
+  volatile COMPARE_TYPE duration = 0U;  ///< Scheduled duration (uS ?)
+  volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  voidVoidCallback pStartCallback = &nullCallback; ///< Start Callback function for schedule
+  voidVoidCallback pEndCallback = &nullCallback;   ///< End Callback function for schedule
 
-  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextStartCompare = 0U;      ///< Planned start of next schedule (when current schedule is RUNNING)
   volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
