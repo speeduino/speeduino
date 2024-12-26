@@ -67,8 +67,7 @@ IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppr
 static void reset(Schedule &schedule)
 {
     schedule.Status = OFF;
-    schedule.pStartCallback = nullCallback;
-    schedule.pEndCallback = nullCallback;
+    setCallbacks(schedule, nullCallback, nullCallback);
 }
 
 static void reset(FuelSchedule &schedule) 
@@ -267,6 +266,12 @@ void stopFuelSchedulers(void)
 #if INJ_CHANNELS >= 8
   FUEL8_TIMER_DISABLE();
 #endif  
+}
+
+void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback)
+{
+  schedule.pStartCallback = pStartCallback;
+  schedule.pEndCallback = pEndCallback;
 }
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
