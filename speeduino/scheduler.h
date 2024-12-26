@@ -120,12 +120,16 @@ void disableAllFuelSchedules(void);
  * @brief The current state of a schedule
  * */
 enum ScheduleStatus {
+  // We use powers of 2 so we can check multiple states with a single bitwise AND
+
   /** Not running */
-  OFF, 
+  OFF              = 0b00000000U, 
   /** The delay phase of the schedule is active */
-  PENDING,
+  PENDING          = 0b00000001U,
   /** The schedule action is running */
-  RUNNING,
+  RUNNING          = 0b00000010U,
+  /** The schedule is running, with a next schedule queued up */
+  RUNNING_WITHNEXT = 0b00000100U,
 }; 
 
 
@@ -170,18 +174,29 @@ struct Schedule {
   {
   }  
 
+  /**
+   * @brief Scheduled duration (timer ticks) 
+   *
+   * This captures the duration of the *next* interval to be scheduled. I.e.
+   *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
+   *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
+   */
   volatile COMPARE_TYPE duration = 0U;  ///< Scheduled duration (uS ?)
   volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   voidVoidCallback pStartCallback = &nullCallback; ///< Start Callback function for schedule
   voidVoidCallback pEndCallback = &nullCallback;   ///< End Callback function for schedule
-
-  COMPARE_TYPE nextStartCompare = 0U;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
+  COMPARE_TYPE nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
 };
 
+static inline bool isRunning(const Schedule &schedule) {
+  // Using flags and bitwise AND (&) to check multiple states is much quicker
+  // than a logical or (||) (one less branch & 30% less instructions)
+  static constexpr uint8_t flags = RUNNING | RUNNING_WITHNEXT;
+  return ((uint8_t)schedule.Status & flags)!=0U;
+}
 
 void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
 
@@ -207,7 +222,7 @@ inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule 
   {
     ATOMIC() 
     {
-      if(schedule.Status != RUNNING) 
+      if(!isRunning(schedule)) 
       { //Check that we're not already part way through a schedule
         _setIgnitionScheduleRunning(schedule, timeout, duration);
       }
@@ -238,7 +253,7 @@ inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedul
   {
     ATOMIC() 
     {
-      if(schedule.Status != RUNNING) 
+      if(!isRunning(schedule)) 
       { //Check that we're not already part way through a schedule
         _setFuelScheduleRunning(schedule, timeout, duration);
       }
