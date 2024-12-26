@@ -288,7 +288,7 @@ void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
   schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
   schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  schedule.hasNextSchedule = true;
+  schedule.Status = RUNNING_WITHNEXT;
 }
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
@@ -302,7 +302,7 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
-  if( (ignitionSchedule1.Status == RUNNING) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
+  if( (isRunning(ignitionSchedule1)) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   {
     ATOMIC() {
@@ -358,18 +358,22 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
     schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
     SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); //Doing this here prevents a potential overflow on restarts
   }
-  else if (schedule.Status == RUNNING)
+  else if (isRunning(schedule))
   {
     schedule.pEndCallback();
-    schedule.Status = OFF; //Turn off the schedule
 
     //If there is a next schedule queued up, activate it
-    if(schedule.hasNextSchedule == true)
+    if(schedule.Status==RUNNING_WITHNEXT)
     {
       SET_COMPARE(schedule._compare, schedule.nextStartCompare); //Flip the next start compare time to be the current one. The duration of this next pulse will already have been set in _setFuelScheduleNext()
       schedule.Status = PENDING;
-      schedule.hasNextSchedule = false;
+    } else {
+      schedule.Status = OFF; //Turn off the schedule
     }
+  }
+  else
+  {
+    // Schedule is off, so do nothing but keep the MISRA checker happy
   }
 } 
 
@@ -478,22 +482,26 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
     if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule._compare, schedule.endCompare); }
     else { SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); } //Doing this here prevents a potential overflow on restarts
   }
-  else if (schedule.Status == RUNNING)
+  else if (isRunning(schedule))
   {
     schedule.pEndCallback();
-    schedule.Status = OFF; //Turn off the schedule
     schedule.endScheduleSetByDecoder = false;
-    ignitionCount = ignitionCount + 1; //Increment the ignition counter
+    ignitionCount = ignitionCount + 1U; //Increment the ignition counter
     currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
 
     //If there is a next schedule queued up, activate it
-    if(schedule.hasNextSchedule == true)
+    if(schedule.Status==RUNNING_WITHNEXT)
     {
       SET_COMPARE(schedule._compare, schedule.nextStartCompare);
       schedule.Status = PENDING;
-      schedule.hasNextSchedule = false;
+    } else {
+      schedule.Status = OFF; //Turn off the schedule
     }
   }
+  else
+  {
+    // Schedule is off, so do nothing but keep the MISRA checker happy
+  }  
 }
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
