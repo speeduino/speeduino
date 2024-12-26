@@ -32,38 +32,36 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "units.h"
 
-FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, FUEL1_TIMER_DISABLE, FUEL1_TIMER_ENABLE);
-FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE, FUEL2_TIMER_DISABLE, FUEL2_TIMER_ENABLE);
-FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE, FUEL3_TIMER_DISABLE, FUEL3_TIMER_ENABLE);
-FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE, FUEL4_TIMER_DISABLE, FUEL4_TIMER_ENABLE);
-
+FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if (INJ_CHANNELS >= 5)
-FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE, FUEL5_TIMER_DISABLE, FUEL5_TIMER_ENABLE);
+FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 6)
-FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE, FUEL6_TIMER_DISABLE, FUEL6_TIMER_ENABLE);
+FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 7)
-FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE, FUEL7_TIMER_DISABLE, FUEL7_TIMER_ENABLE);
+FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if (INJ_CHANNELS >= 8)
-FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE, FUEL8_TIMER_DISABLE, FUEL8_TIMER_ENABLE);
+FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE, IGN1_TIMER_DISABLE, IGN1_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE, IGN2_TIMER_DISABLE, IGN2_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE, IGN3_TIMER_DISABLE, IGN3_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE, IGN4_TIMER_DISABLE, IGN4_TIMER_ENABLE);
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE, IGN5_TIMER_DISABLE, IGN5_TIMER_ENABLE);
-
+IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE, IGN6_TIMER_DISABLE, IGN6_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE, IGN7_TIMER_DISABLE, IGN7_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 #if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE, IGN8_TIMER_DISABLE, IGN8_TIMER_ENABLE);
+IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
 static void reset(Schedule &schedule)
@@ -71,7 +69,6 @@ static void reset(Schedule &schedule)
     schedule.Status = OFF;
     schedule.pStartCallback = nullCallback;
     schedule.pEndCallback = nullCallback;
-    schedule.pTimerEnable();
 }
 
 static void reset(FuelSchedule &schedule) 
@@ -84,7 +81,7 @@ static void reset(IgnitionSchedule &schedule)
     reset((Schedule&)schedule);
 }
 
-void initialiseSchedulers(void)
+void initialiseFuelSchedulers(void)
 {
     reset(fuelSchedule1);
     reset(fuelSchedule2);
@@ -103,6 +100,26 @@ void initialiseSchedulers(void)
     reset(fuelSchedule8);
 #endif
 
+	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
+	channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
+	channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
+	channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
+#if (INJ_CHANNELS >= 5)
+	channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 6)
+	channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 7)
+	channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+#endif
+#if (INJ_CHANNELS >= 8)
+	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+#endif
+}
+
+void initialiseIgnitionSchedulers(void)
+{
     reset(ignitionSchedule1);
     reset(ignitionSchedule2);
     reset(ignitionSchedule3);
@@ -157,24 +174,99 @@ void initialiseSchedulers(void)
   ignition8EndAngle=0;
   channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
 #endif
+}
 
-	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-	channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-	channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-	channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-#if (INJ_CHANNELS >= 5)
-	channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
+void startIgnitionSchedulers(void)
+{
+  IGN1_TIMER_ENABLE();
+#if IGN_CHANNELS >= 2
+  IGN2_TIMER_ENABLE();
 #endif
-#if (INJ_CHANNELS >= 6)
-	channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
+#if IGN_CHANNELS >= 3
+  IGN3_TIMER_ENABLE();
 #endif
-#if (INJ_CHANNELS >= 7)
-	channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
+#if IGN_CHANNELS >= 4
+  IGN4_TIMER_ENABLE();
 #endif
-#if (INJ_CHANNELS >= 8)
-	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
+#if IGN_CHANNELS >= 5
+  IGN5_TIMER_ENABLE();
 #endif
+#if IGN_CHANNELS >= 6
+  IGN6_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 7
+  IGN7_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 8
+  IGN8_TIMER_ENABLE();
+#endif  
+}
 
+void stopIgnitionSchedulers(void)
+{
+  IGN1_TIMER_DISABLE();
+#if IGN_CHANNELS >= 2
+  IGN2_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 3
+  IGN3_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 4
+  IGN4_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 5
+  IGN5_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 6
+  IGN6_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 7
+  IGN7_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 8
+  IGN8_TIMER_DISABLE();
+#endif  
+
+}
+
+void startFuelSchedulers(void)
+{
+  FUEL1_TIMER_ENABLE();
+  FUEL2_TIMER_ENABLE();
+  FUEL3_TIMER_ENABLE();
+  FUEL4_TIMER_ENABLE();
+#if INJ_CHANNELS >= 5
+  FUEL5_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 6
+  FUEL6_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 7
+  FUEL7_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 8
+  FUEL8_TIMER_ENABLE();
+#endif
+}
+
+void stopFuelSchedulers(void)
+{
+  FUEL1_TIMER_DISABLE();
+  FUEL2_TIMER_DISABLE();
+  FUEL3_TIMER_DISABLE();
+  FUEL4_TIMER_DISABLE();
+#if INJ_CHANNELS >= 5
+  FUEL5_TIMER_DISABLE();
+#endif
+#if INJ_CHANNELS >= 6
+  FUEL6_TIMER_DISABLE();
+#endif
+#if INJ_CHANNELS >= 7
+  FUEL7_TIMER_DISABLE();
+#endif
+#if INJ_CHANNELS >= 8
+  FUEL8_TIMER_DISABLE();
+#endif  
 }
 
 void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
@@ -185,7 +277,6 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
   SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
-  schedule.pTimerEnable();
 }
 
 void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
@@ -204,7 +295,6 @@ void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeo
   COMPARE_TYPE startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
   SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
-  schedule.pTimerEnable();
 }
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
@@ -280,15 +370,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
       schedule.Status = PENDING;
       schedule.hasNextSchedule = false;
     }
-    else
-    { 
-      schedule.pTimerDisable(); 
-    }
   }
-  else if (schedule.Status == OFF) 
-  { 
-    schedule.pTimerDisable(); //Safety check. Turn off this output compare unit and return without performing any action
-  } 
 } 
 
 /*******************************************************************************************************************************************************************************************************/
@@ -411,15 +493,6 @@ static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSc
       schedule.Status = PENDING;
       schedule.hasNextSchedule = false;
     }
-    else
-    { 
-      schedule.pTimerDisable(); 
-    }
-  }
-  else if (schedule.Status == OFF)
-  {
-    //This occurs after a hard cut is active to prevent the future schedules from ever being run
-    schedule.pTimerDisable(); 
   }
 }
 
@@ -509,7 +582,7 @@ void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a functio
   }
 #endif
 
-void disableFuelSchedule(byte channel)
+void disableFuelSchedule(uint8_t channel)
 {
   noInterrupts();
   switch(channel)
@@ -557,7 +630,7 @@ void disableFuelSchedule(byte channel)
   }
   interrupts();
 }
-void disableIgnSchedule(byte channel)
+void disableIgnSchedule(uint8_t channel)
 {
   noInterrupts();
   switch(channel)
