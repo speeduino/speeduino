@@ -182,8 +182,8 @@ void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsi
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   schedule.duration = min(MAX_TIMER_PERIOD - 1U, duration);
-  schedule.startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout);
-  SET_COMPARE(schedule._compare, schedule.startCompare);
+  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
+  SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   schedule.pTimerEnable();
 }
@@ -199,11 +199,10 @@ void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
 
 void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
 {
-  //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell timess should never get that long, but it's here for safety
+  //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell times should never get that long, but it's here for safety
   schedule.duration = min(MAX_TIMER_PERIOD - 1U, duration);
-  schedule.startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-  //if(schedule.endScheduleSetByDecoder == false) { schedule.endCompare = schedule.startCompare + uS_TO_TIMER_COMPARE(schedule.duration); } //The .endCompare value is also set by the per tooth timing in decoders.ino. The check here is so that it's not getting overridden. 
-  SET_COMPARE(schedule._compare, schedule.startCompare);
+  COMPARE_TYPE startCompare = schedule._counter + uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
+  SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
   schedule.pTimerEnable();
 }
@@ -214,7 +213,7 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   //if( (timeToEnd < ignitionSchedule1.duration) && (timeToEnd > IGNITION_REFRESH_THRESHOLD) )
   {
-                              ATOMIC() {
+    ATOMIC() {
       ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
       SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare);
     }
