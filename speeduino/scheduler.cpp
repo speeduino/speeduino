@@ -273,34 +273,6 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
   schedule.pEndCallback = pEndCallback;
 }
 
-void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, uint16_t duration)
-{
-  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  _setDuration(schedule, duration);
-  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  SET_COMPARE(schedule._compare, startCompare);
-  schedule.Status = PENDING; //Turn this schedule on
-}
-
-void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration)
-{
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  //Duration can safely be set here as the schedule is already running at the previous duration value already used
-  _setDuration(schedule, duration);
-  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  schedule.Status = RUNNING_WITHNEXT;
-}
-
-void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration)
-{
-  //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell times should never get that long, but it's here for safety
-  _setDuration(schedule, duration);
-  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
-  SET_COMPARE(schedule._compare, startCompare);
-  schedule.Status = PENDING; //Turn this schedule on
-}
-
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (isRunning(ignitionSchedule1)) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
