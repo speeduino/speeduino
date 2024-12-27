@@ -54,14 +54,14 @@ static inline void calculateIgnitionTrailingRotary(uint16_t dwellAngle, int rota
   if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
 }
 
-static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) 
+static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) 
 {
   int16_t delta = startAngle - crankAngle;
   if (delta < 0)
   {
     if ((isRunning(schedule)) && (delta>-CRANK_ANGLE_MAX_IGN)) 
     { 
-      // Msut be >0
+      // Must be >0
       delta = delta + CRANK_ANGLE_MAX_IGN; 
     }
     else
