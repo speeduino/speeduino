@@ -448,6 +448,9 @@ void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
   }
 #endif
 
+#define DWELL_AVERAGE_ALPHA 30
+#define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
+
 // Shared ISR function for all ignition timers.
 // This is completely inlined into the ISR - there is no function call
 // overhead.
