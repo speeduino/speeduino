@@ -210,7 +210,24 @@ static void inline _setDuration(Schedule &schedule, uint16_t duration) {
 #endif
 }
 
-void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration);
+static inline __attribute__((always_inline)) void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration)
+{
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  //Duration can safely be set here as the schedule is already running at the previous duration value already used
+  _setDuration(schedule, duration);
+  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
+  schedule.Status = RUNNING_WITHNEXT;
+}
+
+static inline __attribute__((always_inline)) void _setScheduleRunning(Schedule &schedule, uint32_t timeout, uint16_t duration)
+{
+  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  _setDuration(schedule, duration);
+  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
+  schedule._compare = startCompare;
+  schedule.Status = PENDING; //Turn this schedule on
+}
 
 void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
 
@@ -226,20 +243,18 @@ struct IgnitionSchedule : public Schedule {
   volatile bool endScheduleSetByDecoder = false;
 };
 
-void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration);
-
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration) 
+static inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t timeout, uint16_t duration) 
 {
-  if((timeout) < MAX_TIMER_PERIOD)
+  if(timeout < MAX_TIMER_PERIOD)
   {
     ATOMIC() 
     {
       if(!isRunning(schedule)) 
       { //Check that we're not already part way through a schedule
-        _setIgnitionScheduleRunning(schedule, timeout, duration);
+        _setScheduleRunning(schedule, timeout, duration);
       }
       // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-      else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
+      else if(angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
       {
         _setScheduleNext(schedule, timeout, duration);
       }
@@ -257,20 +272,18 @@ struct FuelSchedule : public Schedule {
 
 };
 
-void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, uint16_t duration);
-
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, uint16_t duration) 
+static inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, uint32_t timeout, uint16_t duration) 
 {
-  if((timeout) < MAX_TIMER_PERIOD)
+  if(timeout < MAX_TIMER_PERIOD)
   {
     ATOMIC() 
     {
       if(!isRunning(schedule)) 
       { //Check that we're not already part way through a schedule
-        _setFuelScheduleRunning(schedule, timeout, duration);
+        _setScheduleRunning(schedule, timeout, duration);
       }
       //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-      else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
+      else if(angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
       {
         _setScheduleNext(schedule, timeout, duration);
       }
