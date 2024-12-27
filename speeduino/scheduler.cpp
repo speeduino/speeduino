@@ -70,12 +70,12 @@ static void reset(Schedule &schedule)
     setCallbacks(schedule, nullCallback, nullCallback);
 }
 
-static void reset(FuelSchedule &schedule) 
+static inline void reset(FuelSchedule &schedule) 
 {
     reset((Schedule&)schedule);
 }
 
-static void reset(IgnitionSchedule &schedule) 
+static inline void reset(IgnitionSchedule &schedule) 
 {
     reset((Schedule&)schedule);
 }
@@ -123,7 +123,6 @@ void initialiseIgnitionSchedulers(void)
     reset(ignitionSchedule2);
     reset(ignitionSchedule3);
     reset(ignitionSchedule4);
-    reset(ignitionSchedule5);
 #if (IGN_CHANNELS >= 5)
     reset(ignitionSchedule5);
 #endif
@@ -274,29 +273,29 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
   schedule.pEndCallback = pEndCallback;
 }
 
-void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration)
+void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, uint16_t duration)
 {
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
+  _setDuration(schedule, duration);
   COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
   SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
 }
 
-void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration)
+void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration)
 {
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
+  _setDuration(schedule, duration);
   schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
   schedule.Status = RUNNING_WITHNEXT;
 }
 
-void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration)
+void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration)
 {
   //The duration of the dwell cannot be longer than the maximum timer period. This is unlikely as dwell times should never get that long, but it's here for safety
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
+  _setDuration(schedule, duration);
   COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout); //As there is a tick every 4uS, there are timeout/4 ticks until the interrupt should be triggered ( >>2 divides by 4)
   SET_COMPARE(schedule._compare, startCompare);
   schedule.Status = PENDING; //Turn this schedule on
@@ -320,33 +319,37 @@ static table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.pr
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
  */
-extern void beginInjectorPriming(void)
+void beginInjectorPriming(void)
 {
-  unsigned long primingValue = table2D_getValue(&PrimingPulseTable, temperatureAddOffset(currentStatus.coolant));
+  uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(currentStatus.coolant));
   if( (primingValue > 0) && (currentStatus.TPS <= configPage4.floodClear) )
   {
-    primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( currentStatus.maxInjOutputs >= 1 ) { setFuelSchedule(fuelSchedule1, 100, primingValue); }
+    constexpr uint32_t PRIMING_DELAY = 100U; // 100us
+    // The prime pulse value is in ms*2, so need to multiply by 500 to get to µS
+    constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
+
+    primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
+    if ( currentStatus.maxInjOutputs >= 1U ) { setFuelSchedule(fuelSchedule1, PRIMING_DELAY, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( currentStatus.maxInjOutputs >= 2 ) { setFuelSchedule(fuelSchedule2, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 2U ) { setFuelSchedule(fuelSchedule2, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( currentStatus.maxInjOutputs >= 3 ) { setFuelSchedule(fuelSchedule3, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 3U ) { setFuelSchedule(fuelSchedule3, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( currentStatus.maxInjOutputs >= 4 ) { setFuelSchedule(fuelSchedule4, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 4U ) { setFuelSchedule(fuelSchedule4, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( currentStatus.maxInjOutputs >= 5 ) { setFuelSchedule(fuelSchedule5, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 5U ) { setFuelSchedule(fuelSchedule5, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( currentStatus.maxInjOutputs >= 6 ) { setFuelSchedule(fuelSchedule6, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 6U ) { setFuelSchedule(fuelSchedule6, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( currentStatus.maxInjOutputs >= 7) { setFuelSchedule(fuelSchedule7, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 7U) { setFuelSchedule(fuelSchedule7, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( currentStatus.maxInjOutputs >= 8 ) { setFuelSchedule(fuelSchedule8, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 8U ) { setFuelSchedule(fuelSchedule8, PRIMING_DELAY, primingValue); }
 #endif
   }
 }

@@ -198,7 +198,19 @@ static inline bool isRunning(const Schedule &schedule) {
   return ((uint8_t)schedule.Status & flags)!=0U;
 }
 
-void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint32_t duration);
+static void inline _setDuration(Schedule &schedule, uint16_t duration) {
+#ifndef MAX_TIMER_PERIOD
+  #error MAX_TIMER_PERIOD must be defined
+#else
+#if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
+  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
+#else
+  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(duration);
+#endif
+#endif
+}
+
+void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration);
 
 void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
 
@@ -214,9 +226,9 @@ struct IgnitionSchedule : public Schedule {
   volatile bool endScheduleSetByDecoder = false;
 };
 
-void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration);
 
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) 
+inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, uint16_t duration) 
 {
   if((timeout) < MAX_TIMER_PERIOD)
   {
@@ -245,9 +257,9 @@ struct FuelSchedule : public Schedule {
 
 };
 
-void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
+void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, uint16_t duration);
 
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
+inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, uint16_t duration) 
 {
   if((timeout) < MAX_TIMER_PERIOD)
   {
