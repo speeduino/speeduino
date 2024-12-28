@@ -198,9 +198,7 @@ struct statuses {
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
   byte nChannels; /**< Number of fuel and ignition channels.  */
   int16_t fuelLoad;
-  int16_t fuelLoad2;
   int16_t ignLoad;
-  int16_t ignLoad2;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   volatile byte syncLossCounter;
   byte knockRetard;

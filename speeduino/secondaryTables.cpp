@@ -13,8 +13,7 @@
  */
 static inline uint8_t getVE2(void)
 {
-  currentStatus.fuelLoad2 = getLoad(configPage10.fuel2Algorithm, currentStatus);
-  return get3DTableValue(&fuelTable2, currentStatus.fuelLoad2, (table3d_axis_t)currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
+  return get3DTableValue(&fuelTable2, getLoad(configPage10.fuel2Algorithm, currentStatus), (table3d_axis_t)currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 static inline bool fuelModeCondSwitchRpmActive(void) {
@@ -80,15 +79,13 @@ void calculateSecondaryFuel(void)
     // Unknown mode or mode not activated
     BIT_CLEAR(currentStatus.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use.
     currentStatus.VE2 = 0U;
-    currentStatus.fuelLoad2 = 0U;
   }
 }
 
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(void) {
-  currentStatus.ignLoad2 = getLoad(configPage10.spark2Algorithm, currentStatus);
-  return (int16_t)get3DTableValue(&ignitionTable2, currentStatus.ignLoad2, (table3d_axis_t)currentStatus.RPM) - INT16_C(OFFSET_IGNITION);  
+  return (int16_t)get3DTableValue(&ignitionTable2, getLoad(configPage10.spark2Algorithm, currentStatus), (table3d_axis_t)currentStatus.RPM) - INT16_C(OFFSET_IGNITION);  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)
@@ -140,7 +137,6 @@ TESTABLE_INLINE_STATIC bool isFixedTimingOn(void) {
 void calculateSecondarySpark(void)
 {
   BIT_CLEAR(currentStatus.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
-  currentStatus.ignLoad2 = 0;
   currentStatus.advance2 = 0;
 
   if (!isFixedTimingOn())

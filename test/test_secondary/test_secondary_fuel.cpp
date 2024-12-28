@@ -33,7 +33,6 @@ static void __attribute__((noinline)) assert_2nd_fuel_is_off(uint8_t expectedVE)
     TEST_ASSERT_EQUAL(expectedVE, currentStatus.VE1);
     TEST_ASSERT_EQUAL(0, currentStatus.VE2);
     TEST_ASSERT_EQUAL(currentStatus.VE1, currentStatus.VE);
-    TEST_ASSERT_EQUAL(0, currentStatus.fuelLoad2);
 } 
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_on(uint8_t expectedVE1, uint8_t expectedVE2, uint8_t expectedVE) {
@@ -42,7 +41,6 @@ static void __attribute__((noinline)) assert_2nd_fuel_is_on(uint8_t expectedVE1,
     TEST_ASSERT_EQUAL(expectedVE2, currentStatus.VE2);
     TEST_ASSERT_EQUAL(expectedVE, currentStatus.VE);
     // All tests in this file use MAP as the load source
-    TEST_ASSERT_EQUAL(currentStatus.MAP, currentStatus.fuelLoad2);
 } 
 
 static void test_setup(void) {

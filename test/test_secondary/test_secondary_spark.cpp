@@ -34,7 +34,6 @@ static void __attribute__((noinline)) assert_2nd_spark_is_off(int8_t expectedAdv
     TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance1);
     TEST_ASSERT_EQUAL(0, currentStatus.advance2);
     TEST_ASSERT_EQUAL(currentStatus.advance1, currentStatus.advance);
-    TEST_ASSERT_EQUAL(0, currentStatus.ignLoad2);
 } 
 
 static void __attribute__((noinline)) assert_2nd_spark_is_on(int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
@@ -42,8 +41,6 @@ static void __attribute__((noinline)) assert_2nd_spark_is_on(int8_t expectedAdva
     TEST_ASSERT_EQUAL(expectedAdvance1, currentStatus.advance1);
     TEST_ASSERT_EQUAL(expectedAdvance2, currentStatus.advance2);
     TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance);
-    // All tests in this file use MAP as the load source
-    TEST_ASSERT_EQUAL(currentStatus.MAP, currentStatus.ignLoad2);
 } 
 
 static void __attribute__((noinline)) test_setup(void) {
