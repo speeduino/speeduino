@@ -243,18 +243,18 @@ void initialiseAll(void)
     initialiseProgrammableIO();
 
     //Check whether the flex sensor is enabled and if so, attach an interrupt for it
-    if( (configPage2.flexEnabled > 0) && !pinIsOutput(pinFlex) )
+    if(configPage2.flexEnabled > 0)
     {
       if(!pinIsReserved(pinFlex)) { attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); }
       currentStatus.ethanolPct = 0;
     }
     //Same as above, but for the VSS input
-    if( (configPage2.vssMode > 1) && !pinIsOutput(pinVSS) ) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+    if(configPage2.vssMode > 1) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
       if(!pinIsReserved(pinVSS)) { attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING); }
     }
     //As above but for knock pulses
-    if( (configPage10.knock_mode == KNOCK_MODE_DIGITAL) && !pinIsOutput(configPage10.knock_pin) )
+    if(configPage10.knock_mode == KNOCK_MODE_DIGITAL)
     {
       if(configPage10.knock_pullup) { pinMode(configPage10.knock_pin, INPUT_PULLUP); }
       else { pinMode(configPage10.knock_pin, INPUT); }
@@ -2751,55 +2751,56 @@ void setPinMapping(byte boardID)
       break;
   }
 
-  //Setup any devices that are using selectable pins, pins will be reassigned only if isn't already in use or is protected
+  //Setup any devices that are using selectable pins
+
+  if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_MAX_IO_PINS) ) { pinLaunch = pinTranslate(configPage6.launchPin); }
+  if ( (configPage4.ignBypassPin != 0) && (configPage4.ignBypassPin < BOARD_MAX_IO_PINS) ) { pinIgnBypass = pinTranslate(configPage4.ignBypassPin); }
+  if ( (configPage2.tachoPin != 0) && (configPage2.tachoPin < BOARD_MAX_IO_PINS) ) { pinTachOut = pinTranslate(configPage2.tachoPin); }
+  if ( (configPage4.fuelPumpPin != 0) && (configPage4.fuelPumpPin < BOARD_MAX_IO_PINS) ) { pinFuelPump = pinTranslate(configPage4.fuelPumpPin); }
+  if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_MAX_IO_PINS) ) { pinFan = pinTranslate(configPage6.fanPin); }
+  if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_MAX_IO_PINS) ) { pinBoost = pinTranslate(configPage6.boostPin); }
+  if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_MAX_IO_PINS) ) { pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
   if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinBaro = pinTranslateAnalog(configPage6.baroPin); }
+  if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
+  if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_MAX_IO_PINS) ) { pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
+  if ( (configPage10.spark2InputPin != 0) && (configPage10.spark2InputPin < BOARD_MAX_IO_PINS) ) { pinSpark2Input = pinTranslate(configPage10.spark2InputPin); }
+  if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_MAX_IO_PINS) ) { pinVSS = pinTranslate(configPage2.vssPin); }
   if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinFuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
   if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinOilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
-  if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
-  pinInputReassign(pinLaunch, configPage6.launchPin);
-  pinInputReassign(pinIgnBypass, configPage4.ignBypassPin);
-  pinOutputReassign(pinTachOut, configPage2.tachoPin);
-  pinOutputReassign(pinFuelPump, configPage4.fuelPumpPin);
-  pinOutputReassign(pinFan, configPage6.fanPin);
-  pinOutputReassign(pinBoost, configPage6.boostPin);
-  pinOutputReassign(pinVVT_1, configPage6.vvt1Pin);
-  pinInputReassign(pinFuel2Input, configPage10.fuel2InputPin);
-  pinInputReassign(pinSpark2Input, configPage10.spark2InputPin);
-  pinOutputReassign(pinVSS, configPage2.vssPin);  
-  pinInputReassign(pinWMIEmpty, configPage10.wmiEmptyPin);
-  pinOutputReassign(pinWMIIndicator, configPage10.wmiIndicatorPin);
-  pinOutputReassign(pinWMIEnabled, configPage10.wmiEnabledPin);
-  pinOutputReassign(pinVVT_2, configPage10.vvt2Pin);
-  if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) ) { pinOutputReassign(pinSDEnable, configPage13.onboard_log_tr5_Epin_pin); }
   
+  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_MAX_IO_PINS) ) { pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
+  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
+  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
+  if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) && (configPage13.onboard_log_tr5_Epin_pin < BOARD_MAX_IO_PINS) ) { pinSDEnable = pinTranslate(configPage13.onboard_log_tr5_Epin_pin); }
+  
+
   //Currently there's no default pin for Idle Up
-  if(!pinInputReassign(pinIdleUp, configPage2.idleUpPin)) { pinIdleUp = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  
+  pinIdleUp = pinTranslate(configPage2.idleUpPin);
 
   //Currently there's no default pin for Idle Up Output
-  if(!pinOutputReassign(pinIdleUpOutput, configPage2.idleUpOutputPin)) { pinIdleUpOutput = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
 
   //Currently there's no default pin for closed throttle position sensor
-  if(!pinInputReassign(pinCTPS, configPage2.CTPSPin)) { pinCTPS = BOARD_MAX_IO_PINS; } //Invalid pin, protect current function
+  pinCTPS = pinTranslate(configPage2.CTPSPin);
   
   // Air conditioning control initialisation
-  pinInputReassign(pinAirConComp, configPage15.airConCompPin);
-  pinOutputReassign(pinAirConFan, configPage15.airConFanPin);
-  pinInputReassign(pinAirConRequest, configPage15.airConReqPin);
-
+  if ((configPage15.airConCompPin != 0) && (configPage15.airConCompPin < BOARD_MAX_IO_PINS) ) { pinAirConComp = pinTranslate(configPage15.airConCompPin); }
+  if ((configPage15.airConFanPin != 0) && (configPage15.airConFanPin < BOARD_MAX_IO_PINS) ) { pinAirConFan = pinTranslate(configPage15.airConFanPin); }
+  if ((configPage15.airConReqPin != 0) && (configPage15.airConReqPin < BOARD_MAX_IO_PINS) ) { pinAirConRequest = pinTranslate(configPage15.airConReqPin); }
+    
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
   if ( (configPage4.resetControlConfig != 0) && (configPage4.resetControlPin < BOARD_MAX_IO_PINS) )
   {
-    if( (configPage4.resetControlPin == 0U) || (!pinIsReserved(configPage4.resetControlPin)) )
-    {
-      if (configPage4.resetControlPin != 0U) {
-        pinResetControl = pinTranslate(configPage4.resetControlPin);
-      }
-      resetControl = configPage4.resetControlConfig;
-      setResetControlPinState();
-      pinMode(pinResetControl, OUTPUT);
+    if (configPage4.resetControlPin!=0U) {
+      pinResetControl = pinTranslate(configPage4.resetControlPin);
     }
+    resetControl = configPage4.resetControlConfig;
+    setResetControlPinState();
+    pinMode(pinResetControl, OUTPUT);
   }
   
 
@@ -2991,10 +2992,10 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinSDEnable, INPUT);
   }
-  if( (configPage10.wmiEnabled > 0) && (!pinIsOutput(pinWMIEnabled)) )
+  if(configPage10.wmiEnabled > 0)
   {
     pinMode(pinWMIEnabled, OUTPUT);
-    if( (configPage10.wmiIndicatorEnabled > 0) && (!pinIsReserved(pinWMIIndicator)) )
+    if(configPage10.wmiIndicatorEnabled > 0)
     {
       pinMode(pinWMIIndicator, OUTPUT);
       if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinWMIIndicator, HIGH); }
@@ -3006,7 +3007,7 @@ void setPinMapping(byte boardID)
     }
   } 
 
-  if( (pinAirConComp>0) && ((configPage15.airConEnable) == 1) && (!pinIsReserved(pinAirConComp)) )
+  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
   {
     pinMode(pinAirConComp, OUTPUT);
   }
@@ -3027,7 +3028,7 @@ void setPinMapping(byte boardID)
     }
   }
 
-  if( (pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1) && (!pinIsReserved(pinAirConFan)) )
+  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
