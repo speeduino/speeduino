@@ -2823,26 +2823,6 @@ void setPinMapping(byte boardID)
 
   if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
   {
-    #if defined(CORE_STM32)
-    //Protect against wrong board layout selection, set pin to itself to force a protection check
-    pinOutputReassign(pinCoil1, pinCoil1);
-    pinOutputReassign(pinCoil2, pinCoil2);
-    pinOutputReassign(pinCoil3, pinCoil3);
-    pinOutputReassign(pinCoil4, pinCoil4);
-    #if (IGN_CHANNELS >= 5)
-    pinOutputReassign(pinCoil5, pinCoil5);
-    #endif
-    #if (IGN_CHANNELS >= 6)
-    pinOutputReassign(pinCoil6, pinCoil6);
-    #endif
-    #if (IGN_CHANNELS >= 7)
-    pinOutputReassign(pinCoil7, pinCoil7);
-    #endif
-    #if (IGN_CHANNELS >= 8)
-    pinOutputReassign(pinCoil8, pinCoil8);
-    #endif
-    #endif /* CORE_STM32 */
-
     pinMode(pinCoil1, OUTPUT);
     pinMode(pinCoil2, OUTPUT);
     pinMode(pinCoil3, OUTPUT);
@@ -2880,26 +2860,6 @@ void setPinMapping(byte boardID)
 
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
   {
-    #if defined(CORE_STM32)
-    //Protect against wrong board layout selection, set pin to itself to force a protection check
-    pinOutputReassign(pinInjector1, pinInjector1);
-    pinOutputReassign(pinInjector2, pinInjector2);
-    pinOutputReassign(pinInjector3, pinInjector3);
-    pinOutputReassign(pinInjector4, pinInjector4);
-    #if (INJ_CHANNELS >= 5)
-    pinOutputReassign(pinInjector5, pinInjector5);
-    #endif
-    #if (INJ_CHANNELS >= 6)
-    pinOutputReassign(pinInjector6, pinInjector6);
-    #endif
-    #if (INJ_CHANNELS >= 7)
-    pinOutputReassign(pinInjector7, pinInjector7);
-    #endif
-    #if (INJ_CHANNELS >= 8)
-    pinOutputReassign(pinInjector8, pinInjector8);
-    #endif
-    #endif /* CORE_STM32 */
-
     pinMode(pinInjector1, OUTPUT);
     pinMode(pinInjector2, OUTPUT);
     pinMode(pinInjector3, OUTPUT);
@@ -3072,12 +3032,6 @@ void setPinMapping(byte boardID)
     pinMode(pinAirConFan, OUTPUT);
   }  
 
-  #if defined(CORE_STM32)
-  //Protect against wrong board layout selection, set pin to itself to force a protection check
-  pinInputReassign(pinTrigger, pinTrigger);
-  pinInputReassign(pinTrigger2, pinTrigger2);
-  pinInputReassign(pinTrigger3, pinTrigger3);
-  #endif /* CORE_STM32 */
   //These must come after the above pinMode statements
   triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
   triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
