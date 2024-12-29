@@ -8,6 +8,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <SimplyAtomic.h>
 #include "bit_manip.h"
 
 using byte = uint8_t;

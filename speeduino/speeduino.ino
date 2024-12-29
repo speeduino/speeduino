@@ -415,8 +415,8 @@ void __attribute__((always_inline)) loop(void)
     currentStatus.advance1 = getAdvance1();
     currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
 
-    calculateSecondaryFuel();
-    calculateSecondarySpark();
+    calculateSecondaryFuel(configPage10, fuelTable2, currentStatus);
+    calculateSecondarySpark(configPage2, configPage10, ignitionTable2, currentStatus);
 
     //Always check for sync
     //Main loop runs within this clause

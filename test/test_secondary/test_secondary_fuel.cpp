@@ -28,67 +28,69 @@ TEST_DATA_P table3d_value_t fuel2TableValues[] = {
 TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
-static void __attribute__((noinline)) assert_2nd_fuel_is_off(uint8_t expectedVE) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS3_FUEL2_ACTIVE, currentStatus.status3);
-    TEST_ASSERT_EQUAL(expectedVE, currentStatus.VE1);
-    TEST_ASSERT_EQUAL(0, currentStatus.VE2);
-    TEST_ASSERT_EQUAL(currentStatus.VE1, currentStatus.VE);
+static table3d16RpmLoad veLookupTable;
+
+static void __attribute__((noinline)) assert_2nd_fuel_is_off(const statuses &current, uint8_t expectedVE) {
+    TEST_ASSERT_BIT_LOW(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_EQUAL(expectedVE, current.VE1);
+    TEST_ASSERT_EQUAL(0, current.VE2);
+    TEST_ASSERT_EQUAL(current.VE1, current.VE);
 } 
 
-static void __attribute__((noinline)) assert_2nd_fuel_is_on(uint8_t expectedVE1, uint8_t expectedVE2, uint8_t expectedVE) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS3_FUEL2_ACTIVE, currentStatus.status3);
-    TEST_ASSERT_EQUAL(expectedVE1, currentStatus.VE1);
-    TEST_ASSERT_EQUAL(expectedVE2, currentStatus.VE2);
-    TEST_ASSERT_EQUAL(expectedVE, currentStatus.VE);
-    // All tests in this file use MAP as the load source
+static void __attribute__((noinline)) assert_2nd_fuel_is_on(const statuses &current, uint8_t expectedVE1, uint8_t expectedVE2, uint8_t expectedVE) {
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_EQUAL(expectedVE1, current.VE1);
+    TEST_ASSERT_EQUAL(expectedVE2, current.VE2);
+    TEST_ASSERT_EQUAL(expectedVE, current.VE);
 } 
-
-static void test_setup(void) {
-    resetConfigPages();
-    memset(&currentStatus, 0, sizeof(currentStatus));
-}
 
 static void test_no_secondary_fuel(void) {
-    test_setup();
-    configPage10.fuel2Mode = FUEL2_MODE_OFF;
-    configPage10.fuel2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.VE1 = 50;
-    currentStatus.VE = currentStatus.VE1;
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondaryFuel();
+    page10.fuel2Mode = FUEL2_MODE_OFF;
+    page10.fuel2Algorithm = LOAD_SOURCE_MAP;
+    current.VE1 = 50;
+    current.VE = current.VE1;
 
-    assert_2nd_fuel_is_off(50);
+    calculateSecondaryFuel(page10, veLookupTable, current);
+
+    assert_2nd_fuel_is_off(current, 50);
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode) {
-    test_setup();
-    configPage10.fuel2Mode = mode;    
-    configPage10.fuel2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.VE1 = 200;
-    currentStatus.VE = currentStatus.VE1;
-    currentStatus.MAP = 100; //Load source value
-    currentStatus.RPM = 7000;
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondaryFuel();
+    page10.fuel2Mode = mode;    
+    page10.fuel2Algorithm = LOAD_SOURCE_MAP;
+    current.VE1 = 200;
+    current.VE = current.VE1;
+    current.MAP = 100; //Load source value
+    current.RPM = 7000;
 
-    assert_2nd_fuel_is_on(200, 150, UINT8_MAX);
+    calculateSecondaryFuel(page10, veLookupTable, current);
+
+    assert_2nd_fuel_is_on(current, 200, 150, UINT8_MAX);
 }
 
 static constexpr int8_t SIMPLE_VE1 = 75;
 static constexpr int16_t SIMPLE_LOAD_VALUE = 150;
 
 static void __attribute__((noinline)) test_fuel_mode_simple(uint8_t mode, uint8_t expectedVE) {
-    test_setup();
-    configPage10.fuel2Mode = mode;    
-    configPage10.fuel2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.VE1 = SIMPLE_VE1;
-    currentStatus.VE = currentStatus.VE1;
-    currentStatus.MAP = 100; //Load source value
-    currentStatus.RPM = 7000;
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondaryFuel();
+    page10.fuel2Mode = mode;    
+    page10.fuel2Algorithm = LOAD_SOURCE_MAP;
+    current.VE1 = SIMPLE_VE1;
+    current.VE = current.VE1;
+    current.MAP = 100; //Load source value
+    current.RPM = 7000;
 
-    assert_2nd_fuel_is_on(SIMPLE_VE1, SIMPLE_LOAD_VALUE, expectedVE);
+    calculateSecondaryFuel(page10, veLookupTable, current);
+
+    assert_2nd_fuel_is_on(current, SIMPLE_VE1, SIMPLE_LOAD_VALUE, expectedVE);
 }
 
 static void test_fuel_mode_multiply_cap_UINT8_MAX(void) {
@@ -110,95 +112,97 @@ static void test_fuel_mode_add_cap_UINT8_MAX(void) {
 static constexpr int16_t SWITCHED_LOAD = 50;
 static constexpr int16_t SWITCHED_VE2 = 68;
 
-static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(uint8_t cond, uint16_t trigger) {
-    configPage10.fuel2Mode = FUEL2_MODE_CONDITIONAL_SWITCH; 
-    configPage10.fuel2SwitchVariable = cond;
-    configPage10.fuel2SwitchValue = trigger;
-    configPage10.fuel2Algorithm = LOAD_SOURCE_MAP;    
-    currentStatus.VE1 = SIMPLE_VE1;
-    currentStatus.VE = currentStatus.VE1;
-    currentStatus.MAP = SWITCHED_LOAD; //Load source value
-    currentStatus.RPM = 3500;
-    currentStatus.TPS = 50;
-    currentStatus.ethanolPct = 50;
+static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 &page10, statuses &current, uint8_t cond, uint16_t trigger) {
+    page10.fuel2Mode = FUEL2_MODE_CONDITIONAL_SWITCH; 
+    page10.fuel2SwitchVariable = cond;
+    page10.fuel2SwitchValue = trigger;
+    page10.fuel2Algorithm = LOAD_SOURCE_MAP;    
+    current.VE1 = SIMPLE_VE1;
+    current.VE = current.VE1;
+    current.MAP = SWITCHED_LOAD; //Load source value
+    current.RPM = 3500;
+    current.TPS = 50;
+    current.ethanolPct = 50;
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_negative(uint8_t cond, uint16_t trigger) {
-    setup_test_fuel_mode_cond_switch(cond, trigger);
+    config10 page10 = {};
+    statuses current = {};
+    setup_test_fuel_mode_cond_switch(page10, current, cond, trigger);
 
-    calculateSecondaryFuel();
+    calculateSecondaryFuel(page10, veLookupTable, current);
 
-    assert_2nd_fuel_is_off(SIMPLE_VE1);    
+    assert_2nd_fuel_is_off(current, SIMPLE_VE1);    
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_positive(uint8_t cond, uint16_t trigger) {
-    setup_test_fuel_mode_cond_switch(cond, trigger);
+    config10 page10 = {};
+    statuses current = {};
+    setup_test_fuel_mode_cond_switch(page10, current, cond, trigger);
 
-    calculateSecondaryFuel();
+    calculateSecondaryFuel(page10, veLookupTable, current);
 
-    assert_2nd_fuel_is_on(SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
+    assert_2nd_fuel_is_on(current, SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_rpm(void) {
-    test_setup();
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_RPM, 3499);    
     test_fuel_mode_cond_switch_negative(FUEL2_CONDITION_RPM, 3501);    
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_RPM, 3499);    
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_tps(void) {
-    test_setup();
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_TPS, 49);    
     test_fuel_mode_cond_switch_negative(FUEL2_CONDITION_TPS, 51);    
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_TPS, 49);    
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_map(void) {
-    test_setup();
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_MAP, 49);    
     test_fuel_mode_cond_switch_negative(FUEL2_CONDITION_MAP, 51);    
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_MAP, 49);    
 }
 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_ethanol_pct(void) {
-    test_setup();
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_ETH, 49);    
     test_fuel_mode_cond_switch_negative(FUEL2_CONDITION_ETH, 51);    
     test_fuel_mode_cond_switch_positive(FUEL2_CONDITION_ETH, 49);    
 }
 
 static void __attribute__((noinline)) test_fuel_mode_input_switch(void) {
-    test_setup();
-    configPage10.fuel2Mode = FUEL2_MODE_INPUT_SWITCH; 
-    configPage10.fuel2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.VE1 = SIMPLE_VE1;
-    currentStatus.VE = currentStatus.VE1;
-    currentStatus.MAP = SWITCHED_LOAD; //Load source value
-    currentStatus.RPM = 3500;
-    configPage10.fuel2InputPolarity = HIGH;
+    config10 page10 = {};
+    statuses current = {};
+
+    page10.fuel2Mode = FUEL2_MODE_INPUT_SWITCH; 
+    page10.fuel2Algorithm = LOAD_SOURCE_MAP;
+    current.VE1 = SIMPLE_VE1;
+    current.VE = current.VE1;
+    current.MAP = SWITCHED_LOAD; //Load source value
+    current.RPM = 3500;
+    page10.fuel2InputPolarity = HIGH;
     pinFuel2Input = 3;   
     pinMode(pinFuel2Input, OUTPUT);
 
     // On
-    digitalWrite(pinFuel2Input, configPage10.fuel2InputPolarity);
-    calculateSecondaryFuel();
-    assert_2nd_fuel_is_on(SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
+    digitalWrite(pinFuel2Input, page10.fuel2InputPolarity);
+    calculateSecondaryFuel(page10, veLookupTable, current);
+    assert_2nd_fuel_is_on(current, SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
 
     // Off
-    digitalWrite(pinFuel2Input, !configPage10.fuel2InputPolarity);
-    currentStatus.VE = currentStatus.VE1;
-    calculateSecondaryFuel();
-    assert_2nd_fuel_is_off(SIMPLE_VE1);
+    digitalWrite(pinFuel2Input, !page10.fuel2InputPolarity);
+    current.VE = current.VE1;
+    calculateSecondaryFuel(page10, veLookupTable, current);
+    assert_2nd_fuel_is_off(current, SIMPLE_VE1);
 
     // On again
-    digitalWrite(pinFuel2Input, configPage10.fuel2InputPolarity);
-    calculateSecondaryFuel();
-    assert_2nd_fuel_is_on(SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
+    digitalWrite(pinFuel2Input, page10.fuel2InputPolarity);
+    calculateSecondaryFuel(page10, veLookupTable, current);
+    assert_2nd_fuel_is_on(current, SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
 }
 
 void test_calculateSecondaryFuel(void)
 {
-    populate_table_P(fuelTable2, tempXAxis, tempYAxis, fuel2TableValues);
+    populate_table_P(veLookupTable, tempXAxis, tempYAxis, fuel2TableValues);
 
     SET_UNITY_FILENAME() {
         RUN_TEST(test_no_secondary_fuel);

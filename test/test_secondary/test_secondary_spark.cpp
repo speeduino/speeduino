@@ -29,94 +29,115 @@ TEST_DATA_P table3d_value_t values[] = {
 TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
-static void __attribute__((noinline)) assert_2nd_spark_is_off(int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_SPARK2_ACTIVE, currentStatus.status5);
-    TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance1);
-    TEST_ASSERT_EQUAL(0, currentStatus.advance2);
-    TEST_ASSERT_EQUAL(currentStatus.advance1, currentStatus.advance);
+static table3d16RpmLoad lookupTable;
+
+static void __attribute__((noinline)) assert_2nd_spark_is_off(const statuses &current, int8_t expectedAdvance) {
+    TEST_ASSERT_BIT_LOW(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_EQUAL(expectedAdvance, current.advance1);
+    TEST_ASSERT_EQUAL(0, current.advance2);
+    TEST_ASSERT_EQUAL(current.advance1, current.advance);
 } 
 
-static void __attribute__((noinline)) assert_2nd_spark_is_on(int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_SPARK2_ACTIVE, currentStatus.status5);
-    TEST_ASSERT_EQUAL(expectedAdvance1, currentStatus.advance1);
-    TEST_ASSERT_EQUAL(expectedAdvance2, currentStatus.advance2);
-    TEST_ASSERT_EQUAL(expectedAdvance, currentStatus.advance);
+static void __attribute__((noinline)) assert_2nd_spark_is_on(const statuses &current, int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
+    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_EQUAL(expectedAdvance1, current.advance1);
+    TEST_ASSERT_EQUAL(expectedAdvance2, current.advance2);
+    TEST_ASSERT_EQUAL(expectedAdvance, current.advance);
 } 
-
-static void __attribute__((noinline)) test_setup(void) {
-    resetConfigPages();
-    memset(&currentStatus, 0, sizeof(currentStatus));
-}
 
 static void __attribute__((noinline)) test_mode_off_no_secondary_spark(void) {
-    test_setup();
-    configPage10.spark2Mode = SPARK2_MODE_OFF;
-    configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.advance1 = 50;
-    currentStatus.advance = currentStatus.advance1;
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondarySpark();
+    page10.spark2Mode = SPARK2_MODE_OFF;
+    page10.spark2Algorithm = LOAD_SOURCE_MAP;
+    current.advance1 = 50;
+    current.advance = current.advance1;
 
-    assert_2nd_spark_is_off(50);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+
+    assert_2nd_spark_is_off(current, 50);
+}
+
+static constexpr int8_t CAP_ADVANCE1 = INT8_MAX - 1;
+static constexpr int16_t CAP_LOAD_LOOKUP_MAP = 100;
+static constexpr uint16_t CAP_LOAD_LOOKUP_RPM = 7000;
+static constexpr int16_t CAP_LOAD_LOOKUP_RESULT = 150;
+static constexpr int16_t CAP_LOAD_VALUE = CAP_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
+
+static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, config10 &page10, statuses &current, uint8_t mode) {
+    page10.spark2Mode = mode;    
+    page10.spark2Algorithm = LOAD_SOURCE_MAP;
+    current.advance1 = CAP_ADVANCE1;
+    current.advance = current.advance1;
+    current.MAP = CAP_LOAD_LOOKUP_MAP;
+    current.RPM = CAP_LOAD_LOOKUP_RPM;
 }
 
 static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_t expectedAdvance2) {
-    test_setup();
-    configPage10.spark2Mode = mode;    
-    configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.advance = currentStatus.advance1 = 120;
-    currentStatus.MAP = 100; //Load source value
-    currentStatus.RPM = 7000;
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondarySpark();
+    setup_test_mode_cap_INT8_MAX(page2, page10, current, mode);
 
-    assert_2nd_spark_is_on(120, expectedAdvance2, INT8_MAX);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+
+    assert_2nd_spark_is_on(current, CAP_ADVANCE1, expectedAdvance2, INT8_MAX);
 }
 
 static constexpr int8_t SIMPLE_ADVANCE1 = 75;
-static constexpr int16_t SIMPLE_LOAD_LOOKUP_VALUE = 68;
-static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_VALUE-INT16_C(OFFSET_IGNITION);
+static constexpr int16_t SIMPLE_LOAD_LOOKUP_MAP = 50;
+static constexpr uint16_t SIMPLE_LOAD_LOOKUP_RPM = 3500;
+static constexpr int16_t SIMPLE_LOAD_LOOKUP_RESULT = 68;
+static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
 
-static void __attribute__((noinline)) setup_test_mode_simple(uint8_t mode) {
-        test_setup();
-    configPage10.spark2Mode = mode;    
-    configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.advance1 = SIMPLE_ADVANCE1;
-    currentStatus.advance = currentStatus.advance1;
-    currentStatus.MAP = 50; //Load source value
-    currentStatus.RPM = 3500;
+static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10 &page10, statuses &current, uint8_t mode) {
+    page10.spark2Mode = mode;    
+    page10.spark2Algorithm = LOAD_SOURCE_MAP;
+    current.advance1 = SIMPLE_ADVANCE1;
+    current.advance = current.advance1;
+    current.MAP = SIMPLE_LOAD_LOOKUP_MAP;
+    current.RPM = SIMPLE_LOAD_LOOKUP_RPM;
 }
 
 static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance, int8_t expectedAdvance2) {
-    setup_test_mode_simple(mode);
-    calculateSecondarySpark();
-    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, expectedAdvance2, expectedAdvance);
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
+
+    setup_test_mode_simple(page2, page10, current, mode);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, expectedAdvance2, expectedAdvance);
 }
 
 static void __attribute__((noinline)) test_sparkmode_multiply_cap_INT8_MAX(void) {
-    test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY, (int16_t)150-INT16_C(OFFSET_IGNITION)-INT16_C(INT8_MAX));
+    test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY, CAP_LOAD_VALUE-INT8_MAX);
 }
 
 static void __attribute__((noinline)) test_sparkmode_multiply(void) {
     test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*SIMPLE_LOAD_VALUE)/100, SIMPLE_LOAD_VALUE-INT8_MAX);
 }
 
-extern bool isFixedTimingOn(void);
-
 static void __attribute__((noinline)) test_fixed_timing_no_secondary_spark(void) {
-    setup_test_mode_simple(SPARK2_MODE_MULTIPLY);
-    configPage2.fixAngEnable = 1U;// Should turn 2nd table off
-    TEST_ASSERT_TRUE(isFixedTimingOn());
-    calculateSecondarySpark();
-    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
+    setup_test_mode_simple(page2, page10, current, SPARK2_MODE_MULTIPLY);
+    page2.fixAngEnable = 1U;// Should turn 2nd table off
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 }
 
 static void __attribute__((noinline)) test_cranking_no_secondary_spark(void) {
-    setup_test_mode_simple(SPARK2_MODE_MULTIPLY);
-    BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
-    TEST_ASSERT_TRUE(isFixedTimingOn());
-    calculateSecondarySpark();
-    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
+    setup_test_mode_simple(page2, page10, current, SPARK2_MODE_MULTIPLY);
+    BIT_SET(current.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 }
 
 static void __attribute__((noinline)) test_sparkmode_add(void) {
@@ -127,95 +148,102 @@ static void __attribute__((noinline)) test_sparkmode_add_cap_INT8_MAX(void) {
     test_mode_cap_INT8_MAX(SPARK2_MODE_ADD, (int16_t)150-INT16_C(OFFSET_IGNITION));
 }
 
-static void __attribute__((noinline)) setup_test_mode_cond_switch(uint8_t cond, uint16_t trigger) {
-    configPage10.spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH; 
-    configPage10.spark2SwitchVariable = cond;
-    configPage10.spark2SwitchValue = trigger;
-    configPage10.spark2Algorithm = LOAD_SOURCE_MAP;    
-    currentStatus.advance1 = SIMPLE_ADVANCE1;
-    currentStatus.advance = currentStatus.advance1;
-    currentStatus.MAP = 50; //Load source value
-    currentStatus.RPM = 3500;
-    currentStatus.TPS = 50;
-    currentStatus.ethanolPct = 50;
+static void __attribute__((noinline)) setup_test_mode_cond_switch(config2 &, config10 &page10, statuses &current, uint8_t cond, uint16_t trigger) {
+    page10.spark2Mode = SPARK2_MODE_CONDITIONAL_SWITCH; 
+    page10.spark2SwitchVariable = cond;
+    page10.spark2SwitchValue = trigger;
+    page10.spark2Algorithm = LOAD_SOURCE_MAP;    
+    current.advance1 = SIMPLE_ADVANCE1;
+    current.advance = current.advance1;
+    current.MAP = 50; //Load source value
+    current.RPM = 3500;
+    current.TPS = 50;
+    current.ethanolPct = 50;
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_negative(uint8_t cond, uint16_t trigger) {
-    setup_test_mode_cond_switch(cond, trigger);
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondarySpark();
+    setup_test_mode_cond_switch(page2, page10, current, cond, trigger);
 
-    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);    
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+
+    assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);    
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_positive(uint8_t cond, uint16_t trigger) {
-    setup_test_mode_cond_switch(cond, trigger);
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
 
-    calculateSecondarySpark();
+    setup_test_mode_cond_switch(page2, page10, current, cond, trigger);
 
-    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+
+    assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_rpm(void) {
-    test_setup();
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_RPM, 3499);    
     test_sparkmode_cond_switch_negative(SPARK2_CONDITION_RPM, 3501);    
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_RPM, 3499);    
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_tps(void) {
-    test_setup();
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_TPS, 49);    
     test_sparkmode_cond_switch_negative(SPARK2_CONDITION_TPS, 51);    
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_TPS, 49);    
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_map(void) {
-    test_setup();
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_MAP, 49);    
     test_sparkmode_cond_switch_negative(SPARK2_CONDITION_MAP, 51);    
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_MAP, 49);    
 }
 
 static void __attribute__((noinline)) test_sparkmode_cond_switch_ethanol_pct(void) {
-    test_setup();
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_ETH, 49);    
     test_sparkmode_cond_switch_negative(SPARK2_CONDITION_ETH, 51);    
     test_sparkmode_cond_switch_positive(SPARK2_CONDITION_ETH, 49);    
 }
 
 static void __attribute__((noinline)) test_sparkmode_input_switch(void) {
-    test_setup();
-    configPage10.spark2Mode = SPARK2_MODE_INPUT_SWITCH; 
-    configPage10.spark2Algorithm = LOAD_SOURCE_MAP;
-    currentStatus.advance1 = SIMPLE_ADVANCE1;
-    currentStatus.advance = currentStatus.advance1;
-    currentStatus.MAP = 50; //Load source value
-    currentStatus.RPM = 3500;
-    configPage10.spark2InputPolarity = HIGH;
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
+
+    page10.spark2Mode = SPARK2_MODE_INPUT_SWITCH; 
+    page10.spark2Algorithm = LOAD_SOURCE_MAP;
+    current.advance1 = SIMPLE_ADVANCE1;
+    current.advance = current.advance1;
+    current.MAP = 50; //Load source value
+    current.RPM = 3500;
+    page10.spark2InputPolarity = HIGH;
     pinSpark2Input = 3;   
     pinMode(pinSpark2Input, OUTPUT);
 
     // On
-    digitalWrite(pinSpark2Input, configPage10.spark2InputPolarity);
-    calculateSecondarySpark();
-    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
+    digitalWrite(pinSpark2Input, page10.spark2InputPolarity);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 
     // Off
-    digitalWrite(pinSpark2Input, !configPage10.spark2InputPolarity);
-    currentStatus.advance = currentStatus.advance1;
-    calculateSecondarySpark();
-    assert_2nd_spark_is_off(SIMPLE_ADVANCE1);
+    digitalWrite(pinSpark2Input, !page10.spark2InputPolarity);
+    current.advance = current.advance1;
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 
     // On again
-    digitalWrite(pinSpark2Input, configPage10.spark2InputPolarity);
-    calculateSecondarySpark();
-    assert_2nd_spark_is_on(SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
+    digitalWrite(pinSpark2Input, page10.spark2InputPolarity);
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 }
 
 void test_calculateSecondarySpark(void)
 {
-    populate_table_P(ignitionTable2, tempXAxis, tempYAxis, values);
+    populate_table_P(lookupTable, tempXAxis, tempYAxis, values);
 
     SET_UNITY_FILENAME() {
         RUN_TEST(test_mode_off_no_secondary_spark);
