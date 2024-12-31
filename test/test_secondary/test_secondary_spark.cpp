@@ -4,7 +4,8 @@
 #include "globals.h"
 #include "../test_utils.h"
 #include "storage.h"
-#include "corrections.h"
+// #include "corrections.h"
+#include "maths.h"
 
 TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
@@ -68,7 +69,7 @@ static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_
     assert_2nd_spark_is_on(current, CAP_ADVANCE1, expectedAdvance2, INT8_MAX);
 }
 
-static constexpr int8_t SIMPLE_ADVANCE1 = 75;
+static constexpr int8_t SIMPLE_ADVANCE1 = 35;
 static constexpr int16_t SIMPLE_LOAD_LOOKUP_RESULT = 68;
 static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
 
@@ -99,8 +100,40 @@ static void __attribute__((noinline)) test_sparkmode_multiply_cap_INT8_MAX(void)
     test_mode_cap_INT8_MAX(SPARK2_MODE_MULTIPLY, CAP_LOAD_VALUE-INT8_MAX);
 }
 
-static void __attribute__((noinline)) test_sparkmode_multiply(void) {
-    test_mode_simple(SPARK2_MODE_MULTIPLY, (SIMPLE_ADVANCE1*SIMPLE_LOAD_VALUE)/100, SIMPLE_LOAD_VALUE-INT8_MAX);
+static void __attribute__((noinline)) test_sparkmode_multiply(uint8_t multiplier) {
+    config2 page2 = {};
+    config10 page10 = {};
+    statuses current = {};
+    table3d16RpmLoad lookupTable;
+
+    setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
+    fill_table_values(lookupTable, multiplier+INT16_C(OFFSET_IGNITION));
+    calculateSecondarySpark(page2, page10, lookupTable, current);
+    assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, multiplier-INT8_MAX, DIV_ROUND_CLOSEST((SIMPLE_ADVANCE1*multiplier), 100, int16_t));
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_0(void) {
+    test_sparkmode_multiply(0);
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_50(void) {
+    test_sparkmode_multiply(50);
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_100(void) {
+    test_sparkmode_multiply(100);
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_150(void) {
+    test_sparkmode_multiply(150);
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_200(void) {
+    test_sparkmode_multiply(200);
+}
+
+static void __attribute__((noinline)) test_sparkmode_multiply_215(void) {
+    test_sparkmode_multiply(215);
 }
 
 static void __attribute__((noinline)) test_fixed_timing_no_secondary_spark(void) {
@@ -230,7 +263,12 @@ void test_calculateSecondarySpark(void)
         RUN_TEST(test_mode_off_no_secondary_spark);
         RUN_TEST(test_fixed_timing_no_secondary_spark);
         RUN_TEST(test_cranking_no_secondary_spark);
-        RUN_TEST(test_sparkmode_multiply);
+        RUN_TEST(test_sparkmode_multiply_0);
+        RUN_TEST(test_sparkmode_multiply_50);
+        RUN_TEST(test_sparkmode_multiply_100);
+        RUN_TEST(test_sparkmode_multiply_150);
+        RUN_TEST(test_sparkmode_multiply_200);
+        RUN_TEST(test_sparkmode_multiply_215);
         RUN_TEST(test_sparkmode_multiply_cap_INT8_MAX); 
         RUN_TEST(test_sparkmode_add);
         RUN_TEST(test_sparkmode_add_cap_INT8_MAX);
