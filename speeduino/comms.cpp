@@ -395,8 +395,8 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
     if( (x % 32U) == 0U )
     {
-      o2Calibration_values[offset/32U] = serialPayload[x+7U]; //O2 table stores 8 bit values
-      o2Calibration_bins[offset/32U]   = offset;
+      configPage16.o2Calibration_values[offset/32U] = serialPayload[x+7U]; //O2 table stores 8 bit values
+      configPage16.o2Calibration_bins[offset/32U]   = offset;
     }
 
     //Update the CRC
@@ -897,11 +897,11 @@ void processSerialCommand(void)
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibration_values, iatCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, configPage16.iatCalibration_values, configPage16.iatCalibration_bins);
       }
       else if(cmd == CLT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibration_values, cltCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, configPage16.cltCalibration_values, configPage16.cltCalibration_bins);
       }
       else
       {

@@ -1478,6 +1478,25 @@ struct config15 {
   } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
+/**
+Page 16 - Alternate Method of viewing and calibrating O2 CLT and IAT tables. - HRW
+352 bytes long. 
+*/
+struct config16 {
+  uint16_t o2Calibration_bins[32];  //64 bytes
+  uint8_t o2Calibration_values[32]; //32 bytes
+  uint16_t iatCalibration_bins[32]; //64 bytes
+  uint16_t iatCalibration_values[32]; //64 bytes
+  uint16_t cltCalibration_bins[32]; //64 bytes
+  uint16_t cltCalibration_values[32]; //64 bytes
+
+	
+#if defined(CORE_AVR)
+  };
+#else
+  } __attribute__((__packed__)); //The 32 bit systems require all structs to be fully packed
+#endif
+
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2
 extern byte pinInjector3; //Output pin injector 3
@@ -1574,16 +1593,17 @@ extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
 extern struct config15 configPage15;
+extern struct config16 configPage16;
 //extern byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
 //extern byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
 //extern byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
 
-extern uint16_t cltCalibration_bins[32];
-extern uint16_t cltCalibration_values[32];
-extern uint16_t iatCalibration_bins[32];
-extern uint16_t iatCalibration_values[32];
-extern uint16_t o2Calibration_bins[32];
-extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
+//extern uint16_t cltCalibration_bins[32];
+//extern uint16_t cltCalibration_values[32];
+//extern uint16_t iatCalibration_bins[32];
+//extern uint16_t iatCalibration_values[32];
+//extern uint16_t o2Calibration_bins[32];
+//extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
 extern struct table2D cltCalibrationTable; /**< A 32 bin array containing the coolant temperature sensor calibration values */
 extern struct table2D iatCalibrationTable; /**< A 32 bin array containing the inlet air temperature sensor calibration values */
 extern struct table2D o2CalibrationTable; /**< A 32 bin array containing the O2 sensor calibration values */

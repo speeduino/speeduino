@@ -439,23 +439,23 @@ void legacySerialCommand(void)
       primarySerial.println(F("Coolant"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(cltCalibration_bins[x]);
+        primarySerial.print(configPage16.cltCalibration_bins[x]);
         primarySerial.print(", ");
-        primarySerial.println(cltCalibration_values[x]);
+        primarySerial.println(configPage16.cltCalibration_values[x]);
       }
       primarySerial.println(F("Inlet temp"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(iatCalibration_bins[x]);
+        primarySerial.print(configPage16.iatCalibration_bins[x]);
         primarySerial.print(", ");
-        primarySerial.println(iatCalibration_values[x]);
+        primarySerial.println(configPage16.iatCalibration_values[x]);
       }
       primarySerial.println(F("O2"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(o2Calibration_bins[x]);
+        primarySerial.print(configPage16.o2Calibration_bins[x]);
         primarySerial.print(", ");
-        primarySerial.println(o2Calibration_values[x]);
+        primarySerial.println(configPage16.o2Calibration_values[x]);
       }
       primarySerial.println(F("WUE"));
       for (int x = 0; x < 10; x++)
@@ -1163,6 +1163,8 @@ void sendPageASCII(void)
 
     case warmupPage:
     case progOutsPage:
+	case O2IATCLTPage:
+	
     default:
     #ifndef SMALL_FLASH_MODE
         primarySerial.println(F("\nPage has not been implemented yet"));
@@ -1187,31 +1189,31 @@ void receiveCalibration(byte tableID)
   {
     case 0:
       //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
+      pnt_TargetTable_values = (uint16_t *)&configPage16.cltCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&configPage16.cltCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
       DIVISION_FACTOR = 10;
       break;
     case 1:
       //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+      pnt_TargetTable_values = (uint16_t *)&configPage16.iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&configPage16.iatCalibration_bins;
       OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
       DIVISION_FACTOR = 10;
       break;
     case 2:
       //O2 table
       //pnt_TargetTable = (byte *)&o2CalibrationTable;
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
+      pnt_TargetTable_values = (uint8_t *)&configPage16.o2Calibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&configPage16.o2Calibration_bins;
       OFFSET = 0;
       DIVISION_FACTOR = 1;
       break;
 
     default:
       OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
+      pnt_TargetTable_values = (uint16_t *)&configPage16.iatCalibration_values;
+      pnt_TargetTable_bins = (uint16_t *)&configPage16.iatCalibration_bins;
       DIVISION_FACTOR = 10;
       break; //Should never get here, but if we do, just fail back to main loop
   }

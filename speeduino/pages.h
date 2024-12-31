@@ -28,6 +28,7 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define progOutsPage  13
 #define ignMap2Page   14
 #define boostvvtPage2 15
+#define O2IATCLTPage 16 // Alternate method of viewing O2 IAT and CLT tables.
 
 // ============================== Per-byte page access ==========================
 
