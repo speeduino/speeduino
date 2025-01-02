@@ -273,6 +273,59 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
   schedule.pEndCallback = pEndCallback;
 }
 
+// Event duration cannot be longer than the maximum timer period
+static inline uint16_t clipDuration(uint16_t duration) {
+#ifndef MAX_TIMER_PERIOD
+  #error MAX_TIMER_PERIOD must be defined
+#else
+#if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
+  return min((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
+#else
+  return duration;
+#endif
+#endif
+}
+
+static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration)
+{
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  //Duration can safely be set here as the schedule is already running at the previous duration value already used
+  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(clipDuration(duration));
+  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(delay);
+  schedule.Status = RUNNING_WITHNEXT;
+}
+
+static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration)
+{
+  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
+  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
+  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(clipDuration(duration));
+  SET_COMPARE(schedule._compare, schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(delay));
+  schedule.Status = PENDING; //Turn this schedule on
+}
+
+void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule)
+{
+  if((delay>0U) && (delay < MAX_TIMER_PERIOD) && (duration > 0U))
+  {
+    ATOMIC() 
+    {
+      //Check that we're not already part way through a schedule
+      if(!isRunning(schedule)) 
+      { 
+        setScheduleRunning(schedule, delay, duration);
+      }
+      // If the schedule is already running, we can queue up the next event.
+      else if(allowQueuedSchedule)
+      {
+        setScheduleNext(schedule, delay, duration);
+      } else {
+        // Cannot schedule next event, as it would exceed the maximum future time
+      }
+    }
+  }  
+}
+
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
   if( (isRunning(ignitionSchedule1)) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )

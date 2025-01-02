@@ -146,8 +146,7 @@ enum ScheduleStatus {
  * \endcode
  * 
  * @par Timers are modelled as registers
- * Once set, Schedule instances are usually driven externally by a timer
- * ISR calling moveToNextState()
+ * Once set, Schedule instances are usually driven externally by a timer ISR
  */
 struct Schedule {
   // Deduce the real types of the counter and compare registers.
@@ -177,7 +176,7 @@ struct Schedule {
    *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
    *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
    */
-  volatile COMPARE_TYPE duration = 0U;  ///< Scheduled duration (uS ?)
+  volatile COMPARE_TYPE duration = 0U;
   volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
   voidVoidCallback pStartCallback = &nullCallback; ///< Start Callback function for schedule
   voidVoidCallback pEndCallback = &nullCallback;   ///< End Callback function for schedule
@@ -187,6 +186,7 @@ struct Schedule {
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
 };
 
+/** @brief Is the schedule action currently running? */
 static inline bool isRunning(const Schedule &schedule) {
   // Using flags and bitwise AND (&) to check multiple states is much quicker
   // than a logical or (||) (one less branch & 30% less instructions)
@@ -194,38 +194,24 @@ static inline bool isRunning(const Schedule &schedule) {
   return ((uint8_t)schedule.Status & flags)!=0U;
 }
 
-static void inline _setDuration(Schedule &schedule, uint16_t duration) {
-#ifndef MAX_TIMER_PERIOD
-  #error MAX_TIMER_PERIOD must be defined
-#else
-#if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(min(MAX_TIMER_PERIOD - 1U, duration));
-#else
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(duration);
-#endif
-#endif
-}
-
-static inline __attribute__((always_inline)) void _setScheduleNext(Schedule &schedule, uint32_t timeout, uint16_t duration)
-{
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  //Duration can safely be set here as the schedule is already running at the previous duration value already used
-  _setDuration(schedule, duration);
-  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  schedule.Status = RUNNING_WITHNEXT;
-}
-
-static inline __attribute__((always_inline)) void _setScheduleRunning(Schedule &schedule, uint32_t timeout, uint16_t duration)
-{
-  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  _setDuration(schedule, duration);
-  COMPARE_TYPE startCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeout);
-  schedule._compare = startCompare;
-  schedule.Status = PENDING; //Turn this schedule on
-}
-
+/**
+ * @brief Set the schedule action start & end callbacks
+ * 
+ * @param schedule Schedule to modify
+ * @param pStartCallback Start callback
+ * @param pEndCallback End callback
+ */
 void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+
+/**
+ * @brief Set the schedule action to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the action starts (µS)
+ * @param duration Action duration (µS)
+ * @param allowQueuedSchedule true to allow a schedule to be queued up if one is currently running; false otherwise
+ */
+void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule);
 
 
 /** Ignition schedule.
@@ -239,23 +225,17 @@ struct IgnitionSchedule : public Schedule {
   volatile bool endScheduleSetByDecoder = false;
 };
 
-static inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t timeout, uint16_t duration) 
+/**
+ * @brief Set the ignition schedule action (charge & fire a coil) to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the coil begins charging (µS)
+ * @param duration Dwell time (µS)
+ */
+static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
-  if(timeout < MAX_TIMER_PERIOD)
-  {
-    ATOMIC() 
-    {
-      if(!isRunning(schedule)) 
-      { //Check that we're not already part way through a schedule
-        _setScheduleRunning(schedule, timeout, duration);
-      }
-      // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-      else if(angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
-      {
-        _setScheduleNext(schedule, timeout, duration);
-      }
-    }
-  }
+  // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
+  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
 
 /** Fuel injection schedule.
@@ -268,23 +248,17 @@ struct FuelSchedule : public Schedule {
 
 };
 
-static inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, uint32_t timeout, uint16_t duration) 
+/**
+ * @brief Set the fuel schedule action (open & close an injector) to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the injector opens (µS)
+ * @param duration Injector open time (µS)
+ */
+static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
-  if(timeout < MAX_TIMER_PERIOD)
-  {
-    ATOMIC() 
-    {
-      if(!isRunning(schedule)) 
-      { //Check that we're not already part way through a schedule
-        _setScheduleRunning(schedule, timeout, duration);
-      }
-      //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-      else if(angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
-      {
-        _setScheduleNext(schedule, timeout, duration);
-      }
-    }
-  }
+  // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
+  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
 }
 
 extern FuelSchedule fuelSchedule1;
