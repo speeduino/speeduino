@@ -121,13 +121,18 @@
   static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
   static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-  //Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
-  //#define TMR_PRESCALE  128
-  //#define MAX_TIMER_PERIOD ((65535 * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
-  #define MAX_TIMER_PERIOD 55923UL
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-  /*
-  To calculate the above uS_TO_TIMER_COMPARE
+//Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
+//#define TMR_PRESCALE  128
+//#define MAX_TIMER_PERIOD ((65535 * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
+#define MAX_TIMER_PERIOD 55923UL
+
+/** @brief Convert a time in microseconds to the equivalent number of timer ticks */
+static inline constexpr COMPARE_TYPE convertMicroSecToTicks(uint32_t uS) {
+  return (COMPARE_TYPE)((uS * 75UL) >> 6);
+}
+
+/*
+  To calculate the above convertMicroSecToTicks
   Choose number of bit of precision. Eg: 6
   Divide 2^6 by the time per tick (0.853333) = 75
   Multiply and bitshift back by the precision: (uS * 75) >> 6

@@ -108,8 +108,12 @@
     static inline void IGN8_TIMER_DISABLE(void)  {<macro here>;}
 
   
-  #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+#define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
+
+/** @brief Convert a time in microseconds to the equivalent number of timer ticks */
+static inline constexpr COMPARE_TYPE convertMicroSecToTicks(uint32_t uS) {
+  return (COMPARE_TYPE)((uS * 75UL) >> 6);
+}
 
 /*
 ***********************************************************************************************************

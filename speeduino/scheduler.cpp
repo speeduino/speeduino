@@ -288,19 +288,16 @@ static inline uint16_t clipDuration(uint16_t duration) {
 
 static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration)
 {
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  //Duration can safely be set here as the schedule is already running at the previous duration value already used
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(clipDuration(duration));
-  schedule.nextStartCompare = schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(delay);
+  //Duration can safely be set here as the schedule is already running so the previous duration value already used
+  schedule.duration = convertMicroSecToTicks(clipDuration(duration));
+  schedule.nextStartCompare = schedule._counter + convertMicroSecToTicks(delay);
   schedule.Status = RUNNING_WITHNEXT;
 }
 
 static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration)
 {
-  //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
-  //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  schedule.duration = (COMPARE_TYPE)uS_TO_TIMER_COMPARE(clipDuration(duration));
-  SET_COMPARE(schedule._compare, schedule._counter + (COMPARE_TYPE)uS_TO_TIMER_COMPARE(delay));
+  schedule.duration = convertMicroSecToTicks(clipDuration(duration));
+  SET_COMPARE(schedule._compare, schedule._counter + convertMicroSecToTicks(delay));
   schedule.Status = PENDING; //Turn this schedule on
 }
 
@@ -328,11 +325,11 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd)
 {
-  if( (isRunning(ignitionSchedule1)) && ((COMPARE_TYPE)uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
+  if( (isRunning(ignitionSchedule1)) && (convertMicroSecToTicks(timeToEnd) < ignitionSchedule1.duration) )
   //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
   {
     ATOMIC() {
-      ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
+      ignitionSchedule1.endCompare = IGN1_COUNTER + convertMicroSecToTicks(timeToEnd);
       SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare);
     }
   }
