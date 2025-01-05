@@ -1699,21 +1699,19 @@ void checkLaunchAndFlatShift()
 
   if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
   { 
-    //If VSS is used, make sure we're not above the speed limit
-    if ( (configPage2.vssMode > 0) && (currentStatus.vss >= configPage10.lnchCtrlVss) )
+    //Only enable if VSS is not used or if it is, make sure we're not above the speed limit
+    if( (configPage2.vssMode == 0) || ((configPage2.vssMode > 0) && (currentStatus.vss < configPage10.lnchCtrlVss)) )
     {
-      return;
-    }
-    
-    //Check whether RPM is above the launch limit
-    uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
-    if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+      //Check whether RPM is above the launch limit
+      uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
+      if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
 
-    if(currentStatus.RPM > launchRPMLimit)
-    {
-      //HardCut rev limit for 2-step launch control.
-      currentStatus.launchingHard = true; 
-      BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+      if(currentStatus.RPM > launchRPMLimit)
+      {
+        //HardCut rev limit for 2-step launch control.
+        currentStatus.launchingHard = true; 
+        BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+      }
     }
   } 
   else 
