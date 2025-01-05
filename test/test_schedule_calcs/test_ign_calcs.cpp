@@ -33,8 +33,6 @@ struct ign_test_parameters
   int16_t expectedEndAngle;      // Expected end angle
 };
 
-static void nullIgnCallback(void) { }
-
 void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
   char msg[150];
