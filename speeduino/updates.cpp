@@ -755,7 +755,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 23)
   {
-    //202405
+    //202501
     configPage10.knock_mode = KNOCK_MODE_OFF;
 
     //Change the CAN Broadcast settings to be a selection

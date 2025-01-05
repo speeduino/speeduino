@@ -1086,7 +1086,7 @@ struct config6 {
   byte iacFastTemp; //Fast idle temp when using a simple on/off valve
 
   byte iacStepHome; //When using a stepper motor, the number of steps to be taken on startup to home the motor
-  byte iacStepHyster; //Hysteresis temperature (*10). Eg 2.2C = 22
+  byte iacStepHyster; //Number of hysteresis steps 
 
   byte fanInv : 1;        // Fan output inversion bit
   byte fanUnused : 1;
