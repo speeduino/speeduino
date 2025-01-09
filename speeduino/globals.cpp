@@ -3,10 +3,6 @@
  */
 #include "globals.h"
 
-const char TSfirmwareVersion[] PROGMEM = "Speeduino";
-
-const byte data_structure_version = 2; //This identifies the data structure when reading / writing. (outdated ?)
-
 struct table3d16RpmLoad fuelTable; ///< 16x16 fuel map
 struct table3d16RpmLoad fuelTable2; ///< 16x16 fuel map
 struct table3d16RpmLoad ignitionTable; ///< 16x16 ignition map
@@ -309,6 +305,8 @@ bool pinIsOutput(byte pin)
 
   return used;
 }
+
+#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) || (((pin) == pinFlex) && (configPage2.flexEnabled != 0)) )
 
 bool pinIsUsed(byte pin)
 {
