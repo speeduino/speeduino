@@ -12,6 +12,7 @@
   void doSystemReset();
   void jumpToBootloader();
   void setTriggerHysteresis();
+  void teensy41_customSerialBegin();
   time_t getTeensy3Time();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t

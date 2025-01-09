@@ -326,4 +326,20 @@ void setTriggerHysteresis()
   *(p->mux) = 5 | 0x10;
 }
 
+/*
+* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
+* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
+*/
+void teensy41_customSerialBegin()
+{
+  uint32_t millis_begin = systick_millis_count;
+  while (!Serial) 
+  {
+    uint32_t elapsed = systick_millis_count - millis_begin;
+    //Wait up to 100ms for this. 
+    if (elapsed > 100) break;
+    yield();
+  }
+}
+
 #endif

@@ -18,7 +18,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    24
+  #define CURRENT_DATA_VERSION    25
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -755,7 +755,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 23)
   {
-    //202405
+    //202501
     configPage10.knock_mode = KNOCK_MODE_OFF;
 
     //Change the CAN Broadcast settings to be a selection
@@ -787,6 +787,16 @@ void doUpdates(void)
     writeAllConfig();
     storeEEPROMVersion(24);
   }
+  
+  if(readEEPROMVersion() == 24)
+  {
+    //202504
+
+
+    writeAllConfig();
+    storeEEPROMVersion(25);
+  }
+  
   
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
