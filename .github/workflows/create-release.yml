@@ -64,6 +64,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         mode: "COMMIT"
+        fromTag: "202501"
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
