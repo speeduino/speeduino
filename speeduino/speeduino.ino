@@ -171,7 +171,7 @@ void __attribute__((always_inline)) loop(void)
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       currentStatus.startRevolutions = 0;
-      initialiseMAPBaro();
+      resetMAPcycleAndEvent();
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;

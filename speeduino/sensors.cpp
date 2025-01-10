@@ -20,6 +20,18 @@ A full copy of the license may be found in the projects root directory
 #include "auxiliaries.h"
 #include "utilities.h"
 #include "unit_testing.h"
+#include "sensors_map_structs.h"
+
+bool auxIsEnabled;
+
+static volatile uint32_t vssTimes[VSS_SAMPLES] = {0};
+static volatile uint8_t vssIndex = 0U;
+
+volatile uint8_t flexCounter = 0U;
+static volatile uint32_t flexStartTime = 0UL;
+volatile uint32_t flexPulseWidth = 0U;
+
+static map_algorithm_t mapAlgorithmState;
 
 /**
  * @brief A specialist function to map a value in the range [0, 1023] (I.e. 10-bit) to a different range.
@@ -42,14 +54,16 @@ A full copy of the license may be found in the projects root directory
  * @param rangeMax Maximum of the output range
  * @return int16_t 
  */
-TESTABLE_INLINE_STATIC int16_t fastMap10Bit(uint16_t value, int16_t rangeMin, int16_t rangeMax) {
+TESTABLE_INLINE_STATIC int16_t fastMap10Bit(uint16_t value, int16_t rangeMin, int16_t rangeMax) 
+{
   uint16_t range = rangeMax-rangeMin; // Must be positive (assuming rangeMax>=rangeMin)
   uint16_t fromStartOfRange = (uint16_t)rshift<10>((uint32_t)value * range);
   return rangeMin + (int16_t)fromStartOfRange;
 }
 
 //
-static inline uint16_t readAnalogPin(uint8_t pin) {
+static inline uint16_t readAnalogPin(uint8_t pin) 
+{
   // Why do we read twice? Who knows.....
   analogRead(pin);
   // According to the docs, analogRead result should be in range 0-1023
@@ -60,14 +74,6 @@ static inline uint16_t readAnalogPin(uint8_t pin) {
   return max(0, tmp);
 }
 
-bool auxIsEnabled;
-
-static volatile uint32_t vssTimes[VSS_SAMPLES] = {0};
-static volatile uint8_t vssIndex = 0U;
-
-volatile uint8_t flexCounter = 0U;
-static volatile uint32_t flexStartTime = 0UL;
-volatile uint32_t flexPulseWidth = 0U;
 
 #if defined(ANALOG_ISR)
 static volatile uint16_t AnChannel[16];
@@ -240,8 +246,6 @@ void initialiseADC(void)
 
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
-
-#include "sensors_map_structs.h"
 
 TESTABLE_INLINE_STATIC bool instanteneousMAPReading(void)
 {
@@ -436,29 +440,6 @@ TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-static inline bool processMapReadings(const statuses &current, const config2 &page2, map_algorithm_t &state) {
-  //MAP Sampling system
-  switch(page2.mapSample)
-  {
-    case MAPSamplingCycleAverage:
-      return cycleAverageMAPReading(current, page2, state.cycle_average, state.sensorReadings);
-      break;
-
-    case MAPSamplingCycleMinimum:
-      return cycleMinimumMAPReading(current, page2, state.cycle_min, state.sensorReadings);
-      break;
-
-    case MAPSamplingIgnitionEventAverage:
-      return eventAverageMAPReading(current, page2, state.event_average, state.sensorReadings);
-      break; 
-
-    case MAPSamplingInstantaneous:
-    default:
-      return instanteneousMAPReading();
-    break;
-  }
-}
-
 static inline bool isValidMapSensorReading(uint16_t reading) {
   return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
 }
@@ -482,7 +463,8 @@ static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previo
   };
 }
 
-static inline void resetMAPLast(map_last_read_t &lastRead, uint16_t oldMAPValue) {
+static inline void storeLastMAPReadings(map_last_read_t &lastRead, uint16_t oldMAPValue) 
+{
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
   uint32_t currTime = micros();
   lastRead.lastMAPValue = oldMAPValue;
@@ -491,20 +473,18 @@ static inline void resetMAPLast(map_last_read_t &lastRead, uint16_t oldMAPValue)
   lastRead.currentReadingTime = currTime;
 }
 
-static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapMax) {
+static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapMax) 
+{
   int16_t mapped = fastMap10Bit(mapADC, mapMin, mapMax); //Get the current MAP value
   return max((int16_t)0, mapped);  //Sanity check
 }
 
-static inline void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) {
+static inline void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
+{
   current.MAP = mapADCToMAP(readings.mapADC, page2.mapMin, page2.mapMax); //Get the current MAP value
   //Repeat for EMAP if it's enabled
-  if(useEMAP) {
-    current.EMAP = mapADCToMAP(readings.emapADC, page2.EMAPMin, page2.EMAPMax);
-  }
+  if(useEMAP) { current.EMAP = mapADCToMAP(readings.emapADC, page2.EMAPMin, page2.EMAPMax); }
 }
-
-static map_algorithm_t mapAlgorithmState;
 
 #if defined(UNIT_TEST)
 map_last_read_t& getMapLast(void){
@@ -512,21 +492,37 @@ map_last_read_t& getMapLast(void){
 }
 #endif
 
-static void initialiseMAP(void) {
-  (void)memset(&mapAlgorithmState, 0, sizeof(mapAlgorithmState));
-}
-
 void readMAP(void)
 {
-  // Read sensor(s)
+  // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
   mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
 
-  // Process sensor readings according to user chosen sampling algorithm
-  if (processMapReadings(currentStatus, configPage2, mapAlgorithmState)) {
-    // Sampling algorithm has decided that the new readings should be used
+  bool readingIsValid;
+  switch(configPage2.mapSample)
+  {
+    case MAPSamplingCycleAverage:
+      readingIsValid = cycleAverageMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_average, mapAlgorithmState.sensorReadings);
+      break;
 
+    case MAPSamplingCycleMinimum:
+      readingIsValid = cycleMinimumMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_min, mapAlgorithmState.sensorReadings);
+      break;
+
+    case MAPSamplingIgnitionEventAverage:
+      readingIsValid = eventAverageMAPReading(currentStatus, configPage2, mapAlgorithmState.event_average, mapAlgorithmState.sensorReadings);
+      break; 
+
+    case MAPSamplingInstantaneous:
+    default:
+      readingIsValid = instanteneousMAPReading();
+      break;
+  }
+
+  // Process sensor readings according to user chosen sampling algorithm
+  if(readingIsValid) 
+  {
     // Roll over the last reading
-    resetMAPLast(mapAlgorithmState.lastReading, currentStatus.MAP);
+    storeLastMAPReadings(mapAlgorithmState.lastReading, currentStatus.MAP);
 
     // Convert from filtered sensor readings to kPa
     setMAPValuesFromReadings(mapAlgorithmState.sensorReadings, configPage2, configPage6.useEMAP, currentStatus);
@@ -607,21 +603,24 @@ void readIAT(void)
 * with record highs close to 108.5 kPa.
 * The lowest possible baro reading is based on an altitude of 3500m above sea level.
 */
-static inline bool isValidBaro(uint8_t baro) {
-static constexpr uint16_t BARO_MIN = 65U;
-static constexpr uint16_t BARO_MAX = 108U;
+static inline bool isValidBaro(uint8_t baro) 
+{
+  static constexpr uint16_t BARO_MIN = 65U;
+  static constexpr uint16_t BARO_MAX = 108U;
 
   return (baro >= BARO_MIN) && (baro <= BARO_MAX);
 }
 
-static inline void setBaroFromSensorReading(uint16_t sensorReading) {
+static inline void setBaroFromSensorReading(uint16_t sensorReading) 
+{
   currentStatus.baroADC = sensorReading;
   int16_t tempValue = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax);
   currentStatus.baro = (uint8_t)max((int16_t)0, tempValue);
 }
 
 // Should only be called when the engine isn't running.
-static inline void setBaroFromMAP(void) {
+static inline void setBaroFromMAP(void) 
+{
   uint16_t tempReading = mapADCToMAP(readMAPSensor(pinMAP), configPage2.mapMin, configPage2.mapMax);
   if (isValidBaro(tempReading)) //Safety check to ensure the baro reading is within the physical limits
   {
@@ -632,7 +631,8 @@ static inline void setBaroFromMAP(void) {
 
 void readBaro(void)
 {
-  if ( configPage6.useExtBaro != 0U  ) {
+  if ( configPage6.useExtBaro != 0U  ) 
+  {
     // readings
     setBaroFromSensorReading(LOW_PASS_FILTER(readMAPSensor(pinBaro), configPage4.ADCFILTER_BARO, currentStatus.baroADC)); //Very weak filter
   // If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
@@ -643,7 +643,12 @@ void readBaro(void)
   }
 }
 
-static inline void initialiseBaro(void) {
+void initialiseMAPBaro(void) 
+{
+  //Initialise MAP values to all 0's
+  (void)memset(&mapAlgorithmState, 0, sizeof(mapAlgorithmState));
+  
+  //Initialise baro
   if ( configPage6.useExtBaro != 0U  )
   {
     // Use raw unfiltered value initially
@@ -660,9 +665,11 @@ static inline void initialiseBaro(void) {
   }
 }
 
-void initialiseMAPBaro(void) {
-  initialiseMAP();
-  initialiseBaro();
+void resetMAPcycleAndEvent(void)
+{
+  (void)memset(&mapAlgorithmState.cycle_average, 0, sizeof(mapAlgorithmState.cycle_average));
+  (void)memset(&mapAlgorithmState.cycle_min, 0, sizeof(mapAlgorithmState.cycle_min));
+  (void)memset(&mapAlgorithmState.event_average, 0, sizeof(mapAlgorithmState.event_average));
 }
 
 // ========================================== O2 ==========================================
