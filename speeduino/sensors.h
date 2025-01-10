@@ -54,6 +54,7 @@ void readBaro(void);
 
 /** @brief Initialize the MAP calculation & Baro values */
 void initialiseMAPBaro(void);
+void resetMAPcycleAndEvent(void);
 
 void readMAP(void);
 
