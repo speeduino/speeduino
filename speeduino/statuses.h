@@ -31,16 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-// Bit masks for statuses::status2
-#define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
-#define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
-#define BIT_STATUS2_HRDLIM          2  //Hard limiter indicator
-#define BIT_STATUS2_SFTLIM          3  //Soft limiter indicator
-#define BIT_STATUS2_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_STATUS2_ERROR           5  // Error is detected
-#define BIT_STATUS2_IDLE            6  // idle on
-#define BIT_STATUS2_SYNC            7  // Whether engine has sync or not
-
 // Bit masks for statuses::status3
 #define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
 #define BIT_STATUS3_NITROUS       1
@@ -167,13 +157,29 @@ struct statuses {
         bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
         bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
         bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
-        bool isBoostCutActive : 1; ///< Boost Cut status: true == active, false == inactive
+        bool status1Unused1 : 1; ///< Was BIT_STATUS1_BOOSTCUT, but unused
         bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
-        bool status1Unused1 : 1; // Was BIT_STATUS1_TOOTHLOG2READY, but unused
+        bool status1Unused2 : 1; // Was BIT_STATUS1_TOOTHLOG2READY, but unused
     };
     byte status1;
   };
-  volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
+  // Status2 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  volatile union {
+    struct {
+        // TODO: resolve duplication with launchingHard
+        bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
+        // TODO: resolve duplication with launchingSoft
+        bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
+        bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
+        bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
+        bool status2unused1 : 1;  ///< Was BIT_STATUS2_BOOSTCUT, but unused
+        bool status2unused2: 1; ///< Was BIT_STATUS2_ERROR, but unused
+        bool idleOn : 1; ///< Is the firware idle code active : true == active, false == inactive
+        // TODO: resolve duplication with hasSync
+        bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
+    };
+    byte status2;
+  };
   volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)

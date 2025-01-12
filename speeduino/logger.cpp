@@ -358,7 +358,7 @@ float getReadableFloatLogEntry(uint16_t logIndex)
 uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 {
   uint8_t statusValue = 0;
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   switch(byteNum)
   {

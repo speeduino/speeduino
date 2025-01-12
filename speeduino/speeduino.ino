@@ -817,19 +817,18 @@ void __attribute__((always_inline)) loop(void)
     
       if(currentStatus.RPM >= maxAllowedRPM)
       {
-        //if(!BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM)) { revLimitAllowedEndTime = micros() + angleToTimeMicroSecPerDegree(360); } //Hard limit must run for a minimum of 1 revolution. This is essentially a hysteresis check. 
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM);
+        currentStatus.hardLimitActive = true;
       }
-      else if(BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM))
+      else if(currentStatus.hardLimitActive)
       {
         //if(micros() > revLimitAllowedEndTime) //Hysteresis check disabled for now. 
         {
           revLimitAllowedEndTime = 0;
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
+          currentStatus.hardLimitActive = false;
         }
       }
 
-      if( (configPage2.hardCutType == HARD_CUT_FULL) && BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM) )
+      if( (configPage2.hardCutType == HARD_CUT_FULL) && currentStatus.hardLimitActive)
       {
         //Full hard cut turns outputs off completely. 
         switch(configPage6.engineProtectType)
@@ -1698,7 +1697,7 @@ void checkLaunchAndFlatShift()
 
   //Default flags to off
   currentStatus.launchingHard = false; 
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+  currentStatus.hardLaunchActive = false;
   currentStatus.flatShiftingHard = false;
 
   if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
@@ -1714,7 +1713,7 @@ void checkLaunchAndFlatShift()
       {
         //HardCut rev limit for 2-step launch control.
         currentStatus.launchingHard = true; 
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+        currentStatus.hardLaunchActive = true;
       }
     }
   } 

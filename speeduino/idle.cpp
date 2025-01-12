@@ -294,10 +294,12 @@ static inline void doStep(void)
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
 
-    BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE);
+    currentStatus.idleOn = true;
   }
   else
-    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE);
+  {
+    currentStatus.idleOn = false;
+  }
 }
 
 /*
@@ -361,14 +363,14 @@ void idleControl(void)
       {
         IDLE_PIN_HIGH();
         idleOn = true;
-        BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+        currentStatus.idleOn = true;
 		    currentStatus.idleLoad = 100;
       }
       else if (idleOn)
       {
         IDLE_PIN_LOW();
         idleOn = false; 
-        BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+        currentStatus.idleOn = false;
 		    currentStatus.idleLoad = 0;
       }
       break;
@@ -684,7 +686,7 @@ void idleControl(void)
   {
     if(currentStatus.idleLoad >= 100)
     {
-      BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+      currentStatus.idleOn = true;
       IDLE_TIMER_DISABLE();
       if (configPage6.iacPWMdir == 0)
       {
@@ -705,7 +707,7 @@ void idleControl(void)
     }
     else
     {
-      BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+      currentStatus.idleOn = true;
       IDLE_TIMER_ENABLE();
     }
   }
@@ -751,7 +753,7 @@ void disableIdle(void)
         idle_pid_target_value = idleStepper.targetIdleStep<<2;
     }
   }
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag off
+  currentStatus.idleOn = false;
   currentStatus.idleLoad = 0;
 }
 

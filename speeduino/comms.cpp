@@ -363,7 +363,7 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
     currentStatus.secl = 0; 
   }
 
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   serialPayload[0] = SERIAL_RC_OK;
   for(uint16_t x=0; x<packetLength; x++)

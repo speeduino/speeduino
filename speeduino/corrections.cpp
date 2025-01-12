@@ -853,13 +853,13 @@ When some other mechanism is also present, wait until the engine is no more than
 int8_t correctionSoftRevLimit(int8_t advance)
 {
   byte ignSoftRevValue = advance;
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SFTLIM);
+  currentStatus.softLimitActive = false;
 
   if (configPage6.engineProtectType == PROTECT_CUT_IGN || configPage6.engineProtectType == PROTECT_CUT_BOTH) 
   {
     if (currentStatus.RPMdiv100 >= configPage4.SoftRevLim) //Softcut RPM limit
     {
-      BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
+      currentStatus.softLimitActive = true;
       if( softLimitTime < configPage4.SoftLimMax )
       {
         if (configPage2.SoftLimitMode == SOFT_LIMIT_RELATIVE) { ignSoftRevValue = ignSoftRevValue - configPage4.SoftLimRetard; } //delay timing by configured number of degrees in relative mode
@@ -908,13 +908,13 @@ int8_t correctionSoftLaunch(int8_t advance)
     )
   {
     currentStatus.launchingSoft = true;
-    BIT_SET(currentStatus.status2, BIT_STATUS2_SLAUNCH);
+    currentStatus.softLaunchActive = true;
     ignSoftLaunchValue = configPage6.lnchRetard;
   }
   else
   {
     currentStatus.launchingSoft = false;
-    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
+    currentStatus.softLaunchActive = false;
   }
 
   return ignSoftLaunchValue;

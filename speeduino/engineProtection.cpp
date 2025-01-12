@@ -1,4 +1,3 @@
-
 #include "globals.h"
 #include "engineProtection.h"
 #include "maths.h"
@@ -60,8 +59,6 @@ byte checkBoostLimit(void)
 {
   byte boostLimitActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-  currentStatus.isBoostCutActive = false;
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
     //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
@@ -69,24 +66,6 @@ byte checkBoostLimit(void)
     {
       boostLimitActive = 1;
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-      /*
-      switch(configPage6.boostCutType)
-      {
-        case 1:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-          break;
-        case 2:
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        case 3:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        default:
-          //Shouldn't ever happen, but just in case, disable all cuts
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-      }
-      */
     }
   }
 

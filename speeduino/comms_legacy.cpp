@@ -728,7 +728,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
 
   //
   targetStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   for(byte x=0; x<packetLength; x++)
   {
