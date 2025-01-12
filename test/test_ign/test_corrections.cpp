@@ -140,7 +140,7 @@ static void setup_WMIAdv(void) {
 
     configPage10.wmiEnabled= 1;
     configPage10.wmiAdvEnabled = 1;
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+    currentStatus.wmiTankEmpty = false;
     configPage10.wmiTPS = 50;
     currentStatus.TPS = configPage10.wmiTPS + 1;
     configPage10.wmiRPM = 30;
@@ -184,7 +184,7 @@ static void test_correctionWMITiming_wmiadvdisabled_inactive(void) {
 
 static void test_correctionWMITiming_empty_inactive(void) {
     setup_WMIAdv();
-    BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+    currentStatus.wmiTankEmpty = true;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
     TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));

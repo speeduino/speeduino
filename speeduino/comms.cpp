@@ -489,7 +489,7 @@ void serialReceive(void)
       legacySerialCommand();
       return;
     }
-    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS)) )
+    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (currentStatus.allowLegacyComms) )
     {
       //Handle legacy cases here
       legacySerialCommand();
@@ -526,7 +526,7 @@ void serialReceive(void)
         {
           //CRC is correct. Process the command
           processSerialCommand();
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Lock out legacy commands until next power cycle
+          currentStatus.allowLegacyComms = false; //Lock out legacy commands until next power cycle
         }
         else {
           //CRC Error. Need to send an error message
@@ -589,16 +589,16 @@ void processSerialCommand(void)
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
       if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { currentStatus.burnPending = true; }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      currentStatus.commCompat = true; //Force the compat mode
       deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
       if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { currentStatus.burnPending = true; }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;

@@ -31,16 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-// Bit masks for statuses::status4
-#define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
-#define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
-#define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
-#define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_BURNPENDING   4
-#define BIT_STATUS4_STAGING_ACTIVE 5
-#define BIT_STATUS4_COMMS_COMPAT  6
-#define BIT_STATUS4_ALLOW_LEGACY_COMMS       7
-
 // Bit masks for statuses::status5
 #define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
 #define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
@@ -187,7 +177,20 @@ struct statuses {
     };
     byte status3;
   };
-  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
+  // Status4 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  volatile union {
+    struct {
+        bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
+        bool vvt1AngleError : 1; ///< VVT1 cam angle within limits (false) or not (true)
+        bool vvt2AngleError : 1; ///< VVT2 cam angle within limits (false) or not (true)
+        bool fanOn : 1; ///< Engine fan status (true == on, false == off)
+        bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
+        bool stagingActive: 1; ///< Is fuel injection staging active (true) or not (false) 
+        bool commCompat: 1; ///< 
+        bool allowLegacyComms: 1; ///< 
+    };
+    byte status4;
+  };
   volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
   unsigned int PW1; ///< In uS
