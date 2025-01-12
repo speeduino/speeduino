@@ -527,7 +527,7 @@ void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
   currentStatus.compositeTriggerUsed = 0U; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -561,7 +561,7 @@ void startCompositeLogger(void)
 {
   currentStatus.compositeTriggerUsed = 2U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -594,7 +594,7 @@ void startCompositeLoggerTertiary(void)
 {
   currentStatus.compositeTriggerUsed = 3U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -622,7 +622,7 @@ void startCompositeLoggerCams(void)
 {
   currentStatus.compositeTriggerUsed = 4;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0;
 
   //Disconnect the standard interrupt and add the logger version
