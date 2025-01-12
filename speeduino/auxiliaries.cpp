@@ -103,13 +103,13 @@ void initialiseAirCon(void)
     acTPSLockoutDelay = 0;
     acRPMLockoutDelay = 0;
 
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_REQUEST);     // Bit 0
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);  // Bit 1
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT); // Bit 2
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT); // Bit 3
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);  // Bit 4
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT); // Bit 5
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);         // Bit 6
+    currentStatus.airconRequested = false;
+    currentStatus.airconCompressorOn = false;
+    currentStatus.airconRpmLockout = false;
+    currentStatus.airconTpsLockout = false;
+    currentStatus.airconTurningOn = false;
+    currentStatus.airconCltLockout = false;
+    currentStatus.airconFanOn = false;
     aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
     aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
     aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
@@ -175,12 +175,12 @@ void airConControl(void)
     // -----------------------------------------
     if( READ_AIRCON_REQUEST() == true &&
         waitedAfterCranking == true &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == false &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT) == false &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT) == false )
+        currentStatus.airconTpsLockout == false &&
+        currentStatus.airconRpmLockout == false &&
+        currentStatus.airconCltLockout == false )
     {
-      // Set the BIT_AIRCON_TURNING_ON bit to notify the idle system to idle up & the cooling fan to start (if enabled)
-      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+      // Set the flag bit to notify the idle system to idle up & the cooling fan to start (if enabled)
+      currentStatus.airconTurningOn = true;
 
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
@@ -200,7 +200,7 @@ void airConControl(void)
     }
     else
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+      currentStatus.airconTurningOn = false;
 
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
@@ -221,11 +221,8 @@ bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  bool acReqPinStatus = ( ((configPage15.airConReqPol)==1) ? 
-                             !!(*aircon_req_pin_port & aircon_req_pin_mask) :
-                             !(*aircon_req_pin_port & aircon_req_pin_mask));
-  BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
-  return acReqPinStatus;
+  currentStatus.airconRequested = (*aircon_req_pin_port & aircon_req_pin_mask)==configPage15.airConReqPol;
+  return currentStatus.airconRequested;
 }
 
 static inline void checkAirConCoolantLockout(void)
@@ -237,7 +234,7 @@ static inline void checkAirConCoolantLockout(void)
   if (currentStatus.coolant > offTemp)
   {
     // A/C is cut off due to high coolant
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+    currentStatus.airconCltLockout = true;
   }
   else if (currentStatus.coolant < (offTemp - 1))
   {
@@ -247,7 +244,7 @@ static inline void checkAirConCoolantLockout(void)
     // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
     // depending on sensor calibration and table interpolation.
     // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+    currentStatus.airconCltLockout = false;
   }
 }
 
@@ -259,16 +256,16 @@ static inline void checkAirConTPSLockout(void)
   if (currentStatus.TPS > configPage15.airConTPSCut)
   {
     // A/C is cut off due to high TPS
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    currentStatus.airconTpsLockout = true;
     acTPSLockoutDelay = 0;
   }
-  else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
+  else if ( (currentStatus.airconTpsLockout == true) &&
             (currentStatus.TPS <= configPage15.airConTPSCut) )
   {
     // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
     if (acTPSLockoutDelay >= configPage15.airConTPSCutTime)
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+      currentStatus.airconTpsLockout = false;
     }
     else
     {
@@ -290,7 +287,7 @@ static inline void checkAirConRPMLockout(void)
        (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
   {
     // A/C is cut off due to high/low RPM
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    currentStatus.airconRpmLockout = true;
     acRPMLockoutDelay = 0;
   }
   else if ( (currentStatus.RPM >= (configPage15.airConMinRPMdiv10 * 10)) &&
@@ -299,7 +296,7 @@ static inline void checkAirConRPMLockout(void)
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
     if (acRPMLockoutDelay >= configPage15.airConRPMCutTime)
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+      currentStatus.airconRpmLockout = false;
     }
     else
     {
@@ -351,7 +348,7 @@ void fanControl(void)
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
            ((configPage15.airConTurnsFanOn) == 1 &&
-           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
+           currentStatus.airconTurningOn == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
@@ -392,7 +389,7 @@ void fanControl(void)
       {
         byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureAddOffset(currentStatus.coolant)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
-           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+           currentStatus.airconTurningOn == true)
         {
           // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
           if(tempFanDuty < configPage15.airConPwmFanMinDuty)
