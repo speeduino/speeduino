@@ -11,14 +11,14 @@ TEST_DATA_P table3d_axis_t tempXAxis[] = {500U/100U, 700U/100U, 900U/100U, 1200U
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16U/2U, 26U/2U, 30U/2U, 36U/2U, 40U/2U, 46U/2U, 50U/2U, 56U/2U, 60U/2U, 66U/2U, 70U/2U, 76U/2U, 86U/2U, 90U/2U, 96U/2U, 100U/2U};
 
 static void __attribute__((noinline)) assert_2nd_spark_is_off(const statuses &current, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_FALSE(current.secondSparkTableActive);
     TEST_ASSERT_EQUAL(expectedAdvance, current.advance1);
     TEST_ASSERT_EQUAL(0, current.advance2);
     TEST_ASSERT_EQUAL(current.advance1, current.advance);
 } 
 
 static void __attribute__((noinline)) assert_2nd_spark_is_on(const statuses &current, int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_TRUE(current.secondSparkTableActive);
     TEST_ASSERT_EQUAL(expectedAdvance1, current.advance1);
     TEST_ASSERT_EQUAL(expectedAdvance2, current.advance2);
     TEST_ASSERT_EQUAL(expectedAdvance, current.advance);

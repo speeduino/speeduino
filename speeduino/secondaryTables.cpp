@@ -136,14 +136,14 @@ static inline bool isFixedTimingOn(const config2 &page2, const statuses &current
 
 void calculateSecondarySpark(const config2 &page2, const config10 &page10, const table3d16RpmLoad &sparkLookupTable, statuses &current)
 {
-  BIT_CLEAR(current.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
+  current.secondSparkTableActive = false; //Clear the bit indicating that the 2nd spark table is in use. 
   current.advance2 = 0;
 
   if (!isFixedTimingOn(page2, current))
   {
     if(page10.spark2Mode == SPARK2_MODE_MULTIPLY)
     {
-      BIT_SET(current.status5, BIT_STATUS5_SPARK2_ACTIVE);
+      current.secondSparkTableActive = true;
       uint8_t spark2Percent = (uint8_t)clamp(lookupSpark2(page10, sparkLookupTable, current), (int16_t)0, (int16_t)UINT8_MAX);
       //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
       int16_t combinedAdvance = div100((int16_t)spark2Percent * (int16_t)current.advance1);
@@ -155,7 +155,7 @@ void calculateSecondarySpark(const config2 &page2, const config10 &page10, const
     }
     else if(page10.spark2Mode == SPARK2_MODE_ADD)
     {    
-      BIT_SET(current.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+      current.secondSparkTableActive = true;
       current.advance2 = constrainAdvance(lookupSpark2(page10, sparkLookupTable, current));
       //Spark tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
       int16_t combinedAdvance = (int16_t)current.advance1 + (int16_t)current.advance2;
@@ -163,7 +163,7 @@ void calculateSecondarySpark(const config2 &page2, const config10 &page10, const
     }
     else if(sparkModeCondSwitchActive(page10, current) || sparkModeInputSwitchActive(page10))
     {
-      BIT_SET(current.status5, BIT_STATUS5_SPARK2_ACTIVE); //Set the bit indicating that the 2nd spark table is in use. 
+      current.secondSparkTableActive = true;
 #if defined(UNIT_TEST)
       current.advance2 = constrainAdvance(lookupSpark2(page10, sparkLookupTable, current));
 #else
