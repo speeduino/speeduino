@@ -320,7 +320,7 @@ void initialiseFan(void)
   fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
   fan_pin_mask = digitalPinToBitMask(pinFan);
   FAN_OFF();  //Initialise program with the fan in the off state
-  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+  currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
   #if defined(PWM_FAN_AVAILABLE)
@@ -357,19 +357,19 @@ void fanControl(void)
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = false;
       }
       else 
       {
         FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = true;
       }
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       FAN_OFF();
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      currentStatus.fanOn = false;
     }
   }
   else if( configPage2.fanEnable == 2 )// PWM Fan control
@@ -382,7 +382,7 @@ void fanControl(void)
       if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = false;
         #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
           DISABLE_FAN_TIMER();
         #endif
@@ -405,7 +405,7 @@ void fanControl(void)
           if (currentStatus.fanDuty > 0)
           {
             ENABLE_FAN_TIMER();
-            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+            currentStatus.fanOn = true;
           }
         #endif
       }
@@ -413,7 +413,7 @@ void fanControl(void)
     else if (!fanPermit)
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      currentStatus.fanOn = false;
     }
 
     #if defined(PWM_FAN_AVAILABLE)
@@ -421,14 +421,14 @@ void fanControl(void)
       {
         //Make sure fan has 0% duty)
         FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = false;
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
         FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = true;
         DISABLE_FAN_TIMER();
       }
     #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
@@ -436,13 +436,13 @@ void fanControl(void)
       {
         //Make sure fan has 0% duty)
         FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = false;
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
         FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = true;
       }
     #endif
   }
@@ -509,8 +509,8 @@ void initialiseAuxPWM(void)
     vvt1_pwm_value = 0;
     vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+    currentStatus.vvt1AngleError = false;
+    currentStatus.vvt2AngleError = false;
     vvtTimeHold = false;
     if (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
@@ -525,7 +525,7 @@ void initialiseAuxPWM(void)
     #elif defined(CORE_TEENSY41)
       vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+   currentStatus.wmiTankEmpty = false;
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
     vvt2_pwm_value = 0;
@@ -835,7 +835,7 @@ void vvtControl(void)
         {
           currentStatus.vvt1Duty = 0;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-          BIT_SET(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = true;
         }
         //Check that we're not already at the angle we want to be
         else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
@@ -843,7 +843,7 @@ void vvtControl(void)
           currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
           vvtPID.Initialize();
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = false;
         }
         else
         {
@@ -857,7 +857,7 @@ void vvtControl(void)
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
           if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = false;
         }
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
@@ -874,7 +874,7 @@ void vvtControl(void)
           {
             currentStatus.vvt2Duty = 0;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-            BIT_SET(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = true;
           }
           //Check that we're not already at the angle we want to be
           else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
@@ -882,7 +882,7 @@ void vvtControl(void)
             currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
             vvt2PID.Initialize();
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = false;
           }
           else
           {
@@ -892,7 +892,7 @@ void vvtControl(void)
             //If not already at target angle, calculate new value from PID
             bool PID_compute = vvt2PID.Compute(true);
             if(PID_compute == true) { vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = false;
           }
         }
         vvtCounter++;
@@ -1037,7 +1037,7 @@ void wmiControl(void)
   {
     if( WMI_TANK_IS_EMPTY() )
     {
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+     currentStatus.wmiTankEmpty = false;
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
@@ -1066,7 +1066,7 @@ void wmiControl(void)
         if (wmiPW > 200) { wmiPW = 200; } //without this the duty can get beyond 100%
       }
     }
-    else { BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY); }
+    else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
     vvt2_pwm_value = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
