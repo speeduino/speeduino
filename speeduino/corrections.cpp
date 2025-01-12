@@ -91,8 +91,8 @@ void initialiseCorrections(void)
   currentStatus.flexIgnCorrection = 0;
   currentStatus.egoCorrection = 100; //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
   AFRnextCycle = 0;
-  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
-  BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE);
+  currentStatus.knockRetardActive = false;
+  currentStatus.knockPulseDetected = false;
   currentStatus.knockCount = 1;
   knockLastRecoveryStep = 0;
   knockStartTime = 0;
@@ -927,10 +927,10 @@ int8_t correctionSoftFlatShift(int8_t advance)
 
   if(configPage6.flatSEnable && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM > ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) ) )
   {
-    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = true;
     ignSoftFlatValue = configPage6.flatSRetard;
   }
-  else { BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS); }
+  else { currentStatus.flatShiftSoftCut = false; }
 
   return ignSoftFlatValue;
 }
@@ -961,7 +961,7 @@ uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
     {
       //Recovery is complete. Knock adjustment is set to 0 and we reset the knock status
       tmpKnockRetard = 0;
-      BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+      currentStatus.knockRetardActive = false;
       knockStartTime = 0;
       currentStatus.knockCount = 0;
     }
@@ -981,13 +981,13 @@ int8_t correctionKnockTiming(int8_t advance)
     //
     if(currentStatus.knockCount >= configPage10.knock_count)
     {
-      if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
+      if(currentStatus.knockRetardActive)
       {
         //Knock retard is currently active already.
         tmpKnockRetard = currentStatus.knockRetard;
 
         //Check if additional knock events occurred
-        if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE))
+        if(currentStatus.knockPulseDetected)
         {
           //Check if the latest event was far enough after the initial knock event to pull further timing
           if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
@@ -1006,16 +1006,16 @@ int8_t correctionKnockTiming(int8_t advance)
         //Knock currently inactive but needs to be active now
         knockStartTime = micros();
         tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize); //
-        BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+        currentStatus.knockRetardActive = true;
         knockLastRecoveryStep = 0;
       }
     }
 
-    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE); //Reset the knock pulse indicator
+    currentStatus.knockPulseDetected = false; //Reset the knock pulse indicator
   }
   else if( (configPage10.knock_mode == KNOCK_MODE_ANALOG)  )
   {
-    if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
+    if(currentStatus.knockRetardActive)
     {
       //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
@@ -1046,7 +1046,7 @@ int8_t correctionKnockTiming(int8_t advance)
           //Knock detected
           knockStartTime = micros();
           tmpKnockRetard = configPage10.knock_firstStep; //
-          BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE);
+          currentStatus.knockRetardActive = true;
           knockLastRecoveryStep = 0;
         }
       }

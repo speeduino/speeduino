@@ -655,7 +655,7 @@ static void setup_correctionSoftFlatShift(void) {
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) + 500;
     currentStatus.RPM = currentStatus.clutchEngagedRPM + 600;
 
-    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = false;
 }
 
 static void test_correctionSoftFlatShift_on(void) {
@@ -663,11 +663,11 @@ static void test_correctionSoftFlatShift_on(void) {
     configPage6.flatSRetard = -3;
 
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_TRUE(currentStatus.flatShiftSoftCut);
 
-    BIT_CLEAR(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = false;
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(3));
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_TRUE(currentStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift_off_disabled(void) {
@@ -675,9 +675,9 @@ static void test_correctionSoftFlatShift_off_disabled(void) {
     configPage6.flatSRetard = -3;
     configPage6.flatSEnable = 0;
 
-    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_FALSE(currentStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
@@ -685,9 +685,9 @@ static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchTrigger = 0;
 
-    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_FALSE(currentStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
@@ -695,9 +695,9 @@ static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 500;
 
-    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_FALSE(currentStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
@@ -705,9 +705,9 @@ static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
     configPage6.flatSRetard = -3;
     currentStatus.RPM = (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100;
 
-    BIT_SET(currentStatus.status5, BIT_STATUS5_FLATSS);
+    currentStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_FLATSS, currentStatus.status5);
+    TEST_ASSERT_FALSE(currentStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift(void) {

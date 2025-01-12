@@ -31,16 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-// Bit masks for statuses::status5
-#define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
-#define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
-#define BIT_STATUS5_SPARK2_ACTIVE  2
-#define BIT_STATUS5_KNOCK_ACTIVE   3
-#define BIT_STATUS5_KNOCK_PULSE    4
-#define BIT_STATUS5_CLUTCH_PRESS   5
-#define BIT_STATUS5_UNUSED7        6
-#define BIT_STATUS5_UNUSED8        7
-
 #define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
 #define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
 #define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
@@ -141,7 +131,6 @@ struct statuses {
         bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
         bool status1Unused1 : 1; ///< Was BIT_STATUS1_BOOSTCUT, but unused
         bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
-        bool status1Unused2 : 1; // Was BIT_STATUS1_TOOTHLOG2READY, but unused
     };
     byte status1;
   };
@@ -191,7 +180,19 @@ struct statuses {
     };
     byte status4;
   };
-  volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
+  // Status4 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  volatile union {
+    struct {
+        bool status5Unused1 : 1; ///< Was BIT_STATUS5_FLATSH, but unused
+        bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 
+        bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
+        bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
+        bool knockPulseDetected : 1;  ///<
+        // TODO: resolve duplication with clutchTrigger
+        bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
+    };
+    byte status5;
+  };
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
