@@ -131,8 +131,8 @@ void initialiseAll(void)
     teensy41_customSerialBegin();
 #endif
     pPrimarySerial = &Serial; //Default to standard Serial interface
-    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
-   
+    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
+    
     //Setup the calibration tables
     loadCalibration();   
 
