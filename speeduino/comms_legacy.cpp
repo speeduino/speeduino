@@ -1230,7 +1230,7 @@ void receiveCalibration(byte tableID)
 void sendToothLog_legacy(byte startOffset) /* Blocking */
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
@@ -1240,7 +1240,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
         primarySerial.write(toothHistory[x] >> 8);
         primarySerial.write(toothHistory[x]);
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      currentStatus.isToothLog1Full = false;
       serialStatusFlag = SERIAL_INACTIVE; 
       toothHistoryIndex = 0;
   }
@@ -1257,7 +1257,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
 
 void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 {
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
 
@@ -1280,7 +1280,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 
         primarySerial.write(compositeLogHistory[x]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      currentStatus.isToothLog1Full = false;
       toothHistoryIndex = 0;
       serialStatusFlag = SERIAL_INACTIVE; 
   }

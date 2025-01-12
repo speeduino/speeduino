@@ -677,7 +677,7 @@ void idleControl(void)
       //There really should be a valid idle type
       break;
   }
-  lastDFCOValue = BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO);
+  lastDFCOValue = currentStatus.isDFCOActive;
 
   //Check for 100% and 0% DC on PWM idle
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )

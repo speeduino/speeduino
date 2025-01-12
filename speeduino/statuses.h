@@ -31,16 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-// Bit masks for statuses::status1
-#define BIT_STATUS1_INJ1           0  //inj1
-#define BIT_STATUS1_INJ2           1  //inj2
-#define BIT_STATUS1_INJ3           2  //inj3
-#define BIT_STATUS1_INJ4           3  //inj4
-#define BIT_STATUS1_DFCO           4  //Deceleration fuel cutoff
-#define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
-#define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
-#define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
-
 // Bit masks for statuses::status2
 #define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
 #define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
@@ -169,7 +159,20 @@ struct statuses {
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
-  volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
+  // Status1 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  volatile union {
+    struct {
+        bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
+        bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
+        bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
+        bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
+        bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
+        bool isBoostCutActive : 1; ///< Boost Cut status: true == active, false == inactive
+        bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
+        bool status1Unused1 : 1; // Was BIT_STATUS1_TOOTHLOG2READY, but unused
+    };
+    byte status1;
+  };
   volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
   volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)

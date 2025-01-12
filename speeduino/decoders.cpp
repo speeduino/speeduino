@@ -140,7 +140,7 @@ static libdivide::libdivide_s16_t divTriggerToothAngle;
  */
 static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
 {
-  if(BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) { return; }
+  if(currentStatus.isToothLog1Full) { return; }
   //High speed tooth logging history
   if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeTriggerUsed > 0) ) 
   {
@@ -197,8 +197,8 @@ static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
     //If there has been a value logged above, update the indexes
     if(valueLogged == true)
     {
-     if(toothHistoryIndex < (TOOTH_LOG_SIZE-1)) { toothHistoryIndex++; BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
-     else { BIT_SET(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY); }
+      currentStatus.isToothLog1Full = toothHistoryIndex < (TOOTH_LOG_SIZE-1);
+      if (!currentStatus.isToothLog1Full) { ++toothHistoryIndex; }
     }
 
 

@@ -149,7 +149,7 @@ uint16_t correctionsFuel(void)
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  currentStatus.isDFCOActive = correctionDFCO();
   byte dfcoTaperCorrection = correctionDFCOfuel();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
@@ -534,7 +534,7 @@ byte correctionLaunch(void)
 byte correctionDFCOfuel(void)
 {
   byte scaleValue = 100;
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  if ( currentStatus.isDFCOActive )
   {
     if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
     {
@@ -558,7 +558,7 @@ bool correctionDFCO(void)
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1 )
   {
-    if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    if ( currentStatus.isDFCOActive ) 
     {
       DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoDelay = 0; }
@@ -644,7 +644,7 @@ byte correctionAFRClosedLoop(void)
 {
   byte AFRValue = 100U;
 
-  if((configPage6.egoType > 0) && (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) != 1  ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent iterator wind-up.
+  if((configPage6.egoType > 0) && ( !currentStatus.isDFCOActive ) ) //egoType of 0 means no O2 sensor. If DFCO is active do not run the ego controllers to prevent iterator wind-up.
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     
@@ -653,9 +653,15 @@ byte correctionAFRClosedLoop(void)
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
       //Check all other requirements for closed loop adjustments
-      if( (currentStatus.coolant > temperatureRemoveOffset(configPage6.egoTemp)) && (currentStatus.RPM > (unsigned int)(configPage6.egoRPM * 100)) && (currentStatus.TPS <= configPage6.egoTPSMax) && (currentStatus.O2 < configPage6.ego_max) && (currentStatus.O2 > configPage6.ego_min) && (currentStatus.runSecs > configPage6.ego_sdelay) &&  (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0) && ( currentStatus.MAP <= (configPage9.egoMAPMax * 2) ) && ( currentStatus.MAP >= (configPage9.egoMAPMin * 2) ) )
+      if(    (currentStatus.coolant > temperatureRemoveOffset(configPage6.egoTemp)) 
+          && (currentStatus.RPM > (configPage6.egoRPM * 100U)) 
+          && (currentStatus.TPS <= configPage6.egoTPSMax) 
+          && (currentStatus.O2 < configPage6.ego_max) 
+          && (currentStatus.O2 > configPage6.ego_min)
+          && (currentStatus.runSecs > configPage6.ego_sdelay) 
+          && (currentStatus.MAP <= (configPage9.egoMAPMax * 2U)) 
+          && (currentStatus.MAP >= (configPage9.egoMAPMin * 2U)) )
       {
-
         //Check which algorithm is used, simple or PID
         if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)
         {
@@ -1058,7 +1064,7 @@ int8_t correctionKnockTiming(int8_t advance)
 int8_t correctionDFCOignition(int8_t advance)
 {
   int8_t dfcoRetard = advance;
-  if ( (configPage9.dfcoTaperEnable == 1) && BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  if ( (configPage9.dfcoTaperEnable == 1) && currentStatus.isDFCOActive )
   {
     if ( dfcoTaper != 0 )
     {

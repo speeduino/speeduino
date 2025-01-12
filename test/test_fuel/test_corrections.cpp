@@ -355,7 +355,7 @@ static void setup_ego_simple(void) {
   currentStatus.afrTarget = currentStatus.O2;
   currentStatus.egoCorrection = 100U;
   
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive = false;
 
   configPage6.egoCount = 100U;
   setup_valid_ego_cycle();
@@ -371,7 +371,7 @@ static void test_corrections_closedloop_off_nosensor(void) {
 static void test_corrections_closedloop_off_dfco(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive =  true;
   TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
 }
 
@@ -827,7 +827,7 @@ static void test_correctionDFCOfuel_DFCO_off()
 {
   setup_DFCO_on_taper_off_no_delay();
 
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive = false;
   TEST_ASSERT_EQUAL(100, correctionDFCOfuel());
 }
 
@@ -836,12 +836,12 @@ static void test_correctionDFCOfuel_notaper()
   setup_DFCO_on_taper_off_no_delay();
 
   configPage9.dfcoTaperEnable = 0; //Disable
-  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive =  true;
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
 }
 
 static inline void reset_dfco_taper(void) {
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive = false;
   TEST_ASSERT_EQUAL(100, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(20, correctionDFCOignition(20));
 }
@@ -859,7 +859,7 @@ static void test_correctionDFCOfuel_taper()
 
   reset_dfco_taper();
 
-  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive =  true;
 
   // 50% test
   advance_dfco_taper(configPage9.dfcoTaperTime/2);
@@ -889,7 +889,7 @@ static void test_correctionDFCOignition_DFCO_off()
 {
   setup_DFCO_on_taper_off_no_delay();
 
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive = false;
   TEST_ASSERT_EQUAL(45, correctionDFCOignition(45));
 }
 
@@ -898,7 +898,7 @@ static void test_correctionDFCOignition_notaper()
   setup_DFCO_on_taper_off_no_delay();
 
   configPage9.dfcoTaperEnable = 0; //Disable
-  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive =  true;
   TEST_ASSERT_EQUAL(45, correctionDFCOignition(45));
 }
 
@@ -908,7 +908,7 @@ static void test_correctionDFCOignition_taper()
 
   reset_dfco_taper();
 
-  BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive =  true;
 
   // 25% test
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
@@ -1551,7 +1551,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.IAT = 100;
   currentStatus.launchingHard = false;
   currentStatus.launchingSoft = false;
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
+  currentStatus.isDFCOActive = false;
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
 
   configPage2.dfcoEnabled = 0;
