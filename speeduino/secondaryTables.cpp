@@ -55,7 +55,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
   if(page10.fuel2Mode == FUEL2_MODE_MULTIPLY)
   {
     current.VE2 = lookupVE2(page10, veLookupTable, current);
-    BIT_SET(current.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+    current.secondFuelTableActive = true;
     //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
     auto combinedVE = percentage(current.VE2, current.VE1);
     current.VE = (uint8_t)min((uint32_t)UINT8_MAX, combinedVE);
@@ -63,7 +63,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
   else if(page10.fuel2Mode == FUEL2_MODE_ADD)
   {
     current.VE2 = lookupVE2(page10, veLookupTable, current);
-    BIT_SET(current.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+    current.secondFuelTableActive = true;
     //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
     uint16_t combinedVE = (uint16_t)current.VE1 + (uint16_t)current.VE2;
     current.VE = (uint8_t)min((uint16_t)UINT8_MAX, combinedVE);
@@ -71,13 +71,13 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
   else if(fuelModeCondSwitchActive(page10, current) || fuelModeInputSwitchActive(page10))
   {
     current.VE2 = lookupVE2(page10, veLookupTable, current);
-    BIT_SET(current.status3, BIT_STATUS3_FUEL2_ACTIVE); //Set the bit indicating that the 2nd fuel table is in use. 
+    current.secondFuelTableActive = true;
     current.VE = current.VE2;
   }
   else
   {
     // Unknown mode or mode not activated
-    BIT_CLEAR(current.status3, BIT_STATUS3_FUEL2_ACTIVE); //Clear the bit indicating that the 2nd fuel table is in use.
+    current.secondFuelTableActive = false;
     current.VE2 = 0U;
   }
 }

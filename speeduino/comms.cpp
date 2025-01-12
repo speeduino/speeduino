@@ -371,7 +371,7 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
     serialPayload[x+1U] = getTSLogEntry(offset+x); 
   }
   // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+  currentStatus.vssUiRefresh = false;
 }
 
 /**
