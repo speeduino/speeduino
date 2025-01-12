@@ -79,7 +79,6 @@ using byte = uint8_t;
 #define PROTECT_CUT_IGN     1
 #define PROTECT_CUT_FUEL    2
 #define PROTECT_CUT_BOTH    3
-#define PROTECT_IO_ERROR    7
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1
@@ -165,7 +164,6 @@ using byte = uint8_t;
 #define PROTECT_CUT_IGN     1
 #define PROTECT_CUT_FUEL    2
 #define PROTECT_CUT_BOTH    3
-#define PROTECT_IO_ERROR    7
 
 #define AE_MODE_TPS         0
 #define AE_MODE_MAP         1

@@ -31,12 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-#define ENGINE_PROTECT_BIT_RPM  0
-#define ENGINE_PROTECT_BIT_MAP  1
-#define ENGINE_PROTECT_BIT_OIL  2
-#define ENGINE_PROTECT_BIT_AFR  3
-#define ENGINE_PROTECT_BIT_COOLANT 4
-
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -232,7 +226,19 @@ struct statuses {
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
-  byte engineProtectStatus;
+  // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  union {
+    struct {
+        bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
+        bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
+        bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
+        bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
+        bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
+        bool engineProtectUnused : 2; ///< 
+        bool engineProtectIoError : 1; ///<
+    };
+    byte engineProtectStatus;
+  };
   byte fanDuty;
   byte wmiPW;
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
