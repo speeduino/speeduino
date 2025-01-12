@@ -31,15 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-#define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
-#define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
-#define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
-#define BIT_AIRCON_TPS_LOCKOUT    3 //Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
-#define BIT_AIRCON_TURNING_ON     4 //Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-#define BIT_AIRCON_CLT_LOCKOUT    5 //Indicates the A/C is locked out either due to high coolant temp.
-#define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
-#define BIT_AIRCON_UNUSED8        7
-
 #define ENGINE_PROTECT_BIT_RPM  0
 #define ENGINE_PROTECT_BIT_MAP  1
 #define ENGINE_PROTECT_BIT_OIL  2
@@ -249,7 +240,19 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
   byte TS_SD_Status; //TunerStudios SD card status
-  byte airConStatus;
+  // airConStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  union {
+    struct {
+        bool airconRequested : 1; ///< Indicates whether the A/C button is pressed
+        bool airconCompressorOn : 1; ///< Indicates whether the A/C compressor is running
+        bool airconRpmLockout : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+        bool airconTpsLockout : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+        bool airconTurningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+        bool airconCltLockout : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
+        bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
+    };
+    byte airConStatus;
+  };
   uint8_t systemTemp;
 };
 
