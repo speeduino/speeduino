@@ -429,12 +429,12 @@ static void setup_correctionSoftRevLimit(void) {
 static void assert_correctionSoftRevLimit(int8_t advance) {
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
     TEST_ASSERT_EQUAL(configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SFTLIM , currentStatus.status2);
+    TEST_ASSERT_TRUE(currentStatus.softLimitActive);
 
-    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SFTLIM);
+    currentStatus.softLimitActive = false;
     configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
     TEST_ASSERT_EQUAL(advance-configPage4.SoftLimRetard, correctionSoftRevLimit(advance));
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SFTLIM , currentStatus.status2);
+    TEST_ASSERT_TRUE(currentStatus.softLimitActive);
 }
 
 static void test_correctionSoftRevLimit_modes(void) {
@@ -448,14 +448,14 @@ static void test_correctionSoftRevLimit_inactive_protecttype(void) {
     setup_correctionSoftRevLimit();
 
     configPage6.engineProtectType = PROTECT_CUT_OFF;
-    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
+    currentStatus.softLimitActive = true;
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLimitActive);
 
     configPage6.engineProtectType = PROTECT_CUT_FUEL;
-    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
+    currentStatus.softLimitActive = true;
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLimitActive);
 }
 
 static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
@@ -463,9 +463,9 @@ static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
     assert_correctionSoftRevLimit(8);
 
     currentStatus.RPMdiv100 = configPage4.SoftRevLim-1;
-    BIT_SET(currentStatus.status2, BIT_STATUS2_SFTLIM);
+    currentStatus.softLimitActive = true;
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SFTLIM , currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLimitActive);
 }
 
 static void test_correctionSoftRevLimit_timeout(void) {
@@ -565,14 +565,14 @@ static void test_correctionSoftLaunch_on(void) {
     configPage6.lnchRetard = -3;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(-8));
     TEST_ASSERT_TRUE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_TRUE(currentStatus.softLaunchActive);
 
     configPage6.lnchRetard = 3;
     currentStatus.launchingSoft = false;
-    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_SLAUNCH);
+    currentStatus.softLaunchActive = false;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(8));
     TEST_ASSERT_TRUE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_TRUE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_disabled(void) {
@@ -582,7 +582,7 @@ static void test_correctionSoftLaunch_off_disabled(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
@@ -592,7 +592,7 @@ static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
@@ -602,7 +602,7 @@ static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_rpmlimit(void) {
@@ -612,7 +612,7 @@ static void test_correctionSoftLaunch_off_rpmlimit(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_tpslow(void) {
@@ -622,7 +622,7 @@ static void test_correctionSoftLaunch_off_tpslow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_vsslimit(void) {
@@ -631,7 +631,7 @@ static void test_correctionSoftLaunch_off_vsslimit(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchingSoft);
-    TEST_ASSERT_BIT_LOW(BIT_STATUS2_SLAUNCH, currentStatus.status2);
+    TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch(void) {

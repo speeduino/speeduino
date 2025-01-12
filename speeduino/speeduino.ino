@@ -1668,7 +1668,7 @@ void checkLaunchAndFlatShift()
 
   //Default flags to off
   currentStatus.launchingHard = false; 
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+  currentStatus.hardLaunchActive = false;
   currentStatus.flatShiftingHard = false;
 
   if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
@@ -1684,7 +1684,7 @@ void checkLaunchAndFlatShift()
       {
         //HardCut rev limit for 2-step launch control.
         currentStatus.launchingHard = true; 
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+        currentStatus.hardLaunchActive = true;
       }
     }
   } 

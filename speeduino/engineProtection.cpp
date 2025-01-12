@@ -25,7 +25,7 @@ byte checkRevLimit(void)
   //Hardcut RPM limit
   byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
+  currentStatus.hardLimitActive = false;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
@@ -35,10 +35,10 @@ byte checkRevLimit(void)
       currentLimitRPM = configPage4.HardRevLim;
       if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
       { 
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
+        currentStatus.hardLimitActive = true; //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
-      else { BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM); }
+      else { currentStatus.hardLimitActive = false; }
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
     {
@@ -46,7 +46,7 @@ byte checkRevLimit(void)
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
+        currentStatus.hardLimitActive = true; //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
     }
@@ -59,8 +59,6 @@ byte checkBoostLimit(void)
 {
   byte boostLimitActive = 0;
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-  currentStatus.isBoostCutActive = false;
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
     //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
@@ -68,24 +66,6 @@ byte checkBoostLimit(void)
     {
       boostLimitActive = 1;
       BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-      /*
-      switch(configPage6.boostCutType)
-      {
-        case 1:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-          break;
-        case 2:
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        case 3:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        default:
-          //Shouldn't ever happen, but just in case, disable all cuts
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-      }
-      */
     }
   }
 
