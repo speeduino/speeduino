@@ -31,14 +31,6 @@ using byte = uint8_t;
 #define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
 #define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
 
-// Bit masks for statuses::status3
-#define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_FUEL2_ACTIVE  2
-#define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
-#define BIT_STATUS3_NSQUIRTS1     5 // Uses bits 5-7
-
 // Bit masks for statuses::status4
 #define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
 #define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
@@ -180,7 +172,21 @@ struct statuses {
     };
     byte status2;
   };
-  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
+  // Status3 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  volatile union {
+    struct {
+        bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
+        // TODO: resolve duplication with nitrous_status
+        bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
+        bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
+        bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
+        // TODO: resolve duplication with hasSync & hasFullSync
+        bool halfSync : 1;  ///< 
+        // TODO: resolve duplication with nSquirts
+        unsigned int nSquirtsStatus: 3; ///< 
+    };
+    byte status3;
+  };
   volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
   volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
   uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
@@ -248,7 +254,7 @@ struct statuses {
  * 
  */
 static inline bool HasAnySyncUnsafe(const statuses &status) {
-  return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
+  return status.hasSync || status.halfSync;
 }
 
 static inline bool HasAnySync(const statuses &status) {

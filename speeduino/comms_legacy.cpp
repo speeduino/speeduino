@@ -757,8 +757,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   targetStatusFlag = SERIAL_INACTIVE;
   while(targetPort.available()) { targetPort.read(); }
   // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-
+  currentStatus.vssUiRefresh = false;
 }
 
 void sendValuesLegacy(void)

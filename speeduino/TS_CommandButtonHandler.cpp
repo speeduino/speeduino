@@ -298,7 +298,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
           //Calculate the ratio of VSS reading from Aux/CAN input and actual VSS (assuming that actual VSS is really 60km/h).
           configPage2.vssPulsesPerKm = (currentStatus.canin[configPage2.vssAuxCh] / 60);
           writeConfig(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-          BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+          currentStatus.vssUiRefresh = true;
         }
         else
         {
@@ -308,7 +308,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
           {
             configPage2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
             writeConfig(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-            BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+            currentStatus.vssUiRefresh = true;
           }
         }
       }
@@ -320,7 +320,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio1 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 
@@ -329,7 +329,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio2 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 
@@ -338,7 +338,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio3 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 
@@ -347,7 +347,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio4 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 
@@ -356,7 +356,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio5 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 
@@ -365,7 +365,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         configPage2.vssRatio6 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
         writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
+        currentStatus.vssUiRefresh = true;
       }
       break;
 

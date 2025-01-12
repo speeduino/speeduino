@@ -978,7 +978,9 @@ void vvtControl(void)
 
 void nitrousControl(void)
 {
-  bool nitrousOn = false; //This tracks whether the control gets turned on at any point. 
+  currentStatus.nitrousActive = false;
+  currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
+
   if(configPage10.n2o_enable > 0)
   {
     bool isArmed = READ_N2O_ARM_PIN();
@@ -998,32 +1000,26 @@ void nitrousControl(void)
       // STAGE1 = 1
       // STAGE2 = 2
       // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
-      currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
       if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;
-        BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+        currentStatus.nitrousActive = true;
         N2O_STAGE1_PIN_HIGH();
-        nitrousOn = true;
       }
       if(configPage10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
       {
         if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
         {
           currentStatus.nitrous_status += NITROUS_STAGE2;
-          BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+          currentStatus.nitrousActive = true;
           N2O_STAGE2_PIN_HIGH();
-          nitrousOn = true;
         }
       }
     }
   }
 
-  if (nitrousOn == false)
+  if (currentStatus.nitrousActive == false)
   {
-    currentStatus.nitrous_status = NITROUS_OFF;
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
-
     if(configPage10.n2o_enable > 0)
     {
       N2O_STAGE1_PIN_LOW();

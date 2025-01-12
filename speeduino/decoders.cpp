@@ -450,7 +450,7 @@ For a missing tooth wheel, this is the number if the tooth had NOT been missing 
 */
 static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamTeeth)
 {
-  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC)) )
+  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && ((currentStatus.hasSync == true) || currentStatus.halfSync) )
   {
     if((toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
@@ -601,14 +601,14 @@ void triggerPri_missingTooth(void)
             { 
                 //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
                 currentStatus.hasSync = false;
-                BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //No sync at all, so also clear HalfSync bit.
+                currentStatus.halfSync = false; //No sync at all, so also clear HalfSync bit.
                 currentStatus.syncLossCounter++;
             }
             //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
             //else if (currentStatus.hasSync == false && toothCurrentCount < checkSyncToothCount ) { triggerFilterTime = 0; }
             else
             {
-                if((currentStatus.hasSync == true) || BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC))
+                if((currentStatus.hasSync == true) || currentStatus.halfSync)
                 {
                   currentStatus.startRevolutions++; //Counter
                   if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
@@ -632,11 +632,11 @@ void triggerPri_missingTooth(void)
                   if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) || (configPage4.trigPatternSec == SEC_TRIGGER_POLL) || (configPage2.strokes == TWO_STROKE) )
                   {
                     currentStatus.hasSync = true;
-                    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit                    
+                    currentStatus.halfSync = false; //the engine is fully synced so clear the Half Sync bit                    
                   }
-                  else if(currentStatus.hasSync != true) { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+                  else if(currentStatus.hasSync != true) { currentStatus.halfSync = true; } //If there is primary trigger but no secondary we only have half sync.
                 }
-                else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+                else { currentStatus.hasSync = true;  currentStatus.halfSync = false; } //If nothing is using sequential, we have sync and also clear half sync bit
                 if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) //Reset the secondary tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
                 { 
                   secondaryToothCount = 0; 
@@ -4626,7 +4626,7 @@ void triggerPri_NGC(void)
     if ( toothLastToothTime > 0 && toothLastMinusOneToothTime > 0 ) { //Make sure we haven't enough tooth information to calculate missing tooth length
 
       //Only check for missing tooth if we expect this one to be it or if we haven't found one yet
-      if (toothCurrentCount == 17 || toothCurrentCount == 35 || ( currentStatus.hasSync == false && BIT_CHECK(currentStatus.status3, BIT_STATUS3_HALFSYNC) == false) ) {
+      if (toothCurrentCount == 17 || toothCurrentCount == 35 || ( currentStatus.hasSync == false && currentStatus.halfSync == false) ) {
         //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
         if (curGap > ( (toothLastToothTime - toothLastMinusOneToothTime) * 2 ) )
         {
@@ -4661,7 +4661,7 @@ void triggerPri_NGC(void)
             {
               revolutionOne = false;
               currentStatus.hasSync = true;
-              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              currentStatus.halfSync = false; //the engine is fully synced so clear the Half Sync bit
             }
             else if (
               ( configPage2.nCylinders == 4 && ( (toothCurrentCount == 1 && secondaryToothCount == 5)                          || (toothCurrentCount == 19 && secondaryToothCount == 7) ) ) ||
@@ -4670,23 +4670,23 @@ void triggerPri_NGC(void)
             {
               revolutionOne = true;
               currentStatus.hasSync = true;
-              BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+              currentStatus.halfSync = false; //the engine is fully synced so clear the Half Sync bit
             }
             // If tooth counters are not valid, set half sync bit
             else {
               if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
               currentStatus.hasSync = false;
-              BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); //If there is primary trigger but no secondary we only have half sync.
+              currentStatus.halfSync = true; //If there is primary trigger but no secondary we only have half sync.
             }
           }
-          else { currentStatus.hasSync = true;  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we have sync and also clear half sync bit
+          else { currentStatus.hasSync = true;  currentStatus.halfSync = false; } //If nothing is using sequential, we have sync and also clear half sync bit
 
         }
         else {
           // If we have found a missing tooth and don't get the next one at the correct tooth we end up here -> Resync
           if (currentStatus.hasSync == true) { currentStatus.syncLossCounter++; }
           currentStatus.hasSync = false;
-          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+          currentStatus.halfSync = false;
         }
       }
 
@@ -5388,7 +5388,7 @@ void triggerPri_RoverMEMS()
         else if(toothCurrentCount > triggerActualTeeth+1) // no patterns match after a rotation when we only need 32 teeth to match, we've lost sync
         {
           currentStatus.hasSync = false;
-          BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+          currentStatus.halfSync = false;
           currentStatus.syncLossCounter++;              
         }
       }
@@ -5430,13 +5430,13 @@ static void triggerRoverMEMSCommon(void)
     if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
     {
       currentStatus.hasSync = true;
-      BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); //the engine is fully synced so clear the Half Sync bit
+      currentStatus.halfSync = false; //the engine is fully synced so clear the Half Sync bit
       if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
     }
     else if(currentStatus.hasSync != true) 
-    { BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If there is primary trigger but no secondary we only have half sync.
+    { currentStatus.halfSync = true; } //If there is primary trigger but no secondary we only have half sync.
   }
-  else { currentStatus.hasSync = false;  BIT_SET(currentStatus.status3, BIT_STATUS3_HALFSYNC); } //If nothing is using sequential, we  set half sync bit
+  else { currentStatus.hasSync = false;  currentStatus.halfSync = true; } //If nothing is using sequential, we  set half sync bit
 
   currentStatus.startRevolutions++;  
 }
@@ -5684,7 +5684,7 @@ void triggerSetup_SuzukiK6A(void)
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_FIXED_CRANKING);
   BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); // never sure if we need to set this in this type of trigger
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC); // we can never have half sync - its either full or none.
+  currentStatus.halfSync = false; // we can never have half sync - its either full or none.
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
 }
