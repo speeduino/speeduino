@@ -245,7 +245,23 @@ struct statuses {
   byte vvt2TargetAngle;
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
-  byte TS_SD_Status; //TunerStudios SD card status
+
+  // SD card status field as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h
+  union {
+    struct {
+        bool sdCardPresent : 1; ///< true if a card is present, false if not
+        unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
+        bool sdCardReady : 1; ///< true if ready, false if not
+        bool sdCardLogging : 1; ///< true if logging active, false if not
+        bool sdCardError : 1;  ///< true if error, false if not
+        unsigned int sdCardUnusedBit1 : 1;  ///< Was SD_STATUS_CARD_VERSION, but unused
+        unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
+        bool sdCardUnused : 1;  ///< true if unused, false if not
+    };
+    byte TS_SD_Status;
+  };
+
   // airConStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
   union {
     struct {
