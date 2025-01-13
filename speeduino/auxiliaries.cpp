@@ -144,7 +144,7 @@ void airConControl(void)
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
-    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+    if (currentStatus.engineIsRunning)
     {
       if(acAfterEngineStartDelay >= configPage15.airConAfterStartDelay)
       {
@@ -342,7 +342,7 @@ void fanControl(void)
 
     
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    else { fanPermit = currentStatus.engineIsRunning; }
 
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
@@ -350,7 +350,7 @@ void fanControl(void)
            currentStatus.airconTurningOn == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      if((currentStatus.engineIsCranking) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
         FAN_OFF();
@@ -373,10 +373,10 @@ void fanControl(void)
   {
     bool fanPermit = false;
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    else { fanPermit = currentStatus.engineIsRunning; }
     if (fanPermit == true)
       {
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      if((currentStatus.engineIsCranking) && (configPage2.fanWhenCranking == 0))
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
         currentStatus.fanOn = false;
@@ -778,7 +778,7 @@ void boostControl(void)
 
 void vvtControl(void)
 {
-  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.engineIsRunning))
   {
     if(vvtTimeHold == false) 
     {

@@ -401,13 +401,13 @@ void idleControl(void)
 
     case IAC_ALGORITHM_PWM_OL:      //Case 2 is PWM open loop
       //Check for cranking pulsewidth
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
         idleTaper = 0;
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -444,7 +444,7 @@ void idleControl(void)
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
@@ -452,7 +452,7 @@ void idleControl(void)
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -502,7 +502,7 @@ void idleControl(void)
 
     case IAC_ALGORITHM_PWM_OLCL: //case 6 is PWM Open Loop table as feedforward term plus closed loop. 
       //No cranking specific value for closed loop (yet?)
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET); //All temps are offset by 40 degrees
@@ -510,7 +510,7 @@ void idleControl(void)
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -568,7 +568,7 @@ void idleControl(void)
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
         //Check for cranking pulsewidth
-        if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) //If ain't running it means off or cranking
+        if( !currentStatus.engineIsRunning ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
@@ -618,7 +618,7 @@ void idleControl(void)
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
-        if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) //If ain't running it means off or cranking
+        if( !currentStatus.engineIsRunning ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, (currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
