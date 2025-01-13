@@ -25,7 +25,7 @@ byte getTSLogEntry(uint16_t byteNum)
   {
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
     case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
+    case 2: statusValue = currentStatus.engineStatus; break; //Engine Status Bitfield
     case 3: statusValue = currentStatus.syncLossCounter; break;
     case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
     case 5: statusValue = highByte(currentStatus.MAP); break;
@@ -206,7 +206,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
   {
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
     case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
+    case 2: statusValue = currentStatus.engineStatus; break; //Engine Status Bitfield
     case 3: statusValue = currentStatus.syncLossCounter; break;
     case 4: statusValue = currentStatus.MAP; break; //2 bytes for MAP
     case 5: statusValue = currentStatus.IAT; break; //mat
@@ -364,7 +364,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
   {
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
     case 1: statusValue = currentStatus.status1; break; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
+    case 2: statusValue = currentStatus.engineStatus; break; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
     case 3: statusValue = (byte)div100(currentStatus.dwell); break; //Dwell in ms * 10
     case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
     case 5: statusValue = highByte(currentStatus.MAP); break;

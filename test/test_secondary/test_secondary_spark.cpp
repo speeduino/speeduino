@@ -155,7 +155,7 @@ static void __attribute__((noinline)) test_cranking_no_secondary_spark(void) {
     table3d16RpmLoad lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
-    BIT_SET(current.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
+    current.engineIsCranking = true;// Should turn 2nd table off
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 }

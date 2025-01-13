@@ -119,7 +119,7 @@ uint16_t correctionsFuel(void)
   if (result != 100) { sumCorrections = div100(sumCorrections * result); }
 
   currentStatus.AEamount = correctionAccel();
-  if ( (configPage2.aeApplyMode == AE_MODE_MULTIPLIER) || BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC) ) // multiply by the AE amount in case of multiplier AE mode or Decel
+  if ( (configPage2.aeApplyMode == AE_MODE_MULTIPLIER) || (currentStatus.isDeceleratingTPS) ) // multiply by the AE amount in case of multiplier AE mode or Decel
   {
     if (currentStatus.AEamount != 100) { sumCorrections = div100(sumCorrections * currentStatus.AEamount);}
   }
@@ -168,12 +168,12 @@ byte correctionWUE(void)
   if (currentStatus.coolant > temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
   {
     //This prevents us doing the 2D lookup if we're already up to temp
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_WARMUP);
-    WUEValue = WUETable.values[WUETable.size()-1U];
+    currentStatus.wueIsActive = false;
+     WUEValue = WUETable.values[WUETable.size()-1U];
   }
   else
   {
-    BIT_SET(currentStatus.engine, BIT_ENGINE_WARMUP);
+    currentStatus.wueIsActive = true;
     WUEValue = table2D_getValue(&WUETable, temperatureAddOffset(currentStatus.coolant));
   }
 
@@ -187,7 +187,7 @@ uint16_t correctionCranking(void)
 {
   uint16_t crankingValue = 100;
   //Check if we are actually cranking
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if ( currentStatus.engineIsCranking )
   {
     crankingValue = table2D_getValue(&crankingEnrichTable, temperatureAddOffset(currentStatus.coolant));
     crankingValue = (uint16_t) crankingValue * 5; //multiplied by 5 to get range from 0% to 1275%
@@ -220,13 +220,13 @@ byte correctionASE(void)
   //Two checks are required:
   //1) Is the engine run time less than the configured ase time
   //2) Make sure we're not still cranking
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
+  if( currentStatus.engineIsCranking != true )
   {
     if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
     {
-      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, temperatureAddOffset(currentStatus.coolant)))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
+      if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, temperatureAddOffset(currentStatus.coolant)))) && (!currentStatus.engineIsCranking) )
       {
-        BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+        currentStatus.aseIsActive = true; //Mark ASE as active.
         ASEValue = 100 + table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant));
         aseTaper = 0;
       }
@@ -234,13 +234,13 @@ byte correctionASE(void)
       {
         if ( aseTaper < configPage2.aseTaperTime ) //Check if we've reached the end of the taper time
         {
-          BIT_SET(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as active.
+          currentStatus.aseIsActive = true; //Mark ASE as active.
           ASEValue = 100 + map(aseTaper, 0, configPage2.aseTaperTime, table2D_getValue(&ASETable, temperatureAddOffset(currentStatus.coolant)), 0);
           aseTaper++;
         }
         else
         {
-          BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+          currentStatus.aseIsActive = false; //Mark ASE as inactive.
           ASEValue = 100;
         }
       }
@@ -255,7 +255,7 @@ byte correctionASE(void)
   else
   {
     //Engine is cranking, ASE disabled
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE); //Mark ASE as inactive.
+    currentStatus.aseIsActive = false; //Mark ASE as inactive.
     ASEValue = 100;
   }
   return ASEValue;
@@ -295,14 +295,14 @@ uint16_t correctionAccel(void)
   
 
   //First, check whether the accel. enrichment is already running
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) || BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC))
+  if( (currentStatus.isAcceleratingTPS) || (currentStatus.isDeceleratingTPS))
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
     if( micros_safe() >= currentStatus.AEEndTime )
     {
       //Time to turn enrichment off
-      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-      BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+      currentStatus.isAcceleratingTPS= false;
+      currentStatus.isDeceleratingTPS = false;
       currentStatus.AEamount = 0;
       accelValue = 100;
 
@@ -320,18 +320,18 @@ uint16_t correctionAccel(void)
       //If the accel amount HAS increased, we clear the current enrich phase and a new one will be started below
       if( (configPage2.aeMode == AE_MODE_MAP) && (abs(currentStatus.mapDOT) > activateMAPDOT) )
       {
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+        currentStatus.isAcceleratingTPS= false;
+        currentStatus.isDeceleratingTPS = false;
       }
       else if( (configPage2.aeMode == AE_MODE_TPS) && (abs(currentStatus.tpsDOT) > activateTPSDOT) )
       {
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-        BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+        currentStatus.isAcceleratingTPS= false;
+        currentStatus.isDeceleratingTPS = false;
       }
     }
   }
 
-  if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC)) //Need to check this again as it may have been changed in the above section (Both ACC and DCC are off if this has changed)
+  if( (!currentStatus.isAcceleratingTPS) && (!currentStatus.isDeceleratingTPS)) //Need to check this again as it may have been changed in the above section (Both ACC and DCC are off if this has changed)
   {
     if(configPage2.aeMode == AE_MODE_MAP)
     {
@@ -350,13 +350,13 @@ uint16_t correctionAccel(void)
           //Check if the MAP rate of change is negative or positive. Negative means decelarion.
           if (currentStatus.mapDOT < 0)
           {
-            BIT_SET(currentStatus.engine, BIT_ENGINE_DCC); //Mark deceleration enleanment as active.
+            currentStatus.isDeceleratingTPS = true; //Mark deceleration enleanment as active.
             accelValue = configPage2.decelAmount; //In decel, use the decel fuel amount as accelValue
           } //Deceleration
           //Positive MAP rate of change is acceleration.
           else
           {
-            BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
+            currentStatus.isAcceleratingTPS = true; //Mark acceleration enrichment as active.
             accelValue = table2D_getValue(&maeTable, (uint8_t)(currentStatus.mapDOT / 10)); //The x-axis of mae table is divided by 10 to fit values in byte.
   
             //Apply the RPM taper to the above
@@ -416,13 +416,13 @@ uint16_t correctionAccel(void)
           //Check if the TPS rate of change is negative or positive. Negative means decelarion.
           if (currentStatus.tpsDOT < 0)
           {
-            BIT_SET(currentStatus.engine, BIT_ENGINE_DCC); //Mark deceleration enleanment as active.
+            currentStatus.isDeceleratingTPS = true; //Mark deceleration enleanment as active.
             accelValue = configPage2.decelAmount; //In decel, use the decel fuel amount as accelValue
           } //Deceleration
           //Positive TPS rate of change is Acceleration.
           else
           {
-            BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
+            currentStatus.isAcceleratingTPS = true; //Mark acceleration enrichment as active.
             accelValue = table2D_getValue(&taeTable, (uint8_t)(currentStatus.tpsDOT / 10)); //The x-axis of tae table is divided by 10 to fit values in byte.
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
@@ -474,7 +474,7 @@ uint16_t correctionAccel(void)
 byte correctionFloodClear(void)
 {
   byte floodValue = 100;
-  if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if( currentStatus.engineIsCranking )
   {
     //Engine is currently cranking, check what the TPS is
     if(currentStatus.TPS >= configPage4.floodClear)
@@ -753,7 +753,7 @@ int8_t correctionFixedTiming(int8_t advance)
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
   int8_t ignCrankFixValue = advance;
-  if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+  if ( currentStatus.engineIsCranking )
   { 
     if ( configPage2.crkngAddCLTAdv == 0 ) { ignCrankFixValue = configPage4.CrankAng; } //Use the fixed cranking ignition angle
     else { ignCrankFixValue = correctionCLTadvance(configPage4.CrankAng); } //Use the CLT compensated cranking ignition angle
@@ -838,13 +838,13 @@ int8_t correctionIdleAdvance(int8_t advance)
 When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
 */
 
-  if ((!idleAdvActive && BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) &&
+  if ((!idleAdvActive && currentStatus.engineIsRunning) &&
    ((configPage6.iacAlgorithm == 0) || (currentStatus.RPM > (((uint16_t)currentStatus.CLIdleTarget * 10) - (uint16_t)IGN_IDLE_THRESHOLD))))
   { 
     idleAdvActive = true; 
   } 
   else 
-    if (idleAdvActive && !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
+    if (idleAdvActive && !currentStatus.engineIsRunning) { idleAdvActive = false; } //Clear flag if engine isn't running anymore
 
   return ignIdleValue;
 }

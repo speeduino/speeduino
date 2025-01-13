@@ -21,16 +21,6 @@
 
 using byte = uint8_t;
 
-//Define bit positions within engine variable
-#define BIT_ENGINE_RUN      0   // Engine running
-#define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2   // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3   // Engine in warmup
-#define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
-#define BIT_ENGINE_DCC      5   // in deceleration mode
-#define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
-#define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
-
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -178,7 +168,21 @@ struct statuses {
     };
     byte status5;
   };
-  uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
+
+  // engine fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  union {
+    struct {
+        bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
+        bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
+        bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
+        bool wueIsActive : 1; ///< Is Warm Up Enrichment (WUE) active (true) or not (false) 
+        bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
+        bool isDeceleratingTPS: 1; ///< Are we decelerating (true) or not (false), based on TPS
+        bool engineUnused1 : 1;  ///< Used to be BIT_ENGINE_MAPACC, but unused
+        bool engineUnused2: 1; ///< Used to be BIT_ENGINE_MAPDCC, but unused
+    };
+    byte engineStatus;
+  };
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
   unsigned int PW3; ///< In uS

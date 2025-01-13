@@ -59,7 +59,7 @@ static void test_correctionCLTadvance(void) {
 
 static void test_correctionCrankingFixedTiming_nocrank_inactive(void) {
     setup_clt_advance_table();
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+    currentStatus.engineIsCranking = false;
     configPage2.crkngAddCLTAdv = 0;
     configPage4.CrankAng = 8;
 
@@ -68,7 +68,7 @@ static void test_correctionCrankingFixedTiming_nocrank_inactive(void) {
 
 static void test_correctionCrankingFixedTiming_crank_fixed(void) {
     setup_clt_advance_table();
-    BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+    currentStatus.engineIsCranking = true;
     configPage2.crkngAddCLTAdv = 0;
 
     configPage4.CrankAng = 8;
@@ -80,7 +80,7 @@ static void test_correctionCrankingFixedTiming_crank_fixed(void) {
 
 static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     setup_clt_advance_table();
-    BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+    currentStatus.engineIsCranking = true;
     configPage2.crkngAddCLTAdv = 1;
     
     configPage4.CrankAng = 8;
@@ -290,7 +290,7 @@ static void setup_correctionIdleAdvance(void) {
     configPage9.idleAdvStartDelay = 0U;
 
     runSecsX10 = configPage2.idleAdvDelay * 5;
-    BIT_SET(currentStatus.engine, BIT_ENGINE_RUN);
+    currentStatus.engineIsRunning = true;
     // int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     currentStatus.CLIdleTarget = 100;
     currentStatus.RPM = (configPage2.idleAdvRPM * 100) - 1U;
@@ -335,7 +335,7 @@ static void test_correctionIdleAdvance_ctps_lookup_nodelay(void) {
 static void test_correctionIdleAdvance_inactive_notrunning(void) {
     setup_correctionIdleAdvance();
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
-    BIT_CLEAR(currentStatus.engine, BIT_ENGINE_RUN);
+    currentStatus.engineIsRunning = false;
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
 }

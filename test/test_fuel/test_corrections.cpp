@@ -35,7 +35,7 @@ static void test_corrections_WUE_active(void)
   currentStatus.coolant = 0;
 
   correctionWUE();
-  TEST_ASSERT_BIT_HIGH(BIT_ENGINE_WARMUP, currentStatus.engine);
+  TEST_ASSERT_TRUE(currentStatus.wueIsActive);
 }
 
 static void test_corrections_WUE_inactive(void)
@@ -45,7 +45,7 @@ static void test_corrections_WUE_inactive(void)
   //Check for WUE being inactive due to the temp being too high
   currentStatus.coolant = 200;
   correctionWUE();
-  TEST_ASSERT_BIT_LOW(BIT_ENGINE_WARMUP, currentStatus.engine);
+  TEST_ASSERT_FALSE(currentStatus.wueIsActive);
 }
 
 static void test_corrections_WUE_inactive_value(void)
@@ -100,16 +100,16 @@ static void setup_correctionCranking_table(void) {
 
 static void test_corrections_cranking_inactive(void) {
   initialiseCorrections();
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  currentStatus.engineIsCranking = false;
+  currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
 
   TEST_ASSERT_EQUAL(100, correctionCranking() );
 } 
 
 static void test_corrections_cranking_cranking(void) {
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  currentStatus.engineIsCranking = true;
+  currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
   currentStatus.coolant = temperatureRemoveOffset(150);
   setup_correctionCranking_table();
@@ -119,7 +119,7 @@ static void test_corrections_cranking_cranking(void) {
 } 
 
 static void test_corrections_cranking_taper_noase(void) {
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
+  currentStatus.aseIsActive = false;
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
   configPage10.crankingEnrichTaper = 100U;
   currentStatus.ASEValue = 100U;
@@ -128,11 +128,11 @@ static void test_corrections_cranking_taper_noase(void) {
   setup_correctionCranking_table();
 
   // Reset taper
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = true;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -159,15 +159,15 @@ static void test_corrections_cranking_taper_withase(void) {
   currentStatus.coolant = temperatureRemoveOffset(150);
   setup_correctionCranking_table();
 
-  BIT_SET(currentStatus.engine, BIT_ENGINE_ASE);
+  currentStatus.aseIsActive = true;
   currentStatus.ASEValue = 50U;
 
   // Reset taper
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = true;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -199,11 +199,11 @@ extern uint8_t correctionASE(void);
 static void test_corrections_ASE_inactive_cranking(void)
 {
   initialiseCorrections();
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = true;
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionASE());
-  TEST_ASSERT_BIT_LOW(BIT_ENGINE_ASE, currentStatus.engine);
+  TEST_ASSERT_FALSE(currentStatus.aseIsActive);
 }
 
 extern table2D_u8_u8_4 ASETable; ///< 4 bin After Start Enrichment map (2D)
@@ -212,7 +212,7 @@ extern table2D_u8_u8_4 ASECountTable; ///< 4 bin After Start duration map (2D)
 static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
@@ -248,7 +248,7 @@ static void test_corrections_ASE_initial(void)
 
   // Should be half way between the 2 table values.
   TEST_ASSERT_EQUAL(125, correctionASE());
-  TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ASE, currentStatus.engine);
+  TEST_ASSERT_TRUE(currentStatus.aseIsActive);
 }
 
 static void test_corrections_ASE_taper(void) {
@@ -258,15 +258,15 @@ static void test_corrections_ASE_taper(void) {
   currentStatus.runSecs = 9;
 
   // Advance taper to halfway
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
   for (uint8_t index=0; index<configPage2.aseTaperTime/2U; ++index) {
     (void)correctionASE();
   }
 
   // Should be half way between the interpolated table value and 100%.
   TEST_ASSERT_INT_WITHIN(1, 113, correctionASE());
-  TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ASE, currentStatus.engine);
-  
+  TEST_ASSERT_TRUE(currentStatus.aseIsActive);
+
   // Final taper step
   for (uint8_t index=configPage2.aseTaperTime/2U; index<configPage2.aseTaperTime-2U; ++index) {
     (void)correctionASE();
@@ -288,7 +288,7 @@ static void test_corrections_ASE(void)
 uint8_t correctionFloodClear(void);
 
 static void test_corrections_floodclear_no_crank_inactive(void) {
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -296,7 +296,7 @@ static void test_corrections_floodclear_no_crank_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = true;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear - 10;
 
@@ -304,7 +304,7 @@ static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_above_threshold_active(void) {
-  BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = true;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -949,8 +949,8 @@ static void test_corrections_dfco()
 //Setup a basic TAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
 
 static void reset_AE(void) {
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_DCC);
+  currentStatus.isAcceleratingTPS = false;
+  currentStatus.isDeceleratingTPS = false;
 }
 
 static void setup_AE(void) {
@@ -1008,8 +1008,8 @@ static void test_corrections_TAE_no_rpm_taper()
 
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+132), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // No change
   reset_AE();
@@ -1018,8 +1018,8 @@ static void test_corrections_TAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(0, currentStatus.tpsDOT);
   TEST_ASSERT_EQUAL(100, accelValue);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Small change   
   reset_AE();
@@ -1028,8 +1028,8 @@ static void test_corrections_TAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(15, currentStatus.tpsDOT);
   TEST_ASSERT_EQUAL(100+74, accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Large change
   reset_AE();
@@ -1038,8 +1038,8 @@ static void test_corrections_TAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(3000, currentStatus.tpsDOT);
   TEST_ASSERT_EQUAL(100+127, accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_negative_tpsdot()
@@ -1055,8 +1055,8 @@ static void test_corrections_TAE_negative_tpsdot()
 
   TEST_ASSERT_EQUAL(-750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL(configPage2.decelAmount, accelValue);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_50pc_rpm_taper()
@@ -1075,8 +1075,8 @@ static void test_corrections_TAE_50pc_rpm_taper()
 
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+66), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_110pc_rpm_taper()
@@ -1095,8 +1095,8 @@ static void test_corrections_TAE_110pc_rpm_taper()
 
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_under_threshold()
@@ -1116,8 +1116,8 @@ static void test_corrections_TAE_under_threshold()
 
   TEST_ASSERT_EQUAL(90, currentStatus.tpsDOT); //DOT is 90%/s (3% * 30)
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_50pc_warmup_taper()
@@ -1139,8 +1139,8 @@ static void test_corrections_TAE_50pc_warmup_taper()
 
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
   TEST_ASSERT_EQUAL((100+165), accelValue); //Total AE should be 132 + (50% * 50%) = 132 * 1.25 = 165
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-  TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+  TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE_timout()
@@ -1155,20 +1155,20 @@ static void test_corrections_TAE_timout()
 
   TEST_ASSERT_EQUAL((100+132), correctionAccel());
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
   
   // TAE should have timed out
   TEST_ASSERT_EQUAL(100, correctionAccel());
   TEST_ASSERT_EQUAL(0, currentStatus.tpsDOT);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
-  TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged off
+  TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged off
 
   // But TPS hasn't changed position so another cycle should begin
   TEST_ASSERT_EQUAL((100+132), correctionAccel());
   TEST_ASSERT_EQUAL(750, currentStatus.tpsDOT); //DOT is 750%/s (25 * 30)
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_TAE()
@@ -1217,8 +1217,8 @@ static void test_corrections_MAE_negative_mapdot()
 
   TEST_ASSERT_EQUAL(-400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(configPage2.decelAmount, accelValue);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_no_rpm_taper()
@@ -1232,8 +1232,8 @@ static void test_corrections_MAE_no_rpm_taper()
   uint16_t accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+132), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // No change
   reset_AE();
@@ -1243,8 +1243,8 @@ static void test_corrections_MAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(0, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100, accelValue);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Small change over small time period  
   reset_AE();
@@ -1254,8 +1254,8 @@ static void test_corrections_MAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(1000, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+136), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Small change over long (>UINT16_MAX) time period  
   reset_AE();
@@ -1265,8 +1265,8 @@ static void test_corrections_MAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(7, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100+70, accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Large change over small time period  
   reset_AE();
@@ -1276,8 +1276,8 @@ static void test_corrections_MAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(6960, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+136), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Large change over long (>UINT16_MAX) time period  
   reset_AE();
@@ -1287,8 +1287,8 @@ static void test_corrections_MAE_no_rpm_taper()
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(6930, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100+136, accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged pn  
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged pn  
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_50pc_rpm_taper()
@@ -1308,7 +1308,7 @@ static void test_corrections_MAE_50pc_rpm_taper()
 
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+66), accelValue);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_110pc_rpm_taper()
@@ -1328,7 +1328,7 @@ static void test_corrections_MAE_110pc_rpm_taper()
 
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_under_threshold()
@@ -1349,7 +1349,7 @@ static void test_corrections_MAE_under_threshold()
 
   TEST_ASSERT_EQUAL(240, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100, accelValue); //Should be no AE as we're above the RPM taper end point
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged off
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged off
 }
 
 static void test_corrections_MAE_50pc_warmup_taper()
@@ -1372,7 +1372,7 @@ static void test_corrections_MAE_50pc_warmup_taper()
 
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+165), accelValue); 
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
 }
 
 static void test_corrections_MAE_timout()
@@ -1387,20 +1387,20 @@ static void test_corrections_MAE_timout()
   configPage2.aeTime = 0; // This should cause the current cycle to expire & the next one to not occur.
   TEST_ASSERT_EQUAL((100+132), correctionAccel());
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // Timeout TAE
   TEST_ASSERT_EQUAL(100, correctionAccel());
   TEST_ASSERT_EQUAL(0, currentStatus.mapDOT);
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-  TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+  TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 
   // But we haven't changed MAP readings so another cycle should begin
   TEST_ASSERT_EQUAL((100+132), correctionAccel());
   TEST_ASSERT_EQUAL(400, currentStatus.mapDOT);
-	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
-	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
+	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
+	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
 
 
@@ -1552,7 +1552,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchingHard = false;
   currentStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
-  BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
+  currentStatus.engineIsCranking = false;
 
   configPage2.dfcoEnabled = 0;
   configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper

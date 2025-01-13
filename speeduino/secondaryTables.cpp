@@ -131,7 +131,7 @@ static inline bool isFixedTimingOn(const config2 &page2, const statuses &current
             // Fixed timing is in effect
     return  (page2.fixAngEnable == 1U)
             // Cranking, so the cranking advance angle is in effect
-            || (BIT_CHECK(current.engine, BIT_ENGINE_CRANK));
+            || (current.engineIsCranking);
 }
 
 void calculateSecondarySpark(const config2 &page2, const config10 &page10, const table3d16RpmLoad &sparkLookupTable, statuses &current)
