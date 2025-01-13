@@ -186,7 +186,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     loop33ms = 0;
 
     //Pulse fuel and ignition test outputs are set at 30Hz
-    if( BIT_CHECK(currentStatus.testOutputs, 1) && (currentStatus.RPM == 0) )
+    if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
     {
       //Check for pulsed injector output test
       if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
@@ -341,7 +341,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
-  if( BIT_CHECK(currentStatus.testOutputs, 1) )
+  if( currentStatus.isTestModeActive )
   {
     //Check for pulsed injector output test
     if( (HWTest_INJ_Pulsed > 0)  )

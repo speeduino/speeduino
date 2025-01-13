@@ -201,7 +201,15 @@ struct statuses {
   bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
-  byte testOutputs;   ///< Test Output bits (only first bit used/tested ?)
+  /// Test Output bits (only first bit used/tested ?)
+  union {
+    struct {
+        // TODO: resolve conflict with testActive
+        bool isTestModeActive : 1; // Is hardware test mode on?
+        // Other bits unused....
+    };
+    byte testOutputs;
+  };   
   bool testActive;    // Not in use ? Replaced by testOutputs ?
   uint16_t boostDuty; ///< Boost Duty percentage value * 100 to give 2 points of precision
   byte idleLoad;      ///< Either the current steps or current duty cycle for the idle control
