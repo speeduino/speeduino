@@ -120,7 +120,7 @@ struct statuses {
         bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
         bool status2unused1 : 1;  ///< Was BIT_STATUS2_BOOSTCUT, but unused
         bool status2unused2: 1; ///< Was BIT_STATUS2_ERROR, but unused
-        bool idleOn : 1; ///< Is the firware idle code active : true == active, false == inactive
+        bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
         // TODO: resolve duplication with hasSync
         bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
     };
