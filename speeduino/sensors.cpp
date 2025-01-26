@@ -276,7 +276,9 @@ static inline void reset(const statuses &current, map_cycle_average_t &cycle_ave
   cycle_average.mapAdcRunningTotal = 0U;
   cycle_average.emapAdcRunningTotal = 0U;
   cycle_average.cycleStartIndex = (uint8_t)current.startRevolutions;
-  (void)cycleAverageMAPReadingAccumulate(cycle_average, sensorReadings);
+  if (isValidMapSensorReadings(sensorReadings)) {
+    (void)cycleAverageMAPReadingAccumulate(cycle_average, sensorReadings);
+  }
 }
 
 static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
@@ -312,15 +314,18 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_avera
   return isCycleCurrent(current, cycle_avg.cycleStartIndex);
 }
 
-TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) 
+      && HasAnySyncUnsafe(current) 
+      && (current.startRevolutions > 1U)
+      && isValidMapSensorReadings(sensorReadings);
   }
   return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
-  if ( canUseCycleAverage(current, page2) )
+  if ( canUseCycleAverage(current, page2, sensorReadings) )
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if( isCycleCurrent(current, cycle_average) ) {

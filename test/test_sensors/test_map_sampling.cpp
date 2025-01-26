@@ -9,7 +9,7 @@ static void test_instantaneous(void) {
 }
 
 extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern bool canUseCycleAverage(const statuses &current, const config2 &page2);
+extern bool canUseCycleAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings);
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
   current.RPMdiv100 = 43;
@@ -39,22 +39,24 @@ static void test_canUseCycleAverge(void) {
   config2 page2;
   enable_cycle_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
 
   current.hasSync = false;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.hasSync = true;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.startRevolutions = 55;
 
   current.RPMdiv100 = page2.mapSwitchPoint-1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint+1;
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
+
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, INVALID_MAP_READINGS));
 }
 
 struct cycleAverageMAPReading_test_data {
@@ -77,8 +79,7 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   setup_cycle_average(test_data);
 
   test_data.current.hasSync = false;
-  test_data.sensorReadings.mapADC = 0x1234;
-  test_data.sensorReadings.emapADC = 0x1234;
+  test_data.sensorReadings = VALID_MAP_READINGS;
 
   TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
@@ -90,6 +91,22 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
+
+  // Repeat - should get same result.
+  test_data.current.hasSync = true;
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.emapAdcRunningTotal);
+
+  // Finally, make sure it was falling back! 
+  test_data.current.hasSync = true;
+  test_data.sensorReadings = VALID_MAP_READINGS;
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(VALID_MAP_READINGS.mapADC, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(VALID_MAP_READINGS.emapADC, test_data.cycle_average.emapAdcRunningTotal);
 }
 
 static void test_cycleAverageMAPReading(void) {
