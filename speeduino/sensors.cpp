@@ -247,6 +247,15 @@ void initialiseADC(void)
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
 
+static inline bool isValidMapSensorReading(uint16_t reading) {
+  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
+}
+
+TESTABLE_INLINE_STATIC bool isValidMapSensorReadings(const map_adc_readings_t &sensorReadings) {
+  return isValidMapSensorReading(sensorReadings.mapADC)
+  && (sensorReadings.emapADC == UINT16_MAX || isValidMapSensorReading(sensorReadings.emapADC));
+}
+
 TESTABLE_INLINE_STATIC bool instanteneousMAPReading(void)
 {
   // All we need to do it signal that the new readings should be used as-is
@@ -440,9 +449,6 @@ TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-static inline bool isValidMapSensorReading(uint16_t reading) {
-  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
-}
 
 TESTABLE_INLINE_STATIC uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior) {
   //Error check

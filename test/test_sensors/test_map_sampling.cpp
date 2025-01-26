@@ -9,7 +9,7 @@ static void test_instantaneous(void) {
 }
 
 extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern  bool canUseCycleAverage(const statuses &current, const config2 &page2);
+extern bool canUseCycleAverage(const statuses &current, const config2 &page2);
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
   current.RPMdiv100 = 43;
@@ -17,6 +17,21 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
   current.startRevolutions = 55;
   current.hasSync = true;
   current.status3 =  0U;
+}
+
+static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
+static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
+static constexpr map_adc_readings_t VALID_MAP_READINGS = { VALID_MAP_MIN+1, VALID_MAP_MAX-1 };
+static constexpr map_adc_readings_t INVALID_MAP_READINGS = { VALID_MAP_MIN, VALID_MAP_MAX-1 };
+
+extern bool isValidMapSensorReadings(const map_adc_readings_t &sensorReadings);
+
+static void test_isValidMapSensorReadings() {
+  TEST_ASSERT_TRUE(isValidMapSensorReadings(VALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings(INVALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings({ VALID_MAP_MIN+1, VALID_MAP_MAX }));
+  TEST_ASSERT_TRUE(isValidMapSensorReadings({ VALID_MAP_MIN+1, UINT16_MAX }));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings({ VALID_MAP_MIN, UINT16_MAX }));
 }
 
 static void test_canUseCycleAverge(void) {
@@ -339,6 +354,7 @@ static void test_validateFilterMapSensorReading(void) {
 
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
+    RUN_TEST(test_isValidMapSensorReadings);
     RUN_TEST(test_instantaneous);
     RUN_TEST(test_canUseCycleAverge);
     RUN_TEST(test_cycleAverageMAPReading_fallback_instantaneous);
