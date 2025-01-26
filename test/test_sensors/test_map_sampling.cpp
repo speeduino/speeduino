@@ -185,26 +185,31 @@ static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
   test_data.cycle_min.mapMinimum = UINT16_MAX;
 }
 
-// static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
-//   cycleMinmumMAPReading_test_data test_data;
-//   setup_cycle_minimum(test_data);
+static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
+  cycleMinmumMAPReading_test_data test_data;
+  setup_cycle_minimum(test_data);
 
-//   test_data.current.RPMdiv100 = test_data.page2.mapSwitchPoint - 1U;
-//   test_data.sensorReadings.mapADC = 300;
-//   test_data.sensorReadings.emapADC = 500;  
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(0U, test_data.cycle_min.cycleStartIndex);
 
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  // Repeat - should get same result.
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(0U, test_data.cycle_min.cycleStartIndex);
 
-//   // Repeat - should get same result.
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
-// }
+  //
+  test_data.current.RPMdiv100 = test_data.page2.mapSwitchPoint - 1U;
+  test_data.sensorReadings = VALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
+}
 
 static void test_cycleMinimumMAPReading(void) {
   cycleMinmumMAPReading_test_data test_data;
   setup_cycle_minimum(test_data);
-
 
   test_data.cycle_min.cycleStartIndex = test_data.current.startRevolutions;
   test_data.sensorReadings.mapADC = 100;
@@ -377,7 +382,7 @@ void test_map_sampling(void) {
     RUN_TEST(test_cycleAverageMAPReading_fallback_instantaneous);
     RUN_TEST(test_cycleAverageMAPReading);
     RUN_TEST(test_cycleAverageMAPReading_nosamples);
-    // RUN_TEST(test_cycleMinimumMAPReading_fallback_instantaneous);
+    RUN_TEST(test_cycleMinimumMAPReading_fallback_instantaneous);
     RUN_TEST(test_cycleMinimumMAPReading);
     RUN_TEST(test_canUseEventAverage);
     RUN_TEST(test_eventAverageMAPReading_fallback_instantaneous);

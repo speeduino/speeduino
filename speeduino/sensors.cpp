@@ -349,8 +349,13 @@ static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_
 }
 
 static inline void reset(const statuses &current, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
-  cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
-  cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+  if (isValidMapSensorReading(sensorReadings.mapADC)) {
+    cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
+    cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+  } else {
+    cycle_min.cycleStartIndex = 0U;
+    cycle_min.mapMinimum = UINT16_MAX;
+  }
 }
 
 static inline bool cycleMinimumEndCycle(const statuses &current, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
@@ -370,7 +375,7 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_min_t
 }
 
 TESTABLE_INLINE_STATIC bool cycleMinimumMAPReading(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
-  if (current.RPMdiv100 > page2.mapSwitchPoint) {
+  if ((current.RPMdiv100 > page2.mapSwitchPoint) && isValidMapSensorReadings(sensorReadings)) {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if ( isCycleCurrent(current, cycle_min) ) {
       return cycleMinimumAccumulate(cycle_min, sensorReadings);
