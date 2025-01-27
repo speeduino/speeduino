@@ -408,8 +408,11 @@ static inline void reset(map_event_average_t &eventAverage, const map_adc_readin
   // Reset for next cycle.
   eventAverage.mapAdcRunningTotal = 0U;
   eventAverage.sampleCount = 0U;
-  eventAverage.eventStartIndex = (uint8_t)ignitionCount;
-  (void)eventAverageAccumulate(eventAverage, sensorReadings);
+  eventAverage.eventStartIndex = 0U;
+  if (isValidMapSensorReadings(sensorReadings)) {
+    eventAverage.eventStartIndex = (uint8_t)ignitionCount;
+    (void)eventAverageAccumulate(eventAverage, sensorReadings);
+  }
 }
 
 static inline bool eventAverageEndEvent(map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
@@ -436,16 +439,20 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 }
 
 
-TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!current.engineProtectStatus);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) 
+        && HasAnySyncUnsafe(current)
+        && (current.startRevolutions > 1U)
+        && (!current.engineProtectStatus) 
+        && isValidMapSensorReadings(sensorReadings);
   }
   return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
   //Average of an ignition event
-  if ( canUseEventAverage(current, page2) ) //If the engine isn't running, fall back to instantaneous reads
+  if ( canUseEventAverage(current, page2, sensorReadings) ) //If the engine isn't running, fall back to instantaneous reads
   {
     if( isIgnitionEventCurrent(eventAverage) ) { //Watch for a change in the ignition counter to determine whether we're still on the same event
       return eventAverageAccumulate(eventAverage, sensorReadings);

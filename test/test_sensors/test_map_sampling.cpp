@@ -239,7 +239,7 @@ static void test_cycleMinimumMAPReading(void) {
   TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
-extern bool canUseEventAverage(const statuses &current, const config2 &page2);
+extern bool canUseEventAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings);
 extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
 static void enable_event_average(statuses &current, config2 &page2) {
@@ -256,26 +256,29 @@ static void test_canUseEventAverage(void) {
   config2 page2;
   enable_event_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
 
   current.hasSync = false;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.hasSync = true;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.startRevolutions = 55;
 
   current.RPMdiv100 = page2.mapSwitchPoint-1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint+1;
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
 
   current.engineProtectStatus = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.engineProtectStatus = 0;  
+
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, INVALID_MAP_READINGS));
 }
 
 
@@ -291,7 +294,7 @@ static void setup_event_average(eventAverageMAPReading_test_data &test_data) {
   test_data.event_average.eventStartIndex = 0;
   test_data.event_average.sampleCount = 0;
   test_data.event_average.mapAdcRunningTotal = 0;
-  ignitionCount = 0;
+  ignitionCount = 333;
 }
 
 static void test_eventAverageMAPReading_fallback_instantaneous(void) {
@@ -299,17 +302,24 @@ static void test_eventAverageMAPReading_fallback_instantaneous(void) {
   setup_event_average(test_data);
 
   test_data.current.hasSync = false;
-  test_data.sensorReadings.mapADC = 0x1234;
-  test_data.sensorReadings.emapADC = 0x1234;
+  test_data.sensorReadings = VALID_MAP_READINGS;
 
   TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT((uint8_t)ignitionCount, test_data.event_average.eventStartIndex);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 
   // Repeat - should get same result.
   TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT((uint8_t)ignitionCount, test_data.event_average.eventStartIndex);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
+
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.eventStartIndex);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.mapAdcRunningTotal);
 }
 
 
