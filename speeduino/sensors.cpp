@@ -466,17 +466,8 @@ TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-
-TESTABLE_INLINE_STATIC uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior) {
-  //Error check
-  if (isValidMapSensorReading(reading)) { 
-    return LOW_PASS_FILTER(reading, alpha, prior);
-  }
-  return prior;
-}
-
 static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t prior) {
-  return validateFilterMapSensorReading(readMAPSensor(pin), alpha, prior);
+  return LOW_PASS_FILTER(readMAPSensor(pin), alpha, prior);
 }
 
 static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previousReadings, const config4 &page4, bool useEMAP) {

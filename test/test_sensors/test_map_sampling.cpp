@@ -375,15 +375,6 @@ static void test_eventAverageMAPReading_nosamples(void) {
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 }
 
-extern uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior);
-
-static void test_validateFilterMapSensorReading(void) {
-  TEST_ASSERT_EQUAL_UINT(0, validateFilterMapSensorReading(0, 0, 0));
-  TEST_ASSERT_EQUAL_UINT(100, validateFilterMapSensorReading(0, 0, 100));
-  TEST_ASSERT_EQUAL_UINT(333, validateFilterMapSensorReading(333, 0, 100));
-  TEST_ASSERT_EQUAL_UINT(217, validateFilterMapSensorReading(333, 127, 100));
-}
-
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_isValidMapSensorReadings);
@@ -398,6 +389,5 @@ void test_map_sampling(void) {
     RUN_TEST(test_eventAverageMAPReading_fallback_instantaneous);
     RUN_TEST(test_eventAverageMAPReading);
     RUN_TEST(test_eventAverageMAPReading_nosamples);
-    RUN_TEST(test_validateFilterMapSensorReading);
   }    
 }
