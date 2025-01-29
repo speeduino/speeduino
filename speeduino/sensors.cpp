@@ -493,7 +493,7 @@ static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapM
   return max((int16_t)0, mapped);  //Sanity check
 }
 
-static inline void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
+TESTABLE_INLINE_STATIC void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
 {
   current.MAP = mapADCToMAP(readings.mapADC, page2.mapMin, page2.mapMax); //Get the current MAP value
   //Repeat for EMAP if it's enabled

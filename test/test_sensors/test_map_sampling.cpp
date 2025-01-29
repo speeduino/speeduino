@@ -8,6 +8,26 @@ static void test_instantaneous(void) {
   TEST_ASSERT_TRUE(instanteneousMAPReading());
 }
 
+extern void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current);
+
+static void test_setMAPValuesFromReadings(void) {
+  config2 page2;
+  page2.mapMin = page2.EMAPMin = 10;
+  page2.mapMax = page2.EMAPMax = 260;
+  statuses current;
+  setMAPValuesFromReadings({ 0, 0 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(10, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(10, current.EMAP);
+
+  setMAPValuesFromReadings({ 1024, 1024 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(260, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(260, current.EMAP);
+
+  setMAPValuesFromReadings({ 0, 0 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(10, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(10, current.EMAP);
+}
+
 extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
 extern bool canUseCycleAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings);
 
@@ -389,5 +409,6 @@ void test_map_sampling(void) {
     RUN_TEST(test_eventAverageMAPReading_fallback_instantaneous);
     RUN_TEST(test_eventAverageMAPReading);
     RUN_TEST(test_eventAverageMAPReading_nosamples);
+    RUN_TEST(test_setMAPValuesFromReadings);
   }    
 }
