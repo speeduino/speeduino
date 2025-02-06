@@ -8,7 +8,8 @@
 #include <unity.h>
 #include "table2d.h"
 #include "table3d.h"
-
+#include "maths.h"
+#
 template<size_t MAX_LEN, size_t N>
 constexpr void STR_LEN_CHECK(char const (&)[N]) 
 {
@@ -133,18 +134,18 @@ static inline void populate_table_P(table3d_t &table,
 
 // Populate a 2d table with constant values
 static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
-  for (uint8_t index=0; index<pTable->xSize; ++index) {
-    ((uint8_t*)pTable->values)[index] = value;
-    ((uint8_t*)pTable->axisX)[index] = bin;
+  for (uint8_t index=0; index<pTable->length; ++index) {
+    ((uint8_t*)pTable->values.data)[index] = value;
+    ((uint8_t*)pTable->axis.data)[index] = bin;
   }
-  pTable->cacheTime = UINT8_MAX;
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
 template <typename TValue, typename TBin>
 static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
-  memcpy(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy(pTable->values, values, pTable->xSize * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+  memcpy(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
+  memcpy(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
 // Populate a 2d table (from PROGMEM if available)
@@ -152,12 +153,19 @@ static inline void populate_2dtable(table2D *pTable, const TValue values[], cons
 template <typename TValue, typename TBin>
 static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
 #if defined(PROGMEM)
-  memcpy_P(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy_P(pTable->values, values, pTable->xSize * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+  memcpy_P(const_cast<void*>(pTable->axis.data), bins, pTable->length * sizeof(TBin));
+  memcpy_P(const_cast<void*>(pTable->values.data), values, pTable->length * sizeof(TValue));
+  pTable->cache.cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)
 #endif
 }
 
-void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
+template <typename T>
+T intermediate(T const& min, T const& max, uint8_t const& frac)
+{
+  if (max<min) {
+    return min - percentage(frac, (min - max));
+  }
+  return min + percentage(frac, (max - min));
+}
