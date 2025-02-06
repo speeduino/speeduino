@@ -9,14 +9,14 @@ TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500,
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_off(const statuses &current, uint8_t expectedVE) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_FALSE(current.secondFuelTableActive);
     TEST_ASSERT_EQUAL(expectedVE, current.VE1);
     TEST_ASSERT_EQUAL(0, current.VE2);
     TEST_ASSERT_EQUAL(current.VE1, current.VE);
 } 
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_on(const statuses &current, uint8_t expectedVE1, uint8_t expectedVE2, uint8_t expectedVE) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_TRUE(current.secondFuelTableActive);
     TEST_ASSERT_EQUAL(expectedVE1, current.VE1);
     TEST_ASSERT_EQUAL(expectedVE2, current.VE2);
     TEST_ASSERT_EQUAL(expectedVE, current.VE);
