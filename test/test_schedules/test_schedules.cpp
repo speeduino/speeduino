@@ -4,6 +4,7 @@
 #include <avr/sleep.h>
 
 #include "test_schedules.h"
+extern void test_setSchedule(void);
 
 void setup()
 {
@@ -16,12 +17,13 @@ void setup()
 
   initialiseAll(); //Run the main initialise function
   test_status_initial_off();
-  //test_status_off_to_pending();
-  //test_status_pending_to_running();
-  //test_status_running_to_pending();
-  //test_status_running_to_off();
+  test_status_off_to_pending();
+  test_status_pending_to_running();
+  test_status_running_to_pending();
+  test_status_running_to_off();
   test_accuracy_timeout();
   test_accuracy_duration();
+  test_setSchedule();
   
   UNITY_END(); // stop unit testing
 
