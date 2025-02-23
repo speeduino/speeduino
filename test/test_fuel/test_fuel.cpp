@@ -5,8 +5,15 @@
 #include <avr/sleep.h>
 
 #include "test_corrections.h"
-#include "test_PW.h"
-#include "test_staging.h"
+extern void testComputePulseWidths(void);
+extern void testPwApplyNitrous(void);
+extern void testCalculatePWLimit(void);
+extern void testCalculateRequiredFuel(void);
+extern void testApplyPwLimit(void);
+extern void testCalculateSecondaryPw(void);
+extern void testApplyPwToInjectorChannels(void);
+extern void testCalculateOpenTime(void);
+extern void testCalcPrimaryPulseWidth(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -23,8 +30,15 @@ void setup()
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testCorrections();
-    testPW();
-    testStaging();
+    testPwApplyNitrous();
+    testCalculatePWLimit();
+    testCalculateRequiredFuel();
+    testApplyPwLimit();
+    testCalculateSecondaryPw();
+    testApplyPwToInjectorChannels();
+    testCalculateOpenTime();
+    testCalcPrimaryPulseWidth();
+    testComputePulseWidths();
 
     UNITY_END(); // stop unit testing
 
