@@ -42,6 +42,7 @@ void initBoard()
 
     attachInterruptVector(IRQ_PIT, PIT_isr);
     NVIC_ENABLE_IRQ(IRQ_PIT);
+    NVIC_SET_PRIORITY(IRQ_PIT,255);
 
     /*
     ***********************************************************************************************************
