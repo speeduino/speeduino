@@ -29,6 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO.h"
 #include "timers.h"
 #include "schedule_calcs.h"
+#include "utilities.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, FUEL1_TIMER_DISABLE, FUEL1_TIMER_ENABLE);
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE, FUEL2_TIMER_DISABLE, FUEL2_TIMER_ENABLE);
@@ -281,6 +282,8 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
     interrupts();
   }
 }
+
+static constexpr table2D PrimingPulseTable(_countof(configPage2.primePulse), configPage2.primePulse, configPage2.primeBins);
 
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
