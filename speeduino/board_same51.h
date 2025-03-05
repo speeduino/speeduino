@@ -151,11 +151,15 @@ static inline void IGN6_TIMER_DISABLE(void) { TCC1->INTENSET.bit.MC1 = 0x0; }
 static inline void IGN7_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC0 = 0x0; }
 static inline void IGN8_TIMER_DISABLE(void) { TCC2->INTENSET.bit.MC1 = 0x0; }
 
-  #define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
-  #define MAX_TIMER_PERIOD_SLOW 139808
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-  //Hack compatibility with AVR timers that run at different speeds
-  #define uS_TO_TIMER_COMPARE_SLOW(uS) ((uS * 15) >> 5)
+#define MAX_TIMER_PERIOD 139808 // 2.13333333uS * 65535
+#define MAX_TIMER_PERIOD_SLOW 139808
+
+/** @brief Convert a time in microseconds to the equivalent number of timer ticks */
+static inline constexpr COMPARE_TYPE convertMicroSecToTicks(uint32_t uS) {
+// Hack compatibility with AVR timers that run at different speeds
+  return (COMPARE_TYPE)((uS * 15) >> 5);
+}
+
 
 /*
 ***********************************************************************************************************
