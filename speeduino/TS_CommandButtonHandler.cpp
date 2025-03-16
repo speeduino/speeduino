@@ -11,6 +11,7 @@
 #include "sensors.h"
 #include "storage.h"
 #include "SD_logger.h"
+#include "pages.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
@@ -294,9 +295,9 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       {
         if(configPage2.vssMode == 1)
         {
-          //Calculate the ratio of VSS reading from Aux input and actual VSS (assuming that actual VSS is really 60km/h).
+          //Calculate the ratio of VSS reading from Aux/CAN input and actual VSS (assuming that actual VSS is really 60km/h).
           configPage2.vssPulsesPerKm = (currentStatus.canin[configPage2.vssAuxCh] / 60);
-          writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+          writeConfig(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
           BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
         }
         else
@@ -306,7 +307,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
           if( calibrationGap > 0 )
           {
             configPage2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
-            writeConfig(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+            writeConfig(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
             BIT_SET(currentStatus.status3, BIT_STATUS3_VSS_REFRESH); //Set the flag to trigger the UI reset
           }
         }

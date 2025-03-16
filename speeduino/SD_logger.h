@@ -41,18 +41,19 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
+#define SD_LOG_NUM_FIELDS   91 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 #ifndef UNIT_TEST // Scope guard for unit testing
   #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
 #else
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
 
-//Test values only
 #define SD_LOG_FILE_SIZE  10000000 //Default 10mb file size
 #define MAX_LOG_FILES     9999
 #define LOG_FILE_PREFIX "SPD_"
 #define LOG_FILE_EXTENSION "csv"
-#define RING_BUF_CAPACITY (SD_LOG_ENTRY_SIZE * 10) //Allow for 10 entries in the ringbuffer. Will need tuning
+#define SD_LOG_ENTRY_TOTAL_BYTES (SD_LOG_ENTRY_SIZE + SD_LOG_NUM_FIELDS + 1) //The total size of each SD log entry in bytes. This is the size of the data packet + 1 comma for each field + 1 for the newline character
+#define RING_BUF_CAPACITY (SD_LOG_ENTRY_TOTAL_BYTES * 10) //Allow for 10 entries in the ringbuffer. Will need tuning
 
 /*
 Standard FAT16/32

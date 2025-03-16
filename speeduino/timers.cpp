@@ -233,7 +233,11 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
-    if ( (currentStatus.injPrimed == false) && (seclx10 == configPage2.primingDelay) && (currentStatus.RPM == 0) ) { beginInjectorPriming(); currentStatus.injPrimed = true; }
+    if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
+    { 
+      beginInjectorPriming(); 
+      currentStatus.injPrimed = true; 
+    }
     seclx10++;
   }
 
@@ -300,22 +304,22 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       byte tempEthPct = 0; 
       if(flexCounter < configPage2.flexFreqLow)
       {
-        tempEthPct = 0; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
-        flexCounter = 0;
+        tempEthPct = 0U; //Standard GM Continental sensor reads from 50Hz (0 ethanol) to 150Hz (Pure ethanol). Subtracting 50 from the frequency therefore gives the ethanol percentage.
+        flexCounter = 0U;
       }
       else if (flexCounter > (configPage2.flexFreqHigh + 1) ) //1 pulse buffer
       {
 
         if(flexCounter < (configPage2.flexFreqLow + 19)) //20Hz above the max freq is considered an error condition. Everything below that should be treated as max value
         {
-          tempEthPct = 100;
-          flexCounter = 0;
+          tempEthPct = 100U;
+          flexCounter = 0U;
         }
         else
         {
           //This indicates an error condition. Spec of the sensor is that errors are above 170Hz)
-          tempEthPct = 0;
-          flexCounter = 0;
+          tempEthPct = 0U;
+          flexCounter = 0U;
         }
       }
       else
@@ -325,9 +329,9 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       }
 
       //Off by 1 error check
-      if (tempEthPct == 1) { tempEthPct = 0; }
+      if (tempEthPct == 1U) { tempEthPct = 0U; }
 
-      currentStatus.ethanolPct = ADC_FILTER(tempEthPct, configPage4.FILTER_FLEX, currentStatus.ethanolPct);
+      currentStatus.ethanolPct = (uint8_t)LOW_PASS_FILTER((uint16_t)tempEthPct, configPage4.FILTER_FLEX, (uint16_t)currentStatus.ethanolPct);
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);

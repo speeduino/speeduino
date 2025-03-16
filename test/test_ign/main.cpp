@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
+#include <avr/sleep.h>
 
 void testIgnCorrections(void);
 
@@ -11,13 +12,21 @@ void setup()
 
     // NOTE!!! Wait for >2 secs
     // if board doesn't support software reset via Serial.DTR/RTS
+#if !defined(SIMULATOR)
     delay(2000);
+#endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     testIgnCorrections();
 
     UNITY_END(); // stop unit testing
+
+#if defined(SIMULATOR)       // Tell SimAVR we are done
+    cli();
+    sleep_enable();
+    sleep_cpu();
+#endif     
 }
 
 void loop()

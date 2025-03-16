@@ -196,13 +196,13 @@ void jumpToBootloader();
 *
 * Timers Table for STM32F4
 *   TIMER1  |  TIMER2  |  TIMER3  |  TIMER4  |  TIMER5  |  TIMER11
-* 1 - FAN  |1 - INJ1  |1 - IGN1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
-* 2 - BOOST |2 - INJ2  |2 - IGN2  |2 - IGN6  |2 - INJ6  |
-* 3 - VVT   |3 - INJ3  |3 - IGN3  |3 - IGN7  |3 - INJ7  |
-* 4 - IDLE  |4 - INJ4  |4 - IGN4  |4 - IGN8  |4 - INJ8  | 
+* 1 - FAN   |1 - IGN1  |1 - INJ1  |1 - IGN5  |1 - INJ5  |1 - oneMSInterval
+* 2 - BOOST |2 - IGN2  |2 - INJ2  |2 - IGN6  |2 - INJ6  |
+* 3 - VVT   |3 - IGN3  |3 - INJ3  |3 - IGN7  |3 - INJ7  |
+* 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
-#define MAX_TIMER_PERIOD 65535*4 //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS) (uS>>2) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
+#define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT
@@ -255,16 +255,15 @@ static inline void FUEL2_TIMER_DISABLE(void) {(TIM3)->DIER &= ~TIM_DIER_CC2IE;}
 static inline void FUEL3_TIMER_DISABLE(void) {(TIM3)->DIER &= ~TIM_DIER_CC3IE;}
 static inline void FUEL4_TIMER_DISABLE(void) {(TIM3)->DIER &= ~TIM_DIER_CC4IE;}
 
-  static inline void IGN1_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC1; (TIM2)->DIER |= TIM_DIER_CC1IE;}
-  static inline void IGN2_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC2; (TIM2)->DIER |= TIM_DIER_CC2IE;}
-  static inline void IGN3_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC3; (TIM2)->DIER |= TIM_DIER_CC3IE;}
-  static inline void IGN4_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC4; (TIM2)->DIER |= TIM_DIER_CC4IE;}
+static inline void IGN1_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC1; (TIM2)->DIER |= TIM_DIER_CC1IE;}
+static inline void IGN2_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC2; (TIM2)->DIER |= TIM_DIER_CC2IE;}
+static inline void IGN3_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC3; (TIM2)->DIER |= TIM_DIER_CC3IE;}
+static inline void IGN4_TIMER_ENABLE(void)  {(TIM2)->CR1 |= TIM_CR1_CEN; (TIM2)->SR = ~TIM_FLAG_CC4; (TIM2)->DIER |= TIM_DIER_CC4IE;}
 
-  static inline void IGN1_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC1IE;}
-  static inline void IGN2_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC2IE;}
-  static inline void IGN3_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC3IE;}
-  static inline void IGN4_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC4IE;}
-
+static inline void IGN1_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC1IE;}
+static inline void IGN2_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC2IE;}
+static inline void IGN3_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC3IE;}
+static inline void IGN4_TIMER_DISABLE(void)  {(TIM2)->DIER &= ~TIM_DIER_CC4IE;}
 
 static inline void FUEL5_TIMER_ENABLE(void) {(TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->SR = ~TIM_FLAG_CC1; (TIM5)->DIER |= TIM_DIER_CC1IE;}
 static inline void FUEL6_TIMER_ENABLE(void) {(TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->CR1 |= TIM_CR1_CEN; (TIM5)->SR = ~TIM_FLAG_CC2; (TIM5)->DIER |= TIM_DIER_CC2IE;}
@@ -276,17 +275,15 @@ static inline void FUEL6_TIMER_DISABLE(void) {(TIM5)->DIER &= ~TIM_DIER_CC2IE;}
 static inline void FUEL7_TIMER_DISABLE(void) {(TIM5)->DIER &= ~TIM_DIER_CC3IE;}
 static inline void FUEL8_TIMER_DISABLE(void) {(TIM5)->DIER &= ~TIM_DIER_CC4IE;}
 
-  static inline void IGN5_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC1; (TIM4)->DIER |= TIM_DIER_CC1IE;}
-  static inline void IGN6_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC2; (TIM4)->DIER |= TIM_DIER_CC2IE;}
-  static inline void IGN7_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC3; (TIM4)->DIER |= TIM_DIER_CC3IE;}
-  static inline void IGN8_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC4; (TIM4)->DIER |= TIM_DIER_CC4IE;}
+static inline void IGN5_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC1; (TIM4)->DIER |= TIM_DIER_CC1IE;}
+static inline void IGN6_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC2; (TIM4)->DIER |= TIM_DIER_CC2IE;}
+static inline void IGN7_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC3; (TIM4)->DIER |= TIM_DIER_CC3IE;}
+static inline void IGN8_TIMER_ENABLE(void)  {(TIM4)->CR1 |= TIM_CR1_CEN; (TIM4)->SR = ~TIM_FLAG_CC4; (TIM4)->DIER |= TIM_DIER_CC4IE;}
 
-  static inline void IGN5_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC1IE;}
-  static inline void IGN6_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC2IE;}
-  static inline void IGN7_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC3IE;}
-  static inline void IGN8_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC4IE;}
-
-  
+static inline void IGN5_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC1IE;}
+static inline void IGN6_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC2IE;}
+static inline void IGN7_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC3IE;}
+static inline void IGN8_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC4IE;}
 
 
 /*

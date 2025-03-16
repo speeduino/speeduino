@@ -18,7 +18,7 @@
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    24
+  #define CURRENT_DATA_VERSION    25
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -26,7 +26,8 @@ void doUpdates(void)
   if(readEEPROMVersion() == 2)
   {
     auto table_it = ignitionTable.values.begin();
-    while (!table_it.at_end())
+    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
+    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
     {
       auto row = *table_it;
       while (!row.at_end())
@@ -144,8 +145,8 @@ void doUpdates(void)
   if (readEEPROMVersion() == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
-    configPage2.fuelAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
-    configPage2.ignAlgorithm = configPage2.legacyMAP; //Was configPage2.unused2_38c
+    configPage2.fuelAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
+    configPage2.ignAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
 
     //Add option back in for open or closed loop boost. For all current configs to use closed
     configPage4.boostType = 1;
@@ -754,7 +755,7 @@ void doUpdates(void)
 
   if(readEEPROMVersion() == 23)
   {
-    //202405
+    //202501
     configPage10.knock_mode = KNOCK_MODE_OFF;
 
     //Change the CAN Broadcast settings to be a selection
@@ -769,9 +770,33 @@ void doUpdates(void)
     configPage2.flexFreqLow = 50;
     configPage2.flexFreqHigh = 150;
 
+    //Realign configPage10 to correct unaligned pointer warnings
+    //Move boostIntv from position 27 to 25
+    uint8_t origBoostIntv = ((uint8_t *)&configPage10)[27];
+    ((uint8_t *)&configPage10)[27] = ((uint8_t *)&configPage10)[26];
+    ((uint8_t *)&configPage10)[26] = ((uint8_t *)&configPage10)[25];
+    ((uint8_t *)&configPage10)[25] = origBoostIntv;
+    //Move lnchCtrlTPS from position 32 to 74
+    uint8_t origlnchCtrlTPS= ((uint8_t *)&configPage10)[32];
+    for(byte x=32U; x<74U; x++)
+    {
+      ((uint8_t *)&configPage10)[x] = ((uint8_t *)&configPage10)[x+1];
+    }
+    ((uint8_t *)&configPage10)[74] = origlnchCtrlTPS;
+
     writeAllConfig();
     storeEEPROMVersion(24);
   }
+  
+  if(readEEPROMVersion() == 24)
+  {
+    //202504
+
+
+    writeAllConfig();
+    storeEEPROMVersion(25);
+  }
+  
   
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )

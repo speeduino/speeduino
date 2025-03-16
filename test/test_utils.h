@@ -1,5 +1,6 @@
 
 #pragma once
+#include "table3d.h"
 
 #include <stdint.h>
 #include <unity.h>
@@ -67,6 +68,39 @@ for ( UNITY_FILENAME_RESTORE, _ufname_done = ufname_set(__FILE__);              
 #define TEST_DATA_P static constexpr
 #endif
 
+template <typename table3d_t>
+static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
+  // for (uint8_t i=0; i<table.values.row_size*table.values.num_rows; ++i) {
+  //   table.values.values[i] = value;
+  // }
+  table_value_iterator itZ = table.values.begin();
+  while (!itZ.at_end())
+  {
+    table_row_iterator itRow = *itZ;
+    while (!itRow.at_end())
+    {
+      *itRow = value;
+      ++itRow;
+    }
+    ++itZ;
+  }  
+  invalidate_cache(&table.get_value_cache);
+}
+
+static inline void populate_table_axis_P(table_axis_iterator it, 
+                                         const table3d_axis_t *pXValues) {   // PROGMEM if available
+  while (!it.at_end())
+  {
+#if defined(PROGMEM)
+    *it = (table3d_axis_t)pgm_read_word(pXValues);
+#else
+    *it = *pXValues;
+#endif      
+    ++pXValues;
+    ++it;
+  }
+}
+
 // Populate a 3d table (from PROGMEM if available)
 // You wuld typically declare the 3 source arrays usin TEST_DATA_P
 template <typename table3d_t>
@@ -75,32 +109,8 @@ static inline void populate_table_P(table3d_t &table,
                                   const table3d_axis_t *pYValues,   // PROGMEM if available
                                   const table3d_value_t *pZValues)  // PROGMEM if available
 {
-  {
-    table_axis_iterator itX = table.axisX.begin();
-    while (!itX.at_end())
-    {
-#if defined(PROGMEM)
-      *itX = (table3d_axis_t)pgm_read_word(pXValues);
-#else
-      *itX = *pXValues;
-#endif      
-      ++pXValues;
-      ++itX;
-    }
-  }  
-  {
-    table_axis_iterator itY = table.axisY.begin();
-    while (!itY.at_end())
-    {
-#if defined(PROGMEM)
-      *itY = (table3d_axis_t)pgm_read_word(pYValues);
-#else
-      *itY = *pYValues;
-#endif      
-      ++pYValues;
-      ++itY;
-    }
-  }
+  populate_table_axis_P(table.axisX.begin(), pXValues);
+  populate_table_axis_P(table.axisY.begin(), pYValues);
   {
     table_value_iterator itZ = table.values.begin();
     while (!itZ.at_end())
@@ -120,7 +130,6 @@ static inline void populate_table_P(table3d_t &table,
     }
   }
 }
-
 
 // Populate a 2d table with constant values
 static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
@@ -150,3 +159,5 @@ static inline void populate_2dtable_P(table2D *pTable, const TValue values[], co
   populate_2dtable(pTable, values, bins)
 #endif
 }
+
+void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);

@@ -45,6 +45,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "SD_logger.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
+#include "load_source.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
@@ -88,9 +89,18 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, int16_t fuelLoad, int
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  */
-void loop(void)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+// Sometimes loop() is inlined by LTO & sometimes not
+// When not inlined, there is a huge difference in stack usage: 60+ bytes
+// That eats into available RAM.
+// Adding __attribute__((always_inline)) forces the LTO process to inline.
+//
+// Since the function is declared in an Arduino header, we can't change
+// it to inline, so we need to suppress the resulting warning.
+void __attribute__((always_inline)) loop(void)
 {
-      mainLoopCount++;
+      if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms
@@ -138,8 +148,7 @@ void loop(void)
     }
 
     currentLoopTime = micros_safe();
-    uint32_t timeToLastTooth = (currentLoopTime - toothLastToothTime);
-    if ( (timeToLastTooth < MAX_STALL_TIME) || (toothLastToothTime > currentLoopTime) ) //Check how long ago the last tooth was seen compared to now. If it was more than half a second ago then the engine is probably stopped. toothLastToothTime can be greater than currentLoopTime if a pulse occurs between getting the latest time and doing the comparison
+    if ( engineIsRunning(currentLoopTime) )
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
@@ -158,17 +167,12 @@ void loop(void)
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
-      toothLastToothTime = 0;
-      toothLastSecToothTime = 0;
-      //toothLastMinusOneToothTime = 0;
+      resetDecoder();
       currentStatus.hasSync = false;
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       currentStatus.startRevolutions = 0;
-      toothSystemCount = 0;
-      secondaryToothCount = 0;
-      MAPcurRev = 0;
-      MAPcount = 0;
+      resetMAPcycleAndEvent();
       currentStatus.rpmDOT = 0;
       AFRnextCycle = 0;
       ignitionCount = 0;
@@ -411,8 +415,8 @@ void loop(void)
     currentStatus.advance1 = getAdvance1();
     currentStatus.advance = currentStatus.advance1; //Set the final advance value to be advance 1 as a default. This may be changed in the section below
 
-    calculateSecondaryFuel();
-    calculateSecondarySpark();
+    calculateSecondaryFuel(configPage10, fuelTable2, currentStatus);
+    calculateSecondarySpark(configPage2, configPage10, ignitionTable2, currentStatus);
 
     //Always check for sync
     //Main loop runs within this clause
@@ -907,7 +911,7 @@ void loop(void)
 #if INJ_CHANNELS >= 1
       if( (maxInjOutputs >= 1) && (currentStatus.PW1 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT)) )
       {
-        uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, channel1InjDegrees, injector1StartAngle, crankAngle);
+        uint32_t timeOut = calculateInjectorTimeout(fuelSchedule1, injector1StartAngle, crankAngle);
         if (timeOut>0U)
         {
             setFuelSchedule(fuelSchedule1, 
@@ -931,7 +935,7 @@ void loop(void)
 #if INJ_CHANNELS >= 2
         if( (maxInjOutputs >= 2) && (currentStatus.PW2 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ2_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, channel2InjDegrees, injector2StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule2, injector2StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule2, 
@@ -945,7 +949,7 @@ void loop(void)
 #if INJ_CHANNELS >= 3
         if( (maxInjOutputs >= 3) && (currentStatus.PW3 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ3_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, channel3InjDegrees, injector3StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule3, injector3StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule3, 
@@ -959,7 +963,7 @@ void loop(void)
 #if INJ_CHANNELS >= 4
         if( (maxInjOutputs >= 4) && (currentStatus.PW4 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ4_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, channel4InjDegrees, injector4StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule4, injector4StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule4, 
@@ -973,7 +977,7 @@ void loop(void)
 #if INJ_CHANNELS >= 5
         if( (maxInjOutputs >= 5) && (currentStatus.PW5 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ5_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, channel5InjDegrees, injector5StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule5, injector5StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule5, 
@@ -987,7 +991,7 @@ void loop(void)
 #if INJ_CHANNELS >= 6
         if( (maxInjOutputs >= 6) && (currentStatus.PW6 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ6_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, channel6InjDegrees, injector6StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule6, injector6StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule6, 
@@ -1001,7 +1005,7 @@ void loop(void)
 #if INJ_CHANNELS >= 7
         if( (maxInjOutputs >= 7) && (currentStatus.PW7 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ7_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, channel7InjDegrees, injector7StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule7, injector7StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule7, 
@@ -1015,7 +1019,7 @@ void loop(void)
 #if INJ_CHANNELS >= 8
         if( (maxInjOutputs >= 8) && (currentStatus.PW8 >= inj_opentime_uS) && (BIT_CHECK(fuelChannelsOn, INJ8_CMD_BIT)) )
         {
-          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, channel8InjDegrees, injector8StartAngle, crankAngle);
+          uint32_t timeOut = calculateInjectorTimeout(fuelSchedule8, injector8StartAngle, crankAngle);
           if ( timeOut>0U )
           {
             setFuelSchedule(fuelSchedule8, 
@@ -1197,6 +1201,8 @@ void loop(void)
       BIT_CLEAR(currentStatus.status3, BIT_STATUS3_RESET_PREVENT);
     }
 } //loop()
+#pragma GCC diagnostic pop
+
 #endif //Unit test guard
 
 /**
@@ -1282,28 +1288,10 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
  * 
  * @return byte The current VE value
  */
-byte getVE1(void)
+uint8_t getVE1(void)
 {
-  byte tempVE = 100;
-  if (configPage2.fuelAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.fuelLoad = currentStatus.MAP;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.fuelLoad = currentStatus.TPS * 2;
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.fuelLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  else { currentStatus.fuelLoad = currentStatus.MAP; } //Fallback position
-  tempVE = get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
-
-  return tempVE;
+  currentStatus.fuelLoad = getLoad(configPage2.fuelAlgorithm, currentStatus);
+  return get3DTableValue(&fuelTable, currentStatus.fuelLoad, currentStatus.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 /** Lookup the ignition advance from 3D ignition table.
@@ -1311,29 +1299,10 @@ byte getVE1(void)
  * 
  * @return byte The current target advance value in degrees
  */
-byte getAdvance1(void)
+int8_t getAdvance1(void)
 {
-  byte tempAdvance = 0;
-  if (configPage2.ignAlgorithm == LOAD_SOURCE_MAP) //Check which fuelling algorithm is being used
-  {
-    //Speed Density
-    currentStatus.ignLoad = currentStatus.MAP;
-  }
-  else if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS)
-  {
-    //Alpha-N
-    currentStatus.ignLoad = currentStatus.TPS * 2;
-
-  }
-  else if (configPage2.fuelAlgorithm == LOAD_SOURCE_IMAPEMAP)
-  {
-    //IMAP / EMAP
-    currentStatus.ignLoad = ((int16_t)currentStatus.MAP * 100U) / currentStatus.EMAP;
-  }
-  tempAdvance = get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - OFFSET_IGNITION; //As above, but for ignition advance
-  tempAdvance = correctionsIgn(tempAdvance);
-
-  return tempAdvance;
+  currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
+  return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - INT16_C(OFFSET_IGNITION)); //As above, but for ignition advance
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
@@ -1692,17 +1661,21 @@ void checkLaunchAndFlatShift()
   BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
   currentStatus.flatShiftingHard = false;
 
-  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS)  &&  ( (configPage2.vssMode > 0) && (currentStatus.vss <= configPage10.lnchCtrlVss) ) ) 
+  if (configPage6.launchEnabled && currentStatus.clutchTrigger && (currentStatus.clutchEngagedRPM < ((unsigned int)(configPage6.flatSArm) * 100)) && (currentStatus.TPS >= configPage10.lnchCtrlTPS) ) 
   { 
-    //Check whether RPM is above the launch limit
-    uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
-    if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
-
-    if(currentStatus.RPM > launchRPMLimit)
+    //Only enable if VSS is not used or if it is, make sure we're not above the speed limit
+    if( (configPage2.vssMode == 0) || ((configPage2.vssMode > 0) && (currentStatus.vss < configPage10.lnchCtrlVss)) )
     {
-      //HardCut rev limit for 2-step launch control.
-      currentStatus.launchingHard = true; 
-      BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+      //Check whether RPM is above the launch limit
+      uint16_t launchRPMLimit = (configPage6.lnchHardLim * 100);
+      if( (configPage2.hardCutType == HARD_CUT_ROLLING) ) { launchRPMLimit += (configPage15.rollingProtRPMDelta[0] * 10); } //Add the rolling cut delta if enabled (Delta is a negative value)
+
+      if(currentStatus.RPM > launchRPMLimit)
+      {
+        //HardCut rev limit for 2-step launch control.
+        currentStatus.launchingHard = true; 
+        BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
+      }
     }
   } 
   else 

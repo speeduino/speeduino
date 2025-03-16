@@ -227,7 +227,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(2, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
-    Timer5.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
+    Timer5.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
     Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
     #endif

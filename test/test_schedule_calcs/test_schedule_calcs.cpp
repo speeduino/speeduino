@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include <init.h>
+#include <avr/sleep.h>
 
 extern void test_calc_ign_timeout();
 extern void test_calc_inj_timeout();
@@ -9,7 +10,9 @@ extern void test_adjust_crank_angle();
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
-  delay(2000);
+#if !defined(SIMULATOR)
+    delay(2000);
+#endif
 
   UNITY_BEGIN(); // start unit testing
 
@@ -19,6 +22,11 @@ void setup()
   
   UNITY_END(); // stop unit testing
 
+#if defined(SIMULATOR)       // Tell SimAVR we are done
+    cli();
+    sleep_enable();
+    sleep_cpu();
+#endif     
 }
 
 void loop()

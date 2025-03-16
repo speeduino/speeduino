@@ -15,7 +15,6 @@ A full copy of the license may be found in the projects root directory
 #include "utilities.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
-#include "errors.h"
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
@@ -57,6 +56,7 @@ Commands are single byte (letter symbol) commands.
 */
 void legacySerialCommand(void)
 {
+  serialReceiveStartTime = millis();
   if ( serialStatusFlag == SERIAL_INACTIVE )  { currentCommand = primarySerial.read(); }
 
   switch (currentCommand)
@@ -146,24 +146,37 @@ void legacySerialCommand(void)
 
     case 'g': // Receive a dump of raw EEPROM values from the user
     {
+      serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       //Format is similar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
-      while(primarySerial.available() < 3) { delay(1); }
-      uint16_t eepromSize = word(primarySerial.read(), primarySerial.read());
-      if(eepromSize != getEEPROMSize())
+      while( (primarySerial.available() < 3) && (!isRxTimeout()) ) { delay(1); }
+      if(primarySerial.available() >= 3)
       {
-        //Client is trying to send the wrong EEPROM size. Don't let it 
-        primarySerial.println(F("ERR; Incorrect EEPROM size"));
-        break;
-      }
-      else
-      {
-        for(uint16_t x = 0; x < eepromSize; x++)
+        uint16_t eepromSize = word(primarySerial.read(), primarySerial.read());
+        if(eepromSize != getEEPROMSize())
         {
-          while(primarySerial.available() < 3) { delay(1); }
-          EEPROMWriteRaw(x, primarySerial.read());
+          //Client is trying to send the wrong EEPROM size. Don't let it 
+          primarySerial.println(F("ERR; Incorrect EEPROM size"));
+          break;
         }
+        else
+        {
+          for(uint16_t x = 0; x < eepromSize; x++)
+          {
+            while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
+            if(primarySerial.available()) 
+            { 
+              EEPROMWriteRaw(x, primarySerial.read());
+            }
+            else 
+            {
+              //Timed out, abort the write
+              serialStatusFlag = SERIAL_INACTIVE;
+              break;
+            }
+          }
+        }
+        serialStatusFlag = SERIAL_INACTIVE;
       }
-      serialStatusFlag = SERIAL_INACTIVE;
       break;
     }
 
@@ -630,8 +643,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'Q': // send code version
-      //targetPort.print(F("speeduino 202402"));
-      targetPort.print(F("speeduino 202405-dev"));
+      targetPort.print(F("speeduino 202504-dev"));
       break;
 
     case 'r': //New format for the optimised OutputChannels
@@ -663,7 +675,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'S': // send code version
-      targetPort.print(F("Speeduino 2024.05-dev"));
+      targetPort.print(F("Speeduino 2025.04-dev"));
       break;
   }
 }

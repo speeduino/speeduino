@@ -7,8 +7,8 @@
  * 
  */
 
-#ifndef NEW_COMMS_H
-#define NEW_COMMS_H
+#ifndef COMMS_H
+#define COMMS_H
 
 #if defined(CORE_TEENSY)
   #define BLOCKING_FACTOR       251
@@ -24,6 +24,8 @@
 extern Stream *pPrimarySerial;
 #define primarySerial (*pPrimarySerial)
 
+extern uint32_t serialReceiveStartTime; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
+
 /**
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.
@@ -33,5 +35,11 @@ void serialReceive(void);
 /** @brief The serial transmit pump. Should be called when ::serialStatusFlag indicates a transmit
  * operation is in progress */
 void serialTransmit(void);
+
+/** @brief Checks whether the current serial command should be timed out 
+ * 
+ * @return true if the serial command has been waiting too long
+*/
+bool isRxTimeout(void);
 
 #endif // COMMS_H
