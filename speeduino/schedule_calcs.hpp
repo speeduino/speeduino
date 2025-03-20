@@ -28,7 +28,8 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
   uint32_t tempTimeout = 0;
   int16_t delta = openAngle - crankAngle;
 
-  if ( (schedule.Status == RUNNING) || (schedule.Status == OFF)) 
+  if(delta > 0) { tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta); }
+  else if ( (schedule.Status == RUNNING) || (schedule.Status == OFF)) 
   {
     while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
     tempTimeout = angleToTimeMicroSecPerDegree((uint16_t)delta);

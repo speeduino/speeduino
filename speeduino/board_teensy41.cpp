@@ -42,6 +42,7 @@ void initBoard()
 
     attachInterruptVector(IRQ_PIT, PIT_isr);
     NVIC_ENABLE_IRQ(IRQ_PIT);
+    NVIC_SET_PRIORITY(IRQ_PIT,255);
 
     /*
     ***********************************************************************************************************
@@ -306,24 +307,48 @@ time_t getTeensy3Time()
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
 
-void setTriggerHysteresis()
+void setPinHysteresis(uint8_t pin)
 {
   //Refer to digital.c in the Teensyduino core for the following code
   //Refer also to Pgs 382 and 950 of the iMXRT1060 Reference Manual
   const struct digital_pin_bitband_and_config_table_struct *p;
   const uint32_t padConfig = IOMUXC_PAD_DSE(1) | IOMUXC_PAD_PKE | IOMUXC_PAD_PUE | IOMUXC_PAD_SPEED(0) | IOMUXC_PAD_HYS;
 
-  //Primary trigger
-  p = digital_pin_to_info_PGM + pinTrigger;
+  p = digital_pin_to_info_PGM + pin;
   *(p->reg + 1) &= ~(p->mask); // TODO: atomic
   *(p->pad) = padConfig;
   *(p->mux) = 5 | 0x10;
+}
 
+void setTeensy41PinsHysteresis()
+{
+  //Primary trigger
+  setPinHysteresis(pinTrigger);
   //Secondary trigger
-  p = digital_pin_to_info_PGM + pinTrigger2;
-  *(p->reg + 1) &= ~(p->mask); // TODO: atomic
-  *(p->pad) = padConfig;
-  *(p->mux) = 5 | 0x10;
+  setPinHysteresis(pinTrigger2);
+  //Tertiary trigger
+  setPinHysteresis(pinTrigger3);
+
+  if(configPage2.flexEnabled > 0) { setPinHysteresis(pinFlex); }
+  if(configPage2.vssMode > 1) { setPinHysteresis(pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+  if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
+
+}
+
+/*
+* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
+* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
+*/
+void teensy41_customSerialBegin()
+{
+  uint32_t millis_begin = systick_millis_count;
+  while (!Serial) 
+  {
+    uint32_t elapsed = systick_millis_count - millis_begin;
+    //Wait up to 100ms for this. 
+    if (elapsed > 100) break;
+    yield();
+  }
 }
 
 #endif
