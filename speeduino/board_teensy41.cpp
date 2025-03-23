@@ -346,7 +346,7 @@ void teensy41_customSerialBegin()
   {
     uint32_t elapsed = systick_millis_count - millis_begin;
     //Wait up to 100ms for this. 
-    if (elapsed > 100) break;
+    if (elapsed > 250) break;
     yield();
   }
 }
