@@ -406,6 +406,12 @@ struct config2 {
 
   byte decelAmount;
 
+  byte firingOrder3: 1;
+  byte firingOrder4: 2;
+  byte firingOrder5: 1;
+  byte firingOrder6: 2;
+  byte firingOrder8: 2;
+
 #if defined(CORE_AVR)
   };
 #else
