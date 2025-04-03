@@ -247,6 +247,15 @@ void initialiseADC(void)
 static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
 static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
 
+static inline bool isValidMapSensorReading(uint16_t reading) {
+  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
+}
+
+TESTABLE_INLINE_STATIC bool isValidMapSensorReadings(const map_adc_readings_t &sensorReadings) {
+  return isValidMapSensorReading(sensorReadings.mapADC)
+  && (sensorReadings.emapADC == UINT16_MAX || isValidMapSensorReading(sensorReadings.emapADC));
+}
+
 TESTABLE_INLINE_STATIC bool instanteneousMAPReading(void)
 {
   // All we need to do it signal that the new readings should be used as-is
@@ -267,7 +276,9 @@ static inline void reset(const statuses &current, map_cycle_average_t &cycle_ave
   cycle_average.mapAdcRunningTotal = 0U;
   cycle_average.emapAdcRunningTotal = 0U;
   cycle_average.cycleStartIndex = (uint8_t)current.startRevolutions;
-  (void)cycleAverageMAPReadingAccumulate(cycle_average, sensorReadings);
+  if (isValidMapSensorReadings(sensorReadings)) {
+    (void)cycleAverageMAPReadingAccumulate(cycle_average, sensorReadings);
+  }
 }
 
 static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
@@ -303,15 +314,18 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_avera
   return isCycleCurrent(current, cycle_avg.cycleStartIndex);
 }
 
-TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) 
+      && HasAnySyncUnsafe(current) 
+      && (current.startRevolutions > 1U)
+      && isValidMapSensorReadings(sensorReadings);
   }
   return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
-  if ( canUseCycleAverage(current, page2) )
+  if ( canUseCycleAverage(current, page2, sensorReadings) )
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if( isCycleCurrent(current, cycle_average) ) {
@@ -335,8 +349,13 @@ static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_
 }
 
 static inline void reset(const statuses &current, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
-  cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
-  cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+  if (isValidMapSensorReading(sensorReadings.mapADC)) {
+    cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
+    cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+  } else {
+    cycle_min.cycleStartIndex = 0U;
+    cycle_min.mapMinimum = UINT16_MAX;
+  }
 }
 
 static inline bool cycleMinimumEndCycle(const statuses &current, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
@@ -356,7 +375,7 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_min_t
 }
 
 TESTABLE_INLINE_STATIC bool cycleMinimumMAPReading(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
-  if (current.RPMdiv100 > page2.mapSwitchPoint) {
+  if ((current.RPMdiv100 > page2.mapSwitchPoint) && isValidMapSensorReadings(sensorReadings)) {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if ( isCycleCurrent(current, cycle_min) ) {
       return cycleMinimumAccumulate(cycle_min, sensorReadings);
@@ -389,8 +408,11 @@ static inline void reset(map_event_average_t &eventAverage, const map_adc_readin
   // Reset for next cycle.
   eventAverage.mapAdcRunningTotal = 0U;
   eventAverage.sampleCount = 0U;
-  eventAverage.eventStartIndex = (uint8_t)ignitionCount;
-  (void)eventAverageAccumulate(eventAverage, sensorReadings);
+  eventAverage.eventStartIndex = 0U;
+  if (isValidMapSensorReadings(sensorReadings)) {
+    eventAverage.eventStartIndex = (uint8_t)ignitionCount;
+    (void)eventAverageAccumulate(eventAverage, sensorReadings);
+  }
 }
 
 static inline bool eventAverageEndEvent(map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
@@ -417,16 +439,20 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 }
 
 
-TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!current.engineProtectStatus);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) 
+        && HasAnySyncUnsafe(current)
+        && (current.startRevolutions > 1U)
+        && (!current.engineProtectStatus) 
+        && isValidMapSensorReadings(sensorReadings);
   }
   return false; // Just here to avoid compiler warning.
 }
 
 TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
   //Average of an ignition event
-  if ( canUseEventAverage(current, page2) ) //If the engine isn't running, fall back to instantaneous reads
+  if ( canUseEventAverage(current, page2, sensorReadings) ) //If the engine isn't running, fall back to instantaneous reads
   {
     if( isIgnitionEventCurrent(eventAverage) ) { //Watch for a change in the ignition counter to determine whether we're still on the same event
       return eventAverageAccumulate(eventAverage, sensorReadings);
@@ -440,20 +466,8 @@ TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-static inline bool isValidMapSensorReading(uint16_t reading) {
-  return (reading < VALID_MAP_MAX) && (reading > VALID_MAP_MIN);  
-}
-
-TESTABLE_INLINE_STATIC uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior) {
-  //Error check
-  if (isValidMapSensorReading(reading)) { 
-    return LOW_PASS_FILTER(reading, alpha, prior);
-  }
-  return prior;
-}
-
 static inline uint16_t readFilteredMapADC(uint8_t pin, uint8_t alpha, uint16_t prior) {
-  return validateFilterMapSensorReading(readMAPSensor(pin), alpha, prior);
+  return LOW_PASS_FILTER(readMAPSensor(pin), alpha, prior);
 }
 
 static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previousReadings, const config4 &page4, bool useEMAP) {
@@ -479,7 +493,7 @@ static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapM
   return max((int16_t)0, mapped);  //Sanity check
 }
 
-static inline void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
+TESTABLE_INLINE_STATIC void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
 {
   current.MAP = mapADCToMAP(readings.mapADC, page2.mapMin, page2.mapMax); //Get the current MAP value
   //Repeat for EMAP if it's enabled
