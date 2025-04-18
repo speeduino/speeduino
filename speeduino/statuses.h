@@ -227,6 +227,7 @@ struct statuses {
   byte airConStatus;
 };
 
+
 /**
  * @brief Non-atomic version of HasAnySync. **Should only be called in an ATOMIC() block***
  * 

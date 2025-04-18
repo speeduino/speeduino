@@ -53,6 +53,9 @@ uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
 uint8_t dfcoTaper;
 
+#define PERCENT_100 100;
+#define PERCENT_0 0;
+
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
 void initialiseCorrections(void)
@@ -136,7 +139,7 @@ uint16_t correctionsFuel(void)
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
-  byte dfcoTaperCorrection = correctionDFCOfuel();
+  byte dfcoTaperCorrection = getDfcoFuelCorrectionPercentage();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
 
@@ -517,24 +520,32 @@ byte correctionLaunch(void)
 }
 
 /**
+ * Returns fuel correction in percents during DFCO tapering
+ * Mutates: dfcoTaper (global Deceleration fuel cutoff taper countdown)
 */
-byte correctionDFCOfuel(void)
+byte getDfcoFuelCorrectionPercentage(void)
 {
-  byte scaleValue = 100;
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) )
+  if (!BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO))
   {
-    if ( (configPage9.dfcoTaperEnable == 1) && (dfcoTaper != 0) )
-    {
-      //Do a check if the user reduced the duration while active to avoid overflow
-      if (dfcoTaper > configPage9.dfcoTaperTime) { dfcoTaper = configPage9.dfcoTaperTime; }
-      scaleValue = map(dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoTaper--; }
-    }
-    else { scaleValue = 0; } //Taper ended or disabled, disable fuel
+    //Keep updating the duration until DFCO is active
+    dfcoTaper = configPage9.dfcoTaperTime;
+    return PERCENT_100;
   }
-  else { dfcoTaper = configPage9.dfcoTaperTime; } //Keep updating the duration until DFCO is active
 
-  return scaleValue;
+  if (!configPage9.dfcoTaperEnable || dfcoTaper == 0)
+  {
+    //Taper ended or disabled, disable fuel
+    return PERCENT_0;
+  }
+
+  dfcoTaper = min(dfcoTaper, configPage9.dfcoTaperTime);
+  const byte percentage = map(
+    dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
+  if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) 
+  { 
+    dfcoTaper--;
+  }
+  return percentage;
 }
 
 /*
