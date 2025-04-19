@@ -10,6 +10,7 @@
 #include "Nissan360/Nissan360.h"
 #include "FordST170/FordST170.h"
 #include "NGC/test_ngc.h"
+#include "ThirtySixMinus21/ThirtySixMinus21.h"
 #include "SuzukiK6A/SuzukiK6A.h"
 
 extern void testDecoder_General(void);
@@ -32,6 +33,7 @@ void setup()
     testNissan360();
     testFordST170();
     testNGC();
+    testThirtySixMinus21();
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
     testDecoder_General();
