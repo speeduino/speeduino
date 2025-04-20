@@ -23,7 +23,7 @@ byte correctionIATDensity(void); //Inlet temp density correction
 byte correctionBaro(void); //Barometric pressure correction
 byte correctionLaunch(void); //Launch control correction
 byte getDfcoFuelCorrectionPercentage(void); //DFCO taper correction
-bool correctionDFCO(void); //Decelleration fuel cutoff
+bool isDfcoOngoing(void); //Decelleration fuel cutoff
 
 int8_t correctionsIgn(int8_t advance);
 int8_t correctionFixedTiming(int8_t advance);

@@ -738,7 +738,7 @@ static void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_both);
 }
 
-extern bool correctionDFCO(void);
+extern bool isDfcoOngoing(void);
 
 static void setup_DFCO_on_taper_off_no_delay()
 {
@@ -757,7 +757,7 @@ static void setup_DFCO_on_taper_off_no_delay()
   configPage2.dfcoDelay = 0;
   configPage9.dfcoTaperEnable = 0; //Enable
 
-  correctionDFCO();
+  isDfcoOngoing();
 }
 
 //**********************************************************************************************************************
@@ -766,7 +766,7 @@ static void test_corrections_dfco_on(void)
   //Test under ideal conditions that DFCO goes active
   setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO());
+  TEST_ASSERT_TRUE(isDfcoOngoing());
 }
 
 static void test_corrections_dfco_off_RPM()
@@ -774,9 +774,9 @@ static void test_corrections_dfco_off_RPM()
   //Test that DFCO comes on and then goes off when the RPM drops below threshold
   setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
+  TEST_ASSERT_TRUE(isDfcoOngoing()); //Make sure DFCO is on initially
   currentStatus.RPM = 1000; //Set the current simulated RPM below the threshold + hyster
-  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+  TEST_ASSERT_FALSE(isDfcoOngoing()); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_TPS()
@@ -784,9 +784,9 @@ static void test_corrections_dfco_off_TPS()
   //Test that DFCO comes on and then goes off when the TPS goes above the required threshold (ie not off throttle)
   setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
+  TEST_ASSERT_TRUE(isDfcoOngoing()); //Make sure DFCO is on initially
   currentStatus.TPS = 10; //Set the current simulated TPS to be above the threshold
-  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+  TEST_ASSERT_FALSE(isDfcoOngoing()); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_delay()
@@ -799,10 +799,10 @@ static void test_corrections_dfco_off_delay()
   configPage2.dfcoDelay = 5;
   
   for (uint8_t index = 0; index < configPage2.dfcoDelay; ++index) {
-    TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on...
+    TEST_ASSERT_FALSE(isDfcoOngoing()); //Make sure DFCO does not come on...
   }
   // ...until simulated delay period expires
-  TEST_ASSERT_TRUE(correctionDFCO()); 
+  TEST_ASSERT_TRUE(isDfcoOngoing()); 
 }
 
 static void setup_DFCO_on_taper_on_no_delay()
@@ -1565,7 +1565,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(correctionDFCO());
+  TEST_ASSERT_FALSE(isDfcoOngoing());
   TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrectionPercentage(), "getDfcoFuelCorrectionPercentage");
 
   // Acceeleration
@@ -1636,7 +1636,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(correctionDFCO());
+  TEST_ASSERT_FALSE(isDfcoOngoing());
   TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrectionPercentage(), "getDfcoFuelCorrectionPercentage");
 
   TEST_ASSERT_EQUAL(1500U, correctionsFuel());

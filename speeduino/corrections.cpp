@@ -138,7 +138,7 @@ uint16_t correctionsFuel(void)
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
+  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, isDfcoOngoing());
   byte dfcoTaperCorrection = getDfcoFuelCorrectionPercentage();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
@@ -548,31 +548,50 @@ byte getDfcoFuelCorrectionPercentage(void)
 
 /*
  * Returns true if deceleration fuel cutoff should be on, false if its off
+ * Mutates dfcoDelay
  */
-bool correctionDFCO(void)
+bool isDfcoOngoing(void)
 {
-  bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1 )
+  if (!configPage2.dfcoEnabled)
   {
-    if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) 
+    // not enabled in configuration
+    return false;
+  }
+
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) 
+  {
+    // if dfco is ongoing
+    // check that RPM is not too low and throttle is still off
+    return 
+      currentStatus.RPM > ( configPage4.dfcoRPM * 10) && 
+      currentStatus.TPS < configPage4.dfcoTPSThresh;
+  }
+
+  //do not start DFCO if throttle pressed
+  //or engine temperature below treshold
+  //or engine rpm below treshold
+  if ((currentStatus.TPS >= configPage4.dfcoTPSThresh) ||
+    (currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) ||
+    (currentStatus.RPM <= (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ))
+  {
+    //reset delay timer when any of DFCO conditions are not met
+    dfcoDelay = 0;
+    return false;
+  }
+
+  //do not activate DFCO while delay timer is running
+  if (dfcoDelay < configPage2.dfcoDelay)
+  {
+    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) 
     {
-      DFCOValue = ( currentStatus.RPM > ( configPage4.dfcoRPM * 10) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
-      if ( DFCOValue == false) { dfcoDelay = 0; }
+      dfcoDelay++; 
     }
-    else 
-    {
-      if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) && (currentStatus.coolant >= (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) && ( currentStatus.RPM > (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ) )
-      {
-        if( dfcoDelay < configPage2.dfcoDelay )
-        {
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { dfcoDelay++; }
-        }
-        else { DFCOValue = true; }
-      }
-      else { dfcoDelay = 0; } //Prevent future activation right away if previous time wasn't activated
-    } // DFCO active check
-  } // DFCO enabled check
-  return DFCOValue;
+    return false;
+  }
+
+  //Reset delay timer and activate DFCO
+  dfcoDelay = 0;
+  return true;
 }
 
 /** Flex fuel adjustment to vary fuel based on ethanol content.
