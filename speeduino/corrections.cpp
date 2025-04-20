@@ -53,8 +53,8 @@ uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
 uint8_t dfcoTaper;
 
-#define PERCENT_100 100;
-#define PERCENT_0 0;
+#define PERCENTS_100 100;
+#define PERCENTS_0 0;
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
@@ -525,27 +525,25 @@ byte correctionLaunch(void)
 */
 byte getDfcoFuelCorrectionPercentage(void)
 {
-  if (!BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO))
+  if (IS_BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO))
   {
     //Keep updating the duration until DFCO is active
     dfcoTaper = configPage9.dfcoTaperTime;
-    return PERCENT_100;
+    return PERCENTS_100;
   }
 
   if (!configPage9.dfcoTaperEnable || dfcoTaper == 0)
   {
     //Taper ended or disabled, disable fuel
-    return PERCENT_0;
+    return PERCENTS_0;
   }
 
   dfcoTaper = min(dfcoTaper, configPage9.dfcoTaperTime);
-  const byte percentage = map(
-    dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
   if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) 
   { 
     dfcoTaper--;
   }
-  return percentage;
+  return map(dfcoTaper, configPage9.dfcoTaperTime, 0, 100, configPage9.dfcoTaperFuel);
 }
 
 /*
