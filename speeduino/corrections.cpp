@@ -561,7 +561,7 @@ bool isDfcoOngoing(void)
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) 
   {
     // if dfco is ongoing
-    // check that RPM is not too low and throttle is still off
+    // check that RPM is not too low and throttle is still closed
     return 
       currentStatus.RPM > ( configPage4.dfcoRPM * 10) && 
       currentStatus.TPS < configPage4.dfcoTPSThresh;
@@ -589,7 +589,8 @@ bool isDfcoOngoing(void)
     return false;
   }
 
-  //Reset delay timer and activate DFCO
+  // Reset delay timer and activate DFCO
+  // when conditions are met and delay timer has ended
   dfcoDelay = 0;
   return true;
 }
