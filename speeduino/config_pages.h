@@ -473,7 +473,7 @@ struct config4 {
   byte dwellCorrectionValues[6]; ///< Correction table for dwell vs battery voltage
   byte iatRetBins[6]; ///< Inlet Air Temp timing retard curve bins (Unit: ...)
   byte iatRetValues[6]; ///< Inlet Air Temp timing retard curve values (Unit: ...)
-  byte dfcoRPM;       ///< RPM at which DFCO turns off/on at
+  byte dfcoRPM;       ///< RPM (divided by 10) at which DFCO turns off/on at
   byte dfcoHyster;    //Hysteris RPM for DFCO
   byte dfcoTPSThresh; //TPS must be below this figure for DFCO to engage (Unit: ...)
 

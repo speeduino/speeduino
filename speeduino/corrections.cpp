@@ -552,47 +552,37 @@ byte getDfcoFuelCorrectionPercentage(void)
  */
 bool isDfcoOngoing(void)
 {
-  if (configPage2.dfcoEnabled == 0)
+  if (configPage2.dfcoEnabled == 0) // Is dfco disabled in configuration?
   {
-    // not enabled in configuration
     return false;
   }
 
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) 
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) // Is dfco ongoing?
   {
-    // If dfco is ongoing
-    // check that RPM is not too low and throttle is still closed
-    return 
-      currentStatus.RPM > ( configPage4.dfcoRPM * 10) && 
-      currentStatus.TPS < configPage4.dfcoTPSThresh;
+    return // continue dfco if
+      (currentStatus.RPM > ( configPage4.dfcoRPM * 10) && // rpm not too low
+      currentStatus.TPS < configPage4.dfcoTPSThresh); // throttle still closed
   }
 
-  // Do not start DFCO if throttle is not closed
-  // or engine temperature below treshold
-  // or engine rpm below treshold
-  if ((currentStatus.TPS >= configPage4.dfcoTPSThresh) ||
-    (currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) ||
-    (currentStatus.RPM <= (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ))
+  if ((currentStatus.TPS >= configPage4.dfcoTPSThresh) || // throttle open
+    (currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) || // engine too cold
+    (currentStatus.RPM <= (unsigned int)((configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)))) //rpm too low
   {
-    // Reset delay timer when any of DFCO conditions are not met
+    dfcoDelay = 0; // Reset delay when DFCO conditions are not met
+    return false;
+  }
+
+  if (dfcoDelay >= configPage2.dfcoDelay) // delay ellapsed, enable dfco, reset delay
+  {
     dfcoDelay = 0;
-    return false;
+    return true;
   }
-
-  // Do not activate DFCO while delay timer is running
-  if (dfcoDelay < configPage2.dfcoDelay)
+  
+  if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) 
   {
-    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) 
-    {
-      dfcoDelay++; 
-    }
-    return false;
+    dfcoDelay++; //delay still running
   }
-
-  // Reset delay timer and activate DFCO
-  // when conditions are met and delay timer has ended
-  dfcoDelay = 0;
-  return true;
+  return false;
 }
 
 /** Flex fuel adjustment to vary fuel based on ethanol content.
