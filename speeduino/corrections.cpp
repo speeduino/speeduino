@@ -552,7 +552,7 @@ byte getDfcoFuelCorrectionPercentage(void)
  */
 bool isDfcoOngoing(void)
 {
-  if (!configPage2.dfcoEnabled)
+  if (configPage2.dfcoEnabled == 0)
   {
     // not enabled in configuration
     return false;
@@ -560,26 +560,26 @@ bool isDfcoOngoing(void)
 
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) 
   {
-    // if dfco is ongoing
+    // If dfco is ongoing
     // check that RPM is not too low and throttle is still closed
     return 
       currentStatus.RPM > ( configPage4.dfcoRPM * 10) && 
       currentStatus.TPS < configPage4.dfcoTPSThresh;
   }
 
-  //do not start DFCO if throttle pressed
-  //or engine temperature below treshold
-  //or engine rpm below treshold
+  // Do not start DFCO if throttle is not closed
+  // or engine temperature below treshold
+  // or engine rpm below treshold
   if ((currentStatus.TPS >= configPage4.dfcoTPSThresh) ||
     (currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) ||
     (currentStatus.RPM <= (unsigned int)( (configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)) ))
   {
-    //reset delay timer when any of DFCO conditions are not met
+    // Reset delay timer when any of DFCO conditions are not met
     dfcoDelay = 0;
     return false;
   }
 
-  //do not activate DFCO while delay timer is running
+  // Do not activate DFCO while delay timer is running
   if (dfcoDelay < configPage2.dfcoDelay)
   {
     if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) 
