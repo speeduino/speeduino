@@ -14,9 +14,6 @@
 /** @brief Is bit pos (0-7) in byte var set? */
 #define BIT_CHECK(var,pos) !!((var) & (1U<<(pos)))
 
-/** @brief Is bit pos (0-7) in byte var clear? */
-#define IS_BIT_CLEAR(var,pos) !((var) & (1U<<(pos)))
-
 /** @brief Toggle the value of bit pos (0-7) in byte var */
 #define BIT_TOGGLE(var,pos) ((var)^= 1UL << (pos))
 
