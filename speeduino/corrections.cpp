@@ -557,22 +557,22 @@ bool isDfcoOngoing(void)
     return false;
   }
 
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO)) // Is dfco ongoing?
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1) // Is dfco ongoing?
   {
     return // continue dfco if
-      (currentStatus.RPM > ( configPage4.dfcoRPM * 10) && // rpm not too low
-      currentStatus.TPS < configPage4.dfcoTPSThresh); // throttle still closed
+      currentStatus.TPS < configPage4.dfcoTPSThresh && // throttle still closed  
+      currentStatus.RPM > (unsigned int)(configPage4.dfcoRPM * 10); // rpm high enough
   }
 
-  if ((currentStatus.TPS >= configPage4.dfcoTPSThresh) || // throttle open
-    (currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET)) || // engine too cold
-    (currentStatus.RPM <= (unsigned int)((configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2)))) //rpm too low
+  if (currentStatus.TPS >= configPage4.dfcoTPSThresh || // throttle open
+    currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) || // engine too cold
+    currentStatus.RPM <= (unsigned int)((configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2))) // rpm too low
   {
     dfcoDelay = 0; // Reset delay when DFCO conditions are not met
     return false;
   }
 
-  if (dfcoDelay >= configPage2.dfcoDelay) // delay ellapsed, enable dfco, reset delay
+  if (dfcoDelay >= configPage2.dfcoDelay) // delay ellapsed, reset delay, enable dfco
   {
     dfcoDelay = 0;
     return true;
