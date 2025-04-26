@@ -139,7 +139,7 @@ uint16_t correctionsFuel(void)
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
   BIT_WRITE(currentStatus.status1, BIT_STATUS1_DFCO, isDfcoOngoing());
-  byte dfcoTaperCorrection = getDfcoFuelCorrectionPercentage();
+  byte dfcoTaperCorrection = getDfcoFuelCorrection();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
 
@@ -523,16 +523,16 @@ byte correctionLaunch(void)
  * Returns fuel correction in percents during DFCO tapering
  * Mutates: dfcoTaper (global Deceleration fuel cutoff taper countdown)
 */
-byte getDfcoFuelCorrectionPercentage(void)
+byte getDfcoFuelCorrection(void)
 {
-  if (IS_BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO))
+  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 0)
   {
     //Keep updating the duration until DFCO is active
     dfcoTaper = configPage9.dfcoTaperTime;
     return PERCENTS_100;
   }
 
-  if (!configPage9.dfcoTaperEnable || dfcoTaper == 0)
+  if (configPage9.dfcoTaperEnable == 0 || dfcoTaper == 0)
   {
     //Taper ended or disabled, disable fuel
     return PERCENTS_0;

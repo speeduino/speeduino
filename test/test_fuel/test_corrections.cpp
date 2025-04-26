@@ -888,39 +888,39 @@ static void setup_DFCO_on_taper_on_no_delay()
   configPage9.dfcoTaperAdvance = 20; //Reduce 20deg until full fuel cut
 }
 
-extern byte getDfcoFuelCorrectionPercentage(void);
+extern byte getDfcoFuelCorrection(void);
 
-static void test_getDfcoFuelCorrectionPercentage_DFCO_off()
+static void test_getDfcoFuelCorrection_DFCO_off()
 {
   setup_and_start_DFCO();
 
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
-  TEST_ASSERT_EQUAL(100, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(100, getDfcoFuelCorrection());
 }
 
-static void test_getDfcoFuelCorrectionPercentage_notaper()
+static void test_getDfcoFuelCorrection_notaper()
 {
   setup_and_start_DFCO();
 
   configPage9.dfcoTaperEnable = 0; //Disable
   BIT_SET(currentStatus.status1, BIT_STATUS1_DFCO);
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
 }
 
 static inline void reset_dfco_taper(void) {
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
-  TEST_ASSERT_EQUAL(100, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(100, getDfcoFuelCorrection());
   TEST_ASSERT_EQUAL(20, correctionDFCOignition(20));
 }
 
 static inline void advance_dfco_taper(uint8_t count) {
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
   for (uint8_t index = 0; index < count; ++index) {
-    (void)getDfcoFuelCorrectionPercentage();
+    (void)getDfcoFuelCorrection();
   }
 }
 
-static void test_getDfcoFuelCorrectionPercentage_taper()
+static void test_getDfcoFuelCorrection_taper()
 {
   setup_DFCO_on_taper_on_no_delay();
 
@@ -931,23 +931,23 @@ static void test_getDfcoFuelCorrectionPercentage_taper()
   // 50% test
   advance_dfco_taper(configPage9.dfcoTaperTime/2);
   BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
-  TEST_ASSERT_EQUAL(50, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(50, getDfcoFuelCorrection());
 
   // 75% test
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
   BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
-  TEST_ASSERT_EQUAL(25, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(25, getDfcoFuelCorrection());
 
   // Advance taper to 100%
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
 
   // 100% & beyond test
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
-  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrectionPercentage());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
+  TEST_ASSERT_EQUAL(0, getDfcoFuelCorrection());
 }
 
 extern int8_t correctionDFCOignition(int8_t advance);
@@ -1010,9 +1010,9 @@ static void test_corrections_dfco()
   RUN_TEST_P(test_dfco_goes_active_and_delay_resets_when_conditions_are_met_and_delay_ellapsed);
   RUN_TEST_P(test_dfco_goes_active_only_after_delay);
 
-  RUN_TEST_P(test_getDfcoFuelCorrectionPercentage_DFCO_off);
-  RUN_TEST_P(test_getDfcoFuelCorrectionPercentage_notaper);
-  RUN_TEST_P(test_getDfcoFuelCorrectionPercentage_taper);
+  RUN_TEST_P(test_getDfcoFuelCorrection_DFCO_off);
+  RUN_TEST_P(test_getDfcoFuelCorrection_notaper);
+  RUN_TEST_P(test_getDfcoFuelCorrection_taper);
   RUN_TEST_P(test_correctionDFCOignition_DFCO_off);
   RUN_TEST_P(test_correctionDFCOignition_notaper);
   RUN_TEST_P(test_correctionDFCOignition_taper);
@@ -1645,7 +1645,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
   TEST_ASSERT_FALSE(isDfcoOngoing());
-  TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrectionPercentage(), "getDfcoFuelCorrectionPercentage");
+  TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrection(), "getDfcoFuelCorrection");
 
   // Acceeleration
   configPage2.aeApplyMode = AE_MODE_MULTIPLIER;
@@ -1716,7 +1716,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
   TEST_ASSERT_FALSE(isDfcoOngoing());
-  TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrectionPercentage(), "getDfcoFuelCorrectionPercentage");
+  TEST_ASSERT_EQUAL_MESSAGE(100, getDfcoFuelCorrection(), "getDfcoFuelCorrection");
 
   TEST_ASSERT_EQUAL(1500U, correctionsFuel());
 }
