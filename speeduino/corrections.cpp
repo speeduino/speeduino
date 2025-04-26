@@ -138,7 +138,7 @@ uint16_t correctionsFuel(void)
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.launchCorrection); }
 
-  bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, isDfcoOngoing());
+  BIT_WRITE(currentStatus.status1, BIT_STATUS1_DFCO, isDfcoOngoing());
   byte dfcoTaperCorrection = getDfcoFuelCorrectionPercentage();
   if (dfcoTaperCorrection == 0) { sumCorrections = 0; }
   else if (dfcoTaperCorrection != 100) { sumCorrections = div100(sumCorrections * dfcoTaperCorrection); }
@@ -559,7 +559,7 @@ bool isDfcoOngoing(void)
 
   if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO) == 1) // Is dfco ongoing?
   {
-    return // continue dfco if
+    return // keep dfco activated if
       currentStatus.TPS < configPage4.dfcoTPSThresh && // throttle still closed  
       currentStatus.RPM > (unsigned int)(configPage4.dfcoRPM * 10); // rpm high enough
   }
@@ -568,11 +568,11 @@ bool isDfcoOngoing(void)
     currentStatus.coolant < (int)(configPage2.dfcoMinCLT - CALIBRATION_TEMPERATURE_OFFSET) || // engine too cold
     currentStatus.RPM <= (unsigned int)((configPage4.dfcoRPM * 10) + (configPage4.dfcoHyster * 2))) // rpm too low
   {
-    dfcoDelay = 0; // Reset delay when DFCO conditions are not met
-    return false;
+    dfcoDelay = 0;
+    return false; // Reset delay and keep DFCO deactivated when conditions are not met
   }
 
-  if (dfcoDelay >= configPage2.dfcoDelay) // delay ellapsed, reset delay, enable dfco
+  if (dfcoDelay >= configPage2.dfcoDelay) // delay ellapsed, reset delay, activate dfco
   {
     dfcoDelay = 0;
     return true;
@@ -580,9 +580,9 @@ bool isDfcoOngoing(void)
   
   if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) 
   {
-    dfcoDelay++; //delay still running
+    dfcoDelay++;
   }
-  return false;
+  return false; //delay still running, keep DFCO deactivated
 }
 
 /** Flex fuel adjustment to vary fuel based on ethanol content.
