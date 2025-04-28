@@ -83,6 +83,7 @@ volatile unsigned long targetGap2;
 volatile unsigned long targetGap3;
 volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
+volatile unsigned long lastSyncRevolution = 0; // the revolution value of last valid sync
 volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 volatile bool revolutionLastOne = 0; // used to identify in the rover pattern which has a non unique primary trigger something unique - has the secondary tooth changed.
 
@@ -5965,3 +5966,278 @@ void triggerSetEndTeeth_SuzukiK6A(void)
 
 /** @} */
 
+/** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
+Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
+
+* @defgroup Ford_TFI Ford TFI
+* @{
+*/
+/** Ford TFI Setup.
+ * 
+ * */
+void triggerSetup_FordTFI(void)
+{
+  triggerActualTeeth = configPage2.nCylinders;
+  if(triggerActualTeeth == 0) { triggerActualTeeth = 1; }
+
+  triggerToothAngle = 720U / triggerActualTeeth; //The number of degrees that passes from tooth to tooth, half cylinder count
+  toothCurrentCount = 0; //Default value
+  triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * configPage2.nCylinders)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
+  triggerSecFilterTime = triggerFilterTime * 4U /5u; //Same as above, but slightly about lower due to signature trigger (about 80%)
+  lastSyncRevolution = 0;
+  BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
+  BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
+  else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
+#ifdef USE_LIBDIVIDE
+  divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
+#endif
+}
+
+
+/** Ford TFI Primary (Rising Edge).
+ * 
+ * */
+void triggerPri_FordTFI(void)
+{
+  curTime = micros(); // Get current time and gap duration with micros rollover
+  if (curTime >= toothLastToothTime) 
+    { curGap = curTime - toothLastToothTime; } 
+  else
+    { curGap = (4294967296 - toothLastToothTime + curTime); }
+  
+  
+  
+  if ( curGap >= triggerFilterTime )
+  {
+    if(currentStatus.hasSync == true) { setFilter(curGap); } //Recalc the new filter value
+    else { triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored
+    
+    toothCurrentCount++; //Increment the tooth counter
+    
+    if(toothCurrentCount > triggerActualTeeth)//Check if we're back to the beginning of a revolution
+    {
+      if ( (currentStatus.hasSync == true)  && ( (lastSyncRevolution) + 3  < currentStatus.startRevolutions)) // Revolution count when signature tooth was detected, Allow up to 4 cam revolution without sync signal detected
+      {
+        currentStatus.hasSync = false;
+        currentStatus.syncLossCounter++;
+      }
+      toothCurrentCount = 1; //Reset the counter
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+      currentStatus.startRevolutions++; //Counter
+    }
+
+    BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    if(configPage2.perToothIgn == true)
+    {
+      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
+      crankAngle = ignitionLimits((crankAngle));
+      uint16_t currentTooth = toothCurrentCount;
+      if(toothCurrentCount > (triggerActualTeeth/2) ) { currentTooth = (toothCurrentCount - (triggerActualTeeth/2)); }
+      checkPerToothTiming(crankAngle, currentTooth);
+    }
+        
+    toothLastMinusOneToothTime = toothLastToothTime;
+    toothLastToothTime = curTime;
+
+   } //Trigger filter
+}
+
+/** Ford TFI Secondary (Falling Edge).
+ * 
+ * */
+void triggerSec_FordTFI(void)
+{
+  curTime2 = micros();
+  if (curTime2 >= toothLastSecToothTime) 
+    { curGap2 = curTime2 - toothLastSecToothTime; } 
+  else
+    { curGap2 = (4294967296 - toothLastSecToothTime + curTime2); }
+  
+ 
+  //Safety check for initial startup
+  if( (toothLastSecToothTime == 0) )
+  { 
+    curGap2 = 0; 
+    toothLastSecToothTime = curTime2;
+  }
+  
+
+  if ( curGap2 >= triggerSecFilterTime ) // Valid tooth falling edge
+  {     
+    if ((curGap > 0) && (curGap < 20000000)) // Limit to prevent overflow
+    {  
+      targetGap2 = curGap * 110UL / 100UL; // Wide last teeth gap min
+      targetGap3 = curGap * 90UL / 100UL; // Narrow last teeth minus one gap max
+    }
+    else 
+    {
+    targetGap2 = 0;
+    targetGap3 = 0;
+    }
+    if ( (curGap2 > targetGap2) && (curGap3 < targetGap3) && (lastGap < targetGap2) && (lastGap > targetGap3) ) // Signature Tooth detected
+    {
+      if( (currentStatus.hasSync == false) || (currentStatus.startRevolutions <= configPage4.StgCycles) )
+      {
+        toothCurrentCount = 2; // Last primary tooth was #2
+        triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
+        currentStatus.hasSync = true;
+      }
+      else 
+      {
+        if ( (toothCurrentCount != 2) && (currentStatus.startRevolutions > 2)) 
+        { 
+          currentStatus.syncLossCounter++;
+        } //Indicates likely sync loss.
+        if (configPage4.useResync == 1) 
+        { 
+          toothCurrentCount = 2;
+          currentStatus.hasSync = true;  
+        }
+      }
+      lastSyncRevolution = currentStatus.startRevolutions ; // Revolution count when signature tooth was detected
+
+    }
+
+  toothLastSecToothTime = curTime2; // 
+  lastGap = curGap3; // Minus two Gap
+  curGap3 = curGap2; // Minus one Gap
+
+  } //Trigger filter
+  //else { currentStatus.syncLossCounter = 0; }
+  triggerSecFilterTime = curGap >> 1; //Set filter at 50 % speed of last primary gap
+}
+
+/** Ford TFI - Get RPM.
+ * 
+ * */
+uint16_t getRPM_FordTFI(void)
+{
+  uint16_t tempRPM;
+  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
+  
+  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
+  { 
+    tempRPM = crankingGetRPM(triggerActualTeeth, distributorSpeed);
+  } 
+  else { tempRPM = stdGetRPM(distributorSpeed); }
+
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+
+  return tempRPM;
+  
+}
+
+/** Ford TFI - Get Crank angle.
+ * 
+ * */
+int getCrankAngle_FordTFI(void)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    bool tempRevolutionOne;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros();
+    interrupts();
+
+    //Handle case where the secondary tooth was the last one seen
+    if(tempToothCurrentCount == 0) { tempToothCurrentCount = 2; } 
+
+    int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+
+    if (lastCrankAngleCalc >= tempToothLastToothTime) 
+      { elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime); } 
+    else
+      { elapsedTime = (4294967296 - tempToothLastToothTime + lastCrankAngleCalc); } 
+    crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle < 0) { crankAngle += CRANK_ANGLE_MAX; }
+
+    return crankAngle;
+
+}
+/** Ford TFI - Set End Teeth.
+ * 
+ * */
+void triggerSetEndTeeth_FordTFI(void)
+{
+  int tempEndAngle = (ignition1EndAngle - configPage4.triggerAngle);
+  tempEndAngle = ignitionLimits((tempEndAngle));
+
+  switch(configPage2.nCylinders)
+  {
+    case 4:
+      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 1;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+      }
+      break;
+    case 6:
+      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 3;
+        ignition3EndTooth = 1;
+      }
+      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 3;
+        ignition2EndTooth = 1;
+        ignition3EndTooth = 2;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+        ignition3EndTooth = 3;
+      }
+      break;
+    case 8:
+      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
+      {
+        ignition1EndTooth = 2;
+        ignition2EndTooth = 3;
+        ignition3EndTooth = 4;
+        ignition4EndTooth = 1;
+      }
+      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
+      {
+        ignition1EndTooth = 3;
+        ignition2EndTooth = 4;
+        ignition3EndTooth = 1;
+        ignition4EndTooth = 2;
+      }
+      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
+      {
+        ignition1EndTooth = 4;
+        ignition2EndTooth = 1;
+        ignition3EndTooth = 2;
+        ignition4EndTooth = 3;
+      }
+      else
+      {
+        ignition1EndTooth = 1;
+        ignition2EndTooth = 2;
+        ignition3EndTooth = 3;
+        ignition4EndTooth = 4;
+      }
+      break;
+  }
+}
+/** @} */
