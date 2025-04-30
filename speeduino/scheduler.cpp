@@ -32,6 +32,7 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "units.h"
 #include "schedule_state_machine.h"
+#include "unit_testing.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
@@ -293,41 +294,46 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
   }  
 }
 
-static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
+TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((isRunning(schedule)) && (schedule.startTime < targetOverdwellTime)) { 
-    schedule.pEndCallback(); schedule.Status = OFF; 
+  ATOMIC() {
+    if (isRunning(schedule) && (schedule.startTime < targetOverdwellTime)) { 
+      schedule.pEndCallback(); schedule.Status = OFF; 
+    }
   }
+}
+
+TESTABLE_INLINE_STATIC bool isOverDwellActive(const config4 &page4, const statuses &current){
+  bool isCrankLocked = page4.ignCranklock && (current.RPM < current.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
+  return (page4.useDwellLim) && !isCrankLocked;
 }
 
 void applyOverDwellProtection(void)
 {
-  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-
-  if ((configPage4.useDwellLim == 1U) && (isCrankLocked != true)) {
+  if (isOverDwellActive(configPage4, currentStatus)) {
     uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
 
-    applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule1, targetOverdwellTime);
 #if IGN_CHANNELS >= 2
-    applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule2, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 3
-    applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule3, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 4
-    applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule4, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 5
-    applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule5, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 6
-    applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule6, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 7
-    applyOverDwellCheck(ignitionSchedule7, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule7, targetOverdwellTime);
 #endif
 #if IGN_CHANNELS >= 8
-    applyOverDwellCheck(ignitionSchedule8, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule8, targetOverdwellTime);
 #endif
   }
 }
