@@ -2,7 +2,7 @@
 #define SENSORS_H
 
 #include "globals.h"
-#include "config_pages.h"
+#include "polling.hpp"
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
@@ -68,7 +68,8 @@ uint16_t readAuxdigital(uint8_t digitalPin);
  * 
  * We expect this to be called at TPS_READ_TIMER_BIT intervals
  */
-void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
+void readTPS(bool useFilter); //Allows the option to override the use of the filter
+static inline void readTPS(void) { readTPS(true); }
 
 /** @brief Define the coolant sensor read frequency. */
 #define CLT_READ_TIMER_BIT BIT_TIMER_4HZ
@@ -78,7 +79,8 @@ void readTPS(bool useFilter=true); //Allows the option to override the use of th
  * 
  * We expect this to be called at CLT_READ_TIMER_BIT intervals
  */
-void readCLT(bool useFilter=true); //Allows the option to override the use of the filter
+void readCLT(bool useFilter); //Allows the option to override the use of the filter
+static inline void readCLT(void) { readCLT(true); }
 
 /** @brief Define the IAT sensor read frequency. */
 #define IAT_READ_TIMER_BIT BIT_TIMER_4HZ
@@ -133,6 +135,17 @@ void resetMAPcycleAndEvent(void);
  * We expect this to be called at MAP_READ_TIMER_BIT intervals
  */
 void readMAP(void);
+
+/** @brief Sensor polling definitions */
+constexpr polledAction_t polledSensors[] = {
+  {TPS_READ_TIMER_BIT, readTPS},
+  {CLT_READ_TIMER_BIT, readCLT},
+  {IAT_READ_TIMER_BIT, readIAT},
+  {O2_READ_TIMER_BIT, readO2},
+  {BAT_READ_TIMER_BIT, readBat},
+  {BARO_READ_TIMER_BIT, readBaro},
+  {MAP_READ_TIMER_BIT, readMAP},
+};
 
 uint8_t getAnalogKnock(void);
 

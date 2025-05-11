@@ -721,7 +721,7 @@ static inline void readO2_2(void)
 
 void readO2(void)
 {
-  if (configPage2.canWBO == 0) {
+  if (configPage2.canWBO == 0U) {
     readO2_1();
     readO2_2();
   } 
