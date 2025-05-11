@@ -44,6 +44,10 @@ int16_t ProgrammableIOGetData(uint16_t index);
 #if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
 #endif
+template <typename T, size_t N>
+constexpr static inline uint8_t countof_t(const T (&)[N]) {
+  return N;
+}
 #define _end_range_address(array) (array + _countof(array))
 #define _end_range_byte_address(array) (((byte*)array) + sizeof(array))
 
