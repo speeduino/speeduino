@@ -17,7 +17,7 @@ struct polledAction_t {
     void (*pCallback)(void); ///< The function to call when the timer bit is set
 };
 
-/** @brief Execute a polled action if the timer bit is set
+/** @brief Conditionally execute a polled action if the timer bit is set
  * 
  * @param action The action to execute
  * @param loopTimer The current loop timer value (e.g. LOOP_TIMER)
@@ -27,4 +27,17 @@ static inline void executePolledAction(const polledAction_t &action, byte loopTi
   if (BIT_CHECK(loopTimer, action.timerBit)) {
     action.pCallback();
   }
+}
+
+/** @brief Execute a polled action at a specific index in the array of actions
+ * 
+ * @note Intent is to use this function with static_for to conditionally execute all actions in the array
+ * 
+ * @param index The index of the action to execute
+ * @param pActions The array of actions to execute from
+ * @param loopTimer The current loop timer value (e.g. LOOP_TIMER)
+ */
+static inline void executePolledArrayAction(uint8_t index, const polledAction_t *pActions, byte loopTimer)
+{
+    executePolledAction(pActions[index], loopTimer);
 }
