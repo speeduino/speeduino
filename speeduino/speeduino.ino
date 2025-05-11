@@ -46,7 +46,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "auxiliaries.h"
 #include "load_source.h"
 #include "board_definition.h"
-#include "static_for.hpp"
 #include RTC_LIB_H //Defined in each boards .h file
 #include "units.h"
 #include "fuel_calcs.h"
@@ -102,11 +101,6 @@ static inline int8_t getAdvance1(void)
 {
   currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
   return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - INT16_C(OFFSET_IGNITION)); //As above, but for ignition advance
-}
-
-static inline void executePolledAction(uint8_t index, const polledAction_t *pActions, byte loopTimer)
-{
-    executePolledAction(pActions[index], loopTimer);
 }
 
 /** Speeduino main loop.
@@ -232,8 +226,7 @@ void __attribute__((always_inline)) loop(void)
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    void (&pExecutePolledAction)(uint8_t, const polledAction_t *, byte) = executePolledAction;
-    static_for<0, countof_t(polledSensors)>::repeat_n(pExecutePolledAction, polledSensors, LOOP_TIMER);
+    readPolledSensors(LOOP_TIMER);
 
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
     {
