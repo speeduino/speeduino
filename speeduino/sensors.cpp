@@ -26,6 +26,7 @@ A full copy of the license may be found in the projects root directory
 #include "board_definition.h"
 #include "preprocessor.h"
 #include "static_for.hpp"
+#include "polling.hpp"
 
 uint8_t statusSensors = 0;
 
@@ -556,52 +557,54 @@ uint32_t getMAPDeltaTime(void) {
 
 // ========================================== TPS ==========================================
 
-void readTPS(bool useFilter)
+static inline bool isCTPSSensorActive(void) {
+  if(configPage2.CTPSPolarity == 0U) { return !digitalRead(pinCTPS); } //Normal mode (ground switched)
+  return digitalRead(pinCTPS); //Inverted mode (5v activates closed throttle position sensor)
+}
+
+static inline void readTPS(uint8_t tpsADC)
 {
   currentStatus.TPSlast = currentStatus.TPS;
-  uint8_t tempTPS = (uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U); //Get the current raw TPS ADC value and map it into a uint8_t
+  currentStatus.tpsADC = tpsADC;
 
-  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = (uint8_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
-  else { currentStatus.tpsADC = tempTPS; }
-  uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
-
-  if(configPage2.tpsMax > configPage2.tpsMin)
-  {
-    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-  }
-  else
+  uint8_t tempTPSMax = configPage2.tpsMax;
+  uint8_t tempTPSMin = configPage2.tpsMin;
+  if(configPage2.tpsMin > configPage2.tpsMax)
   {
     //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
-    tempADC = UINT8_MAX - tempADC; //Reverse the ADC values
-    uint8_t tempTPSMax = UINT8_MAX - configPage2.tpsMax;
-    uint8_t tempTPSMin = UINT8_MAX - configPage2.tpsMin;
-
-    //All checks below are reversed from the standard case above
-    tempADC = clamp(tempADC, tempTPSMin, tempTPSMax);
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
+    tpsADC = UINT8_MAX - tpsADC; //Reverse the ADC values
+    tempTPSMax = UINT8_MAX - configPage2.tpsMax;
+    tempTPSMin = UINT8_MAX - configPage2.tpsMin;
   }
+
+  //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+  tpsADC = clamp(tpsADC, tempTPSMin, tempTPSMax);
+  currentStatus.TPS = map(tpsADC, tempTPSMin, tempTPSMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
 
   //Check whether the closed throttle position sensor is active
-  if(configPage2.CTPSEnabled == true)
-  {
-    if(configPage2.CTPSPolarity == 0U) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
-    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
-  }
-  else { currentStatus.CTPSActive = 0; }
+  currentStatus.CTPSActive = configPage2.CTPSEnabled == true && isCTPSSensorActive();
 }
 
-void readCLT(bool useFilter)
+static inline void readTPS(void)
 {
-  uint16_t tempReading = readAnalogSensor(pinCLT);
-  //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
-  if(useFilter == true) { currentStatus.cltADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
-  else { currentStatus.cltADC = tempReading; }
-  
+  readTPS((uint8_t)LOW_PASS_FILTER((uint16_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U), configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC));
+}
+
+
+void initialiseTPS(void) { 
+  readTPS((uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U)); // Need to read tps to detect flood clear state
+}
+
+static inline void readCLT(void)
+{
+  currentStatus.cltADC = LOW_PASS_FILTER(readAnalogSensor(pinCLT), configPage4.ADCFILTER_CLT, currentStatus.cltADC);
+  currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+}
+
+void initialiseCLT(void) {
+  currentStatus.cltADC = readAnalogSensor(pinCLT);
   currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
@@ -758,9 +761,6 @@ static inline void readBat(void)
 
   currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
-
-static inline void readCLT(void) { readCLT(true); }
-static inline void readTPS(void) { readTPS(true); }
 
 void readPolledSensors(byte loopTimer)
 {
