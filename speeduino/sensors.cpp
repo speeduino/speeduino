@@ -25,6 +25,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "board_definition.h"
 #include "preprocessor.h"
+#include "static_for.hpp"
 
 uint8_t statusSensors = 0;
 
@@ -506,7 +507,7 @@ map_last_read_t& getMapLast(void){
 }
 #endif
 
-void readMAP(void)
+static inline void readMAP(void)
 {
   // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
   mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
@@ -604,7 +605,7 @@ void readCLT(bool useFilter)
   currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
-void readIAT(void)
+static inline void readIAT(void)
 {
   currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = temperatureRemoveOffset(table2D_getValue(&iatCalibrationTable, currentStatus.iatADC));
@@ -647,7 +648,7 @@ static inline void setBaroFromMAP(void)
   }
 }
 
-void readBaro(void)
+static inline void readBaro(void)
 {
   if ( configPage6.useExtBaro != 0U  ) 
   {
@@ -719,7 +720,7 @@ static inline void readO2_2(void)
   }
 }
 
-void readO2(void)
+static inline void readO2(void)
 {
   if (configPage2.canWBO == 0U) {
     readO2_1();
@@ -727,7 +728,7 @@ void readO2(void)
   } 
 }
 
-void readBat(void)
+static inline void readBat(void)
 {
   int16_t tempReading = fastMap10Bit(readAnalogSensor(pinBat), 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
 
@@ -756,6 +757,24 @@ void readBat(void)
   }
 
   currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
+}
+
+static inline void readCLT(void) { readCLT(true); }
+static inline void readTPS(void) { readTPS(true); }
+
+void readPolledSensors(byte loopTimer)
+{
+  static constexpr polledAction_t polledSensors[] = {
+    {TPS_READ_TIMER_BIT, readTPS},
+    {CLT_READ_TIMER_BIT, readCLT},
+    {IAT_READ_TIMER_BIT, readIAT},
+    {O2_READ_TIMER_BIT, readO2},
+    {BAT_READ_TIMER_BIT, readBat},
+    {BARO_READ_TIMER_BIT, readBaro},
+    {MAP_READ_TIMER_BIT, readMAP},
+  };
+  
+  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
 }
 
 /**
