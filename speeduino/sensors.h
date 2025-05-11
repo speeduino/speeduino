@@ -52,6 +52,20 @@ byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 
+/**
+ * @brief Read the TPS sensor
+ * 
+ * We expect this to be called at TPS_READ_TIMER_BIT intervals
+ */
+void readTPS(bool useFilter); //Allows the option to override the use of the filter
+
+/**
+ * @brief Read the coolant sensor
+ * 
+ * We expect this to be called at CLT_READ_TIMER_BIT intervals
+ */
+void readCLT(bool useFilter); //Allows the option to override the use of the filter
+
 #define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
 /** @brief Define the TPS sensor read frequency. */
@@ -63,89 +77,30 @@ uint16_t readAuxdigital(uint8_t digitalPin);
 #error
 #endif
 
-/**
- * @brief Read the TPS sensor
- * 
- * We expect this to be called at TPS_READ_TIMER_BIT intervals
- */
-void readTPS(bool useFilter); //Allows the option to override the use of the filter
-static inline void readTPS(void) { readTPS(true); }
-
 /** @brief Define the coolant sensor read frequency. */
 #define CLT_READ_TIMER_BIT BIT_TIMER_4HZ
-
-/**
- * @brief Read the coolant sensor
- * 
- * We expect this to be called at CLT_READ_TIMER_BIT intervals
- */
-void readCLT(bool useFilter); //Allows the option to override the use of the filter
-static inline void readCLT(void) { readCLT(true); }
 
 /** @brief Define the IAT sensor read frequency. */
 #define IAT_READ_TIMER_BIT BIT_TIMER_4HZ
 
-/**
- * @brief Read the IAT sensor
- * 
- * We expect this to be called at IAT_READ_TIMER_BIT intervals
- */
-void readIAT(void);
-
 /** @brief Define the O2 sensor read frequency. */
 #define O2_READ_TIMER_BIT BIT_TIMER_30HZ
-
-/**
- * @brief Read the O2 sensors
- * 
- * We expect this to be called at O2_READ_TIMER_BIT intervals
- */
-void readO2(void);
 
 /** @brief Define the battery sensor read frequency. */
 #define BAT_READ_TIMER_BIT BIT_TIMER_4HZ
 
-/**
- * @brief Read the battery sensor
- * 
- * We expect this to be called at BAT_READ_TIMER_BIT intervals
- */
-void readBat(void);
-
 /** @brief Define the baro sensor read frequency. */
 #define BARO_READ_TIMER_BIT BIT_TIMER_1HZ
-
-/**
- * @brief Read the baro sensor
- * 
- * We expect this to be called at BARO_READ_TIMER_BIT intervals
- */
-void readBaro(void);
-
-/** @brief Initialize the MAP calculation & Baro values */
-void initialiseMAPBaro(void);
-void resetMAPcycleAndEvent(void);
 
 /** @brief Define the MAP sensor read frequency. */
 #define MAP_READ_TIMER_BIT BIT_TIMER_1KHZ
 
-/**
- * @brief Read the MAP sensor
- * 
- * We expect this to be called at MAP_READ_TIMER_BIT intervals
- */
-void readMAP(void);
+/** @brief Read the sensors that are polled at every loop. This includes the TPS, MAP, CLT, IAT and O2 sensors */
+void readPolledSensors(byte loopTimer);
 
-/** @brief Sensor polling definitions */
-constexpr polledAction_t polledSensors[] = {
-  {TPS_READ_TIMER_BIT, readTPS},
-  {CLT_READ_TIMER_BIT, readCLT},
-  {IAT_READ_TIMER_BIT, readIAT},
-  {O2_READ_TIMER_BIT, readO2},
-  {BAT_READ_TIMER_BIT, readBat},
-  {BARO_READ_TIMER_BIT, readBaro},
-  {MAP_READ_TIMER_BIT, readMAP},
-};
+/** @brief Initialize the MAP calculation & Baro values */
+void initialiseMAPBaro(void);
+void resetMAPcycleAndEvent(void);
 
 uint8_t getAnalogKnock(void);
 

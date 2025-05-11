@@ -47,7 +47,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "load_source.h"
 #include "board_definition.h"
 #include "unit_testing.h"
-#include "static_for.hpp"
 #include RTC_LIB_H //Defined in each boards .h file
 #include "units.h"
 #include "fuel_calcs.h"
@@ -227,11 +226,6 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
 #undef SET_IGNITION_CHANNEL
 }
 
-static inline void executePolledAction(uint8_t index, const polledAction_t *pActions, byte loopTimer)
-{
-    executePolledAction(pActions[index], loopTimer);
-}
-
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -355,8 +349,7 @@ void __attribute__((always_inline)) loop(void)
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    void (&pExecutePolledAction)(uint8_t, const polledAction_t *, byte) = executePolledAction;
-    static_for<0, _countof(polledSensors)>::repeat_n(pExecutePolledAction, polledSensors, LOOP_TIMER);
+    readPolledSensors(LOOP_TIMER);
 
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
     {
