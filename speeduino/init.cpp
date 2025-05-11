@@ -1054,8 +1054,8 @@ void initialiseAll(void)
     else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 
     interrupts();
-    readCLT(false); // Need to read coolant temp to make priming pulsewidth work correctly. The false here disables use of the filter
-    readTPS(false); // Need to read tps to detect flood clear state
+    initialiseCLT();
+    initialiseTPS();
 
     /* tacho sweep function. */
     currentStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);

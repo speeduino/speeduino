@@ -2,7 +2,6 @@
 #define SENSORS_H
 
 #include "globals.h"
-#include "polling.hpp"
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
@@ -52,19 +51,11 @@ byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 
-/**
- * @brief Read the TPS sensor
- * 
- * We expect this to be called at TPS_READ_TIMER_BIT intervals
- */
-void readTPS(bool useFilter); //Allows the option to override the use of the filter
+/** @brief Initial reading of the TPS sensor, primarily to detect flood clear state */
+void initialiseTPS(void);
 
-/**
- * @brief Read the coolant sensor
- * 
- * We expect this to be called at CLT_READ_TIMER_BIT intervals
- */
-void readCLT(bool useFilter); //Allows the option to override the use of the filter
+/** @brief Initial reading of the coolant sensor, primarily to make sure the priming pulsewidth is correct */
+void initialiseCLT(void);
 
 #define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
 
