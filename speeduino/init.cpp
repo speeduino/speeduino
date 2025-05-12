@@ -3600,6 +3600,24 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
+      case DECODER_FORD_TFI:
+      // Ford TFI
+      triggerSetup_FordTFI();
+      triggerHandler = triggerPri_FordTFI;
+      triggerSecondaryHandler = triggerSec_FordTFI;
+      getRPM = getRPM_FordTFI;
+      getCrankAngle = getCrankAngle_FordTFI;
+      triggerSetEndTeeth = triggerSetEndTeeth_FordTFI;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
 
     default:
       triggerHandler = triggerPri_missingTooth;
