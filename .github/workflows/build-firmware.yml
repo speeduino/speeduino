@@ -52,12 +52,12 @@ jobs:
         WEB_PWD: ${{ secrets.WEB_PWD }}
       run: |
         curl -v https://webdisk.speeduino.com:2078 || true
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://webdisk.speeduino.com:2078/bin/master.hex"
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy35/master-teensy35.hex"
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy36/master-teensy36.hex"
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy41/master-teensy41.hex"
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/black_F407VE/firmware.bin"   "https://webdisk.speeduino.com:2078/stm32f407/master-stm32f407.bin"
-        curl -v --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini"                "https://webdisk.speeduino.com:2078/master.ini"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/megaatmega2560/firmware.hex" "https://webdisk.speeduino.com:2078/bin/master.hex"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy35/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy35/master-teensy35.hex"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy36/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy36/master-teensy36.hex"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/teensy41/firmware.hex"       "https://webdisk.speeduino.com:2078/teensy41/master-teensy41.hex"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/black_F407VE/firmware.bin"   "https://webdisk.speeduino.com:2078/stm32f407/master-stm32f407.bin"
+        curl -vk --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini"                "https://webdisk.speeduino.com:2078/master.ini"
 
     - name: Discord Notification (Build Failed)
       uses: rjstone/discord-webhook-notify@v1
