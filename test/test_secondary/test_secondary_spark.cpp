@@ -11,14 +11,14 @@ TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500,
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
 static void __attribute__((noinline)) assert_2nd_spark_is_off(const statuses &current, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_FALSE(current.secondSparkTableActive);
     TEST_ASSERT_EQUAL(expectedAdvance, current.advance1);
     TEST_ASSERT_EQUAL(0, current.advance2);
     TEST_ASSERT_EQUAL(current.advance1, current.advance);
 } 
 
 static void __attribute__((noinline)) assert_2nd_spark_is_on(const statuses &current, int8_t expectedAdvance1, int8_t expectedAdvance2, int8_t expectedAdvance) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS5_SPARK2_ACTIVE, current.status5);
+    TEST_ASSERT_TRUE(current.secondSparkTableActive);
     TEST_ASSERT_EQUAL(expectedAdvance1, current.advance1);
     TEST_ASSERT_EQUAL(expectedAdvance2, current.advance2);
     TEST_ASSERT_EQUAL(expectedAdvance, current.advance);
@@ -155,7 +155,7 @@ static void __attribute__((noinline)) test_cranking_no_secondary_spark(void) {
     table3d16RpmLoad lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
-    BIT_SET(current.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
+    current.engineIsCranking = true;// Should turn 2nd table off
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 }
