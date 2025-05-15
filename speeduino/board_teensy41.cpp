@@ -307,6 +307,48 @@ time_t getTeensy3Time()
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
 
+//Checks if the request pin is being used for rx/tx on secondary serial. Primary (USB) serial does not need to be checked as it is not broken out to an IO on Teensy
+//The Secondary serial that it checks against is based on that one set by the pinMapping
+bool pinIsSerial(uint8_t pin)
+{
+  bool isSerial = false;
+
+  if(&secondarySerial == &Serial1)
+  {
+    if( (pin == 0) || (pin == 1) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial2)
+  {
+    if( (pin == 7) || (pin == 8) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial3)
+  {
+    if( (pin == 14) || (pin == 15) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial4)
+  {
+    if( (pin == 16) || (pin == 17) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial5)
+  {
+    if( (pin == 20) || (pin == 21) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial6)
+  {
+    if( (pin == 24) || (pin == 25) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial7)
+  {
+    if( (pin == 28) || (pin == 29) ) { isSerial = true; }
+  }
+  else if(&secondarySerial == &Serial8)
+  {
+    if( (pin == 34) || (pin == 35) ) { isSerial = true; }
+  }
+
+  return isSerial;
+}
+
 void setPinHysteresis(uint8_t pin)
 {
   //Refer to digital.c in the Teensyduino core for the following code

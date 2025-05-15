@@ -13,6 +13,7 @@
   void jumpToBootloader();
   void setTeensy41PinsHysteresis();
   void teensy41_customSerialBegin();
+  bool pinIsSerial(uint8_t);
   time_t getTeensy3Time();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
@@ -32,7 +33,7 @@
 
   #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   //#define PWM_FAN_AVAILABLE
-  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) ) //Forbidden pins like USB
+  #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) || pinIsSerial((pin)) ) //Forbidden pins like USB
 
 
 /*
