@@ -38,7 +38,7 @@ uint32_t deferEEPROMWritesUntil = 0;
 
 bool isEepromWritePending(void)
 {
-  return BIT_CHECK(currentStatus.status4, BIT_STATUS4_BURNPENDING);
+  return currentStatus.burnPending;
 }
 
 /** Write all config pages to EEPROM.
@@ -167,7 +167,7 @@ void writeConfig(uint8_t pageNum)
   uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
 #else
   uint8_t EEPROM_MAX_WRITE_BLOCK = 18;
-  if(BIT_CHECK(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT)) { EEPROM_MAX_WRITE_BLOCK = 8; } //If comms compatibility mode is on, slow the burn rate down even further
+  if(currentStatus.commCompat) { EEPROM_MAX_WRITE_BLOCK = 8; } //If comms compatibility mode is on, slow the burn rate down even further
 
   #ifdef CORE_AVR
     //In order to prevent missed pulses during EEPROM writes on AVR, scale the
@@ -329,7 +329,7 @@ void writeConfig(uint8_t pageNum)
       break;
   }
 
-  BIT_WRITE(currentStatus.status4, BIT_STATUS4_BURNPENDING, !result.can_write());
+  currentStatus.burnPending = !result.can_write();
 }
 
 /** Reset all configPage* structs (2,4,6,9,10,13) and write them full of null-bytes.

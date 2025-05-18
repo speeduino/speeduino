@@ -128,66 +128,16 @@ void coil8Toggle(void);
 void tachoOutputOn(void);
 void tachoOutputOff(void);
 
-/*
-#ifndef USE_MC33810
-#define openInjector1() *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1)
-#define closeInjector1() *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1)
-#define openInjector2() *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2)
-#define closeInjector2() *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2)
-#define openInjector3() *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3)
-#define closeInjector3() *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3)
-#define openInjector4() *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4)
-#define closeInjector4() *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4)
-#define openInjector5() *inj5_pin_port |= (inj5_pin_mask);
-#define closeInjector5() *inj5_pin_port &= ~(inj5_pin_mask);
-#define openInjector6() *inj6_pin_port |= (inj6_pin_mask);
-#define closeInjector6() *inj6_pin_port &= ~(inj6_pin_mask);
-#define openInjector7() *inj7_pin_port |= (inj7_pin_mask);
-#define closeInjector7() *inj7_pin_port &= ~(inj7_pin_mask);
-#define openInjector8() *inj8_pin_port |= (inj8_pin_mask);
-#define closeInjector8() *inj8_pin_port &= ~(inj8_pin_mask);
-
-#else
-#include "acc_mc33810.h"
-#define openInjector1() openInjector1_MC33810()
-#define closeInjector1() closeInjector1_MC33810()
-#define openInjector2() openInjector2_MC33810()
-#define closeInjector2() closeInjector2_MC33810()
-#define openInjector3() openInjector3_MC33810()
-#define closeInjector3() closeInjector3_MC33810()
-#define openInjector4() openInjector4_MC33810()
-#define closeInjector4() closeInjector4_MC33810()
-#define openInjector5() openInjector5_MC33810()
-#define closeInjector5() closeInjector5_MC33810()
-#define openInjector6() openInjector6_MC33810()
-#define closeInjector6() closeInjector6_MC33810()
-#define openInjector7() openInjector7_MC33810()
-#define closeInjector7() closeInjector7_MC33810()
-#define openInjector8() openInjector8_MC33810()
-#define closeInjector8() closeInjector8_MC33810()
-
-#endif
-
-#define openInjector1and4() openInjector1(); openInjector4()
-#define closeInjector1and4() closeInjector1(); closeInjector4()
-#define openInjector2and3() openInjector2(); openInjector3()
-#define closeInjector2and3() closeInjector2(); closeInjector3()
-
-//5 cylinder support doubles up injector 3 as being closese to inj 5 (Crank angle)
-#define openInjector3and5() openInjector3(); openInjector5()
-#define closeInjector3and5() closeInjector3(); closeInjector5()
-*/
-
 //Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
 //The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
-#define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ1); }
-#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ1); }
-#define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ2); }
-#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ2); }
-#define openInjector3_DIRECT()  { *inj3_pin_port |= (inj3_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ3); }
-#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ3); }
-#define openInjector4_DIRECT()  { *inj4_pin_port |= (inj4_pin_mask); BIT_SET(currentStatus.status1, BIT_STATUS1_INJ4); }
-#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_INJ4); }
+#define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); currentStatus.isInj1Open = true; }
+#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  currentStatus.isInj1Open = false; }
+#define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); currentStatus.isInj2Open = true; }
+#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  currentStatus.isInj2Open = false; }
+#define openInjector3_DIRECT()  { *inj3_pin_port |= (inj3_pin_mask); currentStatus.isInj3Open = true; }
+#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  currentStatus.isInj3Open = false; }
+#define openInjector4_DIRECT()  { *inj4_pin_port |= (inj4_pin_mask); currentStatus.isInj4Open = true; }
+#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  currentStatus.isInj4Open = false; }
 #define openInjector5_DIRECT()  { *inj5_pin_port |= (inj5_pin_mask); }
 #define closeInjector5_DIRECT() { *inj5_pin_port &= ~(inj5_pin_mask); }
 #define openInjector6_DIRECT()  { *inj6_pin_port |= (inj6_pin_mask); }
