@@ -1653,6 +1653,8 @@ void checkLaunchAndFlatShift()
   {
     if(configPage6.launchHiLo > 0) { currentStatus.clutchTrigger = digitalRead(pinLaunch); }
     else { currentStatus.clutchTrigger = !digitalRead(pinLaunch); }
+
+    BIT_WRITE(currentStatus.status5, BIT_STATUS5_CLUTCH_PRESS, currentStatus.clutchTrigger); //Stores the value to send to TunerStudio
   }
   if(currentStatus.clutchTrigger && (currentStatus.previousClutchTrigger != currentStatus.clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
 

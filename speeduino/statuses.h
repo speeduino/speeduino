@@ -49,9 +49,7 @@ using byte = uint8_t;
 #define BIT_STATUS3_FUEL2_ACTIVE  2
 #define BIT_STATUS3_VSS_REFRESH   3
 #define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
-#define BIT_STATUS3_NSQUIRTS1     5
-#define BIT_STATUS3_UNUSED1       6
-#define BIT_STATUS3_UNUSED2       7
+#define BIT_STATUS3_NSQUIRTS1     5 // Uses bits 5-7
 
 // Bit masks for statuses::status4
 #define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
@@ -69,7 +67,7 @@ using byte = uint8_t;
 #define BIT_STATUS5_SPARK2_ACTIVE  2
 #define BIT_STATUS5_KNOCK_ACTIVE   3
 #define BIT_STATUS5_KNOCK_PULSE    4
-#define BIT_STATUS5_UNUSED6        5
+#define BIT_STATUS5_CLUTCH_PRESS   5
 #define BIT_STATUS5_UNUSED7        6
 #define BIT_STATUS5_UNUSED8        7
 
