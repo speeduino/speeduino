@@ -119,14 +119,22 @@ void __attribute__((always_inline)) loop(void)
       //Check for any CAN comms requiring action 
       #if defined(secondarySerial_AVAILABLE)
         //if can or secondary serial interface is enabled then check for requests.
-        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
-        {
-          if ( ((mainLoopCount & 31) == 1) || (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
+        if (configPage9.enable_secondarySerial == 1) // secondary serial interface enabled
+        {  //Condition for sending each frame at 200Hz.
+          if ((configPage9.secondarySerialProtocol == SECONDARY_SERIAL_REALDASHCAN) && (BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ)))
           {
-            if (secondarySerial.available() > 0)  { secondserial_Command(); }
-          } 
+            RealdashCAN();
+          }
+
+          if (((mainLoopCount & 31) == 1) || (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD))
+          {
+            if (secondarySerial.available() > 0)
+            {
+              secondserial_Command();
+            }
+          }
         }
-      #endif
+#endif
       #if defined (NATIVE_CAN_AVAILABLE)
         if (configPage9.enable_intcan == 1) // use internal can module
         {            
