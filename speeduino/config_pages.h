@@ -252,7 +252,7 @@ struct config2 {
   byte aeColdPct;  //AE cold clt modifier %
   byte aeColdTaperMin; //AE cold modifier, taper start temp (full modifier, was ASE in early versions)
   byte aeMode : 2;      /**< Acceleration Enrichment mode. 0 = TPS, 1 = MAP. Values 2 and 3 reserved for potential future use (ie blended TPS / MAP) */
-  byte battVCorMode : 1;
+  byte unused2_3_3 : 1; //Previously used for battery correction type (open vs whole PW)
   byte SoftLimitMode : 1;
   byte useTachoSweep : 1;
   byte aeApplyMode : 1; ///< Acceleration enrichment calc mode: 0 = Multiply | 1 = Add (AE_MODE_ADDER)

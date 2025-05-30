@@ -268,8 +268,6 @@ void doUpdates(void)
   if(readEEPROMVersion() == 12)
   {
     //Nov 2019
-    //New option to only apply voltage correction to dead time. Set existing tunes to use old method
-    configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
 
     //Manual baro correction curve was added. Give it some default values (All baro readings set to 100%)
     configPage4.baroFuelBins[0] = 80;

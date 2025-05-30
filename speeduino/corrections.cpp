@@ -109,16 +109,9 @@ uint16_t correctionsFuel(void)
   currentStatus.egoCorrection = correctionAFRClosedLoop();
   if (currentStatus.egoCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.egoCorrection); }
 
+  //Voltage correction is applied to the injector opening time
   currentStatus.batCorrection = correctionBatVoltage();
-  if (configPage2.battVCorMode == BATTV_COR_MODE_OPENTIME)
-  {
-    inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
-    //currentStatus.batCorrection = 100; // This is to ensure that the correction is not applied twice. There is no battery correction fator as we have instead changed the open time
-  }
-  if (configPage2.battVCorMode == BATTV_COR_MODE_WHOLE)
-  {
-    if (currentStatus.batCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.batCorrection); }  
-  }
+  inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.iatCorrection); }

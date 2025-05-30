@@ -679,21 +679,21 @@ static void setup_battery_correction(void) {
   populate_2dtable_P(&injectorVCorrectionTable, values, bins);   
 }
 
-static void test_corrections_bat_mode_wholePw(void) {
+static void test_corrections_bat_normal(void) {
   setup_battery_correction();
 
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   currentStatus.battery10 = 75;
   configPage2.injOpen = 10;
-  inj_opentime_uS = configPage2.injOpen * 100U;
+  uint8_t correctionValue = correctionBatVoltage();
 
-  TEST_ASSERT_EQUAL(108U, correctionBatVoltage() );
-  TEST_ASSERT_EQUAL(configPage2.injOpen * 100U, inj_opentime_uS );
+  TEST_ASSERT_EQUAL(108U, correctionValue);
+  correctionsFuel();
+  TEST_ASSERT_EQUAL(configPage2.injOpen * correctionValue, inj_opentime_uS );
 }
 
 static void test_corrections_bat(void)
 {
-  RUN_TEST_P(test_corrections_bat_mode_wholePw);
+  RUN_TEST_P(test_corrections_bat_normal);
 }
 
 uint8_t correctionLaunch(void);
@@ -1541,8 +1541,8 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   BIT_CLEAR(currentStatus.status1, BIT_STATUS1_DFCO);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
 
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   configPage2.dfcoEnabled = 0;
+  configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper
 
   configPage4.dfcoRPM = 100;
   configPage4.wueBins[9] = 100;
@@ -1609,7 +1609,6 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   populate_2dtable(&fuelTempTable, 255, 100);
 
   configPage2.flexEnabled = 1;
-  configPage2.battVCorMode = BATTV_COR_MODE_WHOLE;
   configPage2.dfcoEnabled = 0;
   currentStatus.coolant = 212;
   currentStatus.runSecs = 255; 
@@ -1623,6 +1622,8 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
 
   configPage4.wueBins[9] = 100;
   configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value
+
+  configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper
 
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionWUE(), "correctionWUE");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionASE(), "correctionASE");
