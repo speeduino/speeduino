@@ -44,6 +44,27 @@ extern uint16_t staged_req_fuel_mult_pri;
 extern uint16_t staged_req_fuel_mult_sec;
 ///@}
 
+// This should be declared in speeduino.ino, but the Arduino INO file mangling 
+// process *removes it* from speeduino.ino thus causing a compiler error (PlatformIO 
+// works correctly)
+struct InjectorStartAngles {
+  uint16_t injector1 = 0;
+  uint16_t injector2 = 0;
+  uint16_t injector3 = 0;
+  uint16_t injector4 = 0;
 
+  #if INJ_CHANNELS >= 5
+  uint16_t injector5 = 0;
+  #endif
+  #if INJ_CHANNELS >= 6
+  uint16_t injector6 = 0;
+  #endif
+  #if INJ_CHANNELS >= 7
+  uint16_t injector7 = 0;
+  #endif
+  #if INJ_CHANNELS >= 8
+  uint16_t injector8 = 0;
+  #endif
+};
 
 #endif
