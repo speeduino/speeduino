@@ -42,6 +42,7 @@
 #define DECODER_SUZUKI_K6A        26
 #define DECODER_HONDA_J32         27
 #define DECODER_FORD_TFI          28
+#define DECODER_SUBARU_7_C_ONLY   29
 
 #define BIT_DECODER_2ND_DERIV           0 //The use of the 2nd derivative calculation is limited to certain decoders. This is set to either true or false in each decoders setup routine
 #define BIT_DECODER_IS_SEQUENTIAL       1 //Whether or not the decoder supports sequential operation
@@ -277,6 +278,13 @@ void triggerSec_FordTFI(void);
 uint16_t getRPM_FordTFI(void);
 int getCrankAngle_FordTFI(void);
 void triggerSetEndTeeth_FordTFI(void);
+
+void triggerSetup_Subaru7crankOnly(void);
+void triggerPri_Subaru7crankOnly(void);
+void triggerSec_Subaru7crankOnly(void);
+uint16_t getRPM_Subaru7crankOnly(void);
+int getCrankAngle_Subaru7crankOnly(void);
+void triggerSetEndTeeth_Subaru7crankOnly(void);
 
 /**
  * @brief This function is called when the engine is stopped, or when the engine is started. It resets the decoder state and the tooth tracking variables
