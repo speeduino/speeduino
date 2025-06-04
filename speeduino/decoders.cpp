@@ -6243,7 +6243,7 @@ void triggerSetEndTeeth_FordTFI(void)
 
 /** Subaru 7 Teeth Crank Only Trigger pattern decoder for 7 tooth (irregularly spaced) crank (eg early 90's Impreza EJ16-EJ18).
 
-https://speeduino.com/forum/viewtopic.php?p=49242#p49242
+https://speeduino.com/forum/viewtopic.php?t=4535
 
 * @defgroup dec_subaru_7_crank_only Subaru 7 Crank Only
 * @{
