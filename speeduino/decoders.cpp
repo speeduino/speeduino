@@ -6240,3 +6240,263 @@ void triggerSetEndTeeth_FordTFI(void)
   }
 }
 /** @} */
+
+/** Subaru 7 Teeth Crank Only Trigger pattern decoder for 7 tooth (irregularly spaced) crank (eg early 90's Impreza EJ16-EJ18).
+
+https://speeduino.com/forum/viewtopic.php?p=49242#p49242
+
+* @defgroup dec_subaru_7_crank_only Subaru 7 Crank Only
+* @{
+*/
+
+void triggerSetup_Subaru7crankOnly(void)
+{
+  triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 1500U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
+  triggerSecFilterTime = 0;
+  secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
+  BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  toothCurrentCount = 1;
+  triggerToothAngle = 2;
+  BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/100U) * 93U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  targetGap=0;
+  targetGap2=0;
+  lastGap=0;
+  curGap=0;
+  toothLastToothTime=micros();
+
+  toothAngles[0] = 350; //tooth #1
+  toothAngles[1] = 5; //tooth #2
+  toothAngles[2] = 83; //tooth #2
+  toothAngles[3] = 115; //tooth #3
+  toothAngles[4] = 170; //tooth #4
+  toothAngles[5] = 263;
+  toothAngles[6] = 295;
+}
+
+
+void triggerPri_Subaru7crankOnly(void)
+{
+  
+/*  Serial.println(toothCurrentCount);
+   Serial.print("Sync: ");Serial.println(currentStatus.hasSync);
+  Serial.print("loss: ");Serial.println(currentStatus.syncLossCounter);
+  Serial.print("rev1: ");Serial.println(revolutionOne);
+ */
+  curTime = micros();
+  
+  if (curTime < toothLastToothTime)
+  {
+   //Serial.print("curoorder");Serial.println(curTime);
+  return;
+  } //out of order, ignore
+
+  //Serial.print("curTime");Serial.println(curTime);
+  //Serial.print("lasttime");Serial.println(toothLastToothTime);
+  
+  targetGap2 = targetGap;
+  targetGap = lastGap;
+  lastGap = curGap;
+  curGap = curTime - toothLastToothTime;
+ /*
+  Serial.print("target2: ");Serial.println(targetGap2);
+  Serial.print("target: ");Serial.println(targetGap);
+  Serial.print("last: ");Serial.println(lastGap);
+  Serial.print("cur: ");Serial.println(curGap);
+ */
+ 
+  if (( curGap < triggerFilterTime ) || (curGap > 1000000))
+   { 
+    //toothLastToothTime=curTime;
+    curGap=lastGap;
+    lastGap=targetGap;
+    targetGap=targetGap2;
+    return; }
+   
+
+  /*if((toothCurrentCount == 2 ) && ( lastGap * 2 > curGap ) && revolutionOne && (  targetGap > 0))   // filter out ghost double teeth after #1
+   { 
+    curGap=lastGap;
+    lastGap=targetGap;
+    targetGap=targetGap2;
+   //Serial.println("skip");
+    return ; }
+    */
+  if (((curGap * 20) < ( targetGap * 17)) && ((curGap * 40) < ( targetGap2 * 10)) && ((curGap * 30) < ( lastGap * 14) ) && ((lastGap * 10) > (targetGap * 11) ))  //found tooth #1
+  {
+   // Serial.println("FOUND");
+    if (toothCurrentCount == 1) //we good
+    {
+      revolutionOne = true;
+    //  Serial.println("found1ok");
+    }
+    else  //wrong, resync
+    {
+     // Serial.println("found1wrong");
+    currentStatus.hasSync = false;
+    revolutionOne = true;
+    currentStatus.syncLossCounter++;
+    toothCurrentCount = 1;
+    toothSystemCount = 1;
+    }
+  }
+
+   if((toothCurrentCount > 2 ) && !revolutionOne) //lost #1
+   {
+  currentStatus.hasSync = false ;
+  //  Serial.println("lost1");
+  }
+
+  toothCurrentCount++; //Increment the tooth counter
+  toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
+  BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
+  
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = curTime;
+  
+
+    if ( toothCurrentCount > 7 ) // done 360 degrees so increment rotation
+    {
+      toothCurrentCount = 1;      
+      toothSystemCount = 1; 
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = curTime;
+      revolutionOne=false;
+      currentStatus.startRevolutions++; //Counter
+    }
+
+ 
+  if(toothCurrentCount > 8) //can't have more than 7 teeth so have lost sync 
+  {
+    toothCurrentCount = 0;
+    toothSystemCount = 0;
+    lastGap=0;    
+    currentStatus.hasSync = false; 
+  //  Serial.println("more7");
+    revolutionOne=false;
+    currentStatus.syncLossCounter++;
+    return;
+  } 
+
+  //Sync is determined by counting the number of crank teeth that have passed after tooth 1
+  switch(toothCurrentCount)
+  {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    break;
+    case 7:
+    if (revolutionOne)
+    { //Serial.println("Sync");
+     currentStatus.hasSync = true;}
+    break;
+
+    default:
+      //Almost certainly due to noise or cranking stop/start
+      currentStatus.hasSync = false;      
+      revolutionOne=false;
+      BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+      currentStatus.syncLossCounter++;
+      break;
+  }
+
+  //Check sync again
+  if ( currentStatus.hasSync == true )
+  {
+    //Locked timing during cranking. This is fixed at 10* BTDC.
+    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && configPage4.ignCranklock)
+    {
+      if( (toothCurrentCount == 1) ) { endCoil1Charge(); endCoil3Charge(); }
+      else if( (toothCurrentCount == 5)  ) { endCoil2Charge(); endCoil4Charge(); }
+    }
+
+/*
+    //Set the last angle between teeth for better calc accuracy
+    if(toothCurrentCount == 2) { triggerToothAngle = 55; } //Special case for tooth 1
+    else if(toothCurrentCount == 4) { triggerToothAngle = 93; } //Special case for tooth 2
+    else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
+    BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+*/
+
+      
+  //Recalc the new filter value
+  //setFilter(curGap);
+  }
+ }
+
+void triggerSec_Subaru7crankOnly(void) { return; } //Not required
+
+uint16_t getRPM_Subaru7crankOnly(void)
+{
+  //if(currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRPM(configPage4.triggerTeeth); }
+
+  uint16_t tempRPM = 0;
+  if(currentStatus.startRevolutions > 0)
+  {
+    //As the tooth count is over 360 degrees
+    tempRPM = stdGetRPM(CRANK_SPEED);
+    
+  //MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  //if(MAX_STALL_TIME > 500000UL) { MAX_STALL_TIME = 500000UL; } //Check for 100rpm minimum
+  }
+  
+
+  return tempRPM;
+}
+
+int getCrankAngle_Subaru7crankOnly(void)
+{
+  int crankAngle = 0;
+  if( currentStatus.hasSync == true )
+  {
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    interrupts();
+
+    crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+
+    //Estimate the number of degrees travelled since the last tooth}
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
+
+    if (crankAngle >= 360) { crankAngle -= 360; }
+    if (crankAngle < 0) { crankAngle += 360; }
+  }
+
+  return crankAngle;
+}
+
+void triggerSetEndTeeth_Subaru7crankOnly(void)
+{/*
+  {
+    if(currentStatus.advance >= 10 ) 
+    { 
+      ignition1EndTooth = 7;
+      ignition2EndTooth = 4;
+      //ignition3EndTooth = 6;
+      //ignition4EndTooth = 9;
+    }
+    else 
+    { 
+      ignition1EndTooth = 1;
+      ignition2EndTooth = 5;
+      //ignition3EndTooth = 7;
+      //ignition4EndTooth = 10;
+    }
+  }*/
+}
+
+/** @} */
