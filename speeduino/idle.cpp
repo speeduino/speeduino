@@ -274,7 +274,7 @@ static inline byte checkForStepping(void)
         if(configPage9.iacStepperPower == STEPPER_POWER_WHEN_ACTIVE) 
         { 
           //Disable the DRV8825, but only if we're at the final step in this cycle or within the hysteresis range. 
-          if ( (idleStepper.curIdleStep >= (idleStepper.targetIdleStep - configPage6.iacStepHyster)) && (idleStepper.curIdleStep <= (idleStepper.targetIdleStep + configPage6.iacStepHyster))) //Hysteresis check
+          if ((idleStepper.targetIdleStep > (idleStepper.curIdleStep - configPage6.iacStepHyster)) && (idleStepper.targetIdleStep < (idleStepper.curIdleStep + configPage6.iacStepHyster))) // Hysteresis check
           { 
             digitalWrite(pinStepperEnable, HIGH); 
           } 
