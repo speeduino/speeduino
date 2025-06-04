@@ -6260,7 +6260,7 @@ void triggerSetup_Subaru7crankOnly(void)
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
-  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/100U) * 93U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/100U) * 93U); //Minimum 100rpm. (3333uS is the time per degree at 50rpm)
 
   targetGap=0;
   targetGap2=0;
@@ -6280,62 +6280,34 @@ void triggerSetup_Subaru7crankOnly(void)
 
 void triggerPri_Subaru7crankOnly(void)
 {
-  
-/*  Serial.println(toothCurrentCount);
-   Serial.print("Sync: ");Serial.println(currentStatus.hasSync);
-  Serial.print("loss: ");Serial.println(currentStatus.syncLossCounter);
-  Serial.print("rev1: ");Serial.println(revolutionOne);
- */
   curTime = micros();
   
   if (curTime < toothLastToothTime)
   {
-   //Serial.print("curoorder");Serial.println(curTime);
   return;
   } //out of order, ignore
-
-  //Serial.print("curTime");Serial.println(curTime);
-  //Serial.print("lasttime");Serial.println(toothLastToothTime);
   
   targetGap2 = targetGap;
   targetGap = lastGap;
   lastGap = curGap;
   curGap = curTime - toothLastToothTime;
- /*
-  Serial.print("target2: ");Serial.println(targetGap2);
-  Serial.print("target: ");Serial.println(targetGap);
-  Serial.print("last: ");Serial.println(lastGap);
-  Serial.print("cur: ");Serial.println(curGap);
- */
  
   if (( curGap < triggerFilterTime ) || (curGap > 1000000))
    { 
-    //toothLastToothTime=curTime;
     curGap=lastGap;
     lastGap=targetGap;
     targetGap=targetGap2;
     return; }
    
 
-  /*if((toothCurrentCount == 2 ) && ( lastGap * 2 > curGap ) && revolutionOne && (  targetGap > 0))   // filter out ghost double teeth after #1
-   { 
-    curGap=lastGap;
-    lastGap=targetGap;
-    targetGap=targetGap2;
-   //Serial.println("skip");
-    return ; }
-    */
   if (((curGap * 20) < ( targetGap * 17)) && ((curGap * 40) < ( targetGap2 * 10)) && ((curGap * 30) < ( lastGap * 14) ) && ((lastGap * 10) > (targetGap * 11) ))  //found tooth #1
   {
-   // Serial.println("FOUND");
     if (toothCurrentCount == 1) //we good
     {
-      revolutionOne = true;
-    //  Serial.println("found1ok");
+      revolutionOne = true;  //used to keep track if #1 already passed
     }
     else  //wrong, resync
     {
-     // Serial.println("found1wrong");
     currentStatus.hasSync = false;
     revolutionOne = true;
     currentStatus.syncLossCounter++;
@@ -6347,7 +6319,6 @@ void triggerPri_Subaru7crankOnly(void)
    if((toothCurrentCount > 2 ) && !revolutionOne) //lost #1
    {
   currentStatus.hasSync = false ;
-  //  Serial.println("lost1");
   }
 
   toothCurrentCount++; //Increment the tooth counter
@@ -6369,13 +6340,12 @@ void triggerPri_Subaru7crankOnly(void)
     }
 
  
-  if(toothCurrentCount > 8) //can't have more than 7 teeth so have lost sync 
+  if(toothCurrentCount > 8) //can't have more than 7 teeth so have lost sync
   {
     toothCurrentCount = 0;
     toothSystemCount = 0;
     lastGap=0;    
     currentStatus.hasSync = false; 
-  //  Serial.println("more7");
     revolutionOne=false;
     currentStatus.syncLossCounter++;
     return;
@@ -6394,13 +6364,13 @@ void triggerPri_Subaru7crankOnly(void)
     break;
     case 7:
     if (revolutionOne)
-    { //Serial.println("Sync");
+    { 
      currentStatus.hasSync = true;}
     break;
 
     default:
       //Almost certainly due to noise or cranking stop/start
-      currentStatus.hasSync = false;      
+      currentStatus.hasSync = false;
       revolutionOne=false;
       BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
       currentStatus.syncLossCounter++;
@@ -6417,17 +6387,6 @@ void triggerPri_Subaru7crankOnly(void)
       else if( (toothCurrentCount == 5)  ) { endCoil2Charge(); endCoil4Charge(); }
     }
 
-/*
-    //Set the last angle between teeth for better calc accuracy
-    if(toothCurrentCount == 2) { triggerToothAngle = 55; } //Special case for tooth 1
-    else if(toothCurrentCount == 4) { triggerToothAngle = 93; } //Special case for tooth 2
-    else { triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; }
-    BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
-*/
-
-      
-  //Recalc the new filter value
-  //setFilter(curGap);
   }
  }
 
@@ -6435,7 +6394,6 @@ void triggerSec_Subaru7crankOnly(void) { return; } //Not required
 
 uint16_t getRPM_Subaru7crankOnly(void)
 {
-  //if(currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRPM(configPage4.triggerTeeth); }
 
   uint16_t tempRPM = 0;
   if(currentStatus.startRevolutions > 0)
@@ -6443,8 +6401,6 @@ uint16_t getRPM_Subaru7crankOnly(void)
     //As the tooth count is over 360 degrees
     tempRPM = stdGetRPM(CRANK_SPEED);
     
-  //MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  //if(MAX_STALL_TIME > 500000UL) { MAX_STALL_TIME = 500000UL; } //Check for 100rpm minimum
   }
   
 
@@ -6480,7 +6436,7 @@ int getCrankAngle_Subaru7crankOnly(void)
 }
 
 void triggerSetEndTeeth_Subaru7crankOnly(void)
-{/*
+{/*    TO BE DEFINED
   {
     if(currentStatus.advance >= 10 ) 
     { 
