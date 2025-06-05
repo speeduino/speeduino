@@ -34,9 +34,9 @@ volatile uint32_t flexPulseWidth = 0U;
 
 static map_algorithm_t mapAlgorithmState;
 
-static constexpr table2du16u16_32 cltCalibrationTable(cltCalibration_values, cltCalibration_bins);
-static constexpr table2du16u16_32 iatCalibrationTable(iatCalibration_values, iatCalibration_bins);
-static constexpr table2du16u8_32 o2CalibrationTable(o2Calibration_values, o2Calibration_bins); 
+static constexpr table2du16u16_32 cltCalibrationTable(cltCalibration_bins, cltCalibration_values);
+static constexpr table2du16u16_32 iatCalibrationTable(iatCalibration_bins, iatCalibration_values);
+static constexpr table2du16u8_32 o2CalibrationTable(o2Calibration_bins, o2Calibration_values); 
 
 /**
  * @brief A specialist function to map a value in the range [0, 1023] (I.e. 10-bit) to a different range.

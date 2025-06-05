@@ -62,7 +62,7 @@ struct table2D
 
   mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
 
-  constexpr table2D(const value_t (&curve)[sizeT], const axis_t (&axisBin)[sizeT])
+  constexpr table2D(const axis_t (&axisBin)[sizeT], const value_t (&curve)[sizeT])
     : axis(axisBin) // cppcheck-suppress misra-c2012-14.4
     , values(curve)
   {

@@ -284,7 +284,7 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd)
   }
 }
 
-static constexpr table2du8u8_4 PrimingPulseTable(configPage2.primePulse, configPage2.primeBins);
+static constexpr table2du8u8_4 PrimingPulseTable(configPage2.primeBins, configPage2.primePulse);
 
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
