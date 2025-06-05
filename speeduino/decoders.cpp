@@ -2967,7 +2967,8 @@ void triggerPri_Nissan360(void)
 {
    curTime = micros();
    curGap = curTime - toothLastToothTime;
-   //if ( curGap < triggerFilterTime ) { return; }
+   if ( curGap < triggerFilterTime ) { return; }
+   
    toothCurrentCount++; //Increment the tooth counter
    BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
 
@@ -2984,7 +2985,7 @@ void triggerPri_Nissan360(void)
        currentStatus.startRevolutions++; //Counter
      }
      //Recalc the new filter value
-     //setFilter(curGap);
+     setFilter(curGap);
 
      //EXPERIMENTAL!
      if(configPage2.perToothIgn == true)
@@ -3088,9 +3089,9 @@ void triggerSec_Nissan360(void)
         }
         else if(configPage2.nCylinders == 6)
         {
-          if(secondaryDuration == 4)
+          if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
           {
-            //toothCurrentCount = 304;
+            toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
           }
         } //Cylinder count
       } //use resync
