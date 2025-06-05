@@ -3,6 +3,7 @@
 #include "engineProtection.h"
 #include "maths.h"
 #include "utilities.h"
+#include "units.h"
 
 byte oilProtStartTime = 0;
 static constexpr table2du8u8_4 oilPressureProtectTable(configPage10.oilPressureProtMins, configPage10.oilPressureProtRPM);
@@ -41,7 +42,7 @@ byte checkRevLimit(void)
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
     {
-      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)));
+      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureToStorage(currentStatus.coolant)));
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);

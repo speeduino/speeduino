@@ -21,6 +21,7 @@ A full copy of the license may be found in the projects root directory
 #include "utilities.h"
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
+#include "units.h"
 
 bool auxIsEnabled;
 
@@ -591,13 +592,13 @@ void readCLT(bool useFilter)
   if(useFilter == true) { currentStatus.cltADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
-  currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  currentStatus.coolant = temperatureToInternal(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
 void readIAT(void)
 {
   currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
-  currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = temperatureToInternal(table2D_getValue(&iatCalibrationTable, currentStatus.iatADC));
 }
 
 // ========================================== Baro ==========================================

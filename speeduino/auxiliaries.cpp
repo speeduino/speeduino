@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "timers.h"
 #include "utilities.h"
+#include "units.h"
 
 static long vvt1_pwm_value;
 static long vvt2_pwm_value;
@@ -232,7 +233,7 @@ static inline void checkAirConCoolantLockout(void)
   // ---------------------------
   // Coolant Temperature Lockout
   // ---------------------------
-  int offTemp = (int)configPage15.airConClTempCut - CALIBRATION_TEMPERATURE_OFFSET;
+  int offTemp = temperatureToInternal(configPage15.airConClTempCut);
   if (currentStatus.coolant > offTemp)
   {
     // A/C is cut off due to high coolant
@@ -339,7 +340,7 @@ void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
-    int onTemp = (int)configPage6.fanSP - CALIBRATION_TEMPERATURE_OFFSET;
+    int onTemp = temperatureToInternal(configPage6.fanSP);
     int offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
@@ -389,7 +390,7 @@ void fanControl(void)
       }
       else
       {
-        byte tempFanDuty = table2D_getValue(&fanPWMTable, (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET)); //In normal situation read PWM duty from the table
+        byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureToStorage(currentStatus.coolant)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {
@@ -512,7 +513,7 @@ void initialiseAuxPWM(void)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
     vvtTimeHold = false;
-    if (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
+    if (currentStatus.coolant >= temperatureToInternal(configPage4.vvtMinClt)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
   
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
@@ -781,7 +782,7 @@ void boostControl(void)
 
 void vvtControl(void)
 {
-  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= (int)(configPage4.vvtMinClt - CALIBRATION_TEMPERATURE_OFFSET)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureToInternal(configPage4.vvtMinClt)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
   {
     if(vvtTimeHold == false) 
     {
@@ -984,7 +985,7 @@ void nitrousControl(void)
     if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
-    if( (isArmed == true) && (currentStatus.coolant > (configPage10.n2o_minCLT - CALIBRATION_TEMPERATURE_OFFSET)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
+    if( (isArmed == true) && (currentStatus.coolant > temperatureToInternal(configPage10.n2o_minCLT)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
     {
       //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
@@ -1042,7 +1043,7 @@ void wmiControl(void)
     if( WMI_TANK_IS_EMPTY() )
     {
       BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
-      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( (currentStatus.IAT + CALIBRATION_TEMPERATURE_OFFSET) >= configPage10.wmiIAT) )
+      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureToStorage(currentStatus.IAT) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
         {

@@ -63,7 +63,8 @@ struct table2D
   mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
 
   constexpr table2D(const value_t (&curve)[sizeT], const axis_t (&axisBin)[sizeT])
-    : axis(axisBin), values(curve) // cppcheck-suppress misra-c2012-14.4
+    : axis(axisBin) // cppcheck-suppress misra-c2012-14.4
+    , values(curve)
   {
   }
 
@@ -146,7 +147,7 @@ static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fr
     fromTable->cache.lastOutput = fromTable->values[xBin.upperIndex];
     fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
   // Within the bin, interpolate
-  } else if (isInBin(axisValue, xBin)) {
+  } else if (isInBin(axisValue, xBin)) {  //cppcheck-suppress misra-c2012-14.4
     const _table2d_detail::Bin<value_t> valueBin = _table2d_detail::getValueBin(fromTable, xBin.upperIndex);
     fromTable->cache.lastOutput = map(axisValue, xBin.lowerValue, xBin.upperValue, valueBin.lowerValue, valueBin.upperValue);
     fromTable->cache.lastBinUpperIndex = xBin.upperIndex;

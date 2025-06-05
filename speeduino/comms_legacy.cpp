@@ -23,6 +23,7 @@ A full copy of the license may be found in the projects root directory
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
+#include "units.h"
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */

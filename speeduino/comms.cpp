@@ -27,6 +27,7 @@ A full copy of the license may be found in the projects root directory
 #ifdef SD_LOGGING
   #include "SD_logger.h"
 #endif
+#include "units.h"
 
 /** @defgroup group-serial-comms-impl Serial comms implementation
  * @{
@@ -415,15 +416,15 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 
 /**
  * @brief Convert 2 bytes into an offset temperature in degrees Celsius
- * @attention Returned value will be offset CALIBRATION_TEMPERATURE_OFFSET
+ * @attention Returned value will be in storeage temperatures
  */
-static uint16_t toTemperature(byte lo, byte hi)
+static uint8_t toTemperature(byte lo, byte hi)
 {
   int16_t tempValue = (int16_t)(word(hi, lo)); //Combine the 2 bytes into a single, signed 16-bit value
   tempValue = tempValue / 10; //TS sends values multiplied by 10 so divide back to whole degrees. 
   tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
   //Apply the temp offset and check that it results in all values being positive
-  return max( tempValue + CALIBRATION_TEMPERATURE_OFFSET, 0 );
+  return max( temperatureToStorage(tempValue), (uint8_t)0U );
 }
 
 /**

@@ -5,6 +5,7 @@
 #include "idle.h"
 #include "../test_utils.h"
 #include "sensors.h"
+#include "units.h"
 
 extern int8_t correctionFixedTiming(int8_t advance);
 
@@ -42,13 +43,13 @@ static void setup_clt_advance_table(void) {
 static void test_correctionCLTadvance_lookup(void) {
     setup_clt_advance_table();
 
-    currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
+    currentStatus.coolant = temperatureToInternal(105);
     TEST_ASSERT_EQUAL(8 + 8 - 15, correctionCLTadvance(8));
 
-    currentStatus.coolant = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+    currentStatus.coolant = temperatureToInternal(65);
     TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
 
-    currentStatus.coolant = 105 - CALIBRATION_TEMPERATURE_OFFSET;
+    currentStatus.coolant = temperatureToInternal(105);
     TEST_ASSERT_EQUAL(-3 + 8 - 15, correctionCLTadvance(-3));
 }
 
@@ -84,7 +85,7 @@ static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     
     configPage4.CrankAng = 8;
 
-    currentStatus.coolant = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+    currentStatus.coolant = temperatureToInternal(65);
     TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
 }
 
@@ -147,7 +148,7 @@ static void setup_WMIAdv(void) {
     configPage10.wmiMAP = 35;
     currentStatus.MAP = (configPage10.wmiMAP*2L)+1L;
     configPage10.wmiIAT = 155;
-    currentStatus.IAT = configPage10.wmiIAT - CALIBRATION_TEMPERATURE_OFFSET + 1;
+    currentStatus.IAT = temperatureToInternal(configPage10.wmiIAT) + 1;
 
     TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
     TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -215,7 +216,7 @@ static void test_correctionWMITiming_maplow_inactive(void) {
     
 static void test_correctionWMITiming_iatlow_inactive(void) {
     setup_WMIAdv();
-    currentStatus.IAT = configPage10.wmiIAT - CALIBRATION_TEMPERATURE_OFFSET - 1;
+    currentStatus.IAT = temperatureToInternal(configPage10.wmiIAT) - 1;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
     TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
