@@ -1,6 +1,6 @@
+#include <avr-fast-shift.h>
 #include "globals.h"
 #include "crankMaths.h"
-#include "bit_shifts.h"
 
 #define SECOND_DERIV_ENABLED                0          
 
