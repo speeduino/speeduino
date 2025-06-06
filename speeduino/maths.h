@@ -2,7 +2,7 @@
 #define MATH_H
 
 #include <stdint.h>
-#include "bit_shifts.h"
+#include <avr-fast-shift.h>
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -395,6 +395,23 @@ static inline uint8_t fast_map(const uint8_t from, const uint8_t fromLow, const 
   } else {
     return scale(from - fromLow, fromHigh - fromLow, toHigh-toLow) + toLow;
   }
+}
+
+/**
+ * @brief Rounded arithmetic right shift
+ * 
+ * Right shifting throws away bits. When use for fixed point division, this
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
+ * when right-shifting by S, just add in 2 power b−1 (which is the 
+ * fixed-point equivalent of 0.5) first
+ *  
+ * @tparam b number of bits to shift by
+ * @param a value to shift
+ * @return uint32_t 
+ */
+template <uint8_t b> 
+static inline uint32_t rshift_round(uint32_t a) { 
+    return rshift<b>(a+(1UL<<(b-1UL))); 
 }
 
 #endif
