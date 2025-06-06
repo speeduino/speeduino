@@ -2,8 +2,8 @@
 #define MATH_H
 
 #include <stdint.h>
+#include <avr-fast-shift.h>
 #include "globals.h"
-#include "bit_shifts.h"
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
@@ -343,6 +343,23 @@ static inline uint16_t LOW_PASS_FILTER(uint16_t input, uint8_t alpha, uint16_t p
 /** @brief Simple low pass IIR filter for S16 values */
 static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prior) {
     return LOW_PASS_FILTER_8BIT<int16_t, int32_t>(input, alpha, prior);
+}
+
+/**
+ * @brief Rounded arithmetic right shift
+ * 
+ * Right shifting throws away bits. When use for fixed point division, this
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
+ * when right-shifting by S, just add in 2 power b−1 (which is the 
+ * fixed-point equivalent of 0.5) first
+ *  
+ * @tparam b number of bits to shift by
+ * @param a value to shift
+ * @return uint32_t 
+ */
+template <uint8_t b> 
+static inline uint32_t rshift_round(uint32_t a) { 
+    return rshift<b>(a+(1UL<<(b-1UL))); 
 }
 
 #endif
