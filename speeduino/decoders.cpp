@@ -122,7 +122,7 @@ uint16_t ignition8EndTooth = 0;
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 #ifdef USE_LIBDIVIDE
-#include "src/libdivide/libdivide.h"
+#include <libdivide.h>
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
