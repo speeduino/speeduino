@@ -9,7 +9,7 @@
 // Using predefined constants saves flash and RAM (.bss) versus calling the 
 // libdivide generator functions (E.g. libdivide_s32_gen)
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
-#include "src/libdivide/libdivide.h"
+#include <libdivide.h>
 #endif
 
 uint8_t random1to100(void);

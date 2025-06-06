@@ -30,6 +30,7 @@ jobs:
               - name: Time
               - name: SimplyAtomic
               - name: adbancroft/avr-fast-shift
+              - name: ridiculousfish/libdivide
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
@@ -44,6 +45,7 @@ jobs:
               - name: InternalTemperature
               - name: elapsedMillis
               - name: adbancroft/avr-fast-shift
+              - name: ridiculousfish/libdivide
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -58,6 +60,7 @@ jobs:
               - name: InternalTemperature
               - name: elapsedMillis
               - name: adbancroft/avr-fast-shift
+              - name: ridiculousfish/libdivide
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -74,6 +77,7 @@ jobs:
               - name: SimplyAtomic
               - name: elapsedMillis
               - name: adbancroft/avr-fast-shift
+              - name: ridiculousfish/libdivide
 
     steps:
       - name: Checkout repository
