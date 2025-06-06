@@ -1,18 +1,18 @@
 #include "globals.h"
 #include "page_crc.h"
 #include "pages.h"
-#include "src/FastCRC/FastCRC.h"
+#include <FastCRC.h>
 
-using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
+using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t);
 
 static inline uint32_t compute_raw_crc(const page_iterator_t &entity, pCrcCalc calcFunc, FastCRC32 &crcCalc)
 {
-    return (crcCalc.*calcFunc)((uint8_t*)entity.pData, entity.size, false);
+    return (crcCalc.*calcFunc)((uint8_t*)entity.pData, entity.size);
 }
 
 static inline uint32_t compute_row_crc(const table_row_iterator &row, pCrcCalc calcFunc, FastCRC32 &crcCalc)
 {
-    return (crcCalc.*calcFunc)(&*row, row.size(), false);
+    return (crcCalc.*calcFunc)(&*row, row.size());
 }
 
 static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc calcFunc, FastCRC32 &crcCalc)
@@ -37,7 +37,7 @@ static inline uint32_t compute_tableaxis_crc(table_axis_iterator it, uint32_t cr
         *pValue++ = (byte)*it;
         ++it;
     }
-    return pValue-values==0 ? crc : crcCalc.crc32_upd(values, pValue-values, false);
+    return pValue-values==0 ? crc : crcCalc.crc32_upd(values, pValue-values);
 }
 
 static inline uint32_t compute_table_crc(const page_iterator_t &entity, pCrcCalc calcFunc, FastCRC32 &crcCalc)
@@ -54,7 +54,7 @@ static inline uint32_t pad_crc(uint16_t padding, uint32_t crc, FastCRC32 &crcCal
     const uint8_t raw_value = 0u;
     while (padding>0)
     {
-        crc = crcCalc.crc32_upd(&raw_value, 1, false);
+        crc = crcCalc.crc32_upd(&raw_value, 1);
         --padding;
     }
     return crc;
@@ -95,5 +95,5 @@ uint32_t calculatePageCRC32(byte pageNum)
     crc = compute_crc(entity, &FastCRC32::crc32_upd /* Note that we are *updating* */, crcCalc);
     entity = advance(entity);
   }
-  return ~pad_crc(getPageSize(pageNum) - entity.size, crc, crcCalc);
+  return pad_crc(getPageSize(pageNum) - entity.size, crc, crcCalc);
 }
