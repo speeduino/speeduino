@@ -32,6 +32,7 @@ jobs:
               - name: adbancroft/avr-fast-shift
               - name: ridiculousfish/libdivide
               - name: frankboesing/FastCRC
+              - name: adbancroft/avr-fast-div
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
@@ -46,6 +47,7 @@ jobs:
               - name: adbancroft/avr-fast-shift
               - name: ridiculousfish/libdivide
               - name: frankboesing/FastCRC
+              - name: adbancroft/avr-fast-div
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -60,6 +62,7 @@ jobs:
               - name: adbancroft/avr-fast-shift
               - name: ridiculousfish/libdivide
               - name: frankboesing/FastCRC
+              - name: adbancroft/avr-fast-div
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -77,6 +80,7 @@ jobs:
               - name: adbancroft/avr-fast-shift
               - name: ridiculousfish/libdivide
               - name: frankboesing/FastCRC
+              - name: adbancroft/avr-fast-div
 
     steps:
       - name: Checkout repository
