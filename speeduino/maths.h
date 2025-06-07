@@ -90,7 +90,7 @@ uint8_t random1to100(void);
  * @param d The denominator (divider) (an \em unsigned integer)
  * @param t The type of the result. E.g. uint16_t
  */
-#define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
+#define UDIV_ROUND_CLOSEST(n, d, t) ((t)fast_div((n) + DIV_ROUND_CORRECT(d, t), (t)(d)))
 
 /**
  * @brief Rounded \em unsigned integer division optimized for compile time constants
@@ -231,19 +231,15 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
 }
 
 /**
- * @brief Same as fast_div32_16(), except this will round to nearest integer 
+ * @brief Same as fast_div(), except this will round to nearest integer 
  * instead of truncating.
  * 
  * Minor performance drop compared to non-rounding version.
  **/
-static inline uint16_t fast_div32_16_closest(uint32_t dividend, uint16_t divisor)
-{
-#if defined(__AVR__)
-    dividend = dividend + (uint32_t)(DIV_ROUND_CORRECT(divisor, uint16_t));
-    return fast_div32_16(dividend, divisor);
-#else
-    return (uint16_t)UDIV_ROUND_CLOSEST(dividend, (uint32_t)divisor, uint32_t);
-#endif
+template <typename TDividend, typename TDivisor>
+static constexpr inline TDividend fast_div_closest(TDividend dividend, TDivisor divisor) {
+    // TDivisor correction = (divisor>>1U)+(TDivisor)DIV_ROUND_BEHAVIOR;
+    return fast_div(dividend + DIV_ROUND_CORRECT(divisor, TDivisor), divisor);
 }
 
 /**
