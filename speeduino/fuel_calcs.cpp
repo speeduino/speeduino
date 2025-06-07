@@ -22,7 +22,7 @@ static inline uint8_t calcNitrousStagePercent(uint8_t minRPMDiv100, uint8_t maxR
   uint16_t minRPM = minRPMDiv100*UINT16_C(100);
   uint16_t maxRPM = maxRPMDiv100*UINT16_C(100);
   uint16_t rpmRange = maxRPM - minRPM;
-  auto adderPercent = (uint8_t)udiv_32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
+  auto adderPercent = (uint8_t)fast_div32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
   return 100U - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
 }
 
@@ -176,10 +176,10 @@ static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime
 }
 
 static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) {
-  return fastDiv(totalPw, page10.stagedInjSizePri);
+  return fast_div(totalPw, page10.stagedInjSizePri);
 }
 static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) {
-  return fastDiv(totalPw, page10.stagedInjSizeSec);
+  return fast_div(totalPw, page10.stagedInjSizeSec);
 }
 
 static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
@@ -210,7 +210,7 @@ static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLi
   if(pwPrimaryStaged > pwLimit)
   {
     uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-    uint32_t secondary = fastDiv(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
+    uint32_t secondary = fast_div(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
     return { 
       pwLimit,
       (uint16_t)min(secondary, (uint32_t)UINT16_MAX),

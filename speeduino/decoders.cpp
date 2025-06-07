@@ -383,16 +383,8 @@ static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
  return updatedRevTime;  
 }
 
-static inline uint16_t clampRpm(uint16_t rpm) {
-    return rpm>=MAX_RPM ? currentStatus.RPM : rpm;
-}
-
 static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
-  if (revTime<UINT16_MAX) {
-    return clampRpm(udiv_32_16_closest(MICROS_PER_MIN, revTime));
-  } else {
-    return clampRpm((uint16_t)UDIV_ROUND_CLOSEST(MICROS_PER_MIN, revTime, uint32_t)); //Calc RPM based on last full revolution time (Faster as /)
-  }
+  return clamp(fast_div_closest((uint32_t)MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
 }
 
 /** Compute RPM.

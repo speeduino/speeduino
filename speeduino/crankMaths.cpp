@@ -29,7 +29,7 @@ static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
 void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
   microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
-  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST(lshift<degreesPerMicro_Shift>(UINT32_C(360)), revolutionTime, uint32_t);
+  degreesPerMicro = (uint16_t)fast_div_closest(lshift<degreesPerMicro_Shift>(UINT32_C(360)), revolutionTime);
 }
 
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
