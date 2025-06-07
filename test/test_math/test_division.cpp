@@ -103,7 +103,7 @@ void test_maths_div360(void)
 }
 
 void assert_fast_div_closest(uint32_t dividend, uint16_t divisor) {
-    assert_rounded_div(dividend, divisor, fast_div32_16_closest(dividend, divisor));
+    assert_rounded_div(dividend, divisor, fast_div_closest(dividend, divisor));
 }
 
 void test_maths_fast_div_closest(void)
