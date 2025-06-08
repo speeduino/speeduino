@@ -3,16 +3,26 @@
 #include "pages.h"
 #include <FastCRC.h>
 
-using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t);
+// Abstract the FastCrC32 functions 
+// - they have have very slight differences in signatures, which causes the Arduino
+// compiler to fail for some boards (the Platform IO compiler works fine though)
+static inline uint32_t initializeCrc(FastCRC32 &crc, const uint8_t *buffer, uint16_t len) {
+  return crc.crc32(buffer, len);
+}
+static inline uint32_t updateCrc(FastCRC32 &crc, const uint8_t *buffer, uint16_t len) {
+  return crc.crc32_upd(buffer, len);
+}
+
+using pCrcCalc = uint32_t (*)(FastCRC32 &, const uint8_t *, uint16_t);
 
 static inline uint32_t compute_raw_crc(const page_iterator_t &entity, pCrcCalc calcFunc, FastCRC32 &crcCalc)
 {
-    return (crcCalc.*calcFunc)((uint8_t*)entity.pData, entity.size);
+    return calcFunc(crcCalc, (uint8_t*)entity.pData, entity.size);
 }
 
 static inline uint32_t compute_row_crc(const table_row_iterator &row, pCrcCalc calcFunc, FastCRC32 &crcCalc)
 {
-    return (crcCalc.*calcFunc)(&*row, row.size());
+    return calcFunc(crcCalc, &*row, row.size());
 }
 
 static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc calcFunc, FastCRC32 &crcCalc)
@@ -22,7 +32,7 @@ static inline uint32_t compute_tablevalues_crc(table_value_iterator it, pCrcCalc
 
     while (!it.at_end())
     {
-        crc = compute_row_crc(*it, &FastCRC32::crc32_upd, crcCalc);
+        crc = compute_row_crc(*it, &updateCrc, crcCalc);
         ++it;
     }
     return crc;
@@ -87,12 +97,12 @@ uint32_t calculatePageCRC32(byte pageNum)
   FastCRC32 crcCalc;
   page_iterator_t entity = page_begin(pageNum);
   // Initial CRC calc
-  uint32_t crc = compute_crc(entity, &FastCRC32::crc32, crcCalc);
+  uint32_t crc = compute_crc(entity, &initializeCrc, crcCalc);
 
   entity = advance(entity);
   while (entity.type!=End)
   {
-    crc = compute_crc(entity, &FastCRC32::crc32_upd /* Note that we are *updating* */, crcCalc);
+    crc = compute_crc(entity, &updateCrc /* Note that we are *updating* */, crcCalc);
     entity = advance(entity);
   }
   return pad_crc(getPageSize(pageNum) - entity.size, crc, crcCalc);
