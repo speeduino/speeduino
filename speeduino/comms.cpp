@@ -373,6 +373,16 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
   currentStatus.vssUiRefresh = false;
 }
 
+// Abstract the FastCrC32 functions 
+// - they have have very slight differences in signatures, which causes the Arduino
+// compiler to fail for some boards (the Platform IO compiler works fine though)
+static inline uint32_t initializeCrc(uint8_t buffer) {
+  return CRC32_calibration.crc32(&buffer, 1U);
+}
+static inline uint32_t updateCrc(uint8_t buffer) {
+  return CRC32_calibration.crc32_upd(&buffer, 1U);
+}
+
 /**
  * @brief Update the oxygen sensor table from serialPayload
  * 
@@ -381,9 +391,9 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
  */
 static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 {
-  using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t);
+  using pCrcCalc = uint32_t (*)(uint8_t);
   // First pass through the loop, we need to INITIALIZE the CRC
-  pCrcCalc pCrcFun = offset==0U ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
+  pCrcCalc pCrcFun = offset==0U ? &initializeCrc : &updateCrc;
   uint32_t calibrationCRC = 0U;
 
   //Read through the current chunk (Should be 256 bytes long)
@@ -401,9 +411,9 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     }
 
     //Update the CRC
-    calibrationCRC = (CRC32_calibration.*pCrcFun)(&serialPayload[x+7U], 1);
+    calibrationCRC = (*pCrcFun)(serialPayload[x+7U]);
     // Subsequent passes through the loop, we need to UPDATE the CRC
-    pCrcFun = &FastCRC32::crc32_upd;
+    pCrcFun = &updateCrc;
   }
  
   if( offset >= 1023U ) 
