@@ -79,44 +79,30 @@ namespace _table2d_detail {
 
 template <typename T>
 struct Bin {
+  constexpr Bin(const T *array, uint8_t binUpperIndex)
+  : upperIndex(binUpperIndex)
+  , upperValue(array[binUpperIndex])
+  , lowerValue(array[binUpperIndex-1U])
+  {
+  } 
+
   uint8_t upperIndex;
   T upperValue;
   T lowerValue;
 };
 
 template <typename T>
-static inline T range(const Bin<T> &bin) {
-  return bin.upperValue - bin.lowerValue;
-}
-
-template <typename T>
 static inline bool isInBin(T value, const Bin<T> &bin) {
   return (value <= bin.upperValue) && (value > bin.lowerValue);
 }
 
-template <typename TArray>
-static inline Bin<TArray> constructBin(const TArray *values, uint8_t binUpperIndex) {
-  return { .upperIndex = binUpperIndex , .upperValue = values[binUpperIndex], .lowerValue = values[binUpperIndex-1U] }; 
-}
-
-template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline Bin<axis_t> getAxisBin(const table2D<axis_t, value_t, sizeT> *fromTable, uint8_t binUpperIndex)
-{
-  return constructBin(fromTable->axis, binUpperIndex);
-}
-
-template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline Bin<value_t> getValueBin(const table2D<axis_t, value_t, sizeT> *fromTable, uint8_t binUpperIndex)
-{
-  return constructBin(fromTable->values, binUpperIndex);
-}
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
 static inline Bin<axis_t> findAxisBin(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t value) {
   // Loop from the upper end of the axis back down to the 1st bin [0,1]
-  Bin<axis_t> xBin = getAxisBin(fromTable, sizeT-1U);
+  Bin<axis_t> xBin(fromTable->axis, sizeT-1U);
   while ((!isInBin(value, xBin)) && (xBin.upperIndex!=1U)) {
-    xBin = getAxisBin(fromTable, xBin.upperIndex - 1U);
+    xBin = Bin<axis_t>(fromTable->axis, xBin.upperIndex - 1U);
   }
 
   return xBin;
@@ -135,7 +121,7 @@ static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fr
   }
 
   // 1st check is whether we're still in the same X bin as last time
-  _table2d_detail::Bin<axis_t> xBin = _table2d_detail::getAxisBin(fromTable, fromTable->cache.lastBinUpperIndex);
+  _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(fromTable->axis, fromTable->cache.lastBinUpperIndex);
   if (!isInBin(axisValue, xBin))
   {
     //If we're not in the same bin, search 
@@ -148,7 +134,7 @@ static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fr
     fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
   // Within the bin, interpolate
   } else if (isInBin(axisValue, xBin)) {  //cppcheck-suppress misra-c2012-14.4
-    const _table2d_detail::Bin<value_t> valueBin = _table2d_detail::getValueBin(fromTable, xBin.upperIndex);
+    const _table2d_detail::Bin<value_t> valueBin = _table2d_detail::Bin<value_t>(fromTable->values, xBin.upperIndex);
     fromTable->cache.lastOutput = map(axisValue, xBin.lowerValue, xBin.upperValue, valueBin.lowerValue, valueBin.upperValue);
     fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
   // Above max axis value, clip to max data value
