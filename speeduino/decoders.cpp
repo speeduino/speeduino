@@ -122,7 +122,7 @@ uint16_t ignition8EndTooth = 0;
 int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 #ifdef USE_LIBDIVIDE
-#include "src/libdivide/libdivide.h"
+#include <libdivide.h>
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
@@ -387,11 +387,7 @@ static inline uint16_t clampRpm(uint16_t rpm) {
 }
 
 static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
-  if (revTime<UINT16_MAX) {
-    return clampRpm(udiv_32_16_closest(MICROS_PER_MIN, revTime));
-  } else {
-    return clampRpm((uint16_t)UDIV_ROUND_CLOSEST(MICROS_PER_MIN, revTime, uint32_t)); //Calc RPM based on last full revolution time (Faster as /)
-  }
+  return clampRpm((uint16_t)fast_div_closest(MICROS_PER_MIN, revTime)); //Calc RPM based on last full revolution time (Faster as /)
 }
 
 /** Compute RPM.
