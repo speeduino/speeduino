@@ -29,10 +29,15 @@ jobs:
             lib_deps: |
               - name: Time
               - name: SimplyAtomic
+                version: "1.0"
               - name: avr-fast-shift
+                version: "1.1.0"
               - name: libdivide
+                version: "5.2.0"
               - name: FastCRC
+                version: "1.41"
               - name: avr-fast-div
+                version: "1.4.0"
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
@@ -44,12 +49,17 @@ jobs:
             lib_deps: |
               - name: SDfat
               - name: SimplyAtomic
+                version: "1.0"
               - name: InternalTemperature
               - name: elapsedMillis
               - name: avr-fast-shift
+                version: "1.1.0"
               - name: libdivide
+                version: "5.2.0"
               - name: FastCRC
+                version: "1.41"
               - name: avr-fast-div
+                version: "1.4.0"
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -61,12 +71,17 @@ jobs:
             lib_deps: |
               - name: SDfat
               - name: SimplyAtomic
+                version: "1.0"
               - name: InternalTemperature
               - name: elapsedMillis
               - name: avr-fast-shift
+                version: "1.1.0"
               - name: libdivide
+                version: "5.2.0"
               - name: FastCRC
+                version: "1.41"
               - name: avr-fast-div
+                version: "1.4.0"
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -82,10 +97,15 @@ jobs:
               - name: SdFat
               - name: SimplyAtomic
               - name: elapsedMillis
+                version: "1.0"
               - name: avr-fast-shift
+                version: "1.1.0"
               - name: libdivide
+                version: "5.2.0"
               - name: FastCRC
+                version: "1.41"
               - name: avr-fast-div
+                version: "1.4.0"
 
     steps:
       - name: Checkout repository
