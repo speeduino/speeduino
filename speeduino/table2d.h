@@ -81,72 +81,98 @@ template <typename T>
 struct Bin {
   constexpr Bin(const T *array, uint8_t binUpperIndex)
   : upperIndex(binUpperIndex)
-  , upperValue(array[binUpperIndex])
-  , lowerValue(array[binUpperIndex-1U])
+  , _upperValue(array[binUpperIndex])
+  , _lowerValue(array[binUpperIndex-1U])
+  {
+  } 
+  constexpr Bin(uint8_t binUpperIndex, const T upperValue, const T lowerValue)
+  : upperIndex(binUpperIndex)
+  , _upperValue(upperValue)
+  , _lowerValue(lowerValue)
   {
   } 
 
-  uint8_t upperIndex;
-  T upperValue;
-  T lowerValue;
-};
+  const T upperValue(void) const noexcept { return _upperValue; }
+  const T lowerValue(void) const noexcept { return _lowerValue; }
 
-template <typename T>
-static inline bool isInBin(T value, const Bin<T> &bin) {
-  return (value <= bin.upperValue) && (value > bin.lowerValue);
-}
-
-
-template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline Bin<axis_t> findAxisBin(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t value) {
-  // Loop from the upper end of the axis back down to the 1st bin [0,1]
-  Bin<axis_t> xBin(fromTable->axis, sizeT-1U);
-  while ((!isInBin(value, xBin)) && (xBin.upperIndex!=1U)) {
-    xBin = Bin<axis_t>(fromTable->axis, xBin.upperIndex - 1U);
+  bool withinBin(const T value) const noexcept {
+    return (value <= _upperValue) && (value > _lowerValue);
   }
 
-  return xBin;
+  uint8_t upperIndex;
+  T _upperValue;
+  T _lowerValue;
+};
+
+
+template <typename T, uint8_t sizeT>
+static inline Bin<T> findBin(const T *const array, const T value) {
+  // Loop from the upper end of the axis back down to the 1st bin [0,1]
+  // Assume array is ordered [min...max]
+  const T *binLower = array+sizeT-2U;
+  while (*binLower>=value && binLower!=array) {
+    --binLower;
+  }
+  return Bin<T>(binLower-array+1U, *(binLower+1U), *binLower);
 }
+
+// Generic interpolation
+template <typename axis_t, typename value_t>
+static inline value_t interpolate(const axis_t axisValue, const Bin<axis_t> &axisBin, const Bin<value_t> &valueBin) {
+  return map(axisValue, axisBin.lowerValue(), axisBin.upperValue(), valueBin.lowerValue(), valueBin.upperValue());
+}
+
+// Specialized interpolation of uint8_t for performance
+uint8_t interpolate(const uint8_t axisValue, const Bin<uint8_t> &axisBin, const Bin<uint8_t> &valueBin);
 
 } // _table2d_detail
 
 /// @endcond
 
+/**
+ * @brief Interpolate a value from a 2d table.
+ * 
+ * @tparam axis_t The type of the table axis
+ * @tparam value_t The type of the table values
+ * @tparam sizeT  The size of the table (number of axis and value elements)
+ * @param fromTable the table to get the value from
+ * @param axisValue the value to look up in the table axis
+ * @return value_t table value corresponding to the axis value (possibly interpolated)
+ */
 template <typename axis_t, typename value_t, uint8_t sizeT>
 static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) {
   //Check whether the X input is the same as last time this ran
   if( (axisValue == fromTable->cache.lastInput) && (!cacheExpired(fromTable->cache)) )
   {
     return fromTable->cache.lastOutput;
-  }
-
-  // 1st check is whether we're still in the same X bin as last time
-  _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(fromTable->axis, fromTable->cache.lastBinUpperIndex);
-  if (!isInBin(axisValue, xBin))
-  {
-    //If we're not in the same bin, search 
-    xBin = _table2d_detail::findAxisBin(fromTable, axisValue);
-  }
-
-  // We are exactly at the bin upper bound, so no need to interpolate
-  if (axisValue==xBin.upperValue) {
-    fromTable->cache.lastOutput = fromTable->values[xBin.upperIndex];
-    fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
-  // Within the bin, interpolate
-  } else if (isInBin(axisValue, xBin)) {  //cppcheck-suppress misra-c2012-14.4
-    const _table2d_detail::Bin<value_t> valueBin = _table2d_detail::Bin<value_t>(fromTable->values, xBin.upperIndex);
-    fromTable->cache.lastOutput = map(axisValue, xBin.lowerValue, xBin.upperValue, valueBin.lowerValue, valueBin.upperValue);
-    fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
-  // Above max axis value, clip to max data value
+  // Test if above the max axis value, clip to max data value
   } else if(axisValue >= fromTable->axis[sizeT-1]) {
     fromTable->cache.lastOutput = fromTable->values[sizeT-1];
     fromTable->cache.lastBinUpperIndex = sizeT-1;
-  // Only choice left is below min axis value, clip to min data value
-  } else {
+  // Test if below the min axis value, clip to min data value
+  } else if (axisValue <= fromTable->axis[0]) {
     fromTable->cache.lastOutput = fromTable->values[0];
     fromTable->cache.lastBinUpperIndex = 1U;
-  }
+  } else {
+    // 1st check is whether we're still in the same X bin as last time
+    _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(fromTable->axis, fromTable->cache.lastBinUpperIndex);
+    if (!xBin.withinBin(axisValue))
+    {
+      //If we're not in the same bin, search 
+      xBin = _table2d_detail::findBin<axis_t, sizeT>(fromTable->axis, axisValue);
+    }
 
+    // We are exactly at the bin upper bound, so no need to interpolate
+    if (axisValue==xBin.upperValue()) {
+      fromTable->cache.lastOutput = fromTable->values[xBin.upperIndex];
+      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+    // Must be within the bin, interpolate
+    } else {
+      fromTable->cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(fromTable->values, xBin.upperIndex));
+      fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
+    }
+    // Note: we cannot be at the bin lower bound here, as that would violate the bin definition of a non-inclusive lower bound
+  }
   fromTable->cache.cacheTime = _table2d_detail::getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
   fromTable->cache.lastInput = axisValue;
 
