@@ -62,10 +62,10 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 
-static constexpr table2du8u16_4 injectorAngleTable(configPage2.injAngRPM, configPage2.injAng);
-static constexpr table2du8u8_8 rotarySplitTable(configPage10.rotarySplitBins, configPage10.rotarySplitValues);
-static constexpr table2di8u8_4 rollingCutTable(configPage15.rollingProtRPMDelta, configPage15.rollingProtCutPercent);
-static constexpr table2du8u8_10 idleTargetTable(configPage6.iacBins, configPage6.iacCLValues);
+static constexpr table2du8u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
+static constexpr table2du8u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
+static constexpr table2di8u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
+static constexpr table2du8u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 

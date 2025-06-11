@@ -6,8 +6,8 @@
 #include "units.h"
 
 byte oilProtStartTime = 0;
-static constexpr table2du8u8_4 oilPressureProtectTable(configPage10.oilPressureProtRPM, configPage10.oilPressureProtMins);
-static constexpr table2du8u8_6 coolantProtectTable(configPage9.coolantProtTemp, configPage9.coolantProtRPM);
+static constexpr table2du8u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
+static constexpr table2du8u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
 byte checkEngineProtect(void)
 {

@@ -54,21 +54,19 @@ template <typename axis_t, typename value_t, uint8_t sizeT>
 struct table2D
 {
   using size_type = uint8_t;
-  using axis_type = axis_t;
-  using value_type = value_t;
 
-  const axis_t *axis = nullptr;
-  const value_t *values = nullptr;
+  const value_t (&values)[sizeT];
+  const axis_t (&axis)[sizeT];
 
   mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
 
-  constexpr table2D(const axis_t (&axisBin)[sizeT], const value_t (&curve)[sizeT])
-    : axis(axisBin) // cppcheck-suppress misra-c2012-14.4
-    , values(curve)
+  constexpr table2D(const axis_t (*pAxisBin)[sizeT], const value_t (*pCurve)[sizeT])
+    : values(*pCurve) //cppcheck-suppress misra-c2012-10.4
+    , axis(*pAxisBin) 
   {
   }
-
-  constexpr size_type size(void) const noexcept { return sizeT; }  
+  
+  static constexpr size_type size(void) { return sizeT; }  
 };
 
 

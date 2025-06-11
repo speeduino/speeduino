@@ -24,12 +24,12 @@ static uint16_t table2d_axis_u16[] = {
     123, 2539, 5531, 7537, 11329, 16363, 21323, 26357, 32029,
 };
 
-static table2D<uint8_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_u8(table2d_axis_u8, table2d_data_u8);
-static table2D<uint16_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_u16(table2d_axis_u16, table2d_data_u8);
-static table2D<uint8_t, uint16_t, _countof(table2d_data_u16)> table2d_u16_u8(table2d_axis_u8, table2d_data_u16);
-static table2D<uint16_t, uint16_t, _countof(table2d_data_u16)> table2d_u16_u16(table2d_axis_u16, table2d_data_u16);
-static table2D<int8_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_i8(table2d_axis_i8, table2d_data_u8);
-static table2D<uint8_t, int16_t, _countof(table2d_data_i16)> table2d_i16_u8(table2d_axis_u8, table2d_data_i16);
+static table2D<uint8_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_u8(&table2d_axis_u8, &table2d_data_u8);
+static table2D<uint16_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_u16(&table2d_axis_u16, &table2d_data_u8);
+static table2D<uint8_t, uint16_t, _countof(table2d_data_u16)> table2d_u16_u8(&table2d_axis_u8, &table2d_data_u16);
+static table2D<uint16_t, uint16_t, _countof(table2d_data_u16)> table2d_u16_u16(&table2d_axis_u16, &table2d_data_u16);
+static table2D<int8_t, uint8_t, _countof(table2d_data_u8)> table2d_u8_i8(&table2d_axis_i8, &table2d_data_u8);
+static table2D<uint8_t, int16_t, _countof(table2d_data_i16)> table2d_i16_u8(&table2d_axis_u8, &table2d_data_i16);
 
 namespace internal
 {
