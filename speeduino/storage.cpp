@@ -68,7 +68,7 @@ const storage_api_t& getStorageAPI(void) {
 }
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-static constexpr uint16_t STORAGE_END = 0xFFF;       // Should be E2END?
+static constexpr uint16_t STORAGE_END = 0xFFF;
 static constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(uint16_t)sizeof(cltCalibration_values);
 static constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(cltCalibration_bins);
 static constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(uint16_t)sizeof(iatCalibration_values);
