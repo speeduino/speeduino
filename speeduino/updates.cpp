@@ -384,7 +384,7 @@ void doUpdates(void)
 
     for(uint16_t x=0; x<(CALIBRATION_TABLE_SIZE/16U); x++) //Each calibration table is 512 bytes long
     {
-      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
+      uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
       cltCalibrationTable.values[x] = getStorageAPI().read(y);
       cltCalibrationTable.axis[x] = (x * 32U);
 

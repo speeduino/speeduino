@@ -347,23 +347,23 @@ static void test_moveBlock_down_adjacent(void) {
 }
 
 void testStorageApi(void) {
-    Unity.TestFile = __FILE__;    
-
-    RUN_TEST_P(test_update_nowrite_ifnochange);
-    RUN_TEST_P(test_update_write_ifchange);
-    RUN_TEST_P(test_updateBlock_reads_all_addresses);
-    RUN_TEST_P(test_updateBlock_writes_all_addresses);
-    RUN_TEST_P(test_updateBlockLimitWriteOps_reads_all_addresses);
-    RUN_TEST_P(test_updateBlockLimitWriteOps_writes_all_addresses);
-    RUN_TEST_P(test_updateBlockLimitWriteOps_limited_writes);
-    RUN_TEST_P(test_loadBlock);
-    RUN_TEST_P(test_fillBlock_nochange_nowrite);
-    RUN_TEST_P(test_fillBlock_write_if_different);
-    RUN_TEST_P(test_clearStorage_default);
-    RUN_TEST_P(test_moveBlock_up_nooverlap_noochanges);
-    RUN_TEST_P(test_moveBlock_down_nooverlap_noochanges);
-    RUN_TEST_P(test_moveBlock_up_overlap);
-    RUN_TEST_P(test_moveBlock_down_overlap);
-    RUN_TEST_P(test_moveBlock_up_adjacent);
-    RUN_TEST_P(test_moveBlock_down_adjacent);
+    SET_UNITY_FILENAME() {
+        RUN_TEST_P(test_update_nowrite_ifnochange);
+        RUN_TEST_P(test_update_write_ifchange);
+        RUN_TEST_P(test_updateBlock_reads_all_addresses);
+        RUN_TEST_P(test_updateBlock_writes_all_addresses);
+        RUN_TEST_P(test_updateBlockLimitWriteOps_reads_all_addresses);
+        RUN_TEST_P(test_updateBlockLimitWriteOps_writes_all_addresses);
+        RUN_TEST_P(test_updateBlockLimitWriteOps_limited_writes);
+        RUN_TEST_P(test_loadBlock);
+        RUN_TEST_P(test_fillBlock_nochange_nowrite);
+        RUN_TEST_P(test_fillBlock_write_if_different);
+        RUN_TEST_P(test_clearStorage_default);
+        RUN_TEST_P(test_moveBlock_up_nooverlap_noochanges);
+        RUN_TEST_P(test_moveBlock_down_nooverlap_noochanges);
+        RUN_TEST_P(test_moveBlock_up_overlap);
+        RUN_TEST_P(test_moveBlock_down_overlap);
+        RUN_TEST_P(test_moveBlock_up_adjacent);
+        RUN_TEST_P(test_moveBlock_down_adjacent);
+    }
 }

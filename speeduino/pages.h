@@ -83,6 +83,10 @@ page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate ove
  */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);
 
+#if defined (UNIT_TEST)
+const char *getEntityName(const page_iterator_t &it);
+#endif
+
 /**
  * Convert page iterator to table value iterator.
  */
