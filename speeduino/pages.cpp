@@ -492,6 +492,59 @@ page_iterator_t advance(const page_iterator_t &it)
     return map_page_offset_to_entity(it.page, it.start+it.size);
 }
 
+#if defined (UNIT_TEST)
+const char *getEntityName(const page_iterator_t &it) {
+  #define GET_VARIABLE_NAME(Variable) (#Variable)
+
+  struct entity_name_map_t {
+      void *pEntity;
+      String name;
+  };
+  // Store a map of entity to EEPROM address in FLASH memory.
+  static const entity_name_map_t entityMap[] = {
+    { &fuelTable, GET_VARIABLE_NAME(fuelTable) },
+    { &configPage2, GET_VARIABLE_NAME(configPage2) },
+    { &ignitionTable, GET_VARIABLE_NAME(ignitionTable) },
+    { &configPage4, GET_VARIABLE_NAME(configPage4) },
+    { &afrTable, GET_VARIABLE_NAME(afrTable) },
+    { &configPage6, GET_VARIABLE_NAME(configPage6) },
+    { &boostTable, GET_VARIABLE_NAME(boostTable) },
+    { &vvtTable, GET_VARIABLE_NAME(vvtTable) },
+    { &stagingTable, GET_VARIABLE_NAME(stagingTable) },
+    { &trim1Table, GET_VARIABLE_NAME(trim1Table) },
+    { &trim2Table, GET_VARIABLE_NAME(trim2Table) },
+    { &trim3Table, GET_VARIABLE_NAME(trim3Table) },
+    { &trim4Table, GET_VARIABLE_NAME(trim4Table) },
+    { &trim5Table, GET_VARIABLE_NAME(trim5Table) },
+    { &trim6Table, GET_VARIABLE_NAME(trim6Table) },
+    { &trim7Table, GET_VARIABLE_NAME(trim7Table) },
+    { &trim8Table, GET_VARIABLE_NAME(trim8Table) },
+    { &configPage9, GET_VARIABLE_NAME(configPage9) },
+    { &configPage10, GET_VARIABLE_NAME(configPage10) },
+    { &fuelTable2, GET_VARIABLE_NAME(fuelTable2) },
+    { &wmiTable, GET_VARIABLE_NAME(wmiTable) },
+    { &vvt2Table, GET_VARIABLE_NAME(vvt2Table) },
+    { &dwellTable, GET_VARIABLE_NAME(dwellTable) },
+    { &configPage13, GET_VARIABLE_NAME(configPage13) },
+    { &ignitionTable2, GET_VARIABLE_NAME(ignitionTable2) },
+    { &boostTableLookupDuty, GET_VARIABLE_NAME(boostTableLookupDuty) },
+    { &configPage15, GET_VARIABLE_NAME(configPage15) },
+  };
+  static const constexpr entity_name_map_t* entityMapEnd = entityMap + _countof(entityMap);  
+
+  // Linear search of the name map.
+  const entity_name_map_t *pMapEntry = entityMap;
+  while ((pMapEntry!=entityMapEnd) && (it.pData!=pMapEntry->pEntity)) {
+    ++pMapEntry;
+  }
+  if (pMapEntry!=entityMapEnd) {
+    return pMapEntry->name.c_str();
+  }
+  static const char *unknown = "Unknown";
+  return unknown;
+}
+#endif
+
 /**
  * Convert page iterator to table value iterator.
  */
