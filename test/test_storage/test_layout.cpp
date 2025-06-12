@@ -93,9 +93,47 @@ static void test_no_entity_overlap(void) {
     }
 }
 
+const char* getEntityType(const page_iterator_t &entity) {
+    switch (entity.type) {
+        case Raw: return "Raw";
+        case Table: return "Table";
+        case NoEntity: return "NoEntity";
+        case End: return "End";
+        default: return "Unknown";
+    }
+}
+
+// An informational function to print the layout of the EEPROM as CSV
+// Requires "-v" flag on pio unit test runner 
+static void print_eeprom_layout(void) {
+    #define GET_VARIABLE_NAME(Variable) (#Variable)
+    char msg[128];
+    UnityPrint("Page, Index, Item, Type, Start Address, Length"); UNITY_PRINT_EOL();
+    for (uint8_t page = 0; page < getPageCount(); page++) {
+        page_iterator_t entity = page_begin(page);
+        uint8_t entityIndex = 0U;
+        while (entity.type!=End) {
+            sprintf(msg, "%d, %d, %s, %s, %d, %d", page, entityIndex, getEntityName(entity), getEntityType(entity), getEntityStartAddress(entity), entity.size);
+            UnityPrint(msg); UNITY_PRINT_EOL();
+            entity = advance(entity);
+            ++entityIndex;
+        }
+    }
+
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(CoolantSensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(IntakeAirTempSensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(O2Sensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calibrations, 0, Calib, Calib, %d, %d", MAX_PAGE_ADDRESS, STORAGE_SIZE-MAX_PAGE_ADDRESS);
+    UnityPrint(msg); UNITY_PRINT_EOL();
+}
+
 void test_layout(void) {
-    Unity.TestFile = __FILE__;    
-    
-    RUN_TEST_P(test_getEntityStartAddress_invalid_entity);
-    RUN_TEST_P(test_no_entity_overlap);
+    SET_UNITY_FILENAME() {     
+        RUN_TEST_P(test_getEntityStartAddress_invalid_entity);
+        RUN_TEST_P(test_no_entity_overlap);
+        RUN_TEST_P(print_eeprom_layout);
+    }
 }
