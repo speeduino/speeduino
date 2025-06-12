@@ -55,7 +55,7 @@ uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
 #endif
-static constexpr table2du8u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
+static table2du8u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
 bool acIsEnabled;
 bool acStandAloneFanIsEnabled;
@@ -74,7 +74,7 @@ bool vvtIsHot;
 bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static constexpr table2du8s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
+static table2du8s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);

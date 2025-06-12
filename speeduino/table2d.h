@@ -55,12 +55,12 @@ struct table2D
 {
   using size_type = uint8_t;
 
-  const value_t (&values)[sizeT];
-  const axis_t (&axis)[sizeT];
+  value_t (&values)[sizeT];
+  axis_t (&axis)[sizeT];
 
   mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
 
-  constexpr table2D(const axis_t (*pAxisBin)[sizeT], const value_t (*pCurve)[sizeT])
+  constexpr table2D(axis_t (*pAxisBin)[sizeT], value_t (*pCurve)[sizeT])
     : values(*pCurve) //cppcheck-suppress misra-c2012-10.4
     , axis(*pAxisBin) 
   {

@@ -56,23 +56,23 @@ uint8_t idleAdvTaper;
 uint8_t crankingEnrichTaper;
 uint8_t dfcoTaper;
 
-TESTABLE_CONSTEXPR table2du8u8_4 taeTable(&configPage4.taeBins, &configPage4.taeValues);
-TESTABLE_CONSTEXPR table2du8u8_4 maeTable(&configPage4.maeBins, &configPage4.maeRates);
-TESTABLE_CONSTEXPR table2du8u8_10 WUETable(&configPage4.wueBins, &configPage2.wueValues);
-TESTABLE_CONSTEXPR table2du8u8_4 ASETable(&configPage2.aseBins, &configPage2.asePct);
-TESTABLE_CONSTEXPR table2du8u8_4 ASECountTable(&configPage2.aseBins, &configPage2.aseCount);
-TESTABLE_CONSTEXPR table2du8u8_4 crankingEnrichTable(&configPage10.crankingEnrichBins, &configPage10.crankingEnrichValues);
-TESTABLE_CONSTEXPR table2du8u8_6 dwellVCorrectionTable(&configPage6.voltageCorrectionBins, &configPage4.dwellCorrectionValues);
-TESTABLE_CONSTEXPR table2du8u8_6 injectorVCorrectionTable(&configPage6.voltageCorrectionBins, &configPage6.injVoltageCorrectionValues);
-TESTABLE_CONSTEXPR table2du8u8_9 IATDensityCorrectionTable(&configPage6.airDenBins, &configPage6.airDenRates);
-TESTABLE_CONSTEXPR table2du8u8_8 baroFuelTable(&configPage4.baroFuelBins, &configPage4.baroFuelValues);
-TESTABLE_CONSTEXPR table2du8u8_6 IATRetardTable(&configPage4.iatRetBins, &configPage4.iatRetValues);
-TESTABLE_CONSTEXPR table2du8u8_6 idleAdvanceTable(&configPage4.idleAdvBins, &configPage4.idleAdvValues);
-TESTABLE_CONSTEXPR table2du8u8_6 CLTAdvanceTable(&configPage4.cltAdvBins, &configPage4.cltAdvValues);
-TESTABLE_CONSTEXPR table2du8u8_6 flexFuelTable(&configPage10.flexFuelBins, &configPage10.flexFuelAdj);
-TESTABLE_CONSTEXPR table2du8u8_6 flexAdvTable(&configPage10.flexAdvBins, &configPage10.flexAdvAdj);
-TESTABLE_CONSTEXPR table2du8u8_6 fuelTempTable(&configPage10.fuelTempBins, &configPage10.fuelTempValues);
-TESTABLE_CONSTEXPR table2du8u8_6 wmiAdvTable(&configPage10.wmiAdvBins, &configPage10.wmiAdvAdj);
+TESTABLE_STATIC table2du8u8_4 taeTable(&configPage4.taeBins, &configPage4.taeValues);
+TESTABLE_STATIC table2du8u8_4 maeTable(&configPage4.maeBins, &configPage4.maeRates);
+TESTABLE_STATIC table2du8u8_10 WUETable(&configPage4.wueBins, &configPage2.wueValues);
+TESTABLE_STATIC table2du8u8_4 ASETable(&configPage2.aseBins, &configPage2.asePct);
+TESTABLE_STATIC table2du8u8_4 ASECountTable(&configPage2.aseBins, &configPage2.aseCount);
+TESTABLE_STATIC table2du8u8_4 crankingEnrichTable(&configPage10.crankingEnrichBins, &configPage10.crankingEnrichValues);
+TESTABLE_STATIC table2du8u8_6 dwellVCorrectionTable(&configPage6.voltageCorrectionBins, &configPage4.dwellCorrectionValues);
+TESTABLE_STATIC table2du8u8_6 injectorVCorrectionTable(&configPage6.voltageCorrectionBins, &configPage6.injVoltageCorrectionValues);
+TESTABLE_STATIC table2du8u8_9 IATDensityCorrectionTable(&configPage6.airDenBins, &configPage6.airDenRates);
+TESTABLE_STATIC table2du8u8_8 baroFuelTable(&configPage4.baroFuelBins, &configPage4.baroFuelValues);
+TESTABLE_STATIC table2du8u8_6 IATRetardTable(&configPage4.iatRetBins, &configPage4.iatRetValues);
+TESTABLE_STATIC table2du8u8_6 idleAdvanceTable(&configPage4.idleAdvBins, &configPage4.idleAdvValues);
+TESTABLE_STATIC table2du8u8_6 CLTAdvanceTable(&configPage4.cltAdvBins, &configPage4.cltAdvValues);
+TESTABLE_STATIC table2du8u8_6 flexFuelTable(&configPage10.flexFuelBins, &configPage10.flexFuelAdj);
+TESTABLE_STATIC table2du8u8_6 flexAdvTable(&configPage10.flexAdvBins, &configPage10.flexAdvAdj);
+TESTABLE_STATIC table2du8u8_6 fuelTempTable(&configPage10.fuelTempBins, &configPage10.fuelTempValues);
+TESTABLE_STATIC table2du8u8_6 wmiAdvTable(&configPage10.wmiAdvBins, &configPage10.wmiAdvAdj);
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
