@@ -407,13 +407,6 @@ extern struct config10 configPage10;
 extern struct config13 configPage13;
 extern struct config15 configPage15;
 
-extern uint16_t cltCalibration_bins[32];
-extern uint16_t cltCalibration_values[32];
-extern uint16_t iatCalibration_bins[32];
-extern uint16_t iatCalibration_values[32];
-extern uint16_t o2Calibration_bins[32];
-extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
-
 bool pinIsOutput(byte pin);
 bool pinIsUsed(byte pin);
 

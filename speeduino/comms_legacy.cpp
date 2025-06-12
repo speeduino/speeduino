@@ -24,6 +24,7 @@ A full copy of the license may be found in the projects root directory
   #include "rtc_common.h"
 #endif
 #include "units.h"
+#include "sensors.h"
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -440,23 +441,23 @@ void legacySerialCommand(void)
       primarySerial.println(F("Coolant"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(cltCalibration_bins[x]);
+        primarySerial.print(cltCalibrationTable.axis[x]);
         primarySerial.print(", ");
-        primarySerial.println(cltCalibration_values[x]);
+        primarySerial.println(cltCalibrationTable.values[x]);
       }
       primarySerial.println(F("Inlet temp"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(iatCalibration_bins[x]);
+        primarySerial.print(iatCalibrationTable.axis[x]);
         primarySerial.print(", ");
-        primarySerial.println(iatCalibration_values[x]);
+        primarySerial.println(iatCalibrationTable.values[x]);
       }
       primarySerial.println(F("O2"));
       for (int x = 0; x < 32; x++)
       {
-        primarySerial.print(o2Calibration_bins[x]);
+        primarySerial.print(o2CalibrationTable.axis[x]);
         primarySerial.print(", ");
-        primarySerial.println(o2Calibration_values[x]);
+        primarySerial.println(o2CalibrationTable.values[x]);
       }
       primarySerial.println(F("WUE"));
       for (int x = 0; x < 10; x++)
@@ -1179,81 +1180,47 @@ void sendPageASCII(void)
  */
 void receiveCalibration(byte tableID)
 {
-  void* pnt_TargetTable_values; //Pointer that will be used to point to the required target table values
-  uint16_t* pnt_TargetTable_bins;   //Pointer that will be used to point to the required target table bins
-  int OFFSET, DIVISION_FACTOR;
-
-  switch (tableID)
-  {
-    case 0:
-      //coolant table
-      pnt_TargetTable_values = (uint16_t *)&cltCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&cltCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET; //
-      DIVISION_FACTOR = 10;
-      break;
-    case 1:
-      //Inlet air temp table
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      OFFSET = CALIBRATION_TEMPERATURE_OFFSET;
-      DIVISION_FACTOR = 10;
-      break;
-    case 2:
-      //O2 table
-      pnt_TargetTable_values = (uint8_t *)&o2Calibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&o2Calibration_bins;
-      OFFSET = 0;
-      DIVISION_FACTOR = 1;
-      break;
-
-    default:
-      OFFSET = 0;
-      pnt_TargetTable_values = (uint16_t *)&iatCalibration_values;
-      pnt_TargetTable_bins = (uint16_t *)&iatCalibration_bins;
-      DIVISION_FACTOR = 10;
-      break; //Should never get here, but if we do, just fail back to main loop
-  }
-
-  int16_t tempValue;
-  byte tempBuffer[2];
-
   if(tableID == 2)
   {
     //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
     for (int x = 0; x < 1024; x++)
     {
       while ( primarySerial.available() < 1 ) {}
-      tempValue = primarySerial.read();
+      uint8_t tempValue = (uint8_t)primarySerial.read();
 
       if( (x % 32) == 0)
       {
-        ((uint8_t*)pnt_TargetTable_values)[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
-        pnt_TargetTable_bins[(x/32)] = (x);
+        o2CalibrationTable.values[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
+        o2CalibrationTable.axis[(x/32)] = x;
       }
       
     }
   }
   else
   {
+    table2du16u16_32 *pTargetTable;
+    if (tableID == 0)
+    {
+      pTargetTable = &cltCalibrationTable;
+    }
+    else
+    {
+      pTargetTable = &iatCalibrationTable;
+    }
     //Temperature calibrations are sent as 32 16-bit values
     for (uint16_t x = 0; x < 32; x++)
     {
       while ( primarySerial.available() < 2 ) {}
+      byte tempBuffer[2];
       tempBuffer[0] = primarySerial.read();
       tempBuffer[1] = primarySerial.read();
 
-      tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, DIVISION_FACTOR).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
+      int16_t tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
+      tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
       
-      //Apply the temp offset and check that it results in all values being positive
-      tempValue = tempValue + OFFSET;
-      if (tempValue < 0) { tempValue = 0; }
-
-      
-      ((uint16_t*)pnt_TargetTable_values)[x] = tempValue; //Both temp tables have 16-bit values
-      pnt_TargetTable_bins[x] = (x * 32U);
+      pTargetTable->values[x] = temperatureToStorage(tempValue);
+      pTargetTable->axis[x] = (x * 32U);
       writeCalibration();
     }
   }
