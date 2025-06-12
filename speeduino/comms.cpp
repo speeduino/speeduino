@@ -416,7 +416,7 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 
 /**
  * @brief Convert 2 bytes into an offset temperature in degrees Celsius
- * @attention Returned value will be in storeage temperatures
+ * @attention Returned value will be in storage temperatures
  */
 static uint8_t toTemperature(byte lo, byte hi)
 {
