@@ -15,6 +15,12 @@
 #include "comms_CAN.h"
 #include "utilities.h"
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 void tableValueAdd(table_row_iterator &row, table3d_value_t addValue) {  // cppcheck-suppress [constParameter,constParameterCallback]
   *row = *row + addValue; 
 }
@@ -803,3 +809,7 @@ void doUpdates(void)
   //Check to see if someone has downgraded versions:
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
