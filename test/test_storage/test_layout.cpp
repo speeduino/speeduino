@@ -6,6 +6,8 @@
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
 extern const uint16_t MAX_PAGE_ADDRESS;
+extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
+extern const uint16_t STORAGE_SIZE;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
     config10 localPage10;
@@ -28,6 +30,21 @@ struct block {
     uint16_t length;
 };
 
+static void assert_nocalibration_overlap(const block &newBlock, uint8_t idxCurrBlock, SensorCalibrationTable table) {
+    uint16_t start = getSensorCalibrationCrcAddress(table);
+    uint16_t end = start + sizeof(uint32_t);
+    char msg[64];
+    sprintf(msg, "EEPROM storage: entity %d overlaps calibration CRC %d", idxCurrBlock, table);
+    TEST_ASSERT_FALSE_MESSAGE(isInRangeExclusive(start, end, newBlock.start), msg);
+    TEST_ASSERT_FALSE_MESSAGE(isInRangeExclusive(start, end, newBlock.start+newBlock.length), msg);
+}
+
+static void assert_nocalibration_overlap(const block &newBlock, uint8_t idxCurrBlock) {
+    assert_nocalibration_overlap(newBlock, idxCurrBlock, CoolantSensor);
+    assert_nocalibration_overlap(newBlock, idxCurrBlock, IntakeAirTempSensor);
+    assert_nocalibration_overlap(newBlock, idxCurrBlock, O2Sensor);
+}
+
 static bool inline overlaps(const block &a, const block &b) {
     return  isInRangeExclusive(a.start, a.start+a.length-1, b.start);
             isInRangeExclusive(a.start, a.start+a.length, b.start+b.length);
@@ -49,6 +66,7 @@ static uint8_t test_no_overlap_page(uint8_t pageNum, block blocks[], size_t leng
     block newBlock = { getEntityStartAddress(entity), entity.size };
     TEST_ASSERT_GREATER_THAN(0, newBlock.start);
     TEST_ASSERT_LESS_THAN(MAX_PAGE_ADDRESS, newBlock.start+newBlock.length);
+    assert_nocalibration_overlap(newBlock, idxCurrBlock);
     uint8_t overlapBlock = find_overlap(blocks, idxCurrBlock, newBlock);
     if (overlapBlock!=idxCurrBlock) {
         char msg[64];
@@ -83,9 +101,6 @@ const char* getEntityType(const page_iterator_t &entity) {
         default: return "Unknown";
     }
 }
-
-extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
-extern uint16_t STORAGE_SIZE;
 
 // An informational function to print the layout of the EEPROM as CSV
 // Requires "-v" flag on pio unit test runner 
