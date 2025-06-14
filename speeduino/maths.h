@@ -345,4 +345,42 @@ static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prio
     return LOW_PASS_FILTER_8BIT<int16_t, int32_t>(input, alpha, prior);
 }
 
+/**
+ * @brief Scale a value from one range to another.
+ * 
+ * Takes a value from a range of [0, fromRange] and scales it to a range of [0, toRange].
+ * @warning from must be within the range [0, fromRange].
+ * 
+ * @param from Value to scale [0, fromRange]
+ * @param fromRange Zero based range of the from value
+ * @param toRange Zero based range of the to value
+ * @return uint8_t from scaled to toRange
+ */
+static inline uint8_t scale(const uint8_t from, const uint8_t fromRange, const uint8_t toRange) {
+  // Using uint16_t to avoid overflow when calculating the result
+  return (((uint16_t)from * (uint16_t)toRange) / (uint16_t)fromRange);
+}
+
+/**
+ * @brief Specialist version of map(long, long, long, long, long) for performance.
+ * 
+ * Maps a value from one range to another. 
+ * @warning from must be within the range [fromLow, fromHigh].
+ * 
+ * @param from Value to map [fromLow, fromHigh]
+ * @param fromLow Lower bound of the from range
+ * @param fromHigh Upper bound of the from range
+ * @param toLow Lower bound of the to range
+ * @param toHigh Upper bound of the to range
+ * @return uint8_t Mapped value in the new range [toLow, toHigh]
+ */
+static inline uint8_t fast_map(const uint8_t from, const uint8_t fromLow, const uint8_t fromHigh, const uint8_t toLow, const uint8_t toHigh) {
+  // Stick to unsigned math for performance, so need to check for output range inversion
+  if (toLow>toHigh) {
+    return toLow - scale(from - fromLow, fromHigh - fromLow, toLow-toHigh);
+  } else {
+    return scale(from - fromLow, fromHigh - fromLow, toHigh-toLow) + toLow;
+  }
+}
+
 #endif

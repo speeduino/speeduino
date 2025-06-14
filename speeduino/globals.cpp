@@ -212,13 +212,6 @@ struct config10 configPage10;
 struct config13 configPage13;
 struct config15 configPage15;
 
-uint16_t cltCalibration_bins[32];
-uint16_t cltCalibration_values[32];
-uint16_t iatCalibration_bins[32];
-uint16_t iatCalibration_values[32];
-uint16_t o2Calibration_bins[32];
-uint8_t o2Calibration_values[32];
-
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
 bool pinIsOutput(byte pin)
 {

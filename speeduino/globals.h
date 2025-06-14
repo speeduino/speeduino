@@ -170,8 +170,7 @@ static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 #define IGN8_CMD_BIT      7
 
 #define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
-#define CALIBRATION_TEMPERATURE_OFFSET 40 /**< All temperature measurements are stored offset by 40 degrees.
-This is so we can use an unsigned byte (0-255) to represent temperature ranges from -40 to 215 */
+
 #define OFFSET_FUELTRIM 127U ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing
 
@@ -407,13 +406,6 @@ extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
 extern struct config15 configPage15;
-
-extern uint16_t cltCalibration_bins[32];
-extern uint16_t cltCalibration_values[32];
-extern uint16_t iatCalibration_bins[32];
-extern uint16_t iatCalibration_values[32];
-extern uint16_t o2Calibration_bins[32];
-extern uint8_t  o2Calibration_values[32]; // Note 8-bit values
 
 bool pinIsOutput(byte pin);
 bool pinIsUsed(byte pin);
