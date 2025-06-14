@@ -2,6 +2,7 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "pages.h"
+#include "storage.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
 extern const uint16_t MAX_PAGE_ADDRESS;
@@ -83,10 +84,13 @@ const char* getEntityType(const page_iterator_t &entity) {
     }
 }
 
+extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
+extern uint16_t STORAGE_SIZE;
+
 // An informational function to print the layout of the EEPROM as CSV
 // Requires "-v" flag on pio unit test runner 
 static void print_eeprom_layout(void) {
-    extern uint16_t STORAGE_SIZE; 
+    #define GET_VARIABLE_NAME(Variable) (#Variable)
     char msg[128];
     UnityPrint("Page, Index, Item, Type, Start Address, Length"); UNITY_PRINT_EOL();
     for (uint8_t page = 0; page < getPageCount(); page++) {
@@ -100,7 +104,13 @@ static void print_eeprom_layout(void) {
         }
     }
 
-    sprintf(msg, "Calibrations, 1, Calib, Calib, %d, %d", MAX_PAGE_ADDRESS, STORAGE_SIZE-MAX_PAGE_ADDRESS);
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(CoolantSensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(IntakeAirTempSensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calib. CRC, %d, %s, CRC, %d, %d", O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(O2Sensor), sizeof(uint32_t));
+    UnityPrint(msg); UNITY_PRINT_EOL();
+    sprintf(msg, "Calibrations, 0, Calib, Calib, %d, %d", MAX_PAGE_ADDRESS, STORAGE_SIZE-MAX_PAGE_ADDRESS);
     UnityPrint(msg); UNITY_PRINT_EOL();
 }
 

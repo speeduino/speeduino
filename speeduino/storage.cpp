@@ -424,7 +424,7 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
   }
 }
 
-static inline uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
+TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
   constexpr uint16_t EEPROM_CALIBRATION_CLT_CRC = 3674;
   constexpr uint16_t EEPROM_CALIBRATION_IAT_CRC = 3678;
   constexpr uint16_t EEPROM_CALIBRATION_O2_CRC = 3682;
