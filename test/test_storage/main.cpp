@@ -1,12 +1,10 @@
+
 #include <Arduino.h>
 #include <unity.h>
 #include <avr/sleep.h>
 
-extern void testTables3d(void);
-extern void testTable2d(void);
-extern void testAlgorithms3D(void);
-
-#define UNITY_EXCLUDE_DETAILS
+extern void test_layout(void);
+extern void testStorageApi(void);
 
 void setup()
 {
@@ -20,17 +18,16 @@ void setup()
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
-    testTables3d();
-    testTable2d();
-    testAlgorithms3D();
-
+    test_layout();
+    testStorageApi();
+    
     UNITY_END(); // stop unit testing
 
 #if defined(SIMULATOR)       // Tell SimAVR we are done
     cli();
     sleep_enable();
     sleep_cpu();
-#endif  
+#endif
 }
 
 void loop()

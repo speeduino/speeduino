@@ -4,7 +4,7 @@ These are some utility functions and variables used through the main code
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <Arduino.h>
+#include <stdint.h>
 
 #define CONCATS(s1, s2) (s1" " s2) //needed for some reason. not defined correctly because of utils.h file of speeduino (same name as one in arduino core)
 
@@ -24,15 +24,12 @@ These are some utility functions and variables used through the main code
 
 #define REUSE_RULES 240
 
-extern uint8_t ioOutDelay[sizeof(configPage13.outputPin)];
-extern uint8_t ioDelay[sizeof(configPage13.outputPin)];
 extern uint8_t pinIsValid;
 extern uint8_t currentRuleStatus;
-//uint8_t outputPin[sizeof(configPage13.outputPin)];
 
 void setResetControlPinState(void);
-byte pinTranslate(byte rawPin);
-byte pinTranslateAnalog(byte rawPin);
+uint8_t pinTranslate(uint8_t rawPin);
+uint8_t pinTranslateAnalog(uint8_t rawPin);
 void initialiseProgrammableIO(void);
 void checkProgrammableIO(void);
 int16_t ProgrammableIOGetData(uint16_t index);
@@ -41,9 +38,9 @@ int16_t ProgrammableIOGetData(uint16_t index);
 #define UNUSED(x) (void)(x)
 #endif
 
-#define _countof(x) (sizeof(x) / sizeof (x[0]))
-#define _end_range_address(array) (array + _countof(array))
-#define _end_range_byte_address(array) (((byte*)array) + sizeof(array))
+#define _countof(x) (sizeof((x)) / sizeof ((x)[0]))
+#define _end_range_address(array) ((array) + _countof((array)))
+#define _end_range_byte_address(array) (((byte*)(array)) + sizeof((array)))
 
 // Pre-processor arithmetic increment (pulled from Boost.Preprocessor)
 #define PP_INC(x) PP_INC_I(x)

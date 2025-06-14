@@ -99,9 +99,11 @@ static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
 #endif
-static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
-static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent
+static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
+static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
+static uint32_t deferEEPROMWritesUntil = 0; //!< Point in time that we can resume writing pages
+static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -324,7 +326,7 @@ static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffe
     {
       setPageValue(pageNum, (offset + i), buffer[i]);
     }
-    deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
+    setStorageWriteTimeout(micros() + EEPROM_DEFER_DELAY);
     return true;
   }
 
@@ -408,8 +410,8 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
   if( offset >= 1023U ) 
   {
     //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
-    storeCalibrationCRC32(O2_CALIBRATION_PAGE, ~calibrationCRC);
-    writeCalibrationPage(O2_CALIBRATION_PAGE);
+    saveCalibrationCrc(O2Sensor, ~calibrationCRC);
+    saveCalibrationTable(O2Sensor);
   }
 }
 
@@ -434,7 +436,7 @@ static uint16_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, SensorCalibrationTable calibrationPage, uint16_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)
@@ -444,8 +446,8 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
       values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
       bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
-    storeCalibrationCRC32(calibrationPage, CRC32_calibration.crc32(&serialPayload[7], 64));
-    writeCalibrationPage(calibrationPage);
+    saveCalibrationCrc(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+    saveCalibrationTable(calibrationPage);
     sendReturnCodeMsg(SERIAL_RC_OK);
   }
   else 
@@ -576,6 +578,15 @@ void serialTransmit(void)
   }
 }
 
+static void burnSinglePage(uint8_t page)
+{
+  if( storageWriteTimeoutExpired()) { 
+    savePage(page); 
+  } else { 
+    setEepromWritePending(true); 
+  }
+}
+
 void processSerialCommand(void)
 {
   switch (serialPayload[0])
@@ -586,18 +597,14 @@ void processSerialCommand(void)
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
-      
+      burnSinglePage(serialPayload[2]);     
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-      deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
-      
+      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4)); //Add 25% more to the EEPROM defer time
+      burnSinglePage(serialPayload[2]);      
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
@@ -664,7 +671,7 @@ void processSerialCommand(void)
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
+      uint32_t CRC32_val = reverse_bytes(loadCalibrationCrc((SensorCalibrationTable)serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
       (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));
@@ -889,19 +896,19 @@ void processSerialCommand(void)
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      if(cmd == O2_CALIBRATION_PAGE)
+      if(cmd == O2Sensor)
       {
         loadO2CalibrationChunk(offset, calibrationLength);
         sendReturnCodeMsg(SERIAL_RC_OK);
         primarySerial.flush(); //This is safe because engine is assumed to not be running during calibration
       }
-      else if(cmd == IAT_CALIBRATION_PAGE)
+      else if(cmd == IntakeAirTempSensor)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibration_values, iatCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, IntakeAirTempSensor, iatCalibration_values, iatCalibration_bins);
       }
-      else if(cmd == CLT_CALIBRATION_PAGE)
+      else if(cmd == CoolantSensor)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibration_values, cltCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, CoolantSensor, cltCalibration_values, cltCalibration_bins);
       }
       else
       {
@@ -1176,6 +1183,14 @@ void sendCompositeLog(void)
 
   //Send the CRC
   (void)serialWrite(CRC32_val);
+}
+
+void setStorageWriteTimeout(uint32_t time) {
+  deferEEPROMWritesUntil = time;
+}
+
+bool storageWriteTimeoutExpired(void) {
+  return micros() > deferEEPROMWritesUntil;
 }
 
 #if defined(CORE_AVR)
