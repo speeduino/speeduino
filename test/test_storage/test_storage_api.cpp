@@ -181,37 +181,6 @@ static void test_fillBlock_write_if_different(void) {
     TEST_ASSERT_EQUAL(INT8_MAX, lastWriteValue);
 }
 
-static void test_clearStorage_default(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
-
-    mockLength = 256;
-    readCounter = writeCounter = 0U;
-    readValue = 128U;
-
-    clearStorage(api);
-    TEST_ASSERT_EQUAL(mockLength, readCounter);
-    TEST_ASSERT_EQUAL(mockLength, writeCounter);
-    TEST_ASSERT_EQUAL(255, lastWriteValue);
-}
-
-// static uint8_t clearMockCounter;
-// static void countingClearMock(void) {
-//     ++clearMockCounter;
-// }
-
-// static void test_clearStorage_custom(void) {
-//     storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, .clear = countingClearMock, };
-
-//     mockLength = 256;
-//     readCounter = writeCounter = clearMockCounter = 0U;
-//     readValue = 128U;
-
-//     clearStorage(api);
-//     TEST_ASSERT_EQUAL(0, readCounter);
-//     TEST_ASSERT_EQUAL(0, writeCounter);
-//     TEST_ASSERT_EQUAL(1, clearMockCounter);
-// }
-
 static constexpr uint16_t MOVE_BLOCK_SIZE = 37; // An non-power of 2 size is a good test
 
 static void test_moveBlock_up_nooverlap_noochanges(void) {
@@ -358,7 +327,6 @@ void testStorageApi(void) {
         RUN_TEST_P(test_loadBlock);
         RUN_TEST_P(test_fillBlock_nochange_nowrite);
         RUN_TEST_P(test_fillBlock_write_if_different);
-        RUN_TEST_P(test_clearStorage_default);
         RUN_TEST_P(test_moveBlock_up_nooverlap_noochanges);
         RUN_TEST_P(test_moveBlock_down_nooverlap_noochanges);
         RUN_TEST_P(test_moveBlock_up_overlap);

@@ -14,8 +14,13 @@ static byte eeprom_read(uint16_t address) {
 static void eeprom_write(uint16_t address, byte val) {
   eeprom_write_byte( (uint8_t*) address, val );
 }
-static uint16_t eeprom_length(void) {
+static constexpr uint16_t eeprom_length(void) {
   return E2END + 1;
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<eeprom_length(); ++address) {
+    eeprom_update_byte((uint8_t*)address, UINT8_MAX);
+  }   
 }
 
 void initialiseStorage(void) {
@@ -23,6 +28,7 @@ void initialiseStorage(void) {
     .read = eeprom_read,
     .write = eeprom_write,
     .length = eeprom_length,
+    .clear = eeprom_clear,
   });
 }
 
