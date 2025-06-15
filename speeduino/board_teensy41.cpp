@@ -7,7 +7,6 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include "storage_api.h"
-#include "storage.h"
 
 static byte eeprom_read(uint16_t address) {
   return EEPROM.read(address);

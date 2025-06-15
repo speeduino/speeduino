@@ -8,7 +8,6 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include "storage_api.h"
-#include "storage.h"
 
 #ifdef USE_SPI_EEPROM
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
