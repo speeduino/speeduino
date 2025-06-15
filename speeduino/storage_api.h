@@ -27,14 +27,10 @@ struct storage_api_t {
      */
     uint16_t (*length)(void);
 
-#if defined(STORAGE_API_CUSTOM_CLEAR)
     /**
-     * @brief *Optional* function to erase the entire storage space
-     * 
-     * Set to nullptr if not implemented.
+     * @brief Function to erase the entire storage space
      */
     void (*clear)(void);
-#endif
 };
 
 /**
@@ -132,9 +128,6 @@ static inline T &loadObject(const storage_api_t &api, uint16_t address, T &t ){
   (void)loadBlock(api, address, pFirst, pLast);
   return t;
 }
-
-/** @brief Clears all of the durable store */
-void clearStorage(const storage_api_t &api);
 
 /**
  * @brief Fills the given block with a constant

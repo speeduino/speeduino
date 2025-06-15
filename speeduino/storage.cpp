@@ -52,9 +52,7 @@ static storage_api_t externalApi = {
     .read = default_read,
     .write = default_write,
     .length = default_length,
-#if defined(STORAGE_API_CUSTOM_CLEAR)
     .clear = nullptr,
-#endif    
   };
 
 static constexpr uint16_t EEPROM_DATA_VERSION = 0;
