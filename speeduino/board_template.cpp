@@ -2,7 +2,6 @@
 
 #if defined(CORE_TEMPLATE)
 #include "storage_api.h"
-#include "storage.h"
 
 void initialiseStorage(void) {
     // Call setStorageAPI

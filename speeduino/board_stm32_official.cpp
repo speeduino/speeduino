@@ -8,7 +8,6 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include "storage_api.h"
-#include "storage.h"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -97,7 +96,6 @@ void initialiseStorage(void) {
     .clear = eeprom_clear,
   });
 }
-
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);

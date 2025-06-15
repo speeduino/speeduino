@@ -1,6 +1,7 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -9,7 +10,6 @@
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "storage_api.h"
-#include "storage.h"
 
 static byte eeprom_read(uint16_t address) {
   return EEPROM.read(address);
