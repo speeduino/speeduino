@@ -1,4 +1,4 @@
-#include <Unity.h>
+#include <unity.h>
 #include <string.h>
 #include "../test_utils.h"
 #include "storage_api.h"
@@ -24,7 +24,7 @@ static uint16_t lengthMock(void) {
 
 static void test_update_nowrite_ifnochange(void) {
     readCounter = writeCounter = 0U;
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     readValue = 33;
     mockLength = UINT16_MAX;
@@ -35,7 +35,7 @@ static void test_update_nowrite_ifnochange(void) {
 
 static void test_update_write_ifchange(void) {
     readCounter = writeCounter = 0U;
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     readValue = 33;
     lastWriteValue = UINT8_MAX;
@@ -47,7 +47,7 @@ static void test_update_write_ifchange(void) {
 }
 
 static void test_updateBlock_reads_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     byte block[16];
     memset(block, 77, sizeof(block));
@@ -61,7 +61,7 @@ static void test_updateBlock_reads_all_addresses(void) {
 }
 
 static void test_updateBlock_writes_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     mockLength = UINT16_MAX;
     readValue = 3;
@@ -82,7 +82,7 @@ static void test_updateBlock_writes_all_addresses(void) {
 }
 
 static void test_updateBlockLimitWriteOps_reads_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     byte block[16];
     memset(block, 77, sizeof(block));
@@ -96,7 +96,7 @@ static void test_updateBlockLimitWriteOps_reads_all_addresses(void) {
 }
 
 static void test_updateBlockLimitWriteOps_writes_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     mockLength = UINT16_MAX;
     readValue = 3;
@@ -118,7 +118,7 @@ static void test_updateBlockLimitWriteOps_writes_all_addresses(void) {
 
 
 static void test_updateBlockLimitWriteOps_limited_writes(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     mockLength = UINT16_MAX;
     readValue = 3;
@@ -139,7 +139,7 @@ static void test_updateBlockLimitWriteOps_limited_writes(void) {
 }
 
 static void test_loadBlock(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     byte block[16];
 
@@ -155,7 +155,7 @@ static void test_loadBlock(void) {
 }
 
 static void test_fillBlock_nochange_nowrite(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     mockLength = UINT16_MAX;
     readCounter = writeCounter = 0U;
@@ -167,7 +167,7 @@ static void test_fillBlock_nochange_nowrite(void) {
 }
 
 static void test_fillBlock_write_if_different(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     mockLength = UINT16_MAX;
     readCounter = writeCounter = 0U;
@@ -181,41 +181,10 @@ static void test_fillBlock_write_if_different(void) {
     TEST_ASSERT_EQUAL(INT8_MAX, lastWriteValue);
 }
 
-static void test_clearStorage_default(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
-
-    mockLength = 256;
-    readCounter = writeCounter = 0U;
-    readValue = 128U;
-
-    clearStorage(api);
-    TEST_ASSERT_EQUAL(mockLength, readCounter);
-    TEST_ASSERT_EQUAL(mockLength, writeCounter);
-    TEST_ASSERT_EQUAL(255, lastWriteValue);
-}
-
-// static uint8_t clearMockCounter;
-// static void countingClearMock(void) {
-//     ++clearMockCounter;
-// }
-
-// static void test_clearStorage_custom(void) {
-//     storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, .clear = countingClearMock, };
-
-//     mockLength = 256;
-//     readCounter = writeCounter = clearMockCounter = 0U;
-//     readValue = 128U;
-
-//     clearStorage(api);
-//     TEST_ASSERT_EQUAL(0, readCounter);
-//     TEST_ASSERT_EQUAL(0, writeCounter);
-//     TEST_ASSERT_EQUAL(1, clearMockCounter);
-// }
-
 static constexpr uint16_t MOVE_BLOCK_SIZE = 37; // An non-power of 2 size is a good test
 
 static void test_moveBlock_up_nooverlap_noochanges(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -225,7 +194,7 @@ static void test_moveBlock_up_nooverlap_noochanges(void) {
 }
 
 static void test_moveBlock_down_nooverlap_noochanges(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -283,7 +252,7 @@ static void assert_moveBlock_read_before_write(int16_t distanceMoved) {
 }
 
 static void test_moveBlock_up_overlap(void) {
-    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -299,7 +268,7 @@ static void test_moveBlock_up_overlap(void) {
 }
 
 static void test_moveBlock_down_overlap(void) {
-    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -315,7 +284,7 @@ static void test_moveBlock_down_overlap(void) {
 }
 
 static void test_moveBlock_up_adjacent(void) {
-    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -331,7 +300,7 @@ static void test_moveBlock_up_adjacent(void) {
 }
 
 static void test_moveBlock_down_adjacent(void) {
-    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, nullptr, };
 
     readCounter = writeCounter = 0U;
     readValue = 33;
@@ -358,7 +327,6 @@ void testStorageApi(void) {
         RUN_TEST_P(test_loadBlock);
         RUN_TEST_P(test_fillBlock_nochange_nowrite);
         RUN_TEST_P(test_fillBlock_write_if_different);
-        RUN_TEST_P(test_clearStorage_default);
         RUN_TEST_P(test_moveBlock_up_nooverlap_noochanges);
         RUN_TEST_P(test_moveBlock_down_nooverlap_noochanges);
         RUN_TEST_P(test_moveBlock_up_overlap);
