@@ -1,6 +1,7 @@
 #include "globals.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
+#include <EEPROM.h>
 #include "board_teensy35.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -9,13 +10,6 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include "storage_api.h"
-#include "storage.h"
-
-#ifdef USE_SPI_EEPROM
-  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
-#else
-  #include <EEPROM.h>
-#endif
 
 static byte eeprom_read(uint16_t address) {
   return EEPROM.read(address);

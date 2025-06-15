@@ -7,7 +7,6 @@
 #include "comms_secondary.h"
 #include "idle.h"
 #include "storage_api.h"
-#include "storage.h"
 
 static byte eeprom_read(uint16_t address) {
   return eeprom_read_byte( (uint8_t*) address );
