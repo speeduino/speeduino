@@ -37,34 +37,7 @@ A full copy of the license may be found in the projects root directory
 #pragma GCC optimize ("Os") 
 #endif
 
-static byte default_read(uint16_t address) {
-  UNUSED(address);
-  return 0U;
-}
-static void default_write(uint16_t address, byte value) {
-  UNUSED(address);
-  UNUSED(value);
-}
-static uint16_t default_length(void) {
-  return 0U;
-}
-static storage_api_t externalApi = {
-    .read = default_read,
-    .write = default_write,
-    .length = default_length,
-    .clear = nullptr,
-  };
-
 static constexpr uint16_t EEPROM_DATA_VERSION = 0;
-
-void setStorageAPI(const storage_api_t &api) {
-  externalApi = api;
-}
-
-/** @brief Provide global access to the raw storage API */
-const storage_api_t& getStorageAPI(void) {
-  return externalApi;
-}
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 static constexpr uint16_t STORAGE_END = 0xFFF;

@@ -1,5 +1,6 @@
 #include "globals.h"
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "board_teensy41.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -7,7 +8,6 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include "storage_api.h"
-#include "storage.h"
 
 static byte eeprom_read(uint16_t address) {
   return EEPROM.read(address);
