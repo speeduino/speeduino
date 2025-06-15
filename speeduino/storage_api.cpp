@@ -1,4 +1,11 @@
 #include "storage_api.h"
+#include "preprocessor.h"
+
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
 
 bool update(const storage_api_t &api, uint16_t address, byte value) {
   if (api.read(address)!=value) {
@@ -64,3 +71,35 @@ __attribute__((noinline)) void fillBlock(const storage_api_t &api, uint16_t addr
     }
   }
 }
+
+static byte default_read(uint16_t address) {
+  UNUSED(address);
+  return 0U;
+}
+static void default_write(uint16_t address, byte value) {
+  UNUSED(address);
+  UNUSED(value);
+}
+static uint16_t default_length(void) {
+  return 0U;
+}
+static storage_api_t externalApi = {
+    .read = default_read,
+    .write = default_write,
+    .length = default_length,
+    .clear = nullptr,
+  };
+
+void setStorageAPI(const storage_api_t &api) {
+  externalApi = api;
+}
+
+/** @brief Provide global access to the raw storage API */
+const storage_api_t& getStorageAPI(void) {
+  return externalApi;
+}
+
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
