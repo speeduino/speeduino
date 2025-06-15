@@ -75,24 +75,27 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
-
-namespace EEPROMApi {
-  static inline byte read(uint16_t address) {
-    return EEPROM.read(address);
-  }
-  static inline void write(uint16_t address, byte val) {
-    EEPROM.write(address, val);
-  }
-  static inline uint16_t length(void) {
-    return EEPROM.length();
-  }
+static byte eeprom_read(uint16_t address) {
+  return EEPROM.read(address);
+}
+static void eeprom_write(uint16_t address, byte val) {
+  EEPROM.write(address, val);
+}
+static uint16_t eeprom_length(void) {
+  return EEPROM.length();
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<EEPROM.length(); ++address) {
+    EEPROM.update(address, UINT8_MAX);
+  }   
 }
 
 void initialiseStorage(void) {
   setStorageAPI(storage_api_t {
-    .read = EEPROMApi::read,
-    .write = EEPROMApi::write,
-    .length = EEPROMApi::length,
+    .read = eeprom_read,
+    .write = eeprom_write,
+    .length = eeprom_length,
+    .clear = eeprom_clear,
   });
 }
 
