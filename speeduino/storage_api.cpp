@@ -40,18 +40,6 @@ __attribute__((noinline)) void fillBlock(const storage_api_t &api, uint16_t addr
   }
 }
 
-__attribute__((noinline)) void clearStorage(const storage_api_t &api) {
-#if defined(STORAGE_API_CUSTOM_CLEAR)
-  if (api.clear!=nullptr) {
-    api.clear();
-  } else {
-    fillBlock(api, 0, api.length(), UINT8_MAX);
-  }
-#else
-  fillBlock(api, 0, api.length(), UINT8_MAX);
-#endif
-}
-
  __attribute__((noinline)) void moveBlock(const storage_api_t &api, uint16_t dest, uint16_t source, uint16_t size) {
   // Implementation is modelled after memmove.
   if (source<dest) {
