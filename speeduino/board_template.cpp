@@ -1,7 +1,11 @@
 #include "globals.h"
 #if defined(CORE_TEMPLATE)
+#include "storage_api.h"
 
-
+void initialiseStorage(void) {
+    // Call setStorageAPI
+}
+  
 void initBoard()
 {
     /*

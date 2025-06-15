@@ -29,6 +29,9 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define ignMap2Page   14
 #define boostvvtPage2 15
 
+/** @brief Fill the tune (config pages & tables) with zeroes. */
+void setTuneToEmpty(void);
+
 // ============================== Per-byte page access ==========================
 
 /**
@@ -79,6 +82,10 @@ page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate ove
  * Moves the iterator to the next sub-entity on the page
  */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);
+
+#if defined (UNIT_TEST)
+const char *getEntityName(const page_iterator_t &it);
+#endif
 
 /**
  * Convert page iterator to table value iterator.
