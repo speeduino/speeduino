@@ -151,3 +151,19 @@ void fillBlock(const storage_api_t &api, uint16_t address, uint16_t length, byte
  * @param size number of bytes to copy 
  */
 void moveBlock(const storage_api_t &api, uint16_t dest, uint16_t source, uint16_t size);
+
+/**
+ * @brief Inject the external storage API
+ * 
+ * @note This must be called before any other storage function.
+ * 
+ * Storage is split into two components:
+ *  1. An API that abstracts basic storage I/O (storage_api_t).
+ *  2. A set of functions that read/write Speeduino entities to/from storage (defined here)
+ * 
+ * @param api The external storage I/O functions
+ */
+void setStorageAPI(const storage_api_t &api);
+
+/** @brief Provide global access to the raw storage API */
+const storage_api_t& getStorageAPI(void);

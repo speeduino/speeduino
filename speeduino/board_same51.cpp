@@ -2,7 +2,7 @@
 #include "globals.h"
 #include "auxiliaries.h"
 #include "storage_api.h"
-#include "storage.h"
+
 #ifdef USE_SPI_EEPROM
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
   SPI_EEPROM_Class EEPROM({255UL, 4096UL, 31, 0x00100000UL}, //windbond W25Q16 SPI flash EEPROM emulation
