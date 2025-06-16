@@ -17,6 +17,13 @@
 #include "units.h"
 #include "preprocessor.h"
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes flash usage - code here is not performance critical
+// since it's really only run once per firmware flash.
+#pragma GCC optimize ("Os") 
+#endif
+
 void tableValueAdd(table_row_iterator &row, void* pContext) { 
   static_assert(sizeof(pContext)>=sizeof(table3d_value_t), "");
   *row = *row + (*(table3d_value_t*)pContext); 
@@ -826,3 +833,7 @@ void doUpdates(void)
   //Check to see if someone has downgraded versions:
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
