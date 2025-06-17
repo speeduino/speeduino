@@ -4,6 +4,7 @@
 #include "init.h"
 #include "maths.h"
 #include "utilities.h"
+#include "preprocessor.h"
 #include "units.h"
 #include "board_definition.h" 
 
