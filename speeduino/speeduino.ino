@@ -50,6 +50,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include RTC_LIB_H //Defined in each boards .h file
 #include "units.h"
 #include "fuel_calcs.h"
+#include "preprocessor.h"
 
 #define CRANK_RUN_HYSTER    15
 

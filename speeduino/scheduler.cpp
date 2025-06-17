@@ -29,7 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO.h"
 #include "timers.h"
 #include "schedule_calcs.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "units.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE, FUEL1_TIMER_DISABLE, FUEL1_TIMER_ENABLE);

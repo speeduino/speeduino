@@ -20,7 +20,7 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "maths.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "comms_legacy.h"
 #include "logger.h"
 #include "page_crc.h"
