@@ -46,6 +46,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "load_source.h"
+#include "preprocessor.h"
 #include RTC_LIB_H //Defined in each boards .h file
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include "units.h"
@@ -152,7 +153,7 @@ void __attribute__((always_inline)) loop(void)
     if(currentLoopTime > micros_safe())
     {
       //Occurs when micros() has overflowed
-      deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
+      setStorageWriteTimeout(0); //Required to ensure that EEPROM writes are not deferred indefinitely
     }
 
     currentLoopTime = micros_safe();
@@ -256,7 +257,7 @@ void __attribute__((always_inline)) loop(void)
       #endif
 
       //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && storageWriteTimeoutExpired()) { saveAllPages(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {

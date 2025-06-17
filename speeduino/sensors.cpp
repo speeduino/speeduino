@@ -22,6 +22,7 @@ A full copy of the license may be found in the projects root directory
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
 #include "units.h"
+#include "preprocessor.h"
 
 bool auxIsEnabled;
 
@@ -238,14 +239,14 @@ void initialiseADC(void)
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS  > 240U) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_CLT  > 240U) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_IAT  > 240U) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_O2   > 240U) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BAT  > 240U) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_MAP  > 240U) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
-  if(configPage4.ADCFILTER_BARO > 240U) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
-  if(configPage4.FILTER_FLEX    > 240U) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_TPS  > 240U) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_CLT  > 240U) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_IAT  > 240U) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_O2   > 240U) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_BAT  > 240U) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_MAP  > 240U) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_BARO > 240U) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  savePage(ignSetPage); }
+  if(configPage4.FILTER_FLEX    > 240U) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     savePage(ignSetPage); }
 
   flexStartTime = micros();
 
@@ -636,7 +637,7 @@ static inline void setBaroFromMAP(void)
   if (isValidBaro(tempReading)) //Safety check to ensure the baro reading is within the physical limits
   {
     currentStatus.baro = tempReading;
-    storeLastBaro(currentStatus.baro);
+    saveLastBaro(currentStatus.baro);
   }
 }
 
@@ -668,7 +669,7 @@ void initialiseMAPBaro(void)
   else
   {
     //Attempt to use the last known good baro reading from EEPROM as a starting point
-    uint8_t lastBaro = readLastBaro();
+    uint8_t lastBaro = loadLastBaro();
     // Make sure it's not invalid (Possible on first run etc)
     currentStatus.baro = isValidBaro(lastBaro) ? lastBaro : 100U;
     // We assume external callers already made sure the engine isn't running
