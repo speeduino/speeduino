@@ -9,8 +9,8 @@ A full copy of the license may be found in the projects root directory
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
 #include "timers.h"
-#include "utilities.h"
 #include "units.h"
+#include "preprocessor.h"
 
 static long vvt1_pwm_value;
 static long vvt2_pwm_value;
