@@ -15,6 +15,7 @@
 #include "pages.h"
 #include "comms_CAN.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
+#include "units.h"
 
 void doUpdates(void)
 {
@@ -333,7 +334,7 @@ void doUpdates(void)
     //Introduced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
     //Introduced a minimum temperature for DFCO. Default it to 40C
-    configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
+    configPage2.dfcoMinCLT = temperatureAddOffset(40);
 
     //Update flex fuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
@@ -386,16 +387,16 @@ void doUpdates(void)
     for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
     {
       y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
-      cltCalibration_values[x] = EEPROM.read(y);
-      cltCalibration_bins[x] = (x * 32);
+      cltCalibrationTable.values[x] = EEPROM.read(y);
+      cltCalibrationTable.axis[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
-      iatCalibration_values[x] = EEPROM.read(y);
-      iatCalibration_bins[x] = (x * 32);
+      iatCalibrationTable.values[x] = EEPROM.read(y);
+      iatCalibrationTable.axis[x] = (x * 32);
 
       y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
-      o2Calibration_values[x] = EEPROM.read(y);
-      o2Calibration_bins[x] = (x * 32);
+      o2CalibrationTable.values[x] = EEPROM.read(y);
+      o2CalibrationTable.axis[x] = (x * 32);
     }
     writeCalibration();
 

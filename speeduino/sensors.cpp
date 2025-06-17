@@ -21,6 +21,7 @@ A full copy of the license may be found in the projects root directory
 #include "utilities.h"
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
+#include "units.h"
 
 bool auxIsEnabled;
 
@@ -33,9 +34,15 @@ volatile uint32_t flexPulseWidth = 0U;
 
 static map_algorithm_t mapAlgorithmState;
 
-static constexpr table2D cltCalibrationTable(_countof(cltCalibration_values), cltCalibration_values, cltCalibration_bins);
-static constexpr table2D iatCalibrationTable(_countof(iatCalibration_values), iatCalibration_values, iatCalibration_bins);
-static constexpr table2D o2CalibrationTable(_countof(o2Calibration_values), o2Calibration_values, o2Calibration_bins); 
+static uint16_t cltCalibration_bins[32];
+static uint16_t cltCalibration_values[32];
+table2D_u16_u16_32 cltCalibrationTable(&cltCalibration_bins, &cltCalibration_values);
+static uint16_t iatCalibration_bins[32];
+static uint16_t iatCalibration_values[32];
+table2D_u16_u16_32 iatCalibrationTable(&iatCalibration_bins, &iatCalibration_values);
+static uint16_t o2Calibration_bins[32];
+static uint8_t o2Calibration_values[32];
+table2D_u16_u8_32 o2CalibrationTable(&o2Calibration_bins, &o2Calibration_values); 
 
 /**
  * @brief A specialist function to map a value in the range [0, 1023] (I.e. 10-bit) to a different range.
@@ -591,13 +598,13 @@ void readCLT(bool useFilter)
   if(useFilter == true) { currentStatus.cltADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
   else { currentStatus.cltADC = tempReading; }
   
-  currentStatus.coolant = table2D_getValue(&cltCalibrationTable, currentStatus.cltADC) - CALIBRATION_TEMPERATURE_OFFSET; //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+  currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
 void readIAT(void)
 {
   currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
-  currentStatus.IAT = table2D_getValue(&iatCalibrationTable, currentStatus.iatADC) - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = temperatureRemoveOffset(table2D_getValue(&iatCalibrationTable, currentStatus.iatADC));
 }
 
 // ========================================== Baro ==========================================

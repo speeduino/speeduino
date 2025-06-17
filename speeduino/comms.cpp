@@ -27,6 +27,8 @@ A full copy of the license may be found in the projects root directory
 #ifdef SD_LOGGING
   #include "SD_logger.h"
 #endif
+#include "units.h"
+#include "sensors.h"
 
 /** @defgroup group-serial-comms-impl Serial comms implementation
  * @{
@@ -395,8 +397,8 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
     //As we're using an interpolated 2D table, we only need to store 32 values out of this 1024
     if( (x % 32U) == 0U )
     {
-      o2Calibration_values[offset/32U] = serialPayload[x+7U]; //O2 table stores 8 bit values
-      o2Calibration_bins[offset/32U]   = offset;
+      o2CalibrationTable.values[offset/32U] = serialPayload[x+7U]; //O2 table stores 8 bit values
+      o2CalibrationTable.axis[offset/32U]   = offset;
     }
 
     //Update the CRC
@@ -415,15 +417,15 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
 
 /**
  * @brief Convert 2 bytes into an offset temperature in degrees Celsius
- * @attention Returned value will be offset CALIBRATION_TEMPERATURE_OFFSET
+ * @attention Returned value will be in storage temperatures
  */
-static uint16_t toTemperature(byte lo, byte hi)
+static uint8_t toTemperature(byte lo, byte hi)
 {
   int16_t tempValue = (int16_t)(word(hi, lo)); //Combine the 2 bytes into a single, signed 16-bit value
   tempValue = tempValue / 10; //TS sends values multiplied by 10 so divide back to whole degrees. 
   tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
   //Apply the temp offset and check that it results in all values being positive
-  return max( tempValue + CALIBRATION_TEMPERATURE_OFFSET, 0 );
+  return max( temperatureAddOffset(tempValue), (uint8_t)0U );
 }
 
 /**
@@ -434,15 +436,15 @@ static uint16_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, uint16_t *values, uint16_t *bins)
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, table2D_u16_u16_32 &table)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)
   {
     for (uint16_t x = 0; x < 32U; x++)
     {
-      values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
-      bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
+      table.values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
+      table.axis[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
     storeCalibrationCRC32(calibrationPage, CRC32_calibration.crc32(&serialPayload[7], 64));
     writeCalibrationPage(calibrationPage);
@@ -897,11 +899,11 @@ void processSerialCommand(void)
       }
       else if(cmd == IAT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibration_values, iatCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, IAT_CALIBRATION_PAGE, iatCalibrationTable);
       }
       else if(cmd == CLT_CALIBRATION_PAGE)
       {
-        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibration_values, cltCalibration_bins);
+        processTemperatureCalibrationTableUpdate(calibrationLength, CLT_CALIBRATION_PAGE, cltCalibrationTable);
       }
       else
       {

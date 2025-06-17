@@ -7,9 +7,10 @@
 #include "sensors.h"
 #include "speeduino.h"
 #include "sensors_map_structs.h"
+#include "units.h"
 
 extern byte correctionWUE(void);
-extern table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
+extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
@@ -17,10 +18,10 @@ static void setup_wue_table(void) {
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
     0, 0, 0, 0, 0, 0,
-    70 + CALIBRATION_TEMPERATURE_OFFSET,
-    90 + CALIBRATION_TEMPERATURE_OFFSET,
-    100 + CALIBRATION_TEMPERATURE_OFFSET,
-    120 + CALIBRATION_TEMPERATURE_OFFSET
+    temperatureAddOffset(70),
+    temperatureAddOffset(90),
+    temperatureAddOffset(100),
+    temperatureAddOffset(120)
   };
   TEST_DATA_P uint8_t values[] = { 0, 0, 0, 0, 0, 0, 120, 130, 130, 130 };
   populate_2dtable_P(&WUETable, values, bins);
@@ -82,17 +83,17 @@ static void test_corrections_WUE(void)
 }
 
 extern uint16_t correctionCranking(void);
-extern table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
+extern table2D_u8_u8_4 crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 
 static void setup_correctionCranking_table(void) {
   initialiseCorrections();
 
   uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
   uint8_t bins[] = { 
-    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET - 10U),
-    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 10U),
-    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 20U),
-    (uint8_t)(currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+    (uint8_t)(temperatureAddOffset(currentStatus.coolant) - 10U),
+    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 10U),
+    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 20U),
+    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 30U)
   };
   populate_2dtable(&crankingEnrichTable, values, bins);
 }
@@ -110,7 +111,7 @@ static void test_corrections_cranking_cranking(void) {
   BIT_SET(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ASE);
   configPage10.crankingEnrichTaper = 0U;
-  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.coolant = temperatureRemoveOffset(150);
   setup_correctionCranking_table();
 
   // Should be half way between the 2 table values.
@@ -123,7 +124,7 @@ static void test_corrections_cranking_taper_noase(void) {
   configPage10.crankingEnrichTaper = 100U;
   currentStatus.ASEValue = 100U;
   
-  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.coolant = temperatureRemoveOffset(150);
   setup_correctionCranking_table();
 
   // Reset taper
@@ -155,7 +156,7 @@ static void test_corrections_cranking_taper_withase(void) {
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
   configPage10.crankingEnrichTaper = 100U;
   
-  currentStatus.coolant = 150 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.coolant = temperatureRemoveOffset(150);
   setup_correctionCranking_table();
 
   BIT_SET(currentStatus.engine, BIT_ENGINE_ASE);
@@ -205,15 +206,15 @@ static void test_corrections_ASE_inactive_cranking(void)
   TEST_ASSERT_BIT_LOW(BIT_ENGINE_ASE, currentStatus.engine);
 }
 
-extern table2D ASETable; ///< 4 bin After Start Enrichment map (2D)
-extern table2D ASECountTable; ///< 4 bin After Start duration map (2D)
+extern table2D_u8_u8_4 ASETable; ///< 4 bin After Start Enrichment map (2D)
+extern table2D_u8_u8_4 ASECountTable; ///< 4 bin After Start duration map (2D)
 
 static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
   BIT_CLEAR(currentStatus.engine, BIT_ENGINE_CRANK);
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
-  constexpr int16_t COOLANT_INITIAL = 150 - CALIBRATION_TEMPERATURE_OFFSET; 
+  constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
   currentStatus.ASEValue = 0U;
   currentStatus.runSecs = 3;
@@ -221,10 +222,10 @@ static inline void setup_correctionASE(void) {
   {
     TEST_DATA_P uint8_t values[] = { 10, 8, 6, 4 };
     TEST_DATA_P uint8_t bins[] = { 
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET - 10U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 10U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 20U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) - 10U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 10U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 20U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 30U)
     };
     populate_2dtable_P(&ASECountTable, values, bins);
   }
@@ -232,10 +233,10 @@ static inline void setup_correctionASE(void) {
   {
     TEST_DATA_P uint8_t values[] = { 20, 30, 40, 50 };
     TEST_DATA_P uint8_t bins[] = { 
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET - 10U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 10U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 20U),
-      (uint8_t)(COOLANT_INITIAL + CALIBRATION_TEMPERATURE_OFFSET + 30U)
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) - 10U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 10U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 20U),
+      (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 30U)
     };
     populate_2dtable_P(&ASETable, values, bins);
   } 
@@ -335,7 +336,7 @@ static void setup_ego_simple(void) {
   currentStatus.runSecs = configPage6.ego_sdelay + 2U;
 
   configPage6.egoTemp = 150U;
-  currentStatus.coolant = (configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET) + 1U; 
+  currentStatus.coolant = temperatureRemoveOffset(configPage6.egoTemp) + 1; 
 
   configPage6.egoRPM = 30U;
   currentStatus.RPM = configPage6.egoRPM*100U + 1U;
@@ -389,7 +390,7 @@ static void test_corrections_closedloop_off_no_algorithm(void) {
 static void test_corrections_closedloop_off_invalidconditions_coolant(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.coolant = (configPage6.egoTemp - CALIBRATION_TEMPERATURE_OFFSET) - 1U; 
+  currentStatus.coolant = temperatureRemoveOffset(configPage6.egoTemp) - 1; 
   TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
 }
 
@@ -608,7 +609,7 @@ static void test_corrections_closedloop(void)
 }
 
 uint8_t correctionFlex(void);
-extern table2D flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
+extern table2D_u8_u8_6 flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 
 static void setupFlexFuelTable(void) {
   initialiseCorrections();
@@ -633,7 +634,7 @@ static void test_corrections_flex_flex_on(void) {
 }
 
 uint8_t correctionFuelTemp(void);
-extern table2D fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
+extern table2D_u8_u8_6 fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
 
 static void setupFuelTempTable(void) {
   initialiseCorrections();
@@ -646,14 +647,14 @@ static void setupFuelTempTable(void) {
 static void test_corrections_fueltemp_off(void) {
   setupFuelTempTable();
   configPage2.flexEnabled = false;
-  currentStatus.fuelTemp = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.fuelTemp = temperatureRemoveOffset(65);
   TEST_ASSERT_EQUAL(100U, correctionFuelTemp() );
 }
 
 static void test_corrections_fueltemp_on(void) {
   setupFuelTempTable();
   configPage2.flexEnabled = true;
-  currentStatus.fuelTemp = 65 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.fuelTemp = temperatureRemoveOffset(65);
   TEST_ASSERT_EQUAL(135U, correctionFuelTemp() );
 }
 
@@ -666,7 +667,7 @@ static void test_corrections_flex(void)
 }
 
 uint8_t correctionBatVoltage(void);
-extern table2D injectorVCorrectionTable; ///< 6 bin injector voltage correction (2D)
+extern table2D_u8_u8_6 injectorVCorrectionTable; ///< 6 bin injector voltage correction (2D)
 
 static void setup_battery_correction(void) {
   initialiseCorrections();
@@ -955,13 +956,13 @@ static void setup_AE(void) {
 	configPage2.aeColdTaperMax = 60;
 	configPage2.aeColdTaperMin = 0;
 	
-  currentStatus.coolant = (int)(configPage2.aeColdTaperMax - CALIBRATION_TEMPERATURE_OFFSET) + 1;
+  currentStatus.coolant = temperatureRemoveOffset(configPage2.aeColdTaperMax) + 1;
   currentStatus.AEEndTime = micros();
 
   reset_AE();
 }
 
-extern table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
+extern table2D_u8_u8_4 taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
 
 static void setup_TAE()
 {
@@ -1027,7 +1028,7 @@ static void test_corrections_TAE_no_rpm_taper()
   currentStatus.TPS = 200;
   accelValue = correctionAccel(); //Run the AE calcs
   TEST_ASSERT_EQUAL(3000, currentStatus.tpsDOT);
-  TEST_ASSERT_EQUAL(100+136, accelValue);
+  TEST_ASSERT_EQUAL(100+127, accelValue);
 	TEST_ASSERT_BIT_HIGH(BIT_ENGINE_ACC, currentStatus.engine); //Confirm AE is flagged on
 	TEST_ASSERT_BIT_LOW(BIT_ENGINE_DCC, currentStatus.engine); //Confirm AE is flagged on
 }
@@ -1120,8 +1121,8 @@ static void test_corrections_TAE_50pc_warmup_taper()
 	
 	//Set a cold % of 50% increase
 	configPage2.aeColdPct = 150;
-	configPage2.aeColdTaperMax = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-	configPage2.aeColdTaperMin = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+	configPage2.aeColdTaperMax = temperatureAddOffset(60);
+	configPage2.aeColdTaperMin = temperatureAddOffset(0);
 	//Set the coolant to be 50% of the way through the warmup range
 	currentStatus.coolant = 30;
 
@@ -1177,7 +1178,7 @@ extern map_last_read_t& getMapLast(void);
 //**********************************************************************************************************************
 //Setup a basic MAE enrichment curve, threshold etc that are common to all tests. Specifica values maybe updated in each individual test
 
-extern table2D maeTable;
+extern table2D_u8_u8_4 maeTable;
 
 static void setup_MAE(void)
 {
@@ -1353,8 +1354,8 @@ static void test_corrections_MAE_50pc_warmup_taper()
 
 	//Set a cold % of 50% increase
 	configPage2.aeColdPct = 150;
-	configPage2.aeColdTaperMax = 60 + CALIBRATION_TEMPERATURE_OFFSET;
-	configPage2.aeColdTaperMin = 0 + CALIBRATION_TEMPERATURE_OFFSET;
+	configPage2.aeColdTaperMax = temperatureAddOffset(60);
+	configPage2.aeColdTaperMin = temperatureAddOffset(0);
 	//Set the coolant to be 50% of the way through the warmup range
 	currentStatus.coolant = 30;
 
@@ -1516,16 +1517,16 @@ extern byte correctionIATDensity(void);
  
 extern byte correctionBaro(void);
 
-extern table2D IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
-extern table2D baroFuelTable; ///< 8 bin baro correction curve (2D)
+extern table2D_u8_u8_9 IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
+extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
-  populate_2dtable(&injectorVCorrectionTable, 100, 100);
-  populate_2dtable(&baroFuelTable, 100, 100);
-  populate_2dtable(&IATDensityCorrectionTable, 100, 100);
-  populate_2dtable(&flexFuelTable, 100, 100);
-  populate_2dtable(&fuelTempTable, 100, 100);
+  populate_2dtable(&injectorVCorrectionTable, (uint8_t)100, (uint8_t)100);
+  populate_2dtable(&baroFuelTable, (uint8_t)100, (uint8_t)100);
+  populate_2dtable(&IATDensityCorrectionTable, (uint8_t)100, (uint8_t)100);
+  populate_2dtable(&flexFuelTable, (uint8_t)100, (uint8_t)100);
+  populate_2dtable(&fuelTempTable, (uint8_t)100, (uint8_t)100);
 
   //Disable the taper
   currentStatus.RPM = 2000;
@@ -1604,18 +1605,18 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
 static void test_corrections_correctionsFuel_clip_limit(void) {
   initialiseCorrections();
 
-  populate_2dtable(&injectorVCorrectionTable, 255, 100);
-  populate_2dtable(&baroFuelTable, 255, 100);
-  populate_2dtable(&IATDensityCorrectionTable, 255, 100);
-  populate_2dtable(&flexFuelTable, 255, 100);
-  populate_2dtable(&fuelTempTable, 255, 100);
+  populate_2dtable(&injectorVCorrectionTable, (uint8_t)255, (uint8_t)100);
+  populate_2dtable(&baroFuelTable, (uint8_t)255, (uint8_t)100);
+  populate_2dtable(&IATDensityCorrectionTable, (uint8_t)255, (uint8_t)100);
+  populate_2dtable(&flexFuelTable, (uint8_t)255, (uint8_t)100);
+  populate_2dtable(&fuelTempTable, (uint8_t)255, (uint8_t)100);
 
   configPage2.flexEnabled = 1;
   configPage2.dfcoEnabled = 0;
   currentStatus.coolant = 212;
   currentStatus.runSecs = 255; 
   currentStatus.battery10 = 100;  
-  currentStatus.IAT = 100 - CALIBRATION_TEMPERATURE_OFFSET;
+  currentStatus.IAT = temperatureRemoveOffset(100);
   currentStatus.baro = 100;
   currentStatus.ethanolPct = 100;
   currentStatus.launchingHard = false;

@@ -7,6 +7,7 @@ extern void testPercent(void);
 extern void testDivision(void);
 extern void testBitShift(void);
 extern void test_LOW_PASS_FILTER(void);
+extern void test_fast_map(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -27,6 +28,7 @@ void setup()
     testDivision();
     testBitShift();
     test_LOW_PASS_FILTER();
+    test_fast_map();
 
     UNITY_END(); // stop unit testing
 
