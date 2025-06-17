@@ -104,19 +104,19 @@ struct Bin {
 
 
 template <typename T, uint8_t sizeT>
-static inline Bin<T> findBin(const T *const array, const T value) {
+static inline Bin<T> findBin(const T *const array, const T value) 
+{
   // Loop from the upper end of the axis back down to the 1st bin [0,1]
   // Assume array is ordered [min...max]
   const T *binLower = array+sizeT-2U;
-  while (*binLower>=value && binLower!=array) {
-    --binLower;
-  }
+  while ( (*binLower >= value) && (binLower != array) ) { --binLower; }
   return Bin<T>(binLower-array+1U, *(binLower+1U), *binLower);
 }
 
 // Generic interpolation
 template <typename axis_t, typename value_t>
-static inline value_t interpolate(const axis_t axisValue, const Bin<axis_t> &axisBin, const Bin<value_t> &valueBin) {
+static inline value_t interpolate(const axis_t axisValue, const Bin<axis_t> &axisBin, const Bin<value_t> &valueBin) 
+{
   return map(axisValue, axisBin.lowerValue(), axisBin.upperValue(), valueBin.lowerValue(), valueBin.upperValue());
 }
 
@@ -138,20 +138,23 @@ uint8_t interpolate(const uint8_t axisValue, const Bin<uint8_t> &axisBin, const 
  * @return value_t table value corresponding to the axis value (possibly interpolated)
  */
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) {
+static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) 
+{
   //Check whether the X input is the same as last time this ran
-  if( (axisValue == fromTable->cache.lastInput) && (!cacheExpired(fromTable->cache)) )
+  if( (axisValue == fromTable->cache.lastInput) && (!cacheExpired(fromTable->cache)) ) { return fromTable->cache.lastOutput; }
+  else if(axisValue >= fromTable->axis[sizeT-1]) // Test if above the max axis value, clip to max data value
   {
-    return fromTable->cache.lastOutput;
-  // Test if above the max axis value, clip to max data value
-  } else if(axisValue >= fromTable->axis[sizeT-1]) {
     fromTable->cache.lastOutput = fromTable->values[sizeT-1];
     fromTable->cache.lastBinUpperIndex = sizeT-1;
-  // Test if below the min axis value, clip to min data value
-  } else if (axisValue <= fromTable->axis[0]) {
+  } 
+  else if (axisValue <= fromTable->axis[0]) // Test if below the min axis value, clip to min data value
+  {
     fromTable->cache.lastOutput = fromTable->values[0];
     fromTable->cache.lastBinUpperIndex = 1U;
-  } else {
+  } 
+  else 
+  {
+    // None of the cached or last values match, so we need to find the new value
     // 1st check is whether we're still in the same X bin as last time
     _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(fromTable->axis, fromTable->cache.lastBinUpperIndex);
     if (!xBin.withinBin(axisValue))
@@ -161,11 +164,13 @@ static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fr
     }
 
     // We are exactly at the bin upper bound, so no need to interpolate
-    if (axisValue==xBin.upperValue()) {
+    if (axisValue==xBin.upperValue()) 
+    {
       fromTable->cache.lastOutput = fromTable->values[xBin.upperIndex];
       fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
-    // Must be within the bin, interpolate
-    } else {
+    } 
+    else // Must be within the bin, interpolate
+    {
       fromTable->cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(fromTable->values, xBin.upperIndex));
       fromTable->cache.lastBinUpperIndex = xBin.upperIndex;
     }
@@ -178,15 +183,15 @@ static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fr
 }
 
 // Hide use of template in the header file
-using table2du8u8_4 = table2D<uint8_t, uint8_t, 4U>;
-using table2di8u8_4 = table2D<int8_t, uint8_t, 4U>;
-using table2du8u8_10 = table2D<uint8_t, uint8_t, 10U>;
-using table2du8u8_6 = table2D<uint8_t, uint8_t, 6U>;
-using table2du8u8_9 = table2D<uint8_t, uint8_t, 9U>;
-using table2du8u8_8 = table2D<uint8_t, uint8_t, 8U>;
-using table2du8u16_4 = table2D<uint8_t, uint16_t, 4U>;
-using table2du8s16_6 = table2D<uint8_t, int16_t, 6U>;
-using table2du16u16_32 = table2D<uint16_t, uint16_t, 32U>;
-using table2du16u8_32 = table2D<uint16_t, uint8_t, 32U>;
+using table2D_i8_u8_4 = table2D<int8_t, uint8_t, 4U>;
+using table2D_u8_u8_4 = table2D<uint8_t, uint8_t, 4U>;
+using table2D_u8_u8_6 = table2D<uint8_t, uint8_t, 6U>;
+using table2D_u8_u8_8 = table2D<uint8_t, uint8_t, 8U>;
+using table2D_u8_u8_9 = table2D<uint8_t, uint8_t, 9U>;
+using table2D_u8_u8_10 = table2D<uint8_t, uint8_t, 10U>;
+using table2D_u16_u8_32 = table2D<uint16_t, uint8_t, 32U>;
+using table2D_u16_u16_32 = table2D<uint16_t, uint16_t, 32U>;
+using table2D_u8_u16_4 = table2D<uint8_t, uint16_t, 4U>;
+using table2D_u8_s16_6 = table2D<uint8_t, int16_t, 6U>;
 
 #endif // TABLE_H

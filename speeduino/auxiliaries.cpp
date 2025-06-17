@@ -55,7 +55,7 @@ uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
 #endif
-static table2du8u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
+static table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
 bool acIsEnabled;
 bool acStandAloneFanIsEnabled;
@@ -74,7 +74,7 @@ bool vvtIsHot;
 bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static table2du8s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
+static table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
@@ -233,7 +233,7 @@ static inline void checkAirConCoolantLockout(void)
   // ---------------------------
   // Coolant Temperature Lockout
   // ---------------------------
-  int offTemp = temperatureToInternal(configPage15.airConClTempCut);
+  int offTemp = temperatureRemoveOffset(configPage15.airConClTempCut);
   if (currentStatus.coolant > offTemp)
   {
     // A/C is cut off due to high coolant
@@ -340,7 +340,7 @@ void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
-    int onTemp = temperatureToInternal(configPage6.fanSP);
+    int onTemp = temperatureRemoveOffset(configPage6.fanSP);
     int offTemp = onTemp - configPage6.fanHyster;
     bool fanPermit = false;
 
@@ -390,7 +390,7 @@ void fanControl(void)
       }
       else
       {
-        byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureToStorage(currentStatus.coolant)); //In normal situation read PWM duty from the table
+        byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureAddOffset(currentStatus.coolant)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
            BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
         {
@@ -513,7 +513,7 @@ void initialiseAuxPWM(void)
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
     BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
     vvtTimeHold = false;
-    if (currentStatus.coolant >= temperatureToInternal(configPage4.vvtMinClt)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
+    if (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
   
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
@@ -782,7 +782,7 @@ void boostControl(void)
 
 void vvtControl(void)
 {
-  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureToInternal(configPage4.vvtMinClt)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
   {
     if(vvtTimeHold == false) 
     {
@@ -985,7 +985,7 @@ void nitrousControl(void)
     if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
-    if( (isArmed == true) && (currentStatus.coolant > temperatureToInternal(configPage10.n2o_minCLT)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
+    if( (isArmed == true) && (currentStatus.coolant > temperatureRemoveOffset(configPage10.n2o_minCLT)) && (currentStatus.TPS > configPage10.n2o_minTPS) && (currentStatus.O2 < configPage10.n2o_maxAFR) && (currentStatus.MAP < (uint16_t)(configPage10.n2o_maxMAP * 2)) )
     {
       //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
       uint16_t realStage1MinRPM = (uint16_t)configPage10.n2o_stage1_minRPM * 100;
@@ -1043,7 +1043,7 @@ void wmiControl(void)
     if( WMI_TANK_IS_EMPTY() )
     {
       BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
-      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureToStorage(currentStatus.IAT) >= configPage10.wmiIAT) )
+      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
         {

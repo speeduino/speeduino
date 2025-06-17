@@ -21,18 +21,20 @@ This will avoid a lot of conversions (speed, simplicity) */
  * @param temperature in °C, from -40 to 215. 
  * @return uint8_t 
  */
-static constexpr inline uint8_t temperatureToStorage(int16_t temperature) {
+static constexpr inline uint8_t temperatureAddOffset(int16_t temperature) 
+{
   return temperature + CALIBRATION_TEMPERATURE_OFFSET;
 }
 
 /**
  * @brief Convert a storage value (0-255) to an internal temperature value (-40 to 215°C).
  * 
- * Reverse operation of temperatureToStorage.
+ * Reverse operation of temperatureAddOffset.
  * 
  * @param temperature 
  * @return int8_t 
  */
-static constexpr inline int16_t temperatureToInternal(uint8_t temperature) {
+static constexpr inline int16_t temperatureRemoveOffset(uint8_t temperature) 
+{
   return (int16_t)temperature - CALIBRATION_TEMPERATURE_OFFSET;
 }

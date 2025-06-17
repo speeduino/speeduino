@@ -31,7 +31,7 @@ static void test_correctionFixedTiming(void) {
 }
 
 extern int8_t correctionCLTadvance(int8_t advance);
-extern table2du8u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on coolant temperature  (2D)
+extern table2D_u8_u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on coolant temperature  (2D)
 
 static void setup_clt_advance_table(void) {
   initialiseCorrections();
@@ -43,13 +43,13 @@ static void setup_clt_advance_table(void) {
 static void test_correctionCLTadvance_lookup(void) {
     setup_clt_advance_table();
 
-    currentStatus.coolant = temperatureToInternal(105);
+    currentStatus.coolant = temperatureRemoveOffset(105);
     TEST_ASSERT_EQUAL(8 + 8 - 15, correctionCLTadvance(8));
 
-    currentStatus.coolant = temperatureToInternal(65);
+    currentStatus.coolant = temperatureRemoveOffset(65);
     TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
 
-    currentStatus.coolant = temperatureToInternal(105);
+    currentStatus.coolant = temperatureRemoveOffset(105);
     TEST_ASSERT_EQUAL(-3 + 8 - 15, correctionCLTadvance(-3));
 }
 
@@ -85,7 +85,7 @@ static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     
     configPage4.CrankAng = 8;
 
-    currentStatus.coolant = temperatureToInternal(65);
+    currentStatus.coolant = temperatureRemoveOffset(65);
     TEST_ASSERT_EQUAL(1 + 28 - 15, correctionCLTadvance(1));
 }
 
@@ -96,7 +96,7 @@ static void test_correctionCrankingFixedTiming(void) {
 }
 
 extern int8_t correctionFlexTiming(int8_t advance);
-extern table2du8u8_6 flexAdvTable;   ///< 6 bin flex fuel correction table for timing advance (2D)
+extern table2D_u8_u8_6 flexAdvTable;   ///< 6 bin flex fuel correction table for timing advance (2D)
 
 static void setup_flexAdv(void) {
   initialiseCorrections();
@@ -133,7 +133,7 @@ static void test_correctionFlexTiming(void) {
 }
 
 extern int8_t correctionWMITiming(int8_t advance);
-extern table2du8u8_6 wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
+extern table2D_u8_u8_6 wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
 
 static void setup_WMIAdv(void) {
     initialiseCorrections();
@@ -148,7 +148,7 @@ static void setup_WMIAdv(void) {
     configPage10.wmiMAP = 35;
     currentStatus.MAP = (configPage10.wmiMAP*2L)+1L;
     configPage10.wmiIAT = 155;
-    currentStatus.IAT = temperatureToInternal(configPage10.wmiIAT) + 1;
+    currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT) + 1;
 
     TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
     TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
@@ -216,7 +216,7 @@ static void test_correctionWMITiming_maplow_inactive(void) {
     
 static void test_correctionWMITiming_iatlow_inactive(void) {
     setup_WMIAdv();
-    currentStatus.IAT = temperatureToInternal(configPage10.wmiIAT) - 1;
+    currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT) - 1;
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
     TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
@@ -235,7 +235,7 @@ static void test_correctionWMITiming(void) {
 }
 
 extern int8_t correctionIATretard(int8_t advance);
-extern table2du8u8_6 IATRetardTable; ///< 6 bin ignition adjustment based on inlet air temperature  (2D)
+extern table2D_u8_u8_6 IATRetardTable; ///< 6 bin ignition adjustment based on inlet air temperature  (2D)
 
 static void setup_IATRetard(void) {
   initialiseCorrections();
@@ -273,7 +273,7 @@ static void setup_idleadv_ctps(void) {
     currentStatus.CTPSActive = 1;
 }
 
-extern table2du8u8_6 idleAdvanceTable; ///< 6 bin idle advance adjustment table based on RPM difference  (2D)
+extern table2D_u8_u8_6 idleAdvanceTable; ///< 6 bin idle advance adjustment table based on RPM difference  (2D)
 
 static void setup_correctionIdleAdvance(void) {
     initialiseCorrections();
@@ -763,7 +763,7 @@ static void test_correctionKnock_disabled_knockactive(void) {
 static void test_correctionKnock(void) {
 }
 
-extern table2du8u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)
+extern table2D_u8_u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)
 
 static void setup_correctionsDwell(void) {
     initialiseCorrections();

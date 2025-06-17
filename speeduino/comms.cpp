@@ -425,7 +425,7 @@ static uint8_t toTemperature(byte lo, byte hi)
   tempValue = tempValue / 10; //TS sends values multiplied by 10 so divide back to whole degrees. 
   tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
   //Apply the temp offset and check that it results in all values being positive
-  return max( temperatureToStorage(tempValue), (uint8_t)0U );
+  return max( temperatureAddOffset(tempValue), (uint8_t)0U );
 }
 
 /**
@@ -436,7 +436,7 @@ static uint8_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, table2du16u16_32 &table)
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, uint8_t calibrationPage, table2D_u16_u16_32 &table)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)

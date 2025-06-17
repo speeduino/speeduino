@@ -269,7 +269,7 @@ int16_t ProgrammableIOGetData(uint16_t index)
     else { result = getTSLogEntry(index); }
     
     //Special cases for temperatures
-    if( (index == 6) || (index == 7) ) { result = temperatureToInternal(result); }
+    if( (index == 6) || (index == 7) ) { result = temperatureRemoveOffset(result); }
   }
   else if ( index == 239U ) { result = (int16_t)max((uint32_t)runSecsX10, (uint32_t)32768); } //STM32 used std lib
   else { result = -1; } //Index is bigger than fullStatus array

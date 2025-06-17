@@ -66,8 +66,8 @@ int16_t getMAPDelta(void);
 /** @brief Get the time in µS between the last 2 MAP readings */
 uint32_t getMAPDeltaTime(void);
 
-extern table2du16u16_32 cltCalibrationTable;
-extern table2du16u16_32 iatCalibrationTable;
-extern table2du16u8_32 o2CalibrationTable; 
+extern table2D_u16_u16_32 cltCalibrationTable;
+extern table2D_u16_u16_32 iatCalibrationTable;
+extern table2D_u16_u8_32 o2CalibrationTable; 
 
 #endif // SENSORS_H

@@ -1198,7 +1198,7 @@ void receiveCalibration(byte tableID)
   }
   else
   {
-    table2du16u16_32 *pTargetTable;
+    table2D_u16_u16_32 *pTargetTable;
     if (tableID == 0)
     {
       pTargetTable = &cltCalibrationTable;
@@ -1219,7 +1219,7 @@ void receiveCalibration(byte tableID)
       tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
       tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
       
-      pTargetTable->values[x] = temperatureToStorage(tempValue);
+      pTargetTable->values[x] = temperatureAddOffset(tempValue);
       pTargetTable->axis[x] = (x * 32U);
       writeCalibration();
     }
