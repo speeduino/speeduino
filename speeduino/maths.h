@@ -113,6 +113,7 @@ static inline uint16_t div100(uint16_t n) {
     return UDIV_ROUND_CLOSEST(n, UINT16_C(100), uint16_t);
 }
 
+/** @overload */
 static inline int16_t div100(int16_t n) {
 #ifdef USE_LIBDIVIDE
     // Try faster unsigned path first
@@ -127,6 +128,7 @@ static inline int16_t div100(int16_t n) {
 #endif
 }
 
+/** @overload */
 static inline uint32_t div100(uint32_t n) {
 #ifdef USE_LIBDIVIDE
     if (n<=(uint32_t)UINT16_MAX) {
@@ -139,10 +141,12 @@ static inline uint32_t div100(uint32_t n) {
 }
 
 #if defined(__arm__)
+/** @overload */
 static inline int div100(int n) {
     return DIV_ROUND_CLOSEST(n, 100U, int);
 }
 #else
+/** @overload */
 static inline int32_t div100(int32_t n) {
 #ifdef USE_LIBDIVIDE    
     if (n<=INT16_MAX && n>=INT16_MIN) {
@@ -381,6 +385,35 @@ static inline uint8_t fast_map(const uint8_t from, const uint8_t fromLow, const 
   } else {
     return scale(from - fromLow, fromHigh - fromLow, toHigh-toLow) + toLow;
   }
+}
+
+
+/**
+ * @brief Division by 2 returning uint8_t
+ * 
+ * Some values are stored internally in signed types, but need to be converted to 
+ * a byte (i.e. uint8_t). This hides any MISRA compliance casts.
+ * 
+ * @warning no range checks are implemented.
+ */
+static inline uint8_t halfU8(uint32_t divisor)
+{
+  return divisor>>1U;
+}
+/** @overload */
+static inline uint8_t halfU8(int32_t divisor)
+{
+  return divisor>>1U; //cppcheck-suppress misra-c2012-10.1
+}
+/** @overload */
+static inline uint8_t halfU8(int16_t divisor)
+{
+  return divisor>>1U; //cppcheck-suppress misra-c2012-10.1
+}
+/** @overload */
+static inline uint8_t halfU8(uint16_t divisor)
+{
+  return divisor>>1U;
 }
 
 #endif

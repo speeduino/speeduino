@@ -357,7 +357,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&maeTable, (uint8_t)(currentStatus.mapDOT / 10)); //The x-axis of mae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&maeTable, (uint8_t)(div100((uint16_t)currentStatus.mapDOT * 10U))); //The x-axis of mae table is divided by 10 to fit values in byte.
   
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
@@ -423,7 +423,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&taeTable, (uint8_t)(currentStatus.tpsDOT / 10)); //The x-axis of tae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&taeTable, (uint8_t)(div100((uint16_t)currentStatus.tpsDOT * 10U))); //The x-axis of tae table is divided by 10 to fit values in byte.
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
             uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
@@ -613,14 +613,14 @@ byte correctionFuelTemp(void)
 uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
   //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   if (page2.incorporateAFR == true) {
-    return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM);
+    return get3DTableValue(&afrLookUpTable, halfU8(current.fuelLoad), current.RPMdiv100);
   }
   if (page6.egoType!=EGO_TYPE_OFF) 
   {
     //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
     //Note that this should only run after the sensor warmup delay when using Include AFR option,
     if( current.runSecs > page6.ego_sdelay) { 
-      return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM); 
+      return get3DTableValue(&afrLookUpTable, halfU8(current.fuelLoad), current.RPMdiv100); 
     }
     return current.O2; //Catch all
   }
