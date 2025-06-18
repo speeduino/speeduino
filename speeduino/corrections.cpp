@@ -357,7 +357,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&maeTable, (uint8_t)(div100((uint16_t)currentStatus.mapDOT * 10U))); //The x-axis of mae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&maeTable, (uint8_t)div100((uint16_t)(currentStatus.mapDOT * 10))); //The x-axis of mae table is divided by 10 to fit values in byte.
   
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
@@ -423,7 +423,7 @@ uint16_t correctionAccel(void)
           else
           {
             BIT_SET(currentStatus.engine, BIT_ENGINE_ACC); //Mark acceleration enrichment as active.
-            accelValue = table2D_getValue(&taeTable, (uint8_t)(div100((uint16_t)currentStatus.tpsDOT * 10U))); //The x-axis of tae table is divided by 10 to fit values in byte.
+            accelValue = table2D_getValue(&taeTable, (uint8_t)div100((uint16_t)(currentStatus.tpsDOT * 10))); //The x-axis of tae table is divided by 10 to fit values in byte.
             //Apply the RPM taper to the above
             //The RPM settings are stored divided by 100:
             uint16_t trueTaperMin = configPage2.aeTaperMin * 100;
