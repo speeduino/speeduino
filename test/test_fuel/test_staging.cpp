@@ -169,6 +169,8 @@ void test_Staging_4cyl_Table_50pct(void)
   uint32_t pwLimit = 9000; //90% duty cycle at 6000rpm
   //Need to change the lookup values so we don't get a cached value
   currentStatus.RPM += 1;
+  currentStatus.RPMdiv100 = currentStatus.RPM/100U;
+  
   currentStatus.fuelLoad += 1;
 
   calculateStaging(pwLimit);

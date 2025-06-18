@@ -1430,7 +1430,7 @@ static void setup_afrtarget(table3d16 &afrLookUpTable,
     109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 114, 114, 114, 114, 
     };
   TEST_DATA_P table3d_axis_t xAxis[] = {500/100, 700/100, 900/100, 1200/100, 1600/100, 2000/100, 2500/100, 3100/100, 3500/100, 4100/100, 4700/100, 5300/100, 5900/100, 6500/100, 6750/100, 7000/100};
-  TEST_DATA_P table3d_axis_t yAxis[] = { 16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};  
+  TEST_DATA_P table3d_axis_t yAxis[] = { 16/2U, 26/2U, 30/2U, 36/2U, 40/2U, 46/2U, 50/2U, 56/2U, 60/2U, 66/2U, 70/2U, 76/2U, 86/2U, 90/2U, 96/2U, 100/2U};  
   populate_table_P(afrLookUpTable, xAxis, yAxis, values);
 
   memset(&page2, 0, sizeof(page2));
@@ -1444,7 +1444,7 @@ static void setup_afrtarget(table3d16 &afrLookUpTable,
   current.runSecs = page6.ego_sdelay + 2U;
   current.fuelLoad = 60;
   current.RPM = 3100;
-  current.RPMdiv100 = 3100/100;
+  current.RPMdiv100 = current.RPM/100;
   current.O2 = 75U;
 }
 
