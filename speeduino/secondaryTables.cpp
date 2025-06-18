@@ -10,7 +10,7 @@
  * This performs largely the same operations as getVE() however the lookup is of the secondary fuel table and uses the secondary load source
  * @return byte 
  */
-static inline uint8_t lookupVE2(const config10 &page10, const table3d16RpmLoad &veLookupTable, const statuses &current)
+static inline uint8_t lookupVE2(const config10 &page10, const table3d16 &veLookupTable, const statuses &current)
 {
   return get3DTableValue(&veLookupTable, halfU8(getLoad(page10.fuel2Algorithm, current)), current.RPMdiv100); //Perform lookup into fuel map for RPM vs MAP value
 }
@@ -48,7 +48,7 @@ static inline bool fuelModeInputSwitchActive(const config10 &page10) {
       && (digitalRead(pinFuel2Input) == page10.fuel2InputPolarity);
 }
 
-void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLookupTable, statuses &current)
+void calculateSecondaryFuel(const config10 &page10, const table3d16 &veLookupTable, statuses &current)
 {
   //If the secondary fuel table is in use, also get the VE value from there
   if(page10.fuel2Mode == FUEL2_MODE_MULTIPLY)
@@ -83,7 +83,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
 
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
-static inline int16_t lookupSpark2(const config10 &page10, const table3d16RpmLoad &sparkLookupTable, const statuses &current) {
+static inline int16_t lookupSpark2(const config10 &page10, const table3d16 &sparkLookupTable, const statuses &current) {
   return (int16_t)get3DTableValue(&sparkLookupTable, halfU8(getLoad(page10.spark2Algorithm, current)), current.RPMdiv100) - INT16_C(OFFSET_IGNITION);  
 }
 
@@ -133,7 +133,7 @@ static inline bool isFixedTimingOn(const config2 &page2, const statuses &current
             || (BIT_CHECK(current.engine, BIT_ENGINE_CRANK));
 }
 
-void calculateSecondarySpark(const config2 &page2, const config10 &page10, const table3d16RpmLoad &sparkLookupTable, statuses &current)
+void calculateSecondarySpark(const config2 &page2, const config10 &page10, const table3d16 &sparkLookupTable, statuses &current)
 {
   BIT_CLEAR(current.status5, BIT_STATUS5_SPARK2_ACTIVE); //Clear the bit indicating that the 2nd spark table is in use. 
   current.advance2 = 0;

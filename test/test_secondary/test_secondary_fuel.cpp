@@ -5,7 +5,7 @@
 #include "../test_utils.h"
 #include "storage.h"
 
-TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+TEST_DATA_P table3d_axis_t tempXAxis[] = {500/100, 700/100, 900/100, 1200/100, 1600/100, 2000/100, 2500/100, 3100/100, 3500/100, 4100/100, 4700/100, 5300/100, 5900/100, 6500/100, 6750/100, 7000/100};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_off(const statuses &current, uint8_t expectedVE) {
@@ -25,7 +25,7 @@ static void __attribute__((noinline)) assert_2nd_fuel_is_on(const statuses &curr
 static void test_no_secondary_fuel(void) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     page10.fuel2Mode = FUEL2_MODE_OFF;
     page10.fuel2Algorithm = LOAD_SOURCE_MAP;
@@ -42,7 +42,7 @@ static constexpr int16_t SIMPLE_LOAD_VALUE = 150;
 static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     fill_table_values(lookupTable, SIMPLE_LOAD_VALUE);
     populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
@@ -62,7 +62,7 @@ static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode)
 
 static constexpr int8_t SIMPLE_VE1 = 75;
 
-static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
+static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page10, statuses &current, table3d16 &lookupTable, uint8_t mode) {
     fill_table_values(lookupTable, SIMPLE_LOAD_VALUE);
     populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
     populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
@@ -77,7 +77,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page
 static void __attribute__((noinline)) test_fuel_mode_simple(uint8_t mode, uint8_t expectedVE) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_fuel_mode_simple(page10, current, lookupTable, mode);
 
@@ -105,7 +105,7 @@ static void test_fuel_mode_add_cap_UINT8_MAX(void) {
 static constexpr int16_t SWITCHED_LOAD = 50;
 static constexpr int16_t SWITCHED_VE2 = 68;
 
-static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t cond, uint16_t trigger) {
+static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 &page10, statuses &current, table3d16 &lookupTable, uint8_t cond, uint16_t trigger) {
     setup_test_fuel_mode_simple(page10, current, lookupTable, FUEL2_MODE_CONDITIONAL_SWITCH);
     fill_table_values(lookupTable, SWITCHED_VE2);
     page10.fuel2SwitchVariable = cond;
@@ -120,7 +120,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_negative(uint8_t cond, uint16_t trigger) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
     setup_test_fuel_mode_cond_switch(page10, current, lookupTable, cond, trigger);
 
     calculateSecondaryFuel(page10, lookupTable, current);
@@ -131,7 +131,7 @@ static void __attribute__((noinline)) test_fuel_mode_cond_switch_negative(uint8_
 static void __attribute__((noinline)) test_fuel_mode_cond_switch_positive(uint8_t cond, uint16_t trigger) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
     setup_test_fuel_mode_cond_switch(page10, current, lookupTable, cond, trigger);
 
     calculateSecondaryFuel(page10, lookupTable, current);
@@ -166,7 +166,7 @@ static void __attribute__((noinline)) test_fuel_mode_cond_switch_ethanol_pct(voi
 static void __attribute__((noinline)) test_fuel_mode_input_switch(void) {
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
     setup_test_fuel_mode_simple(page10, current, lookupTable, FUEL2_MODE_INPUT_SWITCH);
     fill_table_values(lookupTable, SWITCHED_VE2);
 

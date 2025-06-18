@@ -143,11 +143,11 @@ private:
     table3d_dim_t rowWidth;
 };
 
-#define TABLE3D_TYPENAME_VALUE(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _values)
+#define TABLE3D_TYPENAME_VALUE(size) CONCAT(TABLE3D_TYPENAME_BASE(size), _values)
 
-#define TABLE3D_GEN_VALUES(size, xDom, yDom) \
-    /** @brief The values for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_VALUE(size, xDom, yDom) { \
+#define TABLE3D_GEN_VALUES(size) \
+    /** @brief The values for a 3D table with size x size dimensions */ \
+    struct TABLE3D_TYPENAME_VALUE(size) { \
         /** @brief The number of items in a row. I.e. it's length  */ \
         static constexpr table3d_dim_t row_size = (size); \
         /** @brief The number of rows */ \

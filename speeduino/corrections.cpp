@@ -610,7 +610,7 @@ byte correctionFuelTemp(void)
 
 // ============================= Air Fuel Ratio (AFR) correction =============================
 
-uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
+uint8_t calculateAfrTarget(table3d16 &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
   //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   if (page2.incorporateAFR == true) {
     return get3DTableValue(&afrLookUpTable, halfU8(current.fuelLoad), current.RPMdiv100);

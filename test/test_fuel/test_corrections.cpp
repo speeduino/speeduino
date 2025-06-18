@@ -1406,7 +1406,7 @@ static void test_corrections_MAE()
   RUN_TEST_P(test_corrections_MAE_timout);
 }
 
-static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
+static void setup_afrtarget(table3d16 &afrLookUpTable,
                             statuses &current,
                             config2 &page2,
                             config6 &page6) {
@@ -1429,7 +1429,7 @@ static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
     104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 
     109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 114, 114, 114, 114, 
     };
-  TEST_DATA_P table3d_axis_t xAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+  TEST_DATA_P table3d_axis_t xAxis[] = {500/100, 700/100, 900/100, 1200/100, 1600/100, 2000/100, 2500/100, 3100/100, 3500/100, 4100/100, 4700/100, 5300/100, 5900/100, 6500/100, 6750/100, 7000/100};
   TEST_DATA_P table3d_axis_t yAxis[] = { 16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};  
   populate_table_P(afrLookUpTable, xAxis, yAxis, values);
 
@@ -1444,12 +1444,13 @@ static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
   current.runSecs = page6.ego_sdelay + 2U;
   current.fuelLoad = 60;
   current.RPM = 3100;
+  current.RPMdiv100 = 3100/100;
   current.O2 = 75U;
 }
 
 
 static void test_corrections_afrtarget_no_compute(void) {
-  table3d16RpmLoad afrLookUpTable;
+  table3d16 afrLookUpTable;
   statuses current;
   config2 page2;
   config6 page6;
@@ -1463,7 +1464,7 @@ static void test_corrections_afrtarget_no_compute(void) {
 }
 
 static void test_corrections_afrtarget_no_compute_egodelay(void) {
-  table3d16RpmLoad afrLookUpTable;
+  table3d16 afrLookUpTable;
   statuses current;
   config2 page2;
   config6 page6;
@@ -1477,7 +1478,7 @@ static void test_corrections_afrtarget_no_compute_egodelay(void) {
 }
 
 static void test_corrections_afrtarget_incorporteafr(void) {
-  table3d16RpmLoad afrLookUpTable;
+  table3d16 afrLookUpTable;
   statuses current;
   config2 page2;
   config6 page6;
@@ -1490,7 +1491,7 @@ static void test_corrections_afrtarget_incorporteafr(void) {
 }
 
 static void test_corrections_afrtarget_ego(void) {
-  table3d16RpmLoad afrLookUpTable;
+  table3d16 afrLookUpTable;
   statuses current;
   config2 page2;
   config6 page6;

@@ -194,19 +194,19 @@ static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 #define LOGGER_FILENAMING_DATETIME      1
 #define LOGGER_FILENAMING_SEQENTIAL     2
 
-extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
-extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
-extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
-extern struct table3d16RpmLoad ignitionTable2; //16x16 ignition map
-extern struct table3d16RpmLoad afrTable; //16x16 afr target map
-extern struct table3d8RpmLoad stagingTable; //8x8 fuel staging table
-extern struct table3d8RpmLoad boostTable; //8x8 boost map
-extern struct table3d8RpmLoad boostTableLookupDuty; //8x8 boost map
-extern struct table3d8RpmLoad vvtTable; //8x8 vvt map
-extern struct table3d8RpmLoad vvt2Table; //8x8 vvt map
-extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
+extern struct table3d16 fuelTable; //16x16 fuel map
+extern struct table3d16 fuelTable2; //16x16 fuel map
+extern struct table3d16 ignitionTable; //16x16 ignition map
+extern struct table3d16 ignitionTable2; //16x16 ignition map
+extern struct table3d16 afrTable; //16x16 afr target map
+extern struct table3d8 stagingTable; //8x8 fuel staging table
+extern struct table3d8 boostTable; //8x8 boost map
+extern struct table3d8 boostTableLookupDuty; //8x8 boost map
+extern struct table3d8 vvtTable; //8x8 vvt map
+extern struct table3d8 vvt2Table; //8x8 vvt map
+extern struct table3d8 wmiTable; //8x8 wmi map
 
-using trimTable3d = table3d6RpmLoad; 
+using trimTable3d = table3d6; 
 
 extern trimTable3d trim1Table; //6x6 Fuel trim 1 map
 extern trimTable3d trim2Table; //6x6 Fuel trim 2 map
@@ -217,7 +217,7 @@ extern trimTable3d trim6Table; //6x6 Fuel trim 6 map
 extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
 extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 
-extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
+extern struct table3d4 dwellTable; //4x4 Dwell map
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;

@@ -7,7 +7,7 @@
 // #include "corrections.h"
 #include "maths.h"
 
-TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
+TEST_DATA_P table3d_axis_t tempXAxis[] = {500/100, 700/100, 900/100, 1200/100, 1600/100, 2000/100, 2500/100, 3100/100, 3500/100, 4100/100, 4700/100, 5300/100, 5900/100, 6500/100, 6750/100, 7000/100};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
 
 static void __attribute__((noinline)) assert_2nd_spark_is_off(const statuses &current, int8_t expectedAdvance) {
@@ -28,7 +28,7 @@ static void __attribute__((noinline)) test_mode_off_no_secondary_spark(void) {
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     page10.spark2Mode = SPARK2_MODE_OFF;
     page10.spark2Algorithm = LOAD_SOURCE_MAP;
@@ -44,7 +44,7 @@ static constexpr int8_t CAP_ADVANCE1 = INT8_MAX - 1;
 static constexpr int16_t CAP_LOAD_LOOKUP_RESULT = 150;
 static constexpr int16_t CAP_LOAD_VALUE = CAP_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
 
-static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
+static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, config10 &page10, statuses &current, table3d16 &lookupTable, uint8_t mode) {
     page10.spark2Mode = mode;    
     page10.spark2Algorithm = LOAD_SOURCE_MAP;
     current.advance1 = CAP_ADVANCE1;
@@ -60,7 +60,7 @@ static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_cap_INT8_MAX(page2, page10, current, lookupTable, mode);
 
@@ -73,7 +73,7 @@ static constexpr int8_t SIMPLE_ADVANCE1 = 35;
 static constexpr int16_t SIMPLE_LOAD_LOOKUP_RESULT = 68;
 static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
 
-static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
+static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10 &page10, statuses &current, table3d16 &lookupTable, uint8_t mode) {
     page10.spark2Mode = mode;    
     page10.spark2Algorithm = LOAD_SOURCE_MAP;
     current.advance1 = SIMPLE_ADVANCE1;
@@ -89,7 +89,7 @@ static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expe
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, mode);
     calculateSecondarySpark(page2, page10, lookupTable, current);
@@ -104,7 +104,7 @@ static void __attribute__((noinline)) test_sparkmode_multiply(uint8_t multiplier
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
     fill_table_values(lookupTable, multiplier+INT16_C(OFFSET_IGNITION));
@@ -140,7 +140,7 @@ static void __attribute__((noinline)) test_fixed_timing_no_secondary_spark(void)
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
     page2.fixAngEnable = 1U;// Should turn 2nd table off
@@ -152,7 +152,7 @@ static void __attribute__((noinline)) test_cranking_no_secondary_spark(void) {
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
     BIT_SET(current.engine, BIT_ENGINE_CRANK);// Should turn 2nd table off
@@ -168,7 +168,7 @@ static void __attribute__((noinline)) test_sparkmode_add_cap_INT8_MAX(void) {
     test_mode_cap_INT8_MAX(SPARK2_MODE_ADD, (int16_t)150-INT16_C(OFFSET_IGNITION));
 }
 
-static void __attribute__((noinline)) setup_test_mode_cond_switch(config2 &page2, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t cond, uint16_t trigger) {
+static void __attribute__((noinline)) setup_test_mode_cond_switch(config2 &page2, config10 &page10, statuses &current, table3d16 &lookupTable, uint8_t cond, uint16_t trigger) {
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_CONDITIONAL_SWITCH);
     page10.spark2SwitchVariable = cond;
     page10.spark2SwitchValue = trigger;
@@ -182,7 +182,7 @@ static void __attribute__((noinline)) test_sparkmode_cond_switch_negative(uint8_
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_cond_switch(page2, page10, current, lookupTable, cond, trigger);
 
@@ -195,7 +195,7 @@ static void __attribute__((noinline)) test_sparkmode_cond_switch_positive(uint8_
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_cond_switch(page2, page10, current, lookupTable, cond, trigger);
 
@@ -232,7 +232,7 @@ static void __attribute__((noinline)) test_sparkmode_input_switch(void) {
     config2 page2 = {};
     config10 page10 = {};
     statuses current = {};
-    table3d16RpmLoad lookupTable;
+    table3d16 lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_INPUT_SWITCH);
 

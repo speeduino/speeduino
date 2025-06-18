@@ -34,15 +34,14 @@ using table3d_axis_t = uint8_t;
  *    axis length, x-axis domain, y-axis domain
  */
 #define TABLE3D_GENERATOR(GENERATOR, ...) \
-    GENERATOR(6, Rpm, Load, ##__VA_ARGS__) \
-    GENERATOR(4, Rpm, Load, ##__VA_ARGS__) \
-    GENERATOR(8, Rpm, Load, ##__VA_ARGS__) \
-    GENERATOR(8, Rpm, Tps, ##__VA_ARGS__) \
-    GENERATOR(16, Rpm, Load, ##__VA_ARGS__)
+    GENERATOR(6, ##__VA_ARGS__) \
+    GENERATOR(4, ##__VA_ARGS__) \
+    GENERATOR(8, ##__VA_ARGS__) \
+    GENERATOR(16, ##__VA_ARGS__)
 
 // Each 3d table is given a distinct type based on size & axis domains
 // This encapsulates the generation of the type name
-#define TABLE3D_TYPENAME_BASE(size, xDom, yDom) table3d ## size ## xDom ## yDom
+#define TABLE3D_TYPENAME_BASE(size) table3d ## size
 
 #define CAT_HELPER(a, b) a ## b
 #define CONCAT(A, B) CAT_HELPER(A, B)

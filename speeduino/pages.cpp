@@ -1,7 +1,6 @@
 #include "pages.h"
 #include "globals.h"
 #include "utilities.h"
-#include "table3d_axis_io.h"
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -80,10 +79,10 @@ public:
       case table_location_values:
         return get_value_value();
       case table_location_xaxis:
-        return get_table3d_axis_converter(table_t::xaxis_t::domain).to_byte(get_xaxis_value());
+        return get_xaxis_value();
       case table_location_yaxis:
       default:
-        return get_table3d_axis_converter(table_t::yaxis_t::domain).to_byte(get_yaxis_value());
+        return get_yaxis_value();
     }
   }
 
@@ -97,12 +96,12 @@ public:
         break;
 
       case table_location_xaxis:
-        get_xaxis_value() = get_table3d_axis_converter(table_t::xaxis_t::domain).from_byte(new_value);
+        get_xaxis_value() = new_value;
         break;
 
       case table_location_yaxis:
       default:
-        get_yaxis_value() = get_table3d_axis_converter(table_t::yaxis_t::domain).from_byte(new_value);
+        get_yaxis_value() = new_value;
     }
     invalidate_cache(&_pTable->get_value_cache);
     return *this;
@@ -155,8 +154,8 @@ inline byte& get_raw_location(page_iterator_t &entity, uint16_t offset)
 
 inline byte get_table_value(page_iterator_t &entity, uint16_t offset)
 {
-  #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
-      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
+  #define CTA_GET_TABLE_VALUE(size, pTable, offset) \
+      return *offset_to_table<TABLE3D_TYPENAME_BASE(size)>((TABLE3D_TYPENAME_BASE(size)*)pTable, offset);
   #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
   CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start));  
 }
@@ -176,8 +175,8 @@ inline byte get_value(page_iterator_t &entity, uint16_t offset)
 
 inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
 {
-  #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
-      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
+  #define CTA_SET_TABLE_VALUE(size, pTable, offset, new_value) \
+      offset_to_table<TABLE3D_TYPENAME_BASE(size)>((TABLE3D_TYPENAME_BASE(size)*)pTable, offset) = new_value; break;
   #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
   CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start), new_value);  
 }
