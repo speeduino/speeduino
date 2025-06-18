@@ -25,7 +25,7 @@ using table3d_dim_t = uint8_t;
 using table3d_value_t = uint8_t;
 
 /** @brief The type of each axis value */
-using table3d_axis_t = int16_t;
+using table3d_axis_t = uint8_t;
 
 /** @brief Core 3d table generation macro
  * 

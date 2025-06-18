@@ -28,14 +28,14 @@ struct table3DGetValueCache {
   table3d_dim_t lastYBinMax = 1;
 
   //Store the last input and output values, again for caching purposes
-  coord2d last_lookup = { INT16_MAX, INT16_MAX };
+  coord2d last_lookup = { UINT8_MAX, UINT8_MAX };
   table3d_value_t lastOutput;
 };
 
 
 static inline void invalidate_cache(table3DGetValueCache *pCache)
 {
-    pCache->last_lookup.x = INT16_MAX;
+    pCache->last_lookup.x = UINT8_MAX;
 }
 
 /*
