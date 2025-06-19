@@ -123,6 +123,22 @@ void sendCANBroadcast(uint8_t frequency)
         Can0.write(outMsg);
       }
       break;
+
+    case CAN_BROADCAST_PROTOCOL_RUSEFI:
+      if(frequency == 50)
+      {
+        DashMessage(CAN_RUSEFI_RPM);
+        Can0.write(outMsg);
+        DashMessage(CAN_RUSEFI_MAP_CLT_IAT);
+        Can0.write(outMsg);
+        DashMessage(CAN_RUSEFI_OILP_OILT);
+        Can0.write(outMsg);
+        DashMessage(CAN_RUSEFI_AFR);
+        Can0.write(outMsg);
+        DashMessage(CAN_RUSEFI_EGT);
+        Can0.write(outMsg);
+      }
+      break;
     
     default:
       break;
@@ -200,6 +216,7 @@ void DashMessage(uint16_t DashMessageID)
   uint16_t temp_DutyCycle;
   uint16_t temp_Lambda;
   uint16_t temp_BoostTarget;
+  uint16_t temp_Batt;
 
   outMsg.id = DashMessageID;
   switch (DashMessageID)
@@ -387,6 +404,63 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.buf[5] = lowByte(temp_fuelTemp);
       outMsg.buf[6] = 0x00; //Oil Temperature
       outMsg.buf[7] = 0x00; //Oil Temperature
+    break;
+
+
+    case CAN_RUSEFI_RPM:
+      temp_Advance = (int16_t)(currentStatus.advance * 50); 
+      outMsg.len = 8;
+      outMsg.buf[0] = lowByte(currentStatus.RPM);
+      outMsg.buf[1] = highByte(currentStatus.RPM);
+      outMsg.buf[2] = lowByte(temp_Advance);
+      outMsg.buf[3] = highByte(temp_Advance);
+      outMsg.buf[4] = (uint8_t)currentStatus.fuelLoad;
+      outMsg.buf[5] = (uint8_t)currentStatus.ignLoad;
+      outMsg.buf[6] = (uint8_t)currentStatus.vss;
+      outMsg.buf[7] = currentStatus.flexCorrection;
+    break;
+
+    case CAN_RUSEFI_MAP_CLT_IAT:
+      temp_MAP = (uint16_t)currentStatus.MAP * 30;
+      temp_CLT = currentStatus.coolant + 40;
+      temp_IAT = currentStatus.IAT + 40;
+      outMsg.len = 8;
+      outMsg.buf[0] = lowByte(temp_MAP);
+      outMsg.buf[1] = highByte(temp_MAP);
+      outMsg.buf[2] = (uint8_t)temp_CLT;
+      outMsg.buf[3] = (uint8_t)temp_IAT;
+      outMsg.buf[4] = 0;
+      outMsg.buf[5] = 0;
+      outMsg.buf[6] = 0;
+      outMsg.buf[7] = 0;
+    break;
+
+    case CAN_RUSEFI_OILP_OILT:
+      temp_oilPressure = (div100(currentStatus.oilPressure * 6894UL)) * 3;
+      temp_fuelTemp = currentStatus.fuelTemp + 40;
+      temp_Batt = currentStatus.battery10 * 100;
+      outMsg.buf[0] = lowByte(temp_oilPressure); 
+      outMsg.buf[1] = highByte(temp_oilPressure);
+      outMsg.buf[2] = 0x00; // No oil temp
+      outMsg.buf[3] = (uint8_t)temp_fuelTemp;
+      outMsg.buf[4] = lowByte(temp_Batt); 
+      outMsg.buf[5] = highByte(temp_Batt);
+      outMsg.buf[6] = 0x00;
+      outMsg.buf[7] = 0x00; 
+    break;
+
+    case CAN_RUSEFI_AFR:
+      temp_fuelPressure =  div100(currentStatus.fuelPressure * 6894UL) + 1013 * 30;
+      temp_Lambda = ((currentStatus.O2 * 1000U) / configPage2.stoich) * 10;
+      outMsg.len = 8;
+      outMsg.buf[0] = lowByte(temp_Lambda);
+      outMsg.buf[1] = highByte(temp_Lambda);
+      outMsg.buf[2] = 0x00; // No secondary lambda
+      outMsg.buf[3] = 0x00;
+      outMsg.buf[2] = lowByte(temp_fuelPressure);
+      outMsg.buf[3] = highByte(temp_fuelPressure);
+      outMsg.buf[6] = 0x00;
+      outMsg.buf[7] = 0x00; 
     break;
 
     default:
