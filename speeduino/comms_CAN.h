@@ -24,11 +24,16 @@
 #define CAN_HALTECH_DATA4   0x372 //Baro, BatteryV, Target boost. 10Hz
 #define CAN_HALTECH_DATA5   0x3E0 //IAT, CLT, Fuel Temp, Oil Temp. 10Hz
 
+#define CAN_RUSEFI_RPM              0x201 //513
+#define CAN_RUSEFI_MAP_CLT_IAT      0x203 //515 
+#define CAN_RUSEFI_OILP_OILT        0x204 //516
+#define CAN_RUSEFI_AFR              0x207 //519
+
 #define CAN_BROADCAST_PROTOCOL_OFF      0
 #define CAN_BROADCAST_PROTOCOL_BMW      1
 #define CAN_BROADCAST_PROTOCOL_VAG      2
 #define CAN_BROADCAST_PROTOCOL_HALTECH  3
-
+#define CAN_BROADCAST_PROTOCOL_RUSEFI   4
 
 #define CAN_WBO_RUSEFI 1
 #define CAN_WBO_AEM 2
