@@ -51,8 +51,17 @@ Eg: 2x2 table
 (1,0) = 1
 
 */
+template <uint16_t xFactor, uint16_t yFactor>
 table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache, 
-                    table3d_dim_t axisSize,
+                    const table3d_dim_t axisSize,
+                    const table3d_value_t *pValues,
+                    const table3d_axis_t *pXAxis,
+                    const table3d_axis_t *pYAxis,
+                    const uint16_t y, const uint16_t x);
+
+template <>
+table3d_value_t get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
+                    const table3d_dim_t axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,

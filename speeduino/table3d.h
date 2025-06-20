@@ -94,7 +94,9 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
     static inline table3d_value_t get3DTableValue(const TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, const uint16_t y, const uint16_t x) \
     { \
-      return get3DTableValue( &pTable->get_value_cache, \
+      constexpr uint16_t xFactor = axis_domain_to_factor(axis_domain_ ## xDom); \
+      constexpr uint16_t yFactor = axis_domain_to_factor(axis_domain_ ## yDom); \
+      return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
                               pTable->values.values, \
                               pTable->axisX.axis, \

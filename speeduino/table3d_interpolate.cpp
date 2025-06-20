@@ -142,6 +142,7 @@ static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_d
   return udiv_32_16(p, (uint16_t)binWidth);  
 }
 
+template <uint16_t xMultiplier, uint16_t yMultiplier>
 static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *pValueCache, 
                     const table3d_dim_t axisSize,
                     const table3d_value_t *pValues,
@@ -166,8 +167,8 @@ static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *p
     {
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const QU1X8_t p = compute_bin_position(pValueCache->last_lookup.x, pValueCache->lastXBinMax, pXAxis, 100U);
-      const QU1X8_t q = compute_bin_position(pValueCache->last_lookup.y, pValueCache->lastYBinMax, pYAxis, 2U);
+      const QU1X8_t p = compute_bin_position(pValueCache->last_lookup.x, pValueCache->lastXBinMax, pXAxis, xMultiplier);
+      const QU1X8_t q = compute_bin_position(pValueCache->last_lookup.y, pValueCache->lastYBinMax, pYAxis, yMultiplier);
 
       const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
       const QU1X8_t n = mulQU1X8(p, q);
@@ -181,7 +182,8 @@ static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *p
 
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as described in: www.megamanual.com/v22manual/ve_tuner.pdf
-table3d_value_t __attribute__((noclone)) get3DTableValue(struct table3DGetValueCache *pValueCache, 
+template <>
+table3d_value_t __attribute__((noclone)) get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
                     table3d_dim_t axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
@@ -199,12 +201,10 @@ table3d_value_t __attribute__((noclone)) get3DTableValue(struct table3DGetValueC
 
     // Figure out where on the axes the incoming coord are
     pValueCache->lastXBinMax = find_xbin(div100(X_in), pXAxis, axisSize, pValueCache->lastXBinMax);
-    pValueCache->lastYBinMax = find_ybin(UDIV_ROUND_CLOSEST(Y_in, 2U, uint16_t), pYAxis, axisSize, pValueCache->lastYBinMax);
-    // pValueCache->lastXBinMax = find_xbin(X_in, pXAxis, axisSize, pValueCache->lastXBinMax);
-    // pValueCache->lastYBinMax = find_ybin(Y_in, pYAxis, axisSize, pValueCache->lastYBinMax);
+    pValueCache->lastYBinMax = find_ybin(Y_in>>1U, pYAxis, axisSize, pValueCache->lastYBinMax);
     pValueCache->last_lookup.x = X_in;
     pValueCache->last_lookup.y = Y_in;
-    pValueCache->lastOutput = interpolate_3d_value(pValueCache, axisSize, pValues, pXAxis, pYAxis);
+    pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(pValueCache, axisSize, pValues, pXAxis, pYAxis);
 
     return pValueCache->lastOutput;
 }

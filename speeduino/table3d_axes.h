@@ -21,6 +21,11 @@ enum axis_domain {
     axis_domain_Load,
 };
 
+static inline constexpr uint16_t axis_domain_to_factor(axis_domain domain)
+{
+    return domain==axis_domain_Rpm ? 100U : 2U;
+}
+
 /** @brief Iterate over table axis elements */
 class table_axis_iterator
 {
