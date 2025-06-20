@@ -135,8 +135,6 @@ void sendCANBroadcast(uint8_t frequency)
         Can0.write(outMsg);
         DashMessage(CAN_RUSEFI_AFR);
         Can0.write(outMsg);
-        DashMessage(CAN_RUSEFI_EGT);
-        Can0.write(outMsg);
       }
       break;
     
@@ -439,14 +437,14 @@ void DashMessage(uint16_t DashMessageID)
       temp_oilPressure = (div100(currentStatus.oilPressure * 6894UL)) * 3;
       temp_fuelTemp = currentStatus.fuelTemp + 40;
       temp_Batt = currentStatus.battery10 * 100;
-      outMsg.buf[0] = lowByte(temp_oilPressure); 
-      outMsg.buf[1] = highByte(temp_oilPressure);
-      outMsg.buf[2] = 0x00; // No oil temp
-      outMsg.buf[3] = (uint8_t)temp_fuelTemp;
-      outMsg.buf[4] = lowByte(temp_Batt); 
-      outMsg.buf[5] = highByte(temp_Batt);
-      outMsg.buf[6] = 0x00;
-      outMsg.buf[7] = 0x00; 
+      outMsg.buf[0] = 0x00; // Padding
+      outMsg.buf[1] = 0x00; 
+      outMsg.buf[2] = lowByte(temp_oilPressure); 
+      outMsg.buf[3] = highByte(temp_oilPressure);
+      outMsg.buf[4] = 0x00; // No oil temp
+      outMsg.buf[5] = (uint8_t)temp_fuelTemp;
+      outMsg.buf[6] = lowByte(temp_Batt); 
+      outMsg.buf[7] = highByte(temp_Batt);
     break;
 
     case CAN_RUSEFI_AFR:
