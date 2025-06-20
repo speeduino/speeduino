@@ -12,7 +12,7 @@
  */
 static inline uint8_t lookupVE2(const config10 &page10, const table3d16RpmLoad &veLookupTable, const statuses &current)
 {
-  return get3DTableValue(&veLookupTable, getLoad(page10.fuel2Algorithm, current), (table3d_axis_t)current.RPM); //Perform lookup into fuel map for RPM vs MAP value
+  return get3DTableValue(&veLookupTable, getLoad(page10.fuel2Algorithm, current), current.RPM); //Perform lookup into fuel map for RPM vs MAP value
 }
 
 static inline bool fuelModeCondSwitchRpmActive(const config10 &page10, const statuses &current) {
@@ -84,7 +84,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(const config10 &page10, const table3d16RpmLoad &sparkLookupTable, const statuses &current) {
-  return (int16_t)get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), (table3d_axis_t)current.RPM) - INT16_C(OFFSET_IGNITION);  
+  return (int16_t)get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM) - INT16_C(OFFSET_IGNITION);  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)

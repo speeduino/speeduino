@@ -5,8 +5,8 @@
 // A table location. 
 struct coord2d
 {
-    table3d_axis_t x;
-    table3d_axis_t y;
+    uint16_t x;
+    uint16_t y;
 };
 
 
@@ -24,18 +24,18 @@ struct table3DGetValueCache {
   //     0, 1, 2, 3, 4, 5
   // If lastXBinMax==3, the min index must be 2. I.e. the last X value looked
   // up was between 12<X<=15.
-  table3d_dim_t lastXBinMax = 1;
-  table3d_dim_t lastYBinMax = 1;
+  table3d_dim_t lastXBinMax = 1U;
+  table3d_dim_t lastYBinMax = 1U;
 
   //Store the last input and output values, again for caching purposes
-  coord2d last_lookup = { INT16_MAX, INT16_MAX };
+  coord2d last_lookup = { UINT16_MAX, UINT16_MAX };
   table3d_value_t lastOutput;
 };
 
 
 static inline void invalidate_cache(table3DGetValueCache *pCache)
 {
-    pCache->last_lookup.x = INT16_MAX;
+    pCache->last_lookup.x = UINT16_MAX;
 }
 
 /*
@@ -56,4 +56,4 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    table3d_axis_t y, table3d_axis_t x);
+                    uint16_t y, uint16_t x);
