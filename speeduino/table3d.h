@@ -77,8 +77,8 @@ enum table_type_t {
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
     struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) \
     { \
-        typedef TABLE3D_TYPENAME_AXIS(size, xDom) xaxis_t; \
-        typedef TABLE3D_TYPENAME_AXIS(size, yDom) yaxis_t; \
+        typedef TABLE3D_TYPENAME_AXIS(size) xaxis_t; \
+        typedef TABLE3D_TYPENAME_AXIS(size) yaxis_t; \
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \

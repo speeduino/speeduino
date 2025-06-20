@@ -11,7 +11,6 @@ A full copy of the license may be found in the projects root directory
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "storage.h"
 #include "pages.h"
-#include "table3d_axis_io.h"
 #include "sensors.h"
 
 #define EEPROM_DATA_VERSION   0
@@ -127,10 +126,9 @@ static inline write_location write(table_value_iterator it, write_location locat
 
 static inline write_location write(table_axis_iterator it, write_location location)
 {
-  const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
   while (location.can_write() && !it.at_end())
   {
-    location.update(converter.to_byte(*it));
+    location.update(*it);
     ++location;
     ++it;
   }
@@ -390,10 +388,9 @@ static inline eeprom_address_t load(table_value_iterator it, eeprom_address_t ad
 
 static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t address)
 {
-    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
   while (!it.at_end())
   {
-    *it = converter.from_byte(EEPROM.read(address));
+    *it = EEPROM.read(address);
     ++address;
     ++it;
   }
