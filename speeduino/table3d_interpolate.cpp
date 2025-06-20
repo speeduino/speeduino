@@ -124,17 +124,17 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 
 // ============================= Axis value to bin % =========================
 
-static inline QU1X8_t compute_bin_position(table3d_axis_t value, const table3d_dim_t &bin, const table3d_axis_t *pAxis)
+static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_dim_t &bin, const table3d_axis_t *pAxis, const uint16_t &multiplier)
 {
-  table3d_axis_t binMinValue = pAxis[bin+1U];
-  if (value<=binMinValue) { return 0; }
-  table3d_axis_t binMaxValue = pAxis[bin];
+  uint16_t binMinValue = pAxis[bin+1U]*multiplier;
+  if (value<=binMinValue) { return 0U; }
+  uint16_t binMaxValue = pAxis[bin]*multiplier;
   if (value>=binMaxValue) { return QU1X8_ONE; }
-  table3d_axis_t binWidth = binMaxValue-binMinValue;
+  uint16_t binWidth = binMaxValue-binMinValue;
 
   // Since we can have bins of any width, we need to use 
   // 24.8 fixed point to avoid overflow
-  table3d_axis_t binPosition = value - binMinValue;
+  uint16_t binPosition = value - binMinValue;
   uint32_t p = (uint32_t)binPosition << QU1X8_INTEGER_SHIFT;
   // But since we are computing the ratio (0 to 1), p is guaranteed to be
   // less than binWidth and thus the division below will result in a value
@@ -142,6 +142,40 @@ static inline QU1X8_t compute_bin_position(table3d_axis_t value, const table3d_d
   return udiv_32_16(p, (uint16_t)binWidth);  
 }
 
+static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *pValueCache, 
+                    const table3d_dim_t axisSize,
+                    const table3d_value_t *pValues,
+                    const table3d_axis_t *pXAxis,
+                    const table3d_axis_t *pYAxis)
+{
+    table3d_dim_t rowMax = pValueCache->lastYBinMax * axisSize;
+    table3d_dim_t rowMin = rowMax + axisSize;
+    table3d_dim_t colMax = axisSize - pValueCache->lastXBinMax - 1U;
+    table3d_dim_t colMin = colMax - 1U;
+    table3d_value_t A = pValues[rowMax + colMin];
+    table3d_value_t B = pValues[rowMax + colMax];
+    table3d_value_t C = pValues[rowMin + colMin];
+    table3d_value_t D = pValues[rowMin + colMax];  
+  
+    //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
+    if( (A == B) && (A == C) && (A == D) ) 
+    { 
+      return A;
+    }
+    else
+    {
+      //Create some normalised position values
+      //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
+      const QU1X8_t p = compute_bin_position(pValueCache->last_lookup.x, pValueCache->lastXBinMax, pXAxis, 100U);
+      const QU1X8_t q = compute_bin_position(pValueCache->last_lookup.y, pValueCache->lastYBinMax, pYAxis, 2U);
+
+      const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
+      const QU1X8_t n = mulQU1X8(p, q);
+      const QU1X8_t o = mulQU1X8(QU1X8_ONE-p, QU1X8_ONE-q);
+      const QU1X8_t r = mulQU1X8(p, QU1X8_ONE-q);
+      return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> QU1X8_INTEGER_SHIFT;
+    }
+}
 
 // ============================= End internal support functions =========================
 
@@ -164,46 +198,13 @@ table3d_value_t __attribute__((noclone)) get3DTableValue(struct table3DGetValueC
     }
 
     // Figure out where on the axes the incoming coord are
-    pValueCache->lastXBinMax = find_xbin(X_in, pXAxis, axisSize, pValueCache->lastXBinMax);
-    pValueCache->lastYBinMax = find_ybin(Y_in, pYAxis, axisSize, pValueCache->lastYBinMax);
+    pValueCache->lastXBinMax = find_xbin(div100(X_in), pXAxis, axisSize, pValueCache->lastXBinMax);
+    pValueCache->lastYBinMax = find_ybin(UDIV_ROUND_CLOSEST(Y_in, 2U, uint16_t), pYAxis, axisSize, pValueCache->lastYBinMax);
+    // pValueCache->lastXBinMax = find_xbin(X_in, pXAxis, axisSize, pValueCache->lastXBinMax);
+    // pValueCache->lastYBinMax = find_ybin(Y_in, pYAxis, axisSize, pValueCache->lastYBinMax);
     pValueCache->last_lookup.x = X_in;
     pValueCache->last_lookup.y = Y_in;
-
-    /*
-    At this point we have the 4 corners of the map where the interpolated value will fall in
-    Eg: (yMax,xMin)  (yMax,xMax)
-
-        (yMin,xMin)  (yMin,xMax)
-
-    In the following calculation the table values are referred to by the following variables:
-              A          B
-
-              C          D
-    */
-    table3d_dim_t rowMax = pValueCache->lastYBinMax * axisSize;
-    table3d_dim_t rowMin = rowMax + axisSize;
-    table3d_dim_t colMax = axisSize - pValueCache->lastXBinMax - 1U;
-    table3d_dim_t colMin = colMax - 1U;
-    table3d_value_t A = pValues[rowMax + colMin];
-    table3d_value_t B = pValues[rowMax + colMax];
-    table3d_value_t C = pValues[rowMin + colMin];
-    table3d_value_t D = pValues[rowMin + colMax];
-
-    //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
-    if( (A == B) && (A == C) && (A == D) ) { pValueCache->lastOutput = A; }
-    else
-    {
-      //Create some normalised position values
-      //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const QU1X8_t p = compute_bin_position(X_in, pValueCache->lastXBinMax, pXAxis);
-      const QU1X8_t q = compute_bin_position(Y_in, pValueCache->lastYBinMax, pYAxis);
-
-      const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
-      const QU1X8_t n = mulQU1X8(p, q);
-      const QU1X8_t o = mulQU1X8(QU1X8_ONE-p, QU1X8_ONE-q);
-      const QU1X8_t r = mulQU1X8(p, QU1X8_ONE-q);
-      pValueCache->lastOutput = ( (A * m) + (B * n) + (C * o) + (D * r) ) >> QU1X8_INTEGER_SHIFT;
-    }
+    pValueCache->lastOutput = interpolate_3d_value(pValueCache, axisSize, pValues, pXAxis, pYAxis);
 
     return pValueCache->lastOutput;
 }

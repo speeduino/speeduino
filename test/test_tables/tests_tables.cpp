@@ -24,12 +24,17 @@ TEST_DATA_P table3d_value_t values[] = {
 104, 106, 107, 108, 109, 109, 110, 110, 110, 110, 110, 110, 110, 110, 110, 110, 
 109, 111, 112, 113, 114, 114, 114, 115, 115, 115, 114, 114, 114, 114, 114, 114, 
   };
-TEST_DATA_P table3d_axis_t tempXAxis[] = { 500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
-static constexpr table3d_axis_t xMin = tempXAxis[0];
-static constexpr table3d_axis_t xMax = tempXAxis[_countof(tempXAxis)-1];
-TEST_DATA_P table3d_axis_t tempYAxis[] = { 16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
-static constexpr table3d_axis_t yMin = tempYAxis[0];
-static constexpr table3d_axis_t yMax = tempYAxis[_countof(tempYAxis)-1];
+
+static constexpr table3d_axis_t XAXIS_FACTOR = 100U;
+TEST_DATA_P table3d_axis_t tempXAxis[] = { 500U/XAXIS_FACTOR, 700U/XAXIS_FACTOR, 900U/XAXIS_FACTOR, 1200U/XAXIS_FACTOR, 1600U/XAXIS_FACTOR, 2000U/XAXIS_FACTOR, 2500U/XAXIS_FACTOR, 3100U/XAXIS_FACTOR, 3500U/XAXIS_FACTOR, 4100U/XAXIS_FACTOR, 4700U/XAXIS_FACTOR, 5300U/XAXIS_FACTOR, 5900U/XAXIS_FACTOR, 6500U/XAXIS_FACTOR, 6750U/XAXIS_FACTOR, 7000U/XAXIS_FACTOR};
+static constexpr uint16_t xMin = tempXAxis[0]*XAXIS_FACTOR;
+static constexpr uint16_t xMax = tempXAxis[_countof(tempXAxis)-1]*XAXIS_FACTOR;
+
+static constexpr table3d_axis_t YAXIS_FACTOR = 2U;
+// TEST_DATA_P table3d_axis_t tempYAxis[] = { 16U, 26U, 30U, 36U, 40U, 46U, 50U, 56U, 60U, 66U, 70U, 76U, 86U, 90U, 96U, 100U};
+TEST_DATA_P table3d_axis_t tempYAxis[] = { 16U/YAXIS_FACTOR, 26U/YAXIS_FACTOR, 30U/YAXIS_FACTOR, 36U/YAXIS_FACTOR, 40U/YAXIS_FACTOR, 46U/YAXIS_FACTOR, 50U/YAXIS_FACTOR, 56U/YAXIS_FACTOR, 60U/YAXIS_FACTOR, 66U/YAXIS_FACTOR, 70U/YAXIS_FACTOR, 76U/YAXIS_FACTOR, 86U/YAXIS_FACTOR, 90U/YAXIS_FACTOR, 96U/YAXIS_FACTOR, 100U/YAXIS_FACTOR};
+static constexpr uint16_t yMin = tempYAxis[0]*YAXIS_FACTOR;
+static constexpr uint16_t yMax = tempYAxis[_countof(tempYAxis)-1]*YAXIS_FACTOR;
 
 static table3d16RpmLoad testTable;
 
@@ -93,7 +98,7 @@ void test_tableLookup_exact1Axis(void)
   //Tests a lookup that exactly matches on the X axis and 50% of the way between cells on the Y axis
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]*XAXIS_FACTOR); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 65);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)6);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)9);
@@ -104,7 +109,7 @@ void test_tableLookup_exact2Axis(void)
   //Tests a lookup that exactly matches on both the X and Y axis
   setup_TestTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5], testTable.axisX.axis[9]); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5]*YAXIS_FACTOR, testTable.axisX.axis[9]*XAXIS_FACTOR); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 86);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastXBinMax, (table3d_dim_t)9);
   TEST_ASSERT_EQUAL(testTable.get_value_cache.lastYBinMax, (table3d_dim_t)5);
