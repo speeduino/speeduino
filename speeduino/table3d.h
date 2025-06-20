@@ -101,7 +101,7 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
                               pTable->values.values, \
                               pTable->axisX.axis, \
                               pTable->axisY.axis, \
-                              y, x); \
+                              { x, y }); \
     } 
 TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
 

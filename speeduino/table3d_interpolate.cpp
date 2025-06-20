@@ -143,15 +143,16 @@ static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_d
 }
 
 template <uint16_t xMultiplier, uint16_t yMultiplier>
-static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *pValueCache, 
-                    const table3d_dim_t axisSize,
+static inline table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
+                    const xy_coord2d &axisCoords,
+                    const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis)
 {
-    table3d_dim_t rowMax = pValueCache->lastYBinMax * axisSize;
+    table3d_dim_t rowMax = axisCoords.y * axisSize;
     table3d_dim_t rowMin = rowMax + axisSize;
-    table3d_dim_t colMax = axisSize - pValueCache->lastXBinMax - 1U;
+    table3d_dim_t colMax = axisSize - axisCoords.x - 1U;
     table3d_dim_t colMin = colMax - 1U;
     table3d_value_t A = pValues[rowMax + colMin];
     table3d_value_t B = pValues[rowMax + colMax];
@@ -167,8 +168,8 @@ static inline table3d_value_t interpolate_3d_value(const table3DGetValueCache *p
     {
       //Create some normalised position values
       //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-      const QU1X8_t p = compute_bin_position(pValueCache->last_lookup.x, pValueCache->lastXBinMax, pXAxis, xMultiplier);
-      const QU1X8_t q = compute_bin_position(pValueCache->last_lookup.y, pValueCache->lastYBinMax, pYAxis, yMultiplier);
+      const QU1X8_t p = compute_bin_position(lookUpValues.x, axisCoords.x, pXAxis, xMultiplier);
+      const QU1X8_t q = compute_bin_position(lookUpValues.y, axisCoords.y, pYAxis, yMultiplier);
 
       const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
       const QU1X8_t n = mulQU1X8(p, q);
@@ -188,23 +189,21 @@ table3d_value_t __attribute__((noclone)) get3DTableValue<100U, 2U>(struct table3
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    const uint16_t Y_in, const uint16_t X_in)
+                    const xy_values &lookupValues)
 {
     //0th check is whether the same X and Y values are being sent as last time. 
     // If they are, this not only prevents a lookup of the axis, but prevents the 
     //interpolation calcs being performed
-    if( X_in == pValueCache->last_lookup.x && 
-        Y_in == pValueCache->last_lookup.y)
+    if( lookupValues == ((const table3DGetValueCache*)pValueCache)->last_lookup)
     {
       return pValueCache->lastOutput;
     }
 
     // Figure out where on the axes the incoming coord are
-    pValueCache->lastXBinMax = find_xbin(div100(X_in), pXAxis, axisSize, pValueCache->lastXBinMax);
-    pValueCache->lastYBinMax = find_ybin(Y_in>>1U, pYAxis, axisSize, pValueCache->lastYBinMax);
-    pValueCache->last_lookup.x = X_in;
-    pValueCache->last_lookup.y = Y_in;
-    pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(pValueCache, axisSize, pValues, pXAxis, pYAxis);
+    pValueCache->lastBinMax.x = find_xbin(div100(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
+    pValueCache->lastBinMax.y = find_ybin(lookupValues.y>>1U, pYAxis, axisSize, pValueCache->lastBinMax.y);
+    pValueCache->last_lookup = lookupValues;
+    pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(pValueCache->last_lookup, pValueCache->lastBinMax, axisSize, pValues, pXAxis, pYAxis);
 
     return pValueCache->lastOutput;
 }
