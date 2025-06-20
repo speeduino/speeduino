@@ -184,7 +184,7 @@ static inline table3d_value_t interpolate_3d_value(const xy_values &lookUpValues
 //This function pulls a value from a 3D table given a target for X and Y coordinates.
 //It performs a 2D linear interpolation as described in: www.megamanual.com/v22manual/ve_tuner.pdf
 template <>
-table3d_value_t __attribute__((noclone)) get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
+table3d_value_t get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
                     table3d_dim_t axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
@@ -203,7 +203,7 @@ table3d_value_t __attribute__((noclone)) get3DTableValue<100U, 2U>(struct table3
     pValueCache->lastBinMax.x = find_xbin(div100(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
     pValueCache->lastBinMax.y = find_ybin(lookupValues.y>>1U, pYAxis, axisSize, pValueCache->lastBinMax.y);
     pValueCache->last_lookup = lookupValues;
-    pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(pValueCache->last_lookup, pValueCache->lastBinMax, axisSize, pValues, pXAxis, pYAxis);
+    pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, pYAxis);
 
     return pValueCache->lastOutput;
 }
