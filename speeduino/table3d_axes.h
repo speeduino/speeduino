@@ -19,8 +19,6 @@ enum axis_domain {
     axis_domain_Rpm,
     /** Load */
     axis_domain_Load,
-    /** Throttle position */ 
-    axis_domain_Tps 
 };
 
 /** @brief Iterate over table axis elements */
@@ -114,7 +112,6 @@ TABLE3D_GEN_AXIS(4, Rpm)
 TABLE3D_GEN_AXIS(4, Load)
 TABLE3D_GEN_AXIS(8, Rpm)
 TABLE3D_GEN_AXIS(8, Load)
-TABLE3D_GEN_AXIS(8, Tps)
 TABLE3D_GEN_AXIS(16, Rpm)
 TABLE3D_GEN_AXIS(16, Load)
 
