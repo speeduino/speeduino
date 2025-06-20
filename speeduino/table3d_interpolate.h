@@ -56,4 +56,4 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    uint16_t y, uint16_t x);
+                    const uint16_t y, const uint16_t x);

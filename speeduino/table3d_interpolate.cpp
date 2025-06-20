@@ -13,7 +13,7 @@ static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis
 // E.g. 4 in { 1, 3, 5, 7, 9 } would be 2
 // We assume the axis is in order.
 static inline table3d_dim_t find_bin_max(
-  table3d_axis_t &value,        // Value to search for
+  const table3d_axis_t &value,        // Value to search for
   const table3d_axis_t *pAxis,  // The axis to search
   table3d_dim_t minElement,     // Axis index of the element with the lowest value (at one end of the array)
   table3d_dim_t maxElement,     // Axis index of the element with the highest value (at the other end of the array)
@@ -54,13 +54,11 @@ static inline table3d_dim_t find_bin_max(
   // At or above maximum - clamp to final value
   if (value>=pAxis[maxElement])
   {
-    value = pAxis[maxElement];
     return maxElement;
   }
   // At or below minimum - clamp to lowest value
   if (value<=pAxis[minElement])
   {
-    value = pAxis[minElement];
     return minElement - 1U;
   }
 
@@ -79,12 +77,12 @@ static inline table3d_dim_t find_bin_max(
   return lastBinMax;
 }
 
-table3d_dim_t find_xbin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
+table3d_dim_t find_xbin(const table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
   return find_bin_max(value, pAxis, size-1U, 0U, lastBin);
 }
 
-table3d_dim_t find_ybin(table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
+table3d_dim_t find_ybin(const table3d_axis_t &value, const table3d_axis_t *pAxis, table3d_dim_t size, table3d_dim_t lastBin)
 {
   // Y axis is stored in reverse for performance purposes (not sure that's still valid). 
   // The minimum value is at the end & max at the start. So need to adjust for that. 
@@ -129,9 +127,9 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 static inline QU1X8_t compute_bin_position(table3d_axis_t value, const table3d_dim_t &bin, const table3d_axis_t *pAxis)
 {
   table3d_axis_t binMinValue = pAxis[bin+1U];
-  if (value==binMinValue) { return 0; }
+  if (value<=binMinValue) { return 0; }
   table3d_axis_t binMaxValue = pAxis[bin];
-  if (value==binMaxValue) { return QU1X8_ONE; }
+  if (value>=binMaxValue) { return QU1X8_ONE; }
   table3d_axis_t binWidth = binMaxValue-binMinValue;
 
   // Since we can have bins of any width, we need to use 
@@ -154,7 +152,7 @@ table3d_value_t __attribute__((noclone)) get3DTableValue(struct table3DGetValueC
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    uint16_t Y_in, uint16_t X_in)
+                    const uint16_t Y_in, const uint16_t X_in)
 {
     //0th check is whether the same X and Y values are being sent as last time. 
     // If they are, this not only prevents a lookup of the axis, but prevents the 
@@ -165,13 +163,11 @@ table3d_value_t __attribute__((noclone)) get3DTableValue(struct table3DGetValueC
       return pValueCache->lastOutput;
     }
 
-    // Assign this here, as we might modify coords below.
-    pValueCache->last_lookup.x = X_in;
-    pValueCache->last_lookup.y = Y_in;
-
     // Figure out where on the axes the incoming coord are
     pValueCache->lastXBinMax = find_xbin(X_in, pXAxis, axisSize, pValueCache->lastXBinMax);
     pValueCache->lastYBinMax = find_ybin(Y_in, pYAxis, axisSize, pValueCache->lastYBinMax);
+    pValueCache->last_lookup.x = X_in;
+    pValueCache->last_lookup.y = Y_in;
 
     /*
     At this point we have the 4 corners of the map where the interpolated value will fall in
