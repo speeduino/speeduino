@@ -5,7 +5,6 @@
 */
 
 #include <stdint.h>
-#include "globals.h" // Required for CPU/architecture preprocessor symbols
 
 /// @defgroup group-opt-shift Optimised bitwise shifts
 ///
@@ -26,7 +25,7 @@
     
 // Flag if we should turn on optimized shifts
 #if !defined(USE_OPTIMIZED_SHIFTS)
-#if (defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)) && defined(__GNUC__)
+#if (defined(__AVR__) && defined(__GNUC__))
 #define USE_OPTIMIZED_SHIFTS 1
 #else
 #define USE_OPTIMIZED_SHIFTS 0

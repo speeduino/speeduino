@@ -2,7 +2,6 @@
 #define MATH_H
 
 #include <stdint.h>
-#include "globals.h"
 #include "bit_shifts.h"
 
 #ifdef USE_LIBDIVIDE
@@ -215,7 +214,7 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
 
 static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
   return divisor>(uint16_t)(dividend>>16U);
@@ -239,7 +238,7 @@ static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
  */
 static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
-#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
 
     if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
 
@@ -286,7 +285,7 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
  **/
 static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
 {
-#if defined(CORE_AVR) || defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     dividend = dividend + (uint32_t)(DIV_ROUND_CORRECT(divisor, uint16_t));
     return udiv_32_16(dividend, divisor);
 #else

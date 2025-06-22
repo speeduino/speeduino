@@ -3,6 +3,7 @@
 #include "load_source.h"
 #include "maths.h"
 #include "unit_testing.h"
+#include "globals.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
