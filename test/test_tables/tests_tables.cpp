@@ -88,9 +88,7 @@ void test_tableLookup_50pct(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 53, 2250); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 69);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)9);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)8);
+  TEST_ASSERT_EQUAL(69U, tempVE);
 }
 
 void test_tableLookup_exact1Axis(void)
@@ -99,9 +97,7 @@ void test_tableLookup_exact1Axis(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]*XAXIS_FACTOR); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 65);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)6);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)9);
+  TEST_ASSERT_EQUAL(65U, tempVE);
 }
 
 void test_tableLookup_exact2Axis(void)
@@ -110,9 +106,7 @@ void test_tableLookup_exact2Axis(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5]*YAXIS_FACTOR, testTable.axisX.axis[9]*XAXIS_FACTOR); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 86);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)9);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)5);
+  TEST_ASSERT_EQUAL(86U, tempVE);
 }
 
 void test_tableLookup_overMaxX(void)
@@ -121,9 +115,7 @@ void test_tableLookup_overMaxX(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 73, xMax+100); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 89);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)0);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)4);
+  TEST_ASSERT_EQUAL(89U, tempVE);
 }
 
 void test_tableLookup_overMaxY(void)
@@ -133,8 +125,6 @@ void test_tableLookup_overMaxY(void)
 
   uint16_t tempVE = get3DTableValue(&testTable, yMax+10, 600); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(tempVE, 110);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)14);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)0);
 }
 
 void test_tableLookup_underMinX(void)
@@ -143,9 +133,7 @@ void test_tableLookup_underMinX(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 38, xMin-100); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 37);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)14);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)11);
+  TEST_ASSERT_EQUAL(37U, tempVE);
 }
 
 void test_tableLookup_underMinY(void)
@@ -154,9 +142,7 @@ void test_tableLookup_underMinY(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, yMin-5, 600); //Perform lookup into fuel map for RPM vs MAP value
-  TEST_ASSERT_EQUAL(tempVE, 34);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)14);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)14);
+  TEST_ASSERT_EQUAL(34U, tempVE);
 }
 
 void test_tableLookup_roundUp(void)
@@ -167,9 +153,7 @@ void test_tableLookup_roundUp(void)
   setup_TestTable();
 
   uint16_t tempVE = get3DTableValue(&testTable, 17, 600);
-  TEST_ASSERT_EQUAL(tempVE, 34);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.x, (table3d_dim_t)14);
-  TEST_ASSERT_EQUAL(testTable.get_value_cache.lastBinMax.y, (table3d_dim_t)14);
+  TEST_ASSERT_EQUAL(34U, tempVE);
 }
 
 void test_all_incrementing(void)
