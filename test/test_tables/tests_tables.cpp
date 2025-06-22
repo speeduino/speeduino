@@ -65,24 +65,8 @@ void setup_TestTable(void)
   populate_table_P(testTable, tempXAxis, tempYAxis, values);
 }
 
-void testTables()
-{
-  SET_UNITY_FILENAME() {
 
-  RUN_TEST(test_tableLookup_50pct);
-  RUN_TEST(test_tableLookup_exact1Axis);
-  RUN_TEST(test_tableLookup_exact2Axis);
-  RUN_TEST(test_tableLookup_overMaxX);
-  RUN_TEST(test_tableLookup_overMaxY);
-  RUN_TEST(test_tableLookup_underMinX);
-  RUN_TEST(test_tableLookup_underMinY);
-  RUN_TEST(test_tableLookup_roundUp);
-  //RUN_TEST(test_all_incrementing);
-
-  }  
-}
-
-void test_tableLookup_50pct(void)
+static void test_tableLookup_50pct(void)
 {
   //Tests a lookup that is exactly 50% of the way between cells on both the X and Y axis
   setup_TestTable();
@@ -91,7 +75,7 @@ void test_tableLookup_50pct(void)
   TEST_ASSERT_EQUAL(69U, tempVE);
 }
 
-void test_tableLookup_exact1Axis(void)
+static void test_tableLookup_exact1Axis(void)
 {
   //Tests a lookup that exactly matches on the X axis and 50% of the way between cells on the Y axis
   setup_TestTable();
@@ -100,7 +84,7 @@ void test_tableLookup_exact1Axis(void)
   TEST_ASSERT_EQUAL(65U, tempVE);
 }
 
-void test_tableLookup_exact2Axis(void)
+static void test_tableLookup_exact2Axis(void)
 {
   //Tests a lookup that exactly matches on both the X and Y axis
   setup_TestTable();
@@ -109,7 +93,7 @@ void test_tableLookup_exact2Axis(void)
   TEST_ASSERT_EQUAL(86U, tempVE);
 }
 
-void test_tableLookup_overMaxX(void)
+static void test_tableLookup_overMaxX(void)
 {
   //Tests a lookup where the RPM exceeds the highest value in the table. The Y value is a 50% match
   setup_TestTable();
@@ -118,7 +102,7 @@ void test_tableLookup_overMaxX(void)
   TEST_ASSERT_EQUAL(89U, tempVE);
 }
 
-void test_tableLookup_overMaxY(void)
+static void test_tableLookup_overMaxY(void)
 {
   //Tests a lookup where the load value exceeds the highest value in the table. The X value is a 50% match
   setup_TestTable();
@@ -127,7 +111,7 @@ void test_tableLookup_overMaxY(void)
   TEST_ASSERT_EQUAL(tempVE, 110);
 }
 
-void test_tableLookup_underMinX(void)
+static void test_tableLookup_underMinX(void)
 {
   //Tests a lookup where the RPM value is below the lowest value in the table. The Y value is a 50% match
   setup_TestTable();
@@ -136,7 +120,7 @@ void test_tableLookup_underMinX(void)
   TEST_ASSERT_EQUAL(37U, tempVE);
 }
 
-void test_tableLookup_underMinY(void)
+static void test_tableLookup_underMinY(void)
 {
   //Tests a lookup where the load value is below the lowest value in the table. The X value is a 50% match
   setup_TestTable();
@@ -145,7 +129,7 @@ void test_tableLookup_underMinY(void)
   TEST_ASSERT_EQUAL(34U, tempVE);
 }
 
-void test_tableLookup_roundUp(void)
+static void test_tableLookup_roundUp(void)
 {
   // Tests a lookup where the inputs result in a value that is outside the table range
   // due to fixed point rounding
@@ -156,7 +140,7 @@ void test_tableLookup_roundUp(void)
   TEST_ASSERT_EQUAL(34U, tempVE);
 }
 
-void test_all_incrementing(void)
+static void test_all_incrementing(void)
 {
   //Test the when going up both the load and RPM axis that the returned value is always equal or higher to the previous one
   //Tests all combinations of load/rpm from between 0-200 load and 0-9000 rpm
@@ -187,4 +171,22 @@ void test_all_incrementing(void)
       tempVE = newVE;
     }
   }
+}
+
+
+void testTables()
+{
+  SET_UNITY_FILENAME() {
+
+  RUN_TEST(test_tableLookup_50pct);
+  RUN_TEST(test_tableLookup_exact1Axis);
+  RUN_TEST(test_tableLookup_exact2Axis);
+  RUN_TEST(test_tableLookup_overMaxX);
+  RUN_TEST(test_tableLookup_overMaxY);
+  RUN_TEST(test_tableLookup_underMinX);
+  RUN_TEST(test_tableLookup_underMinY);
+  RUN_TEST(test_tableLookup_roundUp);
+  //RUN_TEST(test_all_incrementing);
+
+  }  
 }
