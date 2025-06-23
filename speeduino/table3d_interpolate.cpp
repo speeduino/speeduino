@@ -4,9 +4,9 @@
 
 // ============================= Axis Bin Searching =========================
 
-static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis_t &min, const table3d_axis_t &max)
+static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis_t *pUpper)
 {
-  return testValue > min && testValue <= max;
+  return testValue > *(pUpper + 1U) && testValue <= *pUpper;
 }
 
 /**
@@ -36,9 +36,9 @@ TESTABLE_INLINE_STATIC table3d_dim_t linear_search( const table3d_axis_t *pStart
     return minBinIndex;
   }
 
-  // No hits above, so run a linear search.
+  // Run the linear search.
   table3d_dim_t binUpperIndex = 0U;
-  while (binUpperIndex!=minBinIndex && !is_in_bin(value, *(pStart+binUpperIndex+1U), *(pStart+binUpperIndex)))
+  while (binUpperIndex!=minBinIndex && !is_in_bin(value, pStart+binUpperIndex))
   {
     ++binUpperIndex;
   }
@@ -77,19 +77,19 @@ static inline table3d_dim_t find_bin_max(
 
   // Check if we're still in the same bin as last time
   pMax = pAxis + lastBinMax;
-  if (is_in_bin(value, *(pMax + 1U), *pMax))
+  if (is_in_bin(value, pMax))
   {
     return lastBinMax;
   }
   // Check the bin above the last one
   pMax = pMax + 1U;
-  if (lastBinMax!=minBinIndex && is_in_bin(value, *(pMax + 1U), *pMax))
+  if (lastBinMax!=minBinIndex && is_in_bin(value, pMax))
   {
     return lastBinMax + 1U;    
   }
   // Check the bin below the last one
   pMax -= 2U;
-  if (lastBinMax!=maxElement && is_in_bin(value, *(pMax + 1U), *pMax))
+  if (lastBinMax!=maxElement && is_in_bin(value, pMax))
   {
     return lastBinMax - 1U;
   }
