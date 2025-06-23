@@ -172,6 +172,23 @@ static void test_all_incrementing(void)
     }
   }
 }
+extern table3d_dim_t linear_search(const table3d_axis_t *array, 
+                            const table3d_dim_t length,
+                            const table3d_axis_t value);
+
+static void test_linear_search(void) {
+  // Test the linear search function used in the table lookup
+  // This is a simple test to ensure that the linear search returns the correct index
+  table3d_axis_t axis[] = { 50, 40, 30, 20, 10 };
+  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 5));
+  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 15));
+  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 20));
+  TEST_ASSERT_EQUAL(2U, linear_search(axis, _countof(axis), 25));
+  TEST_ASSERT_EQUAL(1U, linear_search(axis, _countof(axis), 35));
+  TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 45));
+  TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 50));
+  TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 55));
+}
 
 
 void testTables()
@@ -186,6 +203,7 @@ void testTables()
   RUN_TEST(test_tableLookup_underMinX);
   RUN_TEST(test_tableLookup_underMinY);
   RUN_TEST(test_tableLookup_roundUp);
+  RUN_TEST(test_linear_search);
   //RUN_TEST(test_all_incrementing);
 
   }  
