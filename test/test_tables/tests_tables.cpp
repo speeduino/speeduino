@@ -31,7 +31,6 @@ static constexpr uint16_t xMin = tempXAxis[0]*XAXIS_FACTOR;
 static constexpr uint16_t xMax = tempXAxis[_countof(tempXAxis)-1]*XAXIS_FACTOR;
 
 static constexpr table3d_axis_t YAXIS_FACTOR = 2U;
-// TEST_DATA_P table3d_axis_t tempYAxis[] = { 16U, 26U, 30U, 36U, 40U, 46U, 50U, 56U, 60U, 66U, 70U, 76U, 86U, 90U, 96U, 100U};
 TEST_DATA_P table3d_axis_t tempYAxis[] = { 16U/YAXIS_FACTOR, 26U/YAXIS_FACTOR, 30U/YAXIS_FACTOR, 36U/YAXIS_FACTOR, 40U/YAXIS_FACTOR, 46U/YAXIS_FACTOR, 50U/YAXIS_FACTOR, 56U/YAXIS_FACTOR, 60U/YAXIS_FACTOR, 66U/YAXIS_FACTOR, 70U/YAXIS_FACTOR, 76U/YAXIS_FACTOR, 86U/YAXIS_FACTOR, 90U/YAXIS_FACTOR, 96U/YAXIS_FACTOR, 100U/YAXIS_FACTOR};
 static constexpr uint16_t yMin = tempYAxis[0]*YAXIS_FACTOR;
 static constexpr uint16_t yMax = tempYAxis[_countof(tempYAxis)-1]*YAXIS_FACTOR;
@@ -179,14 +178,20 @@ extern table3d_dim_t linear_search(const table3d_axis_t *array,
 static void test_linear_search(void) {
   // Test the linear search function used in the table lookup
   // This is a simple test to ensure that the linear search returns the correct index
-  table3d_axis_t axis[] = { 50, 40, 30, 20, 10 };
+  constexpr table3d_axis_t axis[] = { 50, 40, 30, 20, 10 };
+  // Below axis min value
   TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 5));
+  // Middle of bins & the bin edges
+  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 10));
   TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 15));
   TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_search(axis, _countof(axis), 20));
   TEST_ASSERT_EQUAL(2U, linear_search(axis, _countof(axis), 25));
+  TEST_ASSERT_EQUAL(2U, linear_search(axis, _countof(axis), 30));
   TEST_ASSERT_EQUAL(1U, linear_search(axis, _countof(axis), 35));
+  TEST_ASSERT_EQUAL(1U, linear_search(axis, _countof(axis), 40));
   TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 45));
   TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 50));
+  // Above axis max value
   TEST_ASSERT_EQUAL(0U, linear_search(axis, _countof(axis), 55));
 }
 
