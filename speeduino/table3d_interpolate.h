@@ -1,6 +1,7 @@
 #pragma once
 
 #include "table3d_typedefs.h"
+#include "maths.h"
 
 /**
  * @file 
@@ -57,6 +58,22 @@ static inline void invalidate_cache(table3DGetValueCache *pCache)
     pCache->last_lookup.x = UINT16_MAX;
 }
 
+extern table3d_dim_t find_bin_max(
+  const table3d_axis_t &value,
+  const table3d_axis_t *pAxis,
+  table3d_dim_t length,
+  table3d_dim_t lastBinMax);
+
+extern table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
+                    const xy_coord2d &axisCoords,
+                    const table3d_dim_t &axisSize,
+                    const table3d_value_t *pValues,
+                    const table3d_axis_t *pXAxis,
+                    const uint16_t xMultiplier,
+                    const table3d_axis_t *pYAxis,
+                    const uint16_t yMultiplier);
+
+
 /** @brief Get a value from a 3D table using the specified lookup values.
  * 
  * @tparam xFactor The factor used to scale the lookup value to/from the same dimension as the axis values.
@@ -75,16 +92,33 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    const xy_values &lookupValues);
+                    const xy_values &lookupValues) {
+  // (x|y)Factor
+  // -----------
+  // These are multipliers used to convert the lookup values to the same
+  // scale as the axis values. The axes are sent from TunerStudio compressed 
+  // into a byte. E.g. RPM is stored /100 (I.e. 2500->25) in the table x-axis.
+  // We do *not* want to divide the x-axis lookup value by 100, as that would
+  // result in a loss of fidelity *when interpolating the x-axis position* (see
+  // compute_bin_position). Instead, we:
+  // 1. Divide axis lookup value when searching for the axis bin
+  // 2. Multiply the axis values when interpolating the axis position
 
-/** @brief Specialization of get3DTableValue with x-axis scale factor of 100 and y-axis scale factor of 2. 
-* 
-* This is used for tables with RPM on the X axis and Load on the Y axis - which is the only case at the moment.
-*/
-template <>
-table3d_value_t get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
-                    const table3d_dim_t axisSize,
-                    const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
-                    const table3d_axis_t *pYAxis,
-                    const xy_values &lookupValues);
+  // Check if the lookup values are the same as the last time we looked up a value
+  // If they are, we can return the cached value
+  if( lookupValues == pValueCache->last_lookup)
+  {
+    return pValueCache->lastOutput;
+  }
+
+  // Figure out where on the axes the incoming coord are
+  pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16(lookupValues.x, xFactor), pXAxis, axisSize, pValueCache->lastBinMax.x);
+  pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16(lookupValues.y, yFactor), pYAxis, axisSize, pValueCache->lastBinMax.y);
+  // Interpolate based on the bin positions
+  pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
+  // Store the last lookup values so we can check them next time
+  pValueCache->last_lookup = lookupValues;
+
+  return pValueCache->lastOutput;
+
+}

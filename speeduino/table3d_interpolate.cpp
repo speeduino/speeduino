@@ -67,7 +67,7 @@ TESTABLE_INLINE_STATIC table3d_dim_t linear_search( const table3d_axis_t *pStart
  * @param lastBinMax The last bin max.
  * @return table3d_dim_t The axis index for the top of the bin.
  */
-static inline table3d_dim_t find_bin_max(
+table3d_dim_t find_bin_max(
   const table3d_axis_t &value,
   const table3d_axis_t *pAxis,
   table3d_dim_t length,
@@ -160,7 +160,7 @@ static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_d
   return udiv_32_16(p, (uint16_t)binWidth);  
 }
 
-static inline table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
+table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
                     const xy_coord2d &axisCoords,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
@@ -224,42 +224,3 @@ static inline table3d_value_t interpolate_3d_value(const xy_values &lookUpValues
 }
 
 // ============================= End internal support functions =========================
-
-template <>
-table3d_value_t get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCache, 
-                    table3d_dim_t axisSize,
-                    const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
-                    const table3d_axis_t *pYAxis,
-                    const xy_values &lookupValues)
-{
-  // (x|y)Factor
-  // -----------
-  // These are multipliers used to convert the lookup values to the same
-  // scale as the axis values. The axes are sent from TunerStudio compressed 
-  // into a byte. E.g. RPM is stored /100 (so 2500->25) in the table x-axis.
-  // We do *not* want to divide the x-axis lookup value by 100, as that would
-  // result in a loss of fidelity when interpolating the x-axis position (see
-  // compute_bin_position). Instead, we:
-  // 1. Divide x-axis lookup value when searching for the axis bin
-  // 2. Multiply the x-axis values when interpolating the x-axis position
-
-  // Check if the lookup values are the same as the last time we looked up a value
-  // If they are, we can return the cached value
-  if( lookupValues == pValueCache->last_lookup)
-  {
-    return pValueCache->lastOutput;
-  }
-  constexpr uint16_t xFactor = 100U;
-  constexpr uint16_t yFactor = 2U;
-
-  // Figure out where on the axes the incoming coord are
-  pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16(lookupValues.x, xFactor), pXAxis, axisSize, pValueCache->lastBinMax.x);
-  pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16(lookupValues.y, yFactor), pYAxis, axisSize, pValueCache->lastBinMax.y);
-  // Interpolate based on the bin positions
-  pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
-  // Store the last lookup values so we can check them next time
-  pValueCache->last_lookup = lookupValues;
-
-  return pValueCache->lastOutput;
-}
