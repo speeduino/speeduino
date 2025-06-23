@@ -54,13 +54,13 @@ TESTABLE_INLINE_STATIC table3d_dim_t linear_search( const table3d_axis_t *pStart
   // return pLower - pStart - 1U;
 }
 
-// Find the axis index for the top of the bin that covers the test value.
-// E.g. 4 in { 1, 3, 5, 7, 9 } would be 2
-// We assume the axis is in order.
-
 /**
- * @brief Find the axis index for the top of the bin that covers the test value.
- * 
+ * @brief Find the bin that covers the test value.
+ *
+ * For example, 4 in { 1, 3, 5, 7, 9 } would be 2
+ *
+ * @note We assume the axis is in [max..min] order.
+ *
  * @param value The value to search for.
  * @param pAxis The axis to search.
  * @param length The length of the axis.
@@ -73,34 +73,13 @@ static inline table3d_dim_t find_bin_max(
   table3d_dim_t length,
   table3d_dim_t lastBinMax)
 {
-  // It's quicker to increment/adjust this pointer than to repeatedly 
-  // index the array - minimum 2%, often >5%
-  const table3d_axis_t *pMax = nullptr;
-  // Upper index of the bin pair, we can't go below this.
-  // const table3d_dim_t minBinIndex = length - 2U;
-
-  // Check the cached last bin and either side first - it's likely that this will give a hit under
-  // real world conditions
-
-  // Check if we're still in the same bin as last time
-  pMax = pAxis + lastBinMax;
-  if (is_in_bin(value, pMax))
+  if (is_in_bin(value, pAxis + lastBinMax))
   {
     return lastBinMax;
   }
-  // Check the bin above the last one
-  // pMax = pMax + 1U;
-  // if (lastBinMax!=minBinIndex && is_in_bin(value, pMax))
-  // {
-  //   return lastBinMax + 1U;    
-  // }
-  // // Check the bin below the last one
-  // pMax = pMax - 2U;
-  // if (lastBinMax!=0U && is_in_bin(value, pMax))
-  // {
-  //   return lastBinMax - 1U;
-  // }
 
+  // Note: we could check the bins above and below the lastBinMax, but this showed
+  // no performance improvement in testing, so we just do a linear search.
   return linear_search(pAxis, length, value);
 }
 
@@ -118,10 +97,7 @@ static inline table3d_dim_t find_bin_max(
 typedef uint16_t QU1X8_t;
 /** @brief Integer shift to convert to/from QU1X8_t. */
 static constexpr QU1X8_t QU1X8_INTEGER_SHIFT = 8;
-/* @brief Precomputed value of 1 in QU1X8_t.
- * 
- * This is the value that represents 1.0 in the fixed point representation.
- */
+/* @brief Precomputed value of 1 in QU1X8_t. */
 static constexpr QU1X8_t QU1X8_ONE = (QU1X8_t)1U << QU1X8_INTEGER_SHIFT;
 /* @brief Precomputed value of 0.5 in QU1X8_t. */
 static constexpr QU1X8_t QU1X8_HALF = (QU1X8_t)1U << (QU1X8_INTEGER_SHIFT-1U);
@@ -150,11 +126,27 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 
 // ============================= Axis value to bin % =========================
 
-static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_dim_t &bin, const table3d_axis_t *pAxis, const uint16_t &multiplier)
+/**
+ * @brief Compute the % position of a value within a bin.
+ * 
+ * 0%==at/below the bin minimum 
+ * 100%==at/above the bin maximum
+ * 50%==in the middle of the bin.
+ * 
+ * @note The multiplier is used to scale the axis values to the same scale as the value being checked.
+ * *This retains the full precision of the axis values, thus the computed position and eventually the final interpolated result*
+ * 
+ * @param value The value to check.
+ * @param bin The upper bin index into pAxis.
+ * @param pAxis The axis array.
+ * @param multiplier The multiplier for the axis values.
+ * @return QU1X8_t The % position of the value within the bin.
+ */
+static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
 {
-  uint16_t binMinValue = (uint16_t)pAxis[bin+1U]*multiplier;
+  uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex+1U]*multiplier;
   if (value<=binMinValue) { return 0U; }
-  uint16_t binMaxValue = (uint16_t)pAxis[bin]*multiplier;
+  uint16_t binMaxValue = (uint16_t)pAxis[upperBinIndex]*multiplier;
   if (value>=binMaxValue) { return QU1X8_ONE; }
   uint16_t binWidth = binMaxValue-binMinValue;
 
@@ -168,13 +160,14 @@ static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_d
   return udiv_32_16(p, (uint16_t)binWidth);  
 }
 
-template <uint16_t xMultiplier, uint16_t yMultiplier>
 static inline table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
                     const xy_coord2d &axisCoords,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
-                    const table3d_axis_t *pYAxis)
+                    const uint16_t xMultiplier,
+                    const table3d_axis_t *pYAxis,
+                    const uint16_t yMultiplier)
 {
   /*
   3D Tables have an origin (0,0) in the top left hand corner. Vertical axis is expressed first.
@@ -262,7 +255,7 @@ table3d_value_t get3DTableValue<100U, 2U>(struct table3DGetValueCache *pValueCac
   pValueCache->lastBinMax.x = find_bin_max(div100(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
   pValueCache->lastBinMax.y = find_bin_max(lookupValues.y>>1U, pYAxis, axisSize, pValueCache->lastBinMax.y);
   // Interpolate based on the bin positions
-  pValueCache->lastOutput = interpolate_3d_value<100U, 2U>(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, pYAxis);
+  pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, 100U, pYAxis, 2U);
   // Store the last lookup values so we can check them next time
   pValueCache->last_lookup = lookupValues;
 
