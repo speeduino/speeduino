@@ -112,8 +112,8 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
   }
 
   // Figure out where on the axes the incoming coord are
-  pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16(lookupValues.x, xFactor), pXAxis, axisSize, pValueCache->lastBinMax.x);
-  pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16(lookupValues.y, yFactor), pYAxis, axisSize, pValueCache->lastBinMax.y);
+  pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16<xFactor>(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
+  pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16<yFactor>(lookupValues.y), pYAxis, axisSize, pValueCache->lastBinMax.y);
   // Interpolate based on the bin positions
   pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
   // Store the last lookup values so we can check them next time

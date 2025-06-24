@@ -98,12 +98,13 @@ uint8_t random1to100(void);
  * @param d Divisor - the function is optimized for compile time constants
  * @return uint16_t 
  */
-static inline constexpr uint16_t div_round_closest_u16(uint16_t n, uint16_t d) {
+template <uint16_t divisor>
+static inline constexpr uint16_t div_round_closest_u16(uint16_t n) {
     // This is a compile time version of UDIV_ROUND_CLOSEST
     //
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
     // assuming d is a constant.    
-    return (uint16_t)((n + DIV_ROUND_CORRECT(d, uint16_t)) / d);
+    return (uint16_t)((n + DIV_ROUND_CORRECT(divisor, uint16_t)) / divisor);
 }
 ///@}
 
