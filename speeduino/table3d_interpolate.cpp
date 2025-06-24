@@ -2,24 +2,38 @@
 #include "maths.h"
 #include "unit_testing.h"
 
-// ============================= Axis Bin Searching =========================
+/**
+ * @file
+ *
+ * @brief Support functions for 3D table interpolation.
+ */
 
+/// @name Axis Bin Searching
+/// @{
+
+/**
+ * @brief Check if a value is within a bin defined by its upper bounds.
+ * 
+ * @param testValue The value to test.
+ * @param pUpper Pointer to the upper element of the bin.
+ * @return true If the value is within the bin, false otherwise.
+ */
 static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis_t *pUpper)
 {
   return testValue > *(pUpper + 1U) && testValue <= *pUpper;
 }
 
 /**
- * @brief Perform a linear search on a 1D array.
+ * @brief Perform a linear search on an array for the bin that contains value
  * 
  * @note Assume array is ordered [max...min]
  *
  * @param pStart Pointer to the start of the array.
  * @param length Length of the array.
  * @param value Value to search for.
- * @return Upper array index
+ * @return Upper array index of the bin
  */
-TESTABLE_INLINE_STATIC table3d_dim_t linear_search( const table3d_axis_t *pStart, 
+TESTABLE_INLINE_STATIC table3d_dim_t linear_bin_search( const table3d_axis_t *pStart, 
                                                     const table3d_dim_t length,
                                                     const table3d_axis_t value) 
 {
@@ -73,6 +87,7 @@ table3d_dim_t find_bin_max(
   table3d_dim_t length,
   table3d_dim_t lastBinMax)
 {
+  // Check cached bin from last call to this function.
   if (is_in_bin(value, pAxis + lastBinMax))
   {
     return lastBinMax;
@@ -80,29 +95,33 @@ table3d_dim_t find_bin_max(
 
   // Note: we could check the bins above and below the lastBinMax, but this showed
   // no performance improvement in testing, so we just do a linear search.
-  return linear_search(pAxis, length, value);
+  return linear_bin_search(pAxis, length, value);
 }
 
-// ========================= Fixed point math =========================
+/// @}
 
-/**
- * @brief Unsigned fixed point number type with 1 integer bit & 8 fractional bits.
- * 
- * See https://en.wikipedia.org/wiki/Q_(number_format).
-*
- * This is specialised for the number range 0..1 - a generic fixed point
- * class would miss some important optimisations. Specifically, we can avoid
- * type promotion during multiplication. 
- */
+/// @name Fixed point math
+/// @{
+
+/// @brief Unsigned fixed point number type with 1 integer bit & 8 fractional bits.
+/// 
+/// @see https://en.wikipedia.org/wiki/Q_(number_format).
+///
+/// This is specialised for the number range 0..1 - a generic fixed point
+/// class would miss some important optimisations. Specifically, we can avoid
+/// type promotion during multiplication. 
 typedef uint16_t QU1X8_t;
+
 /** @brief Integer shift to convert to/from QU1X8_t. */
 static constexpr QU1X8_t QU1X8_INTEGER_SHIFT = 8;
-/* @brief Precomputed value of 1 in QU1X8_t. */
+
+/** @brief Precomputed value of 1 in QU1X8_t. */
 static constexpr QU1X8_t QU1X8_ONE = (QU1X8_t)1U << QU1X8_INTEGER_SHIFT;
-/* @brief Precomputed value of 0.5 in QU1X8_t. */
+
+/** @brief Precomputed value of 0.5 in QU1X8_t. */
 static constexpr QU1X8_t QU1X8_HALF = (QU1X8_t)1U << (QU1X8_INTEGER_SHIFT-1U);
 
-/* @brief Multiply two QU1X8_t values. */
+/** @brief Multiply two QU1X8_t values. */
 static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 {
     // 1x1 == 1....but the real reason for this is to avoid 16-bit multiplication overflow.
@@ -124,25 +143,28 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
   return ((a * b) + QU1X8_HALF) >> QU1X8_INTEGER_SHIFT;
 }
 
-// ============================= Axis value to bin % =========================
+/// @}
+
+/// @name Interpolation
+/// @{
 
 /**
  * @brief Compute the % position of a value within a bin.
  * 
- * 0%==at/below the bin minimum 
- * 100%==at/above the bin maximum
- * 50%==in the middle of the bin.
+ *  - 0%==at/below the bin minimum 
+ *  - 100%==at/above the bin maximum
+ *  - 50%==in the middle of the bin.
  * 
  * @note The multiplier is used to scale the axis values to the same scale as the value being checked.
  * *This retains the full precision of the axis values, thus the computed position and eventually the final interpolated result*
  * 
  * @param value The value to check.
- * @param bin The upper bin index into pAxis.
+ * @param upperBinIndex The upper bin index into pAxis.
  * @param pAxis The axis array.
  * @param multiplier The multiplier for the axis values.
  * @return QU1X8_t The % position of the value within the bin.
  */
-static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
+static inline QU1X8_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
 {
   uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex+1U]*multiplier;
   if (value<=binMinValue) { return 0U; }
@@ -160,8 +182,39 @@ static inline QU1X8_t compute_bin_position(const uint16_t value, const table3d_d
   return udiv_32_16(p, (uint16_t)binWidth);  
 }
 
+/** @brief Row and column coordinates in a 2D table */
+struct row_col2d {
+  table3d_dim_t row;
+  table3d_dim_t col;
+};
+
+/** @brief Get the top right corner of the *value* coordinates in a 3D table, based on x/y axis coords. */
+static inline row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize)
+{
+  return { (table3d_dim_t)(axisCoords.y * axisSize), (table3d_dim_t)(axisSize - axisCoords.x - UINT8_C(1)) };
+}
+
+/** @brief Get the bottom left corner of the *value* coordinates in a 3D table, based on top right corner. */
+static inline row_col2d toBottomLeft(const row_col2d &topRight, const table3d_dim_t &axisSize)
+{
+  return { (table3d_dim_t)(topRight.row + axisSize), (table3d_dim_t)(topRight.col - UINT8_C(1)) };
+}
+
+/**
+ * @brief Interpolate a table value from axis bins & values.
+ * 
+ * @param lookUpValues The x & y axis values we are interpolating
+ * @param upperBinIndices The x & y axis bin indices that contain lookUpValues
+ * @param axisSize The length of an axis
+ * @param pValues The interpolation source values
+ * @param pXAxis The x-axis
+ * @param xMultiplier The x-axis multiplier
+ * @param pYAxis The y-axis
+ * @param yMultiplier The y-axis multiplier
+ * @return table3d_value_t 
+ */
 table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
-                    const xy_coord2d &axisCoords,
+                    const xy_coord2d &upperBinIndices,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
@@ -182,26 +235,26 @@ table3d_value_t interpolate_3d_value(const xy_values &lookUpValues,
   (1,0) = 1
   (1,1) = 4
   */  
-  table3d_dim_t rowMax = axisCoords.y * axisSize;
-  table3d_dim_t rowMin = rowMax + axisSize;
-  table3d_dim_t colMax = axisSize - axisCoords.x - 1U;
-  table3d_dim_t colMin = colMax - 1U;
-  table3d_value_t A = pValues[rowMax + colMin];
-  table3d_value_t B = pValues[rowMax + colMax];
-  table3d_value_t C = pValues[rowMin + colMin];
-  table3d_value_t D = pValues[rowMin + colMax];  
+  row_col2d tr = toTopRight(upperBinIndices, axisSize);
+  row_col2d bl = toBottomLeft(tr, axisSize);
 
   /*
-  At this point we have the 4 corners of the map where the interpolated value will fall in
-  Eg: (yMax,xMin)  (yMax,xMax)
+  At this point we have 2 corners of the map where the interpolated value will fall in
+  Eg: ()          (tr.x,tr.y)
 
-      (yMin,xMin)  (yMin,xMax)
+      (bl.x,bl.y) ()
 
-  In the following calculation the table values are referred to by the following variables:
+  Translate those 2 corners into the actual values:
             A          B
 
             C          D
+  Note that the values are stored in a 1D array, so we need to calculate the indices 
+  appropriately based on the array layout.
   */
+  table3d_value_t A = pValues[tr.row + bl.col];
+  table3d_value_t B = pValues[tr.row + tr.col];
+  table3d_value_t C = pValues[bl.row + bl.col];
+  table3d_value_t D = pValues[bl.row + tr.col];  
   
   //Check that all values aren't just the same (This regularly happens with things like the fuel trim maps)
   if( (A == B) && (A == C) && (A == D) ) 
@@ -212,8 +265,8 @@ table3d_value_t interpolate_3d_value(const xy_values &lookUpValues,
   {
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-    const QU1X8_t p = compute_bin_position(lookUpValues.x, axisCoords.x, pXAxis, xMultiplier);
-    const QU1X8_t q = compute_bin_position(lookUpValues.y, axisCoords.y, pYAxis, yMultiplier);
+    const QU1X8_t p = compute_bin_position(lookUpValues.x, upperBinIndices.x, pXAxis, xMultiplier);
+    const QU1X8_t q = compute_bin_position(lookUpValues.y, upperBinIndices.y, pYAxis, yMultiplier);
 
     const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
     const QU1X8_t n = mulQU1X8(p, q);
@@ -223,4 +276,4 @@ table3d_value_t interpolate_3d_value(const xy_values &lookUpValues,
   }
 }
 
-// ============================= End internal support functions =========================
+/// @}

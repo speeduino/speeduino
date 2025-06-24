@@ -92,10 +92,10 @@ uint8_t random1to100(void);
 #define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
 
 /**
- * @brief A template friendly version of DIV_ROUND_CLOSEST for uint16_t.
+ * @brief Rounded \em unsigned integer division optimized for compile time constants
  * 
+ * @tparam divisor Divisor
  * @param n Dividend
- * @param d Divisor - the function is optimized for compile time constants
  * @return uint16_t 
  */
 template <uint16_t divisor>
