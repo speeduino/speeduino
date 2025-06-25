@@ -167,6 +167,85 @@ static void test_linear_bin_search(void) {
   TEST_ASSERT_EQUAL(0U, linear_bin_search(axis, _countof(axis), 55));
 }
 
+extern uint16_t mulQU1X8(uint16_t a, uint16_t b);
+extern uint16_t QU1X8_ONE;
+const uint16_t QU1X8_HALF = QU1X8_ONE/2U;
+const uint16_t QU1X8_QTR = QU1X8_ONE/4U;
+
+static void test_mulQU1X8(void) {
+
+  TEST_ASSERT_EQUAL(0U, mulQU1X8(0U, 0U));
+  TEST_ASSERT_EQUAL(QU1X8_ONE, mulQU1X8(QU1X8_ONE, QU1X8_ONE));
+  TEST_ASSERT_EQUAL(QU1X8_QTR, mulQU1X8(QU1X8_HALF, QU1X8_HALF));
+  TEST_ASSERT_EQUAL(QU1X8_ONE/8U, mulQU1X8(QU1X8_HALF, QU1X8_QTR));
+  TEST_ASSERT_EQUAL(QU1X8_ONE/8U, mulQU1X8(QU1X8_QTR, QU1X8_HALF));
+  TEST_ASSERT_EQUAL(144U, mulQU1X8(QU1X8_QTR*3U, QU1X8_QTR*3U));
+}
+
+extern uint16_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier);
+
+static void assert_compute_bin_position(table3d_axis_t *axis, uint16_t multiplier, uint8_t percent) {
+  char msg[64];
+  sprintf(msg, "Mul: %u, Pct: %u", multiplier, percent);  
+  TEST_ASSERT_INT_WITHIN_MESSAGE(1U, percentage(percent, QU1X8_ONE), compute_bin_position(intermediate(axis[1U]*multiplier, axis[0U]*multiplier, percent), 0U, axis, multiplier), msg);
+}
+
+static void assert_compute_bin_position_mult(table3d_axis_t *axis, uint16_t multiplier) {
+  char msg[64];
+  sprintf(msg, "Mul: %u", multiplier);
+  // Below/at min
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[1U]*multiplier, 0U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[1U]-5U)*multiplier, 0U, axis, multiplier), msg);
+  // Above/at max
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[0U]*multiplier, 0U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[0U]+5U)*multiplier, 0U, axis, multiplier), msg);
+  // Intermediate
+  assert_compute_bin_position(axis, multiplier, 50U);
+  assert_compute_bin_position(axis, multiplier, 25U);
+  assert_compute_bin_position(axis, multiplier, 75U);
+  // We need bigger ranges for this level of fidelity
+  if (((axis[0U]*multiplier)-(axis[1U]*multiplier))>75U) {
+    assert_compute_bin_position(axis, multiplier, 33U);
+    assert_compute_bin_position(axis, multiplier, 66U);
+  }
+}
+
+static void test_compute_bin_position(void) {
+  table3d_axis_t otherAxis[] = { 248, 128 };
+  assert_compute_bin_position_mult(otherAxis, 1U);
+  table3d_axis_t loadAxis[] = { 100, 86 };
+  assert_compute_bin_position_mult(loadAxis, 2U);
+  table3d_axis_t rpmAxis[] = { 25, 20 };
+  assert_compute_bin_position_mult(rpmAxis, 100U);
+}
+
+extern table3d_value_t bilinear_interpolation( const table3d_value_t &tl,
+                                                      const table3d_value_t &tr,
+                                                      const table3d_value_t &bl,
+                                                      const table3d_value_t &br,
+                                                      const uint16_t &dx,
+                                                      const uint16_t &dy);
+
+static void test_bilinear_interpolation(void) {
+  // All same
+  TEST_ASSERT_EQUAL(1U, bilinear_interpolation(1U, 1U, 1U, 1U, 0U, 0U));
+  // Corners
+  TEST_ASSERT_EQUAL(30U, bilinear_interpolation(10U, 20U, 30U, 40U, 0U, 0U));
+  TEST_ASSERT_EQUAL(10U, bilinear_interpolation(10U, 20U, 30U, 40U, 0U, QU1X8_ONE));
+  TEST_ASSERT_EQUAL(40U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_ONE, 0U));
+  TEST_ASSERT_EQUAL(20U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_ONE, QU1X8_ONE));
+  // Edges
+  TEST_ASSERT_EQUAL(35U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_HALF, 0U));
+  TEST_ASSERT_EQUAL(20U, bilinear_interpolation(10U, 20U, 30U, 40U, 0U, QU1X8_HALF));
+  TEST_ASSERT_EQUAL(30U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_ONE, QU1X8_HALF));
+  TEST_ASSERT_EQUAL(15U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_HALF, QU1X8_ONE));
+  // In-between
+  TEST_ASSERT_EQUAL(25U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_HALF, QU1X8_HALF));
+  TEST_ASSERT_EQUAL(27U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR, QU1X8_QTR));
+  TEST_ASSERT_EQUAL(32U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR*3U, QU1X8_QTR));
+  TEST_ASSERT_EQUAL(17U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR, QU1X8_QTR*3U));
+  TEST_ASSERT_EQUAL(22U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR*3U, QU1X8_QTR*3U));
+}
 
 void testTables()
 {
@@ -180,8 +259,11 @@ void testTables()
   RUN_TEST(test_tableLookup_underMinX);
   RUN_TEST(test_tableLookup_underMinY);
   RUN_TEST(test_tableLookup_roundUp);
-  RUN_TEST(test_linear_search);
-  //RUN_TEST(test_all_incrementing);
+  RUN_TEST(test_linear_bin_search);
+  RUN_TEST(test_mulQU1X8);
+  RUN_TEST(test_compute_bin_position);
+  RUN_TEST(test_bilinear_interpolation);
+  // RUN_TEST(test_all_incrementing);
 
   }  
 }

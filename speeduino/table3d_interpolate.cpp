@@ -113,16 +113,23 @@ table3d_dim_t find_bin_max(
 typedef uint16_t QU1X8_t;
 
 /** @brief Integer shift to convert to/from QU1X8_t. */
-static constexpr QU1X8_t QU1X8_INTEGER_SHIFT = 8;
+constexpr QU1X8_t QU1X8_INTEGER_SHIFT = 8;
+
+static inline constexpr QU1X8_t toQU1X8(uint16_t base) {
+  return base << QU1X8_INTEGER_SHIFT;
+}
+static inline constexpr uint16_t fromQU1X8(QU1X8_t base) {
+  return base >> QU1X8_INTEGER_SHIFT;
+}
 
 /** @brief Precomputed value of 1 in QU1X8_t. */
-static constexpr QU1X8_t QU1X8_ONE = (QU1X8_t)1U << QU1X8_INTEGER_SHIFT;
+TESTABLE_CONSTEXPR QU1X8_t QU1X8_ONE = toQU1X8(1U);
 
 /** @brief Precomputed value of 0.5 in QU1X8_t. */
-static constexpr QU1X8_t QU1X8_HALF = (QU1X8_t)1U << (QU1X8_INTEGER_SHIFT-1U);
+TESTABLE_CONSTEXPR QU1X8_t QU1X8_HALF = QU1X8_ONE/2U;
 
 /** @brief Multiply two QU1X8_t values. */
-static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
+TESTABLE_INLINE_STATIC QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
 {
     // 1x1 == 1....but the real reason for this is to avoid 16-bit multiplication overflow.
     //
@@ -140,7 +147,7 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
   // Add the equivalent of 0.5 to the final calculation pre-rounding.
   // This will have the effect of rounding to the nearest integer, rather
   // than always rounding down.
-  return ((a * b) + QU1X8_HALF) >> QU1X8_INTEGER_SHIFT;
+  return fromQU1X8((a * b) + QU1X8_HALF);
 }
 
 /// @}
@@ -164,7 +171,7 @@ static inline QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
  * @param multiplier The multiplier for the axis values.
  * @return QU1X8_t The % position of the value within the bin.
  */
-static inline QU1X8_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
+TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
 {
   uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex+1U]*multiplier;
   if (value<=binMinValue) { return 0U; }
@@ -198,6 +205,44 @@ static inline row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_d
 static inline row_col2d toBottomLeft(const row_col2d &topRight, const table3d_dim_t &axisSize)
 {
   return { (table3d_dim_t)(topRight.row + axisSize), (table3d_dim_t)(topRight.col - UINT8_C(1)) };
+}
+
+/**
+ * @brief 2d interpolation, given 4 corner values and x/y percentages
+ *
+ * <pre>
+ *  tl----------------tr
+ *  |                 |
+ *  |                 |
+ *  |                 |
+ *  |>>>>>dx>>>>?     |
+ *  |           ^     |
+ *  |           dy    |
+ *  |           ^     |
+ *  bl----------------br
+ * </pre>
+ * 
+ * @param tl Top left value 
+ * @param tr Top right value 
+ * @param bl Bottom left value 
+ * @param br Bottom right value 
+ * @param dx X distance
+ * @param dy Y distance
+ * @return table3d_value_t 
+ */
+TESTABLE_INLINE_STATIC table3d_value_t bilinear_interpolation( const table3d_value_t &tl,
+                                                      const table3d_value_t &tr,
+                                                      const table3d_value_t &bl,
+                                                      const table3d_value_t &br,
+                                                      const QU1X8_t &dx,
+                                                      const QU1X8_t &dy) {
+  // Compute corner weights
+  const QU1X8_t m = mulQU1X8(QU1X8_ONE-dx, dy);
+  const QU1X8_t n = mulQU1X8(dx, dy);
+  const QU1X8_t o = mulQU1X8(QU1X8_ONE-dx, QU1X8_ONE-dy);
+  const QU1X8_t r = mulQU1X8(dx, QU1X8_ONE-dy);
+  // Apply weights and shift from fixed point
+  return fromQU1X8( (tl * m) + (tr * n) + (bl * o) + (br * r) );
 }
 
 /**
@@ -267,12 +312,7 @@ table3d_value_t interpolate_3d_value(const xy_values &lookUpValues,
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
     const QU1X8_t p = compute_bin_position(lookUpValues.x, upperBinIndices.x, pXAxis, xMultiplier);
     const QU1X8_t q = compute_bin_position(lookUpValues.y, upperBinIndices.y, pYAxis, yMultiplier);
-
-    const QU1X8_t m = mulQU1X8(QU1X8_ONE-p, q);
-    const QU1X8_t n = mulQU1X8(p, q);
-    const QU1X8_t o = mulQU1X8(QU1X8_ONE-p, QU1X8_ONE-q);
-    const QU1X8_t r = mulQU1X8(p, QU1X8_ONE-q);
-    return ( (A * m) + (B * n) + (C * o) + (D * r) ) >> QU1X8_INTEGER_SHIFT;
+    return bilinear_interpolation(A, B, C, D, p, q);
   }
 }
 
