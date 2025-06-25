@@ -1,6 +1,7 @@
 #include "table3d_interpolate.h"
 #include "maths.h"
 #include "unit_testing.h"
+#include "table2d.h"
 
 /**
  * @file
@@ -11,17 +12,7 @@
 /// @name Axis Bin Searching
 /// @{
 
-/**
- * @brief Check if a value is within a bin defined by its upper bounds.
- * 
- * @param testValue The value to test.
- * @param pUpper Pointer to the upper element of the bin.
- * @return true If the value is within the bin, false otherwise.
- */
-static inline bool is_in_bin(const table3d_axis_t &testValue, const table3d_axis_t *pUpper)
-{
-  return testValue > *(pUpper + 1U) && testValue <= *pUpper;
-}
+using table3d_bin_t = _table2d_detail::Bin<table3d_axis_t>;
 
 /**
  * @brief Perform a linear search on an array for the bin that contains value
@@ -52,7 +43,7 @@ TESTABLE_INLINE_STATIC table3d_dim_t linear_bin_search( const table3d_axis_t *pS
 
   // Run the linear search.
   table3d_dim_t binUpperIndex = 0U;
-  while (binUpperIndex!=minBinIndex && !is_in_bin(value, pStart+binUpperIndex))
+  while (binUpperIndex!=minBinIndex && !table3d_bin_t::withinBin(value, *(pStart+binUpperIndex+1U), *(pStart+binUpperIndex)))
   {
     ++binUpperIndex;
   }
@@ -88,7 +79,7 @@ table3d_dim_t find_bin_max(
   table3d_dim_t lastBinMax)
 {
   // Check cached bin from last call to this function.
-  if (is_in_bin(value, pAxis + lastBinMax))
+  if (table3d_bin_t::withinBin(value, *(pAxis+lastBinMax+1U), *(pAxis+lastBinMax)))
   {
     return lastBinMax;
   }
