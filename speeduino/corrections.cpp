@@ -143,7 +143,7 @@ Additional fuel % to be added when the engine is cranking
 */
 
 static inline uint16_t lookUpCrankingEnrichmentPct(void) {
-  return toWorkingU8U16(CRANKING_ENRICHMENT, 
+  return toWorkingU16(CRANKING_ENRICHMENT, 
                         table2D_getValue(&crankingEnrichTable, temperatureAddOffset(currentStatus.coolant)));
 }
 
@@ -259,11 +259,11 @@ static inline uint8_t applyAeRpmTaper(uint8_t accelCorrection) {
   //Apply the RPM taper to the above
   //The RPM settings are stored divided by 100:
   if ((configPage2.aeTaperMax>configPage2.aeTaperMin) && (accelCorrection>0U)) {
-    const uint16_t taperMinRpm = toWorkingU8U16(RPM_COARSE, configPage2.aeTaperMin);
+    const uint16_t taperMinRpm = toWorkingU16(RPM_COARSE, configPage2.aeTaperMin);
     // If RPM is lower than the taper range, no correction 
     if (currentStatus.RPM > taperMinRpm)
     {
-      const uint16_t taperMaxRpm = toWorkingU8U16(RPM_COARSE, configPage2.aeTaperMax);
+      const uint16_t taperMaxRpm = toWorkingU16(RPM_COARSE, configPage2.aeTaperMax);
       if(currentStatus.RPM > taperMaxRpm) { 
         // RPM is above taper range, so accel enrich is turned off
         accelCorrection = 0U;
@@ -615,14 +615,14 @@ TESTABLE_INLINE_STATIC bool correctionDFCO(void)
 
     if ( currentStatus.isDFCOActive ) 
     {
-      DFCOValue = ( currentStatus.RPM > toWorkingU8U16(RPM_MEDIUM, configPage4.dfcoRPM) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
+      DFCOValue = ( currentStatus.RPM > toWorkingU16(RPM_MEDIUM, configPage4.dfcoRPM) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoDelay = 0; }
     }
     else 
     {
       if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) 
         && (currentStatus.coolant >= temperatureRemoveOffset(configPage2.dfcoMinCLT)) 
-        && (currentStatus.RPM > (toWorkingU8U16(RPM_MEDIUM, configPage4.dfcoRPM) + toWorkingU8U16(RPM_FINE, configPage4.dfcoHyster))) )
+        && (currentStatus.RPM > (toWorkingU16(RPM_MEDIUM, configPage4.dfcoRPM) + toWorkingU16(RPM_FINE, configPage4.dfcoHyster))) )
       {
         if( dfcoDelay < configPage2.dfcoDelay )
         {
@@ -730,14 +730,14 @@ static inline void setNextAfrCycle(void) {
 
 static inline bool isAfrClosedLoopOperational(const statuses &current, const config6 &page6, const config9 &page9) {
   return (current.coolant > temperatureRemoveOffset(page6.egoTemp)) 
-      && (current.RPM > toWorkingU8U16(RPM_COARSE, page6.egoRPM)) 
+      && (current.RPM > toWorkingU16(RPM_COARSE, page6.egoRPM)) 
       && (current.TPS <= page6.egoTPSMax) 
       && (current.O2 < page6.ego_max) 
       && (current.O2 > page6.ego_min) 
       && (current.runSecs > page6.ego_sdelay) 
       && (!current.isDFCOActive) 
-      && (current.MAP <= (long)toWorkingU8U16(MAP, page9.egoMAPMax) ) 
-      && (current.MAP >= (long)toWorkingU8U16(MAP, page9.egoMAPMin) )
+      && (current.MAP <= (long)toWorkingU16(MAP, page9.egoMAPMax)) 
+      && (current.MAP >= (long)toWorkingU16(MAP, page9.egoMAPMin))
       ;
 }
 
@@ -880,7 +880,7 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
   static int8_t cachedValue = 0U;  // Setting this to non-zero will use additional RAM for static initialisation
   // Performance: only update as fast as the sensor is read
   if( BIT_CHECK(LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
-    cachedValue = (int8_t)toWorkingU8S16(IGNITION_ADVANCE_SMALL,  table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
+    cachedValue = (int8_t)toWorkingS16(IGNITION_ADVANCE_SMALL,  table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
   }
   return advance + cachedValue;
 }
@@ -906,7 +906,7 @@ TESTABLE_INLINE_STATIC int8_t correctionFlexTiming(int8_t advance)
   if( configPage2.flexEnabled == 1U ) //Check for flex being enabled
   {
     //This gets cast to a signed 8 bit value to allows for negative advance (ie retard) values here.
-    currentStatus.flexIgnCorrection = (int8_t)toWorkingU8S16(IGNITION_ADVANCE_LARGE, table2D_getValue(&flexAdvTable, currentStatus.ethanolPct));
+    currentStatus.flexIgnCorrection = (int8_t)toWorkingS16(IGNITION_ADVANCE_LARGE, table2D_getValue(&flexAdvTable, currentStatus.ethanolPct));
     advance = advance + currentStatus.flexIgnCorrection;
   }
   return advance;
@@ -921,7 +921,7 @@ static inline bool isWMIAdvanceEnabled(void) {
 static inline bool isWMIAdvanceOperational(void) {
   return (currentStatus.TPS >= configPage10.wmiTPS) 
       && (currentStatus.RPM >= configPage10.wmiRPM) 
-      && (currentStatus.MAP >= (int32_t)toWorkingU8S16(MAP, configPage10.wmiMAP)) 
+      && (currentStatus.MAP >= (int32_t)toWorkingS16(MAP, configPage10.wmiMAP)) 
       && (temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT);
 }
 
@@ -929,7 +929,7 @@ TESTABLE_INLINE_STATIC int8_t correctionWMITiming(int8_t advance)
 {
   // TODO: limit rate to MAP update
   if(isWMIAdvanceEnabled() && isWMIAdvanceOperational()) {
-    advance = advance + (int8_t)toWorkingU8S16(IGNITION_ADVANCE_LARGE, table2D_getValue(&wmiAdvTable, toRawU8(MAP, currentStatus.MAP)));
+    advance = advance + (int8_t)toWorkingS16(IGNITION_ADVANCE_LARGE, table2D_getValue(&wmiAdvTable, toRawU8(MAP, currentStatus.MAP)));
   }
 
   return advance;
@@ -974,17 +974,17 @@ static inline int8_t applyIdleAdvanceAdjust(int8_t advance, int8_t adjustment) {
 
 static inline bool isIdleAdvanceOn(void) {
   return (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) 
-      && (runSecsX10 >= toWorkingU8U16(TIME_TWENTY_MILLIS, configPage2.idleAdvDelay ))
+      && (runSecsX10 >= toWorkingU16(TIME_TWENTY_MILLIS, configPage2.idleAdvDelay ))
       && currentStatus.engineIsRunning
       /* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
       When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
       */
       && ((configPage6.iacAlgorithm == IAC_ALGORITHM_NONE) 
-        || (currentStatus.RPM > (toWorkingU8U16(RPM_MEDIUM, currentStatus.CLIdleTarget) - IGN_IDLE_THRESHOLD)));
+        || (currentStatus.RPM > (toWorkingU16(RPM_MEDIUM, currentStatus.CLIdleTarget) - IGN_IDLE_THRESHOLD)));
 }
 
 static inline bool isIdleAdvanceOperational(void) {
-  return (currentStatus.RPM < toWorkingU8U16(RPM_COARSE, configPage2.idleAdvRPM))
+  return (currentStatus.RPM < toWorkingU16(RPM_COARSE, configPage2.idleAdvRPM))
       && ((configPage2.vssMode == VSS_MODE_OFF) || (currentStatus.vss < configPage2.idleAdvVss))
       && (((configPage2.idleAdvAlgorithm == IDLEADVANCE_ALGO_TPS) && (currentStatus.TPS < configPage2.idleAdvTPS)) 
         || ((configPage2.idleAdvAlgorithm == IDLEADVANCE_ALGO_CTPS) && (currentStatus.CTPSActive == true)));// closed throttle position sensor (CTPS) based idle state
@@ -1004,7 +1004,7 @@ TESTABLE_INLINE_STATIC int8_t correctionIdleAdvance(int8_t advance)
       }
       else
       {
-        int16_t advanceIdleAdjust = toWorkingU8S16(IGNITION_ADVANCE_SMALL, table2D_getValue(&idleAdvanceTable, computeIdleAdvanceRpmDelta()));
+        int16_t advanceIdleAdjust = toWorkingS16(IGNITION_ADVANCE_SMALL, table2D_getValue(&idleAdvanceTable, computeIdleAdvanceRpmDelta()));
         advance = applyIdleAdvanceAdjust(advance, (int8_t)advanceIdleAdjust); 
       }
     }
@@ -1081,8 +1081,8 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
   //SoftCut rev limit for 2-step launch control.
   if(  configPage6.launchEnabled 
     && currentStatus.clutchTrigger 
-    && (currentStatus.clutchEngagedRPM < toWorkingU8U16(RPM_COARSE, configPage6.flatSArm))
-    && (currentStatus.RPM > toWorkingU8U16(RPM_COARSE, configPage6.lnchSoftLim))
+    && (currentStatus.clutchEngagedRPM < toWorkingU16(RPM_COARSE, configPage6.flatSArm))
+    && (currentStatus.RPM > toWorkingU16(RPM_COARSE, configPage6.lnchSoftLim))
     && (currentStatus.TPS >= configPage10.lnchCtrlTPS) 
     && ( (configPage2.vssMode == VSS_MODE_OFF) || (currentStatus.vss <= configPage10.lnchCtrlVss) )
     )
@@ -1105,8 +1105,8 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
 {
   if(configPage6.flatSEnable 
   && currentStatus.clutchTrigger 
-  && (currentStatus.clutchEngagedRPM > toWorkingU8U16(RPM_COARSE, configPage6.flatSArm))
-  && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - toWorkingU8U16(RPM_COARSE, configPage6.flatSSoftWin) ) ) )
+  && (currentStatus.clutchEngagedRPM > toWorkingU16(RPM_COARSE, configPage6.flatSArm))
+  && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - toWorkingU16(RPM_COARSE, configPage6.flatSSoftWin) ) ) )
   {
     currentStatus.flatShiftSoftCut = true;
     advance = configPage6.flatSRetard;
@@ -1312,7 +1312,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   1. Single channel spark mode where there will be nCylinders/2 sparks per revolution
   2. Rotary ignition in wasted spark configuration (FC/FD), results in 2 pulses per rev. RX-8 is fully sequential resulting in 1 pulse, so not required
   */
-  uint16_t sparkDur_uS = toWorkingU8U16(TIME_TEN_MILLIS, configPage4.sparkDur);
+  uint16_t sparkDur_uS = toWorkingU16(TIME_TEN_MILLIS, configPage4.sparkDur);
   uint8_t pulsesPerRevolution = getPulsesPerRev();
   uint16_t dwellPerRevolution = (dwell + sparkDur_uS) * pulsesPerRevolution;
   if(dwellPerRevolution > currentStatus.revolutionTime)

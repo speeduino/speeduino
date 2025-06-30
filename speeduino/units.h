@@ -35,57 +35,6 @@ struct conversionFactor {
     int8_t translate;
 };
 
-
-/// @cond
-// Functions private to this file
-namespace scale_translate_detail {
-static constexpr inline uint16_t _toRawApplyTranslateU16(const conversionFactor &factor, uint16_t working) {
-    return working - (uint16_t)factor.translate;
-}
-
-static constexpr inline int16_t _toRawApplyTranslateS16(const conversionFactor &factor, int16_t working) {
-    return working - (int16_t)factor.translate;
-}
-
-static constexpr inline int16_t _toWorkingApplyTranslateS16(const conversionFactor &factor, uint8_t raw) {
-    return (int16_t)raw + (int16_t)factor.translate;
-}
-
-static constexpr inline int16_t _toWorkingApplyTranslateS16(const conversionFactor &factor, int8_t raw) {
-    return (int16_t)raw + (int16_t)factor.translate;
-}
-
-static constexpr inline int32_t _toWorkingApplyTranslateS32(const conversionFactor &factor, uint16_t raw) {
-    return (int32_t)raw + (int32_t)factor.translate;
-}
-
-static constexpr inline uint16_t _optimisedDivideU16(const conversionFactor &factor, uint16_t working) {
-            // No division required
-    return  (factor.scale==1U) ? working :
-                // uint16_t/2U
-                (factor.scale==2U) ? working >> 1U :
-                    // uint16_t/100
-                    (factor.scale==100U) ? div100(working) :
-                        // uint16_t/10
-                        (factor.scale==10U) ? (working/10U) :
-                            fast_div(working, factor.scale);
-}
-
-static constexpr inline int16_t _optimisedDivideS16(const conversionFactor &factor, int16_t working) {
-            // No division required
-    return  (factor.scale==1U) ? working :
-                // Unsigned path
-                (working>=0) ? (int16_t)_optimisedDivideU16(factor, (uint16_t)working) :
-                    // int16_t/100
-                    (factor.scale==100U) ? div100(working) :
-                        // Faster than int16_t/10.
-                        (factor.scale==10U) ? div100((int16_t)(working*10)) :
-                            // Slowest path
-                            working = working / (int16_t)factor.scale;
-}
-}
-/// @endcond
-
 /**
  * @brief Convert a value from raw page value to working value.
  * 
@@ -96,24 +45,18 @@ static constexpr inline int16_t _optimisedDivideS16(const conversionFactor &fact
  * @param raw The raw value
  * @return uint16_t The working value
  */
-static constexpr inline uint16_t toWorkingU8U16(const conversionFactor &factor, uint8_t raw) {
-    return (uint16_t)scale_translate_detail::_toWorkingApplyTranslateS16(factor, raw) * factor.scale;
+static constexpr inline uint16_t toWorkingU16(const conversionFactor &factor, uint8_t raw) {
+    return ((uint16_t)raw + (uint16_t)factor.translate) * factor.scale;
 }
 
-/** @copydoc toWorkingU8U16 */
-static constexpr inline int16_t toWorkingU8S16(const conversionFactor &factor, uint8_t raw) {
-    return scale_translate_detail::_toWorkingApplyTranslateS16(factor, raw) * (int16_t)factor.scale;
+/** @copydoc toWorkingU16 */
+static constexpr inline int16_t toWorkingS16(const conversionFactor &factor, uint8_t raw) {
+    return ((int16_t)raw + (int16_t)factor.translate) * (int16_t)factor.scale;
 }
 
-/** @copydoc toWorkingU8U16 */
-static constexpr inline int16_t toWorkingS8S16(const conversionFactor &factor, int8_t raw) {
-    return scale_translate_detail::_toWorkingApplyTranslateS16(factor, raw) * (int16_t)factor.scale;
-}
-
-
-/** @copydoc toWorkingU8U16 */
-static constexpr inline uint32_t toWorkingU32(const conversionFactor &factor, uint16_t raw) {
-    return (uint32_t)scale_translate_detail::_toWorkingApplyTranslateS32(factor, raw) * (uint32_t)factor.scale;
+/** @copydoc toWorkingU16 */
+static constexpr inline uint32_t toWorkingU32(const conversionFactor &factor, uint8_t raw) {
+    return ((uint32_t)raw + (uint32_t)factor.translate) * (uint32_t)factor.scale;
 }
 
 /**
@@ -126,13 +69,8 @@ static constexpr inline uint32_t toWorkingU32(const conversionFactor &factor, ui
  * @param working The working value
  * @return uint16_t The raw page value
  */
-static constexpr inline int8_t toRawS8(const conversionFactor &factor, int16_t working) {
-    return scale_translate_detail::_toRawApplyTranslateS16(factor, scale_translate_detail::_optimisedDivideS16(factor, working));
-}
-
-/** @copydoc toRawS8 */
 static constexpr inline uint8_t toRawU8(const conversionFactor &factor, uint16_t working) {
-    return scale_translate_detail::_toRawApplyTranslateU16(factor, scale_translate_detail::_optimisedDivideU16(factor, working));
+    return (uint8_t)((working / factor.scale) - (uint16_t)factor.translate);
 }
 
 /**
@@ -226,7 +164,7 @@ static inline constexpr uint8_t temperatureAddOffset(int16_t temp) {
  * @param temp Storage temperature (0, 255)
  */
 static inline constexpr int16_t temperatureRemoveOffset(uint8_t temp) {
-    return toWorkingU8S16(TEMPERATURE, temp);
+    return toWorkingS16(TEMPERATURE, temp);
 }
 ///@}
 
