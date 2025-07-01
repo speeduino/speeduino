@@ -1,6 +1,9 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "sensors_map_structs.h"
+#include "config_pages.h"
+#include "statuses.h"
+#include "globals.h"
 
 static void test_instantaneous(void) {
   extern bool instanteneousMAPReading(void);
