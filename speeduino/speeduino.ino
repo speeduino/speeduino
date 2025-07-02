@@ -1003,19 +1003,11 @@ void __attribute__((always_inline)) loop(void)
 #endif
 
 #if defined(USE_IGN_REFRESH)
-        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
+        if( (ignitionSchedule1.Status == RUNNING) && (ignition1EndAngle > (int)crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
         {
-          unsigned long uSToEnd = 0;
-
           crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
           
-          //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
-          //*********
-          if(ignition1EndAngle > crankAngle) { uSToEnd = angleToTimeMicroSecPerDegree( (ignition1EndAngle - crankAngle) ); }
-          else { uSToEnd = angleToTimeMicroSecPerDegree( (360 + ignition1EndAngle - crankAngle) ); }
-          //*********
-          //uSToEnd = ((ignition1EndAngle - crankAngle) * (toothLastToothTime - toothLastMinusOneToothTime)) / triggerToothAngle;
-          //*********
+          uint32_t uSToEnd = angleToTimeMicroSecPerDegree(ignition1EndAngle - crankAngle); 
 
           refreshIgnitionSchedule1( uSToEnd + fixedCrankingOverride );
         }
