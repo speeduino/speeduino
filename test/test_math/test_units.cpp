@@ -2,147 +2,102 @@
 #include "units.h"
 #include "../test_utils.h"
 
-static constexpr conversionFactor IDENTITY = {1, 0};
-static constexpr conversionFactor SCALE_ONLY = {10, 0};
-static constexpr conversionFactor POSITIVE_TRANSLATE = {1, 33};
-static constexpr conversionFactor NEGATIVE_TRANSLATE = {1, -33};
-static constexpr conversionFactor SCALE_AND_TRANSLATE = {11, -33};
-//
-static constexpr conversionFactor CONVERT_100_SCALE = { 100U, 0 };
-static constexpr conversionFactor CONVERT_10_SCALE = { 10U, 0 };
-static constexpr conversionFactor CONVERT_2_SCALE = { 2U, 0 };
-static constexpr conversionFactor CONVERT_U16U8_SCALE = { 33U, 0 };
+template <typename T> struct numeric_limits; 
+template <> struct numeric_limits<uint8_t> { 
+    static constexpr uint8_t min = 0U;
+    static constexpr uint8_t max = UINT8_MAX;
+}; 
+template <> struct numeric_limits<int8_t> { 
+    static constexpr int8_t min = INT8_MIN;
+    static constexpr int8_t max = INT8_MAX;
+}; 
+template <> struct numeric_limits<uint16_t> { 
+    static constexpr uint16_t min = 0U;
+    static constexpr uint16_t max = UINT16_MAX;
+}; 
+template <> struct numeric_limits<int16_t> { 
+    static constexpr int16_t min = INT16_MIN;
+    static constexpr int16_t max = INT16_MAX;
+}; 
 
-static void test_toWorkingU16(void)
+template <typename TUser,
+          typename TRaw>
+static void test_conversionFactor_t(void) {
+    constexpr TRaw RAW_HALF = numeric_limits<TRaw>::min + (numeric_limits<TRaw>::max-numeric_limits<TRaw>::min)/2;
+    constexpr TRaw RAW_TENTH = RAW_HALF/5;
+    // constexpr TUser USER_HALF = numeric_limits<TUser>::min + (numeric_limits<TUser>::max-numeric_limits<TUser>::min)/2;
+    // constexpr TUser USER_TENTH = USER_HALF/5;
+    // constexpr TRaw RAW_USER_SCALE = (TRaw)((uint32_t)numeric_limits<TUser>::max/(uint32_t)numeric_limits<TRaw>::max);
+    
+    static_assert(sizeof(TUser)>=sizeof(TRaw), "Expected TUser to be >= TRaw");
+    
+    constexpr conversionFactor<TUser, TRaw> IDENTITY = {1, 0};
+    TEST_ASSERT_EQUAL(0, IDENTITY.toUser(0));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max, IDENTITY.toUser(numeric_limits<TRaw>::max));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min, IDENTITY.toUser(numeric_limits<TRaw>::min));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max, IDENTITY.toRaw(numeric_limits<TRaw>::max));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min, IDENTITY.toRaw(numeric_limits<TRaw>::min));
+
+    constexpr conversionFactor<TUser, TRaw> SCALE_ONLY = { 10U, 0};
+    TEST_ASSERT_EQUAL(0, SCALE_ONLY.toUser(0));
+    TEST_ASSERT_EQUAL((numeric_limits<TRaw>::max/10)*10, SCALE_ONLY.toUser(numeric_limits<TRaw>::max/10));
+    TEST_ASSERT_EQUAL((numeric_limits<TRaw>::min/10)*10, SCALE_ONLY.toUser(numeric_limits<TRaw>::min/10));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max/10, SCALE_ONLY.toRaw(SCALE_ONLY.toUser(numeric_limits<TRaw>::max/10)));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min/10, SCALE_ONLY.toRaw(SCALE_ONLY.toUser(numeric_limits<TRaw>::min/10)));
+    TEST_ASSERT_EQUAL(RAW_TENTH, SCALE_ONLY.toRaw(SCALE_ONLY.toUser(RAW_TENTH)));
+
+    constexpr conversionFactor<TUser, TRaw> POSITIVE_TRANSLATE = {1, 33};
+    TEST_ASSERT_EQUAL(33, POSITIVE_TRANSLATE.toUser(0));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max, POSITIVE_TRANSLATE.toUser(numeric_limits<TRaw>::max-33));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min+66, POSITIVE_TRANSLATE.toUser(numeric_limits<TRaw>::min+33));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max, POSITIVE_TRANSLATE.toRaw(POSITIVE_TRANSLATE.toUser(numeric_limits<TRaw>::max)));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min, POSITIVE_TRANSLATE.toRaw(POSITIVE_TRANSLATE.toUser(numeric_limits<TRaw>::min)));
+    TEST_ASSERT_EQUAL(RAW_TENTH, POSITIVE_TRANSLATE.toRaw(POSITIVE_TRANSLATE.toUser(RAW_TENTH)));
+
+    constexpr conversionFactor<TUser, TRaw> NEGATIVE_TRANSLATE = {1, -33};
+    TEST_ASSERT_EQUAL(0, NEGATIVE_TRANSLATE.toUser(33));
+    TEST_ASSERT_EQUAL(33, NEGATIVE_TRANSLATE.toRaw(0));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max-33, NEGATIVE_TRANSLATE.toUser(numeric_limits<TRaw>::max));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min, NEGATIVE_TRANSLATE.toUser(numeric_limits<TRaw>::min+33));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max, NEGATIVE_TRANSLATE.toRaw(NEGATIVE_TRANSLATE.toUser(numeric_limits<TRaw>::max)));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::min, NEGATIVE_TRANSLATE.toRaw(NEGATIVE_TRANSLATE.toUser(numeric_limits<TRaw>::min)));
+    TEST_ASSERT_EQUAL(RAW_TENTH, NEGATIVE_TRANSLATE.toRaw(NEGATIVE_TRANSLATE.toUser(RAW_TENTH)));
+
+    constexpr conversionFactor<TUser, TRaw> SCALE_AND_TRANSLATE = {10, -3};
+    TEST_ASSERT_EQUAL(0, SCALE_AND_TRANSLATE.toUser(3));
+    TEST_ASSERT_EQUAL((numeric_limits<TRaw>::max/10-3)*10, SCALE_AND_TRANSLATE.toUser(numeric_limits<TRaw>::max/10));
+    TEST_ASSERT_EQUAL((numeric_limits<TRaw>::min/10)*10, SCALE_AND_TRANSLATE.toUser((numeric_limits<TRaw>::min/10)+3));
+    TEST_ASSERT_EQUAL(numeric_limits<TRaw>::max/10, SCALE_AND_TRANSLATE.toRaw(SCALE_AND_TRANSLATE.toUser(numeric_limits<TRaw>::max/10)));
+    TEST_ASSERT_EQUAL((numeric_limits<TRaw>::min/10)+3, SCALE_AND_TRANSLATE.toRaw(SCALE_AND_TRANSLATE.toUser((numeric_limits<TRaw>::min/10)+3)));
+    TEST_ASSERT_EQUAL(RAW_TENTH, SCALE_AND_TRANSLATE.toRaw(SCALE_AND_TRANSLATE.toUser(RAW_TENTH)));
+}
+
+static void test_U8U8(void)
 {
-    TEST_ASSERT_EQUAL_UINT16(0, toWorkingU16(IDENTITY, 0));
-    TEST_ASSERT_EQUAL_UINT16(UINT8_MAX, toWorkingU16(IDENTITY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT16(0, toWorkingU16(SCALE_ONLY, 0));
-    TEST_ASSERT_EQUAL_UINT16(10, toWorkingU16(SCALE_ONLY, 1));
-    TEST_ASSERT_EQUAL_UINT16(10U * (uint16_t)UINT8_MAX, toWorkingU16(SCALE_ONLY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT16(POSITIVE_TRANSLATE.translate, toWorkingU16(POSITIVE_TRANSLATE, 0));
-    TEST_ASSERT_EQUAL_UINT16(34, toWorkingU16(POSITIVE_TRANSLATE, 1));
-    TEST_ASSERT_EQUAL_UINT16(33U + (uint16_t)UINT8_MAX, toWorkingU16(POSITIVE_TRANSLATE, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT16(0U, toWorkingU16(NEGATIVE_TRANSLATE, -NEGATIVE_TRANSLATE.translate));
-    TEST_ASSERT_EQUAL_UINT16(1U, toWorkingU16(NEGATIVE_TRANSLATE, -NEGATIVE_TRANSLATE.translate + 1));
-    TEST_ASSERT_EQUAL_UINT16((uint16_t)UINT8_MAX - 33U, toWorkingU16(NEGATIVE_TRANSLATE, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT16(0U, toWorkingU16(SCALE_AND_TRANSLATE, 33));
-    TEST_ASSERT_EQUAL_UINT16(11U, toWorkingU16(SCALE_AND_TRANSLATE, 34));
-    TEST_ASSERT_EQUAL_UINT16(((uint16_t)UINT8_MAX - 33U) * 11, toWorkingU16(SCALE_AND_TRANSLATE, UINT8_MAX));
-
-    // Overflow
-    TEST_ASSERT_EQUAL_UINT16(65173, toWorkingU16(SCALE_AND_TRANSLATE, 0U));
-    TEST_ASSERT_EQUAL_UINT16(UINT16_MAX - 33U + 1U, toWorkingU16(NEGATIVE_TRANSLATE, 0U));
+    test_conversionFactor_t<uint8_t, uint8_t>();
 }
 
-static void test_toWorkingS16(void)
+static void test_S8S8(void)
 {
-    TEST_ASSERT_EQUAL_INT16(0, toWorkingS16(IDENTITY, 0));
-    TEST_ASSERT_EQUAL_INT16(UINT8_MAX, toWorkingS16(IDENTITY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_INT16(0, toWorkingS16(SCALE_ONLY, 0));
-    TEST_ASSERT_EQUAL_INT16(10, toWorkingS16(SCALE_ONLY, 1));
-    TEST_ASSERT_EQUAL_INT16(10U * (int16_t)UINT8_MAX, toWorkingS16(SCALE_ONLY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_INT16(POSITIVE_TRANSLATE.translate, toWorkingS16(POSITIVE_TRANSLATE, 0));
-    TEST_ASSERT_EQUAL_INT16(34, toWorkingS16(POSITIVE_TRANSLATE, 1));
-    TEST_ASSERT_EQUAL_INT16(33U + (int16_t)UINT8_MAX, toWorkingS16(POSITIVE_TRANSLATE, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_INT16(-33, toWorkingS16(NEGATIVE_TRANSLATE, 0U));
-    TEST_ASSERT_EQUAL_INT16((int16_t)UINT8_MAX - 33U, toWorkingS16(NEGATIVE_TRANSLATE, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_INT16(-363, toWorkingS16(SCALE_AND_TRANSLATE, 0));
-    TEST_ASSERT_EQUAL_INT16(0, toWorkingS16(SCALE_AND_TRANSLATE, 33));
-    TEST_ASSERT_EQUAL_INT16(11, toWorkingS16(SCALE_AND_TRANSLATE, 34));
-    TEST_ASSERT_EQUAL_INT16(((int16_t)UINT8_MAX - 33U) * 11, toWorkingS16(SCALE_AND_TRANSLATE, UINT8_MAX));
+    test_conversionFactor_t<int8_t, int8_t>();
 }
 
-
-static void test_toWorkingU32(void)
+static void test_U16U8(void)
 {
-    TEST_ASSERT_EQUAL_UINT32(0, toWorkingU32(IDENTITY, 0));
-    TEST_ASSERT_EQUAL_UINT32(UINT8_MAX, toWorkingU32(IDENTITY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT32(0, toWorkingU32(SCALE_ONLY, 0));
-    TEST_ASSERT_EQUAL_UINT32(10, toWorkingU32(SCALE_ONLY, 1));
-    TEST_ASSERT_EQUAL_UINT32(10U * (uint32_t)UINT8_MAX, toWorkingU32(SCALE_ONLY, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT32(POSITIVE_TRANSLATE.translate, toWorkingU32(POSITIVE_TRANSLATE, 0));
-    TEST_ASSERT_EQUAL_UINT32(34, toWorkingU32(POSITIVE_TRANSLATE, 1));
-    TEST_ASSERT_EQUAL_UINT32(33U + (uint32_t)UINT8_MAX, toWorkingU32(POSITIVE_TRANSLATE, UINT8_MAX));
-
-    TEST_ASSERT_EQUAL_UINT32(0U, toWorkingU32(NEGATIVE_TRANSLATE, -NEGATIVE_TRANSLATE.translate));
-    TEST_ASSERT_EQUAL_UINT32(1U, toWorkingU32(NEGATIVE_TRANSLATE, -NEGATIVE_TRANSLATE.translate + 1));
-    TEST_ASSERT_EQUAL_UINT32((uint32_t)UINT8_MAX - 33UL, toWorkingU32(NEGATIVE_TRANSLATE, UINT8_MAX));
-    // Overflow
-    // TEST_ASSERT_EQUAL_UINT32(UINT16_MAX - 33U + 1U, toWorkingU32(NEGATIVE_TRANSLATE, 0U));
-
-    TEST_ASSERT_EQUAL_UINT32(0U, toWorkingU32(SCALE_AND_TRANSLATE, 33));
-    TEST_ASSERT_EQUAL_UINT32(11U, toWorkingU32(SCALE_AND_TRANSLATE, 34));
-    TEST_ASSERT_EQUAL_UINT32(((uint32_t)UINT8_MAX - 33UL) * 11, toWorkingU32(SCALE_AND_TRANSLATE, UINT8_MAX));
-    // Overflow
-    // TEST_ASSERT_EQUAL_UINT32(65173, toWorkingU32(SCALE_AND_TRANSLATE, 0U));    
+    test_conversionFactor_t<uint16_t, uint8_t>();
 }
 
-static void test_toRawU8(void) {
-    TEST_ASSERT_EQUAL_UINT8(0, toRawU8(IDENTITY, toWorkingU16(IDENTITY, 0)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(IDENTITY, toWorkingU16(IDENTITY, UINT8_MAX)));
-
-    TEST_ASSERT_EQUAL_UINT8(0, toRawU8(SCALE_ONLY, toWorkingU16(SCALE_ONLY, 0)));
-    TEST_ASSERT_EQUAL_UINT8(10, toRawU8(SCALE_ONLY, toWorkingU16(SCALE_ONLY, 10)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(SCALE_ONLY, toWorkingU16(SCALE_ONLY, UINT8_MAX)));
-
-    TEST_ASSERT_EQUAL_UINT8(0, toRawU8(POSITIVE_TRANSLATE, toWorkingU16(POSITIVE_TRANSLATE, 0)));
-    TEST_ASSERT_EQUAL_UINT8(34, toRawU8(POSITIVE_TRANSLATE, toWorkingU16(POSITIVE_TRANSLATE, 34)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(POSITIVE_TRANSLATE, toWorkingU16(POSITIVE_TRANSLATE, UINT8_MAX)));
-
-    TEST_ASSERT_EQUAL_UINT8(0, toRawU8(NEGATIVE_TRANSLATE, toWorkingU16(NEGATIVE_TRANSLATE, 0U)));
-    TEST_ASSERT_EQUAL_UINT8(33, toRawU8(NEGATIVE_TRANSLATE, toWorkingU16(NEGATIVE_TRANSLATE, 33)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(NEGATIVE_TRANSLATE, toWorkingU16(NEGATIVE_TRANSLATE, UINT8_MAX)));
-
-    TEST_ASSERT_EQUAL_UINT8(33, toRawU8(SCALE_AND_TRANSLATE, toWorkingU16(SCALE_AND_TRANSLATE, 33)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(SCALE_AND_TRANSLATE, toWorkingU16(SCALE_AND_TRANSLATE, UINT8_MAX)));
-
-    TEST_ASSERT_EQUAL_UINT8(0, toRawU8(CONVERT_100_SCALE, toWorkingU16(CONVERT_100_SCALE, 0)));
-    TEST_ASSERT_EQUAL_UINT8(3, toRawU8(CONVERT_100_SCALE, toWorkingU16(CONVERT_100_SCALE, 3)));
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, toRawU8(CONVERT_100_SCALE, toWorkingU16(CONVERT_100_SCALE, UINT8_MAX)));
-
-    // Test division special cases
-    TEST_ASSERT_EQUAL_INT8(UINT8_MAX, toRawU8(CONVERT_100_SCALE, toWorkingU16(CONVERT_100_SCALE, UINT8_MAX)));
-    TEST_ASSERT_EQUAL_INT8(0, toRawU8(CONVERT_100_SCALE, toWorkingU16(CONVERT_100_SCALE, 0)));
-    TEST_ASSERT_EQUAL_INT8(UINT8_MAX, toRawU8(CONVERT_10_SCALE, toWorkingU16(CONVERT_10_SCALE, UINT8_MAX)));
-    TEST_ASSERT_EQUAL_INT8(0, toRawU8(CONVERT_10_SCALE, toWorkingU16(CONVERT_10_SCALE, 0)));
-    TEST_ASSERT_EQUAL_INT8(UINT8_MAX, toRawU8(CONVERT_2_SCALE, toWorkingU16(CONVERT_2_SCALE, UINT8_MAX)));
-    TEST_ASSERT_EQUAL_INT8(0, toRawU8(CONVERT_2_SCALE, toWorkingU16(CONVERT_2_SCALE, 0)));
-    TEST_ASSERT_EQUAL_INT8(992, toRawU8(CONVERT_U16U8_SCALE, INT16_MAX));    
-
-    // Overflow
-    TEST_ASSERT_EQUAL_UINT8(69, toRawU8(SCALE_AND_TRANSLATE, toWorkingU16(SCALE_AND_TRANSLATE, 0)));
-}
-
-
-static void test_temperatureAddOffset(void) {
-    TEST_ASSERT_EQUAL_UINT8(0, temperatureAddOffset(-40));
-    TEST_ASSERT_EQUAL_UINT8(255, temperatureAddOffset(215));
-}
-
-static void test_temperatureRemoveOffset(void) {
-    TEST_ASSERT_EQUAL_INT16(-40, temperatureRemoveOffset(0));
-    TEST_ASSERT_EQUAL_INT16(215, temperatureRemoveOffset(255));
+static void test_S16U8(void)
+{
+    test_conversionFactor_t<int16_t, uint8_t>();
 }
 
 void testUnitConversions(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_toWorkingU16);
-    RUN_TEST(test_toWorkingS16);
-    RUN_TEST(test_toWorkingU32);
-    RUN_TEST(test_toRawU8);
-    RUN_TEST(test_temperatureRemoveOffset);
-    RUN_TEST(test_temperatureAddOffset);
+    RUN_TEST(test_U8U8);
+    RUN_TEST(test_S8S8);
+    RUN_TEST(test_U16U8);
+    RUN_TEST(test_S16U8);
   }
 }
