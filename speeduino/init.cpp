@@ -228,25 +228,6 @@ void initialiseAll(void)
     }
 
     //Once the configs have been loaded, a number of one time calculations can be completed
-    req_fuel_uS = configPage2.reqFuel * 100; //Convert to uS and an int. This is the only variable to be used in calculations
-    inj_opentime_uS = configPage2.injOpen * 100; //Injector open time. Comes through as ms*10 (Eg 15.5ms = 155).
-
-    if(configPage10.stagingEnabled == true)
-    {
-    uint32_t totalInjector = configPage10.stagedInjSizePri + configPage10.stagedInjSizeSec;
-    /*
-        These values are a percentage of the req_fuel value that would be required for each injector channel to deliver that much fuel.
-        Eg:
-        Pri injectors are 250cc
-        Sec injectors are 500cc
-        Total injector capacity = 750cc
-
-        staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
-        staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
-    */
-    staged_req_fuel_mult_pri = (100 * totalInjector) / configPage10.stagedInjSizePri;
-    staged_req_fuel_mult_sec = (100 * totalInjector) / configPage10.stagedInjSizeSec;
-    }
 
     if (configPage4.trigPatternSec == SEC_TRIGGER_POLL && configPage4.TrigPattern == DECODER_MISSING_TOOTH)
     { configPage4.TrigEdgeSec = configPage4.PollLevelPolarity; } // set the secondary trigger edge automatically to correct working value with poll level mode to enable cam angle detection in closed loop vvt.
@@ -286,13 +267,6 @@ void initialiseAll(void)
     if( VSS_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinVSS), vssPulse, RISING); } //Secondary trigger input can safely be used for VSS
     if( FLEX_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); } //Secondary trigger input can safely be used for Flex sensor
 
-    //End crank trigger interrupt attachment
-    if(configPage2.strokes == FOUR_STROKE)
-    {
-      //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
-      req_fuel_uS = req_fuel_uS / 2; //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle. If we're doing more than 1 squirt per cycle then we need to split the amount accordingly. (Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the stroke to make the single squirt on)
-    }
-
     //Initial values for loop times
     currentLoopTime = micros_safe();
     mainLoopCount = 0;
@@ -306,7 +280,7 @@ void initialiseAll(void)
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
 
-    maxInjOutputs = 1; // Disable all injectors expect channel 1
+    currentStatus.maxInjOutputs = 1; // Disable all injectors expect channel 1
 
     ignition1EndAngle = 0;
     ignition2EndAngle = 0;
@@ -332,8 +306,8 @@ void initialiseAll(void)
     case 1:
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
-        maxIgnOutputs = 1;
-        maxInjOutputs = 1;
+        currentStatus.maxIgnOutputs= 1;
+        currentStatus.maxInjOutputs = 1;
 
         //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -342,13 +316,12 @@ void initialiseAll(void)
         {
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          maxInjOutputs = 2;
+          currentStatus.maxInjOutputs = 2;
           channel2InjDegrees = channel1InjDegrees;
         }
         break;
@@ -356,8 +329,8 @@ void initialiseAll(void)
     case 2:
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
-        maxIgnOutputs = 2;
-        maxInjOutputs = 2;
+        currentStatus.maxIgnOutputs= 2;
+        currentStatus.maxInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
         else { channel2IgnDegrees = configPage2.oddfire2; }
 
@@ -368,7 +341,6 @@ void initialiseAll(void)
         {
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
         //The below are true regardless of whether this is running sequential or not
         if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
@@ -383,7 +355,7 @@ void initialiseAll(void)
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          maxInjOutputs = 4;
+          currentStatus.maxInjOutputs = 4;
 
           channel3InjDegrees = channel1InjDegrees;
           channel4InjDegrees = channel2InjDegrees;
@@ -393,8 +365,8 @@ void initialiseAll(void)
 
     case 3:
         channel1IgnDegrees = 0;
-        maxIgnOutputs = 3;
-        maxInjOutputs = 3;
+        currentStatus.maxIgnOutputs= 3;
+        currentStatus.maxInjOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
           //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
@@ -460,7 +432,6 @@ void initialiseAll(void)
           }
           else
           {
-            req_fuel_uS = req_fuel_uS * 2;
             channel1InjDegrees = 0;
             channel2InjDegrees = 240;
             channel3InjDegrees = 480;
@@ -479,14 +450,14 @@ void initialiseAll(void)
         if(configPage10.stagingEnabled == true)
         {
           #if INJ_CHANNELS >= 6
-            maxInjOutputs = 6;
+            currentStatus.maxInjOutputs = 6;
 
             channel4InjDegrees = channel1InjDegrees;
             channel5InjDegrees = channel2InjDegrees;
             channel6InjDegrees = channel3InjDegrees;
           #else
             //Staged output is on channel 4
-            maxInjOutputs = 4;
+            currentStatus.maxInjOutputs = 4;
             channel4InjDegrees = channel1InjDegrees;
           #endif
         }
@@ -494,8 +465,8 @@ void initialiseAll(void)
     case 4:
         channel1IgnDegrees = 0;
         channel1InjDegrees = 0;
-        maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
-        maxInjOutputs = 2;
+        currentStatus.maxIgnOutputs= 2; //Default value for 4 cylinder, may be changed below
+        currentStatus.maxInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE )
         {
           channel2IgnDegrees = 180;
@@ -506,14 +477,14 @@ void initialiseAll(void)
             channel4IgnDegrees = 540;
 
             CRANK_ANGLE_MAX_IGN = 720;
-            maxIgnOutputs = 4;
+            currentStatus.maxIgnOutputs= 4;
           }
           if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
             channel3IgnDegrees = 0;
             channel4IgnDegrees = 180;
-            maxIgnOutputs = 4;
+            currentStatus.maxIgnOutputs= 4;
 
             configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
           }
@@ -523,7 +494,7 @@ void initialiseAll(void)
           channel2IgnDegrees = configPage2.oddfire2;
           channel3IgnDegrees = configPage2.oddfire3;
           channel4IgnDegrees = configPage2.oddfire4;
-          maxIgnOutputs = 4;
+          currentStatus.maxIgnOutputs= 4;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -550,28 +521,27 @@ void initialiseAll(void)
           channel3InjDegrees = 360;
           channel4InjDegrees = 540;
 
-          maxInjOutputs = 4;
+          currentStatus.maxInjOutputs = 4;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
         else
         {
           //Should never happen, but default values
-          maxInjOutputs = 2;
+          currentStatus.maxInjOutputs = 2;
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          maxInjOutputs = 4;
+          currentStatus.maxInjOutputs = 4;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
             //Staging with 4 cylinders semi/sequential requires 8 total channels
             #if INJ_CHANNELS >= 8
-              maxInjOutputs = 8;
+              currentStatus.maxInjOutputs = 8;
 
               channel5InjDegrees = channel1InjDegrees;
               channel6InjDegrees = channel2InjDegrees;
@@ -581,7 +551,7 @@ void initialiseAll(void)
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existent channel 5
               #if (INJ_CHANNELS >= 5)
-              maxInjOutputs = 5;
+              currentStatus.maxInjOutputs = 5;
               channel5InjDegrees = channel1InjDegrees;
               #endif
             #endif
@@ -602,8 +572,8 @@ void initialiseAll(void)
 #if (IGN_CHANNELS >= 5)
         channel5IgnDegrees = 288;
 #endif
-        maxIgnOutputs = 5; //Only 4 actual outputs, so that's all that can be cut
-        maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
+        currentStatus.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
+        currentStatus.maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -653,24 +623,23 @@ void initialiseAll(void)
           channel4InjDegrees = 432;
           channel5InjDegrees = 576;
 
-          maxInjOutputs = 5;
+          currentStatus.maxInjOutputs = 5;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
     #endif
 
     #if INJ_CHANNELS >= 6
-          if(configPage10.stagingEnabled == true) { maxInjOutputs = 6; }
+          if(configPage10.stagingEnabled == true) { currentStatus.maxInjOutputs = 6; }
     #endif
         break;
     case 6:
         channel1IgnDegrees = 0;
         channel2IgnDegrees = 120;
         channel3IgnDegrees = 240;
-        maxIgnOutputs = 3;
-        maxInjOutputs = 3;
+        currentStatus.maxIgnOutputs= 3;
+        currentStatus.maxInjOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -679,7 +648,7 @@ void initialiseAll(void)
         channel5IgnDegrees = 480;
         channel6IgnDegrees = 600;
         CRANK_ANGLE_MAX_IGN = 720;
-        maxIgnOutputs = 6;
+        currentStatus.maxIgnOutputs= 6;
         }
     #endif
 
@@ -714,21 +683,20 @@ void initialiseAll(void)
           channel5InjDegrees = 480;
           channel6InjDegrees = 600;
 
-          maxInjOutputs = 6;
+          currentStatus.maxInjOutputs = 6;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
         else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
         {
-          maxInjOutputs = 6;
+          currentStatus.maxInjOutputs = 6;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
             //Staging with 6 cylinders semi/sequential requires 7 total channels
             #if INJ_CHANNELS >= 7
-              maxInjOutputs = 7;
+              currentStatus.maxInjOutputs = 7;
 
               channel5InjDegrees = channel1InjDegrees;
               channel6InjDegrees = channel2InjDegrees;
@@ -737,7 +705,7 @@ void initialiseAll(void)
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //No staging output will be active
-              maxInjOutputs = 6;
+              currentStatus.maxInjOutputs = 6;
             #endif
           }
         }
@@ -748,13 +716,13 @@ void initialiseAll(void)
         channel2IgnDegrees = 90;
         channel3IgnDegrees = 180;
         channel4IgnDegrees = 270;
-        maxIgnOutputs = 4;
-        maxInjOutputs = 4;
+        currentStatus.maxIgnOutputs= 4;
+        currentStatus.maxInjOutputs = 4;
 
 
         if( (configPage4.sparkMode == IGN_MODE_SINGLE))
         {
-          maxIgnOutputs = 4;
+          currentStatus.maxIgnOutputs= 4;
           CRANK_ANGLE_MAX_IGN = 360;
         }
     
@@ -766,7 +734,7 @@ void initialiseAll(void)
         channel6IgnDegrees = 450;
         channel7IgnDegrees = 540;
         channel8IgnDegrees = 630;
-        maxIgnOutputs = 8;
+        currentStatus.maxIgnOutputs= 8;
         CRANK_ANGLE_MAX_IGN = 720;
         }
     #endif
@@ -808,11 +776,10 @@ void initialiseAll(void)
           channel7InjDegrees = 540;
           channel8InjDegrees = 630;
 
-          maxInjOutputs = 8;
+          currentStatus.maxInjOutputs = 8;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
-          req_fuel_uS = req_fuel_uS * 2;
         }
     #endif
 
@@ -1204,8 +1171,8 @@ void initialiseAll(void)
     currentStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
        tachoSweepIncr is also the number of tach pulses per second */
-    tachoSweepIncr = configPage2.tachoSweepMaxRPM * maxIgnOutputs * 5 / 3;
-    
+    tachoSweepIncr = configPage2.tachoSweepMaxRPM * currentStatus.maxIgnOutputs * 5 / 3;
+   
     currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 
@@ -3650,7 +3617,6 @@ void changeHalfToFullSync(void)
   if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
   {
     CRANK_ANGLE_MAX_INJ = 720;
-    req_fuel_uS *= 2;
     
     fuelSchedule1.pStartFunction = openInjector1;
     fuelSchedule1.pEndFunction = closeInjector1;
@@ -3680,15 +3646,15 @@ void changeHalfToFullSync(void)
     switch (configPage2.nCylinders)
     {
       case 4:
-        maxInjOutputs = 4;
+        currentStatus.maxInjOutputs = 4;
         break;
             
       case 6:
-        maxInjOutputs = 6;
+        currentStatus.maxInjOutputs = 6;
         break;
 
       case 8:
-        maxInjOutputs = 8;
+        currentStatus.maxInjOutputs = 8;
         break;
 
       default:
@@ -3702,7 +3668,7 @@ void changeHalfToFullSync(void)
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
   {
     CRANK_ANGLE_MAX_IGN = 720;
-    maxIgnOutputs = configPage2.nCylinders;
+    currentStatus.maxIgnOutputs = configPage2.nCylinders;
     switch (configPage2.nCylinders)
     {
     case 4:
@@ -3748,7 +3714,6 @@ void changeFullToHalfSync(void)
   if(configPage2.injLayout == INJ_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_INJ = 360;
-    req_fuel_uS /= 2;
     switch (configPage2.nCylinders)
     {
       case 4:
@@ -3766,7 +3731,7 @@ void changeFullToHalfSync(void)
           fuelSchedule2.pStartFunction = openInjector2and3;
           fuelSchedule2.pEndFunction = closeInjector2and3;
         }
-        maxInjOutputs = 2;
+        currentStatus.maxInjOutputs = 2;
         break;
             
       case 6:
@@ -3776,7 +3741,7 @@ void changeFullToHalfSync(void)
         fuelSchedule2.pEndFunction = closeInjector2and5;
         fuelSchedule3.pStartFunction = openInjector3and6;
         fuelSchedule3.pEndFunction = closeInjector3and6;
-        maxInjOutputs = 3;
+        currentStatus.maxInjOutputs = 3;
         break;
 
       case 8:
@@ -3788,7 +3753,7 @@ void changeFullToHalfSync(void)
         fuelSchedule3.pEndFunction = closeInjector3and7;
         fuelSchedule4.pStartFunction = openInjector4and8;
         fuelSchedule4.pEndFunction = closeInjector4and8;
-        maxInjOutputs = 4;
+        currentStatus.maxInjOutputs = 4;
         break;
     }
   }
@@ -3796,7 +3761,7 @@ void changeFullToHalfSync(void)
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_IGN = 360;
-    maxIgnOutputs = configPage2.nCylinders / 2;
+    currentStatus.maxIgnOutputs = configPage2.nCylinders / 2;
     switch (configPage2.nCylinders)
     {
       case 4:
