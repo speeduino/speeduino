@@ -184,6 +184,13 @@ static inline uint32_t div360(uint32_t n) {
 #endif
 }
 
+/** @brief This is only here to eliminate magic numbers
+ * 
+ * DO NOT USE UNLESS YOU REALLY ARE WORKING IN PERCENTAGES - it will be very
+ * confusing for maintainers (which is what we are trying to avoid!)
+ */
+static constexpr uint8_t ONE_HUNDRED_PCT = 100U;
+
 /**
  * @brief Integer based percentage calculation.
  * 
@@ -191,7 +198,7 @@ static inline uint32_t div360(uint32_t n) {
  * @param value The value to operate on
  * @return uint32_t 
  */
-static inline uint32_t percentage(uint8_t percent, uint32_t value) 
+static inline uint32_t percentage(uint16_t percent, uint32_t value) 
 {
     return (uint32_t)div100((uint32_t)value * (uint32_t)percent);
 }
@@ -229,13 +236,18 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(__AVR__)
-
-static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
+/**
+ * @brief Will the result of dividing fit into a uint16_t?
+ * 
+ * @param dividend The dividend (numerator)
+ * @param divisor The divisor (denominator)
+ * @return true If the result would fit 
+ * @return false If the result requires >16 bits
+ */
+static constexpr inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
   return divisor>(uint16_t)(dividend>>16U);
 }
 
-#endif
 /**
  * @brief Optimised division: uint32_t/uint16_t => uint16_t
  * 
@@ -290,7 +302,6 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
     return dividend / divisor;
 #endif
 }
-
 
 /**
  * @brief Same as udiv_32_16(), except this will round to nearest integer 
