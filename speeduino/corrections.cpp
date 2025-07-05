@@ -199,7 +199,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
 TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
 {
   // We use aseTaper both to track taper AND as a flag value
-  // to tell when ASE is complete and avoid unecessary table lookups.
+  // to tell when ASE is complete and avoid unnecessary table lookups.
   constexpr uint8_t ASE_COMPLETE = UINT8_MAX;
   static uint8_t aseTaper = 0U;
 
@@ -450,7 +450,7 @@ static inline bool tpsShouldStartAe(void) {
 static inline uint16_t tpsComputeAe(void) {
   uint16_t aeEnrichment = 0U;
 
-  //Check if the TPS rate of change is negative or positive. Negative means decelaration.
+  //Check if the TPS rate of change is negative or positive. Negative means deceleration.
   if (currentStatus.tpsDOT < 0) {
     aeEnrichment = calcDeccelEnrichment();
   } else {
