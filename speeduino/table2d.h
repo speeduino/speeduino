@@ -93,8 +93,11 @@ struct Bin {
   const T upperValue(void) const noexcept { return _upperValue; }
   const T lowerValue(void) const noexcept { return _lowerValue; }
 
+  static bool withinBin(const T &value, const T &min, const T&max) noexcept {
+    return (value <= max) && (value > min);
+  }
   bool withinBin(const T value) const noexcept {
-    return (value <= _upperValue) && (value > _lowerValue);
+    return withinBin(value, lowerValue(), upperValue());
   }
 
   uint8_t upperIndex;

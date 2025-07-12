@@ -149,6 +149,17 @@ static void test_table2dLookup_underMin(const table2D<axis_t, value_t, sizeT> &t
     TEST_ASSERT_EQUAL(1, table.cache.lastBinUpperIndex);
 }
 
+static void test_withinBin(void) {
+  //Tests the Bin::withinBin function
+  //This is used to check that the value is within the bin range
+  _table2d_detail::Bin<uint16_t> testBin(0, 10, 5);
+  TEST_ASSERT_FALSE(testBin.withinBin(4));
+  TEST_ASSERT_FALSE(testBin.withinBin(5));
+  TEST_ASSERT_TRUE(testBin.withinBin(6));
+  TEST_ASSERT_TRUE(testBin.withinBin(10));
+  TEST_ASSERT_FALSE(testBin.withinBin(11));
+}
+
 static void test_table2dLookup_underMin(void)
 {
     test_table2dLookup_underMin(table2d_u8_u8);
@@ -209,5 +220,6 @@ void testTable2d()
     RUN_TEST(test_table2dLookup_bin_66);
     RUN_TEST(test_table2dLookup_bin_edges);
     RUN_TEST(test_lookup_perf);
+    RUN_TEST(test_withinBin);
   }
 }

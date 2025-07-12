@@ -18,7 +18,6 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
-#include "table3d_axis_io.h"
 #include BOARD_H
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
@@ -908,10 +907,9 @@ namespace {
 
   inline void send_table_axis(table_axis_iterator it)
   {
-    const table3d_axis_io_converter converter = get_table3d_axis_converter(it.get_domain());
     while (!it.at_end())
     {
-      primarySerial.write(converter.to_byte(*it));
+      primarySerial.write(*it);
       ++it;
     }
   }
@@ -1017,7 +1015,7 @@ namespace {
 
   void print_row(const table_axis_iterator &y_it, table_row_iterator row)
   {
-    serial_print_prepadded_value(get_table3d_axis_converter(y_it.get_domain()).to_byte(*y_it));
+    serial_print_prepadded_value(*y_it);
 
     while (!row.at_end())
     {
@@ -1032,11 +1030,10 @@ namespace {
     primarySerial.print(F("    "));
 
     auto x_it = x_begin(pTable, key);
-    const table3d_axis_io_converter converter = get_table3d_axis_converter(x_it.get_domain());
 
     while(!x_it.at_end())
     {
-      serial_print_prepadded_value(converter.to_byte(*x_it));
+      serial_print_prepadded_value(*x_it);
       ++x_it;
     }
   }

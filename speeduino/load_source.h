@@ -25,7 +25,7 @@ enum LoadSource {
  * @param current The current system state, from which the load is computed.
  * @return The load.
  */
-static inline int16_t getLoad(LoadSource algorithm, const statuses &current) {
+static inline uint16_t getLoad(LoadSource algorithm, const statuses &current) {
   if (algorithm == LOAD_SOURCE_TPS)
   {
     //Alpha-N
@@ -34,9 +34,9 @@ static inline int16_t getLoad(LoadSource algorithm, const statuses &current) {
   else if (algorithm == LOAD_SOURCE_IMAPEMAP)
   {
     //IMAP / EMAP
-    return ((int16_t)current.MAP * 100) / current.EMAP;
+    return ((uint16_t)current.MAP * 100U) / current.EMAP;
   } else {
     // LOAD_SOURCE_MAP (the default). Aka Speed Density
-    return current.MAP;
+    return (uint16_t)current.MAP;
   }
 }

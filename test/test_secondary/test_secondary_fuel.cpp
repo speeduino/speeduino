@@ -5,8 +5,8 @@
 #include "../test_utils.h"
 #include "storage.h"
 
-TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
-TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
+TEST_DATA_P table3d_axis_t tempXAxis[] = {500U/100U, 700U/100U, 900U/100U, 1200U/100U, 1600U/100U, 2000U/100U, 2500U/100U, 3100U/100U, 3500U/100U, 4100U/100U, 4700U/100U, 5300U/100U, 5900U/100U, 6500U/100U, 6750U/100U, 7000U/100U};
+TEST_DATA_P table3d_axis_t tempYAxis[] = {16U/2U, 26U/2U, 30U/2U, 36U/2U, 40U/2U, 46U/2U, 50U/2U, 56U/2U, 60U/2U, 66U/2U, 70U/2U, 76U/2U, 86U/2U, 90U/2U, 96U/2U, 100U/2U};
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_off(const statuses &current, uint8_t expectedVE) {
     TEST_ASSERT_BIT_LOW(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
