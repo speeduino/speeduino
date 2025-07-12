@@ -920,7 +920,7 @@ static inline bool isWMIAdvanceEnabled(void) {
 
 static inline bool isWMIAdvanceOperational(void) {
   return (currentStatus.TPS >= configPage10.wmiTPS) 
-      && (currentStatus.RPM >= configPage10.wmiRPM) 
+      && (currentStatus.RPM >= RPM_COARSE.toUser(configPage10.wmiRPM)) 
       && (currentStatus.MAP >= (int32_t)MAP.toUser(configPage10.wmiMAP)) 
       && (temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT);
 }

@@ -144,9 +144,9 @@ static void setup_WMIAdv(void) {
     configPage10.wmiTPS = 50;
     currentStatus.TPS = configPage10.wmiTPS + 1;
     configPage10.wmiRPM = 30;
-    currentStatus.RPM = configPage10.wmiRPM + 1U;
+    currentStatus.RPM = RPM_COARSE.toUser(configPage10.wmiRPM + 1U);
     configPage10.wmiMAP = 35;
-    currentStatus.MAP = (configPage10.wmiMAP*2L)+1L;
+    currentStatus.MAP = MAP.toUser(configPage10.wmiMAP+1L);
     configPage10.wmiIAT = 155;
     currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT) + 1;
 
