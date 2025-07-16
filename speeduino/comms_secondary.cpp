@@ -44,7 +44,7 @@ void secondserial_Command(void)
   {
     pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
     serialReceive();
-    //while(secondarySerial.available()) { secondarySerial.read(); } //Reported to cause potential issues on stm32
+    if(serialStatusFlag == SERIAL_INACTIVE) { pPrimarySerial = &Serial; } //Reset serial to primary to ensure other requests can be handled. 
     return;
   }
 
