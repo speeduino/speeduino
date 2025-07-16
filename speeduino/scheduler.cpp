@@ -296,27 +296,27 @@ extern void beginInjectorPriming(void)
   if( (primingValue > 0) && (currentStatus.TPS <= configPage4.floodClear) )
   {
     primingValue = primingValue * 100 * 5; //to achieve long enough priming pulses, the values in tuner studio are divided by 0.5 instead of 0.1, so multiplier of 5 is required.
-    if ( maxInjOutputs >= 1 ) { setFuelSchedule(fuelSchedule1, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 1 ) { setFuelSchedule(fuelSchedule1, 100, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( maxInjOutputs >= 2 ) { setFuelSchedule(fuelSchedule2, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 2 ) { setFuelSchedule(fuelSchedule2, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( maxInjOutputs >= 3 ) { setFuelSchedule(fuelSchedule3, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 3 ) { setFuelSchedule(fuelSchedule3, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( maxInjOutputs >= 4 ) { setFuelSchedule(fuelSchedule4, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 4 ) { setFuelSchedule(fuelSchedule4, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( maxInjOutputs >= 5 ) { setFuelSchedule(fuelSchedule5, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 5 ) { setFuelSchedule(fuelSchedule5, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( maxInjOutputs >= 6 ) { setFuelSchedule(fuelSchedule6, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 6 ) { setFuelSchedule(fuelSchedule6, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( maxInjOutputs >= 7) { setFuelSchedule(fuelSchedule7, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 7) { setFuelSchedule(fuelSchedule7, 100, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( maxInjOutputs >= 8 ) { setFuelSchedule(fuelSchedule8, 100, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 8 ) { setFuelSchedule(fuelSchedule8, 100, primingValue); }
 #endif
   }
 }
