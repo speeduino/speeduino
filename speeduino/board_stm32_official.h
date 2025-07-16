@@ -202,7 +202,11 @@ void jumpToBootloader();
 * 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
 #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
+
+/** @brief Convert a time in microseconds to the equivalent number of timer ticks */
+static inline constexpr COMPARE_TYPE convertMicroSecToTicks(uint32_t uS) {
+  return (COMPARE_TYPE)(uS >> 2U);
+}
 
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT
