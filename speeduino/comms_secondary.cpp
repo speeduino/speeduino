@@ -24,8 +24,9 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "comms_legacy.h"
 #include "logger.h"
 #include "page_crc.h"
+#include "RealdashCan.h"
 #include BOARD_H
-
+RdCanSender rdCanSender1;
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
 
@@ -55,6 +56,7 @@ void secondserial_Command(void)
   {
     case 'A': 
       // sends a fixed 75 bytes of data. Used by Real Dash (Among others)
+    
       if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_GENERIC_FIXED) { sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag, &getLegacySecondarySerialLogEntry); } // Send values using the legacy fixed byte order
       else { sendValues(0, CAN_PACKET_SIZE, 0x31, secondarySerial, serialSecondaryStatusFlag); } //send values to serial3 using the order in the ini file
       break;
@@ -154,8 +156,39 @@ void secondserial_Command(void)
        break;
   }
   #endif
-} 
-    
+}
+
+void RealdashCAN(void)
+{
+  static uint16_t contrl = 0; 
+
+  static uint16_t baseId = 0x200;
+
+  if (contrl < LOG_ENTRY_SIZE)
+  {
+    rdCanSender1.sendRdCanFrame(
+        baseId,
+        getTSLogEntry(contrl),
+        getTSLogEntry(contrl + 1),
+        getTSLogEntry(contrl + 2),
+        getTSLogEntry(contrl + 3),
+        getTSLogEntry(contrl + 4),
+        getTSLogEntry(contrl + 5),
+        getTSLogEntry(contrl + 6),
+        getTSLogEntry(contrl + 7));
+
+    baseId++;
+    contrl = (contrl + 8);
+
+    if (contrl >= LOG_ENTRY_SIZE)
+
+    {
+      baseId = 0x200;
+      contrl = 0;
+    }
+  }
+}
+
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
