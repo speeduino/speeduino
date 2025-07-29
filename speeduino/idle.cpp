@@ -100,25 +100,11 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_OL:
       //Case 2 is PWM open loop
-      #if defined(CORE_AVR)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY35)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY41)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
       enableIdle();
       break;
 
     case IAC_ALGORITHM_PWM_OLCL:
       //Case 6 is PWM closed loop with open loop table used as feed forward
-      #if defined(CORE_AVR)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY35)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY41)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
       idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on
@@ -130,13 +116,6 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
-      #if defined(CORE_AVR)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY35)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #elif defined(CORE_TEENSY41)
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
       idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
       idlePID.SetMode(AUTOMATIC); //Turn PID on

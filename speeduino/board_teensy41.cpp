@@ -54,6 +54,8 @@ void initBoard()
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
       PIT_TCTRL0 |= PIT_TCTRL_TEN; // start Timer 1
       PIT_LDVAL0 = 1; //1 * 2uS = 2uS
+
+      idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*

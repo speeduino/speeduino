@@ -121,11 +121,30 @@
   static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
   static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-  //Bus Clock is 150Mhz @ 600 Mhz CPU. Need to handle this dynamically in the future for other frequencies
+  // Need to handle this dynamically in the future for other frequencies
   //#define TMR_PRESCALE  128
-  //#define MAX_TIMER_PERIOD ((65535 * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
-  #define MAX_TIMER_PERIOD 55923UL
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  //#define MAX_TIMER_PERIOD ((65535U * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
+  #if F_CPU == 600000000  
+    //Bus Clock is 150Mhz @ 600 Mhz CPU.
+    #define MAX_TIMER_PERIOD 55923UL //Time per tick = 0.8533333
+    #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #elif F_CPU == 528000000
+    //Bus Clock is 132Mhz @ 528 Mhz CPU.
+    #define MAX_TIMER_PERIOD 63549UL //Time per tick = 0.96969696
+    #define uS_TO_TIMER_COMPARE(uS) ((uS * 66UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #elif F_CPU == 450000000
+    //Bus Clock is 150Mhz @ 450 Mhz CPU.
+    #define MAX_TIMER_PERIOD 55923UL //Time per tick = 0.8533333
+    #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #elif F_CPU == 396000000
+    //Bus Clock is 132Mhz @ 396 Mhz CPU.
+    #define MAX_TIMER_PERIOD 63549UL //Time per tick = 0.96969696
+    #define uS_TO_TIMER_COMPARE(uS) ((uS * 66UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #elif F_CPU == 150000000
+    //Bus Clock is 75Mhz @ 150 Mhz CPU.
+    #define MAX_TIMER_PERIOD 111846UL //Time per tick = 1.706666
+    #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 7) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #endif
   /*
   To calculate the above uS_TO_TIMER_COMPARE
   Choose number of bit of precision. Eg: 6
