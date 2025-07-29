@@ -182,7 +182,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.startRevolutions = 0;
       resetMAPcycleAndEvent();
       currentStatus.rpmDOT = 0;
-      AFRnextCycle = 0;
+      initialiseCorrections();
       ignitionCount = 0;
       ignitionChannelsOn = 0;
       fuelChannelsOn = 0;
@@ -207,10 +207,11 @@ void __attribute__((always_inline)) loop(void)
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
+    readPolledSensors(LOOP_TIMER);
+
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
-      readMAP();
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
     {
@@ -227,7 +228,6 @@ void __attribute__((always_inline)) loop(void)
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(50);
       #endif
-
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -238,14 +238,6 @@ void __attribute__((always_inline)) loop(void)
       vvtControl();
       //Water methanol injection
       wmiControl();
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
-      if (configPage2.canWBO == 0)
-      {
-        readO2();
-        readO2_2();
-      }
       
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(30);
@@ -261,9 +253,6 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
-      #if TPS_READ_FREQUENCY == 15
-        readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-      #endif
       #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -305,14 +294,10 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
-      //The IAT and CLT readings can be done less frequently (4 times per second)
-      readCLT();
-      readIAT();
-      readBat();
       nitrousControl();
 
       //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
-      if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
+      if( (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = (byte)table2D_getValue(&idleTargetTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         if(BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON)) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
@@ -386,7 +371,6 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
-      readBaro(); //Infrequent baro readings are not an issue.
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
@@ -799,7 +783,7 @@ void __attribute__((always_inline)) loop(void)
       uint16_t maxAllowedRPM = checkRevLimit(); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
       //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
       if( checkEngineProtect() && (configPage4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = configPage4.engineProtectMaxRPM; }
-      if ( (currentStatus.launchingHard == true) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
+      if (BIT_CHECK(currentStatus.status2, BIT_STATUS2_HLAUNCH) && (configPage6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = configPage6.lnchHardLim; }
       maxAllowedRPM = maxAllowedRPM * 100; //All of the above limits are divided by 100, convert back to RPM
       if ( (currentStatus.flatShiftingHard == true) && (currentStatus.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = currentStatus.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
     
@@ -1667,7 +1651,6 @@ void checkLaunchAndFlatShift()
   if(currentStatus.clutchTrigger && (currentStatus.previousClutchTrigger != currentStatus.clutchTrigger) ) { currentStatus.clutchEngagedRPM = currentStatus.RPM; } //Check whether the clutch has been engaged or disengaged and store the current RPM if so
 
   //Default flags to off
-  currentStatus.launchingHard = false; 
   BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
   currentStatus.flatShiftingHard = false;
 
@@ -1683,7 +1666,6 @@ void checkLaunchAndFlatShift()
       if(currentStatus.RPM > launchRPMLimit)
       {
         //HardCut rev limit for 2-step launch control.
-        currentStatus.launchingHard = true; 
         BIT_SET(currentStatus.status2, BIT_STATUS2_HLAUNCH); 
       }
     }
