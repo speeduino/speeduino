@@ -389,4 +389,10 @@ STM32RTC& rtc = STM32RTC::getInstance();
   void ignitionSchedule8Interrupt(HardwareTimer*){ignitionSchedule8Interrupt();}
   #endif
   #endif //End core<=1.8
+
+uint8_t getSystemTemp()
+{
+  //stm32F4xx does have an internal temperature sensor, but needs to be implemented
+  return 0;
+}
 #endif

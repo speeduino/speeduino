@@ -185,6 +185,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 136: statusValue = lowByte(currentStatus.PW8); break;
     case 137: statusValue = highByte(currentStatus.PW8); break;
 
+    case 138: statusValue = currentStatus.systemTemp; break;
     default: statusValue = 0; // MISRA check
   }
 
@@ -318,6 +319,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 98: statusValue = currentStatus.PW7; break;
     case 100: statusValue = currentStatus.PW8; break;
 
+    case 102: statusValue = currentStatus.systemTemp; break;
     default: statusValue = 0; // MISRA check
   }
 

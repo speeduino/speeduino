@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include <InternalTemperature.h>
 
 /*
   //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
@@ -393,6 +394,11 @@ void teensy41_customSerialBegin()
     if (elapsed > 100) break;
     yield();
   }
+}
+
+uint8_t getSystemTemp()
+{
+  return trunc(InternalTemperature.readTemperatureC());
 }
 
 #endif

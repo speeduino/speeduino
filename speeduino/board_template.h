@@ -19,6 +19,7 @@
   uint16_t freeRam();
   void doSystemReset();
   void jumpToBootloader();
+  uint8_t getSystemTemp();
 
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 

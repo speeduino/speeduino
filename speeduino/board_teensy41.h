@@ -15,6 +15,7 @@
   void teensy41_customSerialBegin();
   bool pinIsSerial(uint8_t);
   time_t getTeensy3Time();
+  uint8_t getSystemTemp();
   #define PORT_TYPE uint32_t //Size of the port variables
   #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint16_t

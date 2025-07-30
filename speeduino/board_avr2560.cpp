@@ -136,4 +136,10 @@ static inline unsigned long micros_safe(void)
 } 
 #endif //TIMER5_MICROS
 
+uint8_t getSystemTemp()
+{
+  //AVR2560 has no internal temperature monitoring, just return 0. 
+  return 0;
+}
+
 #endif //CORE_AVR

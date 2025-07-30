@@ -386,6 +386,7 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
+      currentStatus.systemTemp = getSystemTemp();
       readBaro(); //Infrequent baro readings are not an issue.
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )

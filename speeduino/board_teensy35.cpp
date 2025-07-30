@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include <InternalTemperature.h>
 
 /*
   //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
@@ -418,5 +419,10 @@ time_t getTeensy3Time()
 
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
+
+uint8_t getSystemTemp()
+{
+  return trunc(InternalTemperature.readTemperatureC());
+}
 
 #endif

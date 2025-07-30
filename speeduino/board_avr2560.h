@@ -33,6 +33,7 @@
   uint16_t freeRam(void);
   void doSystemReset(void);
   void jumpToBootloader(void);
+  uint8_t getSystemTemp();
 
   #if defined(TIMER5_MICROS)
     /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
