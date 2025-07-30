@@ -40,6 +40,7 @@ jobs:
             lib_deps: |
               - name: SDfat
               - name: SimplyAtomic
+              - name: InternalTemperature
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -51,6 +52,7 @@ jobs:
             lib_deps: |
               - name: SDfat
               - name: SimplyAtomic
+              - name: InternalTemperature
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
