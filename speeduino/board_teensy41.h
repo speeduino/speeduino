@@ -145,6 +145,8 @@
     //Bus Clock is 75Mhz @ 150 Mhz CPU.
     #define MAX_TIMER_PERIOD 111846UL //Time per tick = 1.706666
     #define uS_TO_TIMER_COMPARE(uS) ((uS * 75UL) >> 7) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
+  #else
+    #error Unsupported CPU frequency. 
   #endif
   /*
   To calculate the above uS_TO_TIMER_COMPARE
@@ -152,6 +154,7 @@
   Divide 2^6 by the time per tick (0.853333) = 75
   Multiply and bitshift back by the precision: (uS * 75) >> 6
   */
+
 
 /*
 ***********************************************************************************************************
