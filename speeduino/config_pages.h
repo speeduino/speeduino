@@ -953,7 +953,7 @@ struct config13 {
 #endif
 
 /**
-Page 15 - second page for VVT and boost control.
+Page 15 - second page for VVT, boost control and DBW.
 256 bytes long. 
 */
 struct config15 {
@@ -992,9 +992,19 @@ struct config15 {
 
   int8_t rollingProtRPMDelta[4]; // Signed RPM value representing how much below the RPM limit. Divided by 10
   byte rollingProtCutPercent[4];
+
+  uint16_t dbwCANaddress;
+  uint8_t dbwTarget_min;
+  uint16_t dbwTarget_max;
+  uint8_t dbwThrottlePos_min;
+  uint16_t dbwThrottlePos_max;
+  uint8_t dbwPedal_min;
+  uint16_t dbwPedal_max;
   
   //Bytes 106-255
-  byte Unused15_106_255[150];
+  byte Unused15_117_175[59];
+
+  //Final 80 bytes are taken up by the 8x8 DBW table
 
 #if defined(CORE_AVR)
   };

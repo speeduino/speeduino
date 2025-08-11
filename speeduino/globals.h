@@ -218,6 +218,7 @@ extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
 extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
+extern struct table3d8RpmLoad dbwTable; //8x8 dbw map
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
 extern volatile PORT_TYPE *inj1_pin_port;

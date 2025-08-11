@@ -24,6 +24,7 @@ trimTable3d trim6Table; ///< 6x6 Fuel trim 6 map
 trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
+struct table3d8RpmLoad dbwTable; ///< 8x8 dbw map
 
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.

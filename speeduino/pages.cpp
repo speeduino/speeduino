@@ -399,11 +399,12 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
       END_OF_PAGE(progOutsPage, 1)
     }
 
-    case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
+    case boostvvtPage2: //Boost, VVT and DBW maps (all 8x8)
     {
       CHECK_TABLE(boostvvtPage2, offset, &boostTableLookupDuty, 0)
       CHECK_RAW(boostvvtPage2, offset, &configPage15, sizeof(configPage15), 1)
-      END_OF_PAGE(boostvvtPage2, 2)
+      CHECK_TABLE(boostvvtPage2, offset, &dbwTable, 2)
+      END_OF_PAGE(boostvvtPage2, 3)
     }
 
     default:
