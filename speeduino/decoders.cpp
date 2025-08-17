@@ -35,7 +35,6 @@ A full copy of the license may be found in the projects root directory
  * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
  */
 #include <limits.h>
-#include <SimplyAtomic.h>
 #include "globals.h"
 #include "decoders.h"
 #include "scheduledIO.h"
