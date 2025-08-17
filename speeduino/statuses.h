@@ -8,8 +8,16 @@
 #pragma once
 
 #include <stdint.h>
-#include <SimplyAtomic.h>
 #include "bit_manip.h"
+
+#if __has_include(<SimplyAtomic.h>)
+  #include <SimplyAtomic.h>
+#else 
+  //Fallback for Arduino IDE when SimplyAtomic is not installed
+  #include <util/atomic.h>
+  #define ATOMIC() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+  #warning It is strongly recomended to install the SimplyAtomic library rather than relying on the built-in ATOMIC
+#endif
 
 using byte = uint8_t;
 
