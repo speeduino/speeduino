@@ -2,11 +2,14 @@
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 #include "board_teensy41.h"
 #include "auxiliaries.h"
-#include "idle.h"
+#include "aux_idle.h"
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
+#include "aux_boost.h"
+#include "aux_vvt.h"
+
 
 /*
   //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67

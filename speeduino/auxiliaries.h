@@ -6,21 +6,12 @@
 #include <SimplyAtomic.h>
 
 void initialiseAuxPWM(void);
-void boostControl(void);
-void boostDisable(void);
-void boostByGear(void);
-void vvtControl(void);
+
+
 void initialiseFan(void);
-void initialiseAirCon(void);
 void nitrousControl(void);
 void fanControl(void);
-void airConControl(void);
-bool READ_AIRCON_REQUEST(void);
-void wmiControl(void);
 
-#define SIMPLE_BOOST_P  1
-#define SIMPLE_BOOST_I  1
-#define SIMPLE_BOOST_D  1
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
@@ -67,28 +58,13 @@ void wmiControl(void);
 
 #endif
 
-#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR); }
-#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); BIT_SET(currentStatus.airConStatus, BIT_AIRCON_FAN); }
-#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN); }
-
 #define FAN_ON()                ATOMIC() { ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); }
 #define FAN_OFF()               ATOMIC() { ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); }
 
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-#define VVT1_PIN_ON()     VVT1_PIN_HIGH();
-#define VVT1_PIN_OFF()    VVT1_PIN_LOW();
-#define VVT2_PIN_ON()     VVT2_PIN_HIGH();
-#define VVT2_PIN_OFF()    VVT2_PIN_LOW();
-#define VVT_TIME_DELAY_MULTIPLIER  50
 
-#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
-extern volatile PORT_TYPE *vvt1_pin_port;
-extern volatile PINMASK_TYPE vvt1_pin_mask;
-extern volatile PORT_TYPE *vvt2_pin_port;
-extern volatile PINMASK_TYPE vvt2_pin_mask;
 extern volatile PORT_TYPE *fan_pin_port;
 extern volatile PINMASK_TYPE fan_pin_mask;
 
@@ -96,11 +72,5 @@ extern volatile PINMASK_TYPE fan_pin_mask;
 extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
-
-extern uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
-extern uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-
-void boostInterrupt(void);
-void vvtInterrupt(void);
 
 #endif

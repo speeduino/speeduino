@@ -1,6 +1,8 @@
 #if defined(CORE_SAME51)
 #include "globals.h"
-#include "auxiliaries.h"
+#include "aux_boost.h"
+#include "aux_idle.h"
+#include "aux_vvt.h"
 
 void initBoard()
 {

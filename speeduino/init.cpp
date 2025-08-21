@@ -18,7 +18,10 @@
 #include "sensors.h"
 #include "decoders.h"
 #include "corrections.h"
-#include "idle.h"
+#include "aux_aircon.h"
+#include "aux_boost.h"
+#include "aux_idle.h"
+#include "aux_vvt.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
@@ -196,6 +199,8 @@ void initialiseAll(void)
     initialiseIdle(true);
     initialiseFan();
     initialiseAirCon();
+    initialiseBoost();
+    initialiseVVT();
     initialiseAuxPWM();
     initialiseCorrections();
     BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
