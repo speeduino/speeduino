@@ -37,8 +37,6 @@ SECONDARY_SERIAL_T* pSecondarySerial;
 
 void secondserial_Command(void)
 {
-  #if defined(secondarySerial_AVAILABLE)
-
   //If the selected protocol is Tuner Studio then everything is routed via the primary serial functions but with the output diverted to the secondary serial interface
   if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO)
   {
@@ -153,63 +151,54 @@ void secondserial_Command(void)
     default:
        break;
   }
-  #endif
 } 
     
 // this routine sends a request(either "0" for a "G" , "1" for a "L" , "2" for a "R" to the Can interface or "3" sends the request via the actual local canbus
 void sendCancommand(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress)
 {
-#if defined(secondarySerial_AVAILABLE)
-    switch (cmdtype)
-    {
-      case 0:
-        secondarySerial.print("G");
-        secondarySerial.write(canaddress);  //tscanid of speeduino device
-        secondarySerial.write(candata1);    // table id
-        secondarySerial.write(candata2);    //table memory offset
-        break;
+  switch (cmdtype)
+  {
+    case 0:
+      secondarySerial.print("G");
+      secondarySerial.write(canaddress);  //tscanid of speeduino device
+      secondarySerial.write(candata1);    // table id
+      secondarySerial.write(candata2);    //table memory offset
+      break;
 
-      case 1:                      //send request to listen for a can message
-        secondarySerial.print("L");
-        secondarySerial.write(canaddress);  //11 bit canaddress of device to listen for
-        break;
+    case 1:                      //send request to listen for a can message
+      secondarySerial.print("L");
+      secondarySerial.write(canaddress);  //11 bit canaddress of device to listen for
+      break;
 
-     case 2:                                          // requests via serial3
-        secondarySerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
-        secondarySerial.write(candata1);                    //the currentStatus.current_caninchannel
-        secondarySerial.write(lowByte(sourcecanAddress) );       //send lsb first
-        secondarySerial.write(highByte(sourcecanAddress) );
-        break;
+    case 2:                                          // requests via serial3
+      secondarySerial.print("R");                         //send "R" to request data from the sourcecanAddress whose value is sent next
+      secondarySerial.write(candata1);                    //the currentStatus.current_caninchannel
+      secondarySerial.write(lowByte(sourcecanAddress) );       //send lsb first
+      secondarySerial.write(highByte(sourcecanAddress) );
+      break;
 
-     case 3:
-        //send to truecan send routine
-        //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
-        //This section is to be moved to the correct can output routine later
-        #if defined(NATIVE_CAN_AVAILABLE)
-        outMsg.id = (canaddress);
-        outMsg.len = 8;
-        outMsg.buf[0] = 0x0B ;  //11;   
-        outMsg.buf[1] = 0x15;
-        outMsg.buf[2] = candata1;
-        outMsg.buf[3] = 0x24;
-        outMsg.buf[4] = 0x7F;
-        outMsg.buf[5] = 0x70;
-        outMsg.buf[6] = 0x9E;
-        outMsg.buf[7] = 0x4D;
-        CAN_write();
-        #endif
-        break;
+    case 3:
+      //send to truecan send routine
+      //canaddress == speeduino canid, candata1 == canin channel dest, paramgroup == can address  to request from
+      //This section is to be moved to the correct can output routine later
+      #if defined(NATIVE_CAN_AVAILABLE)
+      outMsg.id = (canaddress);
+      outMsg.len = 8;
+      outMsg.buf[0] = 0x0B ;  //11;   
+      outMsg.buf[1] = 0x15;
+      outMsg.buf[2] = candata1;
+      outMsg.buf[3] = 0x24;
+      outMsg.buf[4] = 0x7F;
+      outMsg.buf[5] = 0x70;
+      outMsg.buf[6] = 0x9E;
+      outMsg.buf[7] = 0x4D;
+      CAN_write();
+      #endif
+      break;
 
-     default:
-        break;
-    }
-#else
-  UNUSED(cmdtype);
-  UNUSED(canaddress);
-  UNUSED(candata1);
-  UNUSED(candata2);
-  UNUSED(sourcecanAddress);
-#endif
+    default:
+      break;
+  }
 }
 
 #if defined(CORE_AVR)

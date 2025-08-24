@@ -152,9 +152,7 @@ void initialiseAll(void)
     #endif
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
-    #if defined(secondarySerial_AVAILABLE)
-      if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-    #endif
+    if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
 
     //End all coil charges to ensure no stray sparks on startup
     endCoil1Charge();

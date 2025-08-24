@@ -25,9 +25,7 @@ void initBoard(void)
     * General
     */
     configPage9.intcan_available = 0;   // AVR devices do NOT have internal canbus
-    #ifdef secondarySerial_AVAILABLE
-      pSecondarySerial = &Serial3;
-    #endif
+    pSecondarySerial = &Serial3;
 
     /*
     ***********************************************************************************************************
