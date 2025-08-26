@@ -143,7 +143,7 @@ static inline uint16_t readMAPSensor(uint8_t pin) {
  */
 void initialiseADC(void)
 {
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#ifdef CORE_AVR
 
   #if defined(ANALOG_ISR)
     noInterrupts(); //Interrupts should be turned off when playing with any of these registers

@@ -55,21 +55,6 @@
     #define IGN_CHANNELS 5
   #endif
 
-  #if defined(__AVR_ATmega2561__)
-    //This is a workaround to avoid having to change all the references to higher ADC channels. We simply define the channels (Which don't exist on the 2561) as being the same as A0-A7
-    //These Analog inputs should never be used on any 2561 board definition (Because they don't exist on the MCU), so it will not cause any issues
-    #define A8  A0
-    #define A9  A1
-    #define A10  A2
-    #define A11  A3
-    #define A12  A4
-    #define A13  A5
-    #define A14  A6
-    #define A15  A7
-  #endif
-
-  //#define TIMER5_MICROS
-
 #elif defined(CORE_TEENSY)
   #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
     #define CORE_TEENSY35

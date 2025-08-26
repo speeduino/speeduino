@@ -157,7 +157,6 @@
 ***********************************************************************************************************
 * CAN / Second serial
 */
-  #define USE_SERIAL3               // Secondary serial port to use
   #define SECONDARY_SERIAL_T HardwareSerial
 
   #include <FlexCAN_T4.h>
