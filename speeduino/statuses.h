@@ -16,7 +16,7 @@
   //Fallback for Arduino IDE when SimplyAtomic is not installed
   #include <util/atomic.h>
   #define ATOMIC() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  #warning It is strongly recomended to install the SimplyAtomic library rather than relying on the built-in ATOMIC
+  #warning It is strongly recommended to install the SimplyAtomic library rather than relying on the built-in ATOMIC
 #endif
 
 using byte = uint8_t;
