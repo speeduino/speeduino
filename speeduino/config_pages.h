@@ -571,7 +571,7 @@ struct config6 {
   byte lnchSoftLim;
   int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
-  byte lnchFuelAdd;
+  int8_t lnchFuelAdd; //Note signed. 
 
   //PID values for idle needed to go here as out of room in the idle page
   byte idleKP;
