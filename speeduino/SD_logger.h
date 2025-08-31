@@ -41,9 +41,9 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
-#define SD_LOG_NUM_FIELDS   91 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
+#define SD_LOG_NUM_FIELDS   99 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
+  #define SD_LOG_ENTRY_SIZE   140 /**< The size of the live data packet used by the SD card.*/
 #else
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
