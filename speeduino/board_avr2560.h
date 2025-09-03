@@ -44,11 +44,6 @@
   #endif
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
-  //Mega 2561 MCU does not have a serial3 available. 
-  #if not defined(__AVR_ATmega2561__)
-    #define USE_SERIAL3
-  #endif
-
 /*
 ***********************************************************************************************************
 * Schedules
@@ -159,9 +154,6 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 ***********************************************************************************************************
 * CAN / Second serial
 */
-#if ( defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) )
-  #define secondarySerial_AVAILABLE
-#endif
 #define SECONDARY_SERIAL_T HardwareSerial
 
 #endif //CORE_AVR

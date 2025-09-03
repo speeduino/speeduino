@@ -728,12 +728,21 @@ static void test_corrections_launch_both(void) {
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
+static void test_corrections_launch_removeFuel(void) {
+  currentStatus.launchingHard = true;
+  currentStatus.launchingSoft = true;
+  configPage6.lnchFuelAdd = -25;
+
+  TEST_ASSERT_EQUAL(75U, correctionLaunch() );
+}
+
 static void test_corrections_launch(void)
 {
   RUN_TEST_P(test_corrections_launch_inactive);
   RUN_TEST_P(test_corrections_launch_hard);
   RUN_TEST_P(test_corrections_launch_soft);
   RUN_TEST_P(test_corrections_launch_both);
+  RUN_TEST_P(test_corrections_launch_removeFuel);
 }
 
 extern bool correctionDFCO(void);

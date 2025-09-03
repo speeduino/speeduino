@@ -123,22 +123,20 @@ void __attribute__((always_inline)) loop(void)
       }
 
       //Check for any new or in-progress requests from serial.
-      if (Serial.available()>0 || serialRecieveInProgress())
+      if( (Serial.available() > 0) || serialRecieveInProgress() )
       {
         serialReceive();
       }
       
-      //Check for any CAN comms requiring action 
-      #if defined(secondarySerial_AVAILABLE)
-        //if can or secondary serial interface is enabled then check for requests.
-        if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
-        {
-          if ( ((mainLoopCount & 31) == 1) || (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) )
-          {
-            if (secondarySerial.available() > 0)  { secondserial_Command(); }
-          } 
-        }
-      #endif
+      //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
+      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      {
+        #ifndef CORE_AVR
+          if (secondarySerial.available() > 0)  { secondserial_Command(); }
+        #else
+          if (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) { secondserial_Command(); } //Special case for AVR units. This prevents potential overflow of the receive buffer
+        #endif
+      }
       #if defined (NATIVE_CAN_AVAILABLE)
         if (configPage9.enable_intcan == 1) // use internal can module
         {            
@@ -259,6 +257,14 @@ void __attribute__((always_inline)) loop(void)
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
 
+      //AVR units process secondary serial requests at a fixed 30Hz
+      #ifdef CORE_AVR
+      if( (configPage9.enable_secondarySerial == 1) && (secondarySerial.available() > 0) ) //secondary serial interface enabled
+      {
+        secondserial_Command();
+      }
+      #endif
+
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
@@ -324,7 +330,6 @@ void __attribute__((always_inline)) loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
-        syncSDLog(); //Sync the SD log file to the card 4 times per second. 
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
@@ -409,6 +414,12 @@ void __attribute__((always_inline)) loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+        //SD log sync can take up to 8ms on slow SD cards. To prevent potential issues we only perform this if the RPM is under a safe speed so that there will always be sufficient time for a main loop to run. 
+        //A sync will be forced if it hasn't taken place within a max period
+        if( (currentStatus.RPM < SD_SYNC_RPM_THRESHOLD) || (msSinceLastSDSync > SD_SYNC_MAX_TIME_PERIOD) )
+        { 
+          if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
+        }
       #endif
 
     } //1Hz timer

@@ -695,7 +695,6 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t))
 {  
-  #if defined(secondarySerial_AVAILABLE)
   if (&targetPort == &secondarySerial)
   {
     //Using Secondary serial, check if selected protocol requires the echo back of the command
@@ -719,7 +718,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
     }  
   }
   else
-  #endif
   {
     if(firstCommsRequest) 
     { 

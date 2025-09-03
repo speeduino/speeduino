@@ -41,9 +41,9 @@
     #define SD_CS_PIN 10 //This is a made up value for now
 #endif
 
-#define SD_LOG_NUM_FIELDS   91 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
+#define SD_LOG_NUM_FIELDS   99 /**< The number of fields that are in the log. This is always smaller than the entry size due to some fields being 2 bytes */
 #ifndef UNIT_TEST // Scope guard for unit testing
-  #define SD_LOG_ENTRY_SIZE   127 /**< The size of the live data packet used by the SD card.*/
+  #define SD_LOG_ENTRY_SIZE   140 /**< The size of the live data packet used by the SD card.*/
 #else
   #define SD_LOG_ENTRY_SIZE   1 /**< The size of the live data packet used by the SD card.*/
 #endif
@@ -54,6 +54,8 @@
 #define LOG_FILE_EXTENSION "csv"
 #define SD_LOG_ENTRY_TOTAL_BYTES (SD_LOG_ENTRY_SIZE + SD_LOG_NUM_FIELDS + 1) //The total size of each SD log entry in bytes. This is the size of the data packet + 1 comma for each field + 1 for the newline character
 #define RING_BUF_CAPACITY (SD_LOG_ENTRY_TOTAL_BYTES * 10) //Allow for 10 entries in the ringbuffer. Will need tuning
+#define SD_SYNC_RPM_THRESHOLD 1700 //SD log sync can take up to 8ms on slow SD cards. To prevent potential issues we only perform this if the RPM is under a safe speed so that there will always be sufficient time for a main loop to run. 
+#define SD_SYNC_MAX_TIME_PERIOD 20000 //The maximum time (in ms) that will be allowed before a sync will be forced. This is the longest amount of time that an SD log will potentially lose if the ECU is unexpectedly powered down. 
 
 /*
 Standard FAT16/32
@@ -69,13 +71,14 @@ extern RingBuf<ExFile, RING_BUF_CAPACITY> rb;
 extern uint8_t SD_status;
 extern uint16_t currentLogFileNumber;
 extern bool manualLogActive;
+extern elapsedMillis msSinceLastSDSync;
 
 void initSD();
 void writeSDLogEntry();
 void writetSDLogHeader();
 void beginSDLogging();
 void endSDLogging();
-void syncSDLog();
+bool syncSDLog();
 void setTS_SD_status();
 void formatExFat();
 void deleteLogFile(char, char, char, char);

@@ -313,13 +313,11 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 91: statusValue = currentStatus.status5; break;
     case 92: statusValue = currentStatus.knockCount; break;
     case 93: statusValue = currentStatus.knockRetard; break;
-
     case 94: statusValue = currentStatus.PW5; break;
-    case 96: statusValue = currentStatus.PW6; break;
-    case 98: statusValue = currentStatus.PW7; break;
-    case 100: statusValue = currentStatus.PW8; break;
-
-    case 102: statusValue = currentStatus.systemTemp; break;
+    case 95: statusValue = currentStatus.PW6; break;
+    case 96: statusValue = currentStatus.PW7; break;
+    case 97: statusValue = currentStatus.PW8; break;
+    case 98: statusValue = currentStatus.systemTemp; break;
     default: statusValue = 0; // MISRA check
   }
 

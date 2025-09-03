@@ -363,7 +363,7 @@ static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &
 * - endCallback - change scheduler into OFF state (or PENDING if schedule.hasNextSchedule is set)
 */
 //Timer3A (fuel schedule 1) Compare Vector
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#ifdef CORE_AVR //AVR chips use the ISR for this
 //fuelSchedules 1 and 5
 ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
 #else
@@ -374,7 +374,7 @@ void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
   }
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#ifdef CORE_AVR
 ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
@@ -384,7 +384,7 @@ void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
   }
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#ifdef CORE_AVR
 ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
@@ -394,7 +394,7 @@ void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
   }
 
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__) //AVR chips use the ISR for this
+#ifdef CORE_AVR
 ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
 #else
 void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
