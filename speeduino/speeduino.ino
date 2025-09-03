@@ -311,7 +311,6 @@ void __attribute__((always_inline)) loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
-        syncSDLog(); //Sync the SD log file to the card 4 times per second. 
       #endif  
       
       currentStatus.fuelPressure = getFuelPressure();
@@ -395,6 +394,12 @@ void __attribute__((always_inline)) loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+        //SD log sync can take up to 8ms on slow SD cards. To prevent potential issues we only perform this if the RPM is under a safe speed so that there will always be sufficient time for a main loop to run. 
+        //A sync will be forced if it hasn't taken place within a max period
+        if( (currentStatus.RPM < SD_SYNC_RPM_THRESHOLD) || (msSinceLastSDSync > SD_SYNC_MAX_TIME_PERIOD) )
+        { 
+          if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
+        }
       #endif
 
     } //1Hz timer
