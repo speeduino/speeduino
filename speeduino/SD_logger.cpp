@@ -274,6 +274,7 @@ uint8_t SD_status = SD_STATUS_OFF;
 uint16_t currentLogFileNumber;
 bool manualLogActive = false;
 uint32_t logStartTime = 0; //In ms
+elapsedMillis msSinceLastSDSync;
 
 void initSD()
 {
@@ -520,7 +521,12 @@ void writeSDLogEntry()
       {
         #if FPU_MAX_SIZE >= 32
           float entryValue = getReadableFloatLogEntry(x);
-          if(IS_INTEGER(entryValue)) { rb.print((uint16_t)entryValue); }
+          if(IS_INTEGER(entryValue)) 
+          { 
+            uint16_t entryValueInt = (uint16_t)entryValue;
+            if(entryValueInt <= UCHAR_MAX) { rb.print((uint8_t)entryValueInt); }
+            else { rb.print(entryValueInt); }
+          }
           else { rb.print(entryValue); }
         #else
           rb.print(getReadableLogEntry(x));
@@ -532,9 +538,10 @@ void writeSDLogEntry()
 
     //Check if write to SD from ringbuffer is needed
     //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
-    if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy() )
+    if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy())
     {
       uint16_t bytesWritten = rb.writeOut(SD_SECTOR_SIZE); 
+      
       //Make sure that the entire sector was written successfully
       if (SD_SECTOR_SIZE != bytesWritten) 
       {
@@ -714,12 +721,14 @@ void checkForSDStop()
   
 }
 
-void syncSDLog()
+bool syncSDLog()
 {     
   if( (SD_status == SD_STATUS_ACTIVE) && (!logFile.isBusy()) && (!sd.isBusy()) )
   {
     logFile.sync();
+    return true;
   }
+  return false;
 }
 
 /** 
