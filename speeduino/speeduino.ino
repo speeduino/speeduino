@@ -50,7 +50,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 #include "units.h"
 
-
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
 
@@ -58,6 +57,7 @@ uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or
 uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
 uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
+uint32_t revLimitAllowedEndTime = 0;
 
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
@@ -815,7 +815,21 @@ void __attribute__((always_inline)) loop(void)
       maxAllowedRPM = maxAllowedRPM * 100; //All of the above limits are divided by 100, convert back to RPM
       if ( (currentStatus.flatShiftingHard == true) && (currentStatus.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = currentStatus.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
     
-      if( (configPage2.hardCutType == HARD_CUT_FULL) && (currentStatus.RPM > maxAllowedRPM) )
+      if(currentStatus.RPM >= maxAllowedRPM)
+      {
+        //if(!BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM)) { revLimitAllowedEndTime = micros() + angleToTimeMicroSecPerDegree(360); } //Hard limit must run for a minimum of 1 revolution. This is essentially a hysteresis check. 
+        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM);
+      }
+      else if(BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM))
+      {
+        //if(micros() > revLimitAllowedEndTime) //Hysteresis check disabled for now. 
+        {
+          revLimitAllowedEndTime = 0;
+          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
+        }
+      }
+
+      if( (configPage2.hardCutType == HARD_CUT_FULL) && BIT_CHECK(currentStatus.status2, BIT_STATUS2_HRDLIM) )
       {
         //Full hard cut turns outputs off completely. 
         switch(configPage6.engineProtectType)
@@ -828,13 +842,17 @@ void __attribute__((always_inline)) loop(void)
             break;
           case PROTECT_CUT_IGN:
             ignitionChannelsOn = 0;
+            disableAllIgnSchedules();
             break;
           case PROTECT_CUT_FUEL:
             fuelChannelsOn = 0;
+            disableAllFuelSchedules();
             break;
           case PROTECT_CUT_BOTH:
             ignitionChannelsOn = 0;
             fuelChannelsOn = 0;
+            disableAllIgnSchedules();
+            disableAllFuelSchedules();
             break;
           default:
             ignitionChannelsOn = 0;
@@ -870,17 +888,17 @@ void __attribute__((always_inline)) loop(void)
                   break;
                 case PROTECT_CUT_IGN:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
-                  disablePendingIgnSchedule(x);
+                  disableIgnSchedule(x);
                   break;
                 case PROTECT_CUT_FUEL:
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
-                  disablePendingFuelSchedule(x);
+                  disableFuelSchedule(x);
                   break;
                 case PROTECT_CUT_BOTH:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel
                   BIT_CLEAR(fuelChannelsOn, x); //Turn off this fuel channel
-                  disablePendingFuelSchedule(x);
-                  disablePendingIgnSchedule(x);
+                  disableFuelSchedule(x);
+                  disableIgnSchedule(x);
                   break;
                 default:
                   BIT_CLEAR(ignitionChannelsOn, x); //Turn off this ignition channel

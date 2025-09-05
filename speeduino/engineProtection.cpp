@@ -4,6 +4,7 @@
 #include "maths.h"
 #include "utilities.h"
 #include "units.h"
+#include "crankMaths.h"
 
 byte oilProtStartTime = 0;
 static table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
@@ -25,7 +26,6 @@ byte checkRevLimit(void)
   //Hardcut RPM limit
   byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM);
   BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
@@ -35,10 +35,12 @@ byte checkRevLimit(void)
       currentLimitRPM = configPage4.HardRevLim;
       if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
       { 
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
-      else { BIT_CLEAR(currentStatus.status2, BIT_STATUS2_HRDLIM); }
+      else 
+      { 
+        BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM); 
+      }
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
     {
@@ -46,7 +48,6 @@ byte checkRevLimit(void)
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.status2, BIT_STATUS2_HRDLIM); //Legacy and likely to be removed at some point
         BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
       } 
     }
