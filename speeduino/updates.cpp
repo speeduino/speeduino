@@ -173,6 +173,7 @@ void doUpdates(void)
     configPage4.ADCFILTER_BAT  = ADCFILTER_BAT_DEFAULT;
     configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
     configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
+    configPage4.CURVEFACTOR_TPS = CURVEFACTOR_TPS_DEFAULT;
 
     writeAllConfig();
     storeEEPROMVersion(10);

@@ -22,6 +22,7 @@ A full copy of the license may be found in the projects root directory
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
 #include "units.h"
+#include <math.h>
 
 bool auxIsEnabled;
 
@@ -245,6 +246,7 @@ void initialiseADC(void)
   if(configPage4.ADCFILTER_BAT  > 240U) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_MAP  > 240U) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
   if(configPage4.ADCFILTER_BARO > 240U) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
+  if(configPage4.CURVEFACTOR_TPS > 240U) { configPage4.CURVEFACTOR_TPS  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
   if(configPage4.FILTER_FLEX    > 240U) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
 
   flexStartTime = micros();
@@ -554,32 +556,69 @@ uint32_t getMAPDeltaTime(void) {
 
 void readTPS(bool useFilter)
 {
+  
   currentStatus.TPSlast = currentStatus.TPS;
-  uint8_t tempTPS = (uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U); //Get the current raw TPS ADC value and map it into a uint8_t
+  uint16_t tempTPS = (uint16_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 1023U); //Get the current raw TPS ADC value and map it into a uint8_t
 
   //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = (uint8_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
+  if(useFilter == true) { currentStatus.tpsADC = (uint16_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
   else { currentStatus.tpsADC = tempTPS; }
-  uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+  uint16_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
 
   if(configPage2.tpsMax > configPage2.tpsMin)
   {
     //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
     tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
+    // 1. Compute safe denominator
+    float scaleRange = max(1.0f, configPage2.tpsMax - configPage2.tpsMin);
+
+    // 2. Normalize ADC input to 0.0–1.0
+    float linear = (tempADC - configPage2.tpsMin) / scaleRange;
+
+    // 3. Constrain normalized value in case of noise
+    linear = constrain(linear, 0.0f, 1.0f);  
+
+    // 4. Apply curve factor for non-linear response
+    float curved = pow(linear, configPage4.CURVEFACTOR_TPS * 0.1f);
+
+    //5. Scale to  0-200
+    currentStatus.TPS = uint16_t(curved * 200.0f);
+
+
+
+    // Normalize to 0–1
+    //float tpsNorm = float(tempADC - configPage2.tpsMin) / float(configPage2.tpsMax - configPage2.tpsMin);
+    //float tpsMapped = map(tpsNorm, 0.0f, 1.0f, 0.0f, 1000.0f);
+    // Apply curve factor (1.0 = linear, >1 convex, <1 concave)
+    //float tpsCurve = pow(tpsMapped, configPage4.CURVEFACTOR_TPS * 0.1f); // CURVEFACTOR_TPS: 1.0 = linear, >1.0 = convex, <1.0 = concave
+
+    // Scale to 0–200 (or 0–1000, adjust as needed)
+    //currentStatus.TPS = uint16_t(tpsCurve * 200.0f);
+    /*Serial.print("TPS: ");Serial.print(currentStatus.TPS);
+    Serial.print(" TPS ADC: ");Serial.print(currentStatus.tpsADC);
+    Serial.print(" TPS Linear: ");Serial.print(linear);
+    Serial.print(" TPS Curved: ");Serial.print(curved);
+    Serial.print(" CF: ");Serial.println(configPage4.CURVEFACTOR_TPS);*/
+    //Serial.print(" TPS Norm: ");Serial.print(tpsNorm);
+    //Serial.print(" TPS Mapped: ");Serial.print(tpsMapped);
+    //Serial.print(" TPS Curve: ");Serial.println(tpsCurve);
   }
   else
   {
     //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
-    tempADC = UINT8_MAX - tempADC; //Reverse the ADC values
-    uint8_t tempTPSMax = UINT8_MAX - configPage2.tpsMax;
-    uint8_t tempTPSMin = UINT8_MAX - configPage2.tpsMin;
+    tempADC = UINT16_MAX - tempADC; //Reverse the ADC values
+    uint16_t tempTPSMax = UINT16_MAX - configPage2.tpsMax;
+    uint16_t tempTPSMin = UINT16_MAX - configPage2.tpsMin;
 
     //All checks below are reversed from the standard case above
-    tempADC = clamp(tempADC, tempTPSMin, tempTPSMax);
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
+    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
+    // Apply curve factor using pow for non-linear TPS response
+    float tpsNorm = float(tempADC - tempTPSMin) / float(tempTPSMax - tempTPSMin);
+    float tpsCurve = pow(tpsNorm, configPage4.CURVEFACTOR_TPS); // CURVEFACTOR_TPS: 1.0 = linear, >1.0 = convex, <1.0 = concave
+    currentStatus.TPS = uint16_t(tpsCurve * 1000.0f);
   }
 
   //Check whether the closed throttle position sensor is active

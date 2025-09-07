@@ -315,8 +315,8 @@ struct config2 {
   byte flexFreqHigh; //Highest valid frequency reading from the flex sensor
 
   byte boostMaxDuty;
-  byte tpsMin;
-  byte tpsMax;
+  uint16_t tpsMin;
+  uint16_t tpsMax;
   int8_t mapMin; //Must be signed
   uint16_t mapMax;
   byte fpPrime; ///< Time (In seconds) that the fuel pump should be primed for on power up
@@ -488,6 +488,7 @@ struct config4 {
   uint8_t ADCFILTER_BAT;
   uint8_t ADCFILTER_MAP; //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
   uint8_t ADCFILTER_BARO;
+  uint8_t CURVEFACTOR_TPS;
   
   byte cltAdvBins[6];   /**< Coolant Temp timing advance curve bins */
   byte cltAdvValues[6]; /**< Coolant timing advance curve values. These are translated by 15 to allow for negative values */
@@ -571,7 +572,7 @@ struct config6 {
   byte lnchSoftLim;
   int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
-  int8_t lnchFuelAdd; //Note signed. 
+  byte lnchFuelAdd;
 
   //PID values for idle needed to go here as out of room in the idle page
   byte idleKP;
