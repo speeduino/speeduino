@@ -12,6 +12,7 @@
 #include "logger.h"
 #include "rtc_common.h"
 #include "maths.h"
+#include <elapsedMillis.h>
 
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 constexpr char header_0[] PROGMEM = "secl";

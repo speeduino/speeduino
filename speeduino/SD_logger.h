@@ -9,6 +9,7 @@
   #include "SdFat.h"
 #endif
 #include "RingBuf.h"
+#include <elapsedMillis.h>
 
 
 #define SD_STATUS_OFF               0 /**< SD system is inactive. FS and file remain closed */

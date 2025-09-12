@@ -54,8 +54,10 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 void initialiseSchedulers(void);
 void beginInjectorPriming(void);
 
-void disablePendingFuelSchedule(byte channel);
-void disablePendingIgnSchedule(byte channel);
+void disableFuelSchedule(byte channel);
+void disableIgnSchedule(byte channel);
+void disableAllFuelSchedules(void);
+void disableAllIgnSchedules(void);
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
