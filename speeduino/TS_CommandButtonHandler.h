@@ -60,7 +60,7 @@ static constexpr uint16_t TS_CMD_IGN8_PULSED  = 792;
 static constexpr uint16_t TS_CMD_STM32_REBOOT     = 12800;
 static constexpr uint16_t TS_CMD_STM32_BOOTLOADER = 12801;
 
-
+static constexpr uint16_t TS_CMD_SD_FORMAT  = 13057;
 
 static constexpr uint16_t TS_CMD_VSS_60KMH  = 39168; //0x99x00
 static constexpr uint16_t TS_CMD_VSS_RATIO1 = 39169;
