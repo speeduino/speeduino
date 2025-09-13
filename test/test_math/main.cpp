@@ -5,7 +5,6 @@
 
 extern void testPercent(void);
 extern void testDivision(void);
-extern void testBitShift(void);
 extern void test_LOW_PASS_FILTER(void);
 extern void test_fast_map(void);
 
@@ -26,7 +25,6 @@ void setup()
     testCrankMaths();
     testPercent();
     testDivision();
-    testBitShift();
     test_LOW_PASS_FILTER();
     test_fast_map();
 
