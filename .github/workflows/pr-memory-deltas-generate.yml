@@ -7,6 +7,18 @@ on:
 env:
   # It's convenient to set variables for values used multiple times in the workflow.
   SKETCHES_REPORTS_PATH: sketches-reports
+  # Libraries shared by all builds
+  COMMON_LIB_DEPS: | 
+    - name: SimplyAtomic
+      version: "1.0"
+    - name: avr-fast-shift
+      version: "1.1.0"
+    - name: libdivide
+      version: "5.2.0"
+    - name: FastCRC
+      version: "1.41"
+    - name: avr-fast-div
+      version: "1.4.0"
 
 jobs:
   compile:
@@ -28,16 +40,7 @@ jobs:
               - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
             lib_deps: |
               - name: Time
-              - name: SimplyAtomic
-                version: "1.0"
-              - name: avr-fast-shift
-                version: "1.1.0"
-              - name: libdivide
-                version: "5.2.0"
-              - name: FastCRC
-                version: "1.41"
-              - name: avr-fast-div
-                version: "1.4.0"
+
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
             platform: |
@@ -48,18 +51,9 @@ jobs:
               - build.extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
-              - name: SimplyAtomic
-                version: "1.0"
               - name: InternalTemperature
               - name: elapsedMillis
-              - name: avr-fast-shift
-                version: "1.1.0"
-              - name: libdivide
-                version: "5.2.0"
-              - name: FastCRC
-                version: "1.41"
-              - name: avr-fast-div
-                version: "1.4.0"
+
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -70,18 +64,10 @@ jobs:
               - build..extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
-              - name: SimplyAtomic
-                version: "1.0"
               - name: InternalTemperature
               - name: elapsedMillis
-              - name: avr-fast-shift
-                version: "1.1.0"
-              - name: libdivide
-                version: "5.2.0"
-              - name: FastCRC
-                version: "1.41"
-              - name: avr-fast-div
-                version: "1.4.0"
+
+          
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -95,21 +81,12 @@ jobs:
               - name: "STM32duino RTC"
                 version: 1.2.0
               - name: SdFat
-              - name: SimplyAtomic
               - name: elapsedMillis
                 version: "1.0"
-              - name: avr-fast-shift
-                version: "1.1.0"
-              - name: libdivide
-                version: "5.2.0"
-              - name: FastCRC
-                version: "1.41"
-              - name: avr-fast-div
-                version: "1.4.0"
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4     
 
       - name: Compile platforms
         uses: arduino/compile-sketches@v1.1.2
@@ -126,6 +103,7 @@ jobs:
             ${{ matrix.board.compile-flags }}
           libraries: |
             ${{ matrix.board.lib_deps }}
+            ${{ env.COMMON_LIB_DEPS }}
 
       # This step is needed to pass the size data to the report job.
       - name: Upload sketches report to workflow artifact
