@@ -108,7 +108,7 @@ void assert_udiv_32_16(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(0, 0));
 
@@ -133,7 +133,7 @@ void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
 
 void test_maths_udiv_32_16_closest(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   // Divide by zero
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
 
@@ -152,15 +152,15 @@ void test_maths_udiv_32_16_closest(void)
 #endif
 }
 
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
 static uint32_t indexToDividend(int16_t index) {
-  return (uint32_t)index  + (UINT16_MAX*index);
+  return (UINT16_MAX*index)-(uint32_t)index;
 }
 #endif
 
 void test_maths_udiv_32_16_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     uint16_t iters = 32;
     uint16_t start_index = UINT16_MAX/3;
     uint16_t end_index = UINT16_MAX/3*2;
@@ -180,7 +180,7 @@ void test_maths_udiv_32_16_perf(void)
 
 void test_maths_div100_s16_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int16_t iters = 1;
     constexpr int16_t start_index = -10000;
     constexpr int16_t end_index = -1;
@@ -201,7 +201,7 @@ void test_maths_div100_s16_perf(void)
 void test_maths_div10_s16_perf(void)
 {
   // Unit test to confirm using div100 to divide by 10 is quicker than straight division by 10.
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
   constexpr int16_t iters = 1;
   constexpr int16_t start_index = -3213;
   constexpr int16_t end_index = 3213;
@@ -221,7 +221,7 @@ void test_maths_div10_s16_perf(void)
 
 void test_maths_div100_s32_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
+#if defined(__AVR__)
     constexpr int32_t iters = 1;
     constexpr int32_t start_index = -1439190;
     constexpr int32_t end_index = -1;
