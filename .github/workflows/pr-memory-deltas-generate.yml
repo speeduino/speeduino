@@ -53,7 +53,7 @@ jobs:
               - name: SDfat
               - name: InternalTemperature
               - name: elapsedMillis
-
+              
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -66,7 +66,6 @@ jobs:
               - name: SDfat
               - name: InternalTemperature
               - name: elapsedMillis
-
           
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
@@ -82,7 +81,6 @@ jobs:
                 version: 1.2.0
               - name: SdFat
               - name: elapsedMillis
-                version: "1.0"
 
     steps:
       - name: Checkout repository
