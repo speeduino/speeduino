@@ -78,6 +78,7 @@ jobs:
               - name: "STM32duino RTC"
                 version: 1.2.0
               - name: SdFat
+              - name: elapsedMillis
 
     steps:
       - name: Checkout repository
