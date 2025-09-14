@@ -358,10 +358,6 @@ void __attribute__((always_inline)) loop(void)
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_200HZ);
-      #if defined(ANALOG_ISR)
-        //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
-        BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
-      #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
