@@ -449,10 +449,7 @@ void __attribute__((always_inline)) loop(void)
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
-      
-      currentStatus.fuelPressure = getFuelPressure();
-      currentStatus.oilPressure = getOilPressure();
-      
+           
       if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
       {
         //TODO dazq to clean this right up :)

@@ -44,8 +44,6 @@ void flexPulse(void);
 void knockPulse(void);
 uint32_t vssGetPulseGap(byte toothHistoryIndex);
 void vssPulse(void);
-byte getFuelPressure(void);
-byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
 
