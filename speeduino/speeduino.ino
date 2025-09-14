@@ -426,9 +426,6 @@ void __attribute__((always_inline)) loop(void)
       // Air conditioning control
       airConControl();
 
-      currentStatus.vss = getSpeed();
-      currentStatus.gear = getGear();
-
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(10);
       #endif

@@ -770,6 +770,9 @@ static void enableAnalogIsr(void)
   #endif
 }
 
+static void readSpeed(void);
+static void readGear(void);
+
 void readPolledSensors(byte loopTimer)
 {
   static constexpr polledAction_t polledSensors[] = {
@@ -781,6 +784,8 @@ void readPolledSensors(byte loopTimer)
     {BARO_READ_TIMER_BIT, readBaro},
     {MAP_READ_TIMER_BIT, readMAP},
     {BIT_TIMER_200HZ, enableAnalogIsr},
+    {BIT_TIMER_10HZ, readSpeed},
+    {BIT_TIMER_10HZ, readGear},
   };
   
   static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
@@ -808,7 +813,7 @@ uint32_t vssGetPulseGap(uint8_t historyIndex)
   return tempGap;
 }
 
-uint16_t getSpeed(void)
+static uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
   // Get VSS from CAN, Serial or Analog by using Aux input channels.
@@ -852,7 +857,12 @@ uint16_t getSpeed(void)
   return tempSpeed;
 }
 
-byte getGear(void)
+static void readSpeed(void)
+{
+  currentStatus.vss = getSpeed();
+}
+
+static byte getGear(void)
 {
   byte tempGear = 0U; //Unknown gear
   if(currentStatus.vss > 0U)
@@ -874,6 +884,11 @@ byte getGear(void)
   }
   
   return tempGear;
+}
+
+static void readGear(void)
+{
+  currentStatus.gear = getGear();
 }
 
 byte getFuelPressure(void)
