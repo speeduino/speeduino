@@ -770,6 +770,8 @@ static void enableAnalogIsr(void)
 
 static void readSpeed(void);
 static void readGear(void);
+static void updateFuelPressure(void);
+static void updateOilPressure(void);
 
 void readPolledSensors(byte loopTimer)
 {
@@ -784,6 +786,8 @@ void readPolledSensors(byte loopTimer)
     {BIT_TIMER_200HZ, enableAnalogIsr},
     {BIT_TIMER_10HZ, readSpeed},
     {BIT_TIMER_10HZ, readGear},
+    {BIT_TIMER_4HZ, updateFuelPressure},
+    {BIT_TIMER_4HZ, updateOilPressure},
   };
   
   static_for<0, countof_t(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
@@ -889,7 +893,7 @@ static void readGear(void)
   currentStatus.gear = getGear();
 }
 
-byte getFuelPressure(void)
+static byte getFuelPressure(void)
 {
   int16_t tempFuelPressure = 0;
 
@@ -904,7 +908,12 @@ byte getFuelPressure(void)
   return (byte)tempFuelPressure;
 }
 
-byte getOilPressure(void)
+static void updateFuelPressure(void)
+{
+  currentStatus.fuelPressure = getFuelPressure();
+}
+
+static byte getOilPressure(void)
 {
   int16_t tempOilPressure = 0;
 
@@ -919,6 +928,11 @@ byte getOilPressure(void)
 
 
   return (byte)tempOilPressure;
+}
+
+static void updateOilPressure(void)
+{
+  currentStatus.oilPressure = getOilPressure();
 }
 
 uint8_t getAnalogKnock(void)
