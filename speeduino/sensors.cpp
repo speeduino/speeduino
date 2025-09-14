@@ -762,6 +762,14 @@ static inline void readBat(void)
   currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+static void enableAnalogIsr(void)
+{
+  #if defined(ANALOG_ISR)
+    //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
+    BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
+  #endif
+}
+
 void readPolledSensors(byte loopTimer)
 {
   static constexpr polledAction_t polledSensors[] = {
@@ -772,6 +780,7 @@ void readPolledSensors(byte loopTimer)
     {BAT_READ_TIMER_BIT, readBat},
     {BARO_READ_TIMER_BIT, readBaro},
     {MAP_READ_TIMER_BIT, readMAP},
+    {BIT_TIMER_200HZ, enableAnalogIsr},
   };
   
   static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
