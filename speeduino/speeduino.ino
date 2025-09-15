@@ -837,7 +837,7 @@ void __attribute__((always_inline)) loop(void)
             //Make sure all channels are turned on
             ignitionChannelsOn = 0xFF;
             fuelChannelsOn = 0xFF;
-            currentStatus.engineProtectStatus = 0;
+            resetEngineProtect(currentStatus);
             break;
           case PROTECT_CUT_IGN:
             ignitionChannelsOn = 0;
@@ -934,7 +934,7 @@ void __attribute__((always_inline)) loop(void)
       } //Rolling cut check
       else
       {
-        currentStatus.engineProtectStatus = 0;
+        resetEngineProtect(currentStatus);
         //No engine protection active, so turn all the channels on
         if(currentStatus.startRevolutions >= configPage4.StgCycles)
         { 

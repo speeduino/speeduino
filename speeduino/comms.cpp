@@ -781,7 +781,7 @@ void processSerialCommand(void)
           
           serialPayload[0] = SERIAL_RC_OK;
 
-          serialPayload[1] = currentStatus.TS_SD_Status;
+          serialPayload[1] = buildSdCardStatus(currentStatus);
           serialPayload[2] = 0; //Error code
  
           //Sector size = 512

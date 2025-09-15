@@ -779,7 +779,7 @@ void sendValuesLegacy(void)
   bytestosend -= primarySerial.write(temp);
 
   bytestosend -= primarySerial.write(currentStatus.nSquirts);
-  bytestosend -= primarySerial.write(currentStatus.engineStatus);
+  bytestosend -= primarySerial.write(buildEngineStatus(currentStatus));
   bytestosend -= primarySerial.write(currentStatus.afrTarget);
   bytestosend -= primarySerial.write(currentStatus.afrTarget); // send twice so afrtgt1 == afrtgt2
   bytestosend -= primarySerial.write(99); // send dummy data as we don't have wbo2_en1

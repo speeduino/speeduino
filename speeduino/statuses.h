@@ -96,93 +96,66 @@ struct statuses {
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
-  // Status1 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  volatile union {
-    struct {
-        bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
-        bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
-        bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
-        bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
-        bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
-        bool status1Unused1 : 1; ///< Was BIT_STATUS1_BOOSTCUT, but unused
-        bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
-    };
-    byte status1;
-  };
-  // Status2 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  volatile union {
-    struct {
-        // TODO: resolve duplication with launchingHard
-        bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
-        // TODO: resolve duplication with launchingSoft
-        bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
-        bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
-        bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
-        bool status2unused1 : 1;  ///< Was BIT_STATUS2_BOOSTCUT, but unused
-        bool status2unused2: 1; ///< Was BIT_STATUS2_ERROR, but unused
-        bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
-        // TODO: resolve duplication with hasSync
-        bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
-    };
-    byte status2;
-  };
-  // Status3 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  volatile union {
-    struct {
-        bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
-        // TODO: resolve duplication with nitrous_status
-        bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
-        bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
-        bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
-        // TODO: resolve duplication with hasSync & hasFullSync
-        bool halfSync : 1;  ///< 
-        // TODO: resolve duplication with nSquirts
-        unsigned int nSquirtsStatus: 3; ///< 
-    };
-    byte status3;
-  };
-  // Status4 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  volatile union {
-    struct {
-        bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
-        bool vvt1AngleError : 1; ///< VVT1 cam angle within limits (false) or not (true)
-        bool vvt2AngleError : 1; ///< VVT2 cam angle within limits (false) or not (true)
-        bool fanOn : 1; ///< Engine fan status (true == on, false == off)
-        bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
-        bool stagingActive: 1; ///< Is fuel injection staging active (true) or not (false) 
-        bool commCompat: 1; ///< 
-        bool allowLegacyComms: 1; ///< 
-    };
-    byte status4;
-  };
-  // Status4 fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  volatile union {
-    struct {
-        bool status5Unused1 : 1; ///< Was BIT_STATUS5_FLATSH, but unused
-        bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 
-        bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
-        bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
-        bool knockPulseDetected : 1;  ///<
-        // TODO: resolve duplication with clutchTrigger
-        bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
-    };
-    byte status5;
-  };
 
-  // engine fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  union {
-    struct {
-        bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
-        bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
-        bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
-        bool wueIsActive : 1; ///< Is Warm Up Enrichment (WUE) active (true) or not (false) 
-        bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
-        bool isDeceleratingTPS: 1; ///< Are we decelerating (true) or not (false), based on TPS
-        bool engineUnused1 : 1;  ///< Used to be BIT_ENGINE_MAPACC, but unused
-        bool engineUnused2: 1; ///< Used to be BIT_ENGINE_MAPDCC, but unused
-    };
-    byte engineStatus;
-  };
+  // Status1 fields as defined in the INI
+  volatile bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
+  volatile bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
+  volatile bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
+  volatile bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
+  bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
+  volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
+
+  // Status2 fields as defined in the INI. 
+  // TODO: resolve duplication with launchingHard
+  bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
+  // TODO: resolve duplication with launchingSoft
+  bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
+  bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
+  bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
+  bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
+  // TODO: resolve duplication with hasSync
+  volatile bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
+
+  // Status3 fields as defined in the INI.   
+  bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
+  // TODO: resolve duplication with nitrous_status
+  bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
+  bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
+  bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
+  // TODO: resolve duplication with hasSync & hasFullSync
+  volatile bool halfSync : 1;  ///< 
+  // TODO: resolve duplication with nSquirts
+  unsigned int nSquirtsStatus: 3; ///< 
+
+  // Status4 fields as defined in the INI.   
+  bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
+  bool vvt1AngleError : 1; ///< VVT1 cam angle within limits (false) or not (true)
+  bool vvt2AngleError : 1; ///< VVT2 cam angle within limits (false) or not (true)
+  bool fanOn : 1; ///< Engine fan status (true == on, false == off)
+  bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
+  bool stagingActive: 1; ///< Is fuel injection staging active (true) or not (false) 
+  bool commCompat: 1; ///< 
+  bool allowLegacyComms: 1; ///< 
+
+  // Status5 fields as defined in the INI. 
+  bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 
+  bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
+  bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
+  bool knockPulseDetected : 1;  ///<
+  // TODO: resolve duplication with clutchTrigger
+  bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
+
+  // Engine status fields as defined in the INI.  
+  // TODO: engine has 3 states: Off, Cranking, Running. Need to capture this better 
+  bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
+  bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
+  bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
+  bool wueIsActive : 1; ///< Is Warm Up Enrichment (WUE) active (true) or not (false) 
+  // TODO: acceleration has 3 states: Steady, Accelerating, Decelerating. Need to capture this better 
+  bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
+  bool isDeceleratingTPS: 1; ///< Are we decelerating (true) or not (false), based on TPS
+  
+  // TODO: make all pulse widths uint16_t
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
   unsigned int PW3; ///< In uS
@@ -196,20 +169,15 @@ struct statuses {
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
   bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
+  // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
+  // TODO: make all RPMs uint16_t
   unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
   bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
-  /// Test Output bits (only first bit used/tested ?)
-  union {
-    struct {
-        // TODO: resolve conflict with testActive
-        bool isTestModeActive : 1; // Is hardware test mode on?
-        // Other bits unused....
-    };
-    byte testOutputs;
-  };   
+  // TODO: resolve conflict with testActive
+  bool isTestModeActive : 1; // Is hardware test mode on?
   bool testActive;    // Not in use ? Replaced by testOutputs ?
   uint16_t boostDuty; ///< Boost Duty percentage value * 100 to give 2 points of precision
   byte idleLoad;      ///< Either the current steps or current duty cycle for the idle control
@@ -238,19 +206,15 @@ struct statuses {
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
+
   // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  union {
-    struct {
-        bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
-        bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
-        bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
-        bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
-        bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
-        bool engineProtectUnused : 2; ///< 
-        bool engineProtectIoError : 1; ///<
-    };
-    byte engineProtectStatus;
-  };
+  bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
+  bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
+  bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
+  bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
+  bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
+  bool engineProtectIoError : 1; ///<
+
   byte fanDuty;
   byte wmiPW;
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
@@ -258,35 +222,25 @@ struct statuses {
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
 
-  // SD card status field as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  // SD card status fields.
   // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h
-  union {
-    struct {
-        bool sdCardPresent : 1; ///< true if a card is present, false if not
-        unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
-        bool sdCardReady : 1; ///< true if ready, false if not
-        bool sdCardLogging : 1; ///< true if logging active, false if not
-        bool sdCardError : 1;  ///< true if error, false if not
-        unsigned int sdCardUnusedBit1 : 1;  ///< Was SD_STATUS_CARD_VERSION, but unused
-        unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
-        bool sdCardUnused : 1;  ///< true if unused, false if not
-    };
-    byte TS_SD_Status;
-  };
+  bool sdCardPresent : 1; ///< true if a card is present, false if not
+  unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
+  bool sdCardReady : 1; ///< true if ready, false if not
+  bool sdCardLogging : 1; ///< true if logging active, false if not
+  bool sdCardError : 1;  ///< true if error, false if not
+  unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
+  bool sdCardUnused : 1;  ///< true if unused, false if not
 
-  // airConStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
-  union {
-    struct {
-        bool airconRequested : 1; ///< Indicates whether the A/C button is pressed
-        bool airconCompressorOn : 1; ///< Indicates whether the A/C compressor is running
-        bool airconRpmLockout : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
-        bool airconTpsLockout : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
-        bool airconTurningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-        bool airconCltLockout : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
-        bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
-    };
-    byte airConStatus;
-  };
+  // airConStatus fields.
+  bool airconRequested : 1; ///< Indicates whether the A/C button is pressed
+  bool airconCompressorOn : 1; ///< Indicates whether the A/C compressor is running
+  bool airconRpmLockout : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+  bool airconTpsLockout : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+  bool airconTurningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+  bool airconCltLockout : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
+  bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
+  
   uint8_t systemTemp;
 };
 
@@ -303,4 +257,21 @@ static inline bool HasAnySync(const statuses &status) {
     return HasAnySyncUnsafe(status);
   }
   return false; // Just here to avoid compiler warning.
+}
+
+static inline bool isEngineProtectActive(const statuses &status) {
+  return status.engineProtectRpm
+        || status.engineProtectBoostCut
+        || status.engineProtectOil
+        || status.engineProtectAfr
+        || status.engineProtectClt;
+}
+
+static inline void resetEngineProtect(statuses &status) {
+  status.engineProtectRpm = false;
+  status.engineProtectBoostCut = false;
+  status.engineProtectOil = false;
+  status.engineProtectAfr = false;
+  status.engineProtectClt = false;
+  status.engineProtectIoError = false;
 }
