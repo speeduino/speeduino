@@ -187,7 +187,6 @@ struct statuses {
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
-  byte nChannels; /**< Number of fuel and ignition channels.  */
   uint16_t fuelLoad;
   uint16_t ignLoad;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
