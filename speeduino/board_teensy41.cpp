@@ -1,5 +1,6 @@
 #include "globals.h"
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "board_teensy41.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -7,13 +8,31 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
+#include "storage_api.h"
 
-/*
-  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
-*/
+static byte eeprom_read(uint16_t address) {
+  return EEPROM.read(address);
+}
+static void eeprom_write(uint16_t address, byte val) {
+  EEPROM.write(address, val);
+}
+static uint16_t eeprom_length(void) {
+  return EEPROM.length();
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<EEPROM.length(); ++address) {
+    EEPROM.update(address, UINT8_MAX);
+  }   
+}
+
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = eeprom_read,
+    .write = eeprom_write,
+    .length = eeprom_length,
+    .clear = eeprom_clear,
+  });
+}
 
 static void PIT_isr();
 static void TMR1_isr(void);
