@@ -19,7 +19,6 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   current.hasSync = true;
-  current.status3 =  0U;
 }
 
 static void test_canUseCycleAverge(void) {
@@ -213,8 +212,7 @@ static void enable_event_average(statuses &current, config2 &page2) {
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   current.hasSync = true;
-  current.status3 =  0U;
-  current.engineProtectStatus = 0U;
+  resetEngineProtect(current);
 }
 
 static void test_canUseEventAverage(void) {
@@ -239,9 +237,25 @@ static void test_canUseEventAverage(void) {
   current.RPMdiv100 = page2.mapSwitchPoint+1;
   TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
 
-  current.engineProtectStatus = 1;
+  current.engineProtectRpm = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
-  current.engineProtectStatus = 0;  
+  resetEngineProtect(current);
+
+  current.engineProtectBoostCut = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  resetEngineProtect(current);
+
+  current.engineProtectOil = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  resetEngineProtect(current);
+
+  current.engineProtectAfr = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  resetEngineProtect(current);
+
+  current.engineProtectClt = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  resetEngineProtect(current);
 }
 
 

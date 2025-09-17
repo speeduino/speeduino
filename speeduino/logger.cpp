@@ -7,6 +7,163 @@
 #include BOARD_H 
 #include "units.h"
 
+static byte setStatusBit(byte status, uint8_t index, bool bit)
+{
+  BIT_WRITE(status, index, bit);
+  return status;
+}
+
+// Templated recursion terminates here
+static inline byte setStatusBits(byte status, bool (&bits)[1])
+{
+  return setStatusBit(status, 0U, bits[0U]);
+}
+
+template <uint8_t N>
+static inline byte setStatusBits(byte status, bool (&bits)[N])
+{
+  using shorter_t = bool(&)[N-1U];
+  // Recurse 
+  return setStatusBits(
+    setStatusBit(status, N-1U, bits[N-1U]), 
+    (shorter_t)bits);
+}
+
+static byte buildStatus1(const statuses &current)
+{
+  bool bits[] = {
+    current.isInj1Open,
+    current.isInj2Open,
+    current.isInj3Open,
+    current.isInj4Open,
+    current.isDFCOActive,
+    false, // Unused
+    current.isToothLog1Full,
+  };
+  return setStatusBits(0U, bits);
+}
+
+static byte buildStatus2(const statuses &current)
+{
+  bool bits[] = {
+    current.hardLaunchActive,
+    current.softLaunchActive,
+    current.hardLimitActive,
+    current.softLimitActive,
+    false, // Unused
+    false, // Unused
+    current.idleOn,
+    current.hasFullSync,
+  };
+  return setStatusBits(0U, bits);
+}
+
+static byte buildStatus3(const statuses &current)
+{
+  bool bits[] = {
+    current.resetPreventActive,
+    current.nitrousActive,
+    current.secondFuelTableActive,
+    current.vssUiRefresh,
+    current.halfSync,
+  };
+  byte status3 = setStatusBits(0U, bits);
+  status3 |= (current.nSquirtsStatus << 5U); // Uses bits 5-7
+  return status3;
+}
+
+static byte buildStatus4(const statuses &current)
+{
+  bool bits[] = {
+    current.wmiTankEmpty,
+    current.vvt1AngleError,
+    current.vvt2AngleError,
+    current.fanOn,
+    current.burnPending,
+    current.stagingActive,
+    current.commCompat,
+    current.allowLegacyComms,
+  };
+  return setStatusBits(0U, bits);
+}
+
+static byte buildStatus5(const statuses &current)
+{
+  bool bits[] = {
+    false, // Unused
+    current.flatShiftSoftCut,
+    current.secondSparkTableActive,
+    current.knockRetardActive,
+    current.knockPulseDetected,
+    current.clutchTriggerActive,
+  };
+  return setStatusBits(0U, bits);
+}
+
+byte buildEngineStatus(const statuses &current)
+{
+  bool bits[] = {
+    current.engineIsRunning,
+    current.engineIsCranking,
+    current.aseIsActive,
+    current.wueIsActive,
+    current.isAcceleratingTPS,
+    current.isDeceleratingTPS,
+  };
+  return setStatusBits(0U, bits);
+}
+
+static byte buildTestOutput(const statuses &current)
+{
+  bool bits[] = {
+    current.isTestModeActive,
+  };
+  return setStatusBits(0, bits);
+}
+
+byte buildSdCardStatus(const statuses &current)
+{
+  bool bits[] = {
+    current.sdCardPresent,
+    current.sdCardType,
+    current.sdCardReady,
+    current.sdCardLogging,
+    current.sdCardError,
+    false, // Unused
+    current.sdCardFS,
+    current.sdCardUnused,
+  };
+  return setStatusBits(0, bits);
+}
+
+static byte buildAirConStatus(const statuses &current)
+{
+  bool bits[] = {
+    current.airconRequested,
+    current.airconCompressorOn,
+    current.airconRpmLockout,
+    current.airconTpsLockout,
+    current.airconTurningOn,
+    current.airconCltLockout,
+    current.airconFanOn,
+  };
+  return setStatusBits(0, bits);
+}
+
+static byte buildEngineProtectStatus(const statuses &current)
+{
+  bool bits[] = {
+    current.engineProtectRpm,
+    current.engineProtectBoostCut,
+    current.engineProtectOil,
+    current.engineProtectAfr,
+    current.engineProtectClt,
+    false, // Unused
+    current.engineProtectIoError,    
+  };
+  return setStatusBits(0, bits);
+}
+
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
  * Notes on fields:
@@ -24,13 +181,13 @@ byte getTSLogEntry(uint16_t byteNum)
   switch(byteNum)
   {
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-    case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
+    case 1: statusValue = buildStatus1(currentStatus); break; //status1 Bitfield
+    case 2: statusValue = buildEngineStatus(currentStatus); break; //Engine Status Bitfield
     case 3: statusValue = currentStatus.syncLossCounter; break;
     case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
     case 5: statusValue = highByte(currentStatus.MAP); break;
-    case 6: statusValue = lowByte(temperatureAddOffset(currentStatus.IAT)); break; //mat
-    case 7: statusValue = lowByte(temperatureAddOffset(currentStatus.coolant)); break; //Coolant ADC
+    case 6: statusValue = temperatureAddOffset(currentStatus.IAT); break; //mat
+    case 7: statusValue = temperatureAddOffset(currentStatus.coolant); break; //Coolant ADC
     case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
     case 9: statusValue = currentStatus.battery10; break; //battery voltage
     case 10: statusValue = currentStatus.O2; break; //O2
@@ -68,7 +225,7 @@ byte getTSLogEntry(uint16_t byteNum)
 
     case 30: statusValue = lowByte(currentStatus.boostTarget >> 1U); break; //Divide boost target by 2 to fit in a byte
     case 31: statusValue = lowByte(div100(currentStatus.boostDuty)); break;
-    case 32: statusValue = currentStatus.status2; break; //Spark related bitfield
+    case 32: statusValue = buildStatus2(currentStatus); break; //Spark related bitfield
 
     //rpmDOT must be sent as a signed integer
     case 33: statusValue = lowByte(currentStatus.rpmDOT); break;
@@ -79,7 +236,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 37: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
 
     case 38: statusValue = currentStatus.idleLoad; break;
-    case 39: statusValue = currentStatus.testOutputs; break;
+    case 39: statusValue = buildTestOutput(currentStatus); break;
 
     case 40: statusValue = currentStatus.O2_2; break; //O2
     case 41: statusValue = currentStatus.baro; break; //Barometer value
@@ -129,8 +286,8 @@ byte getTSLogEntry(uint16_t byteNum)
     case 82: statusValue = lowByte(currentStatus.PW4); break;
     case 83: statusValue = highByte(currentStatus.PW4); break;
 
-    case 84: statusValue = currentStatus.status3; break;
-    case 85: statusValue = currentStatus.engineProtectStatus; break;
+    case 84: statusValue = buildStatus3(currentStatus); break;
+    case 85: statusValue = buildEngineProtectStatus(currentStatus); break;
     case 86: statusValue = lowByte(currentStatus.fuelLoad); break;
     case 87: statusValue = highByte(currentStatus.fuelLoad); break;
     case 88: statusValue = lowByte(currentStatus.ignLoad); break;
@@ -155,24 +312,24 @@ byte getTSLogEntry(uint16_t byteNum)
     case 107: statusValue = currentStatus.fuelPressure; break;
     case 108: statusValue = currentStatus.oilPressure; break;
     case 109: statusValue = currentStatus.wmiPW; break;
-    case 110: statusValue = currentStatus.status4; break;
+    case 110: statusValue = buildStatus4(currentStatus); break;
     case 111: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
     case 112: statusValue = highByte(currentStatus.vvt2Angle); break;
     case 113: statusValue = currentStatus.vvt2TargetAngle; break;
     case 114: statusValue = lowByte(currentStatus.vvt2Duty); break;
     case 115: statusValue = currentStatus.outputsStatus; break;
-    case 116: statusValue = lowByte(temperatureAddOffset(currentStatus.fuelTemp)); break; //Fuel temperature from flex sensor
+    case 116: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 118: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 119: statusValue = currentStatus.advance2; break; //advance 2 (%)
-    case 120: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 120: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
     case 121: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 122: statusValue = highByte(currentStatus.EMAP); break;
     case 123: statusValue = currentStatus.fanDuty; break;
-    case 124: statusValue = currentStatus.airConStatus; break;
+    case 124: statusValue = buildAirConStatus(currentStatus); break;
     case 125: statusValue = lowByte(currentStatus.actualDwell); break;
     case 126: statusValue = highByte(currentStatus.actualDwell); break;
-    case 127: statusValue = currentStatus.status5; break;
+    case 127: statusValue = buildStatus5(currentStatus); break;
     case 128: statusValue = currentStatus.knockCount; break;
     case 129: statusValue = currentStatus.knockRetard; break;
 
@@ -205,8 +362,8 @@ int16_t getReadableLogEntry(uint16_t logIndex)
   switch(logIndex)
   {
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-    case 1: statusValue = currentStatus.status1; break; //status1 Bitfield
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield
+    case 1: statusValue = buildStatus1(currentStatus); break; //status1 Bitfield
+    case 2: statusValue = buildEngineStatus(currentStatus); break; //Engine Status Bitfield
     case 3: statusValue = currentStatus.syncLossCounter; break;
     case 4: statusValue = currentStatus.MAP; break; //2 bytes for MAP
     case 5: statusValue = currentStatus.IAT; break; //mat
@@ -239,13 +396,13 @@ int16_t getReadableLogEntry(uint16_t logIndex)
 
     case 24: statusValue = currentStatus.boostTarget; break;
     case 25: statusValue = currentStatus.boostDuty; break;
-    case 26: statusValue = currentStatus.status2; break; //Spark related bitfield
+    case 26: statusValue = buildStatus2(currentStatus); break; //Spark related bitfield
     case 27: statusValue = currentStatus.rpmDOT; break;
     case 28: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
     case 29: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
     case 30: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
     case 31: statusValue = currentStatus.idleLoad; break;
-    case 32: statusValue = currentStatus.testOutputs; break;
+    case 32: statusValue = buildTestOutput(currentStatus); break;
     case 33: statusValue = currentStatus.O2_2; break; //O2
     case 34: statusValue = currentStatus.baro; break; //Barometer value
 
@@ -274,8 +431,8 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 55: statusValue = currentStatus.PW3; break;
     case 56: statusValue = currentStatus.PW4; break;
   
-    case 57: statusValue = currentStatus.status3; break;
-    case 58: statusValue = currentStatus.engineProtectStatus; break;
+    case 57: statusValue = buildStatus3(currentStatus); break;
+    case 58: statusValue = buildEngineProtectStatus(currentStatus); break;
 
     case 59: break; //UNUSED!!
 
@@ -296,7 +453,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 74: statusValue = currentStatus.fuelPressure; break;
     case 75: statusValue = currentStatus.oilPressure; break;
     case 76: statusValue = currentStatus.wmiPW; break;
-    case 77: statusValue = currentStatus.status4; break;
+    case 77: statusValue = buildStatus4(currentStatus); break;
     case 78: statusValue = currentStatus.vvt2Angle; break; //2 bytes for vvt2Angle
     case 79: statusValue = currentStatus.vvt2TargetAngle; break;
     case 80: statusValue = currentStatus.vvt2Duty; break;
@@ -305,12 +462,12 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 83: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 84: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 85: statusValue = currentStatus.advance2; break; //advance 2 (%)
-    case 86: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 86: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
     case 87: statusValue = currentStatus.EMAP; break;
     case 88: statusValue = currentStatus.fanDuty; break;
-    case 89: statusValue = currentStatus.airConStatus; break;
+    case 89: statusValue = buildAirConStatus(currentStatus); break;
     case 90: statusValue = currentStatus.actualDwell; break;
-    case 91: statusValue = currentStatus.status5; break;
+    case 91: statusValue = buildStatus5(currentStatus); break;
     case 92: statusValue = currentStatus.knockCount; break;
     case 93: statusValue = currentStatus.knockRetard; break;
     case 94: statusValue = currentStatus.PW5; break;
@@ -358,18 +515,19 @@ float getReadableFloatLogEntry(uint16_t logIndex)
 uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 {
   uint8_t statusValue = 0;
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   switch(byteNum)
   {
+    default:
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
-    case 1: statusValue = currentStatus.status1; break; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
-    case 2: statusValue = currentStatus.engine; break; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
+    case 1: statusValue = buildStatus1(currentStatus); break; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
+    case 2: statusValue = buildEngineStatus(currentStatus); break; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
     case 3: statusValue = (byte)div100(currentStatus.dwell); break; //Dwell in ms * 10
     case 4: statusValue = lowByte(currentStatus.MAP); break; //2 bytes for MAP
     case 5: statusValue = highByte(currentStatus.MAP); break;
-    case 6: statusValue = (byte)(temperatureAddOffset(currentStatus.IAT)); break; //mat
-    case 7: statusValue = (byte)(temperatureAddOffset(currentStatus.coolant)); break; //Coolant ADC
+    case 6: statusValue = temperatureAddOffset(currentStatus.IAT); break; //mat
+    case 7: statusValue = temperatureAddOffset(currentStatus.coolant); break; //Coolant ADC
     case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
     case 9: statusValue = currentStatus.battery10; break; //battery voltage
     case 10: statusValue = currentStatus.O2; break; //O2
@@ -393,16 +551,16 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 27: currentStatus.freeRAM = freeRam(); statusValue = lowByte(currentStatus.freeRAM); break; //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF); break;
     case 28: currentStatus.freeRAM = freeRam(); statusValue = highByte(currentStatus.freeRAM); break;
 
-    case 29: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
-    case 30: statusValue = (byte)(currentStatus.boostDuty / 100); break;
-    case 31: statusValue = currentStatus.status2; break; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
+    case 29: statusValue = currentStatus.boostTarget / 2; break; //Divide boost target by 2 to fit in a byte
+    case 30: statusValue = currentStatus.boostDuty / 100; break;
+    case 31: statusValue = buildStatus2(currentStatus); break; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
     case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
     case 33: statusValue = highByte(currentStatus.rpmDOT); break;
     case 34: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
     case 35: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
     case 36: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
     case 37: statusValue = currentStatus.idleLoad; break;
-    case 38: statusValue = currentStatus.testOutputs; break; // testEnabled(0), testActive(1)
+    case 38: statusValue = buildTestOutput(currentStatus); break; // testEnabled(0), testActive(1)
     case 39: statusValue = currentStatus.O2_2; break; //O2
     case 40: statusValue = currentStatus.baro; break; //Barometer value
     case 41: statusValue = lowByte(currentStatus.canin[0]); break;
@@ -449,8 +607,8 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 80: statusValue = lowByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
     case 81: statusValue = highByte(currentStatus.PW4); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
-    case 82: statusValue = currentStatus.status3; break; // resentLockOn(0), nitrousOn(1), fuel2Active(2), vssRefresh(3), halfSync(4), nSquirts(6:7)
-    case 83: statusValue = currentStatus.engineProtectStatus; break; //RPM(0), MAP(1), OIL(2), AFR(3), Unused(4:7)
+    case 82: statusValue = buildStatus3(currentStatus); break;
+    case 83: statusValue = buildEngineProtectStatus(currentStatus); break; //RPM(0), MAP(1), OIL(2), AFR(3), Unused(4:7)
     case 84: statusValue = lowByte(currentStatus.fuelLoad); break;
     case 85: statusValue = highByte(currentStatus.fuelLoad); break;
     case 86: statusValue = lowByte(currentStatus.ignLoad); break;
@@ -459,7 +617,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 89: statusValue = highByte(currentStatus.injAngle); break; 
     case 90: statusValue = currentStatus.idleLoad; break;
     case 91: statusValue = currentStatus.CLIdleTarget; break; //closed loop idle target
-    case 92: statusValue = (uint8_t)(currentStatus.mapDOT / 10); break; //rate of change of the map 
+    case 92: statusValue = currentStatus.mapDOT / 10; break; //rate of change of the map 
     case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
     case 94: statusValue = currentStatus.vvt1TargetAngle; break;
     case 95: statusValue = currentStatus.vvt1Duty; break;
@@ -473,23 +631,23 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 103: statusValue = currentStatus.fuelPressure; break;
     case 104: statusValue = currentStatus.oilPressure; break;
     case 105: statusValue = currentStatus.wmiPW; break;
-    case 106: statusValue = currentStatus.status4; break; // wmiEmptyBit(0), vvt1Error(1), vvt2Error(2), fanStatus(3), UnusedBits(4:7)
+    case 106: statusValue = buildStatus4(currentStatus); break;
     case 107: statusValue = (int8_t)currentStatus.vvt2Angle; break;
     case 108: statusValue = currentStatus.vvt2TargetAngle; break;
     case 109: statusValue = currentStatus.vvt2Duty; break;
     case 110: statusValue = currentStatus.outputsStatus; break;
-    case 111: statusValue = (byte)temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
+    case 111: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 112: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 113: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 114: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 115: statusValue = currentStatus.advance1; break; //advance 1 
     case 116: statusValue = currentStatus.advance2; break; //advance 2 
     case 117: statusValue = currentStatus.nitrous_status; break;
-    case 118: statusValue = currentStatus.TS_SD_Status; break; //SD card status
+    case 118: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;
     case 121: statusValue = currentStatus.fanDuty; break;
-    case 122: statusValue = currentStatus.airConStatus; break;
+    case 122: statusValue = buildAirConStatus(currentStatus); break;
   }
 
   return statusValue;
@@ -528,7 +686,7 @@ void startToothLogger(void)
 {
   currentStatus.toothLogEnabled = true;
   currentStatus.compositeTriggerUsed = 0U; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -562,7 +720,7 @@ void startCompositeLogger(void)
 {
   currentStatus.compositeTriggerUsed = 2U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -595,7 +753,7 @@ void startCompositeLoggerTertiary(void)
 {
   currentStatus.compositeTriggerUsed = 3U;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
@@ -623,7 +781,7 @@ void startCompositeLoggerCams(void)
 {
   currentStatus.compositeTriggerUsed = 4;
   currentStatus.toothLogEnabled = false; //Safety first (Should never be required)
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0;
 
   //Disconnect the standard interrupt and add the logger version

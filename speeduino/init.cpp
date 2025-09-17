@@ -131,8 +131,8 @@ void initialiseAll(void)
     teensy41_customSerialBegin();
 #endif
     pPrimarySerial = &Serial; //Default to standard Serial interface
-    BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
-   
+    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
+    
     //Setup the calibration tables
     loadCalibration();   
 
@@ -196,7 +196,7 @@ void initialiseAll(void)
     initialiseAirCon();
     initialiseAuxPWM();
     initialiseCorrections();
-    BIT_CLEAR(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
+    currentStatus.engineProtectIoError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseMAPBaro();
     initialiseProgrammableIO();
@@ -256,7 +256,7 @@ void initialiseAll(void)
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
     currentStatus.RPM = 0;
     currentStatus.hasSync = false;
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_HALFSYNC);
+    currentStatus.halfSync = false;
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     //currentStatus.seclx10 = 0;
@@ -266,10 +266,9 @@ void initialiseAll(void)
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
-    currentStatus.engineProtectStatus = 0;
+    resetEngineProtect(currentStatus);
     triggerFilterTime = 0; //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise. This is simply a default value, the actual values are set in the setup() functions of each decoder
     dwellLimit_uS = (1000 * configPage4.dwellLimit);
-    currentStatus.nChannels = ((uint8_t)INJ_CHANNELS << 4) + IGN_CHANNELS; //First 4 bits store the number of injection channels, 2nd 4 store the number of ignition channels
     fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
@@ -821,7 +820,7 @@ void initialiseAll(void)
         break;
     }
 
-    currentStatus.status3 |= currentStatus.nSquirts << BIT_STATUS3_NSQUIRTS1; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
+    currentStatus.nSquirtsStatus = currentStatus.nSquirts; //Top 3 bits of the status3 variable are the number of squirts. This must be done after the above section due to nSquirts being forced to 1 for sequential
     
     //Special case:
     //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
