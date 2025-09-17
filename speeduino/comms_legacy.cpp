@@ -164,7 +164,7 @@ void legacySerialCommand(void)
           for(uint16_t x = 0; x < eepromSize; x++)
           {
             while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
-            if(primarySerial.available()) 
+            if(primarySerial.available()>0) 
             { 
               EEPROMWriteRaw(x, primarySerial.read());
             }
@@ -755,7 +755,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   }
 
   targetStatusFlag = SERIAL_INACTIVE;
-  while(targetPort.available()) { targetPort.read(); }
+  while(targetPort.available()>0) { targetPort.read(); }
   // Reset any flags that are being used to trigger page refreshes
   currentStatus.vssUiRefresh = false;
 }

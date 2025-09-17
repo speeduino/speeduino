@@ -44,9 +44,9 @@ A full copy of the license may be found in the projects root directory
 #include "schedule_calcs.h"
 #include "unit_testing.h"
 
-void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
-uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
-int nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
+static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
+static int nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 
 void (*triggerHandler)(void) = nullTriggerHandler; ///Pointer for the trigger function (Gets pointed to the relevant decoder)
 void (*triggerSecondaryHandler)(void) = nullTriggerHandler; ///Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
@@ -140,6 +140,7 @@ static libdivide::libdivide_s16_t divTriggerToothAngle;
  */
 static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
 {
+  // cppcheck-suppress misra-c2012-14.4 ; False positive - volatile is messing up the check
   if(currentStatus.isToothLog1Full) { return; }
   //High speed tooth logging history
   if( (currentStatus.toothLogEnabled == true) || (currentStatus.compositeTriggerUsed > 0) ) 

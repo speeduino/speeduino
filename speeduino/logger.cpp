@@ -16,7 +16,7 @@ static byte setStatusBit(byte status, uint8_t index, bool bit)
 // Templated recursion terminates here
 static inline byte setStatusBits(byte status, bool (&bits)[1])
 {
-  return setStatusBit(status, 0, bits[0U]);
+  return setStatusBit(status, 0U, bits[0U]);
 }
 
 template <uint8_t N>
@@ -40,7 +40,7 @@ static byte buildStatus1(const statuses &current)
     false, // Unused
     current.isToothLog1Full,
   };
-  return setStatusBits(0, bits);
+  return setStatusBits(0U, bits);
 }
 
 static byte buildStatus2(const statuses &current)
@@ -55,7 +55,7 @@ static byte buildStatus2(const statuses &current)
     current.idleOn,
     current.hasFullSync,
   };
-  return setStatusBits(0, bits);
+  return setStatusBits(0U, bits);
 }
 
 static byte buildStatus3(const statuses &current)
@@ -67,7 +67,7 @@ static byte buildStatus3(const statuses &current)
     current.vssUiRefresh,
     current.halfSync,
   };
-  byte status3 = setStatusBits(0, bits);
+  byte status3 = setStatusBits(0U, bits);
   status3 |= (current.nSquirtsStatus << 5U); // Uses bits 5-7
   return status3;
 }
@@ -84,7 +84,7 @@ static byte buildStatus4(const statuses &current)
     current.commCompat,
     current.allowLegacyComms,
   };
-  return setStatusBits(0, bits);
+  return setStatusBits(0U, bits);
 }
 
 static byte buildStatus5(const statuses &current)
@@ -97,7 +97,7 @@ static byte buildStatus5(const statuses &current)
     current.knockPulseDetected,
     current.clutchTriggerActive,
   };
-  return setStatusBits(0, bits);
+  return setStatusBits(0U, bits);
 }
 
 byte buildEngineStatus(const statuses &current)
@@ -110,7 +110,7 @@ byte buildEngineStatus(const statuses &current)
     current.isAcceleratingTPS,
     current.isDeceleratingTPS,
   };
-  return setStatusBits(0, bits);
+  return setStatusBits(0U, bits);
 }
 
 static byte buildTestOutput(const statuses &current)
@@ -519,6 +519,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 
   switch(byteNum)
   {
+    default:
     case 0: statusValue = currentStatus.secl; break; //secl is simply a counter that increments each second. Used to track unexpected resets (Which will reset this count to 0)
     case 1: statusValue = buildStatus1(currentStatus); break; //status1 Bitfield, inj1Status(0), inj2Status(1), inj3Status(2), inj4Status(3), DFCOOn(4), boostCutFuel(5), toothLog1Ready(6), toothLog2Ready(7)
     case 2: statusValue = buildEngineStatus(currentStatus); break; //Engine Status Bitfield, running(0), crank(1), ase(2), warmup(3), tpsaccaen(4), tpsacden(5), mapaccaen(6), mapaccden(7)
@@ -550,8 +551,8 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 27: currentStatus.freeRAM = freeRam(); statusValue = lowByte(currentStatus.freeRAM); break; //(byte)((currentStatus.loopsPerSecond >> 8) & 0xFF); break;
     case 28: currentStatus.freeRAM = freeRam(); statusValue = highByte(currentStatus.freeRAM); break;
 
-    case 29: statusValue = (byte)(currentStatus.boostTarget >> 1); break; //Divide boost target by 2 to fit in a byte
-    case 30: statusValue = (byte)(currentStatus.boostDuty / 100); break;
+    case 29: statusValue = currentStatus.boostTarget / 2; break; //Divide boost target by 2 to fit in a byte
+    case 30: statusValue = currentStatus.boostDuty / 100; break;
     case 31: statusValue = buildStatus2(currentStatus); break; //Spark related bitfield, launchHard(0), launchSoft(1), hardLimitOn(2), softLimitOn(3), boostCutSpark(4), error(5), idleControlOn(6), sync(7)
     case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
     case 33: statusValue = highByte(currentStatus.rpmDOT); break;
@@ -616,7 +617,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 89: statusValue = highByte(currentStatus.injAngle); break; 
     case 90: statusValue = currentStatus.idleLoad; break;
     case 91: statusValue = currentStatus.CLIdleTarget; break; //closed loop idle target
-    case 92: statusValue = (uint8_t)(currentStatus.mapDOT / 10); break; //rate of change of the map 
+    case 92: statusValue = currentStatus.mapDOT / 10; break; //rate of change of the map 
     case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
     case 94: statusValue = currentStatus.vvt1TargetAngle; break;
     case 95: statusValue = currentStatus.vvt1Duty; break;
