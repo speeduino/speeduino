@@ -1553,7 +1553,7 @@ void triggerPri_4G63(void)
           if(configPage2.nCylinders == 4)
           {
             triggerToothAngle = 110;
-            triggerFilterTime = rshift<3>(curGap * 3UL); //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+            triggerFilterTime = rshift<3>((uint32_t)(curGap * 3UL)); //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
           }
           else if(configPage2.nCylinders == 6)
           {
@@ -1599,7 +1599,7 @@ void triggerPri_4G63(void)
           triggerToothAngle = 70; 
           if(configPage2.nCylinders == 4)
           { 
-            triggerFilterTime = rshift<3>(curGap * 11UL);//96.26 degrees with a target of 110
+            triggerFilterTime = rshift<3>((uint32_t)(curGap * 11UL));//96.26 degrees with a target of 110
           }
           else
           {
@@ -1611,7 +1611,7 @@ void triggerPri_4G63(void)
           if(configPage2.nCylinders == 4)
           { 
             triggerToothAngle = 110; 
-            triggerFilterTime = rshift<5>(curGap * 9UL); //61.87 degrees with a target of 70
+            triggerFilterTime = rshift<5>((uint32_t)(curGap * 9UL)); //61.87 degrees with a target of 70
           }
           else
           {
@@ -2516,7 +2516,7 @@ void triggerPri_Miata9905(void)
       {
         //Lite filter
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-        else { triggerToothAngle = 110; triggerFilterTime = rshift<3>(curGap * 3UL); } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+        else { triggerToothAngle = 110; triggerFilterTime = rshift<3>((uint32_t)(curGap * 3UL)); } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
       }
       else if(configPage4.triggerFilter == 2)
       {
@@ -2527,8 +2527,8 @@ void triggerPri_Miata9905(void)
       else if (configPage4.triggerFilter == 3)
       {
         //Aggressive filter level
-        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = rshift<3>(curGap * 11UL) ; } //96.26 degrees with a target of 110
-        else { triggerToothAngle = 110; triggerFilterTime = rshift<5>(curGap * 9UL); } //61.87 degrees with a target of 70
+        if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) ) { triggerToothAngle = 70; triggerFilterTime = rshift<3>((uint32_t)(curGap * 11UL)) ; } //96.26 degrees with a target of 110
+        else { triggerToothAngle = 110; triggerFilterTime = rshift<5>((uint32_t)(curGap * 9UL)); } //61.87 degrees with a target of 70
       }
       else if (configPage4.triggerFilter == 0)
       {
@@ -2760,7 +2760,7 @@ void triggerPri_MazdaAU(void)
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (toothCurrentCount == 1) || (toothCurrentCount == 3) ) { triggerToothAngle = 72; triggerFilterTime = curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
-      else { triggerToothAngle = 108; triggerFilterTime = rshift<3>(curGap * 3UL); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
+      else { triggerToothAngle = 108; triggerFilterTime = rshift<3>((uint32_t)(curGap * 3UL)); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
 
       toothLastMinusOneToothTime = toothLastToothTime;
       toothLastToothTime = curTime;
@@ -5757,13 +5757,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              triggerFilterTime = rshift<3>(curGap);
+              triggerFilterTime = rshift<3>((uint32_t)curGap);
               break;
             case 2: // 50 % 35 degrees
-              triggerFilterTime = rshift<3>(curGap) + rshift<4>(curGap);
+              triggerFilterTime = rshift<3>((uint32_t)curGap) + rshift<4>((uint32_t)curGap);
               break;
             case 3: // 75 % 52 degrees
-              triggerFilterTime = rshift<2>(curGap) + rshift<4>(curGap);
+              triggerFilterTime = rshift<2>((uint32_t)curGap) + rshift<4>((uint32_t)curGap);
               break;
             default:
               triggerFilterTime = 0;
@@ -5776,13 +5776,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 8 degrees
-              triggerFilterTime = rshift<3>(curGap);
+              triggerFilterTime = rshift<3>((uint32_t)curGap);
               break;
             case 2: // 50 % 17 degrees
-              triggerFilterTime = rshift<2>(curGap);
+              triggerFilterTime = rshift<2>((uint32_t)curGap);
               break;
             case 3: // 75 % 25 degrees
-              triggerFilterTime = rshift<2>(curGap) + rshift<3>(curGap);
+              triggerFilterTime = rshift<2>((uint32_t)curGap) + rshift<3>((uint32_t)curGap);
               break;
             default:
               triggerFilterTime = 0;
@@ -5814,13 +5814,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              triggerFilterTime = rshift<3>(curGap);
+              triggerFilterTime = rshift<3>((uint32_t)curGap);
               break;
             case 2: // 50 % 35 degrees
-              triggerFilterTime = rshift<2>(curGap);
+              triggerFilterTime = rshift<2>((uint32_t)curGap);
               break;
             case 3: // 75 % 52 degrees
-              triggerFilterTime = rshift<2>(curGap) + rshift<3>(curGap);
+              triggerFilterTime = rshift<2>((uint32_t)curGap) + rshift<3>((uint32_t)curGap);
               break;
             default:
               triggerFilterTime = 0;
@@ -5834,13 +5834,13 @@ void triggerPri_SuzukiK6A(void)
           switch (configPage4.triggerFilter)
           {
             case 1: // 25 % 42 degrees
-              triggerFilterTime = rshift<1>(curGap) + rshift<3>(curGap);
+              triggerFilterTime = rshift<1>((uint32_t)curGap) + rshift<3>((uint32_t)curGap);
               break;
             case 2: // 50 % 85 degrees
-              triggerFilterTime = curGap + rshift<2>(curGap);
+              triggerFilterTime = curGap + rshift<2>((uint32_t)curGap);
               break;
             case 3: // 75 % 127 degrees
-              triggerFilterTime = curGap + rshift<1>(curGap) + rshift<2>(curGap);
+              triggerFilterTime = curGap + rshift<1>((uint32_t)curGap) + rshift<2>((uint32_t)curGap);
               break;
             default:
               triggerFilterTime = 0;
