@@ -89,18 +89,18 @@ static FastCRC32 CRC32_calibration; //!< Support accumulation of a CRC during ca
 using crc_t = uint32_t;
 
 #ifdef COMMS_SD
-#undef SERIAL_BUFFER_SIZE
+#undef TS_SERIAL_BUFFER_SIZE
 /** @brief Serial payload buffer must be significantly larger for boards that support SD logging.
  * 
  * Large enough to contain 4 sectors + overhead 
  */
-#define SERIAL_BUFFER_SIZE (2048 + 3)
+#define TS_SERIAL_BUFFER_SIZE (2048 + 3)
 static uint16_t SDcurrentDirChunk;
 static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
 #endif
-static uint8_t serialPayload[SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
+static uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent
 Stream* pPrimarySerial;
 
