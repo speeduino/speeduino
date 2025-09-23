@@ -14,6 +14,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #include "utilities.h"
 #include "maths.h"
 #include "units.h"
+#include "aux_dbw.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;
@@ -46,6 +47,7 @@ void initCAN()
       Can0.setRX(DEF);
       Can0.setTX(DEF);
     #endif
+
   #endif
 }
 
@@ -179,6 +181,17 @@ void receiveCANwbo()
       }
     }
   }
+}
+
+void receiveCANdbw()
+{
+  if ((inMsg.id == 0x100))
+  {
+    uint16_t pedalPos = (word(inMsg.buf[1], inMsg.buf[0]));
+    uint16_t throttlePos = (word(inMsg.buf[3], inMsg.buf[2]));
+    dbwReceivePacket(pedalPos, throttlePos);
+  }
+  
 }
 
 // All supported definitions/protocols for CAN Dash broadcasts

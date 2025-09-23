@@ -37,15 +37,16 @@
 
 #if defined(NATIVE_CAN_AVAILABLE)
 
-void initCAN();
-int CAN_read();
-void CAN_write();
+void initCAN(void);
+int CAN_read(void);
+void CAN_write(void);
 void sendCANBroadcast(uint8_t);
-void receiveCANwbo();
+void receiveCANwbo(void);
+void receiveCANdbw(void);
 void DashMessages(uint16_t DashMessageID);
 void can_Command(void);
 void obd_response(uint8_t therequestedPID , uint8_t therequestedPIDlow, uint8_t therequestedPIDhigh);
-void readAuxCanBus();
+void readAuxCanBus(void);
 
 extern CAN_message_t outMsg;
 extern CAN_message_t inMsg;

@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "decoders.h"
 #include "aux_aircon.h"
 #include "aux_boost.h"
+#include "aux_dbw.h"
 #include "aux_idle.h"
 #include "aux_vvt.h"
 #include "aux_wmi.h"
@@ -144,6 +145,7 @@ void __attribute__((always_inline)) loop(void)
           // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
           while (CAN_read()) 
           {
+            receiveCANdbw();
             can_Command();
             readAuxCanBus();
             if (configPage2.canWBO > 0) { receiveCANwbo(); }
@@ -228,6 +230,7 @@ void __attribute__((always_inline)) loop(void)
 
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(50);
+      dbwControl(); //Need to confirm required frequency of this
       #endif
 
     }
