@@ -90,10 +90,6 @@
   #define CORE_SAM
   #define INJ_CHANNELS 4
   #define IGN_CHANNELS 4
-#elif defined(__SAMC21J18A__)
-  #define BOARD_H "board_samc21.h"
-  #define CORE_SAMC21
-  #define CORE_SAM
 #elif defined(__SAME51J19A__)
   #define BOARD_H "board_same51.h"
   #define CORE_SAME51
@@ -121,6 +117,8 @@
 #define MICROS_PER_SEC INT32_C(1000000)
 #define MICROS_PER_MIN INT32_C(MICROS_PER_SEC*60U)
 #define MICROS_PER_HOUR INT32_C(MICROS_PER_MIN*60U)
+
+#define UINT16_HALF_RANGE     0x8000
 
 #define SERIAL_PORT_PRIMARY   0
 #define SERIAL_PORT_SECONDARY 3
