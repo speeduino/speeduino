@@ -2,15 +2,16 @@
 #define MATH_H
 
 #include <stdint.h>
-#include "bit_shifts.h"
+#include <avr-fast-shift.h>
+#include <avr-fast-div.h>
 
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
 // Using predefined constants saves flash and RAM (.bss) versus calling the 
 // libdivide generator functions (E.g. libdivide_s32_gen)
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
-#include "src/libdivide/libdivide.h"
-#include "src/libdivide/constant_fast_div.h"
+#include <libdivide.h>
+#include <constant_fast_div.h>
 #endif
 
 uint8_t random1to100(void);
@@ -89,7 +90,7 @@ uint8_t random1to100(void);
  * @param d The denominator (divider) (an \em unsigned integer)
  * @param t The type of the result. E.g. uint16_t
  */
-#define UDIV_ROUND_CLOSEST(n, d, t) ((t)((n) + DIV_ROUND_CORRECT(d, t))/(t)(d))
+#define UDIV_ROUND_CLOSEST(n, d, t) ((t)fast_div((n) + DIV_ROUND_CORRECT(d, t), (t)(d)))
 
 /**
  * @brief Rounded \em unsigned integer division optimized for compile time constants
@@ -229,83 +230,16 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(__AVR__)
-
-static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
-  return divisor>(uint16_t)(dividend>>16U);
-}
-
-#endif
 /**
- * @brief Optimised division: uint32_t/uint16_t => uint16_t
- * 
- * Optimised division of unsigned 32-bit by unsigned 16-bit when it is known
- * that the result fits into unsigned 16-bit.
- * 
- * ~60% quicker than raw 32/32 => 32 division on ATMega
- * 
- * @note Bad things will likely happen if the result doesn't fit into 16-bits.
- * @note Copied from https://stackoverflow.com/a/66593564
- * 
- * @param dividend The dividend (numerator)
- * @param divisor The divisor (denominator)
- * @return uint16_t 
- */
-static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
-{
-#if defined(__AVR__)
-
-    if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
-
-    #define INDEX_REG "r16"
-
-    asm(
-        "    ldi " INDEX_REG ", 16 ; bits = 16\n\t"
-        "0:\n\t"
-        "    lsl  %A0     ; shift\n\t"
-        "    rol  %B0     ;  rem:quot\n\t"
-        "    rol  %C0     ;   left\n\t"
-        "    rol  %D0     ;    by 1\n\t"
-        "    brcs 1f     ; if carry out, rem > divisor\n\t"
-        "    cp   %C0, %A1 ; is rem less\n\t"
-        "    cpc  %D0, %B1 ;  than divisor ?\n\t"
-        "    brcs 2f     ; yes, when carry out\n\t"
-        "1:\n\t"
-        "    sub  %C0, %A1 ; compute\n\t"
-        "    sbc  %D0, %B1 ;  rem -= divisor\n\t"
-        "    ori  %A0, 1  ; record quotient bit as 1\n\t"
-        "2:\n\t"
-        "    dec  " INDEX_REG "     ; bits--\n\t"
-        "    brne 0b     ; until bits == 0"
-        : "=d" (dividend) 
-        : "d" (divisor) , "0" (dividend) 
-        : INDEX_REG
-    );
-
-    // Lower word contains the quotient, upper word contains the remainder.
-    return dividend & 0xFFFFU;
-#else
-    // The non-AVR platforms are all fast enough (or have built in hardware dividers)
-    // so just fall back to regular 32-bit division.
-    return dividend / divisor;
-#endif
-}
-
-
-/**
- * @brief Same as udiv_32_16(), except this will round to nearest integer 
+ * @brief Same as fast_div(), except this will round to nearest integer 
  * instead of truncating.
  * 
  * Minor performance drop compared to non-rounding version.
  **/
-static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
-{
-#if defined(__AVR__)
-    dividend = dividend + (uint32_t)(DIV_ROUND_CORRECT(divisor, uint16_t));
-    return udiv_32_16(dividend, divisor);
-#else
-    return (uint16_t)UDIV_ROUND_CLOSEST(dividend, (uint32_t)divisor, uint32_t);
-#endif
+template <typename TDividend, typename TDivisor>
+static constexpr inline TDividend fast_div_closest(TDividend dividend, TDivisor divisor) {
+    // TDivisor correction = (divisor>>1U)+(TDivisor)DIV_ROUND_BEHAVIOR;
+    return fast_div(dividend + DIV_ROUND_CORRECT(divisor, TDivisor), divisor);
 }
 
 /**
@@ -395,6 +329,23 @@ static inline uint8_t fast_map(const uint8_t from, const uint8_t fromLow, const 
   } else {
     return scale(from - fromLow, fromHigh - fromLow, toHigh-toLow) + toLow;
   }
+}
+
+/**
+ * @brief Rounded arithmetic right shift
+ * 
+ * Right shifting throws away bits. When use for fixed point division, this
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
+ * when right-shifting by S, just add in 2 power b−1 (which is the 
+ * fixed-point equivalent of 0.5) first
+ *  
+ * @tparam b number of bits to shift by
+ * @param a value to shift
+ * @return uint32_t 
+ */
+template <uint8_t b> 
+static inline uint32_t rshift_round(uint32_t a) { 
+    return rshift<b>(a+(1UL<<(b-1UL))); 
 }
 
 #endif
