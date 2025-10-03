@@ -128,4 +128,72 @@ table_axis_iterator x_rbegin(void *pTable, table_type_t key);
 table_axis_iterator y_begin(void *pTable, table_type_t key);
 
 table_axis_iterator y_rbegin(void *pTable, table_type_t key);
+
+/**
+ * @brief Convenience function: apply an operation to all elements of a table axis.
+ * 
+ * @tparam TContext Any additional context required by the context operation 
+ * @param axis_it The axis elements
+ * @param pOperation Operation to apply
+ * @param pContext Any additional context required by the context operation
+ */
+template <typename TContext>
+static __attribute__((noinline)) void for_each(table_axis_iterator axis_it, void(*pOperation)(table_axis_iterator &, TContext), TContext context);
+
+/**
+ * @brief Convenience function: apply an operation to all elements of a table.
+ * 
+ * @tparam TContext Any additional context required by the context operation 
+ * @param value_it The table values
+ * @param pOperation Operation to apply
+ * @param pContext Any additional context required by the context operation
+ */
+template <typename TContext>
+static __attribute__((noinline)) void for_each(table_value_iterator value_it, void(*pOperation)(table_row_iterator &, TContext), TContext context);
+
+/**
+ * @brief A for_each() operation that sets an axis value
+ * 
+ * @param it Axis iterator - current element will be set
+ * @param value Value to set current element to
+ */
+static inline void setAxis(table_axis_iterator &it, table3d_axis_t value) { // cppcheck-suppress [constParameter,constParameterCallback]
+  *it = value; 
+}
+
+/**
+ * @brief A for_each() operation that sets a table value
+ * 
+ * @param row Value iterator - current element will be set
+ * @param value Value to set current element to
+ */
+static inline void setValue(table_row_iterator &row, table3d_value_t value) {  // cppcheck-suppress [constParameter,constParameterCallback]
+  *row = value; 
+}
+
 /** @} */
+
+/// @cond
+template <typename TContext>
+static void for_each(table_axis_iterator axis_it, void(*pOperation)(table_axis_iterator &, TContext), TContext context) {
+  while(!axis_it.at_end())
+  {
+    pOperation(axis_it, context); 
+    ++axis_it;
+  }
+}
+
+template <typename TContext>
+static void for_each(table_value_iterator value_it, void(*pOperation)(table_row_iterator &, TContext), TContext context) {
+  while(!value_it.at_end())
+  {
+    table_row_iterator row = *value_it;
+    while (!row.at_end())
+    {
+      pOperation(row, context);
+      ++row;
+    }  
+    ++value_it;
+  }
+}
+/// @endcond

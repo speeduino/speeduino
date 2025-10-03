@@ -12,7 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "comms_secondary.h"
 #include "storage.h"
 #include "maths.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
 #include "pages.h"
@@ -134,13 +134,13 @@ void legacySerialCommand(void)
     case 'G': // Dumps the EEPROM values to serial
     
       //The format is 2 bytes for the overall EEPROM size, a comma and then a raw dump of the EEPROM values
-      primarySerial.write(lowByte(getEEPROMSize()));
-      primarySerial.write(highByte(getEEPROMSize()));
+      primarySerial.write(lowByte(getStorageAPI().length()));
+      primarySerial.write(highByte(getStorageAPI().length()));
       primarySerial.print(',');
 
-      for(uint16_t x = 0; x < getEEPROMSize(); x++)
+      for(uint16_t x = 0; x < getStorageAPI().length(); x++)
       {
-        primarySerial.write(EEPROMReadRaw(x));
+        primarySerial.write(getStorageAPI().read(x));
       }
       serialStatusFlag = SERIAL_INACTIVE;
       break;
@@ -153,7 +153,7 @@ void legacySerialCommand(void)
       if(primarySerial.available() >= 3)
       {
         uint16_t eepromSize = word(primarySerial.read(), primarySerial.read());
-        if(eepromSize != getEEPROMSize())
+        if(eepromSize != getStorageAPI().length())
         {
           //Client is trying to send the wrong EEPROM size. Don't let it 
           primarySerial.println(F("ERR; Incorrect EEPROM size"));
@@ -166,7 +166,7 @@ void legacySerialCommand(void)
             while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
             if(primarySerial.available()) 
             { 
-              EEPROMWriteRaw(x, primarySerial.read());
+              (void)update(getStorageAPI(), x, primarySerial.read());
             }
             else 
             {
@@ -364,7 +364,7 @@ void legacySerialCommand(void)
       tableID = primarySerial.read(); //Not currently used for anything
 
       receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
+      saveAllCalibrationTables(); //Store received values in EEPROM
 
       break;
 
@@ -536,7 +536,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       if (targetPort.available() >= 2)
       {
         targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
+        savePage(targetPort.read());
         targetStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -547,7 +547,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       if (targetPort.available() >= 2)
       {
         targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
+        savePage(targetPort.read());
         targetStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -1216,11 +1216,11 @@ void receiveCalibration(byte tableID)
       
       pTargetTable->values[x] = temperatureAddOffset(tempValue);
       pTargetTable->axis[x] = (x * 32U);
-      writeCalibration();
+      saveAllCalibrationTables();
     }
   }
 
-  writeCalibration();
+  saveAllCalibrationTables();
 }
 
 /** Send 256 tooth log entries to primarySerial.
