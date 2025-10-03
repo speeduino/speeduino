@@ -37,4 +37,10 @@ void stopCompositeLoggerTertiary(void);
 void startCompositeLoggerCams(void);
 void stopCompositeLoggerCams(void);
 
+/** @brief Build the TunerStudio engine status byte from the current status */
+byte buildEngineStatus(const statuses &current);
+
+/** @brief Build the TunerStudio SD card status byte from the current status */
+byte buildSdCardStatus(const statuses &current);
+
 #endif

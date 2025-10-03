@@ -84,7 +84,7 @@ void legacySerialCommand(void)
       break;
 
     case 'B': // AS above but for the serial compatibility mode. 
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      currentStatus.commCompat = true; //Force the compat mode
       legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
@@ -164,7 +164,7 @@ void legacySerialCommand(void)
           for(uint16_t x = 0; x < eepromSize; x++)
           {
             while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
-            if(primarySerial.available()) 
+            if(primarySerial.available()>0) 
             { 
               EEPROMWriteRaw(x, primarySerial.read());
             }
@@ -728,7 +728,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
 
   //
   targetStatusFlag = SERIAL_TRANSMIT_INPROGRESS_LEGACY;
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   for(byte x=0; x<packetLength; x++)
   {
@@ -755,10 +755,9 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
   }
 
   targetStatusFlag = SERIAL_INACTIVE;
-  while(targetPort.available()) { targetPort.read(); }
+  while(targetPort.available()>0) { targetPort.read(); }
   // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
-
+  currentStatus.vssUiRefresh = false;
 }
 
 void sendValuesLegacy(void)
@@ -780,7 +779,7 @@ void sendValuesLegacy(void)
   bytestosend -= primarySerial.write(temp);
 
   bytestosend -= primarySerial.write(currentStatus.nSquirts);
-  bytestosend -= primarySerial.write(currentStatus.engine);
+  bytestosend -= primarySerial.write(buildEngineStatus(currentStatus));
   bytestosend -= primarySerial.write(currentStatus.afrTarget);
   bytestosend -= primarySerial.write(currentStatus.afrTarget); // send twice so afrtgt1 == afrtgt2
   bytestosend -= primarySerial.write(99); // send dummy data as we don't have wbo2_en1
@@ -1230,7 +1229,7 @@ void receiveCalibration(byte tableID)
 void sendToothLog_legacy(byte startOffset) /* Blocking */
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
@@ -1240,7 +1239,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
         primarySerial.write(toothHistory[x] >> 8);
         primarySerial.write(toothHistory[x]);
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      currentStatus.isToothLog1Full = false;
       serialStatusFlag = SERIAL_INACTIVE; 
       toothHistoryIndex = 0;
   }
@@ -1257,7 +1256,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
 
 void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 {
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY)) //Sanity check. Flagging system means this should always be true
+  if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
 
@@ -1280,7 +1279,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 
         primarySerial.write(compositeLogHistory[x]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       }
-      BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+      currentStatus.isToothLog1Full = false;
       toothHistoryIndex = 0;
       serialStatusFlag = SERIAL_INACTIVE; 
   }

@@ -1,4 +1,3 @@
-
 #include "globals.h"
 #include "engineProtection.h"
 #include "maths.h"
@@ -25,8 +24,8 @@ byte checkRevLimit(void)
 {
   //Hardcut RPM limit
   byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
+  currentStatus.engineProtectRpm = false;
+  currentStatus.engineProtectClt = false;
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
   {
@@ -35,11 +34,11 @@ byte checkRevLimit(void)
       currentLimitRPM = configPage4.HardRevLim;
       if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
       { 
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
+        currentStatus.engineProtectRpm = true;
       } 
       else 
       { 
-        BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM); 
+        currentStatus.engineProtectRpm = false;
       }
     }
     else if(configPage9.hardRevMode == HARD_REV_COOLANT )
@@ -47,8 +46,8 @@ byte checkRevLimit(void)
       currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(currentStatus.coolant)));
       if(currentStatus.RPMdiv100 > currentLimitRPM)
       {
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
+        currentStatus.engineProtectClt = true;
+        currentStatus.engineProtectRpm = true;
       } 
     }
   }
@@ -58,50 +57,16 @@ byte checkRevLimit(void)
 
 byte checkBoostLimit(void)
 {
-  byte boostLimitActive = 0;
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
+  currentStatus.engineProtectBoostCut = (configPage6.engineProtectType != PROTECT_CUT_OFF)
+                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2U)) );
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
-    //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-    if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
-    {
-      boostLimitActive = 1;
-      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-      /*
-      switch(configPage6.boostCutType)
-      {
-        case 1:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-          break;
-        case 2:
-          BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        case 3:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          break;
-        default:
-          //Shouldn't ever happen, but just in case, disable all cuts
-          BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-      }
-      */
-    }
-  }
-
-  return boostLimitActive;
+  return currentStatus.engineProtectBoostCut;
 }
 
 byte checkOilPressureLimit(void)
 {
-  byte oilProtectActive = 0;
-  bool alreadyActive = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
+  bool alreadyActive = currentStatus.engineProtectOil;
+  currentStatus.engineProtectOil = false; //Will be set true below if required
 
   if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
   {
@@ -116,8 +81,7 @@ byte checkOilPressureLimit(void)
         /* Check if countdown has reached its target, if so then instruct to cut */
         if( (uint8_t(div100(millis())) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
         {
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-          oilProtectActive = 1;
+          currentStatus.engineProtectOil = true;
         }
         
       }
@@ -125,7 +89,7 @@ byte checkOilPressureLimit(void)
     }
   }
 
-  return oilProtectActive;
+  return currentStatus.engineProtectOil;
 }
 
 byte checkAFRLimit(void)
@@ -201,7 +165,7 @@ byte checkAFRLimit(void)
       if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
       {
         checkAFRLimitActive = true;
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+        currentStatus.engineProtectAfr = true;
       }
     } 
     else 
@@ -219,7 +183,7 @@ byte checkAFRLimit(void)
     {
       checkAFRLimitActive = false;
       afrProtectCountEnabled = false;
-      BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+      currentStatus.engineProtectAfr = false;
     }
   }
 
