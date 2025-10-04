@@ -32,7 +32,8 @@
 #define SD_STATUS_CARD_UNUSED       7 //0=normal, 1=unused
 
 
-#define SD_SECTOR_SIZE              512 // Standard SD sector size
+#define SD_SECTOR_SIZE              512U // Standard SD sector size
+#define SD_SERIAL_BUFFER_SIZE       ((SD_SECTOR_SIZE * 4) + 3)
 
 #if defined CORE_TEENSY
     #define SD_CS_PIN BUILTIN_SDCARD

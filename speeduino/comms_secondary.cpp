@@ -28,6 +28,8 @@ sendcancommand is called when a command is to be sent either to serial3
 
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
+commsInterface secondaryComms(&Serial2, SERIAL_BUFFER_SIZE);
+SerialStatus serialSecondaryStatusFlag;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -40,9 +42,10 @@ void secondserial_Command(void)
   //If the selected protocol is Tuner Studio then everything is routed via the primary serial functions but with the output diverted to the secondary serial interface
   if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO)
   {
-    pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
-    serialReceive();
-    if(serialStatusFlag == SERIAL_INACTIVE) { pPrimarySerial = &Serial; } //Reset serial to primary to ensure other requests can be handled. 
+    //return;
+    //pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
+    serialReceive(&secondaryComms);
+    //if(serialStatusFlag == SERIAL_INACTIVE) { pPrimarySerial = &Serial; } //Reset serial to primary to ensure other requests can be handled. 
     return;
   }
 

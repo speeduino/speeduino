@@ -113,15 +113,15 @@ void __attribute__((always_inline)) loop(void)
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
-      if (serialTransmitInProgress())
+      if (primaryComms.serialTransmitInProgress())
       {
-        serialTransmit();
+        serialTransmit(&primaryComms);
       }
 
       //Check for any new or in-progress requests from serial.
-      if( (Serial.available() > 0) || serialRecieveInProgress() )
+      if( (Serial.available() > 0) || primaryComms.serialRecieveInProgress() )
       {
-        serialReceive();
+        serialReceive(&primaryComms);
       }
       
       //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
@@ -262,7 +262,7 @@ void __attribute__((always_inline)) loop(void)
       #endif
 
       //Check for any outstanding EEPROM writes.
-      if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
+      if( (isEepromWritePending() == true) && (primaryComms.serialStatusFlag == SERIAL_INACTIVE) && (micros() > deferEEPROMWritesUntil)) { writeAllConfig(); } 
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
