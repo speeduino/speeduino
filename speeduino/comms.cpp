@@ -874,6 +874,9 @@ void processSerialCommand(void)
       (void)memcpy_P(serialPayload, productString, sizeof(productString) );
       sendSerialPayloadNonBlocking(sizeof(productString));
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
+
+      //If this connection is being made over the primary serial interface, disable the secondary from using the TunerStudio protocol until restart. This prevents comms lockups if both interfaces try to use TunerStudio at once
+      if (&primarySerial == &Serial) { BIT_CLEAR(currentStatus.status5, BIT_STATUS5_ALLOW_TS_ON_SECONDARY_COMMS); }
       break;
 
     case 'T': //Send 256 tooth log entries to Tuner Studios tooth logger

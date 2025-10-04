@@ -40,7 +40,7 @@ void secondserial_Command(void)
   #if defined(secondarySerial_AVAILABLE)
 
   //If the selected protocol is Tuner Studio then everything is routed via the primary serial functions but with the output diverted to the secondary serial interface
-  if(configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO)
+  if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO) && (BIT_CHECK(currentStatus.status5, BIT_STATUS5_ALLOW_TS_ON_SECONDARY_COMMS)) )
   {
     pPrimarySerial = pSecondarySerial; //Divert the output of all primary serial functions to the secondary serial interface
     serialReceive();

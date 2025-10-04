@@ -170,6 +170,7 @@ void initialiseAll(void)
 #endif
     pPrimarySerial = &Serial; //Default to standard Serial interface
     BIT_SET(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Flag legacy comms as being allowed on startup
+    BIT_SET(currentStatus.status5, BIT_STATUS5_ALLOW_TS_ON_SECONDARY_COMMS); //Allow TunerStudio protocol on startup
 
     //Repoint the 2D table structs to the config pages that were just loaded
     construct2dTables();
