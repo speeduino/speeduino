@@ -23,7 +23,7 @@ A full copy of the license may be found in the projects root directory
 #include "sensors_map_structs.h"
 #include "units.h"
 
-bool auxIsEnabled;
+uint8_t statusSensors = 0;
 
 static volatile uint32_t vssTimes[VSS_SAMPLES] = {0};
 static volatile uint8_t vssIndex = 0U;
@@ -183,7 +183,7 @@ void initialiseADC(void)
 #endif
 
   //The following checks the aux inputs and initialises pins if required
-  auxIsEnabled = false;
+  BIT_CLEAR(statusSensors, BIT_SENSORS_AUX_ENBL);
   for (uint8_t AuxinChan = 0U; AuxinChan <16U ; AuxinChan++)
   {
     currentStatus.current_caninchannel = AuxinChan;                   
@@ -191,7 +191,7 @@ void initialiseADC(void)
     && ((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))))
     { //if current input channel is enabled as external input in caninput_selxb(bits 2:3) and secondary serial or internal canbus is enabled(and is mcu supported)                 
       //currentStatus.canin[14] = 22;  Dev test use only!
-      auxIsEnabled = true;     
+      BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
     }
     else if ((((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12U) == 8U)
             || (((configPage9.enable_secondarySerial == 0U) && ( (configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 0U) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3U) == 2U)  
@@ -208,7 +208,7 @@ void initialiseADC(void)
         //Channel is active and analog
         pinMode( pinNumber, INPUT);
         //currentStatus.canin[14] = 33;  Dev test use only!
-        auxIsEnabled = true;
+        BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
       }  
     }
     else if ((((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12U) == 12U)
@@ -226,7 +226,7 @@ void initialiseADC(void)
          //Channel is active and digital
          pinMode( pinNumber, INPUT);
          //currentStatus.canin[14] = 44;  Dev test use only!
-         auxIsEnabled = true;
+         BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
        }  
     }
     else {
@@ -636,7 +636,11 @@ static inline void setBaroFromMAP(void)
   if (isValidBaro(tempReading)) //Safety check to ensure the baro reading is within the physical limits
   {
     currentStatus.baro = tempReading;
-    storeLastBaro(currentStatus.baro);
+    if(!BIT_CHECK(statusSensors, BIT_SENSORS_BARO_SAVED))
+    {
+      storeLastBaro(currentStatus.baro); 
+      BIT_SET(statusSensors, BIT_SENSORS_BARO_SAVED); //Flag baro as having been saved. This prevents multiple writes happening, which can cause issues on stm32 with internal flash
+    }
   }
 }
 
