@@ -675,7 +675,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       break;
 
     case 'S': // send code version
-      targetPort.print(F("Speeduino 2025.01.6"));
+      targetPort.print(F("Speeduino 2025.01.7"));
       break;
   }
 }
