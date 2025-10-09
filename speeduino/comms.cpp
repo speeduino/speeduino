@@ -363,7 +363,7 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
     currentStatus.secl = 0; 
   }
 
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   serialPayload[0] = SERIAL_RC_OK;
   for(uint16_t x=0; x<packetLength; x++)
@@ -371,7 +371,7 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
     serialPayload[x+1U] = getTSLogEntry(offset+x); 
   }
   // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+  currentStatus.vssUiRefresh = false;
 }
 
 /**
@@ -489,7 +489,7 @@ void serialReceive(void)
       legacySerialCommand();
       return;
     }
-    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS)) )
+    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (currentStatus.allowLegacyComms) )
     {
       //Handle legacy cases here
       legacySerialCommand();
@@ -526,7 +526,7 @@ void serialReceive(void)
         {
           //CRC is correct. Process the command
           processSerialCommand();
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Lock out legacy commands until next power cycle
+          currentStatus.allowLegacyComms = false; //Lock out legacy commands until next power cycle
         }
         else {
           //CRC Error. Need to send an error message
@@ -589,16 +589,16 @@ void processSerialCommand(void)
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
       if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { currentStatus.burnPending = true; }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      currentStatus.commCompat = true; //Force the compat mode
       deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
       if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
+      else { currentStatus.burnPending = true; }
       
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
@@ -781,7 +781,7 @@ void processSerialCommand(void)
           
           serialPayload[0] = SERIAL_RC_OK;
 
-          serialPayload[1] = currentStatus.TS_SD_Status;
+          serialPayload[1] = buildSdCardStatus(currentStatus);
           serialPayload[2] = 0; //Error code
  
           //Sector size = 512
@@ -1075,7 +1075,7 @@ void processSerialCommand(void)
 void sendToothLog(void)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false) 
+  if (currentStatus.isToothLog1Full == false) 
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
@@ -1112,7 +1112,7 @@ void sendToothLog(void)
     uint32_t transmitted = serialWrite(toothHistory[logItemsTransmitted]);
     CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
   }
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   serialStatusFlag = SERIAL_INACTIVE;
   toothHistoryIndex = 0;
   logItemsTransmitted = 0;
@@ -1126,7 +1126,7 @@ void sendToothLog(void)
 
 void sendCompositeLog(void)
 {
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false )
+  if ( currentStatus.isToothLog1Full == false )
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
@@ -1168,7 +1168,7 @@ void sendCompositeLog(void)
     writeByteReliableBlocking(compositeLogHistory[logItemsTransmitted]);
     CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]), false);
   }
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0;
   serialStatusFlag = SERIAL_INACTIVE;
   logItemsTransmitted = 0;
