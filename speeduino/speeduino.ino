@@ -331,7 +331,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.fuelPressure = getFuelPressure();
       currentStatus.oilPressure = getOilPressure();
       
-      if(auxIsEnabled == true)
+      if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
       {
         //TODO dazq to clean this right up :)
         //check through the Aux input channels if enabled for Can or local use

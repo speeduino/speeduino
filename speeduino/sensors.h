@@ -31,7 +31,15 @@ extern volatile uint32_t flexPulseWidth;
   #define READ_FLEX() digitalRead(pinFlex)
 #endif
 
-extern bool auxIsEnabled;
+#define BIT_SENSORS_AUX_ENBL        0
+#define BIT_SENSORS_BARO_SAVED      1
+#define BIT_SENSORS_UNUSED2         2
+#define BIT_SENSORS_UNUSED3         3
+#define BIT_SENSORS_UNUSED4         4
+#define BIT_SENSORS_UNUSED5         5
+#define BIT_SENSORS_UNUSED6         6
+#define BIT_SENSORS_UNUSED7         7
+extern uint8_t statusSensors; //Uses the above status bits
 
 void initialiseADC(void);
 void readTPS(bool useFilter=true); //Allows the option to override the use of the filter

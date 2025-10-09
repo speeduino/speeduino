@@ -648,7 +648,7 @@ byte correctionAFRClosedLoop(void)
   {
     AFRValue = currentStatus.egoCorrection; //Need to record this here, just to make sure the correction stays 'on' even if the nextCycle count isn't ready
     
-    if((ignitionCount >= AFRnextCycle) || (ignitionCount < (AFRnextCycle - configPage6.egoCount)))
+    if(((uint16_t)(ignitionCount - AFRnextCycle)) < UINT16_HALF_RANGE) //Check whether ignitionCount has exceeded AFRnextCycle. This method prevents any issues when AFRnextCycle overflows but these variables cannot be more than UINT16_HALF_RANGE apart
     {
       AFRnextCycle = ignitionCount + configPage6.egoCount; //Set the target ignition event for the next calculation
         
@@ -698,7 +698,6 @@ byte correctionAFRClosedLoop(void)
           PID_AFRTarget = (long)(currentStatus.afrTarget);
 
           bool PID_compute = egoPID.Compute();
-          //currentStatus.egoCorrection = 100 + PID_output;
           if(PID_compute == true) { AFRValue = 100 + PID_output; }
           
         }
@@ -707,6 +706,10 @@ byte correctionAFRClosedLoop(void)
       else { AFRValue = 100; } // If multivariable check fails disable correction
     } //Ignition count check
   } //egoType
+
+  //Final check to ensure within authority range (This can be needed if the user has lowered the authority limit)
+  if(AFRValue < (100U - configPage6.egoLimit)) {AFRValue = (100U - configPage6.egoLimit); }
+  if(AFRValue > (100U + configPage6.egoLimit)) {AFRValue = (100U + configPage6.egoLimit); }
 
   return AFRValue; //Catch all (Includes when AFR target = current AFR
 }

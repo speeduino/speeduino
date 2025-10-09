@@ -430,20 +430,24 @@ static void test_corrections_closedloop_off_invalidconditions_map(void) {
   TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
 }
 
+//Test calling correctionAFRClosedLoop() before the required number of ignition cycles have taken place
 static void test_corrections_closedloop_outsidecycle(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.egoCorrection = 173U;
+  currentStatus.egoCorrection = 123U;
   ignitionCount = AFRnextCycle - (configPage6.egoCount/2U); 
   TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
 }
 
+//Test what happens when AFRnextCycle has rolled over but ignitionCount has not. 
+//Expected that a correction should NOT occur in this instance
 static void test_corrections_closedloop_cycle_countrollover(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
   currentStatus.egoCorrection = 101U;
-  ignitionCount = AFRnextCycle - (configPage6.egoCount*2U); 
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+  ignitionCount = UINT16_MAX - (configPage6.egoCount/2); 
+  AFRnextCycle = ignitionCount + configPage6.egoCount; //This will overflow AFRnextCycle
+  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_nocorrection(void) {
