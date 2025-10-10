@@ -23,6 +23,7 @@ A full copy of the license may be found in the projects root directory
 #include "sensors_map_structs.h"
 #include "units.h"
 #include "atomic.h"
+#include "board_definition.h"
 
 uint8_t statusSensors = 0;
 

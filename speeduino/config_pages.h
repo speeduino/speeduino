@@ -10,6 +10,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "board_definition.h" // Needed for struct packing.
 #include "load_source.h"
 
 using byte = uint8_t;

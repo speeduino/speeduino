@@ -1,9 +1,7 @@
 #ifndef AVR2560_H
 #define AVR2560_H
 
-#include "globals.h"
 #if defined(CORE_AVR)
-
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
@@ -11,6 +9,20 @@
 ***********************************************************************************************************
 * General
 */
+  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
+  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
+  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
+  #ifndef LED_BUILTIN
+    #define LED_BUILTIN 13
+  #endif
+  
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
+
   #define COMPARE_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
   #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
