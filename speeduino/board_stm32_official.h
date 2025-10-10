@@ -1,19 +1,22 @@
-#ifndef STM32OFFICIAL_H
-#define STM32OFFICIAL_H
+#pragma once
+
+/** DO NOT INCLUDE DIRECTLY - should be included via board_definition.h */
+
 #include <Arduino.h>
-#if defined(STM32_CORE_VERSION_MAJOR)
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
 #include <SPI.h>
 
+#define CORE_STM32
+
 #ifndef PLATFORMIO
-  #ifndef USBCON
-    #error "USBCON must be defined in boards.txt"
-  #endif
-  #ifndef USBD_USE_CDC
-    #error "USBD_USE_CDC must be defined in boards.txt"
-  #endif
+#ifndef USBCON
+  #error "USBCON must be defined in boards.txt"
+#endif
+#ifndef USBD_USE_CDC
+  #error "USBD_USE_CDC must be defined in boards.txt"
+#endif
 #endif
 
 #if defined(STM32F1)
@@ -28,6 +31,7 @@
 #else /*Default should be STM32F4*/
   #include "stm32f4xx_ll_tim.h"
 #endif
+
 /*
 ***********************************************************************************************************
 * General
@@ -99,12 +103,6 @@ HardwareSerial Serial1(PA10, PA9);
 #endif
 
 extern STM32RTC& rtc;
-
-void initBoard();
-uint16_t freeRam();
-void doSystemReset();
-void jumpToBootloader();
-uint8_t getSystemTemp();
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
@@ -394,6 +392,3 @@ extern STM32_CAN Can0;
 #else //libmaple core aka STM32DUINO
   #define SECONDARY_SERIAL_T HardwareSerial
 #endif
-
-#endif //CORE_STM32
-#endif //STM32_H
