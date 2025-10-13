@@ -176,7 +176,6 @@ extern STM32RTC& rtc;
   #endif
 #endif
 
-
 #define RTC_LIB_H "STM32RTC.h"
 
 /*
@@ -318,63 +317,6 @@ static inline void IGN8_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC4IE;}
 #define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE; (TIM1)->CR1 |= TIM_CR1_CEN;
 #define IDLE_TIMER_DISABLE() (TIM1)->DIER &= ~TIM_DIER_CC4IE
 
-/*
-***********************************************************************************************************
-* Timers
-*/
-
-extern HardwareTimer Timer1;
-extern HardwareTimer Timer2;
-extern HardwareTimer Timer3;
-extern HardwareTimer Timer4;
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
-extern HardwareTimer Timer5;
-#if defined(TIM11)
-extern HardwareTimer Timer11;
-#elif defined(TIM7)
-extern HardwareTimer Timer11;
-#endif
-#endif
-
-#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
-void oneMSInterval(HardwareTimer*);
-void boostInterrupt(HardwareTimer*);
-void fuelSchedule1Interrupt(HardwareTimer*);
-void fuelSchedule2Interrupt(HardwareTimer*);
-void fuelSchedule3Interrupt(HardwareTimer*);
-void fuelSchedule4Interrupt(HardwareTimer*);
-#if (INJ_CHANNELS >= 5)
-void fuelSchedule5Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 6)
-void fuelSchedule6Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 7)
-void fuelSchedule7Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 8)
-void fuelSchedule8Interrupt(HardwareTimer*);
-#endif
-void idleInterrupt(HardwareTimer*);
-void vvtInterrupt(HardwareTimer*);
-void fanInterrupt(HardwareTimer*);
-void ignitionSchedule1Interrupt(HardwareTimer*);
-void ignitionSchedule2Interrupt(HardwareTimer*);
-void ignitionSchedule3Interrupt(HardwareTimer*);
-void ignitionSchedule4Interrupt(HardwareTimer*);
-#if (IGN_CHANNELS >= 5)
-void ignitionSchedule5Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 6)
-void ignitionSchedule6Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 7)
-void ignitionSchedule7Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 8)
-void ignitionSchedule8Interrupt(HardwareTimer*);
-#endif
-#endif //End core<=1.8
 
 /*
 ***********************************************************************************************************
