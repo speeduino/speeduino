@@ -124,4 +124,9 @@ uint8_t getSystemTemp()
   return 0;
 }
 
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
 #endif //CORE_AVR

@@ -7,6 +7,7 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
+#include RTC_LIB_H
 
 /*
   //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
@@ -411,7 +412,7 @@ uint16_t freeRam()
 }
 
 //This function is used for attempting to set the RTC time during compile
-time_t getTeensy3Time()
+static time_t getTeensy3Time()
 {
   return Teensy3Clock.get();
 }
@@ -422,6 +423,11 @@ void jumpToBootloader() { return; }
 uint8_t getSystemTemp()
 {
   return trunc(InternalTemperature.readTemperatureC());
+}
+
+void boardInitRTC(void)
+{
+  setSyncProvider(getTeensy3Time);
 }
 
 #endif

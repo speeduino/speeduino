@@ -38,4 +38,9 @@ uint16_t freeRam()
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
 
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
 #endif

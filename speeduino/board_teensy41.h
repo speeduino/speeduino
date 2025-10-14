@@ -13,7 +13,6 @@
 void setTeensy41PinsHysteresis();
 void teensy41_customSerialBegin();
 bool pinIsSerial(uint8_t);
-time_t getTeensy3Time();
 #define COMPARE_TYPE uint16_t
 #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.

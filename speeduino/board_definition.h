@@ -48,3 +48,8 @@ uint8_t getSystemTemp(void);
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif
+
+#if defined(RTC_ENABLED)
+/** @brief Board specific RTC system initialisation (optional) */
+void boardInitRTC(void);
+#endif

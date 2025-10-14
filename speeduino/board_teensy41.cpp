@@ -7,13 +7,7 @@
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
-
-/*
-  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
-*/
+#include RTC_LIB_H
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -302,7 +296,7 @@ uint16_t freeRam()
 }
 
 //This function is used for attempting to set the RTC time during compile
-time_t getTeensy3Time()
+static  time_t getTeensy3Time()
 {
   return Teensy3Clock.get();
 }
@@ -399,6 +393,12 @@ void teensy41_customSerialBegin()
 uint8_t getSystemTemp()
 {
   return trunc(InternalTemperature.readTemperatureC());
+}
+
+
+void boardInitRTC(void)
+{
+    setSyncProvider(getTeensy3Time);
 }
 
 #endif

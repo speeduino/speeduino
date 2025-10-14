@@ -394,4 +394,10 @@ uint8_t getSystemTemp()
   //stm32F4xx does have an internal temperature sensor, but needs to be implemented
   return 0;
 }
+
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
 #endif
