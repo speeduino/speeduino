@@ -86,11 +86,11 @@ void wmiControl(void);
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
 extern volatile PORT_TYPE *vvt1_pin_port;
-extern volatile PINMASK_TYPE vvt1_pin_mask;
+extern PINMASK_TYPE vvt1_pin_mask;
 extern volatile PORT_TYPE *vvt2_pin_port;
-extern volatile PINMASK_TYPE vvt2_pin_mask;
+extern PINMASK_TYPE vvt2_pin_mask;
 extern volatile PORT_TYPE *fan_pin_port;
-extern volatile PINMASK_TYPE fan_pin_mask;
+extern PINMASK_TYPE fan_pin_mask;
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
