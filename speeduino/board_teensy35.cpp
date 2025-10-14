@@ -19,7 +19,7 @@
 #endif
 */
 
-void initBoard()
+void initBoard(uint32_t baudRate)
 {
     /*
     ***********************************************************************************************************
@@ -305,6 +305,9 @@ void initBoard()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM0);
     NVIC_ENABLE_IRQ(IRQ_FTM3);
+
+    Serial.begin(baudRate);
+
 }
 
 void ftm0_isr(void)

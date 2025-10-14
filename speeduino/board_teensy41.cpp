@@ -15,7 +15,19 @@ static void TMR2_isr(void);
 static void TMR3_isr(void);
 static void TMR4_isr(void);
 
-void initBoard()
+static void serialBegin()
+{
+  uint32_t millis_begin = systick_millis_count;
+  while (!Serial) 
+  {
+    uint32_t elapsed = systick_millis_count - millis_begin;
+    //Wait up to 100ms for this. 
+    if (elapsed > 100) break;
+    yield();
+  }
+}
+
+void initBoard(uint32_t /*baudRate*/)
 {
     /*
     ***********************************************************************************************************
@@ -209,6 +221,9 @@ void initBoard()
     NVIC_ENABLE_IRQ(IRQ_QTIMER3);
     attachInterruptVector(IRQ_QTIMER4, TMR4_isr);
     NVIC_ENABLE_IRQ(IRQ_QTIMER4);
+
+    //Teensy 4.1 does not require .begin() to be called. This introduces a 700ms delay on startup time whilst USB is enumerated if it is called
+    serialBegin();
 }
 
 void PIT_isr()
@@ -378,17 +393,6 @@ void setTeensy41PinsHysteresis()
 * The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
 * This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
 */
-void teensy41_customSerialBegin()
-{
-  uint32_t millis_begin = systick_millis_count;
-  while (!Serial) 
-  {
-    uint32_t elapsed = systick_millis_count - millis_begin;
-    //Wait up to 100ms for this. 
-    if (elapsed > 100) break;
-    yield();
-  }
-}
 
 uint8_t getSystemTemp()
 {

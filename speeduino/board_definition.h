@@ -14,8 +14,10 @@
  * @brief Initialise the board, including USB comms
  * 
  * This is called after the tune is loaded from EEPROM, but before pins are assigned.
+ * 
+ * @param baudRate The Serial comms baud rate
  */
-void initBoard(void);
+void initBoard(uint32_t baudRate);
 
 /** @brief Calculate free RAM for display in TunerStudio */
 uint16_t freeRam(void);

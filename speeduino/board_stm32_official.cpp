@@ -80,7 +80,7 @@ HardwareTimer Timer11(TIM7);
 STM32RTC& rtc = STM32RTC::getInstance();
 #endif
 
-  void initBoard()
+  void initBoard(uint32_t baudRate)
   {
     /*
     ***********************************************************************************************************
@@ -287,7 +287,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
     #endif
 
-
+    Serial.begin(baudRate);
   }
 
   uint16_t freeRam()

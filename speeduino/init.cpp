@@ -116,7 +116,7 @@ void initialiseAll(void)
     //This should be 0 until we hear otherwise from the 16u2
     configPage4.bootloaderCaps = 0;
     
-    initBoard(); //This calls the current individual boards init function. See the board_xxx.ino files for these.
+    initBoard(115200); //This calls the current individual boards init function. See the board_xxx.ino files for these.
     initialiseTimers();
     
   #ifdef SD_LOGGING
@@ -124,12 +124,6 @@ void initialiseAll(void)
     if(configPage13.onboard_log_file_style) { initSD(); }
   #endif
 
-//Teensy 4.1 does not require .begin() to be called. This introduces a 700ms delay on startup time whilst USB is enumerated if it is called
-#ifndef CORE_TEENSY41
-    Serial.begin(115200);
-    #else
-    teensy41_customSerialBegin();
-#endif
     pPrimarySerial = &Serial; //Default to standard Serial interface
     currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
     
