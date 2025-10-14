@@ -1886,16 +1886,16 @@ void setPinMapping(byte boardID)
       pinInjector4 = 11; //Output pin injector 4
       pinInjector5 = 12; //Output pin injector 5
       pinInjector6 = 50; //Output pin injector 6
-      pinInjector7 = 39; //Output pin injector 7 (placeholder)
-      pinInjector8 = 42; //Output pin injector 8 (placeholder)
+      pinInjector7 = 39; //Output pin injector 7
+      pinInjector8 = 42; //Output pin injector 8
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
       pinCoil4 = 48; //Pin for coil 4
       pinCoil5 = 36; //Pin for coil 5
       pinCoil6 = 34; //Pin for coil 6
-      pinCoil7 = 46; //Pin for coil 7 (placeholder)
-      pinCoil8 = 53; //Pin for coil 8 (placeholder)
+      pinCoil7 = 46; //Pin for coil 7
+      pinCoil8 = 53; //Pin for coil 8
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 20; //The Cam sensor 2 pin
@@ -1905,6 +1905,7 @@ void setPinMapping(byte boardID)
       pinIAT = A0; //IAT sensor pin
       pinCLT = A1; //CLT sensor pin
       pinO2 = A8; //O2 Sensor pin
+      pinO2_2 = A12; //O2 Sensor pin
       pinBat = A4; //Battery reference voltage pin
       pinBaro = A5; //Baro sensor pin
       pinDisplayReset = 41; // OLED reset pin
@@ -1927,6 +1928,7 @@ void setPinMapping(byte boardID)
       pinWMIIndicator = 33; //(placeholder)
       pinWMIEnabled = 35; //(placeholder)
       pinIdleUp = 37; //(placeholder)
+      pinIdleUpOutput = 41; //(placeholder)
       pinCTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
       pinInjector1 = PB15; //Output pin injector 1
@@ -1935,16 +1937,16 @@ void setPinMapping(byte boardID)
       pinInjector4 = PB13; //Output pin injector 4
       pinInjector5 = PA8; //Output pin injector 5
       pinInjector6 = PE7; //Output pin injector 6
-      pinInjector7 = PE13; //Output pin injector 7 (placeholder)
-      pinInjector8 = PE10; //Output pin injector 8 (placeholder)
+      pinInjector7 = PE13; //Output pin injector 7
+      pinInjector8 = PE10; //Output pin injector 8
       pinCoil1 = PE2; //Pin for coil 1
       pinCoil2 = PE3; //Pin for coil 2
       pinCoil3 = PC13; //Pin for coil 3
       pinCoil4 = PE6; //Pin for coil 4
       pinCoil5 = PE4; //Pin for coil 5
       pinCoil6 = PE5; //Pin for coil 6
-      pinCoil7 = PE0; //Pin for coil 7 (placeholder)
-      pinCoil8 = PB9; //Pin for coil 8 (placeholder)
+      pinCoil7 = PE0; //Pin for coil 7
+      pinCoil8 = PB9; //Pin for coil 8
       pinTrigger = PD3; //The CAS pin
       pinTrigger2 = PD4; //The Cam Sensor pin
       pinTPS = PA2;//TPS input pin
@@ -1953,6 +1955,7 @@ void setPinMapping(byte boardID)
       pinIAT = PA0; //IAT sensor pin
       pinCLT = PA1; //CLS sensor pin
       pinO2 = PB0; //O2 Sensor pin
+      pinO2_2 = PC2; //O2 Sensor pin
       pinBat = PA4; //Battery reference voltage pin
       pinBaro = PA5; //Baro sensor pin
       pinDisplayReset = PE12; // OLED reset pin
@@ -1975,6 +1978,7 @@ void setPinMapping(byte boardID)
       pinWMIIndicator = PD13; //(placeholder)
       pinWMIEnabled = PE15; //(placeholder)
       pinIdleUp = PE14; //(placeholder)
+      pinIdleUpOutput = PE12; //(placeholder)
       pinCTPS = PA6; //(placeholder)
      #endif
       break;
