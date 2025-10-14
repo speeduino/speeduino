@@ -433,4 +433,10 @@ void boardInitRTC(void)
   setSyncProvider(getTeensy3Time);
 }
 
+
+void boardInitPins(void)
+{
+  // Do nothing
+}
+
 #endif

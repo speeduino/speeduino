@@ -130,4 +130,9 @@ void boardInitRTC(void)
   // Do nothing
 }
 
+void boardInitPins(void)
+{
+  // Do nothing
+}
+
 #endif //CORE_AVR

@@ -15,6 +15,10 @@ static void TMR2_isr(void);
 static void TMR3_isr(void);
 static void TMR4_isr(void);
 
+/*
+* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
+* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
+*/
 static void serialBegin()
 {
   uint32_t millis_begin = systick_millis_count;
@@ -361,7 +365,7 @@ bool pinIsSerial(uint8_t pin)
   return isSerial;
 }
 
-void setPinHysteresis(uint8_t pin)
+static void setPinHysteresis(uint8_t pin)
 {
   //Refer to digital.c in the Teensyduino core for the following code
   //Refer also to Pgs 382 and 950 of the iMXRT1060 Reference Manual
@@ -374,7 +378,19 @@ void setPinHysteresis(uint8_t pin)
   *(p->mux) = 5 | 0x10;
 }
 
-void setTeensy41PinsHysteresis()
+uint8_t getSystemTemp()
+{
+  return trunc(InternalTemperature.readTemperatureC());
+}
+
+
+void boardInitRTC(void)
+{
+    setSyncProvider(getTeensy3Time);
+}
+
+
+void boardInitPins(void)
 {
   //Primary trigger
   setPinHysteresis(pinTrigger);
@@ -386,23 +402,7 @@ void setTeensy41PinsHysteresis()
   if(configPage2.flexEnabled > 0) { setPinHysteresis(pinFlex); }
   if(configPage2.vssMode > 1) { setPinHysteresis(pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
-
 }
 
-/*
-* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
-* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
-*/
-
-uint8_t getSystemTemp()
-{
-  return trunc(InternalTemperature.readTemperatureC());
-}
-
-
-void boardInitRTC(void)
-{
-    setSyncProvider(getTeensy3Time);
-}
 
 #endif

@@ -3640,10 +3640,7 @@ void initialiseTriggers(void)
       break;
   }
 
-  #if defined(CORE_TEENSY41)
-    //Teensy 4 requires a HYSTERESIS flag to be set on any external interrupt pins to prevent false interrupts
-    setTeensy41PinsHysteresis();
-  #endif
+  boardInitPins();
 }
 
 static inline bool isAnyFuelScheduleRunning(void) {
