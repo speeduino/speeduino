@@ -34,11 +34,11 @@ long FeedForwardTerm;
 unsigned long idle_pwm_target_value;
 long idle_cl_target_rpm;
 
-volatile PORT_TYPE *idle_pin_port;
+PORT_TYPE idle_pin_port;
 PINMASK_TYPE idle_pin_mask;
-volatile PORT_TYPE *idle2_pin_port;
+PORT_TYPE idle2_pin_port;
 PINMASK_TYPE idle2_pin_mask;
-volatile PORT_TYPE *idleUpOutput_pin_port;
+PORT_TYPE idleUpOutput_pin_port;
 PINMASK_TYPE idleUpOutput_pin_mask;
 
 static table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);

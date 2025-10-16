@@ -2,12 +2,13 @@
 #define MC33810_H
 
 #include <SPI.h>
+#include "port_pin.h"
 #include "globals.h"
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
-extern volatile PORT_TYPE *mc33810_1_pin_port;
+extern PORT_TYPE mc33810_1_pin_port;
 extern PINMASK_TYPE mc33810_1_pin_mask;
-extern volatile PORT_TYPE *mc33810_2_pin_port;
+extern PORT_TYPE mc33810_2_pin_port;
 extern PINMASK_TYPE mc33810_2_pin_mask;
 
 //#define MC33810_ONOFF_CMD   3

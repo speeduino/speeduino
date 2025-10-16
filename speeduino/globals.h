@@ -29,6 +29,7 @@
 #include "table3d.h"
 #include "statuses.h"
 #include "config_pages.h"
+#include "port_pin.h"
 
 #if __has_include(<SimplyAtomic.h>)
   #include <SimplyAtomic.h>
@@ -211,53 +212,53 @@ extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 
 //These are for the direct port manipulation of the injectors, coils and aux outputs
-extern volatile PORT_TYPE *inj1_pin_port;
+extern PORT_TYPE inj1_pin_port;
 extern PINMASK_TYPE inj1_pin_mask;
-extern volatile PORT_TYPE *inj2_pin_port;
+extern PORT_TYPE inj2_pin_port;
 extern PINMASK_TYPE inj2_pin_mask;
-extern volatile PORT_TYPE *inj3_pin_port;
+extern PORT_TYPE inj3_pin_port;
 extern PINMASK_TYPE inj3_pin_mask;
-extern volatile PORT_TYPE *inj4_pin_port;
+extern PORT_TYPE inj4_pin_port;
 extern PINMASK_TYPE inj4_pin_mask;
-extern volatile PORT_TYPE *inj5_pin_port;
+extern PORT_TYPE inj5_pin_port;
 extern PINMASK_TYPE inj5_pin_mask;
-extern volatile PORT_TYPE *inj6_pin_port;
+extern PORT_TYPE inj6_pin_port;
 extern PINMASK_TYPE inj6_pin_mask;
-extern volatile PORT_TYPE *inj7_pin_port;
+extern PORT_TYPE inj7_pin_port;
 extern PINMASK_TYPE inj7_pin_mask;
-extern volatile PORT_TYPE *inj8_pin_port;
+extern PORT_TYPE inj8_pin_port;
 extern PINMASK_TYPE inj8_pin_mask;
 
-extern volatile PORT_TYPE *ign1_pin_port;
+extern PORT_TYPE ign1_pin_port;
 extern PINMASK_TYPE ign1_pin_mask;
-extern volatile PORT_TYPE *ign2_pin_port;
+extern PORT_TYPE ign2_pin_port;
 extern PINMASK_TYPE ign2_pin_mask;
-extern volatile PORT_TYPE *ign3_pin_port;
+extern PORT_TYPE ign3_pin_port;
 extern PINMASK_TYPE ign3_pin_mask;
-extern volatile PORT_TYPE *ign4_pin_port;
+extern PORT_TYPE ign4_pin_port;
 extern PINMASK_TYPE ign4_pin_mask;
-extern volatile PORT_TYPE *ign5_pin_port;
+extern PORT_TYPE ign5_pin_port;
 extern PINMASK_TYPE ign5_pin_mask;
-extern volatile PORT_TYPE *ign6_pin_port;
+extern PORT_TYPE ign6_pin_port;
 extern PINMASK_TYPE ign6_pin_mask;
-extern volatile PORT_TYPE *ign7_pin_port;
+extern PORT_TYPE ign7_pin_port;
 extern PINMASK_TYPE ign7_pin_mask;
-extern volatile PORT_TYPE *ign8_pin_port;
+extern PORT_TYPE ign8_pin_port;
 extern PINMASK_TYPE ign8_pin_mask;
 
-extern volatile PORT_TYPE *tach_pin_port;
+extern PORT_TYPE tach_pin_port;
 extern PINMASK_TYPE tach_pin_mask;
-extern volatile PORT_TYPE *pump_pin_port;
+extern PORT_TYPE pump_pin_port;
 extern PINMASK_TYPE pump_pin_mask;
 
-extern volatile PORT_TYPE *flex_pin_port;
+extern PORT_TYPE flex_pin_port;
 extern PINMASK_TYPE flex_pin_mask;
 
-extern volatile PORT_TYPE *triggerPri_pin_port;
+extern PORT_TYPE triggerPri_pin_port;
 extern PINMASK_TYPE triggerPri_pin_mask;
-extern volatile PORT_TYPE *triggerSec_pin_port;
+extern PORT_TYPE triggerSec_pin_port;
 extern PINMASK_TYPE triggerSec_pin_mask;
-extern volatile PORT_TYPE *triggerThird_pin_port;
+extern PORT_TYPE triggerThird_pin_port;
 extern PINMASK_TYPE triggerThird_pin_mask;
 
 extern byte triggerInterrupt;
