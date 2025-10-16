@@ -25,7 +25,7 @@ jobs:
               - name: arduino:avr
             compile-flags: |
               - --build-property
-              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c99
+              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
             lib_deps: |
               - name: Time
               - name: SimplyAtomic
@@ -61,7 +61,7 @@ jobs:
                 version: 2.7.1
             compile-flags: |
               - --build-property
-              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++11 -UBOARD_MAX_IO_PINS
+              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=c++14 -UBOARD_MAX_IO_PINS
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
