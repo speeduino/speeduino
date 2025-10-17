@@ -6,6 +6,7 @@
 ***********************************************************************************************************
 * General
 */
+  void initialiseStorage(void);
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();
@@ -23,11 +24,9 @@
   #define BOARD_MAX_IO_PINS 57
   #define BOARD_MAX_ADC_PINS  26 //Number of analog pins
   #ifdef USE_SPI_EEPROM
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
+    #define MAX_BLOCK_WRITE_BYTES 20
   #else
-    #define EEPROM_LIB_H <EEPROM.h>
-    typedef int eeprom_address_t;
+    #define MAX_BLOCK_WRITE_BYTES 64
   #endif
   #define RTC_ENABLED
   #define RTC_LIB_H "TimeLib.h"
@@ -115,7 +114,7 @@
     static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
   #define MAX_TIMER_PERIOD 139808UL // 2.13333333uS * 65535
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*
 ***********************************************************************************************************
