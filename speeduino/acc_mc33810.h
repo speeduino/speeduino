@@ -6,9 +6,9 @@
 #include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
 
 extern volatile PORT_TYPE *mc33810_1_pin_port;
-extern volatile PINMASK_TYPE mc33810_1_pin_mask;
+extern PINMASK_TYPE mc33810_1_pin_mask;
 extern volatile PORT_TYPE *mc33810_2_pin_port;
-extern volatile PINMASK_TYPE mc33810_2_pin_mask;
+extern PINMASK_TYPE mc33810_2_pin_mask;
 
 //#define MC33810_ONOFF_CMD   3
 static const uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal

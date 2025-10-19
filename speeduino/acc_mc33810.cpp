@@ -21,9 +21,9 @@ uint8_t MC33810_BIT_IGN7 = 7;
 uint8_t MC33810_BIT_IGN8 = 8;
 
 volatile PORT_TYPE *mc33810_1_pin_port;
-volatile PINMASK_TYPE mc33810_1_pin_mask;
+PINMASK_TYPE mc33810_1_pin_mask;
 volatile PORT_TYPE *mc33810_2_pin_port;
-volatile PINMASK_TYPE mc33810_2_pin_mask;
+PINMASK_TYPE mc33810_2_pin_mask;
 
 void initMC33810(void)
 {
