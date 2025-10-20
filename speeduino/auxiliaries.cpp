@@ -12,21 +12,25 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "units.h"
 
+constexpr uint8_t SIMPLE_BOOST_P = 1U;
+constexpr uint8_t SIMPLE_BOOST_I = 1U;
+constexpr uint8_t SIMPLE_BOOST_D = 1U;
+
 static long vvt1_pwm_value;
 static long vvt2_pwm_value;
-volatile unsigned int vvt1_pwm_cur_value;
-volatile unsigned int vvt2_pwm_cur_value;
+static volatile unsigned int vvt1_pwm_cur_value;
+static volatile unsigned int vvt2_pwm_cur_value;
 static long vvt_pid_target_angle;
 static long vvt2_pid_target_angle;
 static long vvt_pid_current_angle;
 static long vvt2_pid_current_angle;
-volatile bool vvt1_pwm_state;
-volatile bool vvt2_pwm_state;
-volatile bool vvt1_max_pwm;
-volatile bool vvt2_max_pwm;
-volatile char nextVVT;
-byte boostCounter;
-byte vvtCounter;
+static volatile bool vvt1_pwm_state;
+static volatile bool vvt2_pwm_state;
+static volatile bool vvt1_max_pwm;
+static volatile bool vvt2_max_pwm;
+static volatile char nextVVT;
+static byte boostCounter;
+static byte vvtCounter;
 
 port_register_t boost_pin_port;
 pin_mask_t boost_pin_mask;
@@ -49,6 +53,50 @@ pin_mask_t vvt2_pin_mask;
 port_register_t fan_pin_port;
 pin_mask_t fan_pin_mask;
 
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
+#define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
+#define N2O_STAGE1_PIN_LOW()    (digitalWrite(configPage10.n2o_stage1_pin, LOW))
+#define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
+#define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
+#define N2O_STAGE2_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage2_pin, HIGH))
+#define AIRCON_PIN_LOW()        (digitalWrite(pinAirConComp, LOW))
+#define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
+#define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
+#define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
+
+#else
+
+#define BOOST_PIN_LOW()         ATOMIC() { *boost_pin_port &= ~(boost_pin_mask); }
+#define BOOST_PIN_HIGH()        ATOMIC() { *boost_pin_port |= (boost_pin_mask);  }
+#define N2O_STAGE1_PIN_LOW()    ATOMIC() { *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask);  }
+#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
+#define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
+#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
+
+//Note the below macros cannot use ATOMIC() as they are called from within ternary operators. The ATOMIC is instead placed around the ternary call below
+#define AIRCON_PIN_LOW()        *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
+#define AIRCON_PIN_HIGH()       *aircon_comp_pin_port |= (aircon_comp_pin_mask)
+#define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
+#define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
+
+#endif
+
+#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
+#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
+#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
+#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
+
+#define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
+
+#define VVT1_PIN_ON()     VVT1_PIN_HIGH();
+#define VVT1_PIN_OFF()    VVT1_PIN_LOW();
+#define VVT2_PIN_ON()     VVT2_PIN_HIGH();
+#define VVT2_PIN_OFF()    VVT2_PIN_LOW();
+#define VVT_TIME_DELAY_MULTIPLIER  50
+
+#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
+
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
 uint16_t fan_pwm_max_count; //Used for variable PWM frequency
@@ -57,30 +105,30 @@ long fan_pwm_value;
 #endif
 constexpr table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
-bool acIsEnabled;
-bool acStandAloneFanIsEnabled;
-uint8_t acStartDelay;
-uint8_t acTPSLockoutDelay;
-uint8_t acRPMLockoutDelay;
-uint8_t acAfterEngineStartDelay;
-bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
+static bool acIsEnabled;
+static bool acStandAloneFanIsEnabled;
+static uint8_t acStartDelay;
+static uint8_t acTPSLockoutDelay;
+static uint8_t acRPMLockoutDelay;
+static uint8_t acAfterEngineStartDelay;
+static bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
-long boost_pwm_target_value;
-volatile bool boost_pwm_state;
-volatile unsigned int boost_pwm_cur_value = 0;
+static long boost_pwm_target_value;
+static volatile bool boost_pwm_state;
+static volatile unsigned int boost_pwm_cur_value = 0;
 
-uint32_t vvtWarmTime;
-bool vvtIsHot;
-bool vvtTimeHold;
+static uint32_t vvtWarmTime;
+static bool vvtIsHot;
+static bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
-integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 static inline void checkAirConCoolantLockout(void);
 static inline void checkAirConTPSLockout(void);
@@ -136,6 +184,17 @@ void initialiseAirCon(void)
   {
     acIsEnabled = false;
   }
+}
+
+static bool READ_AIRCON_REQUEST(void)
+{
+  if(acIsEnabled == false)
+  {
+    return false;
+  }
+  // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
+  currentStatus.airconRequested = (*aircon_req_pin_port & aircon_req_pin_mask)==configPage15.airConReqPol;
+  return currentStatus.airconRequested;
 }
 
 void airConControl(void)
@@ -212,17 +271,6 @@ void airConControl(void)
       acStartDelay = 0;
     }
   }
-}
-
-bool READ_AIRCON_REQUEST(void)
-{
-  if(acIsEnabled == false)
-  {
-    return false;
-  }
-  // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  currentStatus.airconRequested = (*aircon_req_pin_port & aircon_req_pin_mask)==configPage15.airConReqPol;
-  return currentStatus.airconRequested;
 }
 
 static inline void checkAirConCoolantLockout(void)
@@ -540,7 +588,7 @@ void initialiseAuxPWM(void)
 
 }
 
-void boostByGear(void)
+static void boostByGear(void)
 {
   if(configPage4.boostType == OPEN_LOOP_BOOST)
   {
