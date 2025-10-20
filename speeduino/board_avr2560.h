@@ -11,8 +11,6 @@
 ***********************************************************************************************************
 * General
 */
-  #define PORT_TYPE uint8_t //Size of the port variables (Eg inj1_pin_port).
-  #define PINMASK_TYPE uint8_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead

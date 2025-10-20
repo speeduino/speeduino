@@ -28,25 +28,25 @@ volatile char nextVVT;
 byte boostCounter;
 byte vvtCounter;
 
-volatile PORT_TYPE *boost_pin_port;
+PORT_TYPE boost_pin_port;
 PINMASK_TYPE boost_pin_mask;
-volatile PORT_TYPE *n2o_stage1_pin_port;
+PORT_TYPE n2o_stage1_pin_port;
 PINMASK_TYPE n2o_stage1_pin_mask;
-volatile PORT_TYPE *n2o_stage2_pin_port;
+PORT_TYPE n2o_stage2_pin_port;
 PINMASK_TYPE n2o_stage2_pin_mask;
-volatile PORT_TYPE *n2o_arming_pin_port;
+PORT_TYPE n2o_arming_pin_port;
 PINMASK_TYPE n2o_arming_pin_mask;
-volatile PORT_TYPE *aircon_comp_pin_port;
+PORT_TYPE aircon_comp_pin_port;
 PINMASK_TYPE aircon_comp_pin_mask;
-volatile PORT_TYPE *aircon_fan_pin_port;
+PORT_TYPE aircon_fan_pin_port;
 PINMASK_TYPE aircon_fan_pin_mask;
-volatile PORT_TYPE *aircon_req_pin_port;
+PORT_TYPE aircon_req_pin_port;
 PINMASK_TYPE aircon_req_pin_mask;
-volatile PORT_TYPE *vvt1_pin_port;
+PORT_TYPE vvt1_pin_port;
 PINMASK_TYPE vvt1_pin_mask;
-volatile PORT_TYPE *vvt2_pin_port;
+PORT_TYPE vvt2_pin_port;
 PINMASK_TYPE vvt2_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
+PORT_TYPE fan_pin_port;
 PINMASK_TYPE fan_pin_mask;
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA

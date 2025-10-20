@@ -16,8 +16,6 @@
   bool pinIsSerial(uint8_t);
   time_t getTeensy3Time();
   uint8_t getSystemTemp();
-  #define PORT_TYPE uint32_t //Size of the port variables
-  #define PINMASK_TYPE uint32_t
   #define COMPARE_TYPE uint16_t
   #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
