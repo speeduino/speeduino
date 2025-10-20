@@ -298,7 +298,7 @@ uint16_t correctionAccel(void)
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_ACC) || BIT_CHECK(currentStatus.engine, BIT_ENGINE_DCC))
   {
     //If it is currently running, check whether it should still be running or whether it's reached it's end time
-    if( micros_safe() >= currentStatus.AEEndTime )
+    if( micros() >= currentStatus.AEEndTime )
     {
       //Time to turn enrichment off
       BIT_CLEAR(currentStatus.engine, BIT_ENGINE_ACC);
@@ -346,7 +346,7 @@ uint16_t correctionAccel(void)
         if (abs(currentStatus.mapDOT) > configPage2.maeThresh)
         {
           activateMAPDOT = abs(currentStatus.mapDOT);
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           //Check if the MAP rate of change is negative or positive. Negative means decelarion.
           if (currentStatus.mapDOT < 0)
           {
@@ -412,7 +412,7 @@ uint16_t correctionAccel(void)
         if (abs(currentStatus.tpsDOT) > configPage2.taeThresh)
         {
           activateTPSDOT = abs(currentStatus.tpsDOT);
-          currentStatus.AEEndTime = micros_safe() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
+          currentStatus.AEEndTime = micros() + ((unsigned long)configPage2.aeTime * 10000); //Set the time in the future where the enrichment will be turned off. taeTime is stored as mS / 10, so multiply it by 100 to get it in uS
           //Check if the TPS rate of change is negative or positive. Negative means decelarion.
           if (currentStatus.tpsDOT < 0)
           {

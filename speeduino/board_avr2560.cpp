@@ -116,23 +116,6 @@ uint16_t freeRam(void)
 
 void doSystemReset(void) { return; }
 void jumpToBootloader(void) { return; }
-#if defined(TIMER5_MICROS)
-//This is used by the fast version of micros(). We just need to increment the timer overflow counter
-ISR(TIMER5_OVF_vect)
-{
-    ++timer5_overflow_count;
-}
-
-static inline unsigned long micros_safe(void)
-{
-  unsigned long newMicros;
-  noInterrupts();
-  newMicros = (((timer5_overflow_count << 16) + TCNT5) * 4);
-  interrupts();
-
-  return newMicros;
-} 
-#endif //TIMER5_MICROS
 
 uint8_t getSystemTemp()
 {
