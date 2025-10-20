@@ -12,7 +12,6 @@
   #define BOARD_MAX_IO_PINS  58 //digital pins + analog channels + 1
 
   #define COMPARE_TYPE uint16_t
-  #define COUNTER_TYPE uint16_t
   #define SERIAL_BUFFER_SIZE 257 //Size of the serial buffer used by new comms protocol. Additional 1 byte is for flag
   #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
   #ifdef USE_SPI_EEPROM
