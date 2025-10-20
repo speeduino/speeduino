@@ -33,7 +33,6 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 enum TachoOutputStatus {TACHO_INACTIVE, READY, ACTIVE}; //The 3 statuses that the tacho output pulse can have. NOTE: Cannot just use 'INACTIVE' as this is already defined within the Teensy Libs
 
 extern volatile TachoOutputStatus tachoOutputFlag;
-extern volatile bool tachoSweepEnabled;
 extern volatile uint16_t tachoSweepIncr;
 
 #define TACHO_SWEEP_TIME_MS 1500
