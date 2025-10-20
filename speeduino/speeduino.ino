@@ -147,13 +147,13 @@ void __attribute__((always_inline)) loop(void)
         }   
       #endif
           
-    if(currentLoopTime > micros_safe())
+    if(currentLoopTime > micros())
     {
       //Occurs when micros() has overflowed
       deferEEPROMWritesUntil = 0; //Required to ensure that EEPROM writes are not deferred indefinitely
     }
 
-    currentLoopTime = micros_safe();
+    currentLoopTime = micros();
     if ( engineIsRunning(currentLoopTime) )
     {
       currentStatus.longRPM = getRPM(); //Long RPM is included here

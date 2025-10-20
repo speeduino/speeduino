@@ -292,7 +292,7 @@ void initialiseAll(void)
     }
 
     //Initial values for loop times
-    currentLoopTime = micros_safe();
+    currentLoopTime = micros();
     mainLoopCount = 0;
 
     if(configPage2.divider == 0) { currentStatus.nSquirts = 2; } //Safety check.

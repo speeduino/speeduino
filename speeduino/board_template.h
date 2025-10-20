@@ -12,7 +12,6 @@
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
   typedef int eeprom_address_t;
-  #define micros_safe() micros() //timer5 method is not used on anything but AVR, the micros_safe() macro is simply an alias for the normal micros()
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();

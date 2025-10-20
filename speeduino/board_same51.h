@@ -37,13 +37,6 @@
   void jumpToBootloader();
   uint8_t getSystemTemp();
 
-  #if defined(TIMER5_MICROS)
-    /*#define micros() (((timer5_overflow_count << 16) + TCNT5) * 4) */ //Fast version of micros() that uses the 4uS tick of timer5. See timers.ino for the overflow ISR of timer5
-    #define millis() (ms_counter) //Replaces the standard millis() function with this macro. It is both faster and more accurate. See timers.ino for its counter increment.
-    static inline unsigned long micros_safe(); //A version of micros() that is interrupt safe
-  #else
-    #define micros_safe() micros() //If the timer5 method is not used, the micros_safe() macro is simply an alias for the normal micros()
-  #endif
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
   //Additional analog pins (These won't work without other changes)

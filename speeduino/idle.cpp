@@ -230,13 +230,13 @@ static inline byte checkForStepping(void)
       timeCheck = iacCoolTime_uS;
     }
 
-    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
+    if(micros() > (idleStepper.stepStartTime + timeCheck) )
     {         
       if(idleStepper.stepperStatus == STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinStepperStep, LOW); //Turn off the step
-        idleStepper.stepStartTime = micros_safe();
+        idleStepper.stepStartTime = micros();
 
 	//Set status to COOLING. In next cycle, status will be set to SOFF and set stepper power OFF based on given settings
         idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
@@ -290,7 +290,7 @@ static inline void doStep(void)
 
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepStartTime = micros();
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
 
@@ -314,7 +314,7 @@ static inline byte isStepperHomed(void)
     digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepStartTime = micros();
     idleStepper.stepperStatus = STEPPING;
     completedHomeSteps++;
     idleOn = true;
