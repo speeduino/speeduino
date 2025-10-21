@@ -588,21 +588,13 @@ void writeSDLogHeader()
 //Sets the status variable for TunerStudio
 void setTS_SD_status()
 {
-  if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
-  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
-
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_TYPE); // CARD is SDHC
-  
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); // CARD is ready
-  
-  if( SD_status == SD_STATUS_ACTIVE ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is logging
-  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is not logging
-
-  if( (SD_status >= SD_STATUS_ERROR_NO_FS) ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has an error
-  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has no error
-
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_FS); // CARD has a FAT32 filesystem (Though this will be exFAT)
-  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_UNUSED); //Unused bit is always 0
+  currentStatus.sdCardPresent = (SD_status != SD_STATUS_ERROR_NO_CARD);
+  currentStatus.sdCardType = 1U; // CARD is SDHC
+  currentStatus.sdCardReady = true;
+  currentStatus.sdCardLogging = (SD_status == SD_STATUS_ACTIVE);
+  currentStatus.sdCardError = (SD_status >= SD_STATUS_ERROR_NO_FS);
+  currentStatus.sdCardFS = 1U; // CARD has a FAT32 filesystem (Though this will be exFAT)
+  currentStatus.sdCardUnused = false; //Unused bit is always 0
 }
 
 /** 
@@ -637,7 +629,7 @@ void checkForSDStart()
     //Check for engine protection based enable
     if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
     {
-      if(currentStatus.engineProtectStatus > 0)
+      if(isEngineProtectActive(currentStatus))
       {
         beginSDLogging(); //Setup the log file, preallocation, header row
       }
@@ -691,7 +683,7 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_prot)
     {
-      if(currentStatus.engineProtectStatus > 0)
+      if(isEngineProtectActive(currentStatus))
       {
         log_prot = true;
       }
@@ -742,7 +734,7 @@ void formatExFat()
   bool result = false;
 
   //Set the SD status to busy
-  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
+  currentStatus.sdCardReady = false;
 
   logFile.close();
 
@@ -758,7 +750,7 @@ void formatExFat()
   }
 
   if(result == false) { SD_status = SD_STATUS_ERROR_FORMAT_FAIL; }
-  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); }
+  else { currentStatus.sdCardReady = true; }
 }
 
 /**
