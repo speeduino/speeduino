@@ -11,8 +11,28 @@ static void test_instantaneous(void) {
   TEST_ASSERT_TRUE(instanteneousMAPReading());
 }
 
+extern void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current);
+
+static void test_setMAPValuesFromReadings(void) {
+  config2 page2;
+  page2.mapMin = page2.EMAPMin = 10;
+  page2.mapMax = page2.EMAPMax = 260;
+  statuses current;
+  setMAPValuesFromReadings({ 0, 0 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(10, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(10, current.EMAP);
+
+  setMAPValuesFromReadings({ 1024, 1024 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(260, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(260, current.EMAP);
+
+  setMAPValuesFromReadings({ 0, 0 }, page2, true, current);
+  TEST_ASSERT_EQUAL_UINT(10, current.MAP);
+  TEST_ASSERT_EQUAL_UINT(10, current.EMAP);
+}
+
 extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern  bool canUseCycleAverage(const statuses &current, const config2 &page2);
+extern bool canUseCycleAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings);
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
   current.RPMdiv100 = 43;
@@ -22,27 +42,44 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
   current.status3 =  0U;
 }
 
+static constexpr uint16_t VALID_MAP_MAX=1022U; //The largest ADC value that is valid for the MAP sensor
+static constexpr uint16_t VALID_MAP_MIN=2U; //The smallest ADC value that is valid for the MAP sensor
+static constexpr map_adc_readings_t VALID_MAP_READINGS = { VALID_MAP_MIN+1, VALID_MAP_MAX-1 };
+static constexpr map_adc_readings_t INVALID_MAP_READINGS = { VALID_MAP_MIN, VALID_MAP_MAX-1 };
+
+extern bool isValidMapSensorReadings(const map_adc_readings_t &sensorReadings);
+
+static void test_isValidMapSensorReadings() {
+  TEST_ASSERT_TRUE(isValidMapSensorReadings(VALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings(INVALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings({ VALID_MAP_MIN+1, VALID_MAP_MAX }));
+  TEST_ASSERT_TRUE(isValidMapSensorReadings({ VALID_MAP_MIN+1, UINT16_MAX }));
+  TEST_ASSERT_FALSE(isValidMapSensorReadings({ VALID_MAP_MIN, UINT16_MAX }));
+}
+
 static void test_canUseCycleAverge(void) {
   statuses current;
   config2 page2;
   enable_cycle_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
 
   current.hasSync = false;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.hasSync = true;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.startRevolutions = 55;
 
   current.RPMdiv100 = page2.mapSwitchPoint-1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint+1;
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, VALID_MAP_READINGS));
+
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, INVALID_MAP_READINGS));
 }
 
 struct cycleAverageMAPReading_test_data {
@@ -65,8 +102,7 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   setup_cycle_average(test_data);
 
   test_data.current.hasSync = false;
-  test_data.sensorReadings.mapADC = 0x1234;
-  test_data.sensorReadings.emapADC = 0x1234;
+  test_data.sensorReadings = VALID_MAP_READINGS;
 
   TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
@@ -78,6 +114,22 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
+
+  // Repeat - should get same result.
+  test_data.current.hasSync = true;
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.emapAdcRunningTotal);
+
+  // Finally, make sure it was falling back! 
+  test_data.current.hasSync = true;
+  test_data.sensorReadings = VALID_MAP_READINGS;
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(VALID_MAP_READINGS.mapADC, test_data.cycle_average.mapAdcRunningTotal);
+  TEST_ASSERT_EQUAL_UINT(VALID_MAP_READINGS.emapADC, test_data.cycle_average.emapAdcRunningTotal);
 }
 
 static void test_cycleAverageMAPReading(void) {
@@ -156,26 +208,31 @@ static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
   test_data.cycle_min.mapMinimum = UINT16_MAX;
 }
 
-// static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
-//   cycleMinmumMAPReading_test_data test_data;
-//   setup_cycle_minimum(test_data);
+static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
+  cycleMinmumMAPReading_test_data test_data;
+  setup_cycle_minimum(test_data);
 
-//   test_data.current.RPMdiv100 = test_data.page2.mapSwitchPoint - 1U;
-//   test_data.sensorReadings.mapADC = 300;
-//   test_data.sensorReadings.emapADC = 500;  
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(0U, test_data.cycle_min.cycleStartIndex);
 
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  // Repeat - should get same result.
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(0U, test_data.cycle_min.cycleStartIndex);
 
-//   // Repeat - should get same result.
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
-// }
+  //
+  test_data.current.RPMdiv100 = test_data.page2.mapSwitchPoint - 1U;
+  test_data.sensorReadings = VALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
+}
 
 static void test_cycleMinimumMAPReading(void) {
   cycleMinmumMAPReading_test_data test_data;
   setup_cycle_minimum(test_data);
-
 
   test_data.cycle_min.cycleStartIndex = test_data.current.startRevolutions;
   test_data.sensorReadings.mapADC = 100;
@@ -205,7 +262,7 @@ static void test_cycleMinimumMAPReading(void) {
   TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
-extern bool canUseEventAverage(const statuses &current, const config2 &page2);
+extern bool canUseEventAverage(const statuses &current, const config2 &page2, const map_adc_readings_t &sensorReadings);
 extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
 static void enable_event_average(statuses &current, config2 &page2) {
@@ -222,26 +279,29 @@ static void test_canUseEventAverage(void) {
   config2 page2;
   enable_event_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
 
   current.hasSync = false;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.hasSync = true;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.startRevolutions = 55;
 
   current.RPMdiv100 = page2.mapSwitchPoint-1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.RPMdiv100 = page2.mapSwitchPoint+1;
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
 
   current.engineProtectStatus = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
   current.engineProtectStatus = 0;  
+
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, VALID_MAP_READINGS));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, INVALID_MAP_READINGS));
 }
 
 
@@ -257,7 +317,7 @@ static void setup_event_average(eventAverageMAPReading_test_data &test_data) {
   test_data.event_average.eventStartIndex = 0;
   test_data.event_average.sampleCount = 0;
   test_data.event_average.mapAdcRunningTotal = 0;
-  ignitionCount = 0;
+  ignitionCount = 333;
 }
 
 static void test_eventAverageMAPReading_fallback_instantaneous(void) {
@@ -265,17 +325,24 @@ static void test_eventAverageMAPReading_fallback_instantaneous(void) {
   setup_event_average(test_data);
 
   test_data.current.hasSync = false;
-  test_data.sensorReadings.mapADC = 0x1234;
-  test_data.sensorReadings.emapADC = 0x1234;
+  test_data.sensorReadings = VALID_MAP_READINGS;
 
   TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT((uint8_t)ignitionCount, test_data.event_average.eventStartIndex);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 
   // Repeat - should get same result.
   TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT((uint8_t)ignitionCount, test_data.event_average.eventStartIndex);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
+
+  test_data.sensorReadings = INVALID_MAP_READINGS;
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.eventStartIndex);
+  TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.mapAdcRunningTotal);
 }
 
 
@@ -331,28 +398,20 @@ static void test_eventAverageMAPReading_nosamples(void) {
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 }
 
-extern uint16_t validateFilterMapSensorReading(uint16_t reading, uint8_t alpha, uint16_t prior);
-
-static void test_validateFilterMapSensorReading(void) {
-  TEST_ASSERT_EQUAL_UINT(0, validateFilterMapSensorReading(0, 0, 0));
-  TEST_ASSERT_EQUAL_UINT(100, validateFilterMapSensorReading(0, 0, 100));
-  TEST_ASSERT_EQUAL_UINT(333, validateFilterMapSensorReading(333, 0, 100));
-  TEST_ASSERT_EQUAL_UINT(217, validateFilterMapSensorReading(333, 127, 100));
-}
-
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
+    RUN_TEST(test_isValidMapSensorReadings);
     RUN_TEST(test_instantaneous);
     RUN_TEST(test_canUseCycleAverge);
     RUN_TEST(test_cycleAverageMAPReading_fallback_instantaneous);
     RUN_TEST(test_cycleAverageMAPReading);
     RUN_TEST(test_cycleAverageMAPReading_nosamples);
-    // RUN_TEST(test_cycleMinimumMAPReading_fallback_instantaneous);
+    RUN_TEST(test_cycleMinimumMAPReading_fallback_instantaneous);
     RUN_TEST(test_cycleMinimumMAPReading);
     RUN_TEST(test_canUseEventAverage);
     RUN_TEST(test_eventAverageMAPReading_fallback_instantaneous);
     RUN_TEST(test_eventAverageMAPReading);
     RUN_TEST(test_eventAverageMAPReading_nosamples);
-    RUN_TEST(test_validateFilterMapSensorReading);
+    RUN_TEST(test_setMAPValuesFromReadings);
   }    
 }
