@@ -201,7 +201,7 @@ void initialiseADC(void)
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
+        currentStatus.engineProtectIoError = true; //Tell user that there is problem by lighting up the I/O error indicator
       }
       else
       {
@@ -218,8 +218,8 @@ void initialiseADC(void)
        uint8_t pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&63U) + 1U;
        if( pinIsUsed(pinNumber) )
        {
-         //Do nothing here as the pin is already in use.
-        BIT_SET(currentStatus.engineProtectStatus, PROTECT_IO_ERROR); //Tell user that there is problem by lighting up the I/O error indicator
+          //Do nothing here as the pin is already in use.
+          currentStatus.engineProtectIoError = true; //Tell user that there is problem by lighting up the I/O error indicator
        }
        else
        {
@@ -430,7 +430,7 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 
 TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!current.engineProtectStatus);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
   }
   return false; // Just here to avoid compiler warning.
 }
@@ -904,8 +904,8 @@ void knockPulse(void)
 {
   if( (currentStatus.MAP < (configPage10.knock_maxMAP*2)) && (currentStatus.RPMdiv100 < configPage10.knock_maxRPM) )
   {
-    if(!BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE)) { currentStatus.knockCount++; } //If knock is not currently active we count every pulse. If knock is already active then additional pulses will be counted in correctionKnockTiming()
-    BIT_SET(currentStatus.status5, BIT_STATUS5_KNOCK_PULSE);
+    if(!currentStatus.knockRetardActive) { currentStatus.knockCount++; } //If knock is not currently active we count every pulse. If knock is already active then additional pulses will be counted in correctionKnockTiming()
+    currentStatus.knockPulseDetected = true;
   }
 }
 

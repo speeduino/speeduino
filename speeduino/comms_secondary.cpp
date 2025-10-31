@@ -62,7 +62,7 @@ void secondserial_Command(void)
       break;
 
     case 'B': // AS above but for the serial compatibility mode. 
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      currentStatus.commCompat = true; //Force the compat mode
       legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 

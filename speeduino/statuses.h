@@ -21,79 +21,6 @@
 
 using byte = uint8_t;
 
-//Define bit positions within engine variable
-#define BIT_ENGINE_RUN      0   // Engine running
-#define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2   // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3   // Engine in warmup
-#define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
-#define BIT_ENGINE_DCC      5   // in deceleration mode
-#define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
-#define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
-
-// Bit masks for statuses::status1
-#define BIT_STATUS1_INJ1           0  //inj1
-#define BIT_STATUS1_INJ2           1  //inj2
-#define BIT_STATUS1_INJ3           2  //inj3
-#define BIT_STATUS1_INJ4           3  //inj4
-#define BIT_STATUS1_DFCO           4  //Deceleration fuel cutoff
-#define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
-#define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
-#define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
-
-// Bit masks for statuses::status2
-#define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
-#define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
-#define BIT_STATUS2_HRDLIM          2  //Hard limiter indicator
-#define BIT_STATUS2_SFTLIM          3  //Soft limiter indicator
-#define BIT_STATUS2_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_STATUS2_ERROR           5  // Error is detected
-#define BIT_STATUS2_IDLE            6  // idle on
-#define BIT_STATUS2_SYNC            7  // Whether engine has sync or not
-
-// Bit masks for statuses::status3
-#define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_FUEL2_ACTIVE  2
-#define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
-#define BIT_STATUS3_NSQUIRTS1     5 // Uses bits 5-7
-
-// Bit masks for statuses::status4
-#define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
-#define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
-#define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
-#define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_BURNPENDING   4
-#define BIT_STATUS4_STAGING_ACTIVE 5
-#define BIT_STATUS4_COMMS_COMPAT  6
-#define BIT_STATUS4_ALLOW_LEGACY_COMMS       7
-
-// Bit masks for statuses::status5
-#define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
-#define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
-#define BIT_STATUS5_SPARK2_ACTIVE  2
-#define BIT_STATUS5_KNOCK_ACTIVE   3
-#define BIT_STATUS5_KNOCK_PULSE    4
-#define BIT_STATUS5_CLUTCH_PRESS   5
-#define BIT_STATUS5_UNUSED7        6
-#define BIT_STATUS5_UNUSED8        7
-
-#define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
-#define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
-#define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
-#define BIT_AIRCON_TPS_LOCKOUT    3 //Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
-#define BIT_AIRCON_TURNING_ON     4 //Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-#define BIT_AIRCON_CLT_LOCKOUT    5 //Indicates the A/C is locked out either due to high coolant temp.
-#define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
-#define BIT_AIRCON_UNUSED8        7
-
-#define ENGINE_PROTECT_BIT_RPM  0
-#define ENGINE_PROTECT_BIT_MAP  1
-#define ENGINE_PROTECT_BIT_OIL  2
-#define ENGINE_PROTECT_BIT_AFR  3
-#define ENGINE_PROTECT_BIT_COOLANT 4
-
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -105,19 +32,19 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
   This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool clutchTrigger : 1;
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool previousClutchTrigger : 1;
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool fpPrimed : 1; ///< Tracks whether or not the fuel pump priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool tachoSweepEnabled : 1;
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool tachoAlt : 1;
     
   uint16_t RPM;   ///< RPM - Current Revs per minute
@@ -169,12 +96,103 @@ struct statuses {
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
   unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
-  volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
-  volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
-  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
-  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
-  volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
-  uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
+
+  // Status1 fields as defined in the INI
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
+  // cppcheck-suppress misra-c2012-6.1
+  volatile bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
+
+  // Status2 fields as defined in the INI. 
+  // TODO: resolve duplication with launchingHard
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
+  // TODO: resolve duplication with launchingSoft
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
+  // TODO: resolve duplication with hasSync
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
+
+  // Status3 fields as defined in the INI.   
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
+  // TODO: resolve duplication with nitrous_status
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
+  // TODO: resolve duplication with hasSync & hasFullSync
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool halfSync : 1;  ///< 
+  // TODO: resolve duplication with nSquirts
+  unsigned int nSquirtsStatus: 3; ///< 
+
+  // Status4 fields as defined in the INI.   
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool vvt1AngleError : 1; ///< VVT1 cam angle within limits (false) or not (true)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool vvt2AngleError : 1; ///< VVT2 cam angle within limits (false) or not (true)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool fanOn : 1; ///< Engine fan status (true == on, false == off)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool stagingActive : 1; ///< Is fuel injection staging active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool commCompat : 1; ///< 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool allowLegacyComms : 1; ///< 
+
+  // Status5 fields as defined in the INI. 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool knockPulseDetected : 1;  ///<
+  // TODO: resolve duplication with clutchTrigger
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
+
+  // Engine status fields as defined in the INI.  
+  // TODO: engine has 3 states: Off, Cranking, Running. Need to capture this better 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool wueIsActive : 1; ///< Is Warm Up Enrichment (WUE) active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  // TODO: acceleration has 3 states: Steady, Accelerating, Decelerating. Need to capture this better 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isDeceleratingTPS : 1; ///< Are we decelerating (true) or not (false), based on TPS
+  
+  // TODO: make all pulse widths uint16_t
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS
   unsigned int PW3; ///< In uS
@@ -188,12 +206,16 @@ struct statuses {
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
   bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
+  // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
+  // TODO: make all RPMs uint16_t
   unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
   bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
-  byte testOutputs;   ///< Test Output bits (only first bit used/tested ?)
+  // TODO: resolve conflict with testActive
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isTestModeActive : 1; // Is hardware test mode on?
   bool testActive;    // Not in use ? Replaced by testOutputs ?
   uint16_t boostDuty; ///< Boost Duty percentage value * 100 to give 2 points of precision
   byte idleLoad;      ///< Either the current steps or current duty cycle for the idle control
@@ -203,7 +225,6 @@ struct statuses {
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
-  byte nChannels; /**< Number of fuel and ignition channels.  */
   uint16_t fuelLoad;
   uint16_t ignLoad;
   bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
@@ -222,15 +243,61 @@ struct statuses {
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
-  byte engineProtectStatus;
+
+  // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool engineProtectIoError : 1; ///<
+
   byte fanDuty;
   byte wmiPW;
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt2TargetAngle;
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
   byte outputsStatus;
-  byte TS_SD_Status; //TunerStudios SD card status
-  byte airConStatus;
+
+  // SD card status fields.
+  // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardPresent : 1; ///< true if a card is present, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardReady : 1; ///< true if ready, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardLogging : 1; ///< true if logging active, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardError : 1;  ///< true if error, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardUnused : 1;  ///< true if unused, false if not
+
+  // airConStatus fields.
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconRequested : 1; ///< Indicates whether the A/C button is pressed
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconCompressorOn : 1; ///< Indicates whether the A/C compressor is running
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconRpmLockout : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconTpsLockout : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconTurningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconCltLockout : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
+  
   uint8_t systemTemp;
 };
 
@@ -239,7 +306,7 @@ struct statuses {
  * 
  */
 static inline bool HasAnySyncUnsafe(const statuses &status) {
-  return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
+  return status.hasSync || status.halfSync;
 }
 
 static inline bool HasAnySync(const statuses &status) {
@@ -247,4 +314,21 @@ static inline bool HasAnySync(const statuses &status) {
     return HasAnySyncUnsafe(status);
   }
   return false; // Just here to avoid compiler warning.
+}
+
+static inline bool isEngineProtectActive(const statuses &status) {
+  return status.engineProtectRpm
+        || status.engineProtectBoostCut
+        || status.engineProtectOil
+        || status.engineProtectAfr
+        || status.engineProtectClt;
+}
+
+static inline void resetEngineProtect(statuses &status) {
+  status.engineProtectRpm = false;
+  status.engineProtectBoostCut = false;
+  status.engineProtectOil = false;
+  status.engineProtectAfr = false;
+  status.engineProtectClt = false;
+  status.engineProtectIoError = false;
 }
