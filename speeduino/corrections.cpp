@@ -574,7 +574,7 @@ This simple check applies the extra fuel if we're currently launching
 */
 TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
-  return (currentStatus.launchingHard || currentStatus.launchingSoft) ? (configPage6.lnchFuelAdd+BASELINE_FUEL_CORRECTION) : NO_FUEL_CORRECTION;
+  return (currentStatus.launchingHard || currentStatus.softLaunchActive) ? (configPage6.lnchFuelAdd+BASELINE_FUEL_CORRECTION) : NO_FUEL_CORRECTION;
 }
 
 // ============================= Deceleration Fuel Cut Off (DFCO) correction =============================
@@ -1085,13 +1085,11 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
     && ( (configPage2.vssMode == VSS_MODE_OFF) || ((configPage2.vssMode!=VSS_MODE_OFF) && (currentStatus.vss <= configPage10.lnchCtrlVss)) )
     )
   {
-    currentStatus.launchingSoft = true;
     currentStatus.softLaunchActive = true;
     advance = configPage6.lnchRetard;
   }
   else
   {
-    currentStatus.launchingSoft = false;
     currentStatus.softLaunchActive = false;
   }
 

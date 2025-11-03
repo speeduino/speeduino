@@ -107,7 +107,6 @@ struct statuses {
   // TODO: resolve duplication with launchingHard
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
-  // TODO: resolve duplication with launchingSoft
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -196,7 +195,6 @@ struct statuses {
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
-  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
   bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
