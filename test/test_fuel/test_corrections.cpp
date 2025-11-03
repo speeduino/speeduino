@@ -708,7 +708,7 @@ static void test_corrections_bat(void)
 uint8_t correctionLaunch(void);
 
 static void test_corrections_launch_inactive(void) {
-  currentStatus.launchingHard = false;
+  currentStatus.hardLaunchActive = false;
   currentStatus.softLaunchActive = false;
   configPage6.lnchFuelAdd = 25;
 
@@ -716,7 +716,7 @@ static void test_corrections_launch_inactive(void) {
 }
 
 static void test_corrections_launch_hard(void) {
-  currentStatus.launchingHard = true;
+  currentStatus.hardLaunchActive = true;
   currentStatus.softLaunchActive = false;
   configPage6.lnchFuelAdd = 25;
 
@@ -724,7 +724,7 @@ static void test_corrections_launch_hard(void) {
 }
 
 static void test_corrections_launch_soft(void) {
-  currentStatus.launchingHard = false;
+  currentStatus.hardLaunchActive = false;
   currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = 25;
 
@@ -732,7 +732,7 @@ static void test_corrections_launch_soft(void) {
 }
 
 static void test_corrections_launch_both(void) {
-  currentStatus.launchingHard = true;
+  currentStatus.hardLaunchActive = true;
   currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = 25;
 
@@ -740,7 +740,7 @@ static void test_corrections_launch_both(void) {
 }
 
 static void test_corrections_launch_removeFuel(void) {
-  currentStatus.launchingHard = true;
+  currentStatus.hardLaunchActive = true;
   currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = -25;
 
@@ -1598,7 +1598,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.runSecs = 255; 
   currentStatus.battery10 = 90;  
   currentStatus.IAT = 100;
-  currentStatus.launchingHard = false;
+  currentStatus.hardLaunchActive = false;
   currentStatus.softLaunchActive = false;
   currentStatus.isDFCOActive = false;
   currentStatus.engineIsCranking = false;
@@ -1686,7 +1686,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.IAT = temperatureRemoveOffset(100);
   currentStatus.baro = 100;
   currentStatus.ethanolPct = 100;
-  currentStatus.launchingHard = false;
+  currentStatus.hardLaunchActive = false;
   currentStatus.softLaunchActive = false;
   currentStatus.AEamount = 100U;
   currentStatus.ASEValue = 100U;

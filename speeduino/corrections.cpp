@@ -574,7 +574,7 @@ This simple check applies the extra fuel if we're currently launching
 */
 TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
-  return (currentStatus.launchingHard || currentStatus.softLaunchActive) ? (configPage6.lnchFuelAdd+BASELINE_FUEL_CORRECTION) : NO_FUEL_CORRECTION;
+  return (currentStatus.hardLaunchActive || currentStatus.softLaunchActive) ? (configPage6.lnchFuelAdd+BASELINE_FUEL_CORRECTION) : NO_FUEL_CORRECTION;
 }
 
 // ============================= Deceleration Fuel Cut Off (DFCO) correction =============================
