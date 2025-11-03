@@ -3,6 +3,7 @@
 #include "pw_calcs.h"
 #include "config_pages.h"
 #include "statuses.h"
+#include "globals.h"
 
 extern pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current);
 
