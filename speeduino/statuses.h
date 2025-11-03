@@ -104,7 +104,6 @@ struct statuses {
   volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
 
   // Status2 fields as defined in the INI. 
-  // TODO: resolve duplication with launchingHard
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -195,7 +194,6 @@ struct statuses {
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
-  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
   // TODO: make all RPMs uint16_t
