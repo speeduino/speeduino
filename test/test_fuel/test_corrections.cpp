@@ -708,7 +708,7 @@ uint8_t correctionLaunch(void);
 
 static void test_corrections_launch_inactive(void) {
   currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.softLaunchActive = false;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(100U, correctionLaunch() );
@@ -716,7 +716,7 @@ static void test_corrections_launch_inactive(void) {
 
 static void test_corrections_launch_hard(void) {
   currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = false;
+  currentStatus.softLaunchActive = false;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
@@ -724,7 +724,7 @@ static void test_corrections_launch_hard(void) {
 
 static void test_corrections_launch_soft(void) {
   currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = true;
+  currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
@@ -732,7 +732,7 @@ static void test_corrections_launch_soft(void) {
 
 static void test_corrections_launch_both(void) {
   currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = true;
+  currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
@@ -740,7 +740,7 @@ static void test_corrections_launch_both(void) {
 
 static void test_corrections_launch_removeFuel(void) {
   currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = true;
+  currentStatus.softLaunchActive = true;
   configPage6.lnchFuelAdd = -25;
 
   TEST_ASSERT_EQUAL(75U, correctionLaunch() );
@@ -1598,7 +1598,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.battery10 = 90;  
   currentStatus.IAT = 100;
   currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.softLaunchActive = false;
   currentStatus.isDFCOActive = false;
   currentStatus.engineIsCranking = false;
   currentStatus.ASEValue = 100U;
@@ -1686,7 +1686,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.baro = 100;
   currentStatus.ethanolPct = 100;
   currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.softLaunchActive = false;
   currentStatus.AEamount = 100U;
   currentStatus.ASEValue = 100U;
   currentStatus.TPSlast = 0;
