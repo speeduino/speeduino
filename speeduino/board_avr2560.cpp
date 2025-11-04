@@ -46,19 +46,6 @@ void initBoard(uint32_t baudRate)
       idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
-    /*
-    ***********************************************************************************************************
-    * Timers
-    */
-    //Configure Timer2 for our low-freq interrupt code.
-    TCCR2B = TIMER_PRESCALER_OFF;   //Disable Timer2 while we set it up
-    TCNT2  = 131;                   //Preload timer2 with 131 cycles, leaving 125 till overflow. As the timer runs at 125Khz, this causes overflow to occur at 1Khz = 1ms
-    TIMSK2 = (1<<TOIE2);            //Timer2 Set Overflow Interrupt enabled.
-    TCCR2A = TIMER_MODE_NORMAL;     //Timer2 Control Reg A: Wave Gen Mode normal
-    /* Now configure the prescaler to CPU clock divided by 128 = 125Khz */
-    TCCR2B = (1<<CS22)  | (1<<CS20); // Set bits. This timer uses different prescaler values, thus we cannot use the defines above.
-    TIFR2 = (1 << OCF2A) | (1<<OCF2B) | (1<<TOV2); //Clear the compare flag bits and overflow flag bit
-
     //Enable the watchdog timer for 2 second resets (Good reference: www.tushev.org/articles/arduino/5/arduino-and-watchdog-timer)
     //Boooooooooo WDT is currently broken on Mega 2560 bootloaders :(
     //wdt_enable(WDTO_2S);
