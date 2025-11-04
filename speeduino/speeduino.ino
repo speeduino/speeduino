@@ -109,6 +109,7 @@ inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, uint16_t fuelLoad, in
 void __attribute__((always_inline)) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+      getTimerFlags();
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms

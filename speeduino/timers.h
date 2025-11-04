@@ -48,5 +48,6 @@ extern volatile unsigned int dwellLimit_uS;
   void oneMSInterval(void);
 #endif
 void initialiseTimers(void);
+void getTimerFlags(void);
 
 #endif // TIMERS_H
