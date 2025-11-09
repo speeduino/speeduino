@@ -10,8 +10,7 @@
   #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
   #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
-  #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
-  typedef int eeprom_address_t;
+  void initialiseStorage(void);
   void initBoard();
   uint16_t freeRam();
   void doSystemReset();

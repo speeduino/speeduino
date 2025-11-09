@@ -8,6 +8,7 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "storage_api.h"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -24,9 +25,13 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
     SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
 #endif
 
+/*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
 #if defined(SRAM_AS_EEPROM)
+    #include "src/BackupSram/BackupSramAsEEPROM.h"
     BackupSramAsEEPROM EEPROM;
+/*Use M25Qxx SPI flash on BlackF407VE*/    
 #elif defined(USE_SPI_EEPROM)
+    #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     #if defined(STM32F407xx)
       SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
     #else //Blue/Black Pills
@@ -37,7 +42,9 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
     Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
     SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+/*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */    
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
+    #include "src/FRAM/Fram.h"
     #if defined(STM32F407xx)
       SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
       FramClass EEPROM(PB0, SPI_for_FRAM);
@@ -46,6 +53,7 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
       FramClass EEPROM(PB12, SPI_for_FRAM);
     #endif
 #elif defined(STM32F7xx)
+    #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
   #if defined(DUAL_BANK)
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
   #else
@@ -53,17 +61,42 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
   #endif
     InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #elif defined(STM32F401xC)
+    #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #elif defined(STM32F411xE)
+    #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #else //default case, internal flash as EEPROM for STM32F4
+    #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
     InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
 #endif
 
+static byte eeprom_read(uint16_t address) {
+  return EEPROM.read(address);
+}
+static void eeprom_write(uint16_t address, byte val) {
+  EEPROM.write(address, val);
+}
+static uint16_t eeprom_length(void) {
+  return EEPROM.length();
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<EEPROM.length(); ++address) {
+    EEPROM.update(address, UINT8_MAX);
+  }   
+}
 
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = eeprom_read,
+    .write = eeprom_write,
+    .length = eeprom_length,
+    .clear = eeprom_clear,
+  });
+}
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
 HardwareTimer Timer3(TIM3);

@@ -13,21 +13,24 @@ uint8_t getPageCount(void);
 uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 
 // These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-#define veMapPage     2
-#define veSetPage     1 //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
-#define ignMapPage    3
-#define ignSetPage    4//Config Page 2
-#define afrMapPage    5
-#define afrSetPage    6//Config Page 3
-#define boostvvtPage  7
-#define seqFuelPage   8
-#define canbusPage    9//Config Page 9
-#define warmupPage    10 //Config Page 10
-#define fuelMap2Page  11
-#define wmiMapPage    12
-#define progOutsPage  13
-#define ignMap2Page   14
-#define boostvvtPage2 15
+#define veMapPage     2U
+#define veSetPage     1U //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
+#define ignMapPage    3U
+#define ignSetPage    4U//Config Page 2
+#define afrMapPage    5U
+#define afrSetPage    6U//Config Page 3
+#define boostvvtPage  7U
+#define seqFuelPage   8U
+#define canbusPage    9U//Config Page 9
+#define warmupPage    10U //Config Page 10
+#define fuelMap2Page  11U
+#define wmiMapPage    12U
+#define progOutsPage  13U
+#define ignMap2Page   14U
+#define boostvvtPage2 15U
+
+/** @brief Fill the tune (config pages & tables) with zeroes. */
+void setTuneToEmpty(void);
 
 // ============================== Per-byte page access ==========================
 
@@ -79,6 +82,10 @@ page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate ove
  * Moves the iterator to the next sub-entity on the page
  */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);
+
+#if defined (UNIT_TEST)
+const char *getEntityName(const page_iterator_t &it);
+#endif
 
 /**
  * Convert page iterator to table value iterator.
