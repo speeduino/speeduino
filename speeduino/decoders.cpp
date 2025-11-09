@@ -43,6 +43,7 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "schedule_calcs.h"
 #include "unit_testing.h"
+#include "atomic.h"
 
 static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
 static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
