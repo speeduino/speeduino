@@ -22,6 +22,7 @@ A full copy of the license may be found in the projects root directory
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
 #include "units.h"
+#include "atomic.h"
 
 uint8_t statusSensors = 0;
 

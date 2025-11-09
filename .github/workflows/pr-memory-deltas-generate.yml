@@ -36,11 +36,12 @@ jobs:
                 name: teensy:avr
             compile-flags: |
               - --build-property
-              - build..extra_flags="-Wall"
+              - build.extra_flags="-Wall"
             lib_deps: |
               - name: SDfat
               - name: SimplyAtomic
               - name: InternalTemperature
+              - name: elapsedMillis
           - fqbn: teensy:avr:teensy41
             artifact-name-suffix: teensy-avr-teensy41
             platform: |
@@ -53,6 +54,7 @@ jobs:
               - name: SDfat
               - name: SimplyAtomic
               - name: InternalTemperature
+              - name: elapsedMillis
           - fqbn: STMicroelectronics:stm32:GenF4
             artifact-name-suffix: stm32-avr-stm32f4
             platform: |
@@ -61,12 +63,13 @@ jobs:
                 version: 2.7.1
             compile-flags: |
               - --build-property
-              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=c++14 -UBOARD_MAX_IO_PINS
+              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
               - name: SdFat
               - name: SimplyAtomic
+              - name: elapsedMillis
 
     steps:
       - name: Checkout repository
