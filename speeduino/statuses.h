@@ -291,6 +291,10 @@ struct statuses {
   bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
   
   uint8_t systemTemp;
+  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+
+  uint8_t maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
+  uint8_t maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
 };
 
 /**
