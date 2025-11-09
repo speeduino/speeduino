@@ -29,6 +29,7 @@ static void test_canUseCycleAverge(void) {
   TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
 
   current.hasSync = false;
+  current.halfSync = false;
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   current.hasSync = true;
 
@@ -279,6 +280,7 @@ static void test_eventAverageMAPReading_fallback_instantaneous(void) {
   setup_event_average(test_data);
 
   test_data.current.hasSync = false;
+  test_data.current.halfSync = false;
   test_data.sensorReadings.mapADC = 0x1234;
   test_data.sensorReadings.emapADC = 0x1234;
 
