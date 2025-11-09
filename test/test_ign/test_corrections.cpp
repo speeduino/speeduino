@@ -35,6 +35,8 @@ extern table2D_u8_u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on 
 
 static void setup_clt_advance_table(void) {
   initialiseCorrections();
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&CLTAdvanceTable, values, bins);
@@ -144,9 +146,9 @@ static void setup_WMIAdv(void) {
     configPage10.wmiTPS = 50;
     currentStatus.TPS = configPage10.wmiTPS + 1;
     configPage10.wmiRPM = 30;
-    currentStatus.RPM = configPage10.wmiRPM + 1U;
+    currentStatus.RPM = RPM_COARSE.toUser(configPage10.wmiRPM + 1U);
     configPage10.wmiMAP = 35;
-    currentStatus.MAP = (configPage10.wmiMAP*2L)+1L;
+    currentStatus.MAP = MAP.toUser(configPage10.wmiMAP+1L);
     configPage10.wmiIAT = 155;
     currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT) + 1;
 
@@ -239,7 +241,8 @@ extern table2D_u8_u8_6 IATRetardTable; ///< 6 bin ignition adjustment based on i
 
 static void setup_IATRetard(void) {
   initialiseCorrections();
-
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&IATRetardTable, values, bins);
@@ -250,10 +253,11 @@ static void setup_IATRetard(void) {
 static void test_correctionIATretard_table_lookup(void) {
     setup_IATRetard();
 
+    currentStatus.IAT = 75;
     TEST_ASSERT_EQUAL(-11-8, correctionIATretard(-11));
 
-    currentStatus.IAT = 35;
-    TEST_ASSERT_EQUAL(11-28, correctionIATretard(11));
+    currentStatus.IAT = 45;
+    TEST_ASSERT_EQUAL(-11-23, correctionIATretard(-11));
 }
 
 static void test_correctionIATretard(void) {
@@ -285,7 +289,7 @@ static void setup_correctionIdleAdvance(void) {
     configPage2.idleAdvEnabled = IDLEADVANCE_MODE_ADDED;
     configPage2.idleAdvDelay = 5;
     configPage2.idleAdvRPM = 20;
-    configPage2.vssMode = 0;
+    configPage2.vssMode = VSS_MODE_OFF;
     configPage6.iacAlgorithm = IAC_ALGORITHM_NONE;
     configPage9.idleAdvStartDelay = 0U;
 
@@ -334,9 +338,9 @@ static void test_correctionIdleAdvance_ctps_lookup_nodelay(void) {
 
 static void test_correctionIdleAdvance_inactive_notrunning(void) {
     setup_correctionIdleAdvance();
+    
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
     currentStatus.engineIsRunning = false;
-    TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
 }
 
@@ -357,7 +361,7 @@ static void test_correctionIdleAdvance_noadvance_rpmtoohigh(void) {
 static void test_correctionIdleAdvance_noadvance_vsslimit(void) {
     setup_correctionIdleAdvance();
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
-    configPage2.vssMode = 1;
+    configPage2.vssMode = VSS_MODE_INTERNAL_PIN;
     configPage2.idleAdvVss = 15;
     currentStatus.vss = configPage2.idleAdvVss + 1;
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
@@ -564,14 +568,11 @@ static void test_correctionSoftLaunch_on(void) {
 
     configPage6.lnchRetard = -3;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(-8));
-    TEST_ASSERT_TRUE(currentStatus.launchingSoft);
     TEST_ASSERT_TRUE(currentStatus.softLaunchActive);
 
     configPage6.lnchRetard = 3;
-    currentStatus.launchingSoft = false;
     currentStatus.softLaunchActive = false;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(8));
-    TEST_ASSERT_TRUE(currentStatus.launchingSoft);
     TEST_ASSERT_TRUE(currentStatus.softLaunchActive);
 }
 
@@ -581,7 +582,6 @@ static void test_correctionSoftLaunch_off_disabled(void) {
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -591,7 +591,6 @@ static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -601,7 +600,6 @@ static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -611,7 +609,6 @@ static void test_correctionSoftLaunch_off_rpmlimit(void) {
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -621,7 +618,6 @@ static void test_correctionSoftLaunch_off_tpslow(void) {
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -630,7 +626,6 @@ static void test_correctionSoftLaunch_off_vsslimit(void) {
     currentStatus.vss = 100; //VSS above limit of 80
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchingSoft);
     TEST_ASSERT_FALSE(currentStatus.softLaunchActive);
 }
 
@@ -767,7 +762,8 @@ extern table2D_u8_u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correctio
 
 static void setup_correctionsDwell(void) {
     initialiseCorrections();
-    
+    BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
+
     configPage4.sparkDur = 10;
     configPage2.perToothIgn = false;
     configPage4.dwellErrCorrect = 0;
@@ -822,7 +818,6 @@ static void test_correctionsDwell_pertooth(void) {
 static void test_correctionsDwell_wasted_nopertooth_largerevolutiontime(void) {
     setup_correctionsDwell();
 
-    currentStatus.dwellCorrection = 55;
     currentStatus.battery10 = 105;
     revolutionTime = 5000;
     TEST_ASSERT_EQUAL(800, correctionsDwell(800));
@@ -836,17 +831,9 @@ static void test_correctionsDwell_initialises_current_actualDwell(void) {
     TEST_ASSERT_EQUAL(777, currentStatus.actualDwell);
 }
 
-static void test_correctionsDwell_sets_dwellCorrection(void) {
-    setup_correctionsDwell();
-
-    currentStatus.dwellCorrection = UINT8_MAX;
-    currentStatus.battery10 = 90;
-    correctionsDwell(777);
-    TEST_ASSERT_EQUAL(115, currentStatus.dwellCorrection);
-}
-
 static void test_correctionsDwell_uses_batvcorrection(void) {
     setup_correctionsDwell();
+
     configPage2.nCylinders = 8;
     configPage4.sparkMode = IGN_MODE_WASTED;
 
@@ -862,25 +849,24 @@ static void test_correctionsDwell(void) {
     RUN_TEST_P(test_correctionsDwell_pertooth);
     RUN_TEST_P(test_correctionsDwell_wasted_nopertooth_largerevolutiontime);
     RUN_TEST_P(test_correctionsDwell_initialises_current_actualDwell);
-    RUN_TEST_P(test_correctionsDwell_sets_dwellCorrection);
     RUN_TEST_P(test_correctionsDwell_uses_batvcorrection);
 }
 
 void testIgnCorrections(void) {
-    Unity.TestFile = __FILE__;
-
-    test_correctionFixedTiming();
-    test_correctionCLTadvance();
-    test_correctionCrankingFixedTiming();
-    test_correctionFlexTiming();
-    test_correctionWMITiming();
-    test_correctionIATretard();
-    test_correctionIdleAdvance();
-    test_correctionSoftRevLimit();
-    test_correctionNitrous();
-    test_correctionSoftLaunch();
-    test_correctionSoftFlatShift();
-    test_correctionKnock();
-    // correctionDFCOignition() is tested in the fueling unit tests, since it is tightly coupled to fuel DFCO
-    test_correctionsDwell();
+    SET_UNITY_FILENAME() {
+        test_correctionFixedTiming();
+        test_correctionCLTadvance();
+        test_correctionCrankingFixedTiming();
+        test_correctionFlexTiming();
+        test_correctionWMITiming();
+        test_correctionIATretard();
+        test_correctionIdleAdvance();
+        test_correctionSoftRevLimit();
+        test_correctionNitrous();
+        test_correctionSoftLaunch();
+        test_correctionSoftFlatShift();
+        test_correctionKnock();
+        // correctionDFCOignition() is tested in the fueling unit tests, since it is tightly coupled to fuel DFCO
+        test_correctionsDwell();
+    }
 }
