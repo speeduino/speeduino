@@ -1,13 +1,13 @@
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-#include "board_teensy35.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
+#include RTC_LIB_H
 
 /*
   //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
@@ -19,7 +19,7 @@
 #endif
 */
 
-void initBoard()
+void initBoard(uint32_t baudRate)
 {
     /*
     ***********************************************************************************************************
@@ -305,6 +305,9 @@ void initBoard()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM0);
     NVIC_ENABLE_IRQ(IRQ_FTM3);
+
+    Serial.begin(baudRate);
+
 }
 
 void ftm0_isr(void)
@@ -412,7 +415,7 @@ uint16_t freeRam()
 }
 
 //This function is used for attempting to set the RTC time during compile
-time_t getTeensy3Time()
+static time_t getTeensy3Time()
 {
   return Teensy3Clock.get();
 }
@@ -423,6 +426,17 @@ void jumpToBootloader() { return; }
 uint8_t getSystemTemp()
 {
   return trunc(InternalTemperature.readTemperatureC());
+}
+
+void boardInitRTC(void)
+{
+  setSyncProvider(getTeensy3Time);
+}
+
+
+void boardInitPins(void)
+{
+  // Do nothing
 }
 
 #endif

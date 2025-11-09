@@ -1,6 +1,7 @@
-#include "globals.h"
+#include "board_definition.h"
+
 #if defined(CORE_AVR)
-#include "board_avr2560.h"
+#include "globals.h"
 #include "auxiliaries.h"
 #include "comms_secondary.h"
 #include "idle.h"
@@ -18,7 +19,7 @@
 #define TIMER_MODE_CTC       ((1<<WGM01)|(0<<WGM00))
 #define TIMER_MODE_FASTPWM   ((1<<WGM01)|(1<<WGM00))
 
-void initBoard(void)
+void initBoard(uint32_t baudRate)
 {
     /*
     ***********************************************************************************************************
@@ -93,6 +94,7 @@ void initBoard(void)
     TCCR4B = TIMER_PRESCALER_64;    //Timer4 Control Reg B: Timer Prescaler set to 64.
     TIFR4 = (1 << OCF4A) | (1<<OCF4B) | (1<<OCF4C) | (1<<TOV4) | (1<<ICF4); //Clear the compare flags, overflow flag and external input flag bits
 
+    Serial.begin(baudRate);
 }
 
 /*
@@ -121,6 +123,16 @@ uint8_t getSystemTemp()
 {
   //AVR2560 has no internal temperature monitoring, just return 0. 
   return 0;
+}
+
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
+void boardInitPins(void)
+{
+  // Do nothing
 }
 
 #endif //CORE_AVR

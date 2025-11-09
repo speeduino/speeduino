@@ -1,8 +1,8 @@
-#if defined(CORE_SAME51)
-#include "globals.h"
-#include "auxiliaries.h"
+#include "board_definition.h"
 
-void initBoard()
+#if defined(CORE_SAME51)
+
+void initBoard(uint32_t baudRate)
 {
     /*
     ***********************************************************************************************************
@@ -28,6 +28,8 @@ void initBoard()
     ***********************************************************************************************************
     * Schedules
     */
+
+    Serial.begin(baudRate);
 }
 
 uint16_t freeRam()
@@ -37,5 +39,16 @@ uint16_t freeRam()
 
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
+
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
+
+void boardInitPins(void)
+{
+  // Do nothing
+}
 
 #endif

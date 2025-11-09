@@ -12,12 +12,7 @@
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
   typedef int eeprom_address_t;
-  void initBoard();
-  uint16_t freeRam();
-  void doSystemReset();
-  void jumpToBootloader();
-  uint8_t getSystemTemp();
-
+  
   #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
 
 /*

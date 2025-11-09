@@ -1,19 +1,22 @@
-#ifndef STM32OFFICIAL_H
-#define STM32OFFICIAL_H
+#pragma once
+
+/** DO NOT INCLUDE DIRECTLY - should be included via board_definition.h */
+
 #include <Arduino.h>
-#if defined(STM32_CORE_VERSION_MAJOR)
 #include <HardwareTimer.h>
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
 #include <SPI.h>
 
+#define CORE_STM32
+
 #ifndef PLATFORMIO
-  #ifndef USBCON
-    #error "USBCON must be defined in boards.txt"
-  #endif
-  #ifndef USBD_USE_CDC
-    #error "USBD_USE_CDC must be defined in boards.txt"
-  #endif
+#ifndef USBCON
+  #error "USBCON must be defined in boards.txt"
+#endif
+#ifndef USBD_USE_CDC
+  #error "USBD_USE_CDC must be defined in boards.txt"
+#endif
 #endif
 
 #if defined(STM32F1)
@@ -28,6 +31,7 @@
 #else /*Default should be STM32F4*/
   #include "stm32f4xx_ll_tim.h"
 #endif
+
 /*
 ***********************************************************************************************************
 * General
@@ -100,12 +104,6 @@ HardwareSerial Serial1(PA10, PA9);
 
 extern STM32RTC& rtc;
 
-void initBoard();
-uint16_t freeRam();
-void doSystemReset();
-void jumpToBootloader();
-uint8_t getSystemTemp();
-
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
   #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
@@ -131,6 +129,7 @@ uint8_t getSystemTemp();
 #endif
 
 #define PWM_FAN_AVAILABLE
+#define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
@@ -177,7 +176,6 @@ uint8_t getSystemTemp();
   #endif
 #endif
 
-
 #define RTC_LIB_H "STM32RTC.h"
 
 /*
@@ -200,6 +198,13 @@ uint8_t getSystemTemp();
 #define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
 #define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
+#if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
+  #define INJ_CHANNELS 8
+  #define IGN_CHANNELS 8
+#else
+  #define INJ_CHANNELS 4
+  #define IGN_CHANNELS 5
+#endif
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT
 #define FUEL3_COUNTER (TIM3)->CNT
@@ -312,63 +317,6 @@ static inline void IGN8_TIMER_DISABLE(void)  {(TIM4)->DIER &= ~TIM_DIER_CC4IE;}
 #define IDLE_TIMER_ENABLE()  (TIM1)->SR = ~TIM_FLAG_CC4; (TIM1)->DIER |= TIM_DIER_CC4IE; (TIM1)->CR1 |= TIM_CR1_CEN;
 #define IDLE_TIMER_DISABLE() (TIM1)->DIER &= ~TIM_DIER_CC4IE
 
-/*
-***********************************************************************************************************
-* Timers
-*/
-
-extern HardwareTimer Timer1;
-extern HardwareTimer Timer2;
-extern HardwareTimer Timer3;
-extern HardwareTimer Timer4;
-#if !defined(ARDUINO_BLUEPILL_F103C8) && !defined(ARDUINO_BLUEPILL_F103CB) //F103 just have 4 timers
-extern HardwareTimer Timer5;
-#if defined(TIM11)
-extern HardwareTimer Timer11;
-#elif defined(TIM7)
-extern HardwareTimer Timer11;
-#endif
-#endif
-
-#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
-void oneMSInterval(HardwareTimer*);
-void boostInterrupt(HardwareTimer*);
-void fuelSchedule1Interrupt(HardwareTimer*);
-void fuelSchedule2Interrupt(HardwareTimer*);
-void fuelSchedule3Interrupt(HardwareTimer*);
-void fuelSchedule4Interrupt(HardwareTimer*);
-#if (INJ_CHANNELS >= 5)
-void fuelSchedule5Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 6)
-void fuelSchedule6Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 7)
-void fuelSchedule7Interrupt(HardwareTimer*);
-#endif
-#if (INJ_CHANNELS >= 8)
-void fuelSchedule8Interrupt(HardwareTimer*);
-#endif
-void idleInterrupt(HardwareTimer*);
-void vvtInterrupt(HardwareTimer*);
-void fanInterrupt(HardwareTimer*);
-void ignitionSchedule1Interrupt(HardwareTimer*);
-void ignitionSchedule2Interrupt(HardwareTimer*);
-void ignitionSchedule3Interrupt(HardwareTimer*);
-void ignitionSchedule4Interrupt(HardwareTimer*);
-#if (IGN_CHANNELS >= 5)
-void ignitionSchedule5Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 6)
-void ignitionSchedule6Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 7)
-void ignitionSchedule7Interrupt(HardwareTimer*);
-#endif
-#if (IGN_CHANNELS >= 8)
-void ignitionSchedule8Interrupt(HardwareTimer*);
-#endif
-#endif //End core<=1.8
 
 /*
 ***********************************************************************************************************
@@ -386,6 +334,3 @@ extern STM32_CAN Can0;
 #else //libmaple core aka STM32DUINO
   #define SECONDARY_SERIAL_T HardwareSerial
 #endif
-
-#endif //CORE_STM32
-#endif //STM32_H
