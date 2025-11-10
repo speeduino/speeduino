@@ -389,7 +389,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
   #endif //End core<=1.8
 
-uint8_t getSystemTemp()
+uint8_t getSystemTemp(void)
 {
   //stm32F4xx does have an internal temperature sensor, but needs to be implemented
   return 0;
