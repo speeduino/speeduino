@@ -79,11 +79,11 @@ void legacySerialCommand(void)
       firstCommsRequest = false;
       break;
 
-    case 'b': // New EEPROM burn command to only burn a single page at a time
+    case 'b': // Note this is now deprecated. No EEPROM burn will take place in legacy mode
       legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
 
-    case 'B': // AS above but for the serial compatibility mode. 
+    case 'B': // Note this is now deprecated. No EEPROM burn will take place in legacy mode
       currentStatus.commCompat = true; //Force the compat mode
       legacySerialHandler(currentCommand, Serial, serialStatusFlag);
       break;
@@ -356,15 +356,29 @@ void legacySerialCommand(void)
       break;
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
+      //NOTE: Legacy Serial comms is being made read-only on firmware versions newer than 202501.
+      //This will receive the command and clear the serial buffer, but NO write to memory or EEPROM will occur. 
       byte tableID;
-      //byte canID;
 
       //The first 2 bytes sent represent the canID and tableID
       while (primarySerial.available() == 0) { }
       tableID = primarySerial.read(); //Not currently used for anything
 
-      receiveCalibration(tableID); //Receive new values and store in memory
-      writeCalibration(); //Store received values in EEPROM
+      //Clear the serial buffers
+      if(tableID == 2)
+      {
+        //O2 calibration. Comes through as 1024 8-bit values
+        for (int x = 0; x < 1024; x++) { primarySerial.read(); }
+      }
+      else
+      {
+        //Temperature calibrations are sent as 32 16-bit values
+        for (uint16_t x = 0; x < 32; x++)
+        {
+          primarySerial.read();
+          primarySerial.read();
+        }
+      }
 
       break;
 
@@ -391,6 +405,8 @@ void legacySerialCommand(void)
       break;
 
     case 'W': // receive new VE obr constant at 'W'+<offset>+<newbyte>
+      //NOTE: Legacy Serial comms is being made read-only on firmware versions newer than 202501.
+      //This burn function will accept the command, but NOT alter any values in memory
       serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (isMap())
@@ -401,7 +417,7 @@ void legacySerialCommand(void)
           offset1 = primarySerial.read();
           offset2 = primarySerial.read();
           valueOffset = word(offset2, offset1);
-          setPageValue(currentPage, valueOffset, primarySerial.read());
+          //setPageValue(currentPage, valueOffset, primarySerial.read()); //Value is NOT written to page. 
           serialStatusFlag = SERIAL_INACTIVE;
         }
       }
@@ -410,7 +426,7 @@ void legacySerialCommand(void)
         if(primarySerial.available() >= 2)
         {
           valueOffset = primarySerial.read();
-          setPageValue(currentPage, valueOffset, primarySerial.read());
+          //setPageValue(currentPage, valueOffset, primarySerial.read()); //Value is NOT written to page. 
           serialStatusFlag = SERIAL_INACTIVE;
         }
       }
@@ -530,24 +546,17 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
   switch (cmd)
   {
 
-    case 'b': // New EEPROM burn command to only burn a single page at a time
+    //Both 'b' and 'B' are the same command
+    case 'B':
+    case 'b':
+      //NOTE: Legacy Serial comms is being made read-only on firmware versions newer than 202501.
+      //This burn function will accept the command, but NOT perform any write of the table/page. 
       targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
 
       if (targetPort.available() >= 2)
       {
         targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
-        targetStatusFlag = SERIAL_INACTIVE;
-      }
-      break;
-
-    case 'B': // AS above but for the serial compatibility mode. 
-      targetStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-
-      if (targetPort.available() >= 2)
-      {
-        targetPort.read(); //Ignore the first table value, it's always 0
-        writeConfig(targetPort.read());
+        //writeConfig(targetPort.read()); //The table write is NOT performed
         targetStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -1166,61 +1175,6 @@ void sendPageASCII(void)
   }
 }
 
-
-/** Processes an incoming stream of calibration data (for CLT, IAT or O2) from TunerStudio.
- * Result is store in EEPROM and memory.
- * 
- * @param tableID - calibration table to process. 0 = Coolant Sensor. 1 = IAT Sensor. 2 = O2 Sensor.
- */
-void receiveCalibration(byte tableID)
-{
-  if(tableID == 2)
-  {
-    //O2 calibration. Comes through as 1024 8-bit values of which we use every 32nd
-    for (int x = 0; x < 1024; x++)
-    {
-      while ( primarySerial.available() < 1 ) {}
-      uint8_t tempValue = (uint8_t)primarySerial.read();
-
-      if( (x % 32) == 0)
-      {
-        o2CalibrationTable.values[(x/32)] = (byte)tempValue; //O2 table stores 8 bit values
-        o2CalibrationTable.axis[(x/32)] = x;
-      }
-      
-    }
-  }
-  else
-  {
-    table2D_u16_u16_32 *pTargetTable;
-    if (tableID == 0)
-    {
-      pTargetTable = &cltCalibrationTable;
-    }
-    else
-    {
-      pTargetTable = &iatCalibrationTable;
-    }
-    //Temperature calibrations are sent as 32 16-bit values
-    for (uint16_t x = 0; x < 32; x++)
-    {
-      while ( primarySerial.available() < 2 ) {}
-      byte tempBuffer[2];
-      tempBuffer[0] = primarySerial.read();
-      tempBuffer[1] = primarySerial.read();
-
-      int16_t tempValue = (int16_t)(word(tempBuffer[1], tempBuffer[0])); //Combine the 2 bytes into a single, signed 16-bit value
-      tempValue = div(tempValue, 10).quot; //TS sends values multiplied by 10 so divide back to whole degrees. 
-      tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
-      
-      pTargetTable->values[x] = temperatureAddOffset(tempValue);
-      pTargetTable->axis[x] = (x * 32U);
-      writeCalibration();
-    }
-  }
-
-  writeCalibration();
-}
 
 /** Send 256 tooth log entries to primarySerial.
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
