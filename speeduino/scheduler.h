@@ -41,25 +41,32 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <SimplyAtomic.h>
 #include "globals.h"
 #include "crankMaths.h"
+#include "scheduledIO.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
-#define DWELL_AVERAGE_ALPHA 30
-#define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
-//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
+void initialiseIgnitionSchedulers(void);
 
-void initialiseSchedulers(void);
-void beginInjectorPriming(void);
-
-void disableFuelSchedule(byte channel);
-void disableIgnSchedule(byte channel);
-void disableAllFuelSchedules(void);
-void disableAllIgnSchedules(void);
+void startIgnitionSchedulers(void);
+void stopIgnitionSchedulers(void);
+void disableIgnSchedule(uint8_t channel);
 
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
+void disableAllIgnSchedules(void);
+
+void initialiseFuelSchedulers(void);
+
+void startFuelSchedulers(void);
+void stopFuelSchedulers(void);
+
+void beginInjectorPriming(void);
+
+void disableFuelSchedule(uint8_t channel);
+void disableAllFuelSchedules(void);
 
 //The ARM cores use separate functions for their ISRs
 #if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
@@ -104,123 +111,154 @@ void refreshIgnitionSchedule1(unsigned long timeToEnd);
   void ignitionSchedule8Interrupt(void);
 #endif
 #endif
-/** Schedule statuses.
- * - OFF - Schedule turned off and there is no scheduled plan
- * - PENDING - There's a scheduled plan, but is has not started to run yet
- * - STAGED - (???, Not used)
- * - RUNNING - Schedule is currently running
- */
-enum ScheduleStatus {OFF, PENDING, STAGED, RUNNING}; //The statuses that a schedule can have
 
-/** Ignition schedule.
- */
-struct IgnitionSchedule {
+/** \enum ScheduleStatus
+ * @brief The current state of a schedule
+ * */
+enum ScheduleStatus {
+  // We use powers of 2 so we can check multiple states with a single bitwise AND
 
+  /** Not running */
+  OFF              = 0b00000000U, 
+  /** The delay phase of the schedule is active */
+  PENDING          = 0b00000001U,
+  /** The schedule action is running */
+  RUNNING          = 0b00000010U,
+  /** The schedule is running, with a next schedule queued up */
+  RUNNING_WITHNEXT = 0b00000100U,
+}; 
+
+
+/**
+ * @brief A schedule for a single output channel. 
+ * 
+ * @details
+ * @par A schedule consists of 3 independent parts:
+ * - an action that can be started and stopped. E.g. charge ignition coil or injection pulse
+ * - a delay until the action is started
+ * - a duration until the action is stopped
+ * 
+ * I.e.\n 
+ * \code 
+ *   <--------------- Delay ---------------><---- Duration ---->
+ *                                          ^                  ^
+ *                              Action starts                  Action ends
+ * \endcode
+ * 
+ * @par Timers are modelled as registers
+ * Once set, Schedule instances are usually driven externally by a timer ISR
+ */
+struct Schedule {
   // Deduce the real types of the counter and compare registers.
   // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
   // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(IGN1_COUNTER);
-  using compare_t = decltype(IGN1_COMPARE);
+  /** @brief The type of a timer counter register (this varies between platforms) */
+  using counter_t = decltype(FUEL1_COUNTER /* <-- Arbitrary choice of macro, assumes all have the same type */);
+  /** @brief The type of a timer compare register (this varies between platforms) */
+  using compare_t = decltype(FUEL1_COMPARE /* <-- Arbitrary choice of macro, assumes all have the same type */);
 
-  IgnitionSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
+  /**
+   * @brief Construct a new Schedule object
+   * 
+   * @param counter A <b>reference</b> to the timer counter
+   * @param compare A <b>reference</b> to the timer comparator
+   */
+  constexpr Schedule(counter_t &counter, compare_t &compare)
+    : _counter(counter)
+    , _compare(compare) 
   {
-  }
+  }  
 
-  volatile unsigned long duration;///< Scheduled duration (uS ?)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  void (*pStartCallback)(void);        ///< Start Callback function for schedule
-  void (*pEndCallback)(void);          ///< End Callback function for schedule
-  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-
-  COMPARE_TYPE nextStartCompare;      ///< Planned start of next schedule (when current schedule is RUNNING)
-  COMPARE_TYPE nextEndCompare;        ///< Planned end of next schedule (when current schedule is RUNNING)
-  volatile bool hasNextSchedule = false; ///< Enable flag for planned next schedule (when current schedule is RUNNING)
-  volatile bool endScheduleSetByDecoder = false;
-
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
+  /**
+   * @brief Scheduled duration (timer ticks) 
+   *
+   * This captures the duration of the *next* interval to be scheduled. I.e.
+   *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
+   *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
+   */
+  volatile COMPARE_TYPE duration = 0U;
+  volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  voidVoidCallback pStartCallback = &nullCallback; ///< Start Callback function for schedule
+  voidVoidCallback pEndCallback = &nullCallback;   ///< End Callback function for schedule
+  COMPARE_TYPE nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
+  
+  counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
+  compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
 };
 
-void _setIgnitionScheduleRunning(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setIgnitionScheduleNext(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration);
+/** @brief Is the schedule action currently running? */
+static inline bool isRunning(const Schedule &schedule) {
+  // Using flags and bitwise AND (&) to check multiple states is much quicker
+  // than a logical or (||) (one less branch & 30% less instructions)
+  static constexpr uint8_t flags = RUNNING | RUNNING_WITHNEXT;
+  return ((uint8_t)schedule.Status & flags)!=0U;
+}
 
-inline __attribute__((always_inline)) void setIgnitionSchedule(IgnitionSchedule &schedule, unsigned long timeout, unsigned long duration) 
+/**
+ * @brief Set the schedule action start & end callbacks
+ * 
+ * @param schedule Schedule to modify
+ * @param pStartCallback Start callback
+ * @param pEndCallback End callback
+ */
+void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+
+/**
+ * @brief Set the schedule action to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the action starts (µS)
+ * @param duration Action duration (µS)
+ * @param allowQueuedSchedule true to allow a schedule to be queued up if one is currently running; false otherwise
+ */
+void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule);
+
+
+/** Ignition schedule.
+ */
+struct IgnitionSchedule : public Schedule {
+
+  using Schedule::Schedule;
+
+  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
+  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
+  volatile bool endScheduleSetByDecoder = false;
+};
+
+/**
+ * @brief Set the ignition schedule action (charge & fire a coil) to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the coil begins charging (µS)
+ * @param duration Dwell time (µS)
+ */
+static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
-  if((timeout) < MAX_TIMER_PERIOD)
-  {
-    if(schedule.Status != RUNNING) 
-    { //Check that we're not already part way through a schedule
-      _setIgnitionScheduleRunning(schedule, timeout, duration);
-    }
-    // Check whether timeout exceeds the maximum future time. This can potentially occur on sequential setups when below ~115rpm
-    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD)
-    {
-      _setIgnitionScheduleNext(schedule, timeout, duration);
-    }
-  }
+  // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
+  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
 */
-struct FuelSchedule {
+struct FuelSchedule : public Schedule {
 
-  // Deduce the real types of the counter and compare registers.
-  // COMPARE_TYPE is NOT the same - it's just an integer type wide enough to
-  // store 16-bit counter/compare calculation results.
-  using counter_t = decltype(FUEL1_COUNTER);
-  using compare_t = decltype(FUEL1_COMPARE);
+  using Schedule::Schedule;
 
-  FuelSchedule( counter_t &counter, compare_t &compare,
-            void (&_pTimerDisable)(), void (&_pTimerEnable)())
-  : counter(counter)
-  , compare(compare)
-  , pTimerDisable(_pTimerDisable)
-  , pTimerEnable(_pTimerEnable)
-  {
-  }
-
-  volatile unsigned long duration;///< Scheduled duration (uS)
-  volatile ScheduleStatus Status; ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  volatile COMPARE_TYPE startCompare; ///< The counter value of the timer when this will start
-  void (*pStartFunction)(void);
-  void (*pEndFunction)(void);  
-  COMPARE_TYPE nextStartCompare;
-  volatile bool hasNextSchedule = false;
-
-  counter_t &counter;  // Reference to the counter register. E.g. TCNT3
-  compare_t &compare;  // Reference to the compare register. E.g. OCR3A
-  void (&pTimerDisable)();    // Reference to the timer disable function
-  void (&pTimerEnable)();     // Reference to the timer enable function  
 };
 
-void _setFuelScheduleRunning(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
-void _setFuelScheduleNext(FuelSchedule &schedule, unsigned long timeout, unsigned long duration);
-
-inline __attribute__((always_inline)) void setFuelSchedule(FuelSchedule &schedule, unsigned long timeout, unsigned long duration) 
+/**
+ * @brief Set the fuel schedule action (open & close an injector) to run for a certain duration in the future
+ * 
+ * @param schedule Schedule to modify
+ * @param delay Delay until the injector opens (µS)
+ * @param duration Injector open time (µS)
+ */
+static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
-  if((timeout) < MAX_TIMER_PERIOD)
-  {
-    if(schedule.Status != RUNNING) 
-    { //Check that we're not already part way through a schedule
-      _setFuelScheduleRunning(schedule, timeout, duration);
-    }
-    //If the schedule is already running, we can queue up the next pulse. Only do this however if the maximum time between pulses (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-    else if(angleToTimeMicroSecPerDegree(CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD) 
-    {
-      _setFuelScheduleNext(schedule, timeout, duration);
-    }
-  }
+  // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
+  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
 }
 
 extern FuelSchedule fuelSchedule1;
