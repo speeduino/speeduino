@@ -44,7 +44,7 @@ jobs:
       run: platformio run -e teensy35 -e teensy36 -e teensy41
 
     - name: Build test STM32
-      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB -e black_F407VE-EEPROM-SRAM -e black_F407VE-EEPROM-SPI -e black_F407VE-EEPROM-FRAM
+      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB -e black_F407VE-EEPROM-SRAM -e black_F407VE-EEPROM-SPI -e black_F407VE-EEPROM-FRAM -e BlackPill_F411CE_UART
 
     - name: Upload to Speeduino server
       if: github.event_name != 'pull_request' && github.repository_owner == 'speeduino' && github.ref_name == 'master'
