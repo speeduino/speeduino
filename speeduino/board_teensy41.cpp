@@ -26,7 +26,7 @@ static void serialBegin()
   {
     uint32_t elapsed = systick_millis_count - millis_begin;
     //Wait up to 100ms for this. 
-    if (elapsed > 100) break;
+    if (elapsed > 100) { break; }
     yield();
   }
 }
@@ -378,7 +378,7 @@ static void setPinHysteresis(uint8_t pin)
   *(p->mux) = 5 | 0x10;
 }
 
-uint8_t getSystemTemp()
+uint8_t getSystemTemp(void)
 {
   return trunc(InternalTemperature.readTemperatureC());
 }
