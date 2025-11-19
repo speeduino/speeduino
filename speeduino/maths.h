@@ -372,7 +372,7 @@ static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prio
  */
 static inline uint8_t scale(const uint8_t from, const uint8_t fromRange, const uint8_t toRange) {
   // Using uint16_t to avoid overflow when calculating the result
-  return (((uint16_t)from * (uint16_t)toRange) / (uint16_t)fromRange);
+  return fromRange==0U ? 0U : (((uint16_t)from * (uint16_t)toRange) / (uint16_t)fromRange);
 }
 
 /**
