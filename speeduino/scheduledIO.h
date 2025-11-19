@@ -54,15 +54,6 @@ void closeInjector3and7(void);
 void openInjector4and8(void);
 void closeInjector4and8(void);
 
-void injector1Toggle(void);
-void injector2Toggle(void);
-void injector3Toggle(void);
-void injector4Toggle(void);
-void injector5Toggle(void);
-void injector6Toggle(void);
-void injector7Toggle(void);
-void injector8Toggle(void);
-
 void beginCoil1Charge(void);
 void endCoil1Charge(void);
 
@@ -115,15 +106,6 @@ void beginCoil3and7Charge(void);
 void endCoil3and7Charge(void);
 void beginCoil4and8Charge(void);
 void endCoil4and8Charge(void);
-
-void coil1Toggle(void);
-void coil2Toggle(void);
-void coil3Toggle(void);
-void coil4Toggle(void);
-void coil5Toggle(void);
-void coil6Toggle(void);
-void coil7Toggle(void);
-void coil8Toggle(void);
 
 void tachoOutputOn(void);
 void tachoOutputOff(void);
@@ -198,24 +180,6 @@ void tachoOutputOff(void);
 #define coil7StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil7High_MC33810(); } else { coil7Low_MC33810();  }
 #define coil8Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil8Low_MC33810();  } else { coil8High_MC33810(); }
 #define coil8StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil8High_MC33810(); } else { coil8Low_MC33810();  }
-
-#define coil1Toggle_DIRECT() (*ign1_pin_port ^= ign1_pin_mask )
-#define coil2Toggle_DIRECT() (*ign2_pin_port ^= ign2_pin_mask )
-#define coil3Toggle_DIRECT() (*ign3_pin_port ^= ign3_pin_mask )
-#define coil4Toggle_DIRECT() (*ign4_pin_port ^= ign4_pin_mask )
-#define coil5Toggle_DIRECT() (*ign5_pin_port ^= ign5_pin_mask )
-#define coil6Toggle_DIRECT() (*ign6_pin_port ^= ign6_pin_mask )
-#define coil7Toggle_DIRECT() (*ign7_pin_port ^= ign7_pin_mask )
-#define coil8Toggle_DIRECT() (*ign8_pin_port ^= ign8_pin_mask )
-
-#define injector1Toggle_DIRECT() (*inj1_pin_port ^= inj1_pin_mask )
-#define injector2Toggle_DIRECT() (*inj2_pin_port ^= inj2_pin_mask )
-#define injector3Toggle_DIRECT() (*inj3_pin_port ^= inj3_pin_mask )
-#define injector4Toggle_DIRECT() (*inj4_pin_port ^= inj4_pin_mask )
-#define injector5Toggle_DIRECT() (*inj5_pin_port ^= inj5_pin_mask )
-#define injector6Toggle_DIRECT() (*inj6_pin_port ^= inj6_pin_mask )
-#define injector7Toggle_DIRECT() (*inj7_pin_port ^= inj7_pin_mask )
-#define injector8Toggle_DIRECT() (*inj8_pin_port ^= inj8_pin_mask )
 
 void nullCallback(void);
 
