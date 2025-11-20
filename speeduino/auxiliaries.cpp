@@ -50,8 +50,6 @@ port_register_t vvt1_pin_port;
 pin_mask_t vvt1_pin_mask;
 port_register_t vvt2_pin_port;
 pin_mask_t vvt2_pin_mask;
-port_register_t fan_pin_port;
-pin_mask_t fan_pin_mask;
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
@@ -357,11 +355,45 @@ static inline void checkAirConRPMLockout(void)
 /*
 Fan control
 */
-void initialiseFan(void)
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define FAN_PIN_LOW()           (digitalWrite(pinFan, LOW))
+#define FAN_PIN_HIGH()          (digitalWrite(pinFan, HIGH))
+static void initialiseFanPin(uint8_t pin) { UNUSED(pin); /* Do nothing */}
+#else
+
+static port_register_t fan_pin_port;
+static pin_mask_t fan_pin_mask;
+
+#define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)
+#define FAN_PIN_HIGH()          *fan_pin_port |= (fan_pin_mask)
+
+static void initialiseFanPin(uint8_t pin) 
+{ 
+  fan_pin_port = portOutputRegister(digitalPinToPort(pin));
+  fan_pin_mask = digitalPinToBitMask(pin);
+}
+
+#endif
+
+void fanOn(void) 
 {
-  fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
-  fan_pin_mask = digitalPinToBitMask(pinFan);
-  FAN_OFF();  //Initialise program with the fan in the off state
+  ATOMIC() { 
+    ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); 
+  }
+}
+void fanOff(void)
+{
+  ATOMIC() { 
+    ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); 
+  }
+}
+
+void initialiseFan(uint8_t fanPin)
+{
+  pinMode(pinFan, OUTPUT);
+  initialiseFanPin(fanPin);
+  fanOff();  //Initialise program with the fan in the off state
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
@@ -398,19 +430,19 @@ void fanControl(void)
       if((currentStatus.engineIsCranking) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
-        FAN_OFF();
+        fanOff();
         currentStatus.fanOn = false;
       }
       else 
       {
-        FAN_ON();
+        fanOn();
         currentStatus.fanOn = true;
       }
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
-      FAN_OFF();
+      fanOff();
       currentStatus.fanOn = false;
     }
   }
@@ -462,14 +494,14 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
+        fanOff();
         currentStatus.fanOn = false;
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
+        fanOn();
         currentStatus.fanOn = true;
         DISABLE_FAN_TIMER();
       }
@@ -477,13 +509,13 @@ void fanControl(void)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
+        fanOff();
         currentStatus.fanOn = false;
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
+        fanOn();
         currentStatus.fanOn = true;
       }
     #endif
@@ -1297,13 +1329,13 @@ void vvtInterrupt(void)
 {
   if (fan_pwm_state == true)
   {
-    FAN_OFF();
+    fanOff();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    FAN_ON();
+    fanOn();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;

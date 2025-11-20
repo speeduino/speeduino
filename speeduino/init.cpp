@@ -194,7 +194,7 @@ void initialiseAll(void)
     initialiseIgnitionSchedulers();
     //initialiseDisplay();
     initialiseIdle(true);
-    initialiseFan();
+    initialiseFan(pinFan);
     initialiseAirCon();
     initialiseAuxPWM();
     initialiseCorrections();
@@ -2695,7 +2695,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
   pinMode(pinFuelPump, OUTPUT);
-  pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);

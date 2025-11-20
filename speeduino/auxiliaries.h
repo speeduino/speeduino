@@ -8,7 +8,7 @@ void initialiseAuxPWM(void);
 void boostControl(void);
 void boostDisable(void);
 void vvtControl(void);
-void initialiseFan(void);
+void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
 void nitrousControl(void);
 void fanControl(void);
@@ -21,8 +21,6 @@ void wmiControl(void);
 #define VVT1_PIN_HIGH()         (digitalWrite(pinVVT_1, HIGH))
 #define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
 #define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
-#define FAN_PIN_LOW()           (digitalWrite(pinFan, LOW))
-#define FAN_PIN_HIGH()          (digitalWrite(pinFan, HIGH))
 
 #define FUEL_PUMP_ON()          { digitalWrite(pinFuelPump, HIGH); currentStatus.fuelPumpOn = true; }
 #define FUEL_PUMP_OFF()         { digitalWrite(pinFuelPump, LOW); currentStatus.fuelPumpOn = false; }
@@ -33,8 +31,6 @@ extern port_register_t vvt1_pin_port;
 extern pin_mask_t vvt1_pin_mask;
 extern port_register_t vvt2_pin_port;
 extern pin_mask_t vvt2_pin_mask;
-extern port_register_t fan_pin_port;
-extern pin_mask_t fan_pin_mask;
 
 #define VVT1_PIN_LOW()          ATOMIC() { *vvt1_pin_port &= ~(vvt1_pin_mask);   }
 #define VVT1_PIN_HIGH()         ATOMIC() { *vvt1_pin_port |= (vvt1_pin_mask);    }
@@ -43,13 +39,10 @@ extern pin_mask_t fan_pin_mask;
 #define FUEL_PUMP_ON()          ATOMIC() { *pump_pin_port |= (pump_pin_mask);  currentStatus.fuelPumpOn = true;    }
 #define FUEL_PUMP_OFF()         ATOMIC() { *pump_pin_port &= ~(pump_pin_mask); currentStatus.fuelPumpOn = false;   }
 
-#define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)
-#define FAN_PIN_HIGH()          *fan_pin_port |= (fan_pin_mask)
-
 #endif
 
-#define FAN_ON()                ATOMIC() { ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); }
-#define FAN_OFF()               ATOMIC() { ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); }
+void fanOn(void);
+void fanOff(void);
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
