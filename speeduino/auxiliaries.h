@@ -18,26 +18,10 @@ void fanControl(void);
 void airConControl(void);
 void wmiControl(void);
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-
-#define VVT1_PIN_LOW()          (digitalWrite(pinVVT_1, LOW))
-#define VVT1_PIN_HIGH()         (digitalWrite(pinVVT_1, HIGH))
-#define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
-#define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
-
-#else
-
-extern port_register_t vvt1_pin_port;
-extern pin_mask_t vvt1_pin_mask;
-extern port_register_t vvt2_pin_port;
-extern pin_mask_t vvt2_pin_mask;
-
-#define VVT1_PIN_LOW()          ATOMIC() { *vvt1_pin_port &= ~(vvt1_pin_mask);   }
-#define VVT1_PIN_HIGH()         ATOMIC() { *vvt1_pin_port |= (vvt1_pin_mask);    }
-#define VVT2_PIN_LOW()          ATOMIC() { *vvt2_pin_port &= ~(vvt2_pin_mask);   }
-#define VVT2_PIN_HIGH()         ATOMIC() { *vvt2_pin_port |= (vvt2_pin_mask);    }
-
-#endif
+void vvt1On(void);
+void vvt1Off(void);
+void vvt2On(void);
+void vvt2Off(void);
 
 void fuelPumpOn(void);
 void fuelPumpOff(void);

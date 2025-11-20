@@ -328,8 +328,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
       }
 
-      VVT1_PIN_LOW();
-      VVT2_PIN_LOW();
+      vvt1Off();
+      vvt2Off();
       DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
