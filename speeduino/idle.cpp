@@ -3,43 +3,65 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+#include <Arduino.h>
 #include "idle.h"
 #include "maths.h"
 #include "timers.h"
 #include "preprocessor.h"
 #include "src/PID_v1/PID_v1.h"
 #include "units.h"
+#include "port_pin.h"
+#include "globals.h"
+
+#define IDLE_PIN_LOW()  *idle_pin_port &= ~(idle_pin_mask)
+#define IDLE_PIN_HIGH() *idle_pin_port |= (idle_pin_mask)
+#define IDLE2_PIN_LOW()  *idle2_pin_port &= ~(idle2_pin_mask)
+#define IDLE2_PIN_HIGH() *idle2_pin_port |= (idle2_pin_mask)
+
+#define STEPPER_FORWARD 0
+#define STEPPER_BACKWARD 1
+#define STEPPER_POWER_WHEN_ACTIVE 0
+
+enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper can have. STEPPING means that a high pulse is currently being sent and will need to be turned off at some point.
+
+struct StepperIdle
+{
+  int curIdleStep; //Tracks the current location of the stepper
+  int targetIdleStep; //What the targeted step is
+  volatile StepperStatus stepperStatus;
+  volatile unsigned long stepStartTime;
+};
 
 #define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
 #define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
 
-byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
-byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
-byte idleCounter; //Used for tracking the number of calls to the idle control function
-uint8_t idleTaper;
+static uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
+static uint8_t idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
+static uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
+static uint8_t idleTaper;
 
-struct StepperIdle idleStepper;
-bool idleOn; //Simply tracks whether idle was on last time around
-byte idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
-unsigned int iacStepTime_uS;
-unsigned int iacCoolTime_uS;
-unsigned int completedHomeSteps;
+static struct StepperIdle idleStepper;
+static bool idleOn; //Simply tracks whether idle was on last time around
+static uint8_t idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
+static unsigned int iacStepTime_uS;
+static unsigned int iacCoolTime_uS;
+static unsigned int completedHomeSteps;
 
-volatile bool idle_pwm_state;
-bool lastDFCOValue;
+static volatile bool idle_pwm_state;
+static bool lastDFCOValue;
 uint16_t idle_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int idle_pwm_cur_value;
-long idle_pid_target_value;
-long FeedForwardTerm;
+static volatile unsigned int idle_pwm_cur_value;
+static long idle_pid_target_value;
+static long FeedForwardTerm;
 static uint32_t idle_pwm_target_value;
-long idle_cl_target_rpm;
+static long idle_cl_target_rpm;
 
-port_register_t idle_pin_port;
-pin_mask_t idle_pin_mask;
-port_register_t idle2_pin_port;
-pin_mask_t idle2_pin_mask;
-port_register_t idleUpOutput_pin_port;
-pin_mask_t idleUpOutput_pin_mask;
+static port_register_t idle_pin_port;
+static pin_mask_t idle_pin_mask;
+static port_register_t idle2_pin_port;
+static pin_mask_t idle2_pin_mask;
+static port_register_t idleUpOutput_pin_port;
+static pin_mask_t idleUpOutput_pin_mask;
 
 constexpr table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
 constexpr table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
@@ -69,6 +91,18 @@ static inline void enableIdle(void)
   {
 
   }
+}
+
+static inline void initialiseIdleUpOutput(void)
+{
+  if (configPage2.idleUpOutputInv) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
+  else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
+
+  if(configPage2.idleUpEnabled) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
+  currentStatus.idleUpOutputActive = false;
+
+  idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
+  idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
 }
 
 void initialiseIdle(bool forcehoming)
@@ -196,25 +230,13 @@ void initialiseIdle(bool forcehoming)
   currentStatus.idleLoad = 0;
 }
 
-void initialiseIdleUpOutput(void)
-{
-  if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
-  else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
-
-  if(configPage2.idleUpEnabled > 0) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
-  currentStatus.idleUpOutputActive = false;
-
-  idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
-  idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
-}
-
 /*
 Checks whether a step is currently underway or whether the motor is in 'cooling' state (ie whether it's ready to begin another step or not)
 Returns:
 True: If a step is underway or motor is 'cooling'
 False: If the motor is ready for another step
 */
-static inline byte checkForStepping(void)
+static inline uint8_t checkForStepping(void)
 {
   bool isStepping = false;
   unsigned int timeCheck;
@@ -308,7 +330,7 @@ Returns:
 True: If the system has been homed. No other action is taken
 False: If the motor has not yet been homed. Will also perform another homing step.
 */
-static inline byte isStepperHomed(void)
+static inline uint8_t isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
