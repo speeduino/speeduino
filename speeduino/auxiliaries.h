@@ -1,9 +1,6 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include "board_definition.h"
-#include "atomic.h"
-#include "port_pin.h"
 #include "config_pages.h"
 
 void initialiseAuxPWM(void);
