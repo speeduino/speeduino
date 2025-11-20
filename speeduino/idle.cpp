@@ -60,8 +60,6 @@ static port_register_t idle_pin_port;
 static pin_mask_t idle_pin_mask;
 static port_register_t idle2_pin_port;
 static pin_mask_t idle2_pin_mask;
-static port_register_t idleUpOutput_pin_port;
-static pin_mask_t idleUpOutput_pin_mask;
 
 constexpr table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
 constexpr table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
@@ -100,9 +98,6 @@ static inline void initialiseIdleUpOutput(void)
 
   if(configPage2.idleUpEnabled) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
   currentStatus.idleUpOutputActive = false;
-
-  idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
-  idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
 }
 
 void initialiseIdle(bool forcehoming)
