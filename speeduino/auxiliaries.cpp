@@ -351,6 +351,35 @@ static inline void checkAirConRPMLockout(void)
   }
 }
 
+/*
+ * Fuel pump control
+ */
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define FUEL_PUMP_PIN_HIGH()  digitalWrite(pinFuelPump, HIGH)
+#define FUEL_PUMP_PIN_LOW()   digitalWrite(pinFuelPump, LOW) 
+#else
+
+#define FUEL_PUMP_PIN_HIGH() *pump_pin_port |= (pump_pin_mask)
+#define FUEL_PUMP_PIN_LOW()  *pump_pin_port &= ~(pump_pin_mask)
+
+#endif
+
+void fuelPumpOn(void)
+{
+  ATOMIC() { 
+    FUEL_PUMP_PIN_HIGH();
+    currentStatus.fuelPumpOn = true;
+  }
+}
+void fuelPumpOff(void)
+{
+  ATOMIC() { 
+    FUEL_PUMP_PIN_LOW();
+    currentStatus.fuelPumpOn = false;
+  }
+}
+
 
 /*
 Fan control

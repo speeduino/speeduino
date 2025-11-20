@@ -296,7 +296,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       setRpm(currentStatus, currentStatus.decoder.getRPM());
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
       {
-        FUEL_PUMP_ON();
+        fuelPumpOn();
       }
     }
     else
@@ -313,7 +313,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.rpmDOT = 0;
       initialiseCorrections();
       ignitionCount = 0;
-      if (currentStatus.fpPrimed == true) { FUEL_PUMP_OFF(); } //Turn off the fuel pump, but only if the priming is complete
+      if (currentStatus.fpPrimed == true) { fuelPumpOff(); } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       currentStatus.engineIsCranking = false; //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       currentStatus.wueIsActive = false; //Same as above except for WUE

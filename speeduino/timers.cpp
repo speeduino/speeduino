@@ -276,7 +276,7 @@ void oneMSInterval(void)
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          FUEL_PUMP_OFF();
+          fuelPumpOff();
         }
       }
     }

@@ -1056,7 +1056,7 @@ void initialiseAll(void)
     //First check that the priming time is not 0
     if(configPage2.fpPrime > 0)
     {
-      FUEL_PUMP_ON();
+      fuelPumpOn();
     }
     else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 

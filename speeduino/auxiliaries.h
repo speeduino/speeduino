@@ -22,9 +22,6 @@ void wmiControl(void);
 #define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
 #define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
 
-#define FUEL_PUMP_ON()          { digitalWrite(pinFuelPump, HIGH); currentStatus.fuelPumpOn = true; }
-#define FUEL_PUMP_OFF()         { digitalWrite(pinFuelPump, LOW); currentStatus.fuelPumpOn = false; }
-
 #else
 
 extern port_register_t vvt1_pin_port;
@@ -36,10 +33,11 @@ extern pin_mask_t vvt2_pin_mask;
 #define VVT1_PIN_HIGH()         ATOMIC() { *vvt1_pin_port |= (vvt1_pin_mask);    }
 #define VVT2_PIN_LOW()          ATOMIC() { *vvt2_pin_port &= ~(vvt2_pin_mask);   }
 #define VVT2_PIN_HIGH()         ATOMIC() { *vvt2_pin_port |= (vvt2_pin_mask);    }
-#define FUEL_PUMP_ON()          ATOMIC() { *pump_pin_port |= (pump_pin_mask);  currentStatus.fuelPumpOn = true;    }
-#define FUEL_PUMP_OFF()         ATOMIC() { *pump_pin_port &= ~(pump_pin_mask); currentStatus.fuelPumpOn = false;   }
 
 #endif
+
+void fuelPumpOn(void);
+void fuelPumpOff(void);
 
 void fanOn(void);
 void fanOff(void);
