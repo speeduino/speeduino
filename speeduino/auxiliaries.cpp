@@ -89,10 +89,6 @@ pin_mask_t fan_pin_mask;
 
 #define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
-#define VVT1_PIN_ON()     VVT1_PIN_HIGH();
-#define VVT1_PIN_OFF()    VVT1_PIN_LOW();
-#define VVT2_PIN_ON()     VVT2_PIN_HIGH();
-#define VVT2_PIN_OFF()    VVT2_PIN_LOW();
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
 #define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
@@ -950,8 +946,8 @@ void vvtControl(void)
         if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
         {
           //Make sure solenoid is off (0% duty)
-          VVT1_PIN_OFF();
-          VVT2_PIN_OFF();
+          VVT1_PIN_LOW();
+          VVT2_PIN_LOW();
           vvt1_pwm_state = false;
           vvt1_max_pwm = false;
           vvt2_pwm_state = false;
@@ -961,8 +957,8 @@ void vvtControl(void)
         else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
         {
           //Make sure solenoid is on (100% duty)
-          VVT1_PIN_ON();
-          VVT2_PIN_ON();
+          VVT1_PIN_HIGH();
+          VVT2_PIN_HIGH();
           vvt1_pwm_state = true;
           vvt1_max_pwm = true;
           vvt2_pwm_state = true;
@@ -982,14 +978,14 @@ void vvtControl(void)
         if( currentStatus.vvt1Duty == 0 )
         {
           //Make sure solenoid is off (0% duty)
-          VVT1_PIN_OFF();
+          VVT1_PIN_LOW();
           vvt1_pwm_state = false;
           vvt1_max_pwm = false;
         }
         else if( currentStatus.vvt1Duty >= 200 )
         {
           //Make sure solenoid is on (100% duty)
-          VVT1_PIN_ON();
+          VVT1_PIN_HIGH();
           vvt1_pwm_state = true;
           vvt1_max_pwm = true;
         }
@@ -1188,18 +1184,18 @@ void vvtInterrupt(void)
     if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      VVT1_PIN_OFF();
+      VVT1_PIN_LOW();
       #else
-      VVT1_PIN_ON();
+      VVT1_PIN_HIGH();
       #endif
       vvt1_pwm_state = true;
     }
     if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      VVT2_PIN_OFF();
+      VVT2_PIN_LOW();
       #else
-      VVT2_PIN_ON();
+      VVT2_PIN_HIGH();
       #endif
       vvt2_pwm_state = true;
     }
@@ -1228,9 +1224,9 @@ void vvtInterrupt(void)
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT1_PIN_ON();
+        VVT1_PIN_HIGH();
         #else
-        VVT1_PIN_OFF();
+        VVT1_PIN_LOW();
         #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
@@ -1249,9 +1245,9 @@ void vvtInterrupt(void)
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT2_PIN_ON();
+        VVT2_PIN_HIGH();
         #else
-        VVT2_PIN_OFF();
+        VVT2_PIN_LOW();
         #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
@@ -1270,9 +1266,9 @@ void vvtInterrupt(void)
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
        #if defined(CORE_TEENSY41)
-        VVT1_PIN_ON();
+        VVT1_PIN_HIGH();
         #else
-        VVT1_PIN_OFF();
+        VVT1_PIN_LOW();
         #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
@@ -1282,9 +1278,9 @@ void vvtInterrupt(void)
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT2_PIN_ON();
+        VVT2_PIN_HIGH();
         #else
-        VVT2_PIN_OFF();
+        VVT2_PIN_LOW();
         #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
