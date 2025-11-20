@@ -63,8 +63,6 @@ pin_mask_t ign8_pin_mask;
 
 port_register_t tach_pin_port;
 pin_mask_t tach_pin_mask;
-port_register_t pump_pin_port;
-pin_mask_t pump_pin_mask;
 
 port_register_t flex_pin_port;
 pin_mask_t flex_pin_mask;

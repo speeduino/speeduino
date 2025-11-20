@@ -1052,13 +1052,7 @@ void initialiseAll(void)
         break;
     }
 
-    //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-    //First check that the priming time is not 0
-    if(configPage2.fpPrime > 0)
-    {
-      fuelPumpOn();
-    }
-    else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+    currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 
     interrupts();
     initialiseCLT();
@@ -2694,7 +2688,6 @@ void setPinMapping(byte boardID)
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
-  pinMode(pinFuelPump, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
@@ -2794,8 +2787,6 @@ void setPinMapping(byte boardID)
 
   tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
   tach_pin_mask = digitalPinToBitMask(pinTachOut);
-  pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
-  pump_pin_mask = digitalPinToBitMask(pinFuelPump);
 
   //And for inputs
   #if defined(CORE_STM32)

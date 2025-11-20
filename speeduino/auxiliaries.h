@@ -1,8 +1,10 @@
 #ifndef AUX_H
 #define AUX_H
 
-#include "port_pin.h"
+#include "board_definition.h"
 #include "atomic.h"
+#include "port_pin.h"
+#include "config_pages.h"
 
 void initialiseAuxPWM(void);
 void boostControl(void);
@@ -10,6 +12,7 @@ void boostDisable(void);
 void vvtControl(void);
 void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
+bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin);
 void nitrousControl(void);
 void fanControl(void);
 void airConControl(void);
