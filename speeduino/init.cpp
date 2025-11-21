@@ -202,13 +202,8 @@ void initialiseAll(void)
     initialiseADC();
     initialiseMAPBaro();
     initialiseProgrammableIO();
+    initialiseFlexSensor(configPage2, currentStatus, pinFlex);
 
-    //Check whether the flex sensor is enabled and if so, attach an interrupt for it
-    if(configPage2.flexEnabled > 0)
-    {
-      if(!pinIsReserved(pinFlex)) { attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); }
-      currentStatus.ethanolPct = 0;
-    }
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
@@ -2820,10 +2815,6 @@ void setPinMapping(byte boardID)
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
-  if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
-  {
-    pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
-  }
   if( isExternalVssMode(configPage2) && (!pinIsOutput(pinVSS)) ) //Pin mode 1 for VSS is CAN
   {
     pinMode(pinVSS, INPUT);
@@ -2905,11 +2896,8 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinAirConFan, OUTPUT);
   }  
-
-  flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
-  flex_pin_mask = digitalPinToBitMask(pinFlex);
-
 }
+
 /** Initialise the chosen trigger decoder.
  * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
  * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.

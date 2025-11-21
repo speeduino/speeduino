@@ -64,9 +64,6 @@ pin_mask_t ign8_pin_mask;
 port_register_t tach_pin_port;
 pin_mask_t tach_pin_mask;
 
-port_register_t flex_pin_port;
-pin_mask_t flex_pin_mask;
-
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
