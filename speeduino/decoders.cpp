@@ -6210,18 +6210,24 @@ void triggerSetEndTeeth_FordTFI(void)
 }
 /** @} */
 
+static inline void initTriggerPin(uint8_t pin, PORT_TYPE& pinPort, PINMASK_TYPE& pinMask)
+{
+  pinMode(pin, INPUT);
+  pinPort = portInputRegister(digitalPinToPort(pin));
+  pinMask = digitalPinToBitMask(pin);
+}
+
+/** Initialise the chosen trigger decoder.
+ * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
+ * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.
+ * 
+ * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
+ */
 void initialiseDecoder(uint8_t decoderType)
 {
-  pinMode(pinTrigger, INPUT);
-  pinMode(pinTrigger2, INPUT);
-  pinMode(pinTrigger3, INPUT);
-
-  triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
-  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
-  triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
-  triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
-  triggerThird_pin_port = portInputRegister(digitalPinToPort(pinTrigger3));
-  triggerThird_pin_mask = digitalPinToBitMask(pinTrigger3);
+  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask);
+  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask);
+  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask);
 
   byte triggerInterrupt = 0; // By default, use the first interrupt
   byte triggerInterrupt2 = 1;
