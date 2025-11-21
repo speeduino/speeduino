@@ -332,7 +332,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
-      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { initialiseTriggers(); }
+      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
+        initialiseDecoder(configPage4.TrigPattern);
+      }
 
       VVT1_PIN_LOW();
       VVT2_PIN_LOW();
