@@ -6229,75 +6229,9 @@ void initialiseDecoder(uint8_t decoderType)
   initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask);
   initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask);
 
-  byte triggerInterrupt = 0; // By default, use the first interrupt
-  byte triggerInterrupt2 = 1;
-  byte triggerInterrupt3 = 2;
-
-  #if defined(CORE_AVR)
-    switch (pinTrigger) {
-      //Arduino Mega 2560 mapping
-      case 2:
-        triggerInterrupt = 0; break;
-      case 3:
-        triggerInterrupt = 1; break;
-      case 18:
-        triggerInterrupt = 5; break;
-      case 19:
-        triggerInterrupt = 4; break;
-      case 20:
-        triggerInterrupt = 3; break;
-      case 21:
-        triggerInterrupt = 2; break;
-      default:
-        triggerInterrupt = 0; break; //This should NEVER happen
-    }
-  #else
-    triggerInterrupt = pinTrigger;
-  #endif
-
-  #if defined(CORE_AVR)
-    switch (pinTrigger2) {
-      //Arduino Mega 2560 mapping
-      case 2:
-        triggerInterrupt2 = 0; break;
-      case 3:
-        triggerInterrupt2 = 1; break;
-      case 18:
-        triggerInterrupt2 = 5; break;
-      case 19:
-        triggerInterrupt2 = 4; break;
-      case 20:
-        triggerInterrupt2 = 3; break;
-      case 21:
-        triggerInterrupt2 = 2; break;
-      default:
-        triggerInterrupt2 = 0; break; //This should NEVER happen
-    }
-  #else
-    triggerInterrupt2 = pinTrigger2;
-  #endif
-
-  #if defined(CORE_AVR)
-    switch (pinTrigger3) {
-      //Arduino Mega 2560 mapping
-      case 2:
-        triggerInterrupt3 = 0; break;
-      case 3:
-        triggerInterrupt3 = 1; break;
-      case 18:
-        triggerInterrupt3 = 5; break;
-      case 19:
-        triggerInterrupt3 = 4; break;
-      case 20:
-        triggerInterrupt3 = 3; break;
-      case 21:
-        triggerInterrupt3 = 2; break;
-      default:
-        triggerInterrupt3 = 0; break; //This should NEVER happen
-    }
-  #else
-    triggerInterrupt3 = pinTrigger3;
-  #endif
+  byte triggerInterrupt = digitalPinToInterrupt(pinTrigger);
+  byte triggerInterrupt2 = digitalPinToInterrupt(pinTrigger2);
+  byte triggerInterrupt3 = digitalPinToInterrupt(pinTrigger3);
 
   detachInterrupt(triggerInterrupt);
   detachInterrupt(triggerInterrupt2);
