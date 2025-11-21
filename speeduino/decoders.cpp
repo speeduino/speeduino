@@ -6209,3 +6209,593 @@ void triggerSetEndTeeth_FordTFI(void)
   }
 }
 /** @} */
+
+void initialiseDecoder(uint8_t decoderType)
+{
+  pinMode(pinTrigger, INPUT);
+  pinMode(pinTrigger2, INPUT);
+  pinMode(pinTrigger3, INPUT);
+
+  triggerPri_pin_port = portInputRegister(digitalPinToPort(pinTrigger));
+  triggerPri_pin_mask = digitalPinToBitMask(pinTrigger);
+  triggerSec_pin_port = portInputRegister(digitalPinToPort(pinTrigger2));
+  triggerSec_pin_mask = digitalPinToBitMask(pinTrigger2);
+  triggerThird_pin_port = portInputRegister(digitalPinToPort(pinTrigger3));
+  triggerThird_pin_mask = digitalPinToBitMask(pinTrigger3);
+
+  byte triggerInterrupt = 0; // By default, use the first interrupt
+  byte triggerInterrupt2 = 1;
+  byte triggerInterrupt3 = 2;
+
+  #if defined(CORE_AVR)
+    switch (pinTrigger) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt = 0; break;
+      case 3:
+        triggerInterrupt = 1; break;
+      case 18:
+        triggerInterrupt = 5; break;
+      case 19:
+        triggerInterrupt = 4; break;
+      case 20:
+        triggerInterrupt = 3; break;
+      case 21:
+        triggerInterrupt = 2; break;
+      default:
+        triggerInterrupt = 0; break; //This should NEVER happen
+    }
+  #else
+    triggerInterrupt = pinTrigger;
+  #endif
+
+  #if defined(CORE_AVR)
+    switch (pinTrigger2) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt2 = 0; break;
+      case 3:
+        triggerInterrupt2 = 1; break;
+      case 18:
+        triggerInterrupt2 = 5; break;
+      case 19:
+        triggerInterrupt2 = 4; break;
+      case 20:
+        triggerInterrupt2 = 3; break;
+      case 21:
+        triggerInterrupt2 = 2; break;
+      default:
+        triggerInterrupt2 = 0; break; //This should NEVER happen
+    }
+  #else
+    triggerInterrupt2 = pinTrigger2;
+  #endif
+
+  #if defined(CORE_AVR)
+    switch (pinTrigger3) {
+      //Arduino Mega 2560 mapping
+      case 2:
+        triggerInterrupt3 = 0; break;
+      case 3:
+        triggerInterrupt3 = 1; break;
+      case 18:
+        triggerInterrupt3 = 5; break;
+      case 19:
+        triggerInterrupt3 = 4; break;
+      case 20:
+        triggerInterrupt3 = 3; break;
+      case 21:
+        triggerInterrupt3 = 2; break;
+      default:
+        triggerInterrupt3 = 0; break; //This should NEVER happen
+    }
+  #else
+    triggerInterrupt3 = pinTrigger3;
+  #endif
+
+  detachInterrupt(triggerInterrupt);
+  detachInterrupt(triggerInterrupt2);
+  detachInterrupt(triggerInterrupt3);
+
+  //The default values for edges
+  primaryTriggerEdge = 0; //This should ALWAYS be changed below
+  secondaryTriggerEdge = 0; //This is optional and may not be changed below, depending on the decoder in use
+  tertiaryTriggerEdge = 0; //This is even more optional and may not be changed below, depending on the decoder in use
+
+  //Set the trigger function based on the decoder in the config
+  switch (decoderType)
+  {
+    case DECODER_MISSING_TOOTH:
+      //Missing tooth decoder
+      triggerSetup_missingTooth();
+      triggerHandler = triggerPri_missingTooth;
+      triggerSecondaryHandler = triggerSec_missingTooth;
+      triggerTertiaryHandler = triggerThird_missingTooth;
+      
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+      if(configPage10.TrigEdgeThrd == 0) { tertiaryTriggerEdge = RISING; }
+      else { tertiaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+
+      if(getDecoderFeatures().hasSecondary) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
+      if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
+
+      break;
+
+    case DECODER_BASIC_DISTRIBUTOR:
+      // Basic distributor
+      triggerSetup_BasicDistributor();
+      triggerHandler = triggerPri_BasicDistributor;
+      getRPM = getRPM_BasicDistributor;
+      getCrankAngle = getCrankAngle_BasicDistributor;
+      triggerSetEndTeeth = triggerSetEndTeeth_BasicDistributor;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case 2:
+      triggerSetup_DualWheel();
+      triggerHandler = triggerPri_DualWheel;
+      triggerSecondaryHandler = triggerSec_DualWheel;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_GM7X:
+      triggerSetup_GM7X();
+      triggerHandler = triggerPri_GM7X;
+      getRPM = getRPM_GM7X;
+      getCrankAngle = getCrankAngle_GM7X;
+      triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
+
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case DECODER_4G63:
+      triggerSetup_4G63();
+      triggerHandler = triggerPri_4G63;
+      triggerSecondaryHandler = triggerSec_4G63;
+      getRPM = getRPM_4G63;
+      getCrankAngle = getCrankAngle_4G63;
+      triggerSetEndTeeth = triggerSetEndTeeth_4G63;
+
+      primaryTriggerEdge = CHANGE;
+      secondaryTriggerEdge = FALLING;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_24X:
+      triggerSetup_24X();
+      triggerHandler = triggerPri_24X;
+      triggerSecondaryHandler = triggerSec_24X;
+      getRPM = getRPM_24X;
+      getCrankAngle = getCrankAngle_24X;
+      triggerSetEndTeeth = triggerSetEndTeeth_24X;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = CHANGE; //Secondary is always on every change
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_JEEP2000:
+      triggerSetup_Jeep2000();
+      triggerHandler = triggerPri_Jeep2000;
+      triggerSecondaryHandler = triggerSec_Jeep2000;
+      getRPM = getRPM_Jeep2000;
+      getCrankAngle = getCrankAngle_Jeep2000;
+      triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = CHANGE;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_AUDI135:
+      triggerSetup_Audi135();
+      triggerHandler = triggerPri_Audi135;
+      triggerSecondaryHandler = triggerSec_Audi135;
+      getRPM = getRPM_Audi135;
+      getCrankAngle = getCrankAngle_Audi135;
+      triggerSetEndTeeth = triggerSetEndTeeth_Audi135;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = RISING; //always rising for this trigger
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_HONDA_D17:
+      triggerSetup_HondaD17();
+      triggerHandler = triggerPri_HondaD17;
+      triggerSecondaryHandler = triggerSec_HondaD17;
+      getRPM = getRPM_HondaD17;
+      getCrankAngle = getCrankAngle_HondaD17;
+      triggerSetEndTeeth = triggerSetEndTeeth_HondaD17;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = CHANGE;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_HONDA_J32:
+      triggerSetup_HondaJ32();
+      triggerHandler = triggerPri_HondaJ32;
+      triggerSecondaryHandler = triggerSec_HondaJ32;
+      getRPM = getRPM_HondaJ32;
+      getCrankAngle = getCrankAngle_HondaJ32;
+      triggerSetEndTeeth = triggerSetEndTeeth_HondaJ32;
+
+      primaryTriggerEdge = RISING; // Don't honor the config, always use rising edge 
+      secondaryTriggerEdge = RISING; // Unused
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);  // Suspect this line is not needed
+      break;
+
+    case DECODER_MIATA_9905:
+      triggerSetup_Miata9905();
+      triggerHandler = triggerPri_Miata9905;
+      triggerSecondaryHandler = triggerSec_Miata9905;
+      getRPM = getRPM_Miata9905;
+      getCrankAngle = getCrankAngle_Miata9905;
+      triggerSetEndTeeth = triggerSetEndTeeth_Miata9905;
+
+      //These may both need to change, not sure
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_MAZDA_AU:
+      triggerSetup_MazdaAU();
+      triggerHandler = triggerPri_MazdaAU;
+      triggerSecondaryHandler = triggerSec_MazdaAU;
+      getRPM = getRPM_MazdaAU;
+      getCrankAngle = getCrankAngle_MazdaAU;
+      triggerSetEndTeeth = triggerSetEndTeeth_MazdaAU;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_NON360:
+      triggerSetup_non360();
+      triggerHandler = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+      triggerSecondaryHandler = triggerSec_DualWheel; //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
+      getRPM = getRPM_non360;
+      getCrankAngle = getCrankAngle_non360;
+      triggerSetEndTeeth = triggerSetEndTeeth_non360;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_NISSAN_360:
+      triggerSetup_Nissan360();
+      triggerHandler = triggerPri_Nissan360;
+      triggerSecondaryHandler = triggerSec_Nissan360;
+      getRPM = getRPM_Nissan360;
+      getCrankAngle = getCrankAngle_Nissan360;
+      triggerSetEndTeeth = triggerSetEndTeeth_Nissan360;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = CHANGE;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_SUBARU_67:
+      triggerSetup_Subaru67();
+      triggerHandler = triggerPri_Subaru67;
+      triggerSecondaryHandler = triggerSec_Subaru67;
+      getRPM = getRPM_Subaru67;
+      getCrankAngle = getCrankAngle_Subaru67;
+      triggerSetEndTeeth = triggerSetEndTeeth_Subaru67;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_DAIHATSU_PLUS1:
+      triggerSetup_Daihatsu();
+      triggerHandler = triggerPri_Daihatsu;
+      getRPM = getRPM_Daihatsu;
+      getCrankAngle = getCrankAngle_Daihatsu;
+      triggerSetEndTeeth = triggerSetEndTeeth_Daihatsu;
+
+      //No secondary input required for this pattern
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case DECODER_HARLEY:
+      triggerSetup_Harley();
+      triggerHandler = triggerPri_Harley;
+      //triggerSecondaryHandler = triggerSec_Harley;
+      getRPM = getRPM_Harley;
+      getCrankAngle = getCrankAngle_Harley;
+      triggerSetEndTeeth = triggerSetEndTeeth_Harley;
+
+      primaryTriggerEdge = RISING; //Always rising
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case DECODER_36_2_2_2:
+      //36-2-2-2
+      triggerSetup_ThirtySixMinus222();
+      triggerHandler = triggerPri_ThirtySixMinus222;
+      triggerSecondaryHandler = triggerSec_ThirtySixMinus222;
+      getRPM = getRPM_ThirtySixMinus222;
+      getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_36_2_1:
+      //36-2-1
+      triggerSetup_ThirtySixMinus21();
+      triggerHandler = triggerPri_ThirtySixMinus21;
+      triggerSecondaryHandler = triggerSec_missingTooth;
+      getRPM = getRPM_ThirtySixMinus21;
+      getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
+      triggerSetEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_420A:
+      //DSM 420a
+      triggerSetup_420a();
+      triggerHandler = triggerPri_420a;
+      triggerSecondaryHandler = triggerSec_420a;
+      getRPM = getRPM_420a;
+      getCrankAngle = getCrankAngle_420a;
+      triggerSetEndTeeth = triggerSetEndTeeth_420a;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING; //Always falling edge
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_WEBER:
+      //Weber-Marelli
+      triggerSetup_DualWheel();
+      triggerHandler = triggerPri_Webber;
+      triggerSecondaryHandler = triggerSec_Webber;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_ST170:
+      //Ford ST170
+      triggerSetup_FordST170();
+      triggerHandler = triggerPri_missingTooth;
+      triggerSecondaryHandler = triggerSec_FordST170;
+      getRPM = getRPM_FordST170;
+      getCrankAngle = getCrankAngle_FordST170;
+      triggerSetEndTeeth = triggerSetEndTeeth_FordST170;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+
+      break;
+	  
+    case DECODER_DRZ400:
+      triggerSetup_DRZ400();
+      triggerHandler = triggerPri_DualWheel;
+      triggerSecondaryHandler = triggerSec_DRZ400;
+      getRPM = getRPM_DualWheel;
+      getCrankAngle = getCrankAngle_DualWheel;
+      triggerSetEndTeeth = triggerSetEndTeeth_DualWheel;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_NGC:
+      //Chrysler NGC - 4, 6 and 8 cylinder
+      triggerSetup_NGC();
+      triggerHandler = triggerPri_NGC;
+      getRPM = getRPM_NGC;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_NGC;
+
+      primaryTriggerEdge = CHANGE;
+      if (configPage2.nCylinders == 4) {
+        triggerSecondaryHandler = triggerSec_NGC4;
+        secondaryTriggerEdge = CHANGE;
+      }
+      else {
+        triggerSecondaryHandler = triggerSec_NGC68;
+        secondaryTriggerEdge = FALLING;
+      }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+    case DECODER_VMAX:
+      triggerSetup_Vmax();
+      triggerHandler = triggerPri_Vmax;
+      getRPM = getRPM_Vmax;
+      getCrankAngle = getCrankAngle_Vmax;
+      triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
+      else { primaryTriggerEdge = false; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
+      break;
+
+    case DECODER_RENIX:
+      //Renault 44 tooth decoder
+      triggerSetup_Renix();
+      triggerHandler = triggerPri_Renix;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+      triggerSetEndTeeth = triggerSetEndTeeth_Renix;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt 
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+    case DECODER_ROVERMEMS:
+      //Rover MEMs - covers multiple flywheel trigger combinations.
+      triggerSetup_RoverMEMS();
+      triggerHandler = triggerPri_RoverMEMS;
+      getRPM = getRPM_RoverMEMS;
+      triggerSetEndTeeth = triggerSetEndTeeth_RoverMEMS;
+            
+      triggerSecondaryHandler = triggerSec_RoverMEMS; 
+      getCrankAngle = getCrankAngle_missingTooth;   
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;   
+
+    case DECODER_SUZUKI_K6A:
+      triggerSetup_SuzukiK6A();
+      triggerHandler = triggerPri_SuzukiK6A; // only primary, no secondary, trigger pattern is over 720 degrees
+      getRPM = getRPM_SuzukiK6A;
+      getCrankAngle = getCrankAngle_SuzukiK6A;
+      triggerSetEndTeeth = triggerSetEndTeeth_SuzukiK6A;
+
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
+
+      case DECODER_FORD_TFI:
+      // Ford TFI
+      triggerSetup_FordTFI();
+      triggerHandler = triggerPri_FordTFI;
+      triggerSecondaryHandler = triggerSec_FordTFI;
+      getRPM = getRPM_FordTFI;
+      getCrankAngle = getCrankAngle_FordTFI;
+      triggerSetEndTeeth = triggerSetEndTeeth_FordTFI;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      if(configPage4.TrigEdgeSec == 0) { secondaryTriggerEdge = RISING; }
+      else { secondaryTriggerEdge = FALLING; }
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
+
+    default:
+      triggerHandler = triggerPri_missingTooth;
+      getRPM = getRPM_missingTooth;
+      getCrankAngle = getCrankAngle_missingTooth;
+
+      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
+      break;
+  }
+}
