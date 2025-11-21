@@ -59,6 +59,8 @@
 //220 bytes free
 extern volatile uint8_t decoderState;
 
+void initialiseDecoder(uint8_t decoderType);
+
 /**
  * @brief Is the engine running?
  * 
