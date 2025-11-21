@@ -43,15 +43,12 @@
 #define DECODER_HONDA_J32         27
 #define DECODER_FORD_TFI          28
 
-#define BIT_DECODER_VALID_TRIGGER       4 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-#define BIT_DECODER_TOOTH_ANG_CORRECT   5 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
-#define BIT_DECODER_STATUS_PRIMARY      6 // 1: on, 0: off
-#define BIT_DECODER_STATUS_SECONDARY    7 // 1: on, 0: off
-
 #define TRIGGER_FILTER_OFF              0
 #define TRIGGER_FILTER_LITE             1
 #define TRIGGER_FILTER_MEDIUM           2
 #define TRIGGER_FILTER_AGGRESSIVE       3
+
+void initialiseDecoder(uint8_t decoderType);
 
 struct decoder_features_t {
   bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
@@ -68,6 +65,12 @@ struct decoder_features_t {
 };
 
 const decoder_features_t& getDecoderFeatures(void);
+
+/**
+ * @defgroup trigger_sync_status Functions to get & set trigger sync status
+ *  
+ * @{
+ */
 
 /** \enum SyncStatus
  * @brief The decoder trigger status
