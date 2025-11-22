@@ -139,6 +139,10 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 #define VVT_TIMER_COMPARE     OCR1B
 #define VVT_TIMER_COUNTER     TCNT1
 
+  #define TACHO_TIMER_ENABLE() TIFR2 |= (1 << OCF2A);TIMSK2 |= (1<<OCIE2A) //Timer2 Compare Match A Interrupt enable
+  #define TACHO_TIMER_DISABLE() TIMSK2 &= ~(1<<OCIE2A)
+  #define TACHO_COUNTER TCNT2
+  #define TACHO_COMPARE OCR2A
 /*
 ***********************************************************************************************************
 * Idle
