@@ -166,32 +166,14 @@ extern COMPARE_TYPE dummy_register;
 * CAN / Second serial
 */
 
-struct X86Port {
-    uint32_t v;
 
-    X86Port operator&(const X86Port& o) const {
-      return X86Port{v & o.v};
-    }
-
-    X86Port operator|(const X86Port& o) const {
-      return X86Port{v | o.v};
-    }
-
-    X86Port& operator&=(const X86Port& o) {
-      v &= o.v; return *this;
-    }
-
-    X86Port& operator|=(const X86Port& o) {
-      v |= o.v; return *this;
-    }
-};
-
-#define PORT_TYPE ADDR_TYPE*
-#define PINMASK_TYPE ADDR_TYPE
 
 /*
  * Other stuff
  */
+#define PORT_TYPE X86Port*
+#define PINMASK_TYPE uint64_t
+
 extern void *memcpy_P(void *, const void *, size_t);
 #define RTC_LIB_H "stdio.h"
 

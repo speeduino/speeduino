@@ -27,7 +27,6 @@
 #include <math.h>
 
 #include "binary.h"
-
 #include <platform_x86.h>
 
 #include <HardwareSerial.h>
@@ -133,14 +132,17 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode);
 void detachInterrupt(uint8_t interruptNum);
 
+static X86Port dummyPort;
+
 #define analogInPinToBit(P) (P)
-#define digitalPinToPort(P) ( 123 )
-#define digitalPinToBitMask(P) ( 123  )
+#define analogInPinToBit(P) (P)
 #define digitalPinToTimer(P) ( 123 )
-#define analogInPinToBit(P) (P)
-#define portOutputRegister(P) ( (ADDR_TYPE *) 123  )
-#define portInputRegister(P) ( (ADDR_TYPE *) 123  )
-#define portModeRegister(P) ( (ADDR_TYPE *) 123 )
+
+#define digitalPinToPort(P) ( &dummyPort )
+#define digitalPinToBitMask(P) ( 0xcafebabe  )
+#define portOutputRegister(P) ( (X86Port *) &dummyPort  )
+#define portInputRegister(P) ( (X86Port *) &dummyPort  )
+#define portModeRegister(P) ( (X86Port *) &dummyPort )
 
 #define NOT_A_PIN 0
 #define NOT_A_PORT 0
