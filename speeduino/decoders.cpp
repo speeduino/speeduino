@@ -6210,7 +6210,7 @@ void triggerSetEndTeeth_FordTFI(void)
 }
 /** @} */
 
-static void initTriggerPin(uint8_t pin, PORT_TYPE& pinPort, PINMASK_TYPE& pinMask)
+static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask)
 {
   pinMode(pin, INPUT);
   pinPort = portInputRegister(digitalPinToPort(pin));
