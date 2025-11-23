@@ -17,7 +17,6 @@
 
 #define COMPARE_TYPE uint32_t
 
-
 extern COMPARE_TYPE dummy_register;
 
 #define SECONDARY_SERIAL_T HardwareSerial
@@ -91,45 +90,45 @@ extern COMPARE_TYPE dummy_register;
   #define IGN7_COMPARE  dummy_register
   #define IGN8_COMPARE  dummy_register
 
-  static inline void FUEL1_TIMER_ENABLE(void)  { printf("x86_macro"); }
-  static inline void FUEL2_TIMER_ENABLE(void)  {printf("x86_macro");}
-  static inline void FUEL3_TIMER_ENABLE(void)  {printf("x86_macro");}
-  static inline void FUEL4_TIMER_ENABLE(void)  {printf("x86_macro");}
+  static inline void FUEL1_TIMER_ENABLE(void)  { printf("x86_macro\n"); }
+  static inline void FUEL2_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+  static inline void FUEL3_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+  static inline void FUEL4_TIMER_ENABLE(void)  {printf("x86_macro\n");}
   //The below are optional, but recommended if there are sufficient timers/compares
-  static inline void FUEL5_TIMER_ENABLE(void)  {printf("x86_macro");}
-  static inline void FUEL6_TIMER_ENABLE(void)  {printf("x86_macro");}
-  static inline void FUEL7_TIMER_ENABLE(void)  {printf("x86_macro");}
-  static inline void FUEL8_TIMER_ENABLE(void)  {printf("x86_macro");}
+  static inline void FUEL5_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+  static inline void FUEL6_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+  static inline void FUEL7_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+  static inline void FUEL8_TIMER_ENABLE(void)  {printf("x86_macro\n");}
 
-  static inline void FUEL1_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL2_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL3_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL4_TIMER_DISABLE(void)  { printf("x86_macro");}
+  static inline void FUEL1_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL2_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL3_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL4_TIMER_DISABLE(void)  { printf("x86_macro\n");}
   //The below are optional, but recommended if there are sufficient timers/compares
-  static inline void FUEL5_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL6_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL7_TIMER_DISABLE(void)  { printf("x86_macro");}
-  static inline void FUEL8_TIMER_DISABLE(void)  { printf("x86_macro");}
+  static inline void FUEL5_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL6_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL7_TIMER_DISABLE(void)  { printf("x86_macro\n");}
+  static inline void FUEL8_TIMER_DISABLE(void)  { printf("x86_macro\n");}
 
-    static inline void IGN1_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN2_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN3_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN4_TIMER_ENABLE(void)  {printf("x86_macro");}
+    static inline void IGN1_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN2_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN3_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN4_TIMER_ENABLE(void)  {printf("x86_macro\n");}
   //The below are optional, but recommended if there are sufficient timers/compares
-    static inline void IGN5_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN6_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN7_TIMER_ENABLE(void)  {printf("x86_macro");}
-    static inline void IGN8_TIMER_ENABLE(void)  {printf("x86_macro");}
+    static inline void IGN5_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN6_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN7_TIMER_ENABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN8_TIMER_ENABLE(void)  {printf("x86_macro\n");}
 
-    static inline void IGN1_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN2_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN3_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN4_TIMER_DISABLE(void)  {printf("x86_macro");}
+    static inline void IGN1_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN2_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN3_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN4_TIMER_DISABLE(void)  {printf("x86_macro\n");}
   //The below are optional, but recommended if there are suffici;}ent timers/compares
-    static inline void IGN5_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN6_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN7_TIMER_DISABLE(void)  {printf("x86_macro");}
-    static inline void IGN8_TIMER_DISABLE(void)  {printf("x86_macro");}
+    static inline void IGN5_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN6_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN7_TIMER_DISABLE(void)  {printf("x86_macro\n");}
+    static inline void IGN8_TIMER_DISABLE(void)  {printf("x86_macro\n");}
 
 
   #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
@@ -140,11 +139,11 @@ extern COMPARE_TYPE dummy_register;
 * Auxiliaries
 */
   //macro functions for enabling and disabling timer interrupts for the boost and vvt functions
-  #define ENABLE_BOOST_TIMER()  printf("x86_macro");
-  #define DISABLE_BOOST_TIMER(void)  printf("x86_macro");
+  #define ENABLE_BOOST_TIMER()  printf("x86_macro\n");
+  #define DISABLE_BOOST_TIMER(void)  printf("x86_macro\n");
 
-  #define ENABLE_VVT_TIMER()    printf("x86_macro");
-  #define DISABLE_VVT_TIMER()   printf("x86_macro");
+  #define ENABLE_VVT_TIMER()    printf("x86_macro\n");
+  #define DISABLE_VVT_TIMER()   printf("x86_macro\n");
 
   #define BOOST_TIMER_COMPARE   dummy_register
   #define BOOST_TIMER_COUNTER   dummy_register
@@ -159,13 +158,36 @@ extern COMPARE_TYPE dummy_register;
   #define IDLE_COUNTER          dummy_register
   #define IDLE_COMPARE          dummy_register
 
-  #define IDLE_TIMER_ENABLE()   printf("x86_macro");
-  #define IDLE_TIMER_DISABLE()  printf("x86_macro");
+  #define IDLE_TIMER_ENABLE()   printf("x86_macro\n");
+  #define IDLE_TIMER_DISABLE()  printf("x86_macro\n");
 
 /*
 ***********************************************************************************************************
 * CAN / Second serial
 */
+
+struct X86Port {
+    uint32_t v;
+
+    X86Port operator&(const X86Port& o) const {
+      return X86Port{v & o.v};
+    }
+
+    X86Port operator|(const X86Port& o) const {
+      return X86Port{v | o.v};
+    }
+
+    X86Port& operator&=(const X86Port& o) {
+      v &= o.v; return *this;
+    }
+
+    X86Port& operator|=(const X86Port& o) {
+      v |= o.v; return *this;
+    }
+};
+
+#define PORT_TYPE ADDR_TYPE*
+#define PINMASK_TYPE ADDR_TYPE
 
 /*
  * Other stuff

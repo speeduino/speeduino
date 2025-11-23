@@ -40,6 +40,8 @@ extern "C"{
 
 void yield(void);
 
+#define ADDR_TYPE uint64_t
+
 #define HIGH 0x1
 #define LOW  0x0
 
@@ -131,35 +133,14 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode);
 void detachInterrupt(uint8_t interruptNum);
 
-
-// Get the bit location within the hardware port of the given virtual pin.
-// This comes from the pins_*.c file for the active board configuration.
-
 #define analogInPinToBit(P) (P)
-
-// On the ATmega1280, the addresses of some of the port registers are
-// greater than 255, so we can't store them in uint8_t's.
-extern const uint16_t /* TODO: ogalic  PROGMEM */ port_to_mode_PGM[];
-extern const uint16_t /* TODO: ogalic  PROGMEM */ port_to_input_PGM[];
-extern const uint16_t /* TODO: ogalic  PROGMEM */ port_to_output_PGM[];
-
-extern const uint8_t /* TODO: ogalic  PROGMEM */ digital_pin_to_port_PGM[];
-// extern const uint8_t PROGMEM digital_pin_to_bit_PGM[];
-extern const uint8_t /* TODO: ogalic  PROGMEM */ digital_pin_to_bit_mask_PGM[];
-extern const uint8_t /* TODO: ogalic  PROGMEM */ digital_pin_to_timer_PGM[];
-
-// Get the bit location within the hardware port of the given virtual pin.
-// This comes from the pins_*.c file for the active board configuration.
-// 
-// These perform slightly better as macros compared to inline functions
-//
 #define digitalPinToPort(P) ( 123 )
 #define digitalPinToBitMask(P) ( 123  )
 #define digitalPinToTimer(P) ( 123 )
 #define analogInPinToBit(P) (P)
-#define portOutputRegister(P) ( (volatile uint8_t *) 123  )
-#define portInputRegister(P) ( (volatile uint8_t *) 123  )
-#define portModeRegister(P) ( (volatile uint8_t *) 123 )
+#define portOutputRegister(P) ( (ADDR_TYPE *) 123  )
+#define portInputRegister(P) ( (ADDR_TYPE *) 123  )
+#define portModeRegister(P) ( (ADDR_TYPE *) 123 )
 
 #define NOT_A_PIN 0
 #define NOT_A_PORT 0

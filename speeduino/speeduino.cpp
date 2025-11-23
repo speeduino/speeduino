@@ -1737,6 +1737,7 @@ void checkLaunchAndFlatShift()
 #ifdef PLATFORM_X86
 int main() {
   printf("native-x86: starting firmware\n");
+  printf("setup()");
   setup();
 }
 #endif

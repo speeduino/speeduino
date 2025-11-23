@@ -112,6 +112,10 @@ class FramClass
       volatile uint32_t mosiMask, *mosiPort;
       volatile uint32_t clkMask, *clkPort;
       volatile uint32_t csMask, *csPort;
+    #elif defined(PLATFORM_X86)
+      volatile uint64_t mosiMask, *mosiPort;
+      volatile uint64_t clkMask, *clkPort;
+      volatile uint64_t csMask, *csPort;
     #else
       volatile uint8_t mosiMask, *mosiPort;
       volatile uint8_t clkMask, *clkPort;
@@ -128,7 +132,9 @@ class FramClass
     uint8_t  spiSend(uint8_t data);
     uint16_t  spiSend16(uint16_t data);
 
-    #if defined(ARDUINO_ARCH_STM32) || defined(__IMXRT1062__)
+    #if defined(PLATFORM_X86)
+    inline void fastWrite(volatile uint64_t *port, uint64_t pin, int8_t state)
+    #elif defined(ARDUINO_ARCH_STM32) || defined(__IMXRT1062__)
     inline void fastWrite(volatile uint32_t *port, uint32_t pin, int8_t state)
     #else
     inline void fastWrite(volatile uint8_t *port, uint8_t pin, int8_t state)
