@@ -23,8 +23,6 @@
 #include <inttypes.h>
 #include <stdio.h> // for size_t
 
-#include "WString.h"
-
 #define DEC 10
 #define HEX 16
 #define OCT 8
@@ -42,6 +40,8 @@ class Print
   protected:
     void setWriteError(int err = 1) { write_error = err; }
   public:
+    virtual ~Print() = default;
+
     Print() : write_error(0) {}
   
     int getWriteError() { return write_error; }
@@ -61,8 +61,6 @@ class Print
     // should be overridden by subclasses with buffering
     virtual int availableForWrite() { return 0; }
 
-    size_t print(const __FlashStringHelper *);
-    size_t print(const String &);
     size_t print(const char[]);
     size_t print(char);
     size_t print(unsigned char, int = DEC);
@@ -73,8 +71,6 @@ class Print
     size_t print(double, int = 2);
     //size_t print(const Printable&);
 
-    size_t println(const __FlashStringHelper *);
-    size_t println(const String &s);
     size_t println(const char[]);
     size_t println(char);
     size_t println(unsigned char, int = DEC);

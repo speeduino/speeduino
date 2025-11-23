@@ -16,8 +16,22 @@
 #define TABLE_BLOCKING_FACTOR 256
 
 #define COMPARE_TYPE uint32_t
-COMPARE_TYPE dummy_register;
+
+
+extern COMPARE_TYPE dummy_register;
+
 #define SECONDARY_SERIAL_T HardwareSerial
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 13
+#endif
+
+#ifndef INJ_CHANNELS
+#define INJ_CHANNELS 8
+#endif
+#ifndef IGN_CHANNELS
+#define IGN_CHANNELS 8
+#endif
 
 /*
 ***********************************************************************************************************

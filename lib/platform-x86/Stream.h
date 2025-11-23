@@ -103,10 +103,6 @@ class Stream : public Print
   // terminates if length characters have been read, timeout, or if the terminator character  detected
   // returns the number of characters placed in the buffer (0 means no valid data found)
 
-  // Arduino String functions to be added here
-  String readString();
-  String readStringUntil(char terminator);
-
   protected:
   long parseInt(char ignore) { return parseInt(SKIP_ALL, ignore); }
   float parseFloat(char ignore) { return parseFloat(SKIP_ALL, ignore); }
