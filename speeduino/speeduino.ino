@@ -174,7 +174,7 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
   {
     unsigned long uSToEnd = 0;
 
-    crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+    crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
     
     //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
     //*********
@@ -292,7 +292,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     currentLoopTime = micros();
     if ( engineIsRunning(currentLoopTime) )
     {
-      setRpm(currentStatus, getRPM());
+      setRpm(currentStatus, getDecoder().getRPM());
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
       {
         FUEL_PUMP_ON();
@@ -831,7 +831,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      if( (configPage2.perToothIgn == true) ) { getDecoder().setEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -858,7 +858,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       
       currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10);
       
-      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
+      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getDecoder().getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
     
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
@@ -891,7 +891,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       else { fixedCrankingOverride = 0; }
 
-      setIgnitionChannels(ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, currentStatus.schedulerCutState.ignitionChannels);
+      setIgnitionChannels(ignitionLimits(getDecoder().getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, currentStatus.schedulerCutState.ignitionChannels);
 
       if ( (!currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
       {
