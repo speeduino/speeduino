@@ -133,17 +133,16 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode);
 void detachInterrupt(uint8_t interruptNum);
 
-static X86Port dummyPort("dummyPort", 0);
-
 #define analogInPinToBit(P) (P)
 #define analogInPinToBit(P) (P)
-#define digitalPinToTimer(P) ( 123 )
+#define digitalPinToTimer(P) ( P )
 
-#define digitalPinToPort(P) ( &dummyPort )
-#define digitalPinToBitMask(P) ( 123  )
-#define portOutputRegister(P) ( (X86Port *) &dummyPort  )
-#define portInputRegister(P) ( (X86Port *) &dummyPort  )
-#define portModeRegister(P) ( (X86Port *) &dummyPort )
+#define digitalPinToPort(P) ( P )
+#define digitalPinToBitMask(P) ( P  )
+
+#define portOutputRegister(P) ( new X86Port(P, 0)  )
+#define portInputRegister(P) ( new X86Port(P, 0)  )
+#define portModeRegister(P) ( new X86Port(P, 0) )
 
 #define NOT_A_PIN 0
 #define NOT_A_PORT 0

@@ -43,7 +43,7 @@ void analogWrite(uint8_t pin, int val) {
 }
 
 uint32_t millis(void) {
-    std::chrono::milliseconds ms = duration_cast< std::chrono::milliseconds >(
+    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(
     std::chrono::system_clock::now().time_since_epoch());
     log(ARDUINO_CORE, "millis\n");
     return ms.count();

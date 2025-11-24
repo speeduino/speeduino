@@ -6,49 +6,62 @@
 #define FIRMWARE_PLATFORM_X86_H
 
 #include <stdint.h>
-#include <stdio.h>
 #include "log.h"
+
+#include <chrono>
 
 class X86Port {
 
-    const char* portId;
+    uint64_t opentime;
+    uint8_t portId;
     uint64_t v = 0;
+
+    static uint64_t micros() {
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    }
+
 public:
 
-    X86Port(const char* id, uint64_t initialValue) {
+    X86Port(uint8_t id, uint64_t initialValue) {
         this->portId = id;
         this->v = initialValue;
     }
 
     uint64_t operator&(const uint64_t& o) const {
-        log(PORT, "PORT %s %lld & %lld\n", portId, v, o);
+        log(PORT, "PIN%d %lld & %lld\n", portId, v, o);
         return v & o;
     }
 
     uint64_t operator|(const uint64_t& o) const {
-        log(PORT, "PORT %s %lld | %lld\n", portId, v, o);
+        log(PORT, "PIN %d %lld | %lld\n", portId, v, o);
         return v | o;
     }
 
     uint64_t operator&=(const uint64_t& o) {
-        log(PORT, "PORT %s %lld &= %lld\n", portId, v, o);
+        if (opentime != 0) {
+            log(PORT, "PIN %d duration %lld uS\n", portId, micros() - opentime);
+            opentime = 0;
+        }
+        log(PORT, "PIN %lld LOW\n", v);
         v &= o;
         return v;
     }
 
     uint64_t& operator|=(const uint64_t& o) {
-        log(PORT, "PORT %s %lld |= %lld\n", portId, v, o);
+        log(PORT, "PIN %lld HIGH\n", v);
+        opentime = micros();
         v |= o;
         return v;
     }
 
     uint64_t operator~() const {
-        log(PORT, "PORT %s %lld ~ \n", portId, v);
+        log(PORT, "PIN %d %lld ~ \n", portId, v);
         return ~v;
     }
 
     uint64_t& operator=(const uint64_t& o) {
-        log(PORT, "PORT %s %lld = \n", portId, o);
+        log(PORT, "PIN %d %lld = \n", portId, o);
         v = o;
         return v;
     }
