@@ -161,8 +161,10 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       if(currentStatus.RPM > 0)
       {
-        FUEL_PUMP_ON();
-        currentStatus.fuelPumpOn = true;
+        if (!currentStatus.fuelPumpOn) {
+          FUEL_PUMP_ON();
+          currentStatus.fuelPumpOn = true;
+        }
       }
     }
     else
