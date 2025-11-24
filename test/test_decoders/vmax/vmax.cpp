@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "../../test_utils.h"
 
+extern decoder_status_t decoderStatus;
 
 static void fireInterrupt(uint8_t pin, uint8_t edge)
 {
@@ -39,10 +40,10 @@ static void fireInterrupt(uint8_t pin, uint8_t edge)
 
 static void assertPrimaryTrigger(void)
 {
-    BIT_CLEAR(decoderState, BIT_DECODER_VALID_TRIGGER);
+    decoderStatus.validTrigger = false;
     delayMicroseconds(triggerFilterTime + 1);
     fireInterrupt(pinTrigger, CHANGE);
-    TEST_ASSERT_BIT_HIGH(BIT_DECODER_VALID_TRIGGER, decoderState);
+    TEST_ASSERT_TRUE(decoderStatus.validTrigger);
 }
 
 static void testVMax_primary_trigger_rising(void)
