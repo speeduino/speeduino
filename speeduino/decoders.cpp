@@ -6210,6 +6210,13 @@ void triggerSetEndTeeth_FordTFI(void)
   }
 }
 /** @} */
+static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
+// Just in case
+static_assert(TRIGGER_EDGE_NONE != LOW, "LOW edge value conflict");
+static_assert(TRIGGER_EDGE_NONE != HIGH, "HIGH edge value conflict");
+static_assert(TRIGGER_EDGE_NONE != RISING, "RISING edge value conflict");
+static_assert(TRIGGER_EDGE_NONE != FALLING, "FALLING edge value conflict");
+static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
 
 static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask)
 {
@@ -6252,9 +6259,9 @@ void initialiseDecoder(uint8_t decoderType)
   detachInterrupt(triggerInterrupt3);
 
   //The default values for edges
-  primaryTriggerEdge = 0; //This should ALWAYS be changed below
-  secondaryTriggerEdge = 0; //This is optional and may not be changed below, depending on the decoder in use
-  tertiaryTriggerEdge = 0; //This is even more optional and may not be changed below, depending on the decoder in use
+  primaryTriggerEdge = TRIGGER_EDGE_NONE; //This should ALWAYS be changed below
+  secondaryTriggerEdge = TRIGGER_EDGE_NONE; //This is optional and may not be changed below, depending on the decoder in use
+  tertiaryTriggerEdge = TRIGGER_EDGE_NONE; //This is even more optional and may not be changed below, depending on the decoder in use
 
   //Set the trigger function based on the decoder in the config
   switch (decoderType)
@@ -6271,13 +6278,12 @@ void initialiseDecoder(uint8_t decoderType)
       triggerSetEndTeeth = triggerSetEndTeeth_missingTooth;
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
-      secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-      tertiaryTriggerEdge = getTerTriggerEdge(configPage10);
+      secondaryTriggerEdge = getDecoderFeatures().hasSecondary ? getSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE;
+      tertiaryTriggerEdge = configPage10.vvt2Enabled > 0 ? getTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE;
 
       attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-
-      if(getDecoderFeatures().hasSecondary) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
-      if(configPage10.vvt2Enabled > 0) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); } // we only need this for vvt2, so not really needed if it's not used
+      if(secondaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
+      if(tertiaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); }
 
       break;
 
