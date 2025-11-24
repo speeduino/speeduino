@@ -318,13 +318,16 @@ void triggerSetEndTeeth_FordTFI(void);
  */
 void resetDecoder(void);
 
-extern void (*triggerHandler)(void); //Pointer for the trigger function (Gets pointed to the relevant decoder)
-extern void (*triggerSecondaryHandler)(void); //Pointer for the secondary trigger function (Gets pointed to the relevant decoder)
-extern void (*triggerTertiaryHandler)(void); //Pointer for the tertiary trigger function (Gets pointed to the relevant decoder)
-
-extern uint16_t (*getRPM)(void); //Pointer to the getRPM function (Gets pointed to the relevant decoder)
-extern int (*getCrankAngle)(void); //Pointer to the getCrank Angle function (Gets pointed to the relevant decoder)
-extern void (*triggerSetEndTeeth)(void); //Pointer to the triggerSetEndTeeth function of each decoder
+struct decoder_t
+{
+  void (*primary)(void);
+  void (*secondary)(void);
+  void (*tertiary)(void);
+  uint16_t (*getRPM)(void);
+  int (*getCrankAngle)(void);
+  void (*setEndTeeth)(void);  
+};
+const decoder_t& getDecoder(void);
 
 extern volatile unsigned long curTime;
 extern volatile unsigned long curGap;
