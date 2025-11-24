@@ -262,7 +262,7 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool sdCardPresent : 1; ///< true if a card is present, false if not
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  /** TODO ogalic unsigned int */ bool sdCardType : 1; ///< 0==SD, 1==SDHC
+  unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool sdCardReady : 1; ///< true if ready, false if not
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -270,7 +270,7 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool sdCardError : 1;  ///< true if error, false if not
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  /** TODO ogalic unsigned int */ bool sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
+  unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool sdCardUnused : 1;  ///< true if unused, false if not
 

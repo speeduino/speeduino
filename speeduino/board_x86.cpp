@@ -12,9 +12,23 @@
 COMPARE_TYPE dummy_register;
 
 SoftwareTimer Timer1;
+SoftwareTimer Timer2;
+
+uint32_t spark_random = 100;
 
 void tickTimersX86(uint32_t time) {
     Timer1.tick(time);
+    Timer2.tick(time);
+}
+
+void triggerTimerIsr() {
+    if (trigger_isr != NULL) {
+        trigger_isr();
+        Timer2.setCompare(millis() + spark_random--);
+        if (spark_random < 15) {
+            spark_random = 100;
+        }
+    }
 }
 
 void tick1msTimer() {
@@ -28,6 +42,9 @@ void initBoard(uint32_t baudRate) {
 
     Timer1.attachInterrupt(1, tick1msTimer);
     Timer1.setCompare(millis());
+
+    Timer2.attachInterrupt(1, triggerTimerIsr);
+    Timer2.setCompare(millis());
 
 }
 

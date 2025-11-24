@@ -210,6 +210,8 @@ long random(long, long);
 void randomSeed(unsigned long);
 long map(long, long, long, long, long);
 
+extern void (*trigger_isr)(void);
+
 #endif
 #include "pins_arduino.h"
 #endif
