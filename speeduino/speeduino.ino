@@ -180,7 +180,7 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
   {
     unsigned long uSToEnd = 0;
 
-    crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+    crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
     
     //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
     //*********
@@ -300,7 +300,7 @@ void __attribute__((always_inline)) loop(void)
     currentLoopTime = micros();
     if ( engineIsRunning(currentLoopTime) )
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.longRPM = getDecoder().getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
@@ -886,7 +886,7 @@ void __attribute__((always_inline)) loop(void)
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      if( (configPage2.perToothIgn == true) ) { getDecoder().setEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -1048,7 +1048,7 @@ void __attribute__((always_inline)) loop(void)
         } 
       }
       
-      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getCrankAngle()));
+      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getDecoder().getCrankAngle()));
     
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
@@ -1083,7 +1083,7 @@ void __attribute__((always_inline)) loop(void)
 
       if(ignitionChannelsOn > 0)
       {
-        setIgnitionChannels(ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride);
+        setIgnitionChannels(ignitionLimits(getDecoder().getCrankAngle()), currentStatus.dwell + fixedCrankingOverride);
       } //Ignition schedules on
 
       if ( (!currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
