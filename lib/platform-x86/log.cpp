@@ -7,12 +7,12 @@
 #include <stdarg.h>
 
 uint8_t loglevel =
-  //  ARDUINO_CORE |
-  //  HARDWARE_SERIAL |
+    ARDUINO_CORE |
+    HARDWARE_SERIAL |
     PORT |
   //  ATOM |
     SPIDBG |
-  //  TIMER |
+    TIMER |
     X86BRD;
 
 void log(uint8_t tag, const char * __restrict fmt, ...) {

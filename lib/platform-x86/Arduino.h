@@ -140,9 +140,9 @@ void detachInterrupt(uint8_t interruptNum);
 #define digitalPinToPort(P) ( P )
 #define digitalPinToBitMask(P) ( P  )
 
-#define portOutputRegister(P) ( new X86Port(P, 0)  )
-#define portInputRegister(P) ( new X86Port(P, 0)  )
-#define portModeRegister(P) ( new X86Port(P, 0) )
+#define portOutputRegister(P) ( new X86Port(P)  )
+#define portInputRegister(P) ( new X86Port(P)  )
+#define portModeRegister(P) ( new X86Port(P) )
 
 #define NOT_A_PIN 0
 #define NOT_A_PORT 0

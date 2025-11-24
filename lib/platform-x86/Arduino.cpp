@@ -19,27 +19,27 @@ int atexit(void (*func)()) __attribute__((weak)) {
 }
 
 void pinMode(uint8_t pin, uint8_t mode) {
-    log(ARDUINO_CORE, "pinMode: %d, %d\n", pin, mode);
+    log(ARDUINO_CORE, "PIN %d pinMode: %d\n", pin, mode);
 }
 
 void digitalWrite(uint8_t pin, uint8_t val) {
-    log(ARDUINO_CORE, "digitalWrite: %d, %d\n", pin, val);
+    log(ARDUINO_CORE, "PIN %d digitalWrite: %d\n", pin, val);
 }
 
 int digitalRead(uint8_t pin) {
-    log(ARDUINO_CORE, "digitalRead: %d\n", pin);
+    log(ARDUINO_CORE, "PIN %d digitalRead\n", pin);
     return 1;
 }
 
 int analogRead(uint8_t pin) {
-    log(ARDUINO_CORE, "analogRead: %d\n", pin);
+    log(ARDUINO_CORE, "PIN %d analogRead\n", pin);
     return 255;
 }
 void analogReference(uint8_t mode) {
     log(ARDUINO_CORE, "analogReference: %d\n", mode);
 }
 void analogWrite(uint8_t pin, int val) {
-    log(ARDUINO_CORE, "analogWrite: %d, %d\n", pin, val);
+    log(ARDUINO_CORE, "PIN %d analogWrite: %d\n", pin, val);
 }
 
 uint32_t millis(void) {

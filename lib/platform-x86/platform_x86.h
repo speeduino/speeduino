@@ -14,7 +14,8 @@ class X86Port {
 
     uint64_t opentime;
     uint8_t portId;
-    uint64_t v = 0;
+
+    uint64_t mock = 0;
 
     static uint64_t micros() {
         return std::chrono::duration_cast<std::chrono::microseconds>(
@@ -23,49 +24,44 @@ class X86Port {
 
 public:
 
-    X86Port(uint8_t id, uint64_t initialValue) {
+    X86Port(uint8_t id) {
         this->portId = id;
-        this->v = initialValue;
+        this->mock = portId;
     }
 
     uint64_t operator&(const uint64_t& o) const {
-        log(PORT, "PIN%d %lld & %lld\n", portId, v, o);
-        return v & o;
+        log(PORT, "PIN %d & %lld\n", portId, o);
+        return o;
     }
 
     uint64_t operator|(const uint64_t& o) const {
-        log(PORT, "PIN %d %lld | %lld\n", portId, v, o);
-        return v | o;
+        log(PORT, "PIN %d | %lld\n", portId, o);
+        return o;
     }
 
     uint64_t operator&=(const uint64_t& o) {
         if (opentime != 0) {
-            log(PORT, "PIN %d duration %lld uS\n", portId, micros() - opentime);
+            log(PORT, "PIN %d LOW, duration %lld uS\n", portId, micros() - opentime);
             opentime = 0;
         }
-        log(PORT, "PIN %lld LOW\n", v);
-        v &= o;
-        return v;
+        return o;
     }
 
-    uint64_t& operator|=(const uint64_t& o) {
-        log(PORT, "PIN %lld HIGH\n", v);
+    uint64_t& operator|=(uint64_t& o) {
+        log(PORT, "PIN %lld HIGH\n", o);
         opentime = micros();
-        v |= o;
-        return v;
+        return o;
     }
 
     uint64_t operator~() const {
-        log(PORT, "PIN %d %lld ~ \n", portId, v);
-        return ~v;
+        log(PORT, "PIN %d %d ~ \n", portId, 0);
+        return 0;
     }
 
     uint64_t& operator=(const uint64_t& o) {
-        log(PORT, "PIN %d %lld = \n", portId, o);
-        v = o;
-        return v;
+        log(PORT, "PIN %d %d = \n", portId, 0);
+        return mock;
     }
-
 };
 
 void fireInterrupts();
