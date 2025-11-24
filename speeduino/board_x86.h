@@ -58,6 +58,10 @@ extern SoftwareTimer Ignition6;
 extern SoftwareTimer Ignition7;
 extern SoftwareTimer Ignition8;
 
+extern SoftwareTimer Boost1;
+extern SoftwareTimer Idle1;
+extern SoftwareTimer VVT1;
+
 /*
 ***********************************************************************************************************
 * General
@@ -165,27 +169,27 @@ extern SoftwareTimer Ignition8;
 * Auxiliaries
 */
   //macro functions for enabling and disabling timer interrupts for the boost and vvt functions
-  #define ENABLE_BOOST_TIMER()  log(TIMER, "%s:%d ENABLE_BOOST_TIMER\n", __FILE__, __LINE__);
-  #define DISABLE_BOOST_TIMER(void)  log(TIMER, "%s:%d DISABLE_BOOST_TIMER\n", __FILE__, __LINE__);
+  #define ENABLE_BOOST_TIMER()  { log(TIMER, "%s:%d ENABLE_BOOST_TIMER\n", __FILE__, __LINE__); Boost1.enabled = true; }
+  #define DISABLE_BOOST_TIMER(void) { log(TIMER, "%s:%d DISABLE_BOOST_TIMER\n", __FILE__, __LINE__); Boost1.enabled = false; }
 
-  #define ENABLE_VVT_TIMER()    log(TIMER, "%s:%dENABLE_VVT_TIMER\n", __FILE__, __LINE__);
-  #define DISABLE_VVT_TIMER()   log(TIMER, "%s:%dDISABLE_VVT_TIMER\n", __FILE__, __LINE__);
+  #define ENABLE_VVT_TIMER()    { log(TIMER, "%s:%dENABLE_VVT_TIMER\n", __FILE__, __LINE__); VVT1.enabled = true; }
+  #define DISABLE_VVT_TIMER()   { log(TIMER, "%s:%dDISABLE_VVT_TIMER\n", __FILE__, __LINE__); VVT1.enabled = false; }
 
-  #define BOOST_TIMER_COMPARE   dummy_register
-  #define BOOST_TIMER_COUNTER   dummy_register
-  #define VVT_TIMER_COMPARE     dummy_register
-  #define VVT_TIMER_COUNTER     dummy_register
+  #define BOOST_TIMER_COMPARE   Boost1.compare
+  #define BOOST_TIMER_COUNTER   Boost1.counter
+  #define VVT_TIMER_COMPARE     VVT1.compare
+  #define VVT_TIMER_COUNTER     VVT1.counter
 
 /*
 ***********************************************************************************************************
 * Idle
 */
   //Same as above, but for the timer controlling PWM idle
-  #define IDLE_COUNTER          dummy_register
-  #define IDLE_COMPARE          dummy_register
+  #define IDLE_COUNTER          Idle1.counter
+  #define IDLE_COMPARE          Idle1.compare
 
-  #define IDLE_TIMER_ENABLE()   log(TIMER, "IDLE_TIMER_ENABLE\n");
-  #define IDLE_TIMER_DISABLE()  log(TIMER, "IDLE_TIMER_DISABLE\n");
+  #define IDLE_TIMER_ENABLE()   { log(TIMER, "IDLE_TIMER_ENABLE\n"); Idle1.enabled = true; }
+  #define IDLE_TIMER_DISABLE()  { log(TIMER, "IDLE_TIMER_DISABLE\n"); Idle1.enabled = false; }
 
 /*
 ***********************************************************************************************************

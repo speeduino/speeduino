@@ -8,6 +8,9 @@
 #include <SoftwareTimer.h>
 #include <timers.h>
 #include "board_x86.h"
+
+#include "auxiliaries.h"
+#include "idle.h"
 #include "scheduler.h"
 
 COMPARE_TYPE dummy_register;
@@ -33,7 +36,9 @@ SoftwareTimer Ignition6;
 SoftwareTimer Ignition7;
 SoftwareTimer Ignition8;
 
-uint64_t spark_random = 100000;
+SoftwareTimer Boost1;
+SoftwareTimer Idle1;
+SoftwareTimer VVT1;
 
 void tickTimersX86(uint64_t time) {
     Timer1.tick(time);
@@ -88,21 +93,27 @@ void tickTimersX86(uint64_t time) {
     if (Ignition8.enabled) {
         Ignition8.tick(time);
     }
+    if (Boost1.enabled) {
+        Boost1.tick(time);
+    }
+    if (VVT1.enabled) {
+        VVT1.tick(time);
+    }
+    if (Idle1.enabled) {
+        Idle1.tick(time);
+    }
 }
 
 void triggerTimerIsr() {
     if (trigger_isr != NULL) {
         trigger_isr();
-        Timer2.compare = micros() + (spark_random = spark_random - 1000);
-        if (spark_random < 15000) {
-            spark_random = 100000;
-        }
+        Timer2.compare = micros() + 32000;
     }
 }
 
 void tick1msTimer() {
     oneMSInterval();
-    Timer1.compare = micros() + 1000000;
+    Timer1.compare = micros() + 1000;
 }
 
 void initBoard(uint32_t baudRate) {
@@ -133,6 +144,9 @@ void initBoard(uint32_t baudRate) {
     Ignition7.attachInterrupt(0, ignitionSchedule7Interrupt);
     Ignition8.attachInterrupt(0, ignitionSchedule8Interrupt);
 
+    Boost1.attachInterrupt(0, boostInterrupt);
+    VVT1.attachInterrupt(0, vvtInterrupt);
+    Idle1.attachInterrupt(0, idleInterrupt);
 }
 
 uint16_t freeRam() {
