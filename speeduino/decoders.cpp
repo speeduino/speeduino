@@ -126,6 +126,23 @@ int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently si
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
+static port_register_t triggerPri_pin_port;
+static pin_mask_t triggerPri_pin_mask;
+static port_register_t triggerSec_pin_port;
+static pin_mask_t triggerSec_pin_mask;
+static port_register_t triggerThird_pin_port;
+static pin_mask_t triggerThird_pin_mask;
+
+#if defined(CORE_AVR)
+  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
+  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
+  #define READ_THIRD_TRIGGER() ((*triggerThird_pin_port & triggerThird_pin_mask) ? true : false)
+#else
+  #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
+  #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
+  #define READ_THIRD_TRIGGER() digitalRead(pinTrigger3)  
+#endif
+
 /** Universal (shared between decoders) decoder routines.
 *
 * @defgroup dec_uni Universal Decoder Routines
@@ -6251,7 +6268,7 @@ static_assert(TRIGGER_EDGE_NONE != RISING, "RISING edge value conflict");
 static_assert(TRIGGER_EDGE_NONE != FALLING, "FALLING edge value conflict");
 static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
 
-static void initTriggerPin(uint8_t pin, PORT_TYPE& pinPort, PINMASK_TYPE& pinMask, uint8_t triggerEdge, void (*triggerISR)(void))
+static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask, uint8_t triggerEdge, void (*triggerISR)(void))
 {
   pinMode(pin, INPUT);
   pinPort = portInputRegister(digitalPinToPort(pin));
