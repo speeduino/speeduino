@@ -2,6 +2,7 @@
 #include "../../test_utils.h"
 #include "decoders.h"
 #include "init.h"
+#include "globals.h"
 
 static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCrankAngle, uint16_t expectedToothAngle) {
     triggerSetup_SuzukiK6A();
