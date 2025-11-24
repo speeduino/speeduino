@@ -707,12 +707,12 @@ void stopToothLogger(void)
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, getDecoderTriggerEdges().primary );
 
   if(VSS_USES_RPM2() != true)
   {
     detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );  
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, getDecoderTriggerEdges().secondary );  
   }
 }
 
@@ -740,12 +740,12 @@ void stopCompositeLogger(void)
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, getDecoderTriggerEdges().primary );
 
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
     detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, getDecoderTriggerEdges().secondary );
   }
 }
 
@@ -770,10 +770,10 @@ void stopCompositeLoggerTertiary(void)
 
   //Disconnect the logger interrupts and attach the normal ones
   detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, primaryTriggerEdge );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger), triggerHandler, getDecoderTriggerEdges().primary );
 
   detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, getDecoderTriggerEdges().tertiary );
 }
 
 
@@ -803,9 +803,9 @@ void stopCompositeLoggerCams(void)
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
     detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, secondaryTriggerEdge );
+    attachInterrupt( digitalPinToInterrupt(pinTrigger2), triggerSecondaryHandler, getDecoderTriggerEdges().secondary );
   }
 
   detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
-  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, tertiaryTriggerEdge );
+  attachInterrupt( digitalPinToInterrupt(pinTrigger3), triggerTertiaryHandler, getDecoderTriggerEdges().tertiary );
 }
