@@ -12,6 +12,7 @@ void runAllDecoderTests(void)
     extern void testSuzukiK6A_getCrankAngle(void);
     extern void testDecoder_General(void);
     extern void testVMax(void);    
+    extern void testLogger(void);
 
     testMissingTooth();
     testDualWheel();
@@ -23,6 +24,7 @@ void runAllDecoderTests(void)
     testSuzukiK6A_getCrankAngle();
     testDecoder_General();
     testVMax();
+    testLogger();
 }
 
 DEVICE_TEST(runAllDecoderTests)
