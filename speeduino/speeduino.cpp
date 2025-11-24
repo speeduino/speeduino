@@ -1737,10 +1737,10 @@ void checkLaunchAndFlatShift()
 #ifdef PLATFORM_X86
 int main() {
   uint32_t time = millis();
-  printf("native-x86: starting firmware\n");
-  printf("setup()\n");
+  log(X86BRD, "native-x86: starting firmware\n");
+  log(X86BRD, "setup()\n");
   setup();
-  printf("loop()\n");
+  log(X86BRD, "loop()\n");
   while (true) {
     loop();
     tickTimersX86(time);

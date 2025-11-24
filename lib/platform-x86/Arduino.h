@@ -27,6 +27,7 @@
 #include <math.h>
 
 #include "binary.h"
+#include "log.h"
 #include <platform_x86.h>
 
 #include <HardwareSerial.h>
@@ -79,8 +80,8 @@ void yield(void);
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
 
-#define interrupts() { printf("%s:%d interrupts\n", __FILE__, __LINE__); }
-#define noInterrupts() { printf("%s:%d noInterrupts\n", __FILE__, __LINE__); }
+#define interrupts() { log(ARDUINO_CORE, "%s:%d interrupts\n", __FILE__, __LINE__); }
+#define noInterrupts() { log(ARDUINO_CORE, "%s:%d noInterrupts\n", __FILE__, __LINE__); }
 
 #define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
 #define clockCyclesToMicroseconds(a) ( (a) / clockCyclesPerMicrosecond() )

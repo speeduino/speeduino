@@ -37,7 +37,7 @@ void tick1msTimer() {
 }
 
 void initBoard(uint32_t baudRate) {
-    printf("native-x86: board init, %d baud\n", baudRate);
+    log(X86BRD, "native-x86: board init, %d baud\n", baudRate);
     Serial.begin(baudRate);
 
     Timer1.attachInterrupt(1, tick1msTimer);
@@ -49,19 +49,19 @@ void initBoard(uint32_t baudRate) {
 }
 
 uint16_t freeRam() {
-    printf("native-x86: freeRam\n");
+    log(X86BRD, "native-x86: freeRam\n");
     return 0;
 }
 
 void boardInitPins() {
-    printf("native-x86: boardInitPins\n");
+    log(X86BRD, "native-x86: boardInitPins\n");
 }
 
 void doSystemReset() {
-    printf("native-x86: doSystemReset\n");
+    log(X86BRD, "native-x86: doSystemReset\n");
 }
 void jumpToBootloader() {
-    printf("native-x86: jumpToBootloader\n");
+    log(X86BRD, "native-x86: jumpToBootloader\n");
 }
 
 void * memcpy_P(void * arg, const void * arg2, size_t size) {
@@ -69,7 +69,7 @@ void * memcpy_P(void * arg, const void * arg2, size_t size) {
 }
 
 uint8_t getSystemTemp() {
-    printf("native-x86: getSystemTemp()");
+    log(X86BRD, "native-x86: getSystemTemp()");
     return 0;
 }
 

@@ -3,6 +3,7 @@
 //
 
 #include <Arduino.h>
+#include "log.h"
 #include <cstdio>
 #include <chrono>
 #include <thread>
@@ -10,7 +11,7 @@
 void (*trigger_isr)();
 
 void initVariant(void) {
-    printf("initiVariant\n");
+    log(ARDUINO_CORE, "initiVariant\n");
 }
 
 int atexit(void (*func)()) __attribute__((weak)) {
@@ -18,82 +19,82 @@ int atexit(void (*func)()) __attribute__((weak)) {
 }
 
 void pinMode(uint8_t pin, uint8_t mode) {
-    printf("pinMode: %d, %d\n", pin, mode);
+    log(ARDUINO_CORE, "pinMode: %d, %d\n", pin, mode);
 }
 
 void digitalWrite(uint8_t pin, uint8_t val) {
-    printf("digitalWrite: %d, %d\n", pin, val);
+    log(ARDUINO_CORE, "digitalWrite: %d, %d\n", pin, val);
 }
 
 int digitalRead(uint8_t pin) {
-    printf("digitalRead: %d\n", pin);
+    log(ARDUINO_CORE, "digitalRead: %d\n", pin);
     return 1;
 }
 
 int analogRead(uint8_t pin) {
-    printf("analogRead: %d\n", pin);
+    log(ARDUINO_CORE, "analogRead: %d\n", pin);
     return 255;
 }
 void analogReference(uint8_t mode) {
-    printf("analogReference: %d\n", mode);
+    log(ARDUINO_CORE, "analogReference: %d\n", mode);
 }
 void analogWrite(uint8_t pin, int val) {
-    printf("analogWrite: %d, %d\n", pin, val);
+    log(ARDUINO_CORE, "analogWrite: %d, %d\n", pin, val);
 }
 
 uint32_t millis(void) {
     std::chrono::milliseconds ms = duration_cast< std::chrono::milliseconds >(
     std::chrono::system_clock::now().time_since_epoch());
-    printf("millis\n");
+    log(ARDUINO_CORE, "millis\n");
     return ms.count();
 }
 unsigned long micros(void) {
-    printf("micros()\n");
+    log(ARDUINO_CORE, "micros()\n");
     return millis() * 1000UL;
 }
 void delay(unsigned long ms) {
-    printf("delay()\n");
+    log(ARDUINO_CORE, "delay()\n");
     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 void delayMicroseconds(unsigned int us) {
-    printf("delayMicroseconds()\n");
+    log(ARDUINO_CORE, "delayMicroseconds()\n");
     std::this_thread::sleep_for(std::chrono::milliseconds(us / 1000));
 }
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout) {
-    printf("pulseIn: %d, %d, %ld\n", pin, state, timeout);
+    log(ARDUINO_CORE, "pulseIn: %d, %d, %ld\n", pin, state, timeout);
     return 0;
 }
 
 unsigned long pulseInLong(uint8_t pin, uint8_t state, unsigned long timeout) {
-    printf("pulseInLong: %d, %d, %ld\n", pin, state, timeout);
+    log(ARDUINO_CORE, "pulseInLong: %d, %d, %ld\n", pin, state, timeout);
     return 0;
 }
 
 void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val) {
-    printf("shiftOut: %d, %d, %d, %d\n", dataPin, clockPin, bitOrder, val);
+    log(ARDUINO_CORE, "shiftOut: %d, %d, %d, %d\n", dataPin, clockPin, bitOrder, val);
 }
 uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder) {
-    printf("shiftIn: %d, %d, %d\n", dataPin, clockPin, bitOrder);
+    log(ARDUINO_CORE, "shiftIn: %d, %d, %d\n", dataPin, clockPin, bitOrder);
     return 0;
 }
 
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode) {
-    printf("attachInterrupt: %d, func, %d\n", interruptNum, mode);
+    log(ARDUINO_CORE, "attachInterrupt: %d, func, %d\n", interruptNum, mode);
     if (interruptNum == 19) {
         trigger_isr = userFunc;
     }
 }
 
 void detachInterrupt(uint8_t interruptNum) {
-    printf("detachInterrupt: %d\n", interruptNum);
+    log(ARDUINO_CORE, "detachInterrupt: %d\n", interruptNum);
 }
 
 void tone(uint8_t _pin, unsigned int frequency, unsigned long duration) {
-    printf("tone: %d, %d, %ld", _pin, frequency, duration);
+    log(ARDUINO_CORE, "tone: %d, %d, %ld", _pin, frequency, duration);
 }
 
 void noTone(uint8_t _pin) {
-    printf("noTone: %d\n", _pin);
+    log(ARDUINO_CORE, "noTone: %d\n", _pin);
 }
 
 // WMath stuff

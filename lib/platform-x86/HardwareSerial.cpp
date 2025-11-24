@@ -59,11 +59,11 @@ void HardwareSerial::begin(unsigned long baud) {
   int flags = fcntl(master_fd, F_GETFL, 0);
 
   if (fcntl(master_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-    printf("fcntl(F_SETFL | O_NONBLOCK) failed\n");
+    log(HARDWARE_SERIAL, "fcntl(F_SETFL | O_NONBLOCK) failed\n");
     exit(1);
   }
 
-  printf("HardwareSerial slave device: %s\n", slave_name);
+  log(HARDWARE_SERIAL, "HardwareSerial slave device: %s\n", slave_name);
 
 }
 
@@ -74,7 +74,7 @@ void HardwareSerial::begin(unsigned long baud, byte config)
 
 void HardwareSerial::end()
 {
-  printf("HardwareSerial(%d)::end()\n", this->id);
+  log(HARDWARE_SERIAL, "HardwareSerial(%d)::end()\n", this->id);
   close(master_fd);
 }
 
@@ -119,16 +119,16 @@ int HardwareSerial::availableForWrite(void)
 
 void HardwareSerial::flush()
 {
-  printf("HardwareSerial(%d)::flush()\n", this->id);
+  log(HARDWARE_SERIAL, "HardwareSerial(%d)::flush()\n", this->id);
   tcdrain(master_fd);
 }
 
 size_t HardwareSerial::write(uint8_t c)
 {
-  printf("HardwareSerial(%d)::write(%c)\n", this->id, c);
+  log(HARDWARE_SERIAL, "HardwareSerial(%d)::write(%c)\n", this->id, c);
   int out = ::write(master_fd, &c, 1);
   if (out < 0) {
-    printf("HardwareSerial: write failed!");
+    log(HARDWARE_SERIAL, "HardwareSerial: write failed!");
   }
   return out;
 }

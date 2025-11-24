@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "log.h"
 
 class X86Port {
 
@@ -20,34 +21,34 @@ public:
     }
 
     uint64_t operator&(const uint64_t& o) const {
-        printf("PORT %s %lld & %lld\n", portId, v, o);
+        log(PORT, "PORT %s %lld & %lld\n", portId, v, o);
         return v & o;
     }
 
     uint64_t operator|(const uint64_t& o) const {
-        printf("PORT %s %lld | %lld\n", portId, v, o);
+        log(PORT, "PORT %s %lld | %lld\n", portId, v, o);
         return v | o;
     }
 
     uint64_t operator&=(const uint64_t& o) {
-        printf("PORT %s %lld &= %lld\n", portId, v, o);
+        log(PORT, "PORT %s %lld &= %lld\n", portId, v, o);
         v &= o;
         return v;
     }
 
     uint64_t& operator|=(const uint64_t& o) {
-        printf("PORT %s %lld |= %lld\n", portId, v, o);
+        log(PORT, "PORT %s %lld |= %lld\n", portId, v, o);
         v |= o;
         return v;
     }
 
     uint64_t operator~() const {
-        printf("PORT %s %lld ~ \n", portId, v);
+        log(PORT, "PORT %s %lld ~ \n", portId, v);
         return ~v;
     }
 
     uint64_t& operator=(const uint64_t& o) {
-        printf("PORT %s %lld = \n", portId, o);
+        log(PORT, "PORT %s %lld = \n", portId, o);
         v = o;
         return v;
     }

@@ -5,6 +5,8 @@
 #ifndef FIRMWARE_SIMPLYATOMIC_H
 #define FIRMWARE_SIMPLYATOMIC_H
 
-#define ATOMIC()
+#include "log.h"
+
+#define ATOMIC() { log(ATOM, "%s:%d Atomic block\n", __FILE__, __LINE__); }
 
 #endif //FIRMWARE_SIMPLYATOMIC_H
