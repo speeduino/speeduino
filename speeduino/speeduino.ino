@@ -178,7 +178,7 @@ void __attribute__((always_inline)) loop(void)
     currentLoopTime = micros();
     if ( engineIsRunning(currentLoopTime) )
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.longRPM = getDecoder().getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
@@ -801,7 +801,7 @@ void __attribute__((always_inline)) loop(void)
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      if( (configPage2.perToothIgn == true) ) { getDecoder().setEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -810,7 +810,7 @@ void __attribute__((always_inline)) loop(void)
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = injectorLimits(getCrankAngle());
+      int crankAngle = injectorLimits(getDecoder().getCrankAngle());
 
       // if(Serial && false)
       // {
@@ -1124,7 +1124,7 @@ void __attribute__((always_inline)) loop(void)
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+        crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
 
 #if IGN_CHANNELS >= 1
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
@@ -1140,7 +1140,7 @@ void __attribute__((always_inline)) loop(void)
         {
           unsigned long uSToEnd = 0;
 
-          crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+          crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
           
           //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
           //*********
