@@ -4887,8 +4887,9 @@ void triggerSetup_Vmax(void)
 
 void triggerPri_Vmax(void)
 {
+  bool primaryEdge = configPage4.TrigEdge == 0;
   curTime = micros();
-  if(READ_PRI_TRIGGER() == primaryTriggerEdge){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
+  if(READ_PRI_TRIGGER() == primaryEdge){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
     curGap2 = curTime;
     curGap = curTime - toothLastToothTime;
     if ( (curGap >= triggerFilterTime) ){
@@ -6636,10 +6637,8 @@ void initialiseDecoder(uint8_t decoderType)
       getCrankAngle = getCrankAngle_Vmax;
       triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
 
-      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = true; } // set as boolean so we can directly use it in decoder.
-      else { primaryTriggerEdge = false; }
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, CHANGE); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
+      primaryTriggerEdge = CHANGE; //Always change for this decoder
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
 
     case DECODER_RENIX:
