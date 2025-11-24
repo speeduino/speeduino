@@ -126,6 +126,23 @@ TESTABLE_STATIC decoder_status_t decoderStatus;
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
+static port_register_t triggerPri_pin_port;
+static pin_mask_t triggerPri_pin_mask;
+static port_register_t triggerSec_pin_port;
+static pin_mask_t triggerSec_pin_mask;
+static port_register_t triggerThird_pin_port;
+static pin_mask_t triggerThird_pin_mask;
+
+#if defined(CORE_AVR)
+  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
+  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
+  #define READ_THIRD_TRIGGER() ((*triggerThird_pin_port & triggerThird_pin_mask) ? true : false)
+#else
+  #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
+  #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
+  #define READ_THIRD_TRIGGER() digitalRead(pinTrigger3)  
+#endif
+
 /** Universal (shared between decoders) decoder routines.
 *
 * @defgroup dec_uni Universal Decoder Routines
