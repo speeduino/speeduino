@@ -30,7 +30,7 @@ int digitalRead(uint8_t pin) {
 
 int analogRead(uint8_t pin) {
     printf("analogRead: %d\n", pin);
-    return 1;
+    return 125;
 }
 void analogReference(uint8_t mode) {
     printf("analogReference: %d\n", mode);
@@ -77,6 +77,9 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder) {
 
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode) {
     printf("attachInterrupt: %d, func, %d\n", interruptNum, mode);
+    if (interruptNum == 19) {
+        trigger_interrupt = userFunc;
+    }
 }
 
 void detachInterrupt(uint8_t interruptNum) {

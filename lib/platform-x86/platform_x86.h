@@ -5,7 +5,10 @@
 #ifndef FIRMWARE_PLATFORM_X86_H
 #define FIRMWARE_PLATFORM_X86_H
 
+#include <stdint.h>
 #include <stdio.h>
+
+extern  void (*trigger_interrupt)(void);
 
 class X86Port {
 
@@ -52,6 +55,8 @@ public:
     }
 
 };
+
+void fireInterrupts();
 
 #define ARDUINO 300
 #define PROGMEM
