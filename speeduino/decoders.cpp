@@ -6305,11 +6305,6 @@ void initialiseDecoder(uint8_t decoderType)
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY) ? getSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE;
       tertiaryTriggerEdge = configPage10.vvt2Enabled > 0 ? getTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      if(secondaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
-      if(tertiaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); }
-
       break;
 
     case DECODER_BASIC_DISTRIBUTOR:
@@ -6321,8 +6316,6 @@ void initialiseDecoder(uint8_t decoderType)
       triggerSetEndTeeth = triggerSetEndTeeth_BasicDistributor;
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case 2:
@@ -6335,9 +6328,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_GM7X:
@@ -6348,8 +6338,6 @@ void initialiseDecoder(uint8_t decoderType)
       triggerSetEndTeeth = triggerSetEndTeeth_GM7X;
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_4G63:
@@ -6362,9 +6350,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = CHANGE;
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_24X:
@@ -6377,9 +6362,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = CHANGE; //Secondary is always on every change
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_JEEP2000:
@@ -6392,9 +6374,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_AUDI135:
@@ -6407,9 +6386,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = RISING; //always rising for this trigger
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_HONDA_D17:
@@ -6422,9 +6398,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_HONDA_J32:
@@ -6437,9 +6410,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = RISING; // Don't honor the config, always use rising edge 
       secondaryTriggerEdge = RISING; // Unused
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);  // Suspect this line is not needed
       break;
 
     case DECODER_MIATA_9905:
@@ -6453,9 +6423,6 @@ void initialiseDecoder(uint8_t decoderType)
       //These may both need to change, not sure
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_MAZDA_AU:
@@ -6468,9 +6435,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_NON360:
@@ -6483,9 +6447,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_NISSAN_360:
@@ -6498,9 +6459,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = CHANGE;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_SUBARU_67:
@@ -6513,9 +6471,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = FALLING;
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_DAIHATSU_PLUS1:
@@ -6527,8 +6482,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       //No secondary input required for this pattern
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_HARLEY:
@@ -6540,7 +6493,6 @@ void initialiseDecoder(uint8_t decoderType)
       triggerSetEndTeeth = triggerSetEndTeeth_Harley;
 
       primaryTriggerEdge = RISING; //Always rising
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_36_2_2_2:
@@ -6554,9 +6506,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_36_2_1:
@@ -6570,9 +6519,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_420A:
@@ -6586,9 +6532,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = FALLING; //Always falling edge
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_WEBER:
@@ -6602,9 +6545,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_ST170:
@@ -6618,10 +6558,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
-
       break;
 	  
     case DECODER_DRZ400:
@@ -6634,9 +6570,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_NGC:
@@ -6656,9 +6589,6 @@ void initialiseDecoder(uint8_t decoderType)
         triggerSecondaryHandler = triggerSec_NGC68;
         secondaryTriggerEdge = FALLING;
       }
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
     case DECODER_VMAX:
@@ -6669,7 +6599,6 @@ void initialiseDecoder(uint8_t decoderType)
       triggerSetEndTeeth = triggerSetEndTeeth_Vmax;
 
       primaryTriggerEdge = CHANGE; //Always change for this decoder
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge); //Hardcoded change, the primaryTriggerEdge will be used in the decoder to select if it`s an inverted or non-inverted signal.
       break;
 
     case DECODER_RENIX:
@@ -6682,8 +6611,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
     case DECODER_ROVERMEMS:
@@ -6698,9 +6625,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;   
 
     case DECODER_SUZUKI_K6A:
@@ -6710,10 +6634,7 @@ void initialiseDecoder(uint8_t decoderType)
       getCrankAngle = getCrankAngle_SuzukiK6A;
       triggerSetEndTeeth = triggerSetEndTeeth_SuzukiK6A;
 
-
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
-      
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
       break;
 
       case DECODER_FORD_TFI:
@@ -6727,9 +6648,6 @@ void initialiseDecoder(uint8_t decoderType)
 
       primaryTriggerEdge = getPriTriggerEdge(configPage4);
       secondaryTriggerEdge = getSecTriggerEdge(configPage4);
-
-      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
 
@@ -6737,9 +6655,11 @@ void initialiseDecoder(uint8_t decoderType)
       triggerHandler = triggerPri_missingTooth;
       getRPM = getRPM_missingTooth;
       getCrankAngle = getCrankAngle_missingTooth;
-
-      if(configPage4.TrigEdge == 0) { attachInterrupt(triggerInterrupt, triggerHandler, RISING); } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
-      else { attachInterrupt(triggerInterrupt, triggerHandler, FALLING); }
+      primaryTriggerEdge = getPriTriggerEdge(configPage4);
       break;
   }
+
+  attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+  if(secondaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
+  if(tertiaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); }
 }
