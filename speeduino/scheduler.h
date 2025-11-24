@@ -62,7 +62,7 @@ void disableAllIgnSchedules(void);
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 //The ARM cores use separate functions for their ISRs
-#if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
+#if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY) || defined(PLATFORM_X86)
   void fuelSchedule1Interrupt(void);
   void fuelSchedule2Interrupt(void);
   void fuelSchedule3Interrupt(void);

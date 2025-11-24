@@ -20,7 +20,7 @@
 #define BLOCKING_FACTOR       121
 #define TABLE_BLOCKING_FACTOR 64
 
-#define COMPARE_TYPE uint32_t
+#define COMPARE_TYPE uint64_t
 
 extern COMPARE_TYPE dummy_register;
 
@@ -76,89 +76,89 @@ extern SoftwareTimer Ignition8;
 * Schedules
 */
 
-  #define FUEL1_COUNTER dummy_register
-  #define FUEL2_COUNTER dummy_register
-  #define FUEL3_COUNTER dummy_register
-  #define FUEL4_COUNTER dummy_register
+  #define FUEL1_COUNTER Fuel1.counter
+  #define FUEL2_COUNTER Fuel2.counter
+  #define FUEL3_COUNTER Fuel3.counter
+  #define FUEL4_COUNTER Fuel4.counter
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_COUNTER dummy_register
-  #define FUEL6_COUNTER dummy_register
-  #define FUEL7_COUNTER dummy_register
-  #define FUEL8_COUNTER dummy_register
+  #define FUEL5_COUNTER Fuel5.counter
+  #define FUEL6_COUNTER Fuel6.counter
+  #define FUEL7_COUNTER Fuel7.counter
+  #define FUEL8_COUNTER Fuel8.counter
 
-  #define IGN1_COUNTER  dummy_register
-  #define IGN2_COUNTER  dummy_register
-  #define IGN3_COUNTER  dummy_register
-  #define IGN4_COUNTER  dummy_register
+  #define IGN1_COUNTER  Ignition1.counter
+  #define IGN2_COUNTER  Ignition2.counter
+  #define IGN3_COUNTER  Ignition3.counter
+  #define IGN4_COUNTER  Ignition4.counter
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_COUNTER  dummy_register
-  #define IGN6_COUNTER  dummy_register
-  #define IGN7_COUNTER  dummy_register
-  #define IGN8_COUNTER  dummy_register
+  #define IGN5_COUNTER  Ignition5.counter
+  #define IGN6_COUNTER  Ignition6.counter
+  #define IGN7_COUNTER  Ignition7.counter
+  #define IGN8_COUNTER  Ignition8.counter
 
-  #define FUEL1_COMPARE dummy_register
-  #define FUEL2_COMPARE dummy_register
-  #define FUEL3_COMPARE dummy_register
-  #define FUEL4_COMPARE dummy_register
+  #define FUEL1_COMPARE Fuel1.compare
+  #define FUEL2_COMPARE Fuel2.compare
+  #define FUEL3_COMPARE Fuel3.compare
+  #define FUEL4_COMPARE Fuel4.compare
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define FUEL5_COMPARE dummy_register
-  #define FUEL6_COMPARE dummy_register
-  #define FUEL7_COMPARE dummy_register
-  #define FUEL8_COMPARE dummy_register
+  #define FUEL5_COMPARE Fuel5.compare
+  #define FUEL6_COMPARE Fuel6.compare
+  #define FUEL7_COMPARE Fuel7.compare
+  #define FUEL8_COMPARE Fuel8.compare
 
-  #define IGN1_COMPARE  dummy_register
-  #define IGN2_COMPARE  dummy_register
-  #define IGN3_COMPARE  dummy_register
-  #define IGN4_COMPARE  dummy_register
+  #define IGN1_COMPARE  Ignition1.compare
+  #define IGN2_COMPARE  Ignition2.compare
+  #define IGN3_COMPARE  Ignition3.compare
+  #define IGN4_COMPARE  Ignition4.compare
   //The below are optional, but recommended if there are sufficient timers/compares
-  #define IGN5_COMPARE  dummy_register
-  #define IGN6_COMPARE  dummy_register
-  #define IGN7_COMPARE  dummy_register
-  #define IGN8_COMPARE  dummy_register
+  #define IGN5_COMPARE  Ignition5.compare
+  #define IGN6_COMPARE  Ignition6.compare
+  #define IGN7_COMPARE  Ignition7.compare
+  #define IGN8_COMPARE  Ignition8.compare
 
-  static inline void FUEL1_TIMER_ENABLE(void)  { log(TIMER, "FUEL1_TIMER_ENABLE\n"); }
-  static inline void FUEL2_TIMER_ENABLE(void)  {log(TIMER, "FUEL2_TIMER_ENABLE\n");}
-  static inline void FUEL3_TIMER_ENABLE(void)  {log(TIMER, "FUEL3_TIMER_ENABLE\n");}
-  static inline void FUEL4_TIMER_ENABLE(void)  {log(TIMER, "FUEL4_TIMER_ENABLE\n");}
+  static inline void FUEL1_TIMER_ENABLE(void)  { log(TIMER, "FUEL1_TIMER_ENABLE\n");{ Fuel1.enabled = true; }}
+  static inline void FUEL2_TIMER_ENABLE(void)  {log(TIMER, "FUEL2_TIMER_ENABLE\n"); { Fuel2.enabled = true; }}
+  static inline void FUEL3_TIMER_ENABLE(void)  {log(TIMER, "FUEL3_TIMER_ENABLE\n"); { Fuel3.enabled = true; }}
+  static inline void FUEL4_TIMER_ENABLE(void)  {log(TIMER, "FUEL4_TIMER_ENABLE\n"); { Fuel4.enabled = true; }}
   //The below are optional, but recommended if there are sufficient timers/compares
-  static inline void FUEL5_TIMER_ENABLE(void)  {log(TIMER, "FUEL5_TIMER_ENABLE\n");}
-  static inline void FUEL6_TIMER_ENABLE(void)  {log(TIMER, "FUEL6_TIMER_ENABLE\n");}
-  static inline void FUEL7_TIMER_ENABLE(void)  {log(TIMER, "FUEL7_TIMER_ENABLE\n");}
-  static inline void FUEL8_TIMER_ENABLE(void)  {log(TIMER, "FUEL8_TIMER_ENABLE\n");}
+  static inline void FUEL5_TIMER_ENABLE(void)  {log(TIMER, "FUEL5_TIMER_ENABLE\n"); { Fuel5.enabled = true; }}
+  static inline void FUEL6_TIMER_ENABLE(void)  {log(TIMER, "FUEL6_TIMER_ENABLE\n"); { Fuel6.enabled = true; }}
+  static inline void FUEL7_TIMER_ENABLE(void)  {log(TIMER, "FUEL7_TIMER_ENABLE\n"); { Fuel7.enabled = true; }}
+  static inline void FUEL8_TIMER_ENABLE(void)  {log(TIMER, "FUEL8_TIMER_ENABLE\n"); { Fuel8.enabled = true; }}
 
-  static inline void FUEL1_TIMER_DISABLE(void)  { log(TIMER, "FUEL1_TIMER_DISABLE\n");}
-  static inline void FUEL2_TIMER_DISABLE(void)  { log(TIMER, "FUEL2_TIMER_DISABLE\n");}
-  static inline void FUEL3_TIMER_DISABLE(void)  { log(TIMER, "FUEL3_TIMER_DISABLE\n");}
-  static inline void FUEL4_TIMER_DISABLE(void)  { log(TIMER, "FUEL4_TIMER_DISABLE\n");}
+  static inline void FUEL1_TIMER_DISABLE(void)  { log(TIMER, "FUEL1_TIMER_DISABLE\n"); { Fuel1.enabled = false; }}
+  static inline void FUEL2_TIMER_DISABLE(void)  { log(TIMER, "FUEL2_TIMER_DISABLE\n"); { Fuel2.enabled = false; }}
+  static inline void FUEL3_TIMER_DISABLE(void)  { log(TIMER, "FUEL3_TIMER_DISABLE\n"); { Fuel3.enabled = false; }}
+  static inline void FUEL4_TIMER_DISABLE(void)  { log(TIMER, "FUEL4_TIMER_DISABLE\n"); { Fuel4.enabled = false; }}
   //The below are optional, but recommended if there are sufficient timers/compares
-  static inline void FUEL5_TIMER_DISABLE(void)  { log(TIMER, "FUEL5_TIMER_DISABLE\n");}
-  static inline void FUEL6_TIMER_DISABLE(void)  { log(TIMER, "FUEL6_TIMER_DISABLE\n");}
-  static inline void FUEL7_TIMER_DISABLE(void)  { log(TIMER, "FUEL7_TIMER_DISABLE\n");}
-  static inline void FUEL8_TIMER_DISABLE(void)  { log(TIMER, "FUEL8_TIMER_DISABLE\n");}
+  static inline void FUEL5_TIMER_DISABLE(void)  { log(TIMER, "FUEL5_TIMER_DISABLE\n"); { Fuel5.enabled = false; }}
+  static inline void FUEL6_TIMER_DISABLE(void)  { log(TIMER, "FUEL6_TIMER_DISABLE\n"); { Fuel6.enabled = false; }}
+  static inline void FUEL7_TIMER_DISABLE(void)  { log(TIMER, "FUEL7_TIMER_DISABLE\n"); { Fuel7.enabled = false; }}
+  static inline void FUEL8_TIMER_DISABLE(void)  { log(TIMER, "FUEL8_TIMER_DISABLE\n"); { Fuel8.enabled = false; }}
 
-    static inline void IGN1_TIMER_ENABLE(void)  {log(TIMER, "IGN1_TIMER_ENABLE\n");}
-    static inline void IGN2_TIMER_ENABLE(void)  {log(TIMER, "IGN2_TIMER_ENABLE\n");}
-    static inline void IGN3_TIMER_ENABLE(void)  {log(TIMER, "IGN3_TIMER_ENABLE\n");}
-    static inline void IGN4_TIMER_ENABLE(void)  {log(TIMER, "IGN4_TIMER_ENABLE\n");}
+    static inline void IGN1_TIMER_ENABLE(void)  {log(TIMER, "IGN1_TIMER_ENABLE\n"); { Ignition1.enabled = true; }}
+    static inline void IGN2_TIMER_ENABLE(void)  {log(TIMER, "IGN2_TIMER_ENABLE\n"); { Ignition2.enabled = true; }}
+    static inline void IGN3_TIMER_ENABLE(void)  {log(TIMER, "IGN3_TIMER_ENABLE\n"); { Ignition3.enabled = true; }}
+    static inline void IGN4_TIMER_ENABLE(void)  {log(TIMER, "IGN4_TIMER_ENABLE\n"); { Ignition4.enabled = true; }}
 
-    static inline void IGN5_TIMER_ENABLE(void)  {log(TIMER, "IGN5_TIMER_ENABLE\n");}
-    static inline void IGN6_TIMER_ENABLE(void)  {log(TIMER, "IGN6_TIMER_ENABLE\n");}
-    static inline void IGN7_TIMER_ENABLE(void)  {log(TIMER, "IGN7_TIMER_ENABLE\n");}
-    static inline void IGN8_TIMER_ENABLE(void)  {log(TIMER, "IGN8_TIMER_ENABLE\n");}
+    static inline void IGN5_TIMER_ENABLE(void)  {log(TIMER, "IGN5_TIMER_ENABLE\n"); { Ignition5.enabled = true; }}
+    static inline void IGN6_TIMER_ENABLE(void)  {log(TIMER, "IGN6_TIMER_ENABLE\n"); { Ignition6.enabled = true; }}
+    static inline void IGN7_TIMER_ENABLE(void)  {log(TIMER, "IGN7_TIMER_ENABLE\n"); { Ignition7.enabled = true; }}
+    static inline void IGN8_TIMER_ENABLE(void)  {log(TIMER, "IGN8_TIMER_ENABLE\n"); { Ignition8.enabled = true; }}
 
-    static inline void IGN1_TIMER_DISABLE(void)  {log(TIMER, "IGN1_TIMER_DISABLE\n");}
-    static inline void IGN2_TIMER_DISABLE(void)  {log(TIMER, "IGN2_TIMER_DISABLE\n");}
-    static inline void IGN3_TIMER_DISABLE(void)  {log(TIMER, "IGN3_TIMER_DISABLE\n");}
-    static inline void IGN4_TIMER_DISABLE(void)  {log(TIMER, "IGN4_TIMER_DISABLE\n");}
+    static inline void IGN1_TIMER_DISABLE(void)  {log(TIMER, "IGN1_TIMER_DISABLE\n"); { Ignition1.enabled = false; }}
+    static inline void IGN2_TIMER_DISABLE(void)  {log(TIMER, "IGN2_TIMER_DISABLE\n"); { Ignition2.enabled = false; }}
+    static inline void IGN3_TIMER_DISABLE(void)  {log(TIMER, "IGN3_TIMER_DISABLE\n"); { Ignition3.enabled = false; }}
+    static inline void IGN4_TIMER_DISABLE(void)  {log(TIMER, "IGN4_TIMER_DISABLE\n"); { Ignition4.enabled = false; }}
 
-    static inline void IGN5_TIMER_DISABLE(void)  {log(TIMER, "IGN5_TIMER_DISABLE\n");}
-    static inline void IGN6_TIMER_DISABLE(void)  {log(TIMER, "IGN6_TIMER_DISABLE\n");}
-    static inline void IGN7_TIMER_DISABLE(void)  {log(TIMER, "IGN7_TIMER_DISABLE\n");}
-    static inline void IGN8_TIMER_DISABLE(void)  {log(TIMER, "IGN8_TIMER_DISABLE\n");}
+    static inline void IGN5_TIMER_DISABLE(void)  {log(TIMER, "IGN5_TIMER_DISABLE\n"); { Ignition5.enabled = false; }}
+    static inline void IGN6_TIMER_DISABLE(void)  {log(TIMER, "IGN6_TIMER_DISABLE\n"); { Ignition6.enabled = false; }}
+    static inline void IGN7_TIMER_DISABLE(void)  {log(TIMER, "IGN7_TIMER_DISABLE\n"); { Ignition7.enabled = false; }}
+    static inline void IGN8_TIMER_DISABLE(void)  {log(TIMER, "IGN8_TIMER_DISABLE\n"); { Ignition8.enabled = false; }}
 
 
   #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
-  #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
+  #define uS_TO_TIMER_COMPARE(uS) uS //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*
 ***********************************************************************************************************

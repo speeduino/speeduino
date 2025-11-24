@@ -16,6 +16,6 @@
 #define X86BRD              0b01000000
 
 extern  uint8_t loglevel;
-extern void log(uint8_t tag, const char * __restrict, ...);
+extern void log(uint8_t tag, const char * __restrict fmt, ...) __attribute__((format (printf, 2, 3)));
 
 #endif //FIRMWARE_LOG_H

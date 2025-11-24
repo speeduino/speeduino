@@ -15,6 +15,7 @@ public:
 
     uint64_t counter;
     uint64_t compare;
+    bool enabled = false;
 
     void tick(uint64_t time);
     void attachInterrupt(uint64_t pin, void (*isr)(void));
