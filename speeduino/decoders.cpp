@@ -6243,11 +6243,19 @@ static_assert(TRIGGER_EDGE_NONE != RISING, "RISING edge value conflict");
 static_assert(TRIGGER_EDGE_NONE != FALLING, "FALLING edge value conflict");
 static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
 
-static void initTriggerPin(uint8_t pin, PORT_TYPE& pinPort, PINMASK_TYPE& pinMask)
+static void initTriggerPin(uint8_t pin, PORT_TYPE& pinPort, PINMASK_TYPE& pinMask, uint8_t triggerEdge, void (*triggerISR)(void))
 {
   pinMode(pin, INPUT);
   pinPort = portInputRegister(digitalPinToPort(pin));
   pinMask = digitalPinToBitMask(pin);
+
+  byte triggerInterrupt = digitalPinToInterrupt(pin);
+  detachInterrupt(triggerInterrupt);
+
+  if (triggerEdge != TRIGGER_EDGE_NONE)
+  {
+    attachInterrupt(triggerInterrupt, triggerISR, triggerEdge);
+  }
 }
 
 static uint8_t getPriTriggerEdge(const config4 &page4)
@@ -6271,18 +6279,6 @@ static uint8_t getTerTriggerEdge(const config10 &page10)
  */
 void initialiseDecoder(uint8_t decoderType)
 {
-  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask);
-  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask);
-  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask);
-
-  byte triggerInterrupt = digitalPinToInterrupt(pinTrigger);
-  byte triggerInterrupt2 = digitalPinToInterrupt(pinTrigger2);
-  byte triggerInterrupt3 = digitalPinToInterrupt(pinTrigger3);
-
-  detachInterrupt(triggerInterrupt);
-  detachInterrupt(triggerInterrupt2);
-  detachInterrupt(triggerInterrupt3);
-
   //The default values for edges
   primaryTriggerEdge = TRIGGER_EDGE_NONE; //This should ALWAYS be changed below
   secondaryTriggerEdge = TRIGGER_EDGE_NONE; //This is optional and may not be changed below, depending on the decoder in use
@@ -6659,7 +6655,7 @@ void initialiseDecoder(uint8_t decoderType)
       break;
   }
 
-  attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
-  if(secondaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge); }
-  if(tertiaryTriggerEdge != TRIGGER_EDGE_NONE) { attachInterrupt(triggerInterrupt3, triggerTertiaryHandler, tertiaryTriggerEdge); }
+  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask, primaryTriggerEdge, triggerHandler);
+  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask, secondaryTriggerEdge, triggerSecondaryHandler);
+  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask, tertiaryTriggerEdge, triggerTertiaryHandler);
 }
