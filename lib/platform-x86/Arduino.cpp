@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 #include <cstdio>
+#include <chrono>
+#include <thread>
 
 void initVariant(void) {
     printf("initiVariant\n");
@@ -38,18 +40,22 @@ void analogWrite(uint8_t pin, int val) {
 }
 
 uint32_t millis(void) {
+    std::chrono::milliseconds ms = duration_cast< std::chrono::milliseconds >(
+    std::chrono::system_clock::now().time_since_epoch());
     printf("millis\n");
-    return 0;
+    return ms.count();
 }
 unsigned long micros(void) {
-    printf("micros\n");
-    return 0;
+    printf("micros()\n");
+    return millis() * 1000;
 }
 void delay(unsigned long ms) {
-    printf("delay\n");
+    printf("delay()\n");
+    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 void delayMicroseconds(unsigned int us) {
-    printf("delayMicroseconds\n");
+    printf("delayMicroseconds()\n");
+    std::this_thread::sleep_for(std::chrono::milliseconds(us / 1000));
 }
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout) {
     printf("pulseIn: %d, %d, %ld\n", pin, state, timeout);
@@ -66,6 +72,7 @@ void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val) 
 }
 uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder) {
     printf("shiftIn: %d, %d, %d\n", dataPin, clockPin, bitOrder);
+    return 0;
 }
 
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode) {
@@ -76,16 +83,6 @@ void detachInterrupt(uint8_t interruptNum) {
     printf("detachInterrupt: %d\n", interruptNum);
 }
 
-uint16_t makeWord(uint16_t w) {
-    printf("makeWord: %d\n", w);
-    return 0;
-}
-
-uint16_t makeWord(byte h, byte l) {
-    printf("makeWord: %d, %d\n", h, l);
-    return 0;
-}
-
 void tone(uint8_t _pin, unsigned int frequency, unsigned long duration) {
     printf("tone: %d, %d, %ld", _pin, frequency, duration);
 }
@@ -94,19 +91,44 @@ void noTone(uint8_t _pin) {
     printf("noTone: %d\n", _pin);
 }
 
-// WMath prototypes
-long random(long) {
-    printf("random\n");
-    return 0;
+// WMath stuff
+
+void randomSeed(unsigned long seed)
+{
+    if (seed != 0) {
+        srandom(seed);
+    }
 }
-long random(long, long) {
-    printf("random\n");
-    return 0;
+
+long random(long howbig)
+{
+    if (howbig == 0) {
+        return 0;
+    }
+    return random() % howbig;
 }
-void randomSeed(unsigned long) {
-    printf("random\n");
+
+long random(long howsmall, long howbig)
+{
+    if (howsmall >= howbig) {
+        return howsmall;
+    }
+    long diff = howbig - howsmall;
+    return random(diff) + howsmall;
 }
-long map(long, long, long, long, long) {
-    printf("random\n");
-    return 0;
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+    long div = (in_max - in_min) + out_min;
+    if (div == 0) {
+        return x; // this can happen, *rare*, but it happens
+    }
+    return (x - in_min) * (out_max - out_min) / div;;
+}
+
+uint16_t makeWord(unsigned int w) {
+    return w;
+}
+uint16_t makeWord(unsigned char h, unsigned char l) {
+    return (h << 8) | l;
 }

@@ -2,6 +2,8 @@
 // Created by Ognjen Galić on 23. 11. 2025..
 //
 
+#ifdef PLATFORM_X86
+
 #include <cstring>
 #include "board_x86.h"
 
@@ -9,6 +11,7 @@ COMPARE_TYPE dummy_register;
 
 void initBoard(uint32_t baudRate) {
     printf("native-x86: board init, %d baud\n", baudRate);
+    Serial.begin(baudRate);
 }
 
 uint16_t freeRam() {
@@ -35,3 +38,5 @@ uint8_t getSystemTemp() {
     printf("native-x86: getSystemTemp()");
     return 0;
 }
+
+#endif

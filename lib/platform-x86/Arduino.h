@@ -79,8 +79,8 @@ void yield(void);
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))
 
-#define interrupts() {}
-#define noInterrupts() {}
+#define interrupts() { printf("%s:%d interrupts\n", __FILE__, __LINE__); }
+#define noInterrupts() { printf("%s:%d noInterrupts\n", __FILE__, __LINE__); }
 
 #define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
 #define clockCyclesToMicroseconds(a) ( (a) / clockCyclesPerMicrosecond() )
@@ -132,14 +132,14 @@ uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
 void attachInterrupt(uint8_t interruptNum, void (*userFunc)(void), int mode);
 void detachInterrupt(uint8_t interruptNum);
 
-static X86Port dummyPort;
+static X86Port dummyPort("dummyPort", 0);
 
 #define analogInPinToBit(P) (P)
 #define analogInPinToBit(P) (P)
 #define digitalPinToTimer(P) ( 123 )
 
 #define digitalPinToPort(P) ( &dummyPort )
-#define digitalPinToBitMask(P) ( 0xcafebabe  )
+#define digitalPinToBitMask(P) ( 123  )
 #define portOutputRegister(P) ( (X86Port *) &dummyPort  )
 #define portInputRegister(P) ( (X86Port *) &dummyPort  )
 #define portModeRegister(P) ( (X86Port *) &dummyPort )

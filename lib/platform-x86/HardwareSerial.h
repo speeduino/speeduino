@@ -94,6 +94,13 @@ class HardwareSerial : public Stream
 {
 private:
   int id;
+  int master_fd;
+  static constexpr int WRITE_BUFFER_SIZE = 4096; // emulate Arduino buffer size
+
+  uint8_t buffer[WRITE_BUFFER_SIZE];
+  size_t idx;
+  size_t out_idx;
+
   public:
 HardwareSerial(int id);
     void begin(unsigned long baud);

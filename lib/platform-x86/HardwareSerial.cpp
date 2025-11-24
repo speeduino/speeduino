@@ -25,6 +25,19 @@
 #include <cinttypes>
 #include <Arduino.h>
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#else
+#error POSIX operating systems supported only (Linux/Mac) for now.
+#endif
+
 HardwareSerial Serial(1);
 HardwareSerial Serial2(2);
 HardwareSerial Serial3(3);
@@ -32,56 +45,90 @@ HardwareSerial Serial4(4);
 
 #include <HardwareSerial.h>
 
-
 HardwareSerial::HardwareSerial(int id) {
   this->id = id;
 }
 
 void HardwareSerial::begin(unsigned long baud) {
-  printf("HardwareSerial(%d)::begin(%ld)\n", this->id, baud);
+
+  master_fd = posix_openpt(O_RDWR | O_NOCTTY);
+  grantpt(master_fd);
+  unlockpt(master_fd);
+  char *slave_name = ptsname(master_fd);
+
+  int flags = fcntl(master_fd, F_GETFL, 0);
+
+  if (fcntl(master_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+    printf("fcntl(F_SETFL | O_NONBLOCK) failed\n");
+    exit(1);
+  }
+
+  printf("HardwareSerial slave device: %s\n", slave_name);
+
 }
 
 void HardwareSerial::begin(unsigned long baud, byte config)
 {
-  printf("HardwareSerial(%d)::begin(%ld)\n", this->id, baud);
+  this->begin(baud);
 }
 
 void HardwareSerial::end()
 {
   printf("HardwareSerial(%d)::end()\n", this->id);
+  close(master_fd);
 }
 
 int HardwareSerial::available(void)
 {
-    printf("HardwareSerial(%d)::available()\n", this->id);
-    return 0;
+
+  if (this->idx != 0) {
+    // there is a buffer, empty it
+    return idx;
+  }
+
+  memset(&buffer, 0, sizeof(buffer));
+
+  int read = ::read(master_fd, &buffer, sizeof(buffer));
+
+  if (read > 0) {
+    this->out_idx = 0;
+    this->idx = read;
+    return read;
+  }
+
+  return 0;
 }
 
 int HardwareSerial::peek(void)
 {
-    printf("HardwareSerial(%d)::peek()\n", this->id);
-    return 0;
+    return this->buffer[out_idx];
 }
 
 int HardwareSerial::read(void)
 {
-  printf("HardwareSerial(%d)::read()\n", this->id);
-  return 0;
+  uint8_t out = buffer[out_idx];
+  idx--;
+  out_idx++;
+  return out;
 }
 
 int HardwareSerial::availableForWrite(void)
 {
-  printf("HardwareSerial(%d)::availableForWrite(void)\n", this->id);
-  return 0;
+  return this->idx == 0;
 }
 
 void HardwareSerial::flush()
 {
   printf("HardwareSerial(%d)::flush()\n", this->id);
+  tcdrain(master_fd);
 }
 
 size_t HardwareSerial::write(uint8_t c)
 {
   printf("HardwareSerial(%d)::write(%c)\n", this->id, c);
-  return 0;
+  int out = ::write(master_fd, &c, 1);
+  if (out < 0) {
+    printf("HardwareSerial: write failed!");
+  }
+  return out;
 }
