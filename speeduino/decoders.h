@@ -1,6 +1,8 @@
 #ifndef DECODERS_H
 #define DECODERS_H
 
+#include <stdint.h>
+
 #define DECODER_MISSING_TOOTH     0
 #define DECODER_BASIC_DISTRIBUTOR 1
 #define DECODER_DUAL_WHEEL        2
@@ -48,6 +50,17 @@
 extern volatile uint8_t decoderState;
 
 void initialiseDecoder(uint8_t decoderType);
+
+struct triggerEdges_t
+{
+  uint8_t primary;
+  uint8_t secondary;
+  uint8_t tertiary;
+};
+
+const triggerEdges_t& getDecoderTriggerEdges();
+
+static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
 
 /**
  * @brief Is the engine running?
@@ -309,7 +322,6 @@ extern volatile unsigned long triggerFilterTime; // The shortest time (in uS) th
 extern volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 extern unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 extern volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
-extern byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
