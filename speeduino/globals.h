@@ -185,13 +185,6 @@ extern pin_mask_t pump_pin_mask;
 extern port_register_t flex_pin_port;
 extern pin_mask_t flex_pin_mask;
 
-extern port_register_t triggerPri_pin_port;
-extern pin_mask_t triggerPri_pin_mask;
-extern port_register_t triggerSec_pin_port;
-extern pin_mask_t triggerSec_pin_mask;
-extern port_register_t triggerThird_pin_port;
-extern pin_mask_t triggerThird_pin_mask;
-
 extern byte triggerInterrupt;
 extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
