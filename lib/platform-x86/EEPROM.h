@@ -22,7 +22,7 @@
 #define EEPROM_h
 
 #include <inttypes.h>
-#include "EEPROM_memory.h"
+#include "EEPROM_local.h"
 
 /***
     EERef class.
@@ -38,37 +38,37 @@ struct EERef{
         : index( index )                 {}
 
     //Access/read members.
-    uint8_t operator*() const            { return eeprom_read_byte( (uint8_t*) index ); }
-    operator uint8_t() const             { return **this; }
+    uint16_t operator*() const            { return eeprom_read_byte( (uint16_t*) index ); }
+    operator uint16_t() const             { return **this; }
 
     //Assignment/write members.
     EERef &operator=( const EERef &ref ) { return *this = *ref; }
-    EERef &operator=( uint8_t in )       { return eeprom_write_byte( (uint8_t*) index, in ), *this;  }
-    EERef &operator +=( uint8_t in )     { return *this = **this + in; }
-    EERef &operator -=( uint8_t in )     { return *this = **this - in; }
-    EERef &operator *=( uint8_t in )     { return *this = **this * in; }
-    EERef &operator /=( uint8_t in )     { return *this = **this / in; }
-    EERef &operator ^=( uint8_t in )     { return *this = **this ^ in; }
-    EERef &operator %=( uint8_t in )     { return *this = **this % in; }
-    EERef &operator &=( uint8_t in )     { return *this = **this & in; }
-    EERef &operator |=( uint8_t in )     { return *this = **this | in; }
-    EERef &operator <<=( uint8_t in )    { return *this = **this << in; }
-    EERef &operator >>=( uint8_t in )    { return *this = **this >> in; }
+    EERef &operator=( uint16_t in )       { return eeprom_write_byte( (uint16_t*) index, in ), *this;  }
+    EERef &operator +=( uint16_t in )     { return *this = **this + in; }
+    EERef &operator -=( uint16_t in )     { return *this = **this - in; }
+    EERef &operator *=( uint16_t in )     { return *this = **this * in; }
+    EERef &operator /=( uint16_t in )     { return *this = **this / in; }
+    EERef &operator ^=( uint16_t in )     { return *this = **this ^ in; }
+    EERef &operator %=( uint16_t in )     { return *this = **this % in; }
+    EERef &operator &=( uint16_t in )     { return *this = **this & in; }
+    EERef &operator |=( uint16_t in )     { return *this = **this | in; }
+    EERef &operator <<=( uint16_t in )    { return *this = **this << in; }
+    EERef &operator >>=( uint16_t in )    { return *this = **this >> in; }
 
-    EERef &update( uint8_t in )          { return  in != *this ? *this = in : *this; }
+    EERef &update( uint16_t in )          { return  in != *this ? *this = in : *this; }
 
     /** Prefix increment/decrement **/
     EERef& operator++()                  { return *this += 1; }
     EERef& operator--()                  { return *this -= 1; }
 
     /** Postfix increment/decrement **/
-    uint8_t operator++ (int){
-        uint8_t ret = **this;
+    uint16_t operator++ (int){
+        uint16_t ret = **this;
         return ++(*this), ret;
     }
 
-    uint8_t operator-- (int){
-        uint8_t ret = **this;
+    uint16_t operator-- (int){
+        uint16_t ret = **this;
         return --(*this), ret;
     }
 
@@ -116,9 +116,9 @@ struct EEPROMClass{
 
     //Basic user access methods.
     EERef operator[]( const int idx )    { return idx; }
-    uint8_t read( int idx )              { return EERef( idx ); }
-    void write( int idx, uint8_t val )   { (EERef( idx )) = val; }
-    void update( int idx, uint8_t val )  { EERef( idx ).update( val ); }
+    uint16_t read( int idx )              { return EERef( idx ); }
+    void write( int idx, uint16_t val )   { (EERef( idx )) = val; }
+    void update( int idx, uint16_t val )  { EERef( idx ).update( val ); }
 
     //STL and C++11 iteration capability.
     EEPtr begin()                        { return 0x00; }
@@ -130,14 +130,14 @@ struct EEPROMClass{
     //Functionality to 'get' and 'put' objects to and from EEPROM.
     template< typename T > T &get( int idx, T &t ){
         EEPtr e = idx;
-        uint8_t *ptr = (uint8_t*) &t;
+        uint16_t *ptr = (uint16_t*) &t;
         for( int count = sizeof(T) ; count ; --count, ++e )  *ptr++ = *e;
         return t;
     }
 
     template< typename T > const T &put( int idx, const T &t ){
         EEPtr e = idx;
-        const uint8_t *ptr = (const uint8_t*) &t;
+        const uint16_t *ptr = (const uint16_t*) &t;
         for( int count = sizeof(T) ; count ; --count, ++e )  (*e).update( *ptr++ );
         return t;
     }

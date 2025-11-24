@@ -47,7 +47,7 @@ uint32_t millis(void) {
 }
 unsigned long micros(void) {
     printf("micros()\n");
-    return millis() * 1000;
+    return millis() * 1000UL;
 }
 void delay(unsigned long ms) {
     printf("delay()\n");
