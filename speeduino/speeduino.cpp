@@ -1736,7 +1736,7 @@ void checkLaunchAndFlatShift()
 
 #ifdef PLATFORM_X86
 int main() {
-  uint32_t time = millis();
+  uint64_t time = micros();
   log(X86BRD, "native-x86: starting firmware\n");
   log(X86BRD, "setup()\n");
   setup();
@@ -1744,7 +1744,7 @@ int main() {
   while (true) {
     loop();
     tickTimersX86(time);
-    time = millis();
+    time = micros();
   }
 }
 #endif

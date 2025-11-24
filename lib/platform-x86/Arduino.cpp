@@ -50,7 +50,8 @@ uint32_t millis(void) {
 }
 unsigned long micros(void) {
     log(ARDUINO_CORE, "micros()\n");
-    return millis() * 1000UL;
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
 }
 void delay(unsigned long ms) {
     log(ARDUINO_CORE, "delay()\n");

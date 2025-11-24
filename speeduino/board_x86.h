@@ -14,6 +14,7 @@
 
 #include "Stream.h"
 #include "HardwareSerial.h"
+#include "SoftwareTimer.h"
 #include "log.h"
 
 #define BLOCKING_FACTOR       121
@@ -35,6 +36,27 @@ extern COMPARE_TYPE dummy_register;
 #ifndef IGN_CHANNELS
 #define IGN_CHANNELS 8
 #endif
+
+/*
+ * Timers
+ */
+extern SoftwareTimer Fuel1;
+extern SoftwareTimer Fuel2;
+extern SoftwareTimer Fuel3;
+extern SoftwareTimer Fuel4;
+extern SoftwareTimer Fuel5;
+extern SoftwareTimer Fuel6;
+extern SoftwareTimer Fuel7;
+extern SoftwareTimer Fuel8;
+
+extern SoftwareTimer Ignition1;
+extern SoftwareTimer Ignition2;
+extern SoftwareTimer Ignition3;
+extern SoftwareTimer Ignition4;
+extern SoftwareTimer Ignition5;
+extern SoftwareTimer Ignition6;
+extern SoftwareTimer Ignition7;
+extern SoftwareTimer Ignition8;
 
 /*
 ***********************************************************************************************************
@@ -181,7 +203,7 @@ extern COMPARE_TYPE dummy_register;
 extern void *memcpy_P(void *, const void *, size_t);
 #define RTC_LIB_H "stdio.h"
 
-extern void tickTimersX86(uint32_t time);
+extern void tickTimersX86(uint64_t time);
 
 #endif
 #endif //FIRMWARE_BOARD_X86_H

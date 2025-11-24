@@ -8,9 +8,9 @@
 
 uint8_t loglevel =
   //  ARDUINO_CORE |
-    HARDWARE_SERIAL |
+  //  HARDWARE_SERIAL |
     PORT |
-    ATOM |
+  //  ATOM |
     SPIDBG |
     TIMER |
     X86BRD;
