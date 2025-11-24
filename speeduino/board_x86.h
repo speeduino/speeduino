@@ -180,5 +180,7 @@ extern COMPARE_TYPE dummy_register;
 extern void *memcpy_P(void *, const void *, size_t);
 #define RTC_LIB_H "stdio.h"
 
+extern void tickTimersX86(uint32_t time);
+
 #endif
 #endif //FIRMWARE_BOARD_X86_H

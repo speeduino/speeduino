@@ -5,13 +5,30 @@
 #ifdef PLATFORM_X86
 
 #include <cstring>
+#include <SoftwareTimer.h>
+#include <timers.h>
 #include "board_x86.h"
 
 COMPARE_TYPE dummy_register;
 
+SoftwareTimer Timer1;
+
+void tickTimersX86(uint32_t time) {
+    Timer1.tick(time);
+}
+
+void tick1msTimer() {
+    oneMSInterval();
+    Timer1.setCompare(millis() + 1);
+}
+
 void initBoard(uint32_t baudRate) {
     printf("native-x86: board init, %d baud\n", baudRate);
     Serial.begin(baudRate);
+
+    Timer1.attachInterrupt(1, tick1msTimer);
+    Timer1.setCompare(millis());
+
 }
 
 uint16_t freeRam() {

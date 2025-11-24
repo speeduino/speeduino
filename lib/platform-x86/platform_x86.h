@@ -8,8 +8,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-extern  void (*trigger_interrupt)(void);
-
 class X86Port {
 
     const char* portId;

@@ -1743,7 +1743,8 @@ int main() {
   printf("loop()\n");
   while (true) {
     loop();
-    fireInterrupts();
+    tickTimersX86(time);
+    time = millis();
   }
 }
 #endif
