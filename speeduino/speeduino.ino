@@ -51,6 +51,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "units.h"
 #include "fuel_calcs.h"
 #include "preprocessor.h"
+#include "decoder_init.h"
 
 #define CRANK_RUN_HYSTER    15
 
