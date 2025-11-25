@@ -316,6 +316,9 @@ struct interrupt_t
   void (*callback)(void);
   /** @brief The edge type for the interrupt. E.g. RISING, FALLING, CHANGE */
   uint8_t edge;
+
+  void attach(uint8_t pin) const;
+  void detach(uint8_t pin) const;
 };
 
 /** @brief This structure represents a decoder configuration */
