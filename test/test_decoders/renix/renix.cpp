@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
+#include "decoder_init.h"
 
 void test_setup_renix44()
 {
