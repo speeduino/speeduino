@@ -1183,7 +1183,6 @@ void initialiseAll(void)
     if(configPage2.fpPrime > 0)
     {
       FUEL_PUMP_ON();
-      currentStatus.fuelPumpOn = true;
     }
     else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
 

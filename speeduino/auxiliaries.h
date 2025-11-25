@@ -40,8 +40,8 @@ void wmiControl(void);
 #define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
 #define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
 #define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
-#define FUEL_PUMP_ON()          (digitalWrite(pinFuelPump, HIGH))
-#define FUEL_PUMP_OFF()         (digitalWrite(pinFuelPump, LOW))
+#define FUEL_PUMP_ON()          { digitalWrite(pinFuelPump, HIGH); currentStatus.fuelPumpOn = true; }
+#define FUEL_PUMP_OFF()         { digitalWrite(pinFuelPump, LOW); currentStatus.fuelPumpOn = false; }
 
 #else
 
@@ -55,8 +55,8 @@ void wmiControl(void);
 #define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
 #define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
 #define N2O_STAGE2_PIN_HIGH()   ATOMIC() { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
-#define FUEL_PUMP_ON()          ATOMIC() { *pump_pin_port |= (pump_pin_mask);     }
-#define FUEL_PUMP_OFF()         ATOMIC() { *pump_pin_port &= ~(pump_pin_mask);    }
+#define FUEL_PUMP_ON()          ATOMIC() { *pump_pin_port |= (pump_pin_mask);  currentStatus.fuelPumpOn = true;    }
+#define FUEL_PUMP_OFF()         ATOMIC() { *pump_pin_port &= ~(pump_pin_mask); currentStatus.fuelPumpOn = false;   }
 
 //Note the below macros cannot use ATOMIC() as they are called from within ternary operators. The ATOMIC is instead placed around the ternary call below
 #define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)

@@ -159,10 +159,9 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.longRPM = getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
-      if(currentStatus.RPM > 0)
+      if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
       {
         FUEL_PUMP_ON();
-        currentStatus.fuelPumpOn = true;
       }
     }
     else
@@ -184,7 +183,7 @@ void __attribute__((always_inline)) loop(void)
       ignitionCount = 0;
       ignitionChannelsOn = 0;
       fuelChannelsOn = 0;
-      if (currentStatus.fpPrimed == true) { FUEL_PUMP_OFF(); currentStatus.fuelPumpOn = false; } //Turn off the fuel pump, but only if the priming is complete
+      if (currentStatus.fpPrimed == true) { FUEL_PUMP_OFF(); } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       currentStatus.engineIsCranking = false; //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       currentStatus.wueIsActive = false; //Same as above except for WUE
