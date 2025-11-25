@@ -110,7 +110,7 @@ static void test_start_stop_rising(uint8_t decoder)
     currentStatus.initialisationComplete = false;
     initialiseDecoder(decoder);
 
-    assertStartStopPrimaryTrigger(decoder, getDecoderTriggerEdges().primary);
+    assertStartStopPrimaryTrigger(decoder, getDecoder().primaryEdge);
 
     detachDecoderInterrupts();
 }
@@ -121,7 +121,7 @@ static void test_start_stop_falling(uint8_t decoder)
     configPage4.TrigEdge = 1;
     initialiseDecoder(decoder);
 
-    assertStartStopPrimaryTrigger(decoder, getDecoderTriggerEdges().primary);
+    assertStartStopPrimaryTrigger(decoder, getDecoder().primaryEdge);
 
     detachDecoderInterrupts();
 }
@@ -147,21 +147,21 @@ static void test_start_stop_ngc(void)
   // The NGC decoder triggers on change, but only sets 
   // BIT_DECODER_VALID_TRIGGER on falling interrupts.
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoderTriggerEdges().primary);
+  assertPrimaryTrigger(DECODER_NGC, getDecoder().primaryEdge);
   
   // Attach logger
   startToothLogger();
 
   // Test primary trigger function
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoderTriggerEdges().primary);
+  assertPrimaryTrigger(DECODER_NGC, getDecoder().primaryEdge);
 
   // Detach logger
   stopToothLogger();
 
   // Test primary trigger function
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoderTriggerEdges().primary);
+  assertPrimaryTrigger(DECODER_NGC, getDecoder().primaryEdge);
 
   detachDecoderInterrupts();
 }
