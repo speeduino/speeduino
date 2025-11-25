@@ -252,7 +252,7 @@ void initialiseAll(void)
     resetDecoder();
     
     noInterrupts();
-    initialiseDecoder(configPage4.TrigPattern);
+    setDecoder(configPage4.TrigPattern);
     boardInitPins();
     // The schedulers are all configured & pins are mapped - so start the schedulers
     startIgnitionSchedulers();

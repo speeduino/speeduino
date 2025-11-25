@@ -334,7 +334,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
-        initialiseDecoder(configPage4.TrigPattern);
+        setDecoder(configPage4.TrigPattern);
       }
 
       VVT1_PIN_LOW();

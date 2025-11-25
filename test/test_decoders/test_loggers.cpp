@@ -109,7 +109,7 @@ static void test_start_stop_rising(uint8_t decoder)
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 0;
     currentStatus.initialisationComplete = false;
-    initialiseDecoder(decoder);
+    setDecoder(decoder);
 
     assertStartStopPrimaryTrigger(decoder, getDecoder().primary.edge);
 
@@ -120,7 +120,7 @@ static void test_start_stop_falling(uint8_t decoder)
 {
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 1;
-    initialiseDecoder(decoder);
+    setDecoder(decoder);
 
     assertStartStopPrimaryTrigger(decoder, getDecoder().primary.edge);
 
@@ -143,7 +143,7 @@ static void test_start_stop(void)
 static void test_start_stop_ngc(void)
 {
   pinTrigger = 19; // Example pin number
-  initialiseDecoder(DECODER_NGC);
+  setDecoder(DECODER_NGC);
 
   // The NGC decoder triggers on change, but only sets 
   // BIT_DECODER_VALID_TRIGGER on falling interrupts.

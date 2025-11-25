@@ -1,7 +1,16 @@
+/**
+ * @file 
+ * @brief Decoder initialization and management 
+ */
 #pragma once
 
 #include <stdint.h>
 
+/// @brief Decoder type definitions
+///
+/// These constants are used to identify the various supported decoder types. 
+/// They **must** be kept in sync with the corresponding options in the ini file.
+/// @{
 constexpr uint8_t DECODER_MISSING_TOOTH     = 0;
 constexpr uint8_t DECODER_BASIC_DISTRIBUTOR = 1;
 constexpr uint8_t DECODER_DUAL_WHEEL        = 2;
@@ -31,6 +40,7 @@ constexpr uint8_t DECODER_ROVERMEMS         = 25;
 constexpr uint8_t DECODER_SUZUKI_K6A        = 26;
 constexpr uint8_t DECODER_HONDA_J32         = 27;
 constexpr uint8_t DECODER_FORD_TFI          = 28;
+/// @}
 
 /** @brief This constant represents no trigger edge */
 static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
@@ -67,6 +77,9 @@ struct decoder_t
   /** @brief The function to set the end teeth for ignition calculations */
   void (*setEndTeeth)(void);  
 };
+
+/** @brief Get the current decoder configuration */
 const decoder_t& getDecoder(void);
 
-void initialiseDecoder(uint8_t decoderType);
+/** @brief Set the current decoder configuration */
+void setDecoder(uint8_t decoderType);
