@@ -719,11 +719,11 @@ void stopToothLogger(void)
   currentStatus.toothLogEnabled = false;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoderTriggerEdges().primary );
+  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoder().primaryEdge );
 
   if(VSS_USES_RPM2() != true)
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoderTriggerEdges().secondary );
+    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoder().secondaryEdge );
   }
 }
 
@@ -748,11 +748,11 @@ void stopCompositeLogger(void)
   currentStatus.compositeTriggerUsed = 0U;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoderTriggerEdges().primary );
+  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoder().primaryEdge );
 
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoderTriggerEdges().secondary );
+    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoder().secondaryEdge );
   }
 }
 
@@ -773,8 +773,8 @@ void stopCompositeLoggerTertiary(void)
   currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoderTriggerEdges().primary );
-  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary, getDecoderTriggerEdges().tertiary );
+  detachLoggerInterrupt( pinTrigger, getDecoder().primary, getDecoder().primaryEdge );
+  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary, getDecoder().tertiaryEdge );
 }
 
 
@@ -801,8 +801,8 @@ void stopCompositeLoggerCams(void)
   //Disconnect the logger interrupts and attach the normal ones
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoderTriggerEdges().secondary );
+    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary, getDecoder().secondaryEdge );
   }
 
-  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary, getDecoderTriggerEdges().tertiary );
+  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary, getDecoder().tertiaryEdge );
 }

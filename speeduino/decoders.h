@@ -56,18 +56,6 @@ struct decoder_features_t {
 };
 
 const decoder_features_t& getDecoderFeatures(void);
-
-struct triggerEdges_t
-{
-  uint8_t primary;
-  uint8_t secondary;
-  uint8_t tertiary;
-};
-
-const triggerEdges_t& getDecoderTriggerEdges();
-
-static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
-
 /** \enum SyncStatus
  * @brief The decoder trigger status
  * */
@@ -318,11 +306,16 @@ void triggerSetEndTeeth_FordTFI(void);
  */
 void resetDecoder(void);
 
+static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
+
 struct decoder_t
 {
   void (*primary)(void);
+  uint8_t primaryEdge;
   void (*secondary)(void);
+  uint8_t secondaryEdge;
   void (*tertiary)(void);
+  uint8_t tertiaryEdge;
   uint16_t (*getRPM)(void);
   int (*getCrankAngle)(void);
   void (*setEndTeeth)(void);  
