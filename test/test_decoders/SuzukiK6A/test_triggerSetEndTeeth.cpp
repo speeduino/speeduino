@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "../../test_utils.h"
 #include "schedule_calcs.h"
+#include "decoder_init.h"
 
 static void test_setup_SuzukiK6A()
 {
