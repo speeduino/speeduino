@@ -29,6 +29,7 @@
   #include "rtc_common.h"
 #endif
 #include "fuel_calcs.h"
+#include "decoder_init.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
