@@ -232,9 +232,9 @@ void loggerPrimaryISR(void)
   2) If the primary trigger is FALLING, then check whether the primary is currently LOW
   If either of these are true, the primary decoder function is called
   */
-  if( ( (getDecoder().primaryEdge == RISING) && (READ_PRI_TRIGGER() == HIGH) ) || ( (getDecoder().primaryEdge == FALLING) && (READ_PRI_TRIGGER() == LOW) ) || (getDecoder().primaryEdge == CHANGE) )
+  if( ( (getDecoder().primary.edge == RISING) && (READ_PRI_TRIGGER() == HIGH) ) || ( (getDecoder().primary.edge == FALLING) && (READ_PRI_TRIGGER() == LOW) ) || (getDecoder().primary.edge == CHANGE) )
   {
-    getDecoder().primary();
+    getDecoder().primary.callback();
     validEdge = true;
   }
   if( (currentStatus.toothLogEnabled == true) && (decoderStatus.validTrigger) )
@@ -264,9 +264,9 @@ void loggerSecondaryISR(void)
   3) The secondary trigger is CHANGING
   If any of these are true, the primary decoder function is called
   */
-  if( ( (getDecoder().secondaryEdge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (getDecoder().secondaryEdge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (getDecoder().secondaryEdge == CHANGE) )
+  if( ( (getDecoder().secondary.edge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (getDecoder().secondary.edge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (getDecoder().secondary.edge == CHANGE) )
   {
-    getDecoder().secondary();
+    getDecoder().secondary.callback();
   }
   //No tooth logger for the secondary input
   if( (currentStatus.compositeTriggerUsed > 0) && (decoderStatus.validTrigger) )
@@ -289,11 +289,11 @@ void loggerTertiaryISR(void)
   3) The secondary trigger is CHANGING
   If any of these are true, the primary decoder function is called
   */
-  
-  
-  if( ( (getDecoder().tertiaryEdge == RISING) && ( READ_THIRD_TRIGGER() == HIGH) ) || ( (getDecoder().tertiaryEdge == FALLING) && (READ_THIRD_TRIGGER() == LOW) ) || (getDecoder().tertiaryEdge == CHANGE) )
+
+
+  if( ( (getDecoder().tertiary.edge == RISING) && ( READ_THIRD_TRIGGER() == HIGH) ) || ( (getDecoder().tertiary.edge == FALLING) && (READ_THIRD_TRIGGER() == LOW) ) || (getDecoder().tertiary.edge == CHANGE) )
   {
-    getDecoder().tertiary();
+    getDecoder().tertiary.callback();
   }
   //No tooth logger for the secondary input
   if( (currentStatus.compositeTriggerUsed > 0) && (decoderStatus.validTrigger) )
@@ -6242,25 +6242,34 @@ struct decoder_builder_t {
     setSetEndTeeth(&nullTriggerHandler);
   }
 
+  decoder_builder_t& setPrimaryTrigger(const interrupt_t& trigger)
+  {
+    decoder.primary = trigger;
+    return *this;
+  }
   decoder_builder_t& setPrimaryTrigger(void (*handler)(void), uint8_t edge)
   {
-    decoder.primary = handler;
-    decoder.primaryEdge = edge;
-    return *this;
+    return setPrimaryTrigger( interrupt_t{ handler, edge } );
   }
 
+  decoder_builder_t& setSecondaryTrigger(const interrupt_t& trigger)
+  {
+    decoder.secondary = trigger;
+    return *this;
+  }
   decoder_builder_t& setSecondaryTrigger(void (*handler)(void), uint8_t edge)
   {
-    decoder.secondary = handler;
-    decoder.secondaryEdge = edge;
-    return *this;
+    return setSecondaryTrigger( interrupt_t{ handler, edge } );
   }
 
+  decoder_builder_t& setTertiaryTrigger(const interrupt_t& trigger)
+  {
+    decoder.tertiary = trigger;
+    return *this;
+  }
   decoder_builder_t& setTertiaryTrigger(void (*handler)(void), uint8_t edge)
   {
-    decoder.tertiary = handler;
-    decoder.tertiaryEdge = edge;
-    return *this;
+    return setTertiaryTrigger( interrupt_t{ handler, edge } );
   }
 
   decoder_builder_t& setGetRPM(uint16_t (*getRPM)(void))
@@ -6293,7 +6302,7 @@ const decoder_t& getDecoder(void)
   return triggerFuncs;
 }
 
-static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask, uint8_t triggerEdge, void (*triggerISR)(void))
+static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask, const interrupt_t& trigger)
 {
   pinMode(pin, INPUT);
   pinPort = portInputRegister(digitalPinToPort(pin));
@@ -6302,9 +6311,9 @@ static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pi
   byte triggerInterrupt = digitalPinToInterrupt(pin);
   detachInterrupt(triggerInterrupt);
 
-  if (triggerEdge != TRIGGER_EDGE_NONE)
+  if (trigger.edge != TRIGGER_EDGE_NONE)
   {
-    attachInterrupt(triggerInterrupt, triggerISR, triggerEdge);
+    attachInterrupt(triggerInterrupt, trigger.callback, trigger.edge);
   }
 }
 
@@ -6666,7 +6675,7 @@ void initialiseDecoder(uint8_t decoderType)
       break;
   }
 
-  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask, getDecoder().primaryEdge, getDecoder().primary);
-  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask, getDecoder().secondaryEdge, getDecoder().secondary);
-  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask, getDecoder().tertiaryEdge, getDecoder().tertiary);
+  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask, getDecoder().primary);
+  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask, getDecoder().secondary);
+  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask, getDecoder().tertiary);
 }
