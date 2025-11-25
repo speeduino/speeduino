@@ -272,7 +272,7 @@ void initialiseAll(void)
     resetDecoder();
     
     noInterrupts();
-    initialiseDecoder(configPage4.TrigPattern);
+    setDecoder(configPage4.TrigPattern);
     boardInitPins();
 
     //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS. This MUST be run after the initialiseTriggers() function
