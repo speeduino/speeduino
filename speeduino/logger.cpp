@@ -707,11 +707,7 @@ void startToothLogger(void)
 static inline void detachLoggerInterrupt(uint8_t pin, const interrupt_t &decoderInterrupt)
 {
   detachInterrupt( digitalPinToInterrupt(pin) );
-
-  if ((decoderInterrupt.callback != nullptr) && (decoderInterrupt.edge != TRIGGER_EDGE_NONE) )
-  {
-    attachInterrupt( digitalPinToInterrupt(pin), decoderInterrupt.callback, decoderInterrupt.edge );
-  }
+  decoderInterrupt.attach(pin);
 }
 
 void stopToothLogger(void)
