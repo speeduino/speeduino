@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <stdint.h>
+#include "decoder_t.h"
 
 /// @brief Decoder type definitions
 ///
@@ -41,42 +41,6 @@ constexpr uint8_t DECODER_SUZUKI_K6A        = 26;
 constexpr uint8_t DECODER_HONDA_J32         = 27;
 constexpr uint8_t DECODER_FORD_TFI          = 28;
 /// @}
-
-/** @brief This constant represents no trigger edge */
-static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
-
-/** @brief This structure represents a trigger interrupt */
-struct interrupt_t
-{
-  /** @brief The callback function to be called on interrupt */
-  void (*callback)(void);
-  /** @brief The edge type for the interrupt. E.g. RISING, FALLING, CHANGE */
-  uint8_t edge;
-
-  /** @brief Attach the interrupt to a pin */
-  void attach(uint8_t pin) const;
-
-  /** @brief Detach the interrupt from a pin */
-  void detach(uint8_t pin) const;
-};
-
-/** @brief This structure represents a decoder configuration */
-struct decoder_t
-{
-  /** @brief The primary interrupt configuration - usually the crank trigger */
-  interrupt_t primary;
-  /** @brief The secondary interrupt configuration - usually the cam trigger */
-  interrupt_t secondary;
-  /** @brief The tertiary interrupt configuration - for decoders that use a 3rd input. E.g. VVT */
-  interrupt_t tertiary;
-
-  /** @brief The function to get the RPM */
-  uint16_t (*getRPM)(void);
-  /** @brief The function to get the crank angle */
-  int (*getCrankAngle)(void);
-  /** @brief The function to set the end teeth for ignition calculations */
-  void (*setEndTeeth)(void);  
-};
 
 /** @brief Get the current decoder configuration */
 const decoder_t& getDecoder(void);
