@@ -19,7 +19,9 @@ A full copy of the license may be found in the projects root directory
 #include "logger.h"
 #include "comms_legacy.h"
 #include "src/FastCRC/FastCRC.h"
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 #include <avr/pgmspace.h>
+#endif
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
   #include "comms_sd.h"

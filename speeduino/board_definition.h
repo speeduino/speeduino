@@ -54,6 +54,8 @@ uint8_t getSystemTemp(void);
 // Allow external injection of the board definition via compiler flags
 #elif defined(EXTERNAL_BOARD_H)
   #include EXTERNAL_BOARD_H
+#elif defined(PLATFORM_X86)
+  #include "board_x86.h"
 #else
   #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
 #endif

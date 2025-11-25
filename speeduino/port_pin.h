@@ -15,8 +15,11 @@ namespace type_detection_detail {
   static inline auto detectDigitalPinToBitMask(void) { return digitalPinToBitMask(0); };
 }
 
+#ifndef PLATFORM_X86
 /** @brief The return type of a "call" to portOutputRegister() */
 using PORT_TYPE = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectPortRegisterType));
 
 /** @brief The return type of a "call" to digitalPinToBitMask() */
 using PINMASK_TYPE = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
+
+#endif

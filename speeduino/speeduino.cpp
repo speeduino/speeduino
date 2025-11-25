@@ -1732,3 +1732,18 @@ void checkLaunchAndFlatShift()
     }
   }
 }
+
+#ifdef PLATFORM_X86
+int main() {
+  uint64_t time = micros();
+  log(X86BRD, "native-x86: starting firmware\n");
+  log(X86BRD, "setup()\n");
+  setup();
+  log(X86BRD, "loop()\n");
+  while (true) {
+    loop();
+    tickTimersX86(time);
+    time = micros();
+  }
+}
+#endif

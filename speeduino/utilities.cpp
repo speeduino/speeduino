@@ -7,7 +7,9 @@
  * Custom Programmable I/O.
  * The config related to Programmable I/O is found on configPage13 (of type @ref config13).
  */
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 #include <avr/pgmspace.h>
+#endif
 #include "globals.h"
 #include "utilities.h"
 #include "decoders.h"

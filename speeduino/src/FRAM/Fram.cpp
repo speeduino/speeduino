@@ -22,6 +22,8 @@
 //    added option to use any SPI port
 //    added software version of SPI with configurable speed
 
+#ifndef PLATFORM_X86
+
 #include "Fram.h"
 #ifdef SPI_HAS_TRANSACTION
   SPISettings FRAMSettings(FRAM_DEFAULT_CLOCK, MSBFIRST, SPI_MODE0);
@@ -343,6 +345,7 @@ uint16_t FramClass::spiSend16(uint16_t data)
 
 /*-----------------------------------------------------------------------------*/
 
+#endif
 
 //FramClass Fram;
 

@@ -21,6 +21,8 @@
 #ifndef __FRAM_H__
 #define __FRAM_H__
 
+#ifndef PLATFORM_X86
+
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -157,6 +159,6 @@ class FramClass
 };
 ////////////////////////////////////////////////////////////////////////////////
 
-
+#endif
 #endif   // __FRAM_H__
 
