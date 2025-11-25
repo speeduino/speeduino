@@ -4,7 +4,7 @@
 #include "decoder_builder.h"
 #include "globals.h"
 
-decoder_t triggerFuncs = decoder_builder_t().build();
+static decoder_t triggerFuncs = decoder_builder_t().build();
 const decoder_t& getDecoder(void)
 {
   return triggerFuncs;
@@ -23,24 +23,14 @@ static uint8_t getTerTriggerEdge(const config10 &page10)
   return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
 }
 
-/** Initialise the chosen trigger decoder.
- * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
- * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.
- * 
- * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
- */
-void setDecoder(uint8_t decoderType)
+static decoder_t getDecoder(uint8_t decoderType)
 {
-  //The default values for edges
-  triggerFuncs = decoder_builder_t().build();
-
-  //Set the trigger function based on the decoder in the config
   switch (decoderType)
   {
     case DECODER_MISSING_TOOTH:
       //Missing tooth decoder
       triggerSetup_missingTooth();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_missingTooth, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_missingTooth, getDecoderFeatures().hasSecondary ? getSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
                       .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled > 0 ? getTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
@@ -53,7 +43,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_BASIC_DISTRIBUTOR:
       // Basic distributor
       triggerSetup_BasicDistributor();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_BasicDistributor, getPriTriggerEdge(configPage4))
                       .setGetRPM(getRPM_BasicDistributor)
                       .setGetCrankAngle(getCrankAngle_BasicDistributor)
@@ -63,7 +53,7 @@ void setDecoder(uint8_t decoderType)
 
     case 2:
       triggerSetup_DualWheel();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_DualWheel, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_DualWheel, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_DualWheel)
@@ -74,7 +64,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_GM7X:
       triggerSetup_GM7X();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_GM7X, getPriTriggerEdge(configPage4))
                       .setGetRPM(getRPM_GM7X)
                       .setGetCrankAngle(getCrankAngle_GM7X)
@@ -84,7 +74,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_4G63:
       triggerSetup_4G63();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_4G63, CHANGE)
                       .setSecondaryTrigger(triggerSec_4G63, FALLING)
                       .setGetRPM(getRPM_4G63)
@@ -95,7 +85,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_24X:
       triggerSetup_24X();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_24X, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_24X, CHANGE)
                       .setGetRPM(getRPM_24X)
@@ -106,7 +96,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_JEEP2000:
       triggerSetup_Jeep2000();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Jeep2000, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Jeep2000, CHANGE)
                       .setGetRPM(getRPM_Jeep2000)
@@ -117,7 +107,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_AUDI135:
       triggerSetup_Audi135();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Audi135, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Audi135, RISING)
                       .setGetRPM(getRPM_Audi135)
@@ -128,7 +118,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_HONDA_D17:
       triggerSetup_HondaD17();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_HondaD17, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_HondaD17, CHANGE)
                       .setGetRPM(getRPM_HondaD17)
@@ -139,7 +129,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_HONDA_J32:
       triggerSetup_HondaJ32();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
                       .setSecondaryTrigger(triggerSec_HondaJ32, RISING)
                       .setGetRPM(getRPM_HondaJ32)
@@ -150,7 +140,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_MIATA_9905:
       triggerSetup_Miata9905();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Miata9905, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Miata9905, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_Miata9905)
@@ -161,7 +151,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_MAZDA_AU:
       triggerSetup_MazdaAU();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_MazdaAU, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
                       .setGetRPM(getRPM_MazdaAU)
@@ -172,7 +162,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_NON360:
       triggerSetup_non360();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_DualWheel, getPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
                       .setSecondaryTrigger(triggerSec_DualWheel, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
                       .setGetRPM(getRPM_non360)
@@ -183,7 +173,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_NISSAN_360:
       triggerSetup_Nissan360();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Nissan360, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Nissan360, CHANGE)
                       .setGetRPM(getRPM_Nissan360)
@@ -194,7 +184,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_SUBARU_67:
       triggerSetup_Subaru67();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Subaru67, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Subaru67, FALLING)
                       .setGetRPM(getRPM_Subaru67)
@@ -205,7 +195,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_DAIHATSU_PLUS1:
       triggerSetup_Daihatsu();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Daihatsu, getPriTriggerEdge(configPage4))
                       .setGetRPM(getRPM_Daihatsu)
                       .setGetCrankAngle(getCrankAngle_Daihatsu)
@@ -215,7 +205,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_HARLEY:
       triggerSetup_Harley();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Harley, RISING)
       //                .setSecondaryTrigger(triggerSec_Harley)
                       .setGetRPM(getRPM_Harley)
@@ -227,7 +217,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_36_2_2_2:
       //36-2-2-2
       triggerSetup_ThirtySixMinus222();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_ThirtySixMinus222, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_ThirtySixMinus222, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_ThirtySixMinus222)
@@ -239,7 +229,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_36_2_1:
       //36-2-1
       triggerSetup_ThirtySixMinus21();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_ThirtySixMinus21, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_missingTooth, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_ThirtySixMinus21)
@@ -251,7 +241,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_420A:
       //DSM 420a
       triggerSetup_420a();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_420a, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
                       .setGetRPM(getRPM_420a)
@@ -263,7 +253,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_WEBER:
       //Weber-Marelli
       triggerSetup_DualWheel();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Webber, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_Webber, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_DualWheel)
@@ -275,7 +265,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_ST170:
       //Ford ST170
       triggerSetup_FordST170();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_missingTooth, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_FordST170, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_FordST170)
@@ -286,7 +276,7 @@ void setDecoder(uint8_t decoderType)
 	  
     case DECODER_DRZ400:
       triggerSetup_DRZ400();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_DualWheel, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_DRZ400, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_DualWheel)
@@ -298,7 +288,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_NGC:
       //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_NGC, CHANGE)
                       .setSecondaryTrigger( configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68,
                                             configPage2.nCylinders == 4U ? CHANGE : FALLING)
@@ -310,7 +300,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_VMAX:
       triggerSetup_Vmax();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
                       .setGetRPM(getRPM_Vmax)
                       .setGetCrankAngle(getCrankAngle_Vmax)
@@ -321,7 +311,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_RENIX:
       //Renault 44 tooth decoder
       triggerSetup_Renix();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_Renix, getPriTriggerEdge(configPage4))
                       .setGetRPM(getRPM_missingTooth)
                       .setGetCrankAngle(getCrankAngle_missingTooth)
@@ -332,7 +322,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_ROVERMEMS:
       //Rover MEMs - covers multiple flywheel trigger combinations.
       triggerSetup_RoverMEMS();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_RoverMEMS, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_RoverMEMS, getSecTriggerEdge(configPage4)) 
                       .setGetRPM(getRPM_RoverMEMS)
@@ -343,7 +333,7 @@ void setDecoder(uint8_t decoderType)
 
     case DECODER_SUZUKI_K6A:
       triggerSetup_SuzukiK6A();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_SuzukiK6A, getPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
                       .setGetRPM(getRPM_SuzukiK6A)
                       .setGetCrankAngle(getCrankAngle_SuzukiK6A)
@@ -354,7 +344,7 @@ void setDecoder(uint8_t decoderType)
     case DECODER_FORD_TFI:
       // Ford TFI
       triggerSetup_FordTFI();
-      triggerFuncs = decoder_builder_t()
+      return decoder_builder_t()
                       .setPrimaryTrigger(triggerPri_FordTFI, getPriTriggerEdge(configPage4))
                       .setSecondaryTrigger(triggerSec_FordTFI, getSecTriggerEdge(configPage4))
                       .setGetRPM(getRPM_FordTFI)
@@ -364,9 +354,21 @@ void setDecoder(uint8_t decoderType)
       break;
 
     default:
-      triggerFuncs = decoder_builder_t().build();
       break;
   }
+  return decoder_builder_t().build();
+}
+
+/** Initialise the chosen trigger decoder.
+ * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
+ * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.
+ * 
+ * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
+ */
+void setDecoder(uint8_t decoderType)
+{
+  //Set the trigger function based on the decoder in the config
+  triggerFuncs = getDecoder(decoderType);
 
   getDecoder().primary.attach(pinTrigger);
   getDecoder().secondary.attach(pinTrigger2);
