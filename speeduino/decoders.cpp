@@ -6302,19 +6302,32 @@ const decoder_t& getDecoder(void)
   return triggerFuncs;
 }
 
-static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask, const interrupt_t& trigger)
+void __attribute__((optimize("Os"))) interrupt_t::attach(uint8_t pin) const
+{
+  detach(pin);
+  if (edge != TRIGGER_EDGE_NONE && callback != nullptr)
+  {
+    attachInterrupt(digitalPinToInterrupt(pin), callback, edge);
+  }
+}
+void __attribute__((optimize("Os"))) interrupt_t::detach(uint8_t pin) const
+{
+  detachInterrupt( digitalPinToInterrupt(pin) );
+}
+
+
+static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask)
 {
   pinMode(pin, INPUT);
   pinPort = portInputRegister(digitalPinToPort(pin));
   pinMask = digitalPinToBitMask(pin);
+}
 
-  byte triggerInterrupt = digitalPinToInterrupt(pin);
-  detachInterrupt(triggerInterrupt);
-
-  if (trigger.edge != TRIGGER_EDGE_NONE)
-  {
-    attachInterrupt(triggerInterrupt, trigger.callback, trigger.edge);
-  }
+static void initPins(uint8_t primaryPin, uint8_t secondaryPin, uint8_t tertiaryPin)
+{
+  initTriggerPin(primaryPin, triggerPri_pin_port, triggerPri_pin_mask);
+  initTriggerPin(secondaryPin, triggerSec_pin_port, triggerSec_pin_mask);
+  initTriggerPin(tertiaryPin, triggerThird_pin_port, triggerThird_pin_mask);
 }
 
 static uint8_t getPriTriggerEdge(const config4 &page4)
@@ -6675,7 +6688,9 @@ void initialiseDecoder(uint8_t decoderType)
       break;
   }
 
-  initTriggerPin(pinTrigger, triggerPri_pin_port, triggerPri_pin_mask, getDecoder().primary);
-  initTriggerPin(pinTrigger2, triggerSec_pin_port, triggerSec_pin_mask, getDecoder().secondary);
-  initTriggerPin(pinTrigger3, triggerThird_pin_port, triggerThird_pin_mask, getDecoder().tertiary);
+  getDecoder().primary.attach(pinTrigger);
+  getDecoder().secondary.attach(pinTrigger2);
+  getDecoder().tertiary.attach(pinTrigger3);
+  
+  initPins(pinTrigger, pinTrigger2, pinTrigger3);
 }
