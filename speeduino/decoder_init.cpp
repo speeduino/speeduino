@@ -120,7 +120,7 @@ static uint8_t getTerTriggerEdge(const config10 &page10)
  * 
  * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
  */
-void initialiseDecoder(uint8_t decoderType)
+void setDecoder(uint8_t decoderType)
 {
   //The default values for edges
   triggerFuncs = decoder_builder_t().build();
