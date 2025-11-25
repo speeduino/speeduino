@@ -43,6 +43,7 @@ A full copy of the license may be found in the projects root directory
 #include "unit_testing.h"
 #include "atomic.h"
 #include "decoder_init.h"
+#include "decoder_builder.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
@@ -525,6 +526,20 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
 #endif
   }
 }
+
+static uint8_t getConfigPriTriggerEdge(const config4 &page4)
+{
+  return page4.TrigEdge == 0U ? RISING : FALLING;
+}
+static uint8_t getConfigSecTriggerEdge(const config4 &page4)
+{
+  return page4.TrigEdgeSec == 0U ? RISING : FALLING;
+}
+static uint8_t getConfigTerTriggerEdge(const config10 &page10)
+{
+  return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
+}
+
 /** @} */
   
 /** A (single) multi-tooth wheel with one of more 'missing' teeth.
@@ -533,7 +548,7 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
 * @defgroup dec_miss Missing tooth wheel
 * @{
 */
-void triggerSetup_missingTooth(void)
+decoder_t triggerSetup_missingTooth(void)
 {
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
@@ -567,7 +582,16 @@ void triggerSetup_missingTooth(void)
   else { BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY); }
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
-#endif  
+#endif
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_missingTooth, BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY) ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
+                  .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled > 0 ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
+                  .setGetRPM(getRPM_missingTooth)
+                  .setGetCrankAngle(getCrankAngle_missingTooth)
+                  .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
+                  .build();
 }
 
 void triggerPri_missingTooth(void)
@@ -905,7 +929,7 @@ Note: There can be no missing teeth on the primary wheel.
 /** Dual Wheel Setup.
  * 
  * */
-void triggerSetup_DualWheel(void)
+decoder_t triggerSetup_DualWheel(void)
 {
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
   if(configPage4.TrigSpeed == CAM_SPEED) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
@@ -920,6 +944,14 @@ void triggerSetup_DualWheel(void)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_DualWheel, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_DualWheel)
+                  .setGetCrankAngle(getCrankAngle_DualWheel)
+                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .build();
 }
 
 /** Dual Wheel Primary.
@@ -1100,7 +1132,7 @@ void triggerSetEndTeeth_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-void triggerSetup_BasicDistributor(void)
+decoder_t triggerSetup_BasicDistributor(void)
 {
   triggerActualTeeth = configPage2.nCylinders;
   if(triggerActualTeeth == 0) { triggerActualTeeth = 1; }
@@ -1121,6 +1153,12 @@ void triggerSetup_BasicDistributor(void)
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
+  return decoder_builder_t()
+                .setPrimaryTrigger(triggerPri_BasicDistributor, getConfigPriTriggerEdge(configPage4))
+                .setGetRPM(getRPM_BasicDistributor)
+                .setGetCrankAngle(getCrankAngle_BasicDistributor)
+                .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
+                .build();
 }
 
 void triggerPri_BasicDistributor(void)
@@ -1307,13 +1345,20 @@ void triggerSetEndTeeth_BasicDistributor(void)
 * @defgroup dec_gm7x GM7X
 * @{
 */
-void triggerSetup_GM7X(void)
+decoder_t triggerSetup_GM7X(void)
 {
   triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_GM7X, getConfigPriTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_GM7X)
+                  .setGetCrankAngle(getCrankAngle_GM7X)
+                  .setSetEndTeeth(triggerSetEndTeeth_GM7X)
+                  .build();
 }
 
 void triggerPri_GM7X(void)
@@ -1441,7 +1486,7 @@ Tooth number one is at 355* ATDC.
 * @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
 * @{
 */
-void triggerSetup_4G63(void)
+decoder_t triggerSetup_4G63(void)
 {
   triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
   toothCurrentCount = 99; //Fake tooth count represents no sync
@@ -1493,6 +1538,14 @@ void triggerSetup_4G63(void)
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   triggerSecFilterTime_duration = 4000;
   secondaryLastToothTime = 0;
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_4G63, CHANGE)
+                  .setSecondaryTrigger(triggerSec_4G63, FALLING)
+                  .setGetRPM(getRPM_4G63)
+                  .setGetCrankAngle(getCrankAngle_4G63)
+                  .setSetEndTeeth(triggerSetEndTeeth_4G63)
+                  .build();
 }
 
 void triggerPri_4G63(void)
@@ -1875,7 +1928,7 @@ Provided that the cam signal is used, this decoder simply counts the teeth and t
 * @defgroup dec_gm GM 24X
 * @{
 */
-void triggerSetup_24X(void)
+decoder_t triggerSetup_24X(void)
 {
   triggerToothAngle = 15; //The number of degrees that passes from tooth to tooth (primary)
   toothAngles[0] = 12;
@@ -1909,6 +1962,14 @@ void triggerSetup_24X(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_24X, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_24X, CHANGE)
+                  .setGetRPM(getRPM_24X)
+                  .setGetCrankAngle(getCrankAngle_24X)
+                  .setSetEndTeeth(triggerSetEndTeeth_24X)
+                  .build();
 }
 
 void triggerPri_24X(void)
@@ -1996,7 +2057,7 @@ void triggerSetEndTeeth_24X(void)
 * @defgroup dec_jeep Jeep 2000 (6 cyl)
 * @{
 */
-void triggerSetup_Jeep2000(void)
+decoder_t triggerSetup_Jeep2000(void)
 {
   triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
   toothAngles[0] = 174;
@@ -2018,6 +2079,14 @@ void triggerSetup_Jeep2000(void)
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Jeep2000, CHANGE)
+                  .setGetRPM(getRPM_Jeep2000)
+                  .setGetCrankAngle(getCrankAngle_Jeep2000)
+                  .setSetEndTeeth(triggerSetEndTeeth_Jeep2000)
+                  .build();
 }
 
 void triggerPri_Jeep2000(void)
@@ -2100,7 +2169,7 @@ void triggerSetEndTeeth_Jeep2000(void)
 * @defgroup dec_audi135 Audi 135
 * @{
 */
-void triggerSetup_Audi135(void)
+decoder_t triggerSetup_Audi135(void)
 {
   triggerToothAngle = 8; //135/3 = 45, 360/45 = 8 degrees every 3 teeth
   toothCurrentCount = UINT8_MAX; //Default value
@@ -2112,6 +2181,14 @@ void triggerSetup_Audi135(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Audi135, RISING)
+                  .setGetRPM(getRPM_Audi135)
+                  .setGetCrankAngle(getCrankAngle_Audi135)
+                  .setSetEndTeeth(triggerSetEndTeeth_Audi135)
+                  .build();
 }
 
 void triggerPri_Audi135(void)
@@ -2218,13 +2295,21 @@ void triggerSetEndTeeth_Audi135(void)
 * @defgroup dec_honda_d17 Honda D17
 * @{
 */
-void triggerSetup_HondaD17(void)
+decoder_t triggerSetup_HondaD17(void)
 {
   triggerToothAngle = 360 / 12; //The number of degrees that passes from tooth to tooth
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_HondaD17, CHANGE)
+                  .setGetRPM(getRPM_HondaD17)
+                  .setGetCrankAngle(getCrankAngle_HondaD17)
+                  .setSetEndTeeth(triggerSetEndTeeth_HondaD17)
+                  .build();
 }
 
 void triggerPri_HondaD17(void)
@@ -2328,7 +2413,7 @@ void triggerSetEndTeeth_HondaD17(void)
 * @defgroup dec_honda_j_32 Honda J 32
 * @{
 */ 
-void triggerSetup_HondaJ32(void)
+decoder_t triggerSetup_HondaJ32(void)
 {
   triggerToothAngle = 360 / 24; //The number of degrees that passes from tooth to tooth
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/10U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -2344,6 +2429,14 @@ void triggerSetup_HondaJ32(void)
   toothOneMinusOneTime = 0;
   lastGap = 0;
   revolutionOne = 0;
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
+                  .setSecondaryTrigger(triggerSec_HondaJ32, RISING)
+                  .setGetRPM(getRPM_HondaJ32)
+                  .setGetCrankAngle(getCrankAngle_HondaJ32)
+                  .setSetEndTeeth(triggerSetEndTeeth_HondaJ32)
+                  .build();
 }
 
 void triggerPri_HondaJ32(void)
@@ -2464,7 +2557,7 @@ Tooth number one is at 355* ATDC.
 * @defgroup miata_99_05 Miata '99 to '05
 * @{
 */
-void triggerSetup_Miata9905(void)
+decoder_t triggerSetup_Miata9905(void)
 {
   triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary)
   toothCurrentCount = 99; //Fake tooth count represents no sync
@@ -2500,6 +2593,14 @@ void triggerSetup_Miata9905(void)
   BIT_SET(decoderState, BIT_DECODER_HAS_FIXED_CRANKING);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Miata9905, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_Miata9905)
+                  .setGetCrankAngle(getCrankAngle_Miata9905)
+                  .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
+                  .build();
 }
 
 void triggerPri_Miata9905(void)
@@ -2733,7 +2834,7 @@ Tooth number one is at 348* ATDC.
 * @defgroup mazda_au Mazda AU
 * @{
 */
-void triggerSetup_MazdaAU(void)
+decoder_t triggerSetup_MazdaAU(void)
 {
   triggerToothAngle = 108; //The number of degrees that passes from tooth to tooth (primary). This is the maximum gap
   toothCurrentCount = 99; //Fake tooth count represents no sync
@@ -2751,6 +2852,14 @@ void triggerSetup_MazdaAU(void)
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   BIT_SET(decoderState, BIT_DECODER_HAS_FIXED_CRANKING);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
+                  .setGetRPM(getRPM_MazdaAU)
+                  .setGetCrankAngle(getCrankAngle_MazdaAU)
+                  .setSetEndTeeth(triggerSetEndTeeth_MazdaAU)
+                  .build();
 }
 
 void triggerPri_MazdaAU(void)
@@ -2882,7 +2991,7 @@ There can be no missing teeth on the primary wheel.
 * @defgroup dec_non360 Non-360 Dual wheel
 * @{
 */
-void triggerSetup_non360(void)
+decoder_t triggerSetup_non360(void)
 {
   triggerToothAngle = (360U * configPage4.TrigAngMul) / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth multiplied by the additional multiplier
   toothCurrentCount = UINT8_MAX; //Default value
@@ -2892,6 +3001,14 @@ void triggerSetup_non360(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+                  .setSecondaryTrigger(triggerSec_DualWheel, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
+                  .setGetRPM(getRPM_non360)
+                  .setGetCrankAngle(getCrankAngle_non360)
+                  .setSetEndTeeth(triggerSetEndTeeth_non360)
+                  .build();
 }
 
 
@@ -2955,7 +3072,7 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 * @defgroup dec_nissan360 Nissan 360 tooth on cam
 * @{
 */
-void triggerSetup_Nissan360(void)
+decoder_t triggerSetup_Nissan360(void)
 {
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -2966,6 +3083,14 @@ void triggerSetup_Nissan360(void)
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Nissan360, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Nissan360, CHANGE)
+                  .setGetRPM(getRPM_Nissan360)
+                  .setGetCrankAngle(getCrankAngle_Nissan360)
+                  .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
+                  .build();
 }
 
 
@@ -3181,7 +3306,7 @@ This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (
 * @defgroup dec_subaru_6_7 Subaru 6/7
 * @{
 */
-void triggerSetup_Subaru67(void)
+decoder_t triggerSetup_Subaru67(void)
 {
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = 0;
@@ -3207,6 +3332,14 @@ void triggerSetup_Subaru67(void)
   toothAngles[9] = toothAngles[3] + 360;
   toothAngles[10] = toothAngles[1] + 540;
   toothAngles[11] = toothAngles[2] + 540;
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Subaru67, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Subaru67, FALLING)
+                  .setGetRPM(getRPM_Subaru67)
+                  .setGetCrankAngle(getCrankAngle_Subaru67)
+                  .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
+                  .build();
 }
 
 
@@ -3455,7 +3588,7 @@ void triggerSetEndTeeth_Subaru67(void)
 * @defgroup dec_daihatsu Daihatsu (3  and 4 cyl.)
 * @{
 */
-void triggerSetup_Daihatsu(void)
+decoder_t triggerSetup_Daihatsu(void)
 {
   triggerActualTeeth = configPage2.nCylinders + 1;
   triggerToothAngle = 720 / triggerActualTeeth; //The number of degrees that passes from tooth to tooth
@@ -3483,6 +3616,13 @@ void triggerSetup_Daihatsu(void)
     toothAngles[3] = 360; //tooth #4
     toothAngles[4] = 540; //tooth #5
   }
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Daihatsu, getConfigPriTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_Daihatsu)
+                  .setGetCrankAngle(getCrankAngle_Daihatsu)
+                  .setSetEndTeeth(triggerSetEndTeeth_Daihatsu)
+                  .build();
 }
 
 void triggerPri_Daihatsu(void)
@@ -3617,7 +3757,7 @@ Only rising Edge is used for simplicity.The second input is ignored, as it does 
 * @defgroup dec_harley Harley Davidson
 * @{
 */
-void triggerSetup_Harley(void)
+decoder_t triggerSetup_Harley(void)
 {
   triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
@@ -3626,6 +3766,14 @@ void triggerSetup_Harley(void)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   triggerFilterTime = 1500;
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Harley, RISING)
+  //                .setSecondaryTrigger(triggerSec_Harley)
+                  .setGetRPM(getRPM_Harley)
+                  .setGetCrankAngle(getCrankAngle_Harley)
+                  .setSetEndTeeth(triggerSetEndTeeth_Harley)
+                  .build();
 }
 
 void triggerPri_Harley(void)
@@ -3760,7 +3908,7 @@ void triggerSetEndTeeth_Harley(void)
 * @defgroup dec_36_2_2_2 36-2-2-2 Trigger wheel
 * @{
 */
-void triggerSetup_ThirtySixMinus222(void)
+decoder_t triggerSetup_ThirtySixMinus222(void)
 {
   triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = 30; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
@@ -3774,6 +3922,14 @@ void triggerSetup_ThirtySixMinus222(void)
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_ThirtySixMinus222, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_ThirtySixMinus222, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_ThirtySixMinus222)
+                  .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
+                  .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
+                  .build();
 }
 
 void triggerPri_ThirtySixMinus222(void)
@@ -3940,7 +4096,7 @@ void triggerSetEndTeeth_ThirtySixMinus222(void)
 * @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11
 * @{
 */
-void triggerSetup_ThirtySixMinus21(void)
+decoder_t triggerSetup_ThirtySixMinus21(void)
 {
   triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
@@ -3954,6 +4110,14 @@ void triggerSetup_ThirtySixMinus21(void)
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_ThirtySixMinus21, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_missingTooth, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_ThirtySixMinus21)
+                  .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
+                  .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
+                  .build();
 }
 
 void triggerPri_ThirtySixMinus21(void)
@@ -4071,7 +4235,7 @@ void triggerSetEndTeeth_ThirtySixMinus21(void)
 * @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
 * @{
 */
-void triggerSetup_420a(void)
+decoder_t triggerSetup_420a(void)
 {
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = 0;
@@ -4101,6 +4265,14 @@ void triggerSetup_420a(void)
   toothAngles[13] = toothAngles[1] + 540;
   toothAngles[14] = toothAngles[2] + 540;
   toothAngles[15] = toothAngles[3] + 540;
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_420a, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
+                  .setGetRPM(getRPM_420a)
+                  .setGetCrankAngle(getCrankAngle_420a)
+                  .setSetEndTeeth(triggerSetEndTeeth_420a)
+                  .build();
 }
 
 void triggerPri_420a(void)
@@ -4352,6 +4524,19 @@ void triggerSec_Webber(void)
     checkSyncToothCount = 1; //Reset tooth counter
   } //Trigger filter
 }
+
+decoder_t triggerSetup_Webber(void)
+{
+  triggerSetup_DualWheel();
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Webber, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_DualWheel)
+                  .setGetCrankAngle(getCrankAngle_DualWheel)
+                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .build();
+}
+
 /** @} */
 
 /** Ford ST170 - a dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
@@ -4359,7 +4544,7 @@ Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running
 * @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
 * @{
 */
-void triggerSetup_FordST170(void)
+decoder_t triggerSetup_FordST170(void)
 {
   //Set these as we are using the existing missing tooth primary decoder and these will never change.
   configPage4.triggerTeeth = 36;  
@@ -4385,6 +4570,14 @@ void triggerSetup_FordST170(void)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif  
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_FordST170, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_FordST170)
+                  .setGetCrankAngle(getCrankAngle_FordST170)
+                  .setSetEndTeeth(triggerSetEndTeeth_FordST170)
+                  .build();
 }
 
 void triggerSec_FordST170(void)
@@ -4506,7 +4699,7 @@ void triggerSetEndTeeth_FordST170(void)
 /** @} */
 
 
-void triggerSetup_DRZ400(void)
+decoder_t triggerSetup_DRZ400(void)
 {
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
   if(configPage4.TrigSpeed == 1) { triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
@@ -4518,6 +4711,14 @@ void triggerSetup_DRZ400(void)
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_DRZ400, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_DualWheel)
+                  .setGetCrankAngle(getCrankAngle_DualWheel)
+                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .build();
 }
 
 void triggerSec_DRZ400(void)
@@ -4557,7 +4758,7 @@ The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups 
 * @{
 */
 
-void triggerSetup_NGC(void)
+decoder_t triggerSetup_NGC(void)
 {
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
@@ -4612,6 +4813,15 @@ void triggerSetup_NGC(void)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif  
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_NGC, CHANGE)
+                  .setSecondaryTrigger( configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68,
+                                        configPage2.nCylinders == 4U ? CHANGE : FALLING)
+                  .setGetRPM(getRPM_NGC)
+                  .setGetCrankAngle(getCrankAngle_missingTooth)
+                  .setSetEndTeeth(triggerSetEndTeeth_NGC)
+                  .build();
 }
 
 void triggerPri_NGC(void) 
@@ -4895,7 +5105,7 @@ Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of 
 * @defgroup dec_vmax Yamaha Vmax
 * @{
 */
-void triggerSetup_Vmax(void)
+decoder_t triggerSetup_Vmax(void)
 {
   triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
@@ -4911,6 +5121,13 @@ void triggerSetup_Vmax(void)
   toothAngles[4] = 180;    //tooth #4
   toothAngles[5] = 220;    //tooth #5
   toothAngles[6] = 290;    //tooth #6
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
+                  .setGetRPM(getRPM_Vmax)
+                  .setGetCrankAngle(getCrankAngle_Vmax)
+                  .setSetEndTeeth(triggerSetEndTeeth_Vmax)
+                  .build();
 }
 
 //curGap = microseconds between primary triggers
@@ -5098,7 +5315,7 @@ void triggerSetEndTeeth_Vmax(void)
 * @defgroup dec_renix Renix decoder 
 * @{
 */
-void triggerSetup_Renix(void)
+decoder_t triggerSetup_Renix(void)
 {
   if( configPage2.nCylinders == 4)
   {
@@ -5126,6 +5343,13 @@ void triggerSetup_Renix(void)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif  
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_missingTooth)
+                  .setGetCrankAngle(getCrankAngle_missingTooth)
+                  .setSetEndTeeth(triggerSetEndTeeth_Renix)
+                  .build();
 }
 
 
@@ -5264,7 +5488,7 @@ void triggerSetEndTeeth_Renix(void)
  */
 volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
-void triggerSetup_RoverMEMS()
+decoder_t triggerSetup_RoverMEMS()
 {
   for(toothOneTime = 0; toothOneTime < 10; toothOneTime++)   // repurpose variable temporarily to help clear ToothAngles.
     { toothAngles[toothOneTime] = 0; }// Repurpose ToothAngles to store data needed for this implementation.
@@ -5286,6 +5510,13 @@ void triggerSetup_RoverMEMS()
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
 
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_RoverMEMS, getConfigSecTriggerEdge(configPage4)) 
+                  .setGetRPM(getRPM_RoverMEMS)
+                  .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
+                  .setGetCrankAngle(getCrankAngle_missingTooth)   
+                  .build();
 }
 
 void triggerPri_RoverMEMS()
@@ -5650,7 +5881,7 @@ void triggerSetEndTeeth_RoverMEMS()
 * @defgroup Suzuki_K6A Suzuki K6A 
 * @{
 */
-void triggerSetup_SuzukiK6A(void)
+decoder_t triggerSetup_SuzukiK6A(void)
 {
   triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) - set to a value, needs to be set per tooth
   toothCurrentCount = 99; //Fake tooth count represents no sync
@@ -5695,6 +5926,13 @@ void triggerSetup_SuzukiK6A(void)
   currentStatus.halfSync = false; // we can never have half sync - its either full or none.
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
+                  .setGetRPM(getRPM_SuzukiK6A)
+                  .setGetCrankAngle(getCrankAngle_SuzukiK6A)
+                  .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
+                  .build();
 }
 
 void triggerPri_SuzukiK6A(void)
@@ -5983,7 +6221,7 @@ Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have 
 /** Ford TFI Setup.
  * 
  * */
-void triggerSetup_FordTFI(void)
+decoder_t triggerSetup_FordTFI(void)
 {
   triggerActualTeeth = configPage2.nCylinders;
   if(triggerActualTeeth == 0) { triggerActualTeeth = 1; }
@@ -6002,6 +6240,14 @@ void triggerSetup_FordTFI(void)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif
+
+  return decoder_builder_t()
+                  .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSec_FordTFI, getConfigSecTriggerEdge(configPage4))
+                  .setGetRPM(getRPM_FordTFI)
+                  .setGetCrankAngle(getCrankAngle_FordTFI)
+                  .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
+                  .build();
 }
 
 
