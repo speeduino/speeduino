@@ -6235,15 +6235,63 @@ const triggerEdges_t& getDecoderTriggerEdges(void)
   return triggerEdges;
 }
 
-static constexpr decoder_t DEFAULT_TRIGGER_FUNCS = {
-  nullTriggerHandler,
-  nullTriggerHandler,
-  nullTriggerHandler,
-  nullGetRPM,
-  nullGetCrankAngle,
-  triggerSetEndTeeth_missingTooth
+/** @brief A builder for decoder_t - will make sure all required fields are set */
+struct decoder_builder_t {
+  decoder_t decoder;
+
+  decoder_builder_t(void)
+  {
+    setPrimaryTrigger(&nullTriggerHandler);
+    setSecondaryTrigger(&nullTriggerHandler);
+    setTertiaryTrigger(&nullTriggerHandler);
+    setGetRPM(&nullGetRPM);
+    setGetCrankAngle(&nullGetCrankAngle);
+    setSetEndTeeth(&nullTriggerHandler);
+  }
+
+  decoder_builder_t& setPrimaryTrigger(void (*handler)(void))
+  {
+    decoder.primary = handler;
+    return *this;
+  }
+
+  decoder_builder_t& setSecondaryTrigger(void (*handler)(void))
+  {
+    decoder.secondary = handler;
+    return *this;
+  }
+
+  decoder_builder_t& setTertiaryTrigger(void (*handler)(void))
+  {
+    decoder.tertiary = handler;
+    return *this;
+  }
+
+  decoder_builder_t& setGetRPM(uint16_t (*getRPM)(void))
+  {
+    decoder.getRPM = getRPM;
+    return *this;
+  }
+
+  decoder_builder_t& setGetCrankAngle(int (*getCrankAngle)(void))
+  {
+    decoder.getCrankAngle = getCrankAngle;
+    return *this;
+  }
+
+  decoder_builder_t& setSetEndTeeth(void (*setEndTeeth)(void))
+  {
+    decoder.setEndTeeth = setEndTeeth;
+    return *this;
+  }
+
+  decoder_t build()
+  {
+    return decoder;
+  }
 };
-static decoder_t triggerFuncs = DEFAULT_TRIGGER_FUNCS;
+
+decoder_t triggerFuncs = decoder_builder_t().build();
 const decoder_t& getDecoder(void)
 {
   return triggerFuncs;
@@ -6287,7 +6335,7 @@ void initialiseDecoder(uint8_t decoderType)
 {
   //The default values for edges
   triggerEdges = DEFAULT_TRIGGER_EDGES;
-  triggerFuncs = DEFAULT_TRIGGER_FUNCS;
+  triggerFuncs = decoder_builder_t().build();
 
   //Set the trigger function based on the decoder in the config
   switch (decoderType)
@@ -6295,13 +6343,14 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_MISSING_TOOTH:
       //Missing tooth decoder
       triggerSetup_missingTooth();
-      triggerFuncs.primary = triggerPri_missingTooth;
-      triggerFuncs.secondary = triggerSec_missingTooth;
-      triggerFuncs.tertiary = triggerThird_missingTooth;
-      
-      triggerFuncs.getRPM = getRPM_missingTooth;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_missingTooth;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_missingTooth)
+                      .setSecondaryTrigger(triggerSec_missingTooth)
+                      .setTertiaryTrigger(triggerThird_missingTooth)
+                      .setGetRPM(getRPM_missingTooth)
+                      .setGetCrankAngle(getCrankAngle_missingTooth)
+                      .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getDecoderFeatures().hasSecondary ? getSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE;
@@ -6311,21 +6360,25 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_BASIC_DISTRIBUTOR:
       // Basic distributor
       triggerSetup_BasicDistributor();
-      triggerFuncs.primary = triggerPri_BasicDistributor;
-      triggerFuncs.getRPM = getRPM_BasicDistributor;
-      triggerFuncs.getCrankAngle = getCrankAngle_BasicDistributor;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_BasicDistributor;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_BasicDistributor)
+                      .setGetRPM(getRPM_BasicDistributor)
+                      .setGetCrankAngle(getCrankAngle_BasicDistributor)
+                      .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       break;
 
     case 2:
       triggerSetup_DualWheel();
-      triggerFuncs.primary = triggerPri_DualWheel;
-      triggerFuncs.secondary = triggerSec_DualWheel;
-      triggerFuncs.getRPM = getRPM_DualWheel;
-      triggerFuncs.getCrankAngle = getCrankAngle_DualWheel;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_DualWheel;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_DualWheel)
+                      .setSecondaryTrigger(triggerSec_DualWheel)
+                      .setGetRPM(getRPM_DualWheel)
+                      .setGetCrankAngle(getCrankAngle_DualWheel)
+                      .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6333,21 +6386,25 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_GM7X:
       triggerSetup_GM7X();
-      triggerFuncs.primary = triggerPri_GM7X;
-      triggerFuncs.getRPM = getRPM_GM7X;
-      triggerFuncs.getCrankAngle = getCrankAngle_GM7X;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_GM7X;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_GM7X)
+                      .setGetRPM(getRPM_GM7X)
+                      .setGetCrankAngle(getCrankAngle_GM7X)
+                      .setSetEndTeeth(triggerSetEndTeeth_GM7X)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       break;
 
     case DECODER_4G63:
       triggerSetup_4G63();
-      triggerFuncs.primary = triggerPri_4G63;
-      triggerFuncs.secondary = triggerSec_4G63;
-      triggerFuncs.getRPM = getRPM_4G63;
-      triggerFuncs.getCrankAngle = getCrankAngle_4G63;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_4G63;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_4G63)
+                      .setSecondaryTrigger(triggerSec_4G63)
+                      .setGetRPM(getRPM_4G63)
+                      .setGetCrankAngle(getCrankAngle_4G63)
+                      .setSetEndTeeth(triggerSetEndTeeth_4G63)
+                      .build();
 
       triggerEdges.primary = CHANGE;
       triggerEdges.secondary = FALLING;
@@ -6355,11 +6412,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_24X:
       triggerSetup_24X();
-      triggerFuncs.primary = triggerPri_24X;
-      triggerFuncs.secondary = triggerSec_24X;
-      triggerFuncs.getRPM = getRPM_24X;
-      triggerFuncs.getCrankAngle = getCrankAngle_24X;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_24X;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_24X)
+                      .setSecondaryTrigger(triggerSec_24X)
+                      .setGetRPM(getRPM_24X)
+                      .setGetCrankAngle(getCrankAngle_24X)
+                      .setSetEndTeeth(triggerSetEndTeeth_24X)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = CHANGE; //Secondary is always on every change
@@ -6367,11 +6426,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_JEEP2000:
       triggerSetup_Jeep2000();
-      triggerFuncs.primary = triggerPri_Jeep2000;
-      triggerFuncs.secondary = triggerSec_Jeep2000;
-      triggerFuncs.getRPM = getRPM_Jeep2000;
-      triggerFuncs.getCrankAngle = getCrankAngle_Jeep2000;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Jeep2000;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Jeep2000)
+                      .setSecondaryTrigger(triggerSec_Jeep2000)
+                      .setGetRPM(getRPM_Jeep2000)
+                      .setGetCrankAngle(getCrankAngle_Jeep2000)
+                      .setSetEndTeeth(triggerSetEndTeeth_Jeep2000)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = CHANGE;
@@ -6379,11 +6440,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_AUDI135:
       triggerSetup_Audi135();
-      triggerFuncs.primary = triggerPri_Audi135;
-      triggerFuncs.secondary = triggerSec_Audi135;
-      triggerFuncs.getRPM = getRPM_Audi135;
-      triggerFuncs.getCrankAngle = getCrankAngle_Audi135;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Audi135;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Audi135)
+                      .setSecondaryTrigger(triggerSec_Audi135)
+                      .setGetRPM(getRPM_Audi135)
+                      .setGetCrankAngle(getCrankAngle_Audi135)
+                      .setSetEndTeeth(triggerSetEndTeeth_Audi135)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = RISING; //always rising for this trigger
@@ -6391,11 +6454,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_HONDA_D17:
       triggerSetup_HondaD17();
-      triggerFuncs.primary = triggerPri_HondaD17;
-      triggerFuncs.secondary = triggerSec_HondaD17;
-      triggerFuncs.getRPM = getRPM_HondaD17;
-      triggerFuncs.getCrankAngle = getCrankAngle_HondaD17;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_HondaD17;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_HondaD17)
+                      .setSecondaryTrigger(triggerSec_HondaD17)
+                      .setGetRPM(getRPM_HondaD17)
+                      .setGetCrankAngle(getCrankAngle_HondaD17)
+                      .setSetEndTeeth(triggerSetEndTeeth_HondaD17)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = CHANGE;
@@ -6403,11 +6468,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_HONDA_J32:
       triggerSetup_HondaJ32();
-      triggerFuncs.primary = triggerPri_HondaJ32;
-      triggerFuncs.secondary = triggerSec_HondaJ32;
-      triggerFuncs.getRPM = getRPM_HondaJ32;
-      triggerFuncs.getCrankAngle = getCrankAngle_HondaJ32;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_HondaJ32;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_HondaJ32)
+                      .setSecondaryTrigger(triggerSec_HondaJ32)
+                      .setGetRPM(getRPM_HondaJ32)
+                      .setGetCrankAngle(getCrankAngle_HondaJ32)
+                      .setSetEndTeeth(triggerSetEndTeeth_HondaJ32)
+                      .build();
 
       triggerEdges.primary = RISING; // Don't honor the config, always use rising edge 
       triggerEdges.secondary = RISING; // Unused
@@ -6415,11 +6482,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_MIATA_9905:
       triggerSetup_Miata9905();
-      triggerFuncs.primary = triggerPri_Miata9905;
-      triggerFuncs.secondary = triggerSec_Miata9905;
-      triggerFuncs.getRPM = getRPM_Miata9905;
-      triggerFuncs.getCrankAngle = getCrankAngle_Miata9905;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Miata9905;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Miata9905)
+                      .setSecondaryTrigger(triggerSec_Miata9905)
+                      .setGetRPM(getRPM_Miata9905)
+                      .setGetCrankAngle(getCrankAngle_Miata9905)
+                      .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
+                      .build();
 
       //These may both need to change, not sure
       triggerEdges.primary = getPriTriggerEdge(configPage4);
@@ -6428,11 +6497,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_MAZDA_AU:
       triggerSetup_MazdaAU();
-      triggerFuncs.primary = triggerPri_MazdaAU;
-      triggerFuncs.secondary = triggerSec_MazdaAU;
-      triggerFuncs.getRPM = getRPM_MazdaAU;
-      triggerFuncs.getCrankAngle = getCrankAngle_MazdaAU;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_MazdaAU;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_MazdaAU)
+                      .setSecondaryTrigger(triggerSec_MazdaAU)
+                      .setGetRPM(getRPM_MazdaAU)
+                      .setGetCrankAngle(getCrankAngle_MazdaAU)
+                      .setSetEndTeeth(triggerSetEndTeeth_MazdaAU)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = FALLING;
@@ -6440,11 +6511,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_NON360:
       triggerSetup_non360();
-      triggerFuncs.primary = triggerPri_DualWheel; //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
-      triggerFuncs.secondary = triggerSec_DualWheel; //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-      triggerFuncs.getRPM = getRPM_non360;
-      triggerFuncs.getCrankAngle = getCrankAngle_non360;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_non360;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_DualWheel) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+                      .setSecondaryTrigger(triggerSec_DualWheel) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
+                      .setGetRPM(getRPM_non360)
+                      .setGetCrankAngle(getCrankAngle_non360)
+                      .setSetEndTeeth(triggerSetEndTeeth_non360)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = FALLING;
@@ -6452,11 +6525,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_NISSAN_360:
       triggerSetup_Nissan360();
-      triggerFuncs.primary = triggerPri_Nissan360;
-      triggerFuncs.secondary = triggerSec_Nissan360;
-      triggerFuncs.getRPM = getRPM_Nissan360;
-      triggerFuncs.getCrankAngle = getCrankAngle_Nissan360;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Nissan360;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Nissan360)
+                      .setSecondaryTrigger(triggerSec_Nissan360)
+                      .setGetRPM(getRPM_Nissan360)
+                      .setGetCrankAngle(getCrankAngle_Nissan360)
+                      .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = CHANGE;
@@ -6464,11 +6539,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_SUBARU_67:
       triggerSetup_Subaru67();
-      triggerFuncs.primary = triggerPri_Subaru67;
-      triggerFuncs.secondary = triggerSec_Subaru67;
-      triggerFuncs.getRPM = getRPM_Subaru67;
-      triggerFuncs.getCrankAngle = getCrankAngle_Subaru67;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Subaru67;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Subaru67)
+                      .setSecondaryTrigger(triggerSec_Subaru67)
+                      .setGetRPM(getRPM_Subaru67)
+                      .setGetCrankAngle(getCrankAngle_Subaru67)
+                      .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = FALLING;
@@ -6476,10 +6553,12 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_DAIHATSU_PLUS1:
       triggerSetup_Daihatsu();
-      triggerFuncs.primary = triggerPri_Daihatsu;
-      triggerFuncs.getRPM = getRPM_Daihatsu;
-      triggerFuncs.getCrankAngle = getCrankAngle_Daihatsu;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Daihatsu;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Daihatsu)
+                      .setGetRPM(getRPM_Daihatsu)
+                      .setGetCrankAngle(getCrankAngle_Daihatsu)
+                      .setSetEndTeeth(triggerSetEndTeeth_Daihatsu)
+                      .build();
 
       //No secondary input required for this pattern
       triggerEdges.primary = getPriTriggerEdge(configPage4);
@@ -6487,11 +6566,13 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_HARLEY:
       triggerSetup_Harley();
-      triggerFuncs.primary = triggerPri_Harley;
-      //triggerFuncs.secondary = triggerSec_Harley;
-      triggerFuncs.getRPM = getRPM_Harley;
-      triggerFuncs.getCrankAngle = getCrankAngle_Harley;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Harley;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Harley)
+      //                .setSecondaryTrigger(triggerSec_Harley)
+                      .setGetRPM(getRPM_Harley)
+                      .setGetCrankAngle(getCrankAngle_Harley)
+                      .setSetEndTeeth(triggerSetEndTeeth_Harley)
+                      .build();
 
       triggerEdges.primary = RISING; //Always rising
       break;
@@ -6499,11 +6580,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_36_2_2_2:
       //36-2-2-2
       triggerSetup_ThirtySixMinus222();
-      triggerFuncs.primary = triggerPri_ThirtySixMinus222;
-      triggerFuncs.secondary = triggerSec_ThirtySixMinus222;
-      triggerFuncs.getRPM = getRPM_ThirtySixMinus222;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_ThirtySixMinus222;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_ThirtySixMinus222)
+                      .setSecondaryTrigger(triggerSec_ThirtySixMinus222)
+                      .setGetRPM(getRPM_ThirtySixMinus222)
+                      .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
+                      .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6512,11 +6595,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_36_2_1:
       //36-2-1
       triggerSetup_ThirtySixMinus21();
-      triggerFuncs.primary = triggerPri_ThirtySixMinus21;
-      triggerFuncs.secondary = triggerSec_missingTooth;
-      triggerFuncs.getRPM = getRPM_ThirtySixMinus21;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth; //This uses the same function as the missing tooth decoder, so no need to duplicate code
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_ThirtySixMinus21;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_ThirtySixMinus21)
+                      .setSecondaryTrigger(triggerSec_missingTooth)
+                      .setGetRPM(getRPM_ThirtySixMinus21)
+                      .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
+                      .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6525,11 +6610,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_420A:
       //DSM 420a
       triggerSetup_420a();
-      triggerFuncs.primary = triggerPri_420a;
-      triggerFuncs.secondary = triggerSec_420a;
-      triggerFuncs.getRPM = getRPM_420a;
-      triggerFuncs.getCrankAngle = getCrankAngle_420a;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_420a;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_420a)
+                      .setSecondaryTrigger(triggerSec_420a)
+                      .setGetRPM(getRPM_420a)
+                      .setGetCrankAngle(getCrankAngle_420a)
+                      .setSetEndTeeth(triggerSetEndTeeth_420a)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = FALLING; //Always falling edge
@@ -6538,11 +6625,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_WEBER:
       //Weber-Marelli
       triggerSetup_DualWheel();
-      triggerFuncs.primary = triggerPri_Webber;
-      triggerFuncs.secondary = triggerSec_Webber;
-      triggerFuncs.getRPM = getRPM_DualWheel;
-      triggerFuncs.getCrankAngle = getCrankAngle_DualWheel;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_DualWheel;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Webber)
+                      .setSecondaryTrigger(triggerSec_Webber)
+                      .setGetRPM(getRPM_DualWheel)
+                      .setGetCrankAngle(getCrankAngle_DualWheel)
+                      .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6551,11 +6640,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_ST170:
       //Ford ST170
       triggerSetup_FordST170();
-      triggerFuncs.primary = triggerPri_missingTooth;
-      triggerFuncs.secondary = triggerSec_FordST170;
-      triggerFuncs.getRPM = getRPM_FordST170;
-      triggerFuncs.getCrankAngle = getCrankAngle_FordST170;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_FordST170;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_missingTooth)
+                      .setSecondaryTrigger(triggerSec_FordST170)
+                      .setGetRPM(getRPM_FordST170)
+                      .setGetCrankAngle(getCrankAngle_FordST170)
+                      .setSetEndTeeth(triggerSetEndTeeth_FordST170)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6563,11 +6654,13 @@ void initialiseDecoder(uint8_t decoderType)
 	  
     case DECODER_DRZ400:
       triggerSetup_DRZ400();
-      triggerFuncs.primary = triggerPri_DualWheel;
-      triggerFuncs.secondary = triggerSec_DRZ400;
-      triggerFuncs.getRPM = getRPM_DualWheel;
-      triggerFuncs.getCrankAngle = getCrankAngle_DualWheel;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_DualWheel;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_DualWheel)
+                      .setSecondaryTrigger(triggerSec_DRZ400)
+                      .setGetRPM(getRPM_DualWheel)
+                      .setGetCrankAngle(getCrankAngle_DualWheel)
+                      .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6576,28 +6669,31 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_NGC:
       //Chrysler NGC - 4, 6 and 8 cylinder
       triggerSetup_NGC();
-      triggerFuncs.primary = triggerPri_NGC;
-      triggerFuncs.getRPM = getRPM_NGC;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_NGC;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_NGC)
+                      .setSecondaryTrigger(configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68)
+                      .setGetRPM(getRPM_NGC)
+                      .setGetCrankAngle(getCrankAngle_missingTooth)
+                      .setSetEndTeeth(triggerSetEndTeeth_NGC)
+                      .build();
 
       triggerEdges.primary = CHANGE;
       if (configPage2.nCylinders == 4) {
-        triggerFuncs.secondary = triggerSec_NGC4;
         triggerEdges.secondary = CHANGE;
       }
       else {
-        triggerFuncs.secondary = triggerSec_NGC68;
         triggerEdges.secondary = FALLING;
       }
       break;
 
     case DECODER_VMAX:
       triggerSetup_Vmax();
-      triggerFuncs.primary = triggerPri_Vmax;
-      triggerFuncs.getRPM = getRPM_Vmax;
-      triggerFuncs.getCrankAngle = getCrankAngle_Vmax;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Vmax;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Vmax)
+                      .setGetRPM(getRPM_Vmax)
+                      .setGetCrankAngle(getCrankAngle_Vmax)
+                      .setSetEndTeeth(triggerSetEndTeeth_Vmax)
+                      .build();
 
       triggerEdges.primary = CHANGE; //Always change for this decoder
       break;
@@ -6605,10 +6701,12 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_RENIX:
       //Renault 44 tooth decoder
       triggerSetup_Renix();
-      triggerFuncs.primary = triggerPri_Renix;
-      triggerFuncs.getRPM = getRPM_missingTooth;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_Renix;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_Renix)
+                      .setGetRPM(getRPM_missingTooth)
+                      .setGetCrankAngle(getCrankAngle_missingTooth)
+                      .setSetEndTeeth(triggerSetEndTeeth_Renix)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6617,12 +6715,13 @@ void initialiseDecoder(uint8_t decoderType)
     case DECODER_ROVERMEMS:
       //Rover MEMs - covers multiple flywheel trigger combinations.
       triggerSetup_RoverMEMS();
-      triggerFuncs.primary = triggerPri_RoverMEMS;
-      triggerFuncs.getRPM = getRPM_RoverMEMS;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_RoverMEMS;
-            
-      triggerFuncs.secondary = triggerSec_RoverMEMS; 
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth;   
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_RoverMEMS)
+                      .setGetRPM(getRPM_RoverMEMS)
+                      .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
+                      .setSecondaryTrigger(triggerSec_RoverMEMS) 
+                      .setGetCrankAngle(getCrankAngle_missingTooth)   
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6630,10 +6729,12 @@ void initialiseDecoder(uint8_t decoderType)
 
     case DECODER_SUZUKI_K6A:
       triggerSetup_SuzukiK6A();
-      triggerFuncs.primary = triggerPri_SuzukiK6A; // only primary, no secondary, trigger pattern is over 720 degrees
-      triggerFuncs.getRPM = getRPM_SuzukiK6A;
-      triggerFuncs.getCrankAngle = getCrankAngle_SuzukiK6A;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_SuzukiK6A;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_SuzukiK6A) // only primary, no secondary, trigger pattern is over 720 degrees
+                      .setGetRPM(getRPM_SuzukiK6A)
+                      .setGetCrankAngle(getCrankAngle_SuzukiK6A)
+                      .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       break;
@@ -6641,11 +6742,13 @@ void initialiseDecoder(uint8_t decoderType)
       case DECODER_FORD_TFI:
       // Ford TFI
       triggerSetup_FordTFI();
-      triggerFuncs.primary = triggerPri_FordTFI;
-      triggerFuncs.secondary = triggerSec_FordTFI;
-      triggerFuncs.getRPM = getRPM_FordTFI;
-      triggerFuncs.getCrankAngle = getCrankAngle_FordTFI;
-      triggerFuncs.setEndTeeth = triggerSetEndTeeth_FordTFI;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_FordTFI)
+                      .setSecondaryTrigger(triggerSec_FordTFI)
+                      .setGetRPM(getRPM_FordTFI)
+                      .setGetCrankAngle(getCrankAngle_FordTFI)
+                      .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
+                      .build();
 
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       triggerEdges.secondary = getSecTriggerEdge(configPage4);
@@ -6653,9 +6756,11 @@ void initialiseDecoder(uint8_t decoderType)
 
 
     default:
-      triggerFuncs.primary = triggerPri_missingTooth;
-      triggerFuncs.getRPM = getRPM_missingTooth;
-      triggerFuncs.getCrankAngle = getCrankAngle_missingTooth;
+      triggerFuncs = decoder_builder_t()
+                      .setPrimaryTrigger(triggerPri_missingTooth)
+                      .setGetRPM(getRPM_missingTooth)
+                      .setGetCrankAngle(getCrankAngle_missingTooth)
+                      .build();
       triggerEdges.primary = getPriTriggerEdge(configPage4);
       break;
   }
