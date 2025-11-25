@@ -1,104 +1,13 @@
 #include <Arduino.h>
 #include "decoder_init.h"
 #include "decoders.h"
+#include "decoder_builder.h"
 #include "globals.h"
-
-// Just in case
-static_assert(TRIGGER_EDGE_NONE != LOW, "LOW edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != HIGH, "HIGH edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != RISING, "RISING edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != FALLING, "FALLING edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
-
-static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
-static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
-static int nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
-
-/** @brief A builder for decoder_t - will make sure all required fields are set */
-struct decoder_builder_t {
-  decoder_t decoder;
-
-  decoder_builder_t(void)
-  {
-    setPrimaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    setSecondaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    setTertiaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    setGetRPM(&nullGetRPM);
-    setGetCrankAngle(&nullGetCrankAngle);
-    setSetEndTeeth(&nullTriggerHandler);
-  }
-
-  decoder_builder_t& setPrimaryTrigger(const interrupt_t& trigger)
-  {
-    decoder.primary = trigger;
-    return *this;
-  }
-  decoder_builder_t& setPrimaryTrigger(void (*handler)(void), uint8_t edge)
-  {
-    return setPrimaryTrigger( interrupt_t{ handler, edge } );
-  }
-
-  decoder_builder_t& setSecondaryTrigger(const interrupt_t& trigger)
-  {
-    decoder.secondary = trigger;
-    return *this;
-  }
-  decoder_builder_t& setSecondaryTrigger(void (*handler)(void), uint8_t edge)
-  {
-    return setSecondaryTrigger( interrupt_t{ handler, edge } );
-  }
-
-  decoder_builder_t& setTertiaryTrigger(const interrupt_t& trigger)
-  {
-    decoder.tertiary = trigger;
-    return *this;
-  }
-  decoder_builder_t& setTertiaryTrigger(void (*handler)(void), uint8_t edge)
-  {
-    return setTertiaryTrigger( interrupt_t{ handler, edge } );
-  }
-
-  decoder_builder_t& setGetRPM(uint16_t (*getRPM)(void))
-  {
-    decoder.getRPM = getRPM;
-    return *this;
-  }
-
-  decoder_builder_t& setGetCrankAngle(int (*getCrankAngle)(void))
-  {
-    decoder.getCrankAngle = getCrankAngle;
-    return *this;
-  }
-
-  decoder_builder_t& setSetEndTeeth(void (*setEndTeeth)(void))
-  {
-    decoder.setEndTeeth = setEndTeeth;
-    return *this;
-  }
-
-  decoder_t build()
-  {
-    return decoder;
-  }
-};
 
 decoder_t triggerFuncs = decoder_builder_t().build();
 const decoder_t& getDecoder(void)
 {
   return triggerFuncs;
-}
-
-void __attribute__((optimize("Os"))) interrupt_t::attach(uint8_t pin) const
-{
-  detach(pin);
-  if (edge != TRIGGER_EDGE_NONE && callback != nullptr)
-  {
-    attachInterrupt(digitalPinToInterrupt(pin), callback, edge);
-  }
-}
-void __attribute__((optimize("Os"))) interrupt_t::detach(uint8_t pin) const
-{
-  detachInterrupt( digitalPinToInterrupt(pin) );
 }
 
 static uint8_t getPriTriggerEdge(const config4 &page4)
