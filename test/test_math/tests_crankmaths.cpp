@@ -28,6 +28,7 @@ struct crankmaths_tooth_testdata {
 } *crankmaths_tooth_testdata_current;
 
 extern uint32_t angleToTimeIntervalTooth(uint16_t angle);
+extern volatile unsigned long toothLastMinusOneToothTime;
 
 void test_crankmaths_angletotime_tooth_execute() {
   crankmaths_tooth_testdata *testdata = crankmaths_tooth_testdata_current;

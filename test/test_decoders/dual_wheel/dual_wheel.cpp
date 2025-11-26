@@ -16,18 +16,10 @@ static decoder_t test_setup_dualwheel_12_1()
     return triggerSetup_DualWheel();
 }
 
-static decoder_t test_setup_dualwheel_60_2()
-{
-    //Setup a 60-2 wheel
-    configPage4.triggerTeeth = 60;
-    configPage4.triggerMissingTeeth = 2;
-    configPage4.TrigSpeed = CRANK_SPEED;
-    configPage4.trigPatternSec = SEC_TRIGGER_SINGLE;
-
-    return triggerSetup_DualWheel();
-}
-
 //************************************** Begin the new ignition setEndTooth tests **************************************
+extern uint16_t ignition1EndTooth;
+extern uint16_t ignition2EndTooth;
+
 void test_dualwheel_newIgn_12_1_trig0_1()
 {
     //Test the set end tooth function. Conditions:

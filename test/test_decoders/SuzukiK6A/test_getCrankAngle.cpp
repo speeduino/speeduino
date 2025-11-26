@@ -4,6 +4,9 @@
 #include "init.h"
 #include "globals.h"
 
+extern volatile uint16_t triggerToothAngle;
+extern volatile uint16_t toothCurrentCount;
+
 static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCrankAngle, uint16_t expectedToothAngle) {
     decoder_t decoder = triggerSetup_SuzukiK6A();
     configPage4.triggerAngle = 0U;

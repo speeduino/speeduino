@@ -346,6 +346,10 @@ static inline bool isExternalVssMode(const config2 &page2) {
   return page2.vssMode==VSS_MODE_EXTERNAL_KM
       || page2.vssMode==VSS_MODE_EXTERNAL_MI;
 }
+
+constexpr uint8_t CRANK_SPEED = 0U;
+constexpr uint8_t CAM_SPEED   = 1U;
+
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */

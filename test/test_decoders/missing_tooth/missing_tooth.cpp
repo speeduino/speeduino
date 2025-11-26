@@ -27,6 +27,10 @@ static decoder_t test_setup_60_2()
 }
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
+
+extern uint16_t ignition1EndTooth;
+extern uint16_t ignition2EndTooth;
+
 void test_missingtooth_newIgn_36_1_trig0_1()
 {
     //Test the set end tooth function. Conditions:
