@@ -39,12 +39,15 @@ static void fireInterrupt(uint8_t pin, uint8_t edge)
   delay(0);
 }
 
+extern volatile unsigned long triggerFilterTime;
 static void configureDecoderForStartStop(uint8_t decoder)
 {
     extern volatile byte toothSystemCount;
     extern volatile unsigned long toothLastToothRisingTime;
     extern volatile unsigned long toothLastSecToothRisingTime;
     extern volatile unsigned long toothLastToothTime;
+    extern volatile unsigned long toothSystemLastToothTime;
+    extern volatile uint16_t toothCurrentCount;
 
     if (decoder==DECODER_24X) {
         toothCurrentCount = 0U;
@@ -59,7 +62,6 @@ static void configureDecoderForStartStop(uint8_t decoder)
         toothLastSecToothRisingTime = toothLastToothRisingTime - triggerFilterTime;
     } else if (decoder==DECODER_ROVERMEMS) {
         toothLastToothTime = micros() - triggerFilterTime;
-
     }
 }
 
