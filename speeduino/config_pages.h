@@ -341,6 +341,9 @@ constexpr uint8_t IDLEADVANCE_MODE_SWITCHED = 2U;
 constexpr uint8_t IDLEADVANCE_ALGO_TPS      = 0U;
 constexpr uint8_t IDLEADVANCE_ALGO_CTPS     = 1U;
 
+#define CRANK_SPEED 0U
+#define CAM_SPEED   1U
+
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */
