@@ -1,7 +1,6 @@
 #include <decoders.h>
 #include <globals.h>
 #include <unity.h>
-#include "test_ngc.h"
 #include "scheduler.h"
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
