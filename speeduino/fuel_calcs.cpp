@@ -6,7 +6,10 @@ uint16_t inj_opentime_uS = 0;
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
 
-uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
+// Force this to be inlined via LTO: it's worth 40 loop/sec on AVR
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -73,6 +76,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
   }
   return (unsigned int)(intermediate);
 }
+#pragma GCC diagnostic pop
 
 uint16_t calculatePWLimit()
 {
@@ -104,7 +108,10 @@ uint16_t calculatePWLimit()
   return tempLimit;
 }
 
-void calculateStaging(uint32_t pwLimit)
+// Force this to be inlined via LTO: it's worth 40 loop/sec on AVR
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
+void  __attribute__((always_inline)) calculateStaging(uint32_t pwLimit)
 {
   //Calculate staging pulsewidths if used
   //To run staged injection, the number of cylinders must be less than or equal to the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
@@ -299,3 +306,4 @@ void calculateStaging(uint32_t pwLimit)
   } 
 
 }
+#pragma GCC diagnostic pop
