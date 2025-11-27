@@ -19,6 +19,7 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   current.hasSync = true;
+  current.halfSync = false;
 }
 
 static void test_canUseCycleAverge(void) {
@@ -213,6 +214,7 @@ static void enable_event_average(statuses &current, config2 &page2) {
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   current.hasSync = true;
+  current.halfSync = false;
   resetEngineProtect(current);
 }
 
