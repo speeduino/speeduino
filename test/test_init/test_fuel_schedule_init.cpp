@@ -15,7 +15,7 @@ static constexpr uint16_t reqFuel = 86; // ms * 10
 
 static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
 {
-  char msg[39];
+  char msg[64];
 
   sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, maxInjOutputs);
   TEST_ASSERT_TRUE_MESSAGE(!enabled || (cmdBit+1)<=maxInjOutputs, msg);
