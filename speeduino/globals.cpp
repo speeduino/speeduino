@@ -27,54 +27,54 @@ struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 
 
 /// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
-PORT_TYPE inj1_pin_port;
-PINMASK_TYPE inj1_pin_mask;
-PORT_TYPE inj2_pin_port;
-PINMASK_TYPE inj2_pin_mask;
-PORT_TYPE inj3_pin_port;
-PINMASK_TYPE inj3_pin_mask;
-PORT_TYPE inj4_pin_port;
-PINMASK_TYPE inj4_pin_mask;
-PORT_TYPE inj5_pin_port;
-PINMASK_TYPE inj5_pin_mask;
-PORT_TYPE inj6_pin_port;
-PINMASK_TYPE inj6_pin_mask;
-PORT_TYPE inj7_pin_port;
-PINMASK_TYPE inj7_pin_mask;
-PORT_TYPE inj8_pin_port;
-PINMASK_TYPE inj8_pin_mask;
+port_register_t inj1_pin_port;
+pin_mask_t inj1_pin_mask;
+port_register_t inj2_pin_port;
+pin_mask_t inj2_pin_mask;
+port_register_t inj3_pin_port;
+pin_mask_t inj3_pin_mask;
+port_register_t inj4_pin_port;
+pin_mask_t inj4_pin_mask;
+port_register_t inj5_pin_port;
+pin_mask_t inj5_pin_mask;
+port_register_t inj6_pin_port;
+pin_mask_t inj6_pin_mask;
+port_register_t inj7_pin_port;
+pin_mask_t inj7_pin_mask;
+port_register_t inj8_pin_port;
+pin_mask_t inj8_pin_mask;
 
-PORT_TYPE ign1_pin_port;
-PINMASK_TYPE ign1_pin_mask;
-PORT_TYPE ign2_pin_port;
-PINMASK_TYPE ign2_pin_mask;
-PORT_TYPE ign3_pin_port;
-PINMASK_TYPE ign3_pin_mask;
-PORT_TYPE ign4_pin_port;
-PINMASK_TYPE ign4_pin_mask;
-PORT_TYPE ign5_pin_port;
-PINMASK_TYPE ign5_pin_mask;
-PORT_TYPE ign6_pin_port;
-PINMASK_TYPE ign6_pin_mask;
-PORT_TYPE ign7_pin_port;
-PINMASK_TYPE ign7_pin_mask;
-PORT_TYPE ign8_pin_port;
-PINMASK_TYPE ign8_pin_mask;
+port_register_t ign1_pin_port;
+pin_mask_t ign1_pin_mask;
+port_register_t ign2_pin_port;
+pin_mask_t ign2_pin_mask;
+port_register_t ign3_pin_port;
+pin_mask_t ign3_pin_mask;
+port_register_t ign4_pin_port;
+pin_mask_t ign4_pin_mask;
+port_register_t ign5_pin_port;
+pin_mask_t ign5_pin_mask;
+port_register_t ign6_pin_port;
+pin_mask_t ign6_pin_mask;
+port_register_t ign7_pin_port;
+pin_mask_t ign7_pin_mask;
+port_register_t ign8_pin_port;
+pin_mask_t ign8_pin_mask;
 
-PORT_TYPE tach_pin_port;
-PINMASK_TYPE tach_pin_mask;
-PORT_TYPE pump_pin_port;
-PINMASK_TYPE pump_pin_mask;
+port_register_t tach_pin_port;
+pin_mask_t tach_pin_mask;
+port_register_t pump_pin_port;
+pin_mask_t pump_pin_mask;
 
-PORT_TYPE flex_pin_port;
-PINMASK_TYPE flex_pin_mask;
+port_register_t flex_pin_port;
+pin_mask_t flex_pin_mask;
 
-PORT_TYPE triggerPri_pin_port;
-PINMASK_TYPE triggerPri_pin_mask;
-PORT_TYPE triggerSec_pin_port;
-PINMASK_TYPE triggerSec_pin_mask;
-PORT_TYPE triggerThird_pin_port;
-PINMASK_TYPE triggerThird_pin_mask;
+port_register_t triggerPri_pin_port;
+pin_mask_t triggerPri_pin_mask;
+port_register_t triggerSec_pin_port;
+pin_mask_t triggerSec_pin_mask;
+port_register_t triggerThird_pin_port;
+pin_mask_t triggerThird_pin_mask;
 
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming

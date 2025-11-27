@@ -20,10 +20,10 @@ uint8_t MC33810_BIT_IGN6 = 6;
 uint8_t MC33810_BIT_IGN7 = 7;
 uint8_t MC33810_BIT_IGN8 = 8;
 
-PORT_TYPE mc33810_1_pin_port;
-PINMASK_TYPE mc33810_1_pin_mask;
-PORT_TYPE mc33810_2_pin_port;
-PINMASK_TYPE mc33810_2_pin_mask;
+port_register_t mc33810_1_pin_port;
+pin_mask_t mc33810_1_pin_mask;
+port_register_t mc33810_2_pin_port;
+pin_mask_t mc33810_2_pin_mask;
 
 void initMC33810(void)
 {
