@@ -4,17 +4,18 @@
 
 #include <unity.h>
 #include <Arduino.h>
+#if defined(SIMULATOR)
 #include <avr/sleep.h>
+#endif
 
 void setup(void (*runAllTests)(void))
 {
     pinMode(LED_BUILTIN, OUTPUT);
 
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-#if !defined(SIMULATOR)
-    delay(2000);
-#endif
+    // Wait for Serial Monitor connection
+    while (!Serial) {
+        ; 
+    }
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
