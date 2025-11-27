@@ -5,8 +5,9 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 
+#if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
-
+#endif
 // void printFreeRam()
 // {
 //     char msg[128];

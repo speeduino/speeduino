@@ -41,7 +41,9 @@ int16_t ProgrammableIOGetData(uint16_t index);
 #define UNUSED(x) (void)(x)
 #endif
 
+#if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
+#endif
 #define _end_range_address(array) (array + _countof(array))
 #define _end_range_byte_address(array) (((byte*)array) + sizeof(array))
 
