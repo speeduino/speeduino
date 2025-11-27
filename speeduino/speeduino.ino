@@ -22,7 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <stdint.h> //developer.mbed.org/handbook/C-Data-Types
 //************************************************
 #include "globals.h"
-#include "speeduino.h"
 #include "scheduler.h"
 #include "comms.h"
 #include "comms_legacy.h"
@@ -50,6 +49,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include RTC_LIB_H //Defined in each boards .h file
 #include "units.h"
 #include "fuel_calcs.h"
+
+#define CRANK_RUN_HYSTER    15
+
+// Forward declarations
+void calculateIgnitionAngles(uint16_t dwellAngle);
+void checkLaunchAndFlatShift();
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
 uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */

@@ -15,7 +15,6 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "sensors.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
-#include "speeduino.h"
 #include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"

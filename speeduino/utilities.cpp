@@ -15,7 +15,6 @@
 #include "logger.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
-#include "speeduino.h"
 #include "units.h"
 
 uint8_t ioDelay[sizeof(configPage13.outputPin)];
