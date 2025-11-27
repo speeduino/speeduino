@@ -1,21 +1,7 @@
+#include "../device_test_harness.h"
 
-#include <Arduino.h>
-#include <globals.h>
-#include <unity.h>
-#include <avr/sleep.h>
-
-void setup()
+void runAllDecoderTests(void)
 {
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-#if !defined(SIMULATOR)
-    delay(2000);
-#endif
-
-    UNITY_BEGIN();    // IMPORTANT LINE!
-
     extern void testMissingTooth(void);
     extern void testDualWheel(void);
     extern void testRenix(void);
@@ -35,21 +21,6 @@ void setup()
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
     testDecoder_General();
-
-    UNITY_END(); // stop unit testing
-
-#if defined(SIMULATOR)       // Tell SimAVR we are done
-    cli();
-    sleep_enable();
-    sleep_cpu();
-#endif    
 }
 
-void loop()
-{
-    // Blink to indicate end of test
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(250);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(250);
-}
+DEVICE_TEST(runAllDecoderTests)
