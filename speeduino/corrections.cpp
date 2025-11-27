@@ -25,7 +25,6 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 
 #include "globals.h"
 #include "corrections.h"
-#include "speeduino.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -33,6 +32,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "utilities.h"
 #include "src/PID_v1/PID_v1.h"
 #include "units.h"
+#include "fuel_calcs.h"
 
 long PID_O2, PID_output, PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
