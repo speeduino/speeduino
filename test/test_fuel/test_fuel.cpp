@@ -4,10 +4,6 @@
 #include <unity.h>
 #include <avr/sleep.h>
 
-#include "test_corrections.h"
-#include "test_PW.h"
-#include "test_staging.h"
-
 #define UNITY_EXCLUDE_DETAILS
 
 void setup()
@@ -21,6 +17,10 @@ void setup()
 #endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
+
+    extern void testCorrections(void);
+    extern void testPW(void);
+    extern void testStaging(void );
 
     testCorrections();
     testPW();

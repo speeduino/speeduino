@@ -1,13 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
 #include <avr/sleep.h>
-#include "tests_crankmaths.h"
-
-extern void testPercent(void);
-extern void testDivision(void);
-extern void testBitShift(void);
-extern void test_LOW_PASS_FILTER(void);
-extern void test_fast_map(void);
 
 #define UNITY_EXCLUDE_DETAILS
 
@@ -22,6 +15,13 @@ void setup()
 #endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
+    
+    extern void testCrankMaths(void);
+    extern void testPercent(void);
+    extern void testDivision(void);
+    extern void testBitShift(void);
+    extern void test_LOW_PASS_FILTER(void);
+    extern void test_fast_map(void);
 
     testCrankMaths();
     testPercent();

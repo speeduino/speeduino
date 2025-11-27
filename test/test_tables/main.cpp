@@ -2,9 +2,6 @@
 #include <unity.h>
 #include <avr/sleep.h>
 
-#include "tests_tables.h"
-#include "test_table2d.h"
-
 #define UNITY_EXCLUDE_DETAILS
 
 void setup()
@@ -18,6 +15,9 @@ void setup()
 #endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
+
+    extern void testTables(void);
+    extern void testTable2d(void);
 
     testTables();
     testTable2d();

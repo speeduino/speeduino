@@ -4,16 +4,6 @@
 #include <unity.h>
 #include <avr/sleep.h>
 
-#include "missing_tooth/missing_tooth.h"
-#include "dual_wheel/dual_wheel.h"
-#include "renix/renix.h"
-#include "Nissan360/Nissan360.h"
-#include "FordST170/FordST170.h"
-#include "NGC/test_ngc.h"
-#include "SuzukiK6A/SuzukiK6A.h"
-
-extern void testDecoder_General(void);
-
 void setup()
 {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -25,6 +15,16 @@ void setup()
 #endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
+
+    extern void testMissingTooth(void);
+    extern void testDualWheel(void);
+    extern void testRenix(void);
+    extern void testNissan360(void);
+    extern void testFordST170(void);
+    extern void testNGC(void);
+    extern void testSuzukiK6A_setEndTeeth(void);
+    extern void testSuzukiK6A_getCrankAngle(void);
+    extern void testDecoder_General(void);
 
     testMissingTooth();
     testDualWheel();
