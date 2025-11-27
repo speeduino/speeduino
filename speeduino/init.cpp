@@ -580,7 +580,6 @@ void initialiseAll(void)
             configureFor180Degrees();
             break;
           }
-          /* TODO: can two stroke engines inject sequentially? */
           channel2InjDegrees = 180;
           channel3InjDegrees = 360;
           channel4InjDegrees = 540;
