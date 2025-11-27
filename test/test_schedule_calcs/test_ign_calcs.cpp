@@ -6,7 +6,9 @@
 #include "decoders.h"
 #include "../test_utils.h"
 
+#if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
+#endif
 
 extern void SetRevolutionTime(uint32_t revTime);
 

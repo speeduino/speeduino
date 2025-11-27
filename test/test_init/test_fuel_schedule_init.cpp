@@ -15,7 +15,7 @@ static constexpr uint16_t reqFuel = 86; // ms * 10
 
 static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
 {
-  char msg[39];
+  char msg[64];
 
   sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, maxInjOutputs);
   TEST_ASSERT_TRUE_MESSAGE(!enabled || (cmdBit+1)<=maxInjOutputs, msg);
@@ -80,11 +80,18 @@ static void cylinder1_stroke4_semiseq_nostage(void)
   assert_fuel_schedules(720U, reqFuel * 50U, enabled, angle);
 }
 
+static void enableStaging(void)
+{
+  configPage10.stagingEnabled = true;
+  configPage10.stagedInjSizePri = 250;
+  configPage10.stagedInjSizeSec = 500;
+}
+
 static void cylinder1_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
@@ -95,7 +102,7 @@ static void cylinder1_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
@@ -143,7 +150,7 @@ static void cylinder1_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
@@ -154,7 +161,7 @@ static void cylinder1_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
   const bool enabled[] = {true, true, false, false, false, false, false, false};
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
@@ -202,7 +209,7 @@ static void cylinder2_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -213,7 +220,7 @@ static void cylinder2_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -262,7 +269,7 @@ static void cylinder2_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -273,7 +280,7 @@ static void cylinder2_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -335,7 +342,7 @@ static void cylinder3_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
@@ -351,7 +358,7 @@ static void cylinder3_stroke4_seq_staged(void)
 static void cylinder3_stroke4_semiseq_staged_tb(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   configPage2.injType = INJ_TYPE_TBODY;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
@@ -367,7 +374,7 @@ static void cylinder3_stroke4_semiseq_staged_tb(void)
 static void cylinder3_stroke4_semiseq_staged_port(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
@@ -430,7 +437,7 @@ static void cylinder3_stroke2_semiseq_nostage_port(void)
 static void cylinder3_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
@@ -446,7 +453,7 @@ static void cylinder3_stroke2_seq_staged(void)
 static void cylinder3_stroke2_semiseq_staged_tb(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   configPage2.injType = INJ_TYPE_TBODY;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
@@ -461,7 +468,7 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
 static void cylinder3_stroke2_semiseq_staged_port(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
@@ -520,7 +527,7 @@ static void cylinder4_stroke4_semiseq_nostage(void)
 static void cylinder4_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=8
 	const bool enabled[] = {true, true, true, true, true, true, true, true};
@@ -538,7 +545,7 @@ static void cylinder4_stroke4_seq_staged(void)
 static void cylinder4_stroke4_semiseq_staged(void)  
 {
   configPage2.injLayout = INJ_PAIRED;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -584,7 +591,7 @@ static void cylinder4_stroke2_semiseq_nostage(void)
 static void cylinder4_stroke2_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=8
 	const bool enabled[] = {true, true, true, true, true, true, true, true};
@@ -604,7 +611,7 @@ static void cylinder4_stroke2_seq_staged(void)
 static void cylinder4_stroke2_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_PAIRED;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
@@ -657,7 +664,7 @@ static void cylinder5_stroke4_semiseq_nostage(void)
 static void cylinder5_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
@@ -673,7 +680,7 @@ static void cylinder5_stroke4_seq_staged(void)
 static void cylinder5_stroke4_semiseq_staged(void) 
 {
   configPage2.injLayout = INJ_PAIRED;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 5
 	const bool enabled[] = {true, true, true, true, true, false, false, false};
@@ -731,7 +738,7 @@ static void cylinder6_stroke4_semiseq_nostage(void)
 static void cylinder6_stroke4_seq_staged(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
@@ -748,7 +755,7 @@ static void cylinder6_stroke4_seq_staged(void)
 static void cylinder6_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = true;
+  enableStaging();
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
 	const uint16_t angle[] = {0,120,240,0,0,120,240,0};
