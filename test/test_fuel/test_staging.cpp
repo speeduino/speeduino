@@ -1,9 +1,8 @@
 #include <globals.h>
-#include <speeduino.h>
 #include <unity.h>
 #include "test_staging.h"
 #include "../test_utils.h"
-// #include "init.h"
+#include "fuel_calcs.h"
 
 void testStaging(void)
 {

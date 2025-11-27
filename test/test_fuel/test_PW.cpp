@@ -1,8 +1,7 @@
 #include <globals.h>
-#include <speeduino.h>
 #include <unity.h>
 #include "test_PW.h"
-// #include "init.h"
+#include "fuel_calcs.h"
 #include "../test_utils.h"
 
 #define PW_ALLOWED_ERROR  30

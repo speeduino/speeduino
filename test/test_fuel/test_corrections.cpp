@@ -5,9 +5,9 @@
 #include "test_corrections.h"
 #include "init.h"
 #include "sensors.h"
-#include "speeduino.h"
 #include "sensors_map_structs.h"
 #include "units.h"
+#include "fuel_calcs.h"
 
 extern byte correctionWUE(void);
 extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)

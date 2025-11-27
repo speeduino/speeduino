@@ -5,7 +5,6 @@
 #include "init.h"
 #include "storage.h"
 #include "updates.h"
-#include "speeduino.h"
 #include "timers.h"
 #include "comms.h"
 #include "comms_secondary.h"
@@ -29,6 +28,7 @@
   #include "SD_logger.h"
   #include "rtc_common.h"
 #endif
+#include "fuel_calcs.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
