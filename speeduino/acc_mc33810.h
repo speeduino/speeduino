@@ -6,10 +6,10 @@
 #include "globals.h"
 #include "board_definition.h"
 
-extern PORT_TYPE mc33810_1_pin_port;
-extern PINMASK_TYPE mc33810_1_pin_mask;
-extern PORT_TYPE mc33810_2_pin_port;
-extern PINMASK_TYPE mc33810_2_pin_mask;
+extern port_register_t mc33810_1_pin_port;
+extern pin_mask_t mc33810_1_pin_mask;
+extern port_register_t mc33810_2_pin_port;
+extern pin_mask_t mc33810_2_pin_mask;
 
 //#define MC33810_ONOFF_CMD   3
 static const uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal

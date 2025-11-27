@@ -16,7 +16,7 @@ namespace type_detection_detail {
 }
 
 /** @brief The return type of a "call" to portOutputRegister() */
-using PORT_TYPE = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectPortRegisterType));
+using port_register_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectPortRegisterType));
 
 /** @brief The return type of a "call" to digitalPinToBitMask() */
-using PINMASK_TYPE = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
+using pin_mask_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
