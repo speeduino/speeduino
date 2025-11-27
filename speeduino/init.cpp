@@ -36,39 +36,8 @@
 #pragma GCC optimize ("Os") 
 #endif
 
-void handleOddfire() {
-  if (configPage2.engineType == EVEN_FIRE) {
-    /* ??? */
-    return;
-  }
-  /* caution: fallthrough switch */
-  switch (configPage2.nCylinders) {
-    case 4:
-      channel4IgnDegrees = configPage2.oddfire4;
-      maxIgnOutputs = 4;
-    case 3:
-      channel3IgnDegrees = configPage2.oddfire3;
-    case 2:
-      channel2IgnDegrees = configPage2.oddfire2;
-    case 1:
-      channel1IgnDegrees = 0; // always zero
-  }
-}
-
-void configureFor180Degrees() {
-
-  channel2InjDegrees = 180;
-
-  if (!configPage2.injTiming) {
-    /* Simultanoues */
-    channel1InjDegrees = 0;
-    channel2InjDegrees = 0;
-  } else if (currentStatus.nSquirts > 2) {
-    /* Adjust the injection angles based on the number of squirts */
-    channel2InjDegrees = channel2InjDegrees * 2 / currentStatus.nSquirts;
-  }
-
-}
+void handleOddfire();
+void configureFor180Degrees();
 
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
@@ -462,7 +431,7 @@ void initialiseAll(void)
 
           if (configPage2.injType == INJ_TYPE_PORT) {
             /* Force nSquirts to 2 for individual port injection.
-            /* This prevents TunerStudio forcing the value to 3 even when this isn't wanted.
+             * This prevents TunerStudio forcing the value to 3 even when this isn't wanted.
              */
             currentStatus.nSquirts = 2;
 
@@ -1311,6 +1280,43 @@ void initialiseAll(void)
     
     currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
+
+}
+
+void handleOddfire() {
+  if (configPage2.engineType == EVEN_FIRE) {
+    return;
+  }
+  /* caution: fallthrough switch */
+  switch (configPage2.nCylinders) {
+    // fall through
+    case 4:
+      channel4IgnDegrees = configPage2.oddfire4;
+      maxIgnOutputs = 4;
+    // fall through
+    case 3:
+      channel3IgnDegrees = configPage2.oddfire3;
+    // fall through
+    case 2:
+      channel2IgnDegrees = configPage2.oddfire2;
+    // fall through
+    case 1:
+      channel1IgnDegrees = 0; // always zero
+  }
+}
+
+void configureFor180Degrees() {
+
+  channel2InjDegrees = 180;
+
+  if (!configPage2.injTiming) {
+    /* Simultanoues */
+    channel1InjDegrees = 0;
+    channel2InjDegrees = 0;
+  } else if (currentStatus.nSquirts > 2) {
+    /* Adjust the injection angles based on the number of squirts */
+    channel2InjDegrees = channel2InjDegrees * 2 / currentStatus.nSquirts;
+  }
 
 }
 /** Set board / microcontroller specific pin mappings / assignments.
