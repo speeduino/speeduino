@@ -228,8 +228,6 @@ extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
-extern byte maxIgnOutputs;            /**< Number of ignition outputs being used by the current tune configuration */
-extern byte maxInjOutputs;            /**< Number of injection outputs being used by the current tune configuration */
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;

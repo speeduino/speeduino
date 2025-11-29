@@ -16,8 +16,8 @@ static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t
 {
   char msg[64];
 
-  sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, maxInjOutputs);
-  TEST_ASSERT_TRUE_MESSAGE(!enabled || (cmdBit+1)<=maxInjOutputs, msg);
+  sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, currentStatus.maxInjOutputs);
+  TEST_ASSERT_TRUE_MESSAGE(!enabled || (cmdBit+1)<=currentStatus.maxInjOutputs, msg);
   sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
   TEST_ASSERT_EQUAL_MESSAGE(angle, channelInjDegrees, msg);
   sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);

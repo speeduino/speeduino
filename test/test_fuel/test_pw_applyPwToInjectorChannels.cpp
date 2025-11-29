@@ -35,7 +35,7 @@ static void test_No_Secondary_PW(void) {
   pulseWidths pulseWidths = { 100, 0 /* Zero signal no staging */};
   page2.nCylinders = 2;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
   TEST_PW(2, current, pulseWidths.primary, INJ_CHANNELS >= 2);
@@ -46,7 +46,7 @@ static void test_No_Secondary_PW(void) {
   TEST_PW(7, current, pulseWidths.primary, INJ_CHANNELS >= 7);
   TEST_PW(8, current, pulseWidths.primary, INJ_CHANNELS >= 8);
 
-  maxInjOutputs = INJ_CHANNELS/2;
+  current.maxInjOutputs = INJ_CHANNELS/2;
   applyPwToInjectorChannels(pulseWidths, page2, current);
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
   TEST_PW(2, current, pulseWidths.primary, INJ_CHANNELS/2 >= 2);
@@ -64,7 +64,7 @@ static void test_Cylinders_1(void) {
   pulseWidths pulseWidths = { 333, 777 };
   page2.nCylinders = 1;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -83,7 +83,7 @@ static void test_Cylinders_2(void) {
   pulseWidths pulseWidths = { 333, 777 };
   page2.nCylinders = 2;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -103,7 +103,7 @@ static void test_Cylinders_3(void) {
   pulseWidths pulseWidths = { 333, 777 };
   page2.nCylinders = 3;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -123,7 +123,7 @@ static void test_Cylinders_4_paired(void) {
   page2.nCylinders = 4;
   page2.injLayout = INJ_PAIRED;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -143,7 +143,7 @@ static void test_Cylinders_4_sequential(void) {
   page2.nCylinders = 4;
   page2.injLayout = INJ_SEQUENTIAL;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -163,7 +163,7 @@ static void test_Cylinders_5_paired(void) {
   page2.nCylinders = 5;
   page2.injLayout = INJ_PAIRED;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -184,7 +184,7 @@ static void test_Cylinders_5_sequential(void) {
   page2.nCylinders = 5;
   page2.injLayout = INJ_SEQUENTIAL;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -204,7 +204,7 @@ static void test_Cylinders_6_paired(void) {
   page2.nCylinders = 6;
   page2.injLayout = INJ_PAIRED;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -224,7 +224,7 @@ static void test_Cylinders_6_sequential(void) {
   page2.nCylinders = 6;
   page2.injLayout = INJ_SEQUENTIAL;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -244,7 +244,7 @@ static void test_Cylinders_8_paired(void) {
   page2.nCylinders = 8;
   page2.injLayout = INJ_PAIRED;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
@@ -264,7 +264,7 @@ static void test_Cylinders_8_sequential(void) {
   page2.nCylinders = 8;
   page2.injLayout = INJ_SEQUENTIAL;
 
-  maxInjOutputs = INJ_CHANNELS;
+  current.maxInjOutputs = INJ_CHANNELS;
   applyPwToInjectorChannels(pulseWidths, page2, current);
 
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
