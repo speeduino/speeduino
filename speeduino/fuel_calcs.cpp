@@ -341,19 +341,19 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
   }
   else 
   { 
-    if(maxInjOutputs >= 2) { current.PW2 = current.PW1; }
+    if(current.maxInjOutputs >= 2) { current.PW2 = current.PW1; }
     else { current.PW2 = 0; }
-    if(maxInjOutputs >= 3) { current.PW3 = current.PW1; }
+    if(current.maxInjOutputs >= 3) { current.PW3 = current.PW1; }
     else { current.PW3 = 0; }
-    if(maxInjOutputs >= 4) { current.PW4 = current.PW1; }
+    if(current.maxInjOutputs >= 4) { current.PW4 = current.PW1; }
     else { current.PW4 = 0; }
-    if(maxInjOutputs >= 5) { current.PW5 = current.PW1; }
+    if(current.maxInjOutputs >= 5) { current.PW5 = current.PW1; }
     else { current.PW5 = 0; }
-    if(maxInjOutputs >= 6) { current.PW6 = current.PW1; }
+    if(current.maxInjOutputs >= 6) { current.PW6 = current.PW1; }
     else { current.PW6 = 0; }
-    if(maxInjOutputs >= 7) { current.PW7 = current.PW1; }
+    if(current.maxInjOutputs >= 7) { current.PW7 = current.PW1; }
     else { current.PW7 = 0; }
-    if(maxInjOutputs >= 8) { current.PW8 = current.PW1; }
+    if(current.maxInjOutputs >= 8) { current.PW8 = current.PW1; }
     else { current.PW8 = 0; }
 
     current.stagingActive = false; //Clear the staging active flag
