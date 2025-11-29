@@ -54,3 +54,6 @@ static inline bool canApplyStaging(const config2 &page2, const config10 &page10)
  return  (page10.stagingEnabled == true) 
       && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
 }
+
+pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current);
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current);
