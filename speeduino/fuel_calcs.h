@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include "config_pages.h"
+#include "statuses.h"
 
 /**
  * @brief This function calculates the required pulsewidth time (in us) given the current system state
@@ -14,7 +16,7 @@
  */
 uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpen);
 
-uint16_t calculatePWLimit();
+uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime);
 
 void calculateStaging(uint32_t);
 
