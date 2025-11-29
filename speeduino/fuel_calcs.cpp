@@ -28,7 +28,20 @@ TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page
   return pw;
 }
 
-uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
+uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
+  uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
+  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (current.halfSync)))
+  {
+    //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
+    //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
+    //If we're doing more than 1 squirt per cycle then we need to split the amount accordingly.
+    //(Note that in a non-sequential 4-stroke setup you cannot have less than 2 squirts as you cannot determine the
+    //stroke to make the single squirt on)
+    reqFuel = reqFuel / 2U; 
+  }
+
+  return reqFuel;
+}
 uint16_t inj_opentime_uS = 0;
 uint16_t staged_req_fuel_mult_pri = 0;
 uint16_t staged_req_fuel_mult_sec = 0;   
