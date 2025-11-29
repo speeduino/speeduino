@@ -54,98 +54,98 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
       //No action needed
       break;
     case 2:
-      tempLimit = tempLimit / 2;
+      tempLimit = tempLimit >> 1U;
       break;
     case 4:
-      tempLimit = tempLimit / 4;
+      tempLimit = tempLimit >> 2U;
       break;
     case 8:
-      tempLimit = tempLimit / 8;
+      tempLimit = tempLimit >> 3U;
       break;
     default:
       //Non-PoT squirts value. Perform (slow) uint32_t division
       tempLimit = tempLimit / current.nSquirts;
       break;
   }
-  if(tempLimit > (uint32_t)UINT16_MAX) { tempLimit = UINT16_MAX; }
-
-  return tempLimit;
+  return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
 }
 
-/**
- * @brief This function calculates the required pulsewidth time (in us) given the current system state
- * 
- * @param REQ_FUEL The required fuel value in uS, as calculated by TunerStudio
- * @param VE Lookup from the main fuel table. This can either have been MAP or TPS based, depending on the algorithm used
- * @param MAP In KPa, read from the sensor (This is used when performing a multiply of the map only. It is applicable in both Speed density and Alpha-N)
- * @param corrections Sum of Enrichment factors (Cold start, acceleration). This is a multiplication factor (Eg to add 10%, this should be 110)
- * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
- * @return uint16_t The injector pulse width in uS
- */
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current)
-{
-  //Standard float version of the calculation
-  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
-  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  uint16_t iMAP = 100;
-  uint16_t iAFR = 147;
+
+static inline uint32_t applyMapMode(uint32_t intermediate, const config2 &page2, const statuses &current) {
+  if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
+    uint16_t multiplier = div100((uint16_t)((uint16_t)current.MAP << 7U));
+    return rshift<7U>(intermediate * (uint32_t)multiplier); 
+  }
+  if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
+     uint16_t multiplier = ((uint16_t)current.MAP << 7U) / current.baro; 
+    return rshift<7U>(intermediate * (uint32_t)multiplier); 
+  }
+  return intermediate;
+}
+
+static inline uint32_t applyAFRMultiplier(uint32_t intermediate, const config2 &page2, const config6 &page6, const statuses &current) {
+  if (page2.includeAFR == true) {
+    if ((page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
+      uint16_t multiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
+      return rshift<7U>(intermediate * (uint32_t)multiplier); 
+    }
+  } else {
+    if ( (page2.incorporateAFR == true) ) {
+      uint16_t multiplier = ((uint16_t)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+      return rshift<7U>(intermediate * (uint32_t)multiplier); 
+    }
+  }
+  return intermediate;
+}
+
+static inline uint32_t applyCorrections(uint32_t intermediate, uint16_t corrections) {
+  return percentageApprox(corrections, intermediate); 
+}
+
+static inline uint16_t computeInitialPw(uint16_t REQ_FUEL, uint8_t VE) {
+  // REQ_FUEL max is 255*100 = 25500
+  // VE max is 255
+  // Therefore max result = 65025. So just fits in a uint16_t.
+  return percentageApprox(VE, REQ_FUEL); 
+}
+
+static inline uint32_t includeOpenTime(uint32_t intermediate, uint16_t injOpen) {
+    return intermediate + injOpen; //Add the injector opening time
+}
+
+static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const config2 &page2, const statuses &current) {
+  // We need to add Acceleration Enrichment pct increase if the engine is accelerating
+  if ((current.isAcceleratingTPS) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
+    return intermediate + percentage(current.AEamount - 100U, REQ_FUEL);
+  }
+  return intermediate;
+}
+
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   uint16_t REQ_FUEL = calculateRequiredFuel(page2, current);
 
-  //100% float free version, does sacrifice a little bit of accuracy, but not much.
- 
-  //Check whether either of the multiply MAP modes is turned on
-  //if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
-  if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = div100( ((uint16_t)current.MAP << 7U) ); }
-  else if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { iMAP = ((unsigned int)current.MAP << 7U) / current.baro; }
-  
-  if ( (page2.includeAFR == true) && (page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
-    iAFR = ((unsigned int)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
-  }
-  if ( (page2.incorporateAFR == true) && (page2.includeAFR == false) ) {
-    iAFR = ((unsigned int)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
-  }
+  //Standard float version of the calculation
+  //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
+  //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
+  uint32_t intermediate = 
+    includeAe(
+      includeOpenTime(
+        applyCorrections(
+          applyAFRMultiplier(
+            applyMapMode(
+              computeInitialPw(REQ_FUEL, current.VE), 
+              page2, current),
+            page2, page6, current), 
+        current.corrections), 
+      injOpenTime), 
+      REQ_FUEL, page2, current);
 
-  uint32_t intermediate = percentageApprox(current.VE, REQ_FUEL); //Need to use an intermediate value to avoid overflowing the long
-  if ( page2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
-  
-  if ( (page2.includeAFR == true) && (page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
-    //EGO type must be set to wideband and the AFR warmup time must've elapsed for this to be used
-    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);  
-  }
-  if ( (page2.incorporateAFR == true) && (page2.includeAFR == false) ) {
-    intermediate = rshift<7U>(intermediate * (uint32_t)iAFR);
-  }
-
-  //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  intermediate = percentageApprox(current.corrections, intermediate);
-
-  if (intermediate != 0)
-  {
-    //If intermediate is not 0, we need to add the opening time (0 typically indicates that one of the full fuel cuts is active)
-    intermediate += injOpenTime; //Add the injector opening time
-    //AE calculation only when ACC is active.
-    if (current.isAcceleratingTPS)
-    {
-      //AE Adds % of req_fuel
-      if ( (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U))
-        {
-          intermediate += div100(((uint32_t)REQ_FUEL) * (current.AEamount - 100U));
-        }
-    }
-
-    if ( intermediate > UINT16_MAX)
-    {
-      intermediate = UINT16_MAX;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-    }
-  }
-  return pwApplyNitrous((unsigned int)intermediate, page10, current);
+  // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
+  return pwApplyNitrous((uint16_t)min(intermediate, (uint32_t)UINT16_MAX), page10, current);
 }
 
 // Apply the pwLimit if staging is disabled and engine is not cranking
-TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
-  if (pw<=injOpenTime) {
-    return 0U;
-  }
+TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, const config10 &page10, const statuses &current) {
   if( (!current.engineIsCranking) && (page10.stagingEnabled == false) ) { 
     return min(pw, pwLimit);
   }
@@ -166,50 +166,65 @@ static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime
   return ((uint32_t)primaryPW)*totalInjector;
 }
 
-static inline uint32_t calcStagePrimaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
-  return fastDiv(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizePri);
+static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) {
+  return fastDiv(totalPw, page10.stagedInjSizePri);
 }
-static inline uint32_t calcStageSecondaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
-  return fastDiv(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizeSec);
+static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) {
+  return fastDiv(totalPw, page10.stagedInjSizeSec);
 }
+
+static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
+  uint32_t totalPw = calcTotalStagePw(primaryPW, injOpenTime, page10);
+  //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
+  uint32_t pwPrimaryStaged = calcStagePrimaryPw(totalPw, page10);
+
+  uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
+  if(stagingSplit > 0U) 
+  { 
+    uint32_t pwSecondaryStaged = calcStageSecondaryPw(totalPw, page10);
+    uint32_t primary = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTime;
+    uint32_t secondary = percentage(stagingSplit, pwSecondaryStaged) + injOpenTime;
+    return { 
+      (uint16_t)min(primary, (uint32_t)UINT16_MAX),
+      (uint16_t)min(secondary, (uint32_t)UINT16_MAX),
+    };
+  }
+
+  return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
+}
+
+static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10) {
+  uint32_t pwPrimaryStaged = calcStagePrimaryPw(calcTotalStagePw(primaryPW, injOpenTime, page10), page10);
+
+  //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
+  //If they exceed their limit, the extra duty is passed to the secondaries
+  if(pwPrimaryStaged > pwLimit)
+  {
+    uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+    uint32_t secondary = fastDiv(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
+    return { 
+      pwLimit,
+      (uint16_t)min(secondary, (uint32_t)UINT16_MAX),
+    };
+  }
+
+  return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
+}
+
 
 TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current) {
-  uint16_t secondaryPW = 0U;
   if(canApplyStaging(page2, page10) && (primaryPw!=0U) )
   {
-    uint32_t pwPrimaryStaged = calcStagePrimaryPw(primaryPw, injOpenTime, page10);
-
-    if(page10.stagingMode == STAGING_MODE_TABLE)
-    {
-      uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
-      if(stagingSplit > 0U) 
-      { 
-        uint32_t pwSecondaryStaged = calcStageSecondaryPw(primaryPw, injOpenTime, page10);
-        uint32_t primary = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTime;
-        uint32_t secondary = percentage(stagingSplit, pwSecondaryStaged) + injOpenTime;
-        primaryPw = (uint16_t)min(primary, (uint32_t)UINT16_MAX);
-        secondaryPW = (uint16_t)min(secondary, (uint32_t)UINT16_MAX);
-      } else {
-        primaryPw = pwPrimaryStaged + injOpenTime;
-      }
-    }
-    else if(page10.stagingMode == STAGING_MODE_AUTO)
-    {
-      //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
-      //If they exceed their limit, the extra duty is passed to the secondaries
-      if(pwPrimaryStaged > pwLimit)
-      {
-        uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-        uint32_t secondary = fastDiv(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
-        primaryPw = pwLimit;
-        secondaryPW = (uint16_t)min(secondary, (uint32_t)UINT16_MAX);
-      } else {
-        primaryPw = pwPrimaryStaged + injOpenTime;
-      }
+    //Scale the 'full' pulsewidth by each of the injector capacities
+    if(page10.stagingMode == STAGING_MODE_TABLE) {
+      return applyStagingModeTable(primaryPw, injOpenTime, page10, current);
+    };
+    if(page10.stagingMode == STAGING_MODE_AUTO) {
+      return applyStagingModeAuto(primaryPw, pwLimit, injOpenTime, page10);
     }
   }
 
-  return { primaryPw, secondaryPW };
+  return { primaryPw, 0U };
 }
 
 
@@ -423,7 +438,7 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
        break;
     }
   }
-  else 
+  else if (pulse_widths.primary!=0U)
   { 
     ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
 #if INJ_CHANNELS >= 2
@@ -447,6 +462,8 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
 #if INJ_CHANNELS >= 8
     ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.primary);
 #endif
+  } else {
+    //No pulse widths to apply
   } 
 }
 
@@ -456,16 +473,18 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
 }
 
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
-  uint16_t pwLimit = calculatePWLimit(page2, current);
-  uint16_t injOpenTime = calculateOpenTime(page2, current);
-  uint16_t primaryPw = applyPwLimits(calcPrimaryPulseWidth( injOpenTime, 
-                                                            page2,
-                                                            page6,
-                                                            page10, 
-                                                            current),
-                                      pwLimit,
-                                      injOpenTime,
-                                      page10,
-                                      current);
-  return calculateSecondaryPw(primaryPw, pwLimit, injOpenTime, page2, page10, current);  
+  if (current.corrections!=0U) {
+    uint16_t pwLimit = calculatePWLimit(page2, current);
+    uint16_t injOpenTime = calculateOpenTime(page2, current);
+    uint16_t primaryPw = applyPwLimits(calcPrimaryPulseWidth( injOpenTime, 
+                                                              page2,
+                                                              page6,
+                                                              page10, 
+                                                              current),
+                                        pwLimit,
+                                        page10,
+                                        current);
+    return calculateSecondaryPw(primaryPw, pwLimit, injOpenTime, page2, page10, current);  
+  }
+  return { 0U, 0U };
 }
