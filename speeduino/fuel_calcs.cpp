@@ -14,14 +14,10 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
   //Note: The MAP and TPS portions are currently disabled, we use VE and corrections only
-  uint16_t iVE;
   uint16_t iMAP = 100;
   uint16_t iAFR = 147;
 
   //100% float free version, does sacrifice a little bit of accuracy, but not much.
- 
-  //iVE = ((unsigned int)VE << 7) / 100;
-  iVE = div100(((uint16_t)VE << 7U));
 
   //Check whether either of the multiply MAP modes is turned on
   //if ( configPage2.multiplyMAP == MULTIPLY_MAP_MODE_100) { iMAP = ((unsigned int)MAP << 7) / 100; }
@@ -35,7 +31,7 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
     iAFR = ((unsigned int)configPage2.stoich << 7U) / currentStatus.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
   }
 
-  uint32_t intermediate = rshift<7U>((uint32_t)REQ_FUEL * (uint32_t)iVE); //Need to use an intermediate value to avoid overflowing the long
+  uint32_t intermediate = percentageApprox(VE, REQ_FUEL); //Need to use an intermediate value to avoid overflowing the long
   if ( configPage2.multiplyMAP > 0 ) { intermediate = rshift<7U>(intermediate * (uint32_t)iMAP); }
   
   if ( (configPage2.includeAFR == true) && (configPage6.egoType == EGO_TYPE_WIDE) && (currentStatus.runSecs > configPage6.ego_sdelay) ) {
@@ -47,13 +43,7 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
   }
 
   //If corrections are huge, use less bitshift to avoid overflow. Sacrifices a bit more accuracy (basically only during very cold temp cranking)
-  if (corrections < 512 ) { 
-    intermediate = rshift<7U>(intermediate * div100(lshift<7U>(corrections))); 
-  } else if (corrections < 1024 ) { 
-    intermediate = rshift<6U>(intermediate * div100(lshift<6U>(corrections)));
-  } else {
-    intermediate = rshift<5U>(intermediate * div100(lshift<5U>(corrections)));
-  }
+  intermediate = percentageApprox(corrections, intermediate);
 
   if (intermediate != 0)
   {
@@ -80,7 +70,7 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
 
 uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime)
 {
-  uint32_t tempLimit = percentage(page2.dutyLim, revTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  uint32_t tempLimit = percentageApprox(page2.dutyLim, revTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
   if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
   //Optimise for power of two divisions where possible
