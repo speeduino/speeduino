@@ -214,152 +214,240 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
 
 
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current) {
-  current.PW1 = pulse_widths.primary;
-  current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
+  current.PW1 = current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
 
-  if(pulse_widths.secondary != 0U)
-  {
-    current.PW2 = pulse_widths.secondary;
+  #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pw) \
+    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? pw : 0U;
+
+  // The PW calcs already applied the logic to enable staging or not. If there is a valid
+  // secondary PW, staging is enabled 
+  if ((pulse_widths.secondary!=0U)) {
     //Allocate the primary and secondary pulse widths based on the fuel configuration
-    switch (page2.nCylinders) 
-    {
+    switch (page2.nCylinders) {
       case 1:
-        //Nothing required for 1 cylinder, channels are correct already
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.secondary);
+#endif
         break;
+
       case 2:
         //Primary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
-        current.PW3 = current.PW2;
-        current.PW4 = current.PW2;
-        current.PW2 = current.PW1;
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
+#endif
         break;
+
       case 3:
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
         //6 channels required for 'normal' 3 cylinder staging support
-        #if INJ_CHANNELS >= 6
-          //Primary pulsewidth on channels 1, 2 and 3, secondary on channels 4, 5 and 6
-          current.PW4 = current.PW2;
-          current.PW5 = current.PW2;
-          current.PW6 = current.PW2;
-        #else
-          //If there are not enough channels, then primary pulsewidth is on channels 1, 2 and 3, secondary on channel 4
-          current.PW4 = current.PW2;
-        #endif
-        current.PW2 = current.PW1;
-        current.PW3 = current.PW1;
+#if INJ_CHANNELS >= 4
+        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 5
+        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
+#endif
         break;
+
       case 4:
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
         if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
         {
-          current.PW2 = current.PW1;
-          current.PW3 = current.PW1;
-          current.PW4 = current.PW1;
-        //Staging with 4 cylinders semi/sequential requires 8 total channels
-        #if INJ_CHANNELS >= 8
-          current.PW5 = current.PW2;
-          current.PW6 = current.PW2;
-          current.PW7 = current.PW2;
-          current.PW8 = current.PW2;
-        #elif INJ_CHANNELS >= 5
-          //This is an invalid config as there are not enough outputs to support sequential + staging
-          //Put the staging output to the non-existent channel 5
-          current.PW5 = current.PW2;
-        #endif
-        }
-        else
-        {
-          current.PW3 = current.PW2;
-          current.PW4 = current.PW2;
-          current.PW2 = current.PW1;
+#if INJ_CHANNELS >= 3
+          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
+#endif
+        // Staging with 4 cylinders semi/sequential requires 8 total channels
+#if INJ_CHANNELS >= 5
+          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 7
+          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 3
+          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
+#endif
         }
         break;
         
       case 5:
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
+#endif
         //No easily supportable 5 cylinder staging option unless there are at least 5 channels
-        #if INJ_CHANNELS >= 5
-          if (page2.injLayout != INJ_SEQUENTIAL)
-          {
-            current.PW5 = current.PW2;
+          if (page2.injLayout != INJ_SEQUENTIAL) {
+#if INJ_CHANNELS >= 5
+        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
+#endif
+          } else {
+#if INJ_CHANNELS >= 5
+        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
+#endif
           }
-          #if INJ_CHANNELS >= 6
-            current.PW6 = current.PW2;
-          #endif
-        #endif
-        
-        current.PW2 = current.PW1;
-        current.PW3 = current.PW1;
-        current.PW4 = current.PW1;
+#if INJ_CHANNELS >= 6
+        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
+#endif
         break;
 
       case 6:
-        current.PW2 = current.PW1;
-        current.PW3 = current.PW1;
-        #if INJ_CHANNELS >= 6
-          //8 cylinder staging only if not sequential
-          if (page2.injLayout != INJ_SEQUENTIAL)
-          {
-            current.PW4 = current.PW2;
-            current.PW5 = current.PW2;
-            current.PW6 = current.PW2;
-          }
-          #if INJ_CHANNELS >= 8
-          else
-            {
-              //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
-              current.PW7 = current.PW2;
-              current.PW8 = current.PW2;
-
-              current.PW4 = current.PW1;
-              current.PW5 = current.PW1;
-              current.PW6 = current.PW1;
-            }
-          #endif
-        #endif
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
+        // 6 cylinder staging only if not sequential
+        if (page2.injLayout != INJ_SEQUENTIAL) {
+#if INJ_CHANNELS >= 4
+        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 5
+        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 4
+          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 5
+          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
+#endif
+          //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
+#if INJ_CHANNELS >= 7
+          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
+#endif
+        }
         break;
 
       case 8:
-        #if INJ_CHANNELS >= 8
-          //8 cylinder staging only if not sequential
-          if (page2.injLayout != INJ_SEQUENTIAL)
-          {
-            current.PW5 = current.PW2;
-            current.PW6 = current.PW2;
-            current.PW7 = current.PW2;
-            current.PW8 = current.PW2;
-          }
-        #endif
-        current.PW2 = current.PW1;
-        current.PW3 = current.PW1;
-        current.PW4 = current.PW1;
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
+#endif
+        //8 cylinder staging only if not sequential
+        if (page2.injLayout != INJ_SEQUENTIAL)
+        {
+#if INJ_CHANNELS >= 5
+          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 7
+          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 5
+        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 7
+        ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 8
+        ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.primary);
+#endif          
+        }
         break;
 
       default:
         //Assume 4 cylinder non-seq for default
-        current.PW3 = current.PW2;
-        current.PW4 = current.PW2;
-        current.PW2 = current.PW1;
-        break;
+        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
+#endif
+       break;
     }
   }
   else 
   { 
-    if(current.maxInjOutputs >= 2) { current.PW2 = current.PW1; }
-    else { current.PW2 = 0; }
-    if(current.maxInjOutputs >= 3) { current.PW3 = current.PW1; }
-    else { current.PW3 = 0; }
-    if(current.maxInjOutputs >= 4) { current.PW4 = current.PW1; }
-    else { current.PW4 = 0; }
-    if(current.maxInjOutputs >= 5) { current.PW5 = current.PW1; }
-    else { current.PW5 = 0; }
-    if(current.maxInjOutputs >= 6) { current.PW6 = current.PW1; }
-    else { current.PW6 = 0; }
-    if(current.maxInjOutputs >= 7) { current.PW7 = current.PW1; }
-    else { current.PW7 = 0; }
-    if(current.maxInjOutputs >= 8) { current.PW8 = current.PW1; }
-    else { current.PW8 = 0; }
-
-    current.stagingActive = false; //Clear the staging active flag
-    
+    ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+    ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+    ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+    ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 5
+    ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+    ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 7
+    ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 8
+    ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.primary);
+#endif
   } 
-
 }
 
 TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {

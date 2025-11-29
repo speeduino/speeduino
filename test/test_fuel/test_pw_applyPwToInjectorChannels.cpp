@@ -210,7 +210,7 @@ static void test_Cylinders_6_paired(void) {
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
   TEST_PW(2, current, pulseWidths.primary, INJ_CHANNELS >= 2);
   TEST_PW(3, current, pulseWidths.primary, INJ_CHANNELS >= 3);
-//   TEST_PW(4, current, pulseWidths.secondary, INJ_CHANNELS >= 4);
+  TEST_PW(4, current, pulseWidths.secondary, INJ_CHANNELS >= 4);
   TEST_PW(5, current, pulseWidths.secondary, INJ_CHANNELS >= 5);
   TEST_PW(6, current, pulseWidths.secondary, INJ_CHANNELS >= 6);
   TEST_ASSERT_EQUAL_UINT16(0, current.PW7);
@@ -230,7 +230,7 @@ static void test_Cylinders_6_sequential(void) {
   TEST_ASSERT_EQUAL_UINT16(pulseWidths.primary, current.PW1);
   TEST_PW(2, current, pulseWidths.primary, INJ_CHANNELS >= 2);
   TEST_PW(3, current, pulseWidths.primary, INJ_CHANNELS >= 3);
-//   TEST_PW(4, current, pulseWidths.primary, INJ_CHANNELS >= 4);
+  TEST_PW(4, current, pulseWidths.primary, INJ_CHANNELS >= 4);
   TEST_PW(5, current, pulseWidths.primary, INJ_CHANNELS >= 5);
   TEST_PW(6, current, pulseWidths.primary, INJ_CHANNELS >= 6);
   TEST_PW(7, current, pulseWidths.secondary, INJ_CHANNELS >= 7);
