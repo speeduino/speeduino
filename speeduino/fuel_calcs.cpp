@@ -28,7 +28,7 @@ TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page
   return pw;
 }
 
-uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
   if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (current.halfSync)))
   {
@@ -43,10 +43,7 @@ uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   return reqFuel;
 }
 
-// Force this to be inlined via LTO: it's worth 40 loop/sec on AVR
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes"
-uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -103,10 +100,8 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
   }
   return pwApplyNitrous((unsigned int)intermediate, page10, current);
 }
-#pragma GCC diagnostic pop
 
-
-uint16_t calculatePWLimit(const config2 &page2, const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const statuses &current)
 {
   uint32_t tempLimit = percentageApprox(page2.dutyLim, current.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
@@ -135,6 +130,22 @@ uint16_t calculatePWLimit(const config2 &page2, const statuses &current)
   return tempLimit;
 }
 
+// Apply the pwLimit if staging is disabled and engine is not cranking
+TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
+  if (pw<=injOpenTime) {
+    return 0U;
+  }
+  if( (!current.engineIsCranking) && (page10.stagingEnabled == false) ) { 
+    return min(pw, pwLimit);
+  }
+  return pw;
+}
+
+static inline bool canApplyStaging(const config2 &page2, const config10 &page10) {
+    //To run staged injection, the number of cylinders must be less than the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+ return  (page10.stagingEnabled == true) 
+      && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
+}
 
 static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
   // Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. 
@@ -151,7 +162,7 @@ static inline uint32_t calcStageSecondaryPw(uint16_t primaryPW, uint16_t injOpen
   return fastDiv(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizeSec);
 }
 
-pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current) {
+TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current) {
   uint16_t secondaryPW = 0U;
   if(canApplyStaging(page2, page10) && (primaryPw!=0U) )
   {
@@ -338,7 +349,25 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
   } 
 }
 
-uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
+TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
   // Convert injector open time from tune to microseconds & apply voltage correction if required
   return page2.injOpen * current.batCorrection; 
+}
+
+
+pulseWidths computePulseWidths(byte VE, long MAP, uint16_t corrections, const config2 &page2, const config10 &page10, statuses &current) {
+  uint16_t pwLimit = calculatePWLimit(page2, current);
+  uint16_t injOpenTime = calculateOpenTime(page2, current);
+  uint16_t primaryPw = applyPwLimits(PW( calculateRequiredFuel(page2, current), 
+                                        VE, 
+                                        MAP, 
+                                        corrections, 
+                                        injOpenTime, 
+                                        page10, 
+                                        current),
+                                      pwLimit,
+                                      injOpenTime,
+                                      page10,
+                                      current);
+  return calculateSecondaryPw(primaryPw, pwLimit, injOpenTime, page2, page10, current);  
 }

@@ -2,6 +2,8 @@
 #include "../test_utils.h"
 #include "fuel_calcs.h"
 
+extern uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current);
+
 static void test_inactive_cranking(void) {
     config10 page10 = {};
     statuses current = {};
