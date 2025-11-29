@@ -55,3 +55,5 @@ static inline bool canApplyStaging(const config2 &page2, const config10 &page10)
 
 pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current);
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current);
+
+uint16_t calculateOpenTime(const config2 &page2, const statuses &current);
