@@ -521,7 +521,7 @@ void __attribute__((always_inline)) loop(void)
       //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!currentStatus.engineIsCranking) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
-      calculateStaging(pwLimit);
+      calculateStaging(currentStatus.PW1, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
