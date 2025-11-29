@@ -144,7 +144,19 @@ static void test_PW_Very_Large_Correction()
   context.current.corrections = 1500;
 
   pulseWidths result = computePulseWidths(context);
-  TEST_ASSERT_EQUAL(21465, result.primary); //Additional allowed error here 
+  TEST_ASSERT_EQUAL(21465, result.primary);
+  TEST_ASSERT_EQUAL(0, result.secondary);
+}
+
+static void test_PW_Zero_Correction()
+{
+  //This is the same as the test_PW_No_Multiply, but with correction changed to 0
+  auto context = getBasicFullContext();
+  
+  context.current.corrections = 0;
+
+  pulseWidths result = computePulseWidths(context);
+  TEST_ASSERT_EQUAL(0, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
@@ -160,5 +172,6 @@ void testComputePulseWidths(void)
     RUN_TEST_P(test_PW_batt_correction);
     RUN_TEST_P(test_PW_ae_adder);
     RUN_TEST_P(test_PW_nitrous_stageboth);
+    RUN_TEST_P(test_PW_Zero_Correction);
   }
 }
