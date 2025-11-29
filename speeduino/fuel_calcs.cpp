@@ -1,6 +1,7 @@
 #include "fuel_calcs.h"
 #include "maths.h"
 #include "unit_testing.h"
+#include "globals.h"
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations

@@ -2,6 +2,8 @@
 #include "../test_utils.h"
 #include "pw_test_context.h"
 #include "test_pw_applyNitrous.h"
+#include "config_pages.h"
+#include "statuses.h"
 
 extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current);
 

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "globals.h"
+#include "statuses.h"
+#include "config_pages.h"
 
 /**
  * @file

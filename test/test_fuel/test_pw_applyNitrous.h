@@ -1,7 +1,5 @@
 #pragma once
 
-#include "globals.h"
-
 static inline void setup_nitrous_stage1(config10 &page10, statuses &current) {
   page10.n2o_stage1_minRPM = 20; // RPM/100
   page10.n2o_stage1_maxRPM = 30; // RPM/100

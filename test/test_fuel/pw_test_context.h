@@ -1,6 +1,7 @@
 #pragma once
 
-#include "globals.h"
+#include "config_pages.h"
+#include "statuses.h"
 
 // Gather all inputs to the calculation into one place
 struct ComputePulseWidthsContext {
