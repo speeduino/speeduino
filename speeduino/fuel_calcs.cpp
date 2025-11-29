@@ -43,8 +43,7 @@ uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   return reqFuel;
 }
 uint16_t inj_opentime_uS = 0;
-uint16_t staged_req_fuel_mult_pri = 0;
-uint16_t staged_req_fuel_mult_sec = 0;   
+  
 
 // Force this to be inlined via LTO: it's worth 40 loop/sec on AVR
 #pragma GCC diagnostic push

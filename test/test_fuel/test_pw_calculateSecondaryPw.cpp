@@ -6,8 +6,6 @@
 #include "globals.h"
 
 extern pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, const statuses &current);
-extern uint16_t staged_req_fuel_mult_pri;
-extern uint16_t staged_req_fuel_mult_sec;   
 
 struct testContext {
     config2 page2;
@@ -24,10 +22,6 @@ static testContext getStageContext(uint8_t mode) {
     context.page2.injType = INJ_TYPE_PORT;
     context.page10.stagedInjSizePri = 250;
     context.page10.stagedInjSizeSec = 500;
-    uint32_t totalInjector = context.page10.stagedInjSizePri + context.page10.stagedInjSizeSec;
-
-    staged_req_fuel_mult_pri = (100 * totalInjector) / context.page10.stagedInjSizePri;
-    staged_req_fuel_mult_sec = (100 * totalInjector) / context.page10.stagedInjSizeSec;
 
     return context;
 }
