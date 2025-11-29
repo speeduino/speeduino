@@ -496,7 +496,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = PW(req_fuel_uS, currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS, configPage10, currentStatus);
+      currentStatus.PW1 = PW(calculateRequiredFuel(configPage2, currentStatus), currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS, configPage10, currentStatus);
 
       int injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
