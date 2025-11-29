@@ -18,7 +18,7 @@ uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, 
 uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current);
 uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime);
 
-void calculateStaging(uint32_t);
+void calculateStaging(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current);
 
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
 
