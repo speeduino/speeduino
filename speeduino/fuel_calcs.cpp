@@ -21,7 +21,7 @@ static inline uint8_t calcNitrousStagePercent(uint8_t minRPMDiv100, uint8_t maxR
   uint16_t minRPM = minRPMDiv100*UINT16_C(100);
   uint16_t maxRPM = maxRPMDiv100*UINT16_C(100);
   uint16_t rpmRange = maxRPM - minRPM;
-  uint8_t adderPercent = (uint8_t)udiv_32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
+  auto adderPercent = (uint8_t)udiv_32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
   return 100U - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
 }
 
@@ -55,7 +55,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
 {
   uint32_t tempLimit = percentageApprox(page2.dutyLim, current.revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2U; }
   //Optimise for power of two divisions where possible
   switch(current.nSquirts)  {
     case 1:
@@ -98,7 +98,7 @@ static inline uint32_t applyAFRMultiplier(uint32_t intermediate, const config2 &
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
   } else {
-    if ( (page2.incorporateAFR == true) ) {
+    if ( page2.incorporateAFR ) {
       uint16_t multiplier = ((uint16_t)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
@@ -163,7 +163,7 @@ TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, con
 static inline bool canApplyStaging(const config2 &page2, const config10 &page10) {
     //To run staged injection, the number of cylinders must be less than the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
  return  (page10.stagingEnabled == true) 
-      && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
+      && (page2.nCylinders <= (uint8_t)INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
 }
 
 static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
@@ -226,7 +226,7 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
     //Scale the 'full' pulsewidth by each of the injector capacities
     if(page10.stagingMode == STAGING_MODE_TABLE) {
       return applyStagingModeTable(primaryPw, injOpenTime, page10, current);
-    };
+    }
     if(page10.stagingMode == STAGING_MODE_AUTO) {
       return applyStagingModeAuto(primaryPw, pwLimit, injOpenTime, page10);
     }
@@ -240,11 +240,11 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
   current.PW1 = current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
 
   #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pw) \
-    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? pw : 0U;
+    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? (pw) : 0U
 
   // The PW calcs already applied the logic to enable staging or not. If there is a valid
   // secondary PW, staging is enabled 
-  if ((pulse_widths.secondary!=0U)) {
+  if (pulse_widths.secondary!=0U) {
     //Allocate the primary and secondary pulse widths based on the fuel configuration
     switch (page2.nCylinders) {
       case 1:

@@ -5,13 +5,6 @@
 
 extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current);
 
-// Convenience function
-// static uint16_t computePrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
-//   context.current.VE = VE;
-//   context.current.MAP = MAP;
-//   context.current.corrections = corrections; 
-//   return computePrimaryPulseWidth(REQ_FUEL, injOpenTime, context.page2, context.page6, context.page10, context.current);
-// }
 static uint16_t calcPrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   context.current.VE = VE;
   context.current.MAP = MAP;
