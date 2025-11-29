@@ -132,7 +132,6 @@ uint16_t correctionsFuel(void)
 
   //Voltage correction is applied to the injector opening time
   currentStatus.batCorrection = correctionBatVoltage();
-  inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.iatCorrection); }

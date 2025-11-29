@@ -9,6 +9,7 @@ void runAllFuelTests(void)
     extern void testApplyPwLimit(void);
     extern void testCalculateSecondaryPw(void);
     extern void testApplyPwToInjectorChannels(void);
+    extern void testCalculateOpenTime(void);
 
     testCorrections();
     testPW();
@@ -17,6 +18,7 @@ void runAllFuelTests(void)
     testApplyPwLimit();
     testCalculateSecondaryPw();
     testApplyPwToInjectorChannels();
+    testCalculateOpenTime();
 }
 
 DEVICE_TEST(runAllFuelTests)
