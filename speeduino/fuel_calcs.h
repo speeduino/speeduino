@@ -35,3 +35,15 @@ extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set wit
 */
 extern uint16_t staged_req_fuel_mult_pri;
 extern uint16_t staged_req_fuel_mult_sec;
+
+
+// Apply the pwLimit if staging is disabled and engine is not cranking
+static inline uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
+  if (pw<=injOpenTime) {
+    return 0U;
+  }
+  if( !current.engineIsCranking && (page10.stagingEnabled == false) ) { 
+    return min(pw, pwLimit);
+  }
+  return pw;
+}

@@ -7,12 +7,14 @@ void runAllFuelTests(void)
     extern void testStaging(void );
     extern void testPwApplyNitrous(void);
     extern void testCalculateRequiredFuel(void);
+    extern void testApplyPwLimit(void);
 
     testCorrections();
     testPW();
     testStaging();
     testPwApplyNitrous();
     testCalculateRequiredFuel();
+    testApplyPwLimit();
 }
 
 DEVICE_TEST(runAllFuelTests)
