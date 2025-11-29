@@ -362,9 +362,9 @@ bool SetRevolutionTime(uint32_t revTime)
 static __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
 #endif
 {
-  if (revTime!=revolutionTime) {
-    revolutionTime = revTime;
-    setAngleConverterRevolutionTime(revolutionTime);
+  if (revTime!=currentStatus.revolutionTime) {
+    currentStatus.revolutionTime = revTime;
+    setAngleConverterRevolutionTime(revTime);
     return true;
   } 
   return false;
@@ -403,7 +403,7 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
 static __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
 {
   if (UpdateRevolutionTimeFromTeeth(isCamTeeth)) {
-    return RpmFromRevolutionTimeUs(revolutionTime);
+    return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
   }
 
   return currentStatus.RPM;
@@ -460,7 +460,7 @@ static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamT
       bool newRevtime = SetRevolutionTime(((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth) >> (isCamTeeth ? 1U : 0U));
       interrupts();
       if (newRevtime) {
-        return RpmFromRevolutionTimeUs(revolutionTime);
+        return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
       }
     }
   }
@@ -993,7 +993,7 @@ void triggerSec_DualWheel(void)
   }
   else 
   {
-    triggerSecFilterTime = revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and triggerSecFilterTime get out of alignment and curGap2 never exceeds the filter value
+    triggerSecFilterTime = currentStatus.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and triggerSecFilterTime get out of alignment and curGap2 never exceeds the filter value
   } //Trigger filter
 }
 /** Dual Wheel - Get RPM.
@@ -1187,8 +1187,8 @@ uint16_t getRPM_BasicDistributor(void)
   } 
   else { tempRPM = stdGetRPM(distributorSpeed); }
 
-  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(triggerActualTeeth == 1) { MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
+  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(triggerActualTeeth == 1) { MAX_STALL_TIME = currentStatus.revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
   return tempRPM;
@@ -1786,7 +1786,7 @@ uint16_t getRPM_4G63(void)
       tempRPM = stdGetRPM(CAM_SPEED);
       //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
       //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
-      MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+      MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
       if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
     }
   }
@@ -2407,7 +2407,7 @@ void triggerSec_HondaJ32(void)
 
 uint16_t getRPM_HondaJ32(void)
 {
-  return RpmFromRevolutionTimeUs(revolutionTime); // revolutionTime set by SetRevolutionTime()
+  return RpmFromRevolutionTimeUs(currentStatus.revolutionTime); // currentStatus.revolutionTime set by SetRevolutionTime()
 }
 
 int getCrankAngle_HondaJ32(void)
@@ -2635,7 +2635,7 @@ uint16_t getRPM_Miata9905(void)
   else
   {
     tempRPM = stdGetRPM(CAM_SPEED);
-    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+    MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
     if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
   }
 
@@ -2832,7 +2832,7 @@ uint16_t getRPM_MazdaAU(void)
       tempToothAngle = triggerToothAngle;
       SetRevolutionTime(36*(toothLastToothTime - toothLastMinusOneToothTime)); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
       interrupts();
-      tempRPM = (tempToothAngle * MICROS_PER_MIN) / revolutionTime;
+      tempRPM = (tempToothAngle * MICROS_PER_MIN) / currentStatus.revolutionTime;
     }
     else { tempRPM = stdGetRPM(CRANK_SPEED); }
   }
@@ -3118,8 +3118,8 @@ uint16_t getRPM_Nissan360(void)
       SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> 1); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
       interrupts();
     }
-    tempRPM = RpmFromRevolutionTimeUs(revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
-    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+    tempRPM = RpmFromRevolutionTimeUs(currentStatus.revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
+    MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   }
   else { tempRPM = 0; }
 
@@ -3565,7 +3565,7 @@ uint16_t getRPM_Daihatsu(void)
         noInterrupts();
         SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1));
         interrupts();
-        tempRPM = RpmFromRevolutionTimeUs(revolutionTime);
+        tempRPM = RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
       } //is tooth #2
     }
     else { tempRPM = 0; } //No sync
@@ -5911,7 +5911,7 @@ uint16_t getRPM_SuzukiK6A(void)
 
   uint16_t tempRPM = stdGetRPM(CAM_SPEED);
 
-  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
   return tempRPM;
@@ -6128,7 +6128,7 @@ uint16_t getRPM_FordTFI(void)
   } 
   else { tempRPM = stdGetRPM(distributorSpeed); }
 
-  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
   return tempRPM;

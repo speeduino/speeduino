@@ -494,7 +494,7 @@ void __attribute__((always_inline)) loop(void)
       //Begin the fuel calculation
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus, revolutionTime);
+      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus);
       //Calculate an injector pulsewidth from the VE
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
