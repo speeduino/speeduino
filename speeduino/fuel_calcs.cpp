@@ -27,12 +27,10 @@ static inline uint8_t calcNitrousStagePercent(uint8_t minRPMDiv100, uint8_t maxR
 
 static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPMDiv100, uint8_t maxRPMDiv100, uint8_t adderMinDiv100, uint8_t adderMaxDiv100, const statuses &current)
 {
-  // uint16_t adderMin = adderMinDiv100 * UINT16_C(100);
-  // uint16_t adderMax = adderMaxDiv100 * UINT16_C(100);
-  // uint16_t adderRange = adderMin - adderMax;
-  // return adderMax + percentage(calcNitrousStagePercent(minRPMDiv100, maxRPMDiv100, current), adderRange); //Calculate the above percentage of the calculated ms value.
-
-  return (adderMaxDiv100 + percentage(calcNitrousStagePercent(minRPMDiv100, maxRPMDiv100, current), (adderMinDiv100 - adderMaxDiv100))) * 100; //Calculate the above percentage of the calculated ms value.
+  uint16_t adderMin = adderMinDiv100 * UINT16_C(100);
+  uint16_t adderMax = adderMaxDiv100 * UINT16_C(100);
+  uint16_t adderRange = adderMin - adderMax;
+  return adderMax + percentage(calcNitrousStagePercent(minRPMDiv100, maxRPMDiv100, current), adderRange); //Calculate the above percentage of the calculated ms value.
 }
 
 //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
