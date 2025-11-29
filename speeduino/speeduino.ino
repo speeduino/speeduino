@@ -494,24 +494,13 @@ void __attribute__((always_inline)) loop(void)
       //Begin the fuel calculation
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus);
       //Calculate an injector pulsewidth from the VE
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      uint16_t injOpenTime = calculateOpenTime(configPage2, currentStatus);
-      uint16_t primaryPw = applyPwLimits(PW( calculateRequiredFuel(configPage2, currentStatus), 
-                                            currentStatus.VE, 
+      auto pulse_widths = computePulseWidths(currentStatus.VE, 
                                             currentStatus.MAP, 
-                                            currentStatus.corrections, 
-                                            injOpenTime, 
-                                            configPage10, 
-                                            currentStatus),
-                                          pwLimit,
-                                          injOpenTime,
-                                          configPage10,
-                                          currentStatus);
-      auto pulse_widths = calculateSecondaryPw(primaryPw, pwLimit, injOpenTime, configPage2, configPage10, currentStatus);
+                                            currentStatus.corrections, configPage2, configPage10, currentStatus);
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
       applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);
 

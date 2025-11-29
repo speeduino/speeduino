@@ -3,6 +3,8 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current);
+
 #define PW_ALLOWED_ERROR  30
 
 int16_t REQ_FUEL;
