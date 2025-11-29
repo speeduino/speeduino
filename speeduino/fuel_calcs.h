@@ -1,8 +1,26 @@
+/**
+ * @file
+ * @brief Pulse width calculations
+ */
 #pragma once
 
 #include <stdint.h>
 #include "config_pages.h"
 #include "statuses.h"
+
+/** @brief Result of pulse width calculation */
+struct pulseWidths {
+  /** @brief Primary pulse width in µS */
+  uint16_t primary;
+
+  /** @brief Secondary pulse width in µS. 
+   * 
+   * Will be zero if no secondary pulse width is required. 
+   * E.g. staged injection is not turned on or the required
+   * fuel can be applied using the primary injectors.
+   */
+  uint16_t secondary;
+};
 
 /**
  * @brief This function calculates the required pulsewidth time (in us) given the current system state
@@ -17,8 +35,6 @@
 uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current);
 uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current);
 uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime);
-
-void calculateStaging(uint16_t primaryPw, uint16_t pwLimit, uint16_t injOpenTime, const config2 &page2, const config10 &page10, statuses &current);
 
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
 
@@ -46,4 +62,11 @@ static inline uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t inj
     return min(pw, pwLimit);
   }
   return pw;
+}
+
+
+static inline bool canApplyStaging(const config2 &page2, const config10 &page10) {
+    //To run staged injection, the number of cylinders must be less than the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)
+ return  (page10.stagingEnabled == true) 
+      && (page2.nCylinders <= INJ_CHANNELS || page2.injType == INJ_TYPE_TBODY); //Final check is to ensure that DFCO isn't active, which would cause an overflow below (See #267)  
 }
