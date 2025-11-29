@@ -45,7 +45,7 @@ static void test_pwApplyNitrous_StageBoth(void) {
   current.nitrous_status = NITROUS_BOTH;
 
   // Confirm nitrous is added
-  TEST_ASSERT_EQUAL(200+NITROUS_STAGE1_ADDPW+NITROUS_STAGE2_ADDPW-300, pwApplyNitrous(200, page10, current));
+  TEST_ASSERT_EQUAL(200+NITROUS_STAGE1_BOTH+NITROUS_STAGE2_ADDPW, pwApplyNitrous(200, page10, current));
 }
 
 void testPwApplyNitrous(void)

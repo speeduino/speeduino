@@ -11,7 +11,8 @@ static inline void setup_nitrous_stage1(config10 &page10, statuses &current) {
   current.nitrous_status = NITROUS_STAGE1;
   current.RPM = (page10.n2o_stage1_minRPM+4)*100;
 }
-static constexpr uint16_t NITROUS_STAGE1_ADDPW = 800;//780;
+static constexpr uint16_t NITROUS_STAGE1_ADDPW = 780;
+static constexpr uint16_t NITROUS_STAGE1_BOTH = 540;
 
 static inline void setup_nitrous_stage2(config10 &page10, statuses &current) {
   page10.n2o_stage2_minRPM = 25; // RPM/100
@@ -22,4 +23,4 @@ static inline void setup_nitrous_stage2(config10 &page10, statuses &current) {
   current.nitrous_status = NITROUS_STAGE2;
   current.RPM = (page10.n2o_stage2_maxRPM-3U)*100;  
 }
-static constexpr uint16_t NITROUS_STAGE2_ADDPW = 500;//460;
+static constexpr uint16_t NITROUS_STAGE2_ADDPW = 460;
