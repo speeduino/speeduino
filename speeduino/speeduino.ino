@@ -492,11 +492,34 @@ void __attribute__((always_inline)) loop(void)
       //-----------------------------------------------------------------------------------------------------
 
       //Begin the fuel calculation
+      
+      //Check that the duty cycle of the chosen pulsewidth isn't too high.
+      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus, revolutionTime);
       //Calculate an injector pulsewidth from the VE
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      currentStatus.PW1 = PW(calculateRequiredFuel(configPage2, currentStatus), currentStatus.VE, currentStatus.MAP, currentStatus.corrections, inj_opentime_uS, configPage10, currentStatus);
+      uint16_t primaryPw = applyPwLimits(PW( calculateRequiredFuel(configPage2, currentStatus), 
+                                            currentStatus.VE, 
+                                            currentStatus.MAP, 
+                                            currentStatus.corrections, 
+                                            inj_opentime_uS, 
+                                            configPage10, 
+                                            currentStatus),
+                                          pwLimit,
+                                          inj_opentime_uS,
+                                          configPage10,
+                                          currentStatus);
+
+      calculateStaging(primaryPw, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
+
+      //***********************************************************************************************
+      //BEGIN INJECTION TIMING
+      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
+      if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
+
+      unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
+
 
       int injector1StartAngle = 0;
       uint16_t injector2StartAngle = 0;
@@ -515,21 +538,6 @@ void __attribute__((always_inline)) loop(void)
       #if INJ_CHANNELS >= 8
       uint16_t injector8StartAngle = 0;
       #endif
-      
-      //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus, revolutionTime);
-      //Apply the pwLimit if staging is disabled and engine is not cranking
-      if( (!currentStatus.engineIsCranking) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
-
-      calculateStaging(currentStatus.PW1, pwLimit, inj_opentime_uS, configPage2, configPage10, currentStatus);
-
-      //***********************************************************************************************
-      //BEGIN INJECTION TIMING
-      currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-      if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
-
-      unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
-
       injector1StartAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, channel1InjDegrees, currentStatus.injAngle);
 
       //Repeat the above for each cylinder
