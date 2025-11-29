@@ -22,6 +22,16 @@ struct pulseWidths {
   uint16_t secondary;
 };
 
-pulseWidths computePulseWidths(byte VE, long MAP, uint16_t corrections, const config2 &page2, const config10 &page10, statuses &current);
+
+/**
+ * @brief This function calculates the required pulsewidth time (in µS) given the current tune & system state
+ * 
+ * @param page2 Tune settings 
+ * @param page6 Tune settings
+ * @param page10 Tune settings
+ * @param current Current system state
+ * @return pulseWidths The primary and secondary injector pulse width in uS
+ */
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current);
 
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current);

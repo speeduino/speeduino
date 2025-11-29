@@ -498,9 +498,11 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.corrections = correctionsFuel();
 
-      auto pulse_widths = computePulseWidths(currentStatus.VE, 
-                                            currentStatus.MAP, 
-                                            currentStatus.corrections, configPage2, configPage10, currentStatus);
+      pulseWidths pulse_widths = computePulseWidths(
+                                    configPage2,
+                                    configPage6,
+                                    configPage10, 
+                                    currentStatus);
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
       applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);
 
