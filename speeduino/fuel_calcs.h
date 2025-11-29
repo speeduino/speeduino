@@ -14,7 +14,7 @@
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-uint16_t PW(int REQ_FUEL, uint8_t VE, long MAP, uint16_t corrections, int injOpen);
+uint16_t PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current);
 
 uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime);
 

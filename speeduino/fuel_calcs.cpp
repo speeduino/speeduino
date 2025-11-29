@@ -1,5 +1,32 @@
 #include "fuel_calcs.h"
 #include "globals.h"
+#include "unit_testing.h"
+
+static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPM, uint8_t maxRPM, uint8_t adderMin, uint8_t adderMax, const statuses &current)
+{
+  int16_t adderRange = (maxRPM - minRPM) * 100;
+  int16_t adderPercent = ((current.RPM - (minRPM * 100)) * 100) / adderRange; //The percentage of the way through the RPM range
+  adderPercent = 100 - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
+  return (adderMax + percentage(adderPercent, (adderMin - adderMax))) * 100; //Calculate the above percentage of the calculated ms value.
+}
+
+//Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
+TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page10, const statuses &current)
+{
+  if (current.nitrous_status!=NITROUS_OFF && pw!=0U)
+  {
+    if( (current.nitrous_status == NITROUS_STAGE1) || (current.nitrous_status == NITROUS_BOTH) )
+    {
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage1_minRPM, page10.n2o_stage1_maxRPM, page10.n2o_stage1_adderMin, page10.n2o_stage1_adderMax, current);
+    }
+    if( (current.nitrous_status == NITROUS_STAGE2) || (current.nitrous_status == NITROUS_BOTH) )
+    {
+      pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage2_minRPM, page10.n2o_stage2_maxRPM, page10.n2o_stage2_adderMin, page10.n2o_stage2_adderMax, current);
+    }
+  }
+
+  return pw;
+}
 
 uint16_t req_fuel_uS = 0; /**< The required fuel variable (As calculated by TunerStudio) in uS */
 uint16_t inj_opentime_uS = 0;
@@ -9,7 +36,7 @@ uint16_t staged_req_fuel_mult_sec = 0;
 // Force this to be inlined via LTO: it's worth 40 loop/sec on AVR
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wattributes"
-uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen)
+uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint16_t corrections, int injOpen, const config10 &page10, const statuses &current)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -64,7 +91,7 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
       intermediate = UINT16_MAX;  //Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
     }
   }
-  return (unsigned int)(intermediate);
+  return pwApplyNitrous((unsigned int)intermediate, page10, current);
 }
 #pragma GCC diagnostic pop
 
