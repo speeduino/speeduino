@@ -21,7 +21,7 @@ void test_PW_setCommon()
   injOpen = 1000;
   // Turns off pwLimit
   configPage2.dutyLim = 100;
-  revolutionTime = UINT16_MAX;
+  currentStatus.revolutionTime = UINT16_MAX;
   currentStatus.nSquirts = 1;
   // No staging
   configPage10.stagingEnabled = false;
@@ -43,7 +43,7 @@ void test_PW_No_Multiply()
 {
   test_PW_setCommon();
   setup_basic_pw();
-  revolutionTime = 10000UL; //6000 rpm
+  currentStatus.revolutionTime = 10000UL; //6000 rpm
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen, configPage10, currentStatus);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
