@@ -68,11 +68,6 @@ static table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPa
 static table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 static table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
 
-TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
-  // Convert injector open time from tune to microseconds & apply voltage correction if required
-  return page2.injOpen * current.batCorrection; 
-}
-
 #ifndef UNIT_TEST // Scope guard for unit testing
 
 void setup(void)

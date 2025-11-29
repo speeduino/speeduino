@@ -336,3 +336,8 @@ void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &p
     current.stagingActive = false; //Clear the staging active flag   
   } 
 }
+
+uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
+  // Convert injector open time from tune to microseconds & apply voltage correction if required
+  return page2.injOpen * current.batCorrection; 
+}
