@@ -2,13 +2,17 @@
 #include <unity.h>
 #include "schedule_calcs.h"
 #include "../test_utils.h"
+#include "type_traits.h"
 
 static void nullIgnCallback(void) {};
 
+using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
+
 void test_adjust_crank_angle_pending_below_minrevolutions()
 {
-    auto counter = decltype(+IGN4_COUNTER){0};
-    auto compare = decltype(+IGN4_COMPARE){0};
+    auto counter = raw_counter_t();
+    auto compare = raw_compare_t();
     IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
 
     schedule.Status = PENDING;
@@ -28,8 +32,8 @@ void test_adjust_crank_angle_pending_below_minrevolutions()
 
 void test_adjust_crank_angle_pending_above_minrevolutions()
 {
-    auto counter = decltype(+IGN4_COUNTER){0};
-    auto compare = decltype(+IGN4_COMPARE){0};
+    auto counter = raw_counter_t();
+    auto compare = raw_compare_t();
     IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
     
     schedule.Status = PENDING;
@@ -52,8 +56,8 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
 
 void test_adjust_crank_angle_running()
 {
-    auto counter = decltype(+IGN4_COUNTER){0};
-    auto compare = decltype(+IGN4_COMPARE){0};
+    auto counter = raw_counter_t();
+    auto compare = raw_compare_t();
     IgnitionSchedule schedule(counter, compare, nullIgnCallback, nullIgnCallback);
     
     schedule.Status = RUNNING;

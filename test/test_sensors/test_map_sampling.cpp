@@ -152,6 +152,7 @@ struct cycleMinmumMAPReading_test_data {
 
 static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
   test_data.current.RPMdiv100 = 43;
+  test_data.current.startRevolutions = 0U;
   test_data.page2.mapSwitchPoint = 15; 
   test_data.cycle_min.cycleStartIndex = 0;
   test_data.cycle_min.mapMinimum = UINT16_MAX;
