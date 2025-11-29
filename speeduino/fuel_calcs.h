@@ -38,21 +38,6 @@ uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_
 
 extern uint16_t inj_opentime_uS; /**< The injector opening time. This is set within Tuner Studio, but stored here in uS rather than mS */
 
-/** @name Staging
- * These values are a percentage of the total (Combined) req_fuel value that would be required for each injector channel to deliver that much fuel.   
- * 
- * Eg:
- *  - Pri injectors are 250cc
- *  - Sec injectors are 500cc
- *  - Total injector capacity = 750cc
- * 
- *  - staged_req_fuel_mult_pri = 300% (The primary injectors would have to run 3x the overall PW in order to be the equivalent of the full 750cc capacity
- *  - staged_req_fuel_mult_sec = 150% (The secondary injectors would have to run 1.5x the overall PW in order to be the equivalent of the full 750cc capacity
-*/
-extern uint16_t staged_req_fuel_mult_pri;
-extern uint16_t staged_req_fuel_mult_sec;
-
-
 // Apply the pwLimit if staging is disabled and engine is not cranking
 static inline uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
   if (pw<=injOpenTime) {
@@ -63,7 +48,6 @@ static inline uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, uint16_t inj
   }
   return pw;
 }
-
 
 static inline bool canApplyStaging(const config2 &page2, const config10 &page10) {
     //To run staged injection, the number of cylinders must be less than the injector channels (ie Assuming you're running paired injection, you need at least as many injector channels as you have cylinders, half for the primaries and half for the secondaries)

@@ -63,6 +63,21 @@ uint8_t fuelChannelsOn; /**< The current state of the fuel system (on or off) */
 uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 uint32_t revLimitAllowedEndTime = 0;
 
+static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  // Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. 
+  // It is added on again after that calculation. 
+  primaryPW = primaryPW - injOpenTime;
+  uint32_t totalInjector = page10.stagedInjSizePri + page10.stagedInjSizeSec;
+  return ((uint32_t)primaryPW)*totalInjector;
+}
+
+static inline uint32_t calcStagePrimaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  return fastDiv(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizePri);
+}
+static inline uint32_t calcStageSecondaryPw(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10) {
+  return fastDiv(calcTotalStagePw(primaryPW, injOpenTime, page10), page10.stagedInjSizeSec);
+}
+
 static table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
 static table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 static table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
@@ -72,47 +87,35 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
   uint16_t secondaryPW = 0U;
   if(canApplyStaging(page2, page10) && (primaryPw!=0U) )
   {
-    //Scale the 'full' pulsewidth by each of the injector capacities
-    primaryPw -= injOpenTime; //Subtract the opening time from PW1 as it needs to be multiplied out again by the pri/sec req_fuel values below. It is added on again after that calculation. 
-    uint32_t tempPW1 = div100((uint32_t)primaryPw * staged_req_fuel_mult_pri);
+    uint32_t pwPrimaryStaged = calcStagePrimaryPw(primaryPw, injOpenTime, page10);
 
     if(page10.stagingMode == STAGING_MODE_TABLE)
     {
-      uint32_t tempPW3 = div100((uint32_t)primaryPw * staged_req_fuel_mult_sec); //This is ONLY needed in in table mode. Auto mode only calculates the difference.
-
       uint8_t stagingSplit = get3DTableValue(&stagingTable, current.fuelLoad, current.RPM);
-      primaryPw = div100((100U - stagingSplit) * tempPW1);
-      primaryPw += injOpenTime; 
-
-      //PW2 is used temporarily to hold the secondary injector pulsewidth. It will be assigned to the correct channel below
-      if(stagingSplit > 0) 
+      if(stagingSplit > 0U) 
       { 
-        secondaryPW = div100(stagingSplit * tempPW3); 
-        secondaryPW += injOpenTime;
-      }
-      else
-      {
-        secondaryPW = 0; 
+        uint32_t pwSecondaryStaged = calcStageSecondaryPw(primaryPw, injOpenTime, page10);
+        uint32_t primary = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTime;
+        uint32_t secondary = percentage(stagingSplit, pwSecondaryStaged) + injOpenTime;
+        primaryPw = (uint16_t)min(primary, (uint32_t)UINT16_MAX);
+        secondaryPW = (uint16_t)min(secondary, (uint32_t)UINT16_MAX);
+      } else {
+        primaryPw = pwPrimaryStaged + injOpenTime;
       }
     }
     else if(page10.stagingMode == STAGING_MODE_AUTO)
     {
-      primaryPw = tempPW1;
       //If automatic mode, the primary injectors are used all the way up to their limit (Configured by the pulsewidth limit setting)
       //If they exceed their limit, the extra duty is passed to the secondaries
-      if(tempPW1 > pwLimit)
+      if(pwPrimaryStaged > pwLimit)
       {
-        uint32_t extraPW = tempPW1 - pwLimit + injOpenTime; //The open time must be added here AND below because tempPW1 does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+        uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
+        uint32_t secondary = fastDiv(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
         primaryPw = pwLimit;
-        secondaryPW = udiv_32_16(extraPW * staged_req_fuel_mult_sec, staged_req_fuel_mult_pri); //Convert the 'left over' fuel amount from primary injector scaling to secondary
-        secondaryPW += injOpenTime;
+        secondaryPW = (uint16_t)min(secondary, (uint32_t)UINT16_MAX);
+      } else {
+        primaryPw = pwPrimaryStaged + injOpenTime;
       }
-      else 
-      {
-        //If tempPW1 < pwLImit it means that the entire fuel load can be handled by the primaries and staging is inactive. 
-        primaryPw += injOpenTime; //Add the open time back in
-        secondaryPW = 0; //Secondary PW is simply set to 0 as it is not required
-      } 
     }
   }
 
