@@ -1,7 +1,6 @@
 #include "fuel_calcs.h"
-#include "globals.h"
-#include "unit_testing.h"
 #include "maths.h"
+#include "unit_testing.h"
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -83,7 +82,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
  * @param injOpen Injector opening time. The time the injector take to open minus the time it takes to close (Both in uS)
  * @return uint16_t The injector pulse width in uS
  */
-TESTABLE_INLINE_STATIC uint16_t PW(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current)
 {
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpen);
@@ -128,7 +127,7 @@ TESTABLE_INLINE_STATIC uint16_t PW(uint16_t injOpenTime, const config2 &page2, c
     if (current.isAcceleratingTPS)
     {
       //AE Adds % of req_fuel
-      if ( page2.aeApplyMode == AE_MODE_ADDER )
+      if ( (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U))
         {
           intermediate += div100(((uint32_t)REQ_FUEL) * (current.AEamount - 100U));
         }
@@ -371,11 +370,11 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   uint16_t pwLimit = calculatePWLimit(page2, current);
   uint16_t injOpenTime = calculateOpenTime(page2, current);
-  uint16_t primaryPw = applyPwLimits(PW(injOpenTime, 
-                                        page2,
-                                        page6,
-                                        page10, 
-                                        current),
+  uint16_t primaryPw = applyPwLimits(calcPrimaryPulseWidth( injOpenTime, 
+                                                            page2,
+                                                            page6,
+                                                            page10, 
+                                                            current),
                                       pwLimit,
                                       injOpenTime,
                                       page10,
