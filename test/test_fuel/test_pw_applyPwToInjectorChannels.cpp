@@ -1,7 +1,6 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "fuel_calcs.h"
-#include "globals.h"
 
 extern void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current);
 
