@@ -33,8 +33,6 @@
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
-#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
-
 #define MICROS_PER_SEC INT32_C(1000000)
 #define MICROS_PER_MIN INT32_C(MICROS_PER_SEC*60U)
 #define MICROS_PER_HOUR INT32_C(MICROS_PER_MIN*60U)
