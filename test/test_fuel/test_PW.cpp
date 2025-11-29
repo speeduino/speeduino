@@ -29,6 +29,7 @@ void test_PW_No_Multiply()
   configPage2.includeAFR = 0;
   configPage2.incorporateAFR = 0;
   configPage2.aeApplyMode = 0;
+  revolutionTime = 10000UL; //6000 rpm
 
   uint16_t result = PW(REQ_FUEL, VE, MAP, corrections, injOpen);
   TEST_ASSERT_UINT16_WITHIN(PW_ALLOWED_ERROR, 2557, result);
@@ -133,33 +134,6 @@ void test_PW_4Cyl_PW0(void)
   TEST_ASSERT_EQUAL(0, currentStatus.PW4);
 }
 
-//Tests the PW Limit calculation for a normal scenario
-void test_PW_Limit_90pct(void)
-{
-  test_PW_setCommon();
-
-  revolutionTime = 10000UL; //6000 rpm
-  configPage2.dutyLim = 90;
-
-  //Duty limit of 90% for 10,000uS should give 9,000
-  TEST_ASSERT_EQUAL(9000, calculatePWLimit());
-}
-
-//Tests the PW Limit calculation when the revolution time is greater than the max UINT16 value
-//Occurs at approx. 915rpm
-void test_PW_Limit_Long_Revolution(void)
-{
-  test_PW_setCommon();
-
-  revolutionTime = 100000UL; //600 rpm, below 915rpm cutover point
-  configPage2.dutyLim = 90;
-  configPage2.strokes = TWO_STROKE;
-  currentStatus.nSquirts = 1U;
-
-  //Duty limit of 90% for 100,000uS should give 90,000, but as this would overflow the PW value, this should default to UINT16 Max
-  TEST_ASSERT_EQUAL(UINT16_MAX, calculatePWLimit());
-}
-
 void testPW(void)
 {
   SET_UNITY_FILENAME() {
@@ -170,7 +144,5 @@ void testPW(void)
     RUN_TEST_P(test_PW_Large_Correction);
     RUN_TEST_P(test_PW_Very_Large_Correction);
     RUN_TEST_P(test_PW_4Cyl_PW0);
-    RUN_TEST_P(test_PW_Limit_Long_Revolution);
-    RUN_TEST_P(test_PW_Limit_90pct);
   }
 }

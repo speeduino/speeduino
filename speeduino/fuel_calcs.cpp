@@ -78,14 +78,13 @@ uint16_t __attribute__((always_inline)) PW(int REQ_FUEL, byte VE, long MAP, uint
 }
 #pragma GCC diagnostic pop
 
-uint16_t calculatePWLimit()
+uint16_t calculatePWLimit(const config2 &page2, const statuses &current, uint32_t revTime)
 {
-  uint32_t tempLimit = percentage(configPage2.dutyLim, revolutionTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
+  uint32_t tempLimit = percentage(page2.dutyLim, revTime); //The pulsewidth limit is determined to be the duty cycle limit (Eg 85%) by the total time it takes to perform 1 revolution
   //Handle multiple squirts per rev
-  if (configPage2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
+  if (page2.strokes == FOUR_STROKE) { tempLimit = tempLimit * 2; }
   //Optimise for power of two divisions where possible
-  switch(currentStatus.nSquirts)
-  {
+  switch(current.nSquirts)  {
     case 1:
       //No action needed
       break;
@@ -100,10 +99,10 @@ uint16_t calculatePWLimit()
       break;
     default:
       //Non-PoT squirts value. Perform (slow) uint32_t division
-      tempLimit = tempLimit / currentStatus.nSquirts;
+      tempLimit = tempLimit / current.nSquirts;
       break;
   }
-  if(tempLimit > UINT16_MAX) { tempLimit = UINT16_MAX; }
+  if(tempLimit > (uint32_t)UINT16_MAX) { tempLimit = UINT16_MAX; }
 
   return tempLimit;
 }

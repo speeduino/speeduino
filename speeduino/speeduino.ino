@@ -544,7 +544,7 @@ void __attribute__((always_inline)) loop(void)
       #endif
       
       //Check that the duty cycle of the chosen pulsewidth isn't too high.
-      uint16_t pwLimit = calculatePWLimit();
+      uint16_t pwLimit = calculatePWLimit(configPage2, currentStatus, revolutionTime);
       //Apply the pwLimit if staging is disabled and engine is not cranking
       if( (!currentStatus.engineIsCranking) && (configPage10.stagingEnabled == false) ) { if (currentStatus.PW1 > pwLimit) { currentStatus.PW1 = pwLimit; } }
 
