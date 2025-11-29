@@ -295,13 +295,10 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(__AVR__)
-
 static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
   return divisor>(uint16_t)(dividend>>16U);
 }
 
-#endif
 /**
  * @brief Optimised division: uint32_t/uint16_t => uint16_t
  * 
@@ -321,7 +318,7 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 {
 #if defined(__AVR__)
 
-    if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
+    if (divisor==0U) { return UINT16_MAX; }
 
     #define INDEX_REG "r16"
 
@@ -357,6 +354,27 @@ static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
 #endif
 }
 
+/**
+ * @brief U32/U16 => U32
+ * 
+ * On AVR, Will apply a faster division algorithm if possible. Otherwise, falls back to 
+ * regular 32-bit division.
+ * 
+ * Should be called for any division involving a 32-bit value and a 16-bit value when 
+ * *it's likely (but not certain) that the result will fit into 16-bits.*
+ * 
+ * @param dividend The dividend (numerator)
+ * @param divisor The divisor (denominator)
+ * @return uint32_t 
+ */
+static inline uint32_t fastDiv(uint32_t dividend, uint16_t divisor) {
+#if defined(__AVR__)
+  if (udiv_is16bit_result(dividend, divisor)) {
+    return udiv_32_16(dividend, divisor);
+  }
+#endif
+  return dividend / divisor;    
+}
 
 /**
  * @brief Same as udiv_32_16(), except this will round to nearest integer 
