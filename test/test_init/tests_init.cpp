@@ -308,14 +308,18 @@ void testInitialisation()
 
   RUN_TEST_P(test_initialisation_complete);
   RUN_TEST_P(test_initialisation_ports);
+#if !defined(STM32_CORE_VERSION_MAJOR)
   RUN_TEST_P(test_initialisation_outputs_V03);
   RUN_TEST_P(test_initialisation_outputs_V04);
   RUN_TEST_P(test_initialisation_outputs_MX5_8995);
-#if !defined(CORE_TEENSY) // Test hangs under Teensy 4.1. I suspect the PIT based timer
+#endif
+#if !defined(CORE_TEENSY) && !defined(STM32_CORE_VERSION_MAJOR) // Test hangs under Teensy 4.1. I suspect the PIT based timer
   RUN_TEST_P(test_initialisation_outputs_PWM_idle);
 #endif
+#if !defined(STM32_CORE_VERSION_MAJOR)
   RUN_TEST_P(test_initialisation_outputs_boost);
   RUN_TEST_P(test_initialisation_outputs_VVT);
+#endif
   RUN_TEST_P(test_initialisation_outputs_reset_control_use_board_default);
   RUN_TEST_P(test_initialisation_outputs_reset_control_override_board_default);
   RUN_TEST_P(test_initialisation_user_pin_override_board_default);

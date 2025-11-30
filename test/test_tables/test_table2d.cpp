@@ -64,8 +64,8 @@ static void test_table2dLookup(const table2D<axis_t, value_t, sizeT> &table, uin
         axis_t lookupValue = intermediate(table.axis[i], table.axis[i+1], binFrac);
         value_t expected = map(lookupValue, table.axis[i], table.axis[i+1], table.values[i], table.values[i+1]);
         value_t result = table2D_getValue(&table, lookupValue);
-        char szMsg[256];
-        sprintf(szMsg, "Loop: %" PRIu8 ", VT %s, AT %s lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %" PRIu8, i, GetTypeName<value_t>(), GetTypeName<value_t>(), (int)lookupValue, (int)table.values[i], (int)table.values[i+1], binFrac);
+        char szMsg[512];
+        sprintf(szMsg, "Loop: %d, VT %s, AT %s, lookup: %d, data[i]: %d, data[i+1]: %d, binFrac %d", (int)i, GetTypeName<value_t>(), GetTypeName<axis_t>(), (int)lookupValue, (int)table.values[i], (int)table.values[i+1], (int)binFrac);
         TEST_ASSERT_INT_WITHIN_MESSAGE(1U, expected, result, szMsg);
         TEST_ASSERT_EQUAL(i+1, table.cache.lastBinUpperIndex);
     }
