@@ -13,9 +13,10 @@ void setup(void (*runAllTests)(void))
     pinMode(LED_BUILTIN, OUTPUT);
 
     // Wait for Serial Monitor connection
-    while (!Serial) {
-        ; 
-    }
+    // Note: waiting on !Serial doesn't work on STM32
+#if !defined(SIMULATOR)
+    delay(5000);
+#endif
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
