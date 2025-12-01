@@ -358,7 +358,7 @@ static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
 }
 
-bool engineIsRunning(uint32_t curTime) {
+TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
   // Check how long ago the last tooth was seen compared to now. 
   // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
   // toothLastToothTime can be greater than curTime if a pulse occurs between getting the latest time and doing the comparison
@@ -932,6 +932,7 @@ decoder_t triggerSetup_missingTooth(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1136,6 +1137,7 @@ decoder_t triggerSetup_DualWheel(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1350,6 +1352,7 @@ decoder_t triggerSetup_BasicDistributor(void)
                 .setGetCrankAngle(getCrankAngle_BasicDistributor)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)
+                .setIsEngineRunning(sharedEngineIsRunning)
                 .build();
 }
 /** @} */
@@ -1492,6 +1495,7 @@ decoder_t triggerSetup_GM7X(void)
                   .setGetCrankAngle(getCrankAngle_GM7X)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1924,6 +1928,7 @@ decoder_t triggerSetup_4G63(void)
                   .setGetCrankAngle(getCrankAngle_4G63)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -2050,6 +2055,7 @@ decoder_t triggerSetup_24X(void)
                   .setGetRPM(getRPM_24X)
                   .setGetCrankAngle(getCrankAngle_24X)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2163,6 +2169,7 @@ decoder_t triggerSetup_Jeep2000(void)
                   .setGetRPM(getRPM_Jeep2000)
                   .setGetCrankAngle(getCrankAngle_Jeep2000)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -2287,6 +2294,7 @@ decoder_t triggerSetup_Audi135(void)
                   .setGetRPM(getRPM_Audi135)
                   .setGetCrankAngle(getCrankAngle_Audi135)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2390,6 +2398,7 @@ decoder_t triggerSetup_HondaD17(void)
                   .setGetRPM(getRPM_HondaD17)
                   .setGetCrankAngle(getCrankAngle_HondaD17)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2531,6 +2540,7 @@ decoder_t triggerSetup_HondaJ32(void)
                   .setGetRPM(getRPM_HondaJ32)
                   .setGetCrankAngle(getCrankAngle_HondaJ32)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2813,6 +2823,7 @@ decoder_t triggerSetup_Miata9905(void)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2968,6 +2979,7 @@ decoder_t triggerSetup_MazdaAU(void)
                   .setGetRPM(getRPM_MazdaAU)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3036,6 +3048,7 @@ decoder_t triggerSetup_non360(void)
                   .setGetRPM(getRPM_non360)
                   .setGetCrankAngle(getCrankAngle_non360)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3271,6 +3284,7 @@ decoder_t triggerSetup_Nissan360(void)
                   .setGetCrankAngle(getCrankAngle_Nissan360)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3551,6 +3565,7 @@ decoder_t triggerSetup_Subaru67(void)
                   .setGetCrankAngle(getCrankAngle_Subaru67)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3718,6 +3733,7 @@ decoder_t triggerSetup_Daihatsu(void)
                   .setGetRPM(getRPM_Daihatsu)
                   .setGetCrankAngle(getCrankAngle_Daihatsu)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3851,6 +3867,7 @@ decoder_t triggerSetup_Harley(void)
                   .setGetRPM(getRPM_Harley)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4034,6 +4051,7 @@ decoder_t triggerSetup_ThirtySixMinus222(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4160,6 +4178,7 @@ decoder_t triggerSetup_ThirtySixMinus21(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4353,6 +4372,7 @@ decoder_t triggerSetup_420a(void)
                   .setGetCrankAngle(getCrankAngle_420a)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -4474,6 +4494,7 @@ decoder_t triggerSetup_Webber(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4635,6 +4656,7 @@ decoder_t triggerSetup_FordST170(void)
                   .setGetCrankAngle(getCrankAngle_FordST170)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4686,6 +4708,7 @@ decoder_t triggerSetup_DRZ400(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5036,6 +5059,7 @@ decoder_t triggerSetup_NGC(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5227,6 +5251,7 @@ decoder_t triggerSetup_Vmax(void)
                   .setGetRPM(getRPM_Vmax)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5396,6 +5421,7 @@ decoder_t triggerSetup_Renix(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_Renix)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5768,6 +5794,7 @@ decoder_t triggerSetup_RoverMEMS()
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -6098,6 +6125,7 @@ decoder_t triggerSetup_SuzukiK6A(void)
                   .setGetCrankAngle(getCrankAngle_SuzukiK6A)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -6381,6 +6409,7 @@ decoder_t triggerSetup_FordTFI(void)
                   .setGetCrankAngle(getCrankAngle_FordTFI)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
