@@ -9,7 +9,9 @@
 /// @brief Decoder type definitions
 ///
 /// These constants are used to identify the various supported decoder types. 
-/// They **must** be kept in sync with the corresponding options in the ini file.
+/// They **must** be kept in sync with:
+///   * the corresponding options in the ini file.
+///   * the corresponding array in decoder_init.cpp
 /// @{
 #define DECODER_MISSING_TOOTH     0
 #define DECODER_BASIC_DISTRIBUTOR 1
