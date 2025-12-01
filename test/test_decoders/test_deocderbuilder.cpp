@@ -98,7 +98,7 @@ static void test_setGetRPM(void)
     assert_decoder_builder( builder );
 }
 
-static int incrementGetCrankAngle(void)
+static int16_t incrementGetCrankAngle(void)
 {
     counter++;
     return 0;
@@ -146,6 +146,26 @@ static void test_setReset(void)
     assert_decoder_builder( builder );
 }
 
+static bool engineRunningIncrement(uint32_t)
+{
+    counter++;
+    return false;
+}
+
+static void test_setIsEngineRunning(void)
+{
+    auto builder = decoder_builder_t().setIsEngineRunning( engineRunningIncrement );
+
+    counter = 0;
+    builder.build().isEngineRunning(999UL);
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setIsEngineRunning( nullptr );
+    assert_decoder_builder( builder );
+}
+
 void testDecoderBuilder(void)
 {
   SET_UNITY_FILENAME() {
@@ -157,5 +177,6 @@ void testDecoderBuilder(void)
     RUN_TEST( test_setGetCrankAngle );
     RUN_TEST( test_setSetEndTeeth );
     RUN_TEST( test_setReset );
+    RUN_TEST( test_setIsEngineRunning );
   }
 }

@@ -25,6 +25,7 @@ struct decoder_builder_t {
   decoder_builder_t& setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle);
   decoder_builder_t& setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth);
   decoder_builder_t& setReset(decoder_t::reset_t reset);
+  decoder_builder_t& setIsEngineRunning(decoder_t::engine_running_t isRunning);
 
   decoder_t build(void) const
   {
