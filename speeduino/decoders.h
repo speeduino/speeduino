@@ -98,10 +98,6 @@ decoder_t triggerSetup_FordTFI(void);
 // TODO: use same VVT scheme as other decoders
 int getCamAngle_Miata9905(void);
 
-/** @brief This function is called when the engine is stopped, or when the engine is started. It resets the decoder state and the tooth tracking variables */
-// TODO: move to decoder_t
-void resetDecoder(void);
-
 /** @brief Set the input pins for the decoders. Pin numbers are pulled from the tune
  * 
  * @param primaryPin Primary pin - usually the crank trigger

@@ -14,6 +14,7 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setGetRPM(&nullGetRPM);
     (void)setGetCrankAngle(&nullGetCrankAngle);
     (void)setSetEndTeeth(&nullTriggerHandler);
+    (void)setReset(&nullTriggerHandler);
 }
 
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
@@ -73,5 +74,11 @@ decoder_builder_t& decoder_builder_t::setGetCrankAngle(decoder_t::getCrankAngle_
 decoder_builder_t& decoder_builder_t::setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth)
 {
     decoder.setEndTeeth = setEndTeeth==nullptr ? &nullTriggerHandler : setEndTeeth;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
+{
+    decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
     return *this;
 }
