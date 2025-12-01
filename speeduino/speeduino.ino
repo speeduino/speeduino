@@ -317,7 +317,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
-      resetDecoder();
+      getDecoder().reset();
       currentStatus.hasSync = false;
       currentStatus.halfSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
