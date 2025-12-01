@@ -13,6 +13,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     TEST_ASSERT_NOT_NULL(decoder.getRPM);
     TEST_ASSERT_NOT_NULL(decoder.getCrankAngle);
     TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
+    TEST_ASSERT_NOT_NULL(decoder.reset);
 
     // Test these functions can be called without crashing
     decoder.primary.callback();
@@ -21,6 +22,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     decoder.getRPM();
     decoder.getCrankAngle();
     decoder.setEndTeeth();
+    decoder.reset();
 }
 
 static void test_ctor()
@@ -130,6 +132,20 @@ static void test_setSetEndTeeth(void)
     assert_decoder_builder( builder );
 }
 
+static void test_setReset(void)
+{
+    auto builder = decoder_builder_t().setReset( triggerHandlerIncrement );
+
+    counter = 0;
+    builder.build().reset();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setReset( nullptr );
+    assert_decoder_builder( builder );
+}
+
 void testDecoderBuilder(void)
 {
   SET_UNITY_FILENAME() {
@@ -140,5 +156,6 @@ void testDecoderBuilder(void)
     RUN_TEST( test_setGetRPM );
     RUN_TEST( test_setGetCrankAngle );
     RUN_TEST( test_setSetEndTeeth );
+    RUN_TEST( test_setReset );
   }
 }
