@@ -1,10 +1,12 @@
 #include "decoder_builder.h"
+#include "preprocessor.h"
 
 #pragma GCC optimize ("Os")
 
 static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
 static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
-static int nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static int16_t nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
 
 decoder_builder_t::decoder_builder_t(void)
 {
@@ -15,6 +17,7 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setGetCrankAngle(&nullGetCrankAngle);
     (void)setSetEndTeeth(&nullTriggerHandler);
     (void)setReset(&nullTriggerHandler);
+    (void)setIsEngineRunning(&nullEngineIsRunning);
 }
 
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
@@ -80,5 +83,11 @@ decoder_builder_t& decoder_builder_t::setSetEndTeeth(decoder_t::setEndTeeth_t se
 decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
 {
     decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_running_t isRunning)
+{
+    decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
     return *this;
 }

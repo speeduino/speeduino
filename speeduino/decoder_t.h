@@ -35,19 +35,41 @@ struct decoder_t
   /** @brief The tertiary interrupt configuration - for decoders that use a 3rd input. E.g. VVT */
   interrupt_t tertiary;
 
-  using getRPM_t = uint16_t(*)(void);
+  /// @{
   /** @brief The function to get the RPM */
+  using getRPM_t = uint16_t(*)(void);
   getRPM_t getRPM;
+  /// @}
 
-  using getCrankAngle_t = int(*)(void);
+  /// @{
   /** @brief The function to get the crank angle */
+  using getCrankAngle_t = int16_t(*)(void);
   getCrankAngle_t getCrankAngle;
+  /// @}
 
-  using setEndTeeth_t = void(*)(void); 
+  /// @{
   /** @brief The function to set the end teeth for ignition calculations */
+  using setEndTeeth_t = void(*)(void); 
   setEndTeeth_t setEndTeeth;
+  /// @}
 
-  using reset_t = void(*)(void);
+  /// @{
   /** @brief The function to reset the decoder. Called when the engine is stopped, or when the engine is started */
+  using reset_t = void(*)(void);
   reset_t reset;
+  /// @}
+
+  /// @{
+  /**
+   * @brief The function to test if the engine is running
+   * 
+   * This is based on whether or not the decoder has detected a tooth recently
+   * 
+   * @param curTime The time in µS to use for the liveness check. Typically the result of a recent call to micros() 
+   * @return true If the engine is turning
+   * @return false If the engine is not turning
+   */  
+  using engine_running_t = bool(*)(uint32_t);
+  engine_running_t isEngineRunning;
+  /// @}
 };

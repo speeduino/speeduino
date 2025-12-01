@@ -366,7 +366,7 @@ static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
 }
 
-bool engineIsRunning(uint32_t curTime) {
+TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
   // Check how long ago the last tooth was seen compared to now. 
   // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
   // toothLastToothTime can be greater than curTime if a pulse occurs between getting the latest time and doing the comparison
@@ -817,7 +817,7 @@ static uint16_t getRPM_missingTooth(void)
   return tempRPM;
 }
 
-static int getCrankAngle_missingTooth(void)
+static int16_t getCrankAngle_missingTooth(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -937,6 +937,7 @@ decoder_t triggerSetup_missingTooth(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1049,7 +1050,7 @@ static uint16_t getRPM_DualWheel(void)
 /** Dual Wheel - Get Crank angle.
  * 
  * */
-static int getCrankAngle_DualWheel(void)
+static int16_t getCrankAngle_DualWheel(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1141,6 +1142,7 @@ decoder_t triggerSetup_DualWheel(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1229,7 +1231,7 @@ static uint16_t getRPM_BasicDistributor(void)
   return tempRPM;
 
 }
-static int getCrankAngle_BasicDistributor(void)
+static int16_t getCrankAngle_BasicDistributor(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1353,6 +1355,7 @@ decoder_t triggerSetup_BasicDistributor(void)
                 .setGetCrankAngle(getCrankAngle_BasicDistributor)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)
+                .setIsEngineRunning(sharedEngineIsRunning)
                 .build();
 }
 /** @} */
@@ -1427,7 +1430,7 @@ static uint16_t getRPM_GM7X(void)
 {
    return stdGetRPM(CRANK_SPEED);
 }
-static int getCrankAngle_GM7X(void)
+static int16_t getCrankAngle_GM7X(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1493,6 +1496,7 @@ decoder_t triggerSetup_GM7X(void)
                   .setGetCrankAngle(getCrankAngle_GM7X)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -1798,7 +1802,7 @@ static uint16_t getRPM_4G63(void)
   return tempRPM;
 }
 
-static int getCrankAngle_4G63(void)
+static int16_t getCrankAngle_4G63(void)
 {
     int crankAngle = 0;
     if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -1924,6 +1928,7 @@ decoder_t triggerSetup_4G63(void)
                   .setGetCrankAngle(getCrankAngle_4G63)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -1978,7 +1983,7 @@ static uint16_t getRPM_24X(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int getCrankAngle_24X(void)
+static int16_t getCrankAngle_24X(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2050,6 +2055,7 @@ decoder_t triggerSetup_24X(void)
                   .setGetRPM(getRPM_24X)
                   .setGetCrankAngle(getCrankAngle_24X)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2107,7 +2113,7 @@ static uint16_t getRPM_Jeep2000(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int getCrankAngle_Jeep2000(void)
+static int16_t getCrankAngle_Jeep2000(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2162,6 +2168,7 @@ decoder_t triggerSetup_Jeep2000(void)
                   .setGetRPM(getRPM_Jeep2000)
                   .setGetCrankAngle(getCrankAngle_Jeep2000)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -2235,7 +2242,7 @@ static uint16_t getRPM_Audi135(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int getCrankAngle_Audi135(void)
+static int16_t getCrankAngle_Audi135(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2286,6 +2293,7 @@ decoder_t triggerSetup_Audi135(void)
                   .setGetRPM(getRPM_Audi135)
                   .setGetCrankAngle(getCrankAngle_Audi135)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2342,7 +2350,7 @@ static uint16_t getRPM_HondaD17(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int getCrankAngle_HondaD17(void)
+static int16_t getCrankAngle_HondaD17(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2387,6 +2395,7 @@ decoder_t triggerSetup_HondaD17(void)
                   .setGetRPM(getRPM_HondaD17)
                   .setGetCrankAngle(getCrankAngle_HondaD17)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2472,7 +2481,7 @@ static uint16_t getRPM_HondaJ32(void)
   return RpmFromRevolutionTimeUs(currentStatus.revolutionTime); // currentStatus.revolutionTime set by SetRevolutionTime()
 }
 
-static int getCrankAngle_HondaJ32(void)
+static int16_t getCrankAngle_HondaJ32(void)
 {
   // Returns values from 0 to 360.
   // Tooth 1 time occurs 360/24 degrees after TDC.
@@ -2526,6 +2535,7 @@ decoder_t triggerSetup_HondaJ32(void)
                   .setGetRPM(getRPM_HondaJ32)
                   .setGetCrankAngle(getCrankAngle_HondaJ32)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2683,7 +2693,7 @@ static uint16_t getRPM_Miata9905(void)
   return tempRPM;
 }
 
-static int getCrankAngle_Miata9905(void)
+static int16_t getCrankAngle_Miata9905(void)
 {
     int crankAngle = 0;
     //if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -2807,6 +2817,7 @@ decoder_t triggerSetup_Miata9905(void)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2908,7 +2919,7 @@ static uint16_t getRPM_MazdaAU(void)
   return tempRPM;
 }
 
-static int getCrankAngle_MazdaAU(void)
+static int16_t getCrankAngle_MazdaAU(void)
 {
     int crankAngle = 0;
     if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -2961,6 +2972,7 @@ decoder_t triggerSetup_MazdaAU(void)
                   .setGetRPM(getRPM_MazdaAU)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -2982,7 +2994,7 @@ static uint16_t getRPM_non360(void)
   return tempRPM;
 }
 
-static int getCrankAngle_non360(void)
+static int16_t getCrankAngle_non360(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -3029,6 +3041,7 @@ decoder_t triggerSetup_non360(void)
                   .setGetRPM(getRPM_non360)
                   .setGetCrankAngle(getCrankAngle_non360)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3201,7 +3214,7 @@ static uint16_t getRPM_Nissan360(void)
   return tempRPM;
 }
 
-static int getCrankAngle_Nissan360(void)
+static int16_t getCrankAngle_Nissan360(void)
 {
   //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   int crankAngle = 0;
@@ -3265,6 +3278,7 @@ decoder_t triggerSetup_Nissan360(void)
                   .setGetCrankAngle(getCrankAngle_Nissan360)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3445,7 +3459,7 @@ static uint16_t getRPM_Subaru67(void)
   return tempRPM;
 }
 
-static int getCrankAngle_Subaru67(void)
+static int16_t getCrankAngle_Subaru67(void)
 {
   int crankAngle = 0;
   if( decoderStatus.syncStatus==SyncStatus::Full )
@@ -3545,6 +3559,7 @@ decoder_t triggerSetup_Subaru67(void)
                   .setGetCrankAngle(getCrankAngle_Subaru67)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3652,7 +3667,7 @@ static uint16_t getRPM_Daihatsu(void)
   return tempRPM;
 
 }
-static int getCrankAngle_Daihatsu(void)
+static int16_t getCrankAngle_Daihatsu(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -3711,6 +3726,7 @@ decoder_t triggerSetup_Daihatsu(void)
                   .setGetRPM(getRPM_Daihatsu)
                   .setGetCrankAngle(getCrankAngle_Daihatsu)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -3796,7 +3812,7 @@ static uint16_t getRPM_Harley(void)
   return tempRPM;
 }
 
-static int getCrankAngle_Harley(void)
+static int16_t getCrankAngle_Harley(void)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -3842,6 +3858,7 @@ decoder_t triggerSetup_Harley(void)
                   .setGetRPM(getRPM_Harley)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4024,6 +4041,7 @@ decoder_t triggerSetup_ThirtySixMinus222(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4149,6 +4167,7 @@ decoder_t triggerSetup_ThirtySixMinus21(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4262,7 +4281,7 @@ static uint16_t getRPM_420a(void)
   return tempRPM;
 }
 
-static int getCrankAngle_420a(void)
+static int16_t getCrankAngle_420a(void)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -4342,6 +4361,7 @@ decoder_t triggerSetup_420a(void)
                   .setGetCrankAngle(getCrankAngle_420a)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -4463,6 +4483,7 @@ decoder_t triggerSetup_Webber(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4538,7 +4559,7 @@ static uint16_t getRPM_FordST170(void)
   return tempRPM;
 }
 
-static int getCrankAngle_FordST170(void)
+static int16_t getCrankAngle_FordST170(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -4624,6 +4645,7 @@ decoder_t triggerSetup_FordST170(void)
                   .setGetCrankAngle(getCrankAngle_FordST170)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -4675,6 +4697,7 @@ decoder_t triggerSetup_DRZ400(void)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5021,6 +5044,7 @@ decoder_t triggerSetup_NGC(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5163,7 +5187,7 @@ static uint16_t getRPM_Vmax(void)
 }
 
 
-static int getCrankAngle_Vmax(void)
+static int16_t getCrankAngle_Vmax(void)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -5210,6 +5234,7 @@ decoder_t triggerSetup_Vmax(void)
                   .setGetRPM(getRPM_Vmax)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5379,6 +5404,7 @@ decoder_t triggerSetup_Renix(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_Renix)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5750,6 +5776,7 @@ decoder_t triggerSetup_RoverMEMS()
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */
@@ -5979,7 +6006,7 @@ static uint16_t getRPM_SuzukiK6A(void)
   return tempRPM;
 }
 
-static int getCrankAngle_SuzukiK6A(void)
+static int16_t getCrankAngle_SuzukiK6A(void)
 {
   //Grab some variables that are used in the trigger code and assign them to temp variables.
   noInterrupts();
@@ -6078,6 +6105,7 @@ decoder_t triggerSetup_SuzukiK6A(void)
                   .setGetCrankAngle(getCrankAngle_SuzukiK6A)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -6226,7 +6254,7 @@ static uint16_t getRPM_FordTFI(void)
 /** Ford TFI - Get Crank angle.
  * 
  * */
-static int getCrankAngle_FordTFI(void)
+static int16_t getCrankAngle_FordTFI(void)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -6361,6 +6389,7 @@ decoder_t triggerSetup_FordTFI(void)
                   .setGetCrankAngle(getCrankAngle_FordTFI)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
+                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 /** @} */

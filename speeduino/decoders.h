@@ -1,7 +1,6 @@
 #ifndef DECODERS_H
 #define DECODERS_H
 
-#include <SimplyAtomic.h>
 #include <stdint.h>
 #include "decoder_t.h"
 
@@ -44,18 +43,6 @@ struct decoder_status_t {
 
 /** @brief Access the current decoder status */
 const decoder_status_t getDecoderStatus(void);
-
-/**
- * @brief Is the engine running?
- * 
- * This is based on whether or not the decoder has detected a tooth recently
- * 
- * @param curTime The time in µS to use for the liveness check. Typically the result of a recent call to micros() 
- * @return true If the engine is turning
- * @return false If the engine is not turning
- */
-// TODO: move to decoder_t
-bool engineIsRunning(uint32_t curTime);
 
 // TODO: move these to logger.cpp
 void loggerPrimaryISR(void);
