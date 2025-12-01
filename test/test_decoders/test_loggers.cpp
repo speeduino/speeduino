@@ -70,6 +70,7 @@ static void assertPrimaryTrigger(uint8_t decoder, uint8_t edge)
     char szMsg[64];
     snprintf(szMsg, sizeof(szMsg), "Decoder %d, edge %d", decoder, edge);
 
+    getDecoder().reset();
     configureDecoderForStartStop(decoder);
     decoderStatus.validTrigger = false;
     delayMicroseconds(triggerFilterTime + 1);
