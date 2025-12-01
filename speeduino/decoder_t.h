@@ -35,19 +35,33 @@ struct decoder_t
   /** @brief The tertiary interrupt configuration - for decoders that use a 3rd input. E.g. VVT */
   interrupt_t tertiary;
 
-  using getRPM_t = uint16_t(*)(void);
+  /// @{
   /** @brief The function to get the RPM */
+  using getRPM_t = uint16_t(*)(void);
   getRPM_t getRPM;
+  /// @}
 
-  using getCrankAngle_t = int(*)(void);
+  /// @{
   /** @brief The function to get the crank angle */
+  using getCrankAngle_t = int(*)(void);
   getCrankAngle_t getCrankAngle;
+  /// @}
 
-  using setEndTeeth_t = void(*)(void); 
+  /// @{
   /** @brief The function to set the end teeth for ignition calculations */
+  using setEndTeeth_t = void(*)(void); 
   setEndTeeth_t setEndTeeth;
+  /// @}
 
-  using reset_t = void(*)(void);
+  /// @{
   /** @brief The function to reset the decoder. Called when the engine is stopped, or when the engine is started */
+  using reset_t = void(*)(void);
   reset_t reset;
+  /// @}
+
+  /// @{
+  /** @brief The function to test if the engine is running */
+  using engine_running_t = bool(*)(uint32_t);
+  engine_running_t isEngineRunning;
+  /// @}
 };

@@ -299,7 +299,7 @@ void __attribute__((always_inline)) loop(void)
     }
 
     currentLoopTime = micros();
-    if ( engineIsRunning(currentLoopTime) )
+    if ( getDecoder().isEngineRunning(currentLoopTime) )
     {
       currentStatus.longRPM = getDecoder().getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
