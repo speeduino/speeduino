@@ -46,4 +46,8 @@ struct decoder_t
   using setEndTeeth_t = void(*)(void); 
   /** @brief The function to set the end teeth for ignition calculations */
   setEndTeeth_t setEndTeeth;
+
+  using reset_t = void(*)(void);
+  /** @brief The function to reset the decoder. Called when the engine is stopped, or when the engine is started */
+  reset_t reset;
 };
