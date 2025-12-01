@@ -131,6 +131,7 @@ static inline int8_t getAdvance1(void)
 void __attribute__((always_inline)) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+      getTimerFlags();
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms
