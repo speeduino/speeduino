@@ -140,7 +140,7 @@ static void test_start_stop_falling(uint8_t decoder)
 
 static void test_start_stop(void)
 {
-    for (uint8_t decoder = DECODER_MISSING_TOOTH; decoder < DECODER_FORD_TFI; ++decoder)
+    for (uint8_t decoder = 0; decoder < DECODER_MAX; ++decoder)
     {
         if (   DECODER_NGC!=decoder     // See test_start_stop_ngc
             && DECODER_RENIX!=decoder   // See issue #1347

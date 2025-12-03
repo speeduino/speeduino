@@ -44,6 +44,10 @@ constexpr uint8_t DECODER_HONDA_J32         = 27;
 constexpr uint8_t DECODER_FORD_TFI          = 28;
 /// @}
 
+/// @cond
+constexpr uint8_t DECODER_MAX = (DECODER_FORD_TFI+1U);
+/// @endcond
+
 /** @brief Get the current decoder configuration */
 const decoder_t& getDecoder(void);
 
