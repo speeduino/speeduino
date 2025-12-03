@@ -109,6 +109,10 @@ static void detachDecoderInterrupts(void)
 
 static void test_start_stop_rising(uint8_t decoder)
 {
+#if !defined(SIMULATOR) && defined(CORE_AVR)
+  TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
+#endif
+
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 0;
     currentStatus.initialisationComplete = false;
@@ -121,6 +125,10 @@ static void test_start_stop_rising(uint8_t decoder)
 
 static void test_start_stop_falling(uint8_t decoder)
 {
+#if !defined(SIMULATOR) && defined(CORE_AVR)
+  TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
+#endif
+
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 1;
     setDecoder(decoder);
@@ -145,6 +153,9 @@ static void test_start_stop(void)
 
 static void test_start_stop_ngc(void)
 {
+#if !defined(SIMULATOR) && defined(CORE_AVR)
+  TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
+#endif
   pinTrigger = 19; // Example pin number
   setDecoder(DECODER_NGC);
 
@@ -170,7 +181,7 @@ static void test_start_stop_ngc(void)
   detachDecoderInterrupts();
 }
 
-void testLogger(void)
+void testToothLoggers(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_start_stop);
