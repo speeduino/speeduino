@@ -44,6 +44,10 @@
 #define DECODER_FORD_TFI          28
 /// @}
 
+/// @cond
+#define DECODER_MAX (DECODER_FORD_TFI+1)
+/// @endcond
+
 /** @brief Get the current decoder configuration */
 const decoder_t& getDecoder(void);
 
