@@ -27,9 +27,27 @@ static void test_sharedEngineIsRunning(void)
     TEST_ASSERT_FALSE(sharedEngineIsRunning(toothLastToothTime+MAX_STALL_TIME));
 }
 
+static void test_interrupt_isValid(void)
+{
+  interrupt_t subject;
+
+  TEST_ASSERT_FALSE(subject.isValid());
+  subject.edge = CHANGE;
+  TEST_ASSERT_FALSE(subject.isValid());
+  subject.callback = test_interrupt_isValid;
+  TEST_ASSERT_TRUE(subject.isValid());
+  subject.edge = RISING;
+  TEST_ASSERT_TRUE(subject.isValid());
+  subject.edge = FALLING;
+  TEST_ASSERT_TRUE(subject.isValid());
+  subject.edge = TRIGGER_EDGE_NONE;
+  TEST_ASSERT_FALSE(subject.isValid());
+}
+
 void testDecoder_General()
 {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_sharedEngineIsRunning);
+    RUN_TEST(test_interrupt_isValid);
   }
 }
