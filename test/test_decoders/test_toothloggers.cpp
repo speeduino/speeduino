@@ -165,7 +165,7 @@ static void test_start_stop_ngc(void)
   detachDecoderInterrupts();
 }
 
-void testLogger(void)
+void testToothLoggers(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_start_stop);
