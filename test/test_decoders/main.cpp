@@ -13,7 +13,8 @@ void runAllDecoderTests(void)
     extern void testDecoder_General(void);
     extern void testToothLoggers(void);
     extern void testDecoderBuilder(void);
-
+    extern void testDecoderInit(void);
+    
     testMissingTooth();
     testDualWheel();
     testRenix();
@@ -25,6 +26,7 @@ void runAllDecoderTests(void)
     testDecoder_General();
     testToothLoggers();
     testDecoderBuilder();
+    testDecoderInit();
 }
 
 DEVICE_TEST(runAllDecoderTests)
