@@ -20,6 +20,11 @@ struct interrupt_t
 
   /** @brief Detach the interrupt from a pin */
   void detach(uint8_t pin) const;
+
+  bool isValid(void) const
+  {
+    return edge!=TRIGGER_EDGE_NONE && callback!=nullptr;
+  }
 };
 
 /** @brief This structure represents a decoder configuration 

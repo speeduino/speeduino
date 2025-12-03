@@ -13,7 +13,7 @@ static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
 void interrupt_t::attach(uint8_t pin) const
 {
   detach(pin);
-  if (edge != TRIGGER_EDGE_NONE && callback != nullptr)
+  if (isValid())
   {
     attachInterrupt(digitalPinToInterrupt(pin), callback, edge);
   }
