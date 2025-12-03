@@ -17,10 +17,18 @@ void setup(void (*runAllTests)(void))
 #if !defined(SIMULATOR)
     delay(5000);
 #endif
+    while (!Serial) {
+        ; // Wait for serial connection
+    }
 
     UNITY_BEGIN();    // IMPORTANT LINE!
 
     runAllTests();
+
+    // A small delay here helps STM32
+#if !defined(SIMULATOR)
+    delay(500);
+#endif
 
     UNITY_END(); // stop unit testing
 
