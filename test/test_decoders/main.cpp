@@ -12,7 +12,7 @@ void runAllDecoderTests(void)
     extern void testSuzukiK6A_setEndTeeth(void);
     extern void testSuzukiK6A_getCrankAngle(void);
     extern void testDecoder_General(void);
-    extern void testLogger(void);
+    extern void testToothLoggers(void);
     extern void testDecoderBuilder(void);
 
     testMissingTooth();
@@ -24,7 +24,7 @@ void runAllDecoderTests(void)
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
     testDecoder_General();
-    testLogger();
+    testToothLoggers();
     testDecoderBuilder();
 }
 
