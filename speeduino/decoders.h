@@ -9,12 +9,14 @@ struct decoder_features_t {
   bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
   bool hasSecondary : 1; ///> Whether or not the pattern uses a secondary input
   bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
+  bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
 
   decoder_features_t(void)
     : supports2ndDeriv(false)
     , supportsSequential(false)
     , hasSecondary(false)
     , hasFixedCrankingTiming(false)
+    , supportsPerToothIgnition(false)
   {}
 };
 
