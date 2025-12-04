@@ -51,7 +51,7 @@ static decoder_t buildDecoder(uint8_t decoder)
     triggerSetup_HondaJ32,
     triggerSetup_FordTFI,
   };
-  static_assert(size_t(DECODER_MAX)==_countof(initialisers), "Decoder initialzer array mismatch");
+  static_assert(size_t(DECODER_MAX)==_countof(initialisers), "Decoder initializer array mismatch");
   if (decoder<_countof(initialisers))
   {
     return ((decoder_init_func_t)pgm_read_ptr(&initialisers[decoder]))();
