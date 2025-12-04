@@ -8,9 +8,10 @@
 
 /** @brief A builder for decoder_t - will make sure all required fields are set */
 struct decoder_builder_t {
-  decoder_t decoder;
+  decoder_t _decoder;
 
   decoder_builder_t(void);
+  explicit decoder_builder_t(const decoder_t &decoder);
 
   decoder_builder_t& setPrimaryTrigger(interrupt_t trigger);
   decoder_builder_t& setPrimaryTrigger(interrupt_t::callback_t handler, uint8_t edge);
@@ -29,6 +30,6 @@ struct decoder_builder_t {
 
   decoder_t build(void) const
   {
-    return decoder;
+    return _decoder;
   }
 };
