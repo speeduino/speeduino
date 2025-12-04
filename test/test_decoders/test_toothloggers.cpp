@@ -100,14 +100,10 @@ static void assertStartStopPrimaryTrigger(uint8_t decoder, uint8_t edge)
     assertPrimaryTrigger(decoder, edge);
 }
 
-static void detachDecoderInterrupts(void)
-{
-  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
-}
+// Used as pseudo parameter to support dynamic test naming.
+static uint8_t decoderToTest;
 
-static void test_start_stop_rising(uint8_t decoder)
+static void test_start_stop_rising(void)
 {
 #if !defined(SIMULATOR) && defined(CORE_AVR)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
@@ -116,14 +112,12 @@ static void test_start_stop_rising(uint8_t decoder)
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 0;
     currentStatus.initialisationComplete = false;
-    setDecoder(decoder);
+    setDecoder(decoderToTest);
 
-    assertStartStopPrimaryTrigger(decoder, getDecoder().primary.edge);
-
-    detachDecoderInterrupts();
+    assertStartStopPrimaryTrigger(decoderToTest, getDecoder().primary.edge);
 }
 
-static void test_start_stop_falling(uint8_t decoder)
+static void test_start_stop_falling(void)
 {
 #if !defined(SIMULATOR) && defined(CORE_AVR)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
@@ -131,22 +125,26 @@ static void test_start_stop_falling(uint8_t decoder)
 
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 1;
-    setDecoder(decoder);
+    setDecoder(decoderToTest);
 
-    assertStartStopPrimaryTrigger(decoder, getDecoder().primary.edge);
-
-    detachDecoderInterrupts();
+    assertStartStopPrimaryTrigger(decoderToTest, getDecoder().primary.edge);
 }
 
-static void test_start_stop(void)
+static void test_start_stop_all(void)
 {
     for (uint8_t decoder = 0; decoder < DECODER_MAX; ++decoder)
     {
         if (   DECODER_NGC!=decoder     // See test_start_stop_ngc
             && DECODER_RENIX!=decoder   // See issue #1347
             && DECODER_ROVERMEMS!=decoder) { // See issue #1348
-            test_start_stop_rising(decoder);
-            test_start_stop_falling(decoder);
+
+          decoderToTest = decoder;
+          char szName[128];
+
+          snprintf(szName, sizeof(szName), "test_start_stop_rising_%d", decoder);
+          UnityDefaultTestRun(test_start_stop_rising, szName, __LINE__);
+          snprintf(szName, sizeof(szName), "test_start_stop_falling_%d", decoder);
+          UnityDefaultTestRun(test_start_stop_falling, szName, __LINE__);
         }
     }
 }
@@ -177,14 +175,12 @@ static void test_start_stop_ngc(void)
   // Test primary trigger function
   fireInterrupt(pinTrigger, RISING);
   assertPrimaryTrigger(DECODER_NGC, getDecoder().primary.edge);
-
-  detachDecoderInterrupts();
 }
 
 void testToothLoggers(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_start_stop);
+    test_start_stop_all();
     RUN_TEST(test_start_stop_ngc);
   }
 }

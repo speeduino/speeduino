@@ -1,5 +1,14 @@
+#define CUSTOM_TEARDOWN
 #include "../test_harness_device.h"
 #include "../test_harness_native.h"
+#include "globals.h"
+
+void tearDown(void) 
+{ 
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+}
 
 void runAllDecoderTests(void)
 {
