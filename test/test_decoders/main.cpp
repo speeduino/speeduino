@@ -1,4 +1,12 @@
 #include "../device_test_harness.h"
+#include "globals.h"
+
+void tearDown(void) 
+{ 
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+}
 
 void runAllDecoderTests(void)
 {
