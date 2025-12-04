@@ -897,6 +897,7 @@ decoder_t triggerSetup_missingTooth(void)
 {
   decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
+  decoderFeatures.supportsPerToothIgnition = true;
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
   if(configPage4.TrigSpeed == CAM_SPEED) 
   { 
@@ -1130,6 +1131,7 @@ decoder_t triggerSetup_DualWheel(void)
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
@@ -1346,6 +1348,7 @@ decoder_t triggerSetup_BasicDistributor(void)
   toothCurrentCount = 0; //Default value
   decoderFeatures.hasFixedCrankingTiming = true;
   decoderStatus.toothAngleIsCorrect = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
@@ -1488,6 +1491,7 @@ decoder_t triggerSetup_GM7X(void)
   decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
   triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
+  decoderFeatures.supportsPerToothIgnition = true;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return decoder_builder_t()
@@ -1878,6 +1882,7 @@ decoder_t triggerSetup_4G63(void)
   decoderFeatures.hasFixedCrankingTiming = true;
   decoderStatus.toothAngleIsCorrect = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
 
@@ -2779,6 +2784,7 @@ decoder_t triggerSetup_Miata9905(void)
   triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary)
   toothCurrentCount = 99; //Fake tooth count represents no sync
   decoderFeatures.supportsSequential = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   triggerActualTeeth = 8;
 
   if(currentStatus.initialisationComplete == false) { secondaryToothCount = 0; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
@@ -3267,6 +3273,7 @@ decoder_t triggerSetup_Nissan360(void)
   secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -3534,6 +3541,7 @@ decoder_t triggerSetup_Subaru67(void)
   triggerSecFilterTime = 0;
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   decoderStatus.toothAngleIsCorrect = false;
@@ -4028,6 +4036,7 @@ decoder_t triggerSetup_ThirtySixMinus222(void)
   triggerActualTeeth = 30; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4153,6 +4162,7 @@ decoder_t triggerSetup_ThirtySixMinus21(void)
   triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4332,6 +4342,7 @@ decoder_t triggerSetup_420a(void)
   triggerSecFilterTime = 0;
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 20; //Is only correct for the 4 short pulses before each TDC
   decoderStatus.toothAngleIsCorrect = false;
@@ -4476,6 +4487,7 @@ static void triggerSec_Webber(void)
 decoder_t triggerSetup_Webber(void)
 {
   triggerSetup_DualWheel();
+  decoderFeatures.supportsPerToothIgnition = true;
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Webber, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
@@ -4628,6 +4640,7 @@ decoder_t triggerSetup_FordST170(void)
   
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (36) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4688,6 +4701,7 @@ decoder_t triggerSetup_DRZ400(void)
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;  
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return decoder_builder_t()
@@ -4988,6 +5002,7 @@ decoder_t triggerSetup_NGC(void)
 	sharedDecoderReset();
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
 
   //Primary trigger
   configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
@@ -5391,6 +5406,7 @@ decoder_t triggerSetup_Renix(void)
   }
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
+  decoderFeatures.supportsPerToothIgnition = true;
 
   toothSystemCount = 1;
   toothCurrentCount = 1;
@@ -5768,6 +5784,7 @@ decoder_t triggerSetup_RoverMEMS()
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
@@ -6098,6 +6115,7 @@ decoder_t triggerSetup_SuzukiK6A(void)
   triggerSecFilterTime = 0; //Need to figure out something better for this
   decoderStatus.toothAngleIsCorrect = false;
   decoderFeatures.supportsSequential = true;
+  decoderFeatures.supportsPerToothIgnition = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
@@ -6376,6 +6394,7 @@ decoder_t triggerSetup_FordTFI(void)
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
   decoderFeatures.hasSecondary = true;
+  decoderFeatures.supportsPerToothIgnition = true;
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 #ifdef USE_LIBDIVIDE
