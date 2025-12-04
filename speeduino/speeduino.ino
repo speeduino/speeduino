@@ -49,6 +49,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include RTC_LIB_H //Defined in each boards .h file
 #include "units.h"
 #include "fuel_calcs.h"
+#include "decoder_init.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -176,9 +177,9 @@ void __attribute__((always_inline)) loop(void)
     }
 
     currentLoopTime = micros();
-    if ( engineIsRunning(currentLoopTime) )
+    if ( getDecoder().isEngineRunning(currentLoopTime) )
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
+      currentStatus.longRPM = getDecoder().getRPM(); //Long RPM is included here
       currentStatus.RPM = currentStatus.longRPM;
       currentStatus.RPMdiv100 = div100(currentStatus.RPM);
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
@@ -194,7 +195,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
-      resetDecoder();
+      getDecoder().reset();
       currentStatus.hasSync = false;
       currentStatus.halfSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
@@ -216,7 +217,9 @@ void __attribute__((always_inline)) loop(void)
       //This is a safety check. If for some reason the interrupts have got screwed up (Leading to 0rpm), this resets them.
       //It can possibly be run much less frequently.
       //This should only be run if the high speed logger are off because it will change the trigger interrupts back to defaults rather than the logger versions
-      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { initialiseTriggers(); }
+      if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
+        setDecoder(configPage4.TrigPattern);
+      }
 
       VVT1_PIN_LOW();
       VVT2_PIN_LOW();
@@ -799,7 +802,7 @@ void __attribute__((always_inline)) loop(void)
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { triggerSetEndTeeth(); }
+      if( (configPage2.perToothIgn == true) && BIT_CHECK(decoderState, BIT_DECODER_PER_TOOTH_IGNITION) ) { getDecoder().setEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
@@ -808,7 +811,7 @@ void __attribute__((always_inline)) loop(void)
       //This may potentially be called a number of times as we get closer and closer to the opening time
 
       //Determine the current crank angle
-      int crankAngle = injectorLimits(getCrankAngle());
+      int crankAngle = injectorLimits(getDecoder().getCrankAngle());
 
       // if(Serial && false)
       // {
@@ -1122,7 +1125,7 @@ void __attribute__((always_inline)) loop(void)
       {
         //Refresh the current crank angle info
         //ignition1StartAngle = 335;
-        crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+        crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
 
 #if IGN_CHANNELS >= 1
         uint32_t timeOut = calculateIgnitionTimeout(ignitionSchedule1, ignition1StartAngle, channel1IgnDegrees, crankAngle);
@@ -1138,7 +1141,7 @@ void __attribute__((always_inline)) loop(void)
         {
           unsigned long uSToEnd = 0;
 
-          crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
+          crankAngle = ignitionLimits(getDecoder().getCrankAngle()); //Refresh the crank angle info
           
           //ONLY ONE OF THE BELOW SHOULD BE USED (PROBABLY THE FIRST):
           //*********
