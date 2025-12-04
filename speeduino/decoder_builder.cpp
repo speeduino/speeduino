@@ -19,6 +19,11 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setReset(&nullTriggerHandler);
     (void)setIsEngineRunning(&nullEngineIsRunning);
 }
+decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
+: _decoder(decoder)
+{
+    // TODO: validate _decoder.
+}
 
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
 {
@@ -26,7 +31,7 @@ decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
     {
         trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
     } 
-    decoder.primary = trigger;
+    _decoder.primary = trigger;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
@@ -40,7 +45,7 @@ decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t trigger)
     {
         trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
     }
-    decoder.secondary = trigger;
+    _decoder.secondary = trigger;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
@@ -54,7 +59,7 @@ decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t trigger)
     {
         trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
     }
-    decoder.tertiary = trigger;
+    _decoder.tertiary = trigger;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
@@ -64,30 +69,30 @@ decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t
 
 decoder_builder_t& decoder_builder_t::setGetRPM(decoder_t::getRPM_t getRPM)
 {
-    decoder.getRPM = getRPM==nullptr ? &nullGetRPM : getRPM;
+    _decoder.getRPM = getRPM==nullptr ? &nullGetRPM : getRPM;
     return *this;
 }
 
 decoder_builder_t& decoder_builder_t::setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle)
 {
-    decoder.getCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
+    _decoder.getCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
     return *this;
 }
 
 decoder_builder_t& decoder_builder_t::setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth)
 {
-    decoder.setEndTeeth = setEndTeeth==nullptr ? &nullTriggerHandler : setEndTeeth;
+    _decoder.setEndTeeth = setEndTeeth==nullptr ? &nullTriggerHandler : setEndTeeth;
     return *this;
 }
 
 decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
 {
-    decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
+    _decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
     return *this;
 }
 
 decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_running_t isRunning)
 {
-    decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
+    _decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
     return *this;
 }
