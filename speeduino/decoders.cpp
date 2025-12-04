@@ -4498,16 +4498,9 @@ static void triggerSec_Webber(void)
 
 decoder_t triggerSetup_Webber(void)
 {
-  triggerSetup_DualWheel();
-  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
-  return decoder_builder_t()
+  return decoder_builder_t(triggerSetup_DualWheel())
                   .setPrimaryTrigger(triggerPri_Webber, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_DualWheel)
-                  .setGetCrankAngle(getCrankAngle_DualWheel)
-                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
-                  .setReset(sharedDecoderReset)
-                  .setIsEngineRunning(sharedEngineIsRunning)
                   .build();
 }
 
@@ -5785,7 +5778,7 @@ static void triggerSetEndTeeth_RoverMEMS()
   ignition4EndTooth = tempIgnitionEndTooth[4];
 }
 
-decoder_t triggerSetup_RoverMEMS()
+decoder_t triggerSetup_RoverMEMS(void)
 {
   for(toothOneTime = 0; toothOneTime < 10; toothOneTime++)   // repurpose variable temporarily to help clear ToothAngles.
     { toothAngles[toothOneTime] = 0; }// Repurpose ToothAngles to store data needed for this implementation.
