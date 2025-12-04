@@ -802,7 +802,7 @@ void __attribute__((always_inline)) loop(void)
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
       //if( (configPage2.perToothIgn == true) && (lastToothCalcAdvance != currentStatus.advance) ) { triggerSetEndTeeth(); }
-      if( (configPage2.perToothIgn == true) ) { getDecoder().setEndTeeth(); }
+      if( (configPage2.perToothIgn == true) && BIT_CHECK(decoderState, BIT_DECODER_PER_TOOTH_IGNITION) ) { getDecoder().setEndTeeth(); }
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES

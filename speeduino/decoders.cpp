@@ -891,6 +891,7 @@ static void triggerSetEndTeeth_missingTooth(void)
 decoder_t triggerSetup_missingTooth(void)
 {
 	sharedDecoderReset();
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
   if(configPage4.TrigSpeed == CAM_SPEED) 
@@ -1125,6 +1126,7 @@ decoder_t triggerSetup_DualWheel(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
@@ -1343,6 +1345,7 @@ decoder_t triggerSetup_BasicDistributor(void)
   toothCurrentCount = 0; //Default value
   BIT_SET(decoderState, BIT_DECODER_HAS_FIXED_CRANKING);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 
@@ -1487,6 +1490,7 @@ decoder_t triggerSetup_GM7X(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return decoder_builder_t()
@@ -1878,6 +1882,7 @@ decoder_t triggerSetup_4G63(void)
   BIT_SET(decoderState, BIT_DECODER_HAS_FIXED_CRANKING);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
 
@@ -2045,6 +2050,7 @@ decoder_t triggerSetup_24X(void)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(currentStatus.initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the init check to prevent the fuel pump just staying on all the time
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
@@ -2160,6 +2166,7 @@ decoder_t triggerSetup_Jeep2000(void)
   if(currentStatus.initialisationComplete == false) { toothCurrentCount = 13; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
 
@@ -2284,6 +2291,7 @@ decoder_t triggerSetup_Audi135(void)
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
@@ -2392,6 +2400,7 @@ decoder_t triggerSetup_HondaD17(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
@@ -2526,6 +2535,7 @@ decoder_t triggerSetup_HondaJ32(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   // Filter (ignore) triggers that are faster than this.
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60 * 24));
@@ -2785,6 +2795,7 @@ decoder_t triggerSetup_Miata9905(void)
   toothCurrentCount = 99; //Fake tooth count represents no sync
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   triggerActualTeeth = 8;
 
   if(currentStatus.initialisationComplete == false) { secondaryToothCount = 0; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
@@ -2960,6 +2971,7 @@ decoder_t triggerSetup_MazdaAU(void)
   triggerToothAngle = 108; //The number of degrees that passes from tooth to tooth (primary). This is the maximum gap
   toothCurrentCount = 99; //Fake tooth count represents no sync
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
 
   toothAngles[0] = 348; //tooth #1
@@ -3038,6 +3050,7 @@ decoder_t triggerSetup_non360(void)
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -3273,6 +3286,7 @@ decoder_t triggerSetup_Nissan360(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
@@ -3540,6 +3554,7 @@ decoder_t triggerSetup_Subaru67(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   toothCurrentCount = 1;
   triggerToothAngle = 2;
   BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
@@ -3708,6 +3723,7 @@ decoder_t triggerSetup_Daihatsu(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle)*4U;//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
 
@@ -3858,6 +3874,7 @@ decoder_t triggerSetup_Harley(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   triggerFilterTime = 1500;
@@ -4038,6 +4055,7 @@ decoder_t triggerSetup_ThirtySixMinus222(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4164,6 +4182,7 @@ decoder_t triggerSetup_ThirtySixMinus21(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4343,6 +4362,7 @@ decoder_t triggerSetup_420a(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   toothCurrentCount = 1;
   triggerToothAngle = 20; //Is only correct for the 4 short pulses before each TDC
   BIT_CLEAR(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
@@ -4487,6 +4507,7 @@ static void triggerSec_Webber(void)
 decoder_t triggerSetup_Webber(void)
 {
   triggerSetup_DualWheel();
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Webber, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
@@ -4639,6 +4660,7 @@ decoder_t triggerSetup_FordST170(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   checkSyncToothCount = (36) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
   toothCurrentCount = 0;
@@ -4699,6 +4721,7 @@ decoder_t triggerSetup_DRZ400(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return decoder_builder_t()
@@ -5003,6 +5026,7 @@ decoder_t triggerSetup_NGC(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   //Primary trigger
   configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
@@ -5235,6 +5259,7 @@ decoder_t triggerSetup_Vmax(void)
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_CLEAR(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
   triggerFilterTime = 1500;
@@ -5408,6 +5433,7 @@ decoder_t triggerSetup_Renix(void)
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
   BIT_CLEAR(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   toothSystemCount = 1;
   toothCurrentCount = 1;
@@ -5786,6 +5812,7 @@ decoder_t triggerSetup_RoverMEMS()
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
@@ -6118,6 +6145,7 @@ decoder_t triggerSetup_SuzukiK6A(void)
   currentStatus.halfSync = false; // we can never have half sync - its either full or none.
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
@@ -6396,6 +6424,7 @@ decoder_t triggerSetup_FordTFI(void)
   BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT); //This is always true for this pattern
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+  BIT_SET(decoderState, BIT_DECODER_PER_TOOTH_IGNITION);
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
 #ifdef USE_LIBDIVIDE
