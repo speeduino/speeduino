@@ -4,6 +4,7 @@
 #include "decoder_init.h"
 #include "decoder_builder.h"
 #include "../test_utils.h"
+#include "globals.h"
 
 static void test_init(void)
 {
@@ -56,6 +57,7 @@ static void test_init(void)
 
 static void test_init_all(void)
 {
+    configPage2.nCylinders = 4; // Needed to prevent division by zero on Renix.
     for (uint8_t decoder = 0; decoder < DECODER_MAX; ++decoder) {
         char szName[128];
         snprintf(szName, sizeof(szName), "test_init_%d", decoder);
