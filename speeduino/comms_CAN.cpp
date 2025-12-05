@@ -442,10 +442,8 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
   uint16_t obdcalcB;    //used in obd calcs 
   uint16_t obdcalcC;    //used in obd calcs 
   uint16_t obdcalcD;    //used in obd calcs
-  uint32_t obdcalcE32;    //used in calcs 
   uint32_t obdcalcF32;    //used in calcs 
   uint16_t obdcalcG16;    //used in calcs
-  uint16_t obdcalcH16;    //used in calcs  
 
   outMsg.len = 8;
   outMsg.flags.extended = 0; //Make sure to set this to standard

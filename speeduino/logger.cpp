@@ -125,12 +125,12 @@ byte buildSdCardStatus(const statuses &current)
 {
   bool bits[] = {
     current.sdCardPresent,
-    current.sdCardType,
+    current.sdCardType==1U,
     current.sdCardReady,
     current.sdCardLogging,
     current.sdCardError,
     false, // Unused
-    current.sdCardFS,
+    current.sdCardFS==1U,
     current.sdCardUnused,
   };
   return setStatusBits(0, bits);
