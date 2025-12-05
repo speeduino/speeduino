@@ -71,10 +71,10 @@ void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_par
 
 void test_calc_ign_timeout_360()
 {
-  setEngineSpeed(4000, 360);
-  
-  TEST_ASSERT_EQUAL(15000, revolutionTime);    
-  TEST_ASSERT_EQUAL(96, dwellAngle);
+    setEngineSpeed(4000, 360);
+    
+    TEST_ASSERT_EQUAL(15000, currentStatus.revolutionTime);    
+    TEST_ASSERT_EQUAL(96, dwellAngle);
 
   // Expected test values were generated using floating point calculations (in Excel)
   static const ign_test_parameters test_data[] PROGMEM = {
