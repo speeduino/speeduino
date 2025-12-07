@@ -18,212 +18,77 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
-#include "maths.h"
 
 #if defined(CORE_AVR)
   #include <avr/wdt.h>
 #endif
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile byte loop5ms;
-volatile byte loop20ms;
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
 
-volatile unsigned int dwellLimit_uS;
-
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
-volatile TachoOutputStatus tachoOutputFlag;
-volatile uint16_t tachoSweepIncr;
-volatile uint16_t tachoSweepAccum;
-volatile uint8_t testInjectorPulseCount = 0;
-volatile uint8_t testIgnitionPulseCount = 0;
-
-#if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-#endif
-
-void initialiseTimers(void)
+void initialiseTimers()
 {
   lastRPM_100ms = 0;
-  loop5ms = 0;
-  loop20ms = 0;
-  loop33ms = 0;
-  loop66ms = 0;
-  loop100ms = 0;
-  loop250ms = 0;
-  loopSec = 0;
-  tachoOutputFlag = TACHO_INACTIVE;
 }
 
-static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((schedule.Status == RUNNING) && (schedule.startTime < targetOverdwellTime)) { 
-    schedule.pEndCallback(); schedule.Status = OFF; 
-  }
-}
-
-//Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//Executes every ~1ms.
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
-#else
-void oneMSInterval(void) //Most ARM chips can simply call a function
-#endif
+char getTimerFlags()
 {
-  BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
-  ms_counter++;
+  static uint8_t previousMillis1ms=0;
+  static uint8_t previousMillis5ms=0;
+  static uint8_t previousMillis20ms=0;
+  static uint8_t previousMillis33ms=1;
+  static uint8_t previousMillis66ms=2;
+  static uint8_t previousMillis100ms=3;
+  static uint16_t previousMillis250ms=4;
+  static uint16_t previousMillis1000ms=6;
+  uint16_t currentMillis;
+  uint8_t interval;
+  byte timerflags=0;
 
-  //Increment Loop Counters
-  loop5ms++;
-  loop20ms++;
-  loop33ms++;
-  loop66ms++;
-  loop100ms++;
-  loop250ms++;
-  loopSec++;
-
-  //Overdwell check
-  uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) 
+  currentMillis =(uint16_t)millis(); // capture the latest value of millis()
+  //1000Hz loop
+  interval=lowByte(currentMillis) - lowByte(previousMillis1ms);
+  if(interval >= (uint8_t)1U )
   {
-    applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
-#if IGN_CHANNELS >= 2
-    applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 3
-    applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 4
-    applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 5
-    applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 6
-    applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 7
-    applyOverDwellCheck(ignitionSchedule7, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 8
-    applyOverDwellCheck(ignitionSchedule8, targetOverdwellTime);
-#endif
+    previousMillis1ms=lowByte(currentMillis);
+    BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
   }
 
-  //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
-
-  // See if we're in power-on sweep mode
-  if( currentStatus.tachoSweepEnabled )
+    //200Hz loop
+  interval=lowByte(currentMillis) - previousMillis5ms;
+  if(interval >= (uint8_t)5U )
   {
-    if( (currentStatus.engineIsRunning) || (currentStatus.engineIsCranking) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
-    else 
-    {
-      // Ramp the needle smoothly to the max over the SWEEP_RAMP time
-      if( ms_counter < TACHO_SWEEP_RAMP_MS ) { tachoSweepAccum += map(ms_counter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoSweepIncr); }
-      else                                   { tachoSweepAccum += tachoSweepIncr;                                             }
-             
-      // Each time it rolls over, it's time to pulse the Tach
-      if( tachoSweepAccum >= MS_PER_SEC ) 
-      {  
-        tachoOutputFlag = READY;
-        tachoSweepAccum -= MS_PER_SEC;
-      }
-    }
-  }
-
-  //Tacho output check. This code will not do anything if tacho pulse duration is fixed to coil dwell.
-  if(tachoOutputFlag == READY)
-  {
-    //Check for half speed tacho
-    if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
-    { 
-      TACHO_PULSE_LOW();
-      //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
-      tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
-      tachoOutputFlag = ACTIVE;
-    }
-    else
-    {
-      //Don't run on this pulse (Half speed tacho)
-      tachoOutputFlag = TACHO_INACTIVE;
-    }
-    currentStatus.tachoAlt = !currentStatus.tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
-  }
-  else if(tachoOutputFlag == ACTIVE)
-  {
-    //If the tacho output is already active, check whether it's reached it's end time
-    if((uint8_t)ms_counter == tachoEndTime)
-    {
-      TACHO_PULSE_HIGH();
-      tachoOutputFlag = TACHO_INACTIVE;
-    }
-  }
-
-  //200Hz loop
-  if(loop5ms == 5)
-  {
-    loop5ms = 0; //Reset counter
+    previousMillis5ms=lowByte(currentMillis); 
     BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
   }
 
   //50Hz loop
-  if(loop20ms == 20)
+  interval=lowByte(currentMillis) - previousMillis20ms;
+  if(interval >= (uint8_t)20U )
   {
-    loop20ms = 0; //Reset counter
+    previousMillis20ms=lowByte(currentMillis); 
     BIT_SET(TIMER_mask, BIT_TIMER_50HZ);
   }
-
   //30Hz loop
-  if (loop33ms == 33)
+  interval=lowByte(currentMillis) - previousMillis33ms;
+  if(interval >= (uint8_t)33U )
   {
-    loop33ms = 0;
-
-    //Pulse fuel and ignition test outputs are set at 30Hz
-    if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
-    {
-      //Check for pulsed injector output test
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
-      testInjectorPulseCount = 0;
-
-      //Check for pulsed ignition output test
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
-      testIgnitionPulseCount = 0;
-    }
-
+    previousMillis33ms=lowByte(currentMillis);
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
   //15Hz loop
-  if (loop66ms == 66)
+  interval=lowByte(currentMillis) - previousMillis66ms;
+  if(interval >= (uint8_t)66U )
   {
-    loop66ms = 0;
+    previousMillis66ms=lowByte(currentMillis);
     BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
   }
 
   //10Hz loop
-  if (loop100ms == 100)
+  interval=lowByte(currentMillis) - previousMillis100ms;
+  if(interval >= (uint8_t)100U )
   {
-    loop100ms = 0; //Reset counter
+    previousMillis100ms=lowByte(currentMillis);
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
@@ -241,9 +106,9 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //4Hz loop
-  if (loop250ms == 250)
+  if((uint16_t)(currentMillis - previousMillis250ms) >= (uint16_t)250U )
   {
-    loop250ms = 0; //Reset Counter
+    previousMillis250ms+=(uint16_t)250U;
     BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
     #if defined(CORE_STM32) //debug purpose, only visual for running code
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
@@ -251,9 +116,9 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //1Hz loop
-  if (loopSec == 1000)
+  if((uint16_t)(currentMillis - previousMillis1000ms) >= (uint16_t)1000U )
   {
-    loopSec = 0; //Reset counter.
+    previousMillis1000ms+=(uint16_t)1000U;
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
@@ -381,10 +246,5 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     }
     
   }
-
-
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-    //Reset Timer2 to trigger in another ~1ms
-    TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
-#endif
+return timerflags;
 }

@@ -131,8 +131,11 @@ static inline int8_t getAdvance1(void)
 void __attribute__((always_inline)) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+      TIMER_mask=getTimerFlags();
       LOOP_TIMER = TIMER_mask;
 
+      tachoControl();
+      
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
       if (serialTransmitInProgress())
@@ -414,6 +417,11 @@ void __attribute__((always_inline)) loop(void)
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       currentStatus.systemTemp = getSystemTemp();
       readBaro(); //Infrequent baro readings are not an issue.
+
+      currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Infrequent crankRPM treshold updates are not an issue.
+      getFlex();
+      testOutputs();
+      fanControl();            // Fucntion to turn the cooling fan on/off
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
