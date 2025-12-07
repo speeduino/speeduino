@@ -8,6 +8,7 @@ void runAllMathTests(void)
     extern void testBitShift(void);
     extern void test_LOW_PASS_FILTER(void);
     extern void test_fast_map(void);
+    extern void testUnitConversions(void);
 
     testCrankMaths();
     testPercent();
@@ -15,6 +16,7 @@ void runAllMathTests(void)
     testBitShift();
     test_LOW_PASS_FILTER();
     test_fast_map();
+    testUnitConversions();
 }
 
 DEVICE_TEST(runAllMathTests)
