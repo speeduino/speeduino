@@ -659,8 +659,8 @@ byte correctionAFRClosedLoop(void)
           && (currentStatus.O2 < configPage6.ego_max) 
           && (currentStatus.O2 > configPage6.ego_min)
           && (currentStatus.runSecs > configPage6.ego_sdelay) 
-          && (currentStatus.MAP <= (configPage9.egoMAPMax * 2U)) 
-          && (currentStatus.MAP >= (configPage9.egoMAPMin * 2U)) )
+          && (currentStatus.MAP <= (long)(configPage9.egoMAPMax * 2U)) 
+          && (currentStatus.MAP >= (long)(configPage9.egoMAPMin * 2U)) )
       {
         //Check which algorithm is used, simple or PID
         if (configPage6.egoAlgorithm == EGO_ALGORITHM_SIMPLE)

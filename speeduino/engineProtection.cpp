@@ -58,7 +58,7 @@ byte checkRevLimit(void)
 byte checkBoostLimit(void)
 {
   currentStatus.engineProtectBoostCut = (configPage6.engineProtectType != PROTECT_CUT_OFF)
-                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2U)) );
+                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (long)(configPage6.boostLimit * 2U)) );
 
   return currentStatus.engineProtectBoostCut;
 }
