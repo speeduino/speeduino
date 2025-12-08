@@ -8,7 +8,7 @@
 
 template <typename T>
 static void test_div100(T testValue) {
-  assert_rounded_div(testValue, (T)100, div100(testValue));
+  assert_rounded_div(testValue, (T)100, (T)div100(testValue));
 }
 
 template <typename T>
@@ -64,15 +64,6 @@ void test_maths_div100_S16(void)
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-#if defined(__arm__)
-  test_div100_Seed<int>(100U);
-  test_div100_Seed<int>(10000U);
-  test_div100_Seed<int>(100000000UL);
-
-  test_div100_Seed<int>(-100);
-  test_div100_Seed<int>(-10000);
-  test_div100_Seed<int>(-100000000);
-#else
   test_div100_Seed<int32_t>(100U);
   test_div100_Seed<int32_t>(10000U);
   test_div100_Seed<int32_t>(100000000UL);
@@ -80,7 +71,6 @@ void test_maths_div100_S32(void)
   test_div100_Seed<int32_t>(-100);
   test_div100_Seed<int32_t>(-10000);
   test_div100_Seed<int32_t>(-100000000);
-#endif
 }
 
 static void test_div360(uint32_t testValue) {

@@ -152,11 +152,6 @@ static inline uint32_t div100(uint32_t n) {
 #endif
 }
 
-#if defined(__arm__)
-static inline int div100(int n) {
-    return DIV_ROUND_CLOSEST(n, 100U, int);
-}
-#else
 static inline int32_t div100(int32_t n) {
 #ifdef USE_LIBDIVIDE    
     if (n<=INT16_MAX && n>=INT16_MIN) {
@@ -167,7 +162,6 @@ static inline int32_t div100(int32_t n) {
     return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
 }
-#endif
 ///@}
 
 /**
