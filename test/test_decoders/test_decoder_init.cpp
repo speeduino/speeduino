@@ -41,10 +41,12 @@ static void test_init(void)
     // Per tooth ignition is optional
     if (BIT_CHECK(decoderState, BIT_DECODER_PER_TOOTH_IGNITION))
     {
+        TEST_ASSERT_TRUE(configPage2.perToothIgn);
         TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().setEndTeeth, defaultDecoder.setEndTeeth, "setEndTeeth");
     }
     else
     {
+        TEST_ASSERT_FALSE(configPage2.perToothIgn);
         TEST_ASSERT_EQUAL_MESSAGE(getDecoder().setEndTeeth, defaultDecoder.setEndTeeth, "setEndTeeth");
     }
 
@@ -61,6 +63,7 @@ static void test_init_all(void)
     for (uint8_t decoder = 0; decoder < DECODER_MAX; ++decoder) {
         char szName[128];
         snprintf(szName, sizeof(szName), "test_setDecoder_%d", decoder);
+        configPage2.perToothIgn = true;
         setDecoder(decoder);
         UnityDefaultTestRun(test_init, szName, __LINE__);
     }
