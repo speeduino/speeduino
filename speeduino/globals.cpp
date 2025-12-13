@@ -80,7 +80,6 @@ pin_mask_t triggerThird_pin_mask;
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
-uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
@@ -108,8 +107,6 @@ volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of t
 volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents one of the injector channels and it's pulsed HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
-byte maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
-byte maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
 
 //This needs to be here because using the config page directly can prevent burning the setting
 byte resetControl = RESET_CONTROL_DISABLED;
@@ -232,13 +229,13 @@ bool pinIsOutput(byte pin)
   }
   //Ignition?
   if ((pin == pinCoil1)
-  || ((pin == pinCoil2) && (maxIgnOutputs > 1))
-  || ((pin == pinCoil3) && (maxIgnOutputs > 2))
-  || ((pin == pinCoil4) && (maxIgnOutputs > 3))
-  || ((pin == pinCoil5) && (maxIgnOutputs > 4))
-  || ((pin == pinCoil6) && (maxIgnOutputs > 5))
-  || ((pin == pinCoil7) && (maxIgnOutputs > 6))
-  || ((pin == pinCoil8) && (maxIgnOutputs > 7)))
+  || ((pin == pinCoil2) && (currentStatus.maxIgnOutputs > 1))
+  || ((pin == pinCoil3) && (currentStatus.maxIgnOutputs > 2))
+  || ((pin == pinCoil4) && (currentStatus.maxIgnOutputs > 3))
+  || ((pin == pinCoil5) && (currentStatus.maxIgnOutputs > 4))
+  || ((pin == pinCoil6) && (currentStatus.maxIgnOutputs > 5))
+  || ((pin == pinCoil7) && (currentStatus.maxIgnOutputs > 6))
+  || ((pin == pinCoil8) && (currentStatus.maxIgnOutputs > 7)))
   {
     used = true;
   }

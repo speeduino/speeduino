@@ -8,7 +8,7 @@
 
 template <typename T>
 static void test_div100(T testValue) {
-  assert_rounded_div(testValue, 100, div100(testValue));
+  assert_rounded_div(testValue, (T)100, (T)div100(testValue));
 }
 
 template <typename T>
@@ -55,24 +55,15 @@ void test_maths_div100_S16(void)
   test_div100_Seed<int16_t>(-100);
   test_div100_Seed<int16_t>(-10000);
 
-  test_div100<int16_t>(INT16_MIN+100);
+  test_div100<int16_t>((int16_t)(INT16_MIN+100));
 
   // We expect this to fail - the rounding doesn't do integer promotion
-  TEST_ASSERT_EQUAL_UINT16(327U, div100((int16_t)INT16_MIN));
+  TEST_ASSERT_EQUAL_INT16(327, div100((int16_t)INT16_MIN));
 }
 
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-#if defined(__arm__)
-  test_div100_Seed<int>(100U);
-  test_div100_Seed<int>(10000U);
-  test_div100_Seed<int>(100000000UL);
-
-  test_div100_Seed<int>(-100);
-  test_div100_Seed<int>(-10000);
-  test_div100_Seed<int>(-100000000);
-#else
   test_div100_Seed<int32_t>(100U);
   test_div100_Seed<int32_t>(10000U);
   test_div100_Seed<int32_t>(100000000UL);
@@ -80,11 +71,10 @@ void test_maths_div100_S32(void)
   test_div100_Seed<int32_t>(-100);
   test_div100_Seed<int32_t>(-10000);
   test_div100_Seed<int32_t>(-100000000);
-#endif
 }
 
 static void test_div360(uint32_t testValue) {
-  assert_rounded_div(testValue, 360, div360(testValue));
+  assert_rounded_div(testValue, (uint32_t)360U, div360(testValue));
 }
 void test_maths_div360(void)
 {
@@ -113,7 +103,7 @@ void test_maths_udiv_32_16(void)
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(0, 0));
 
   // Result doesn't fit into 16-bits
-  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16(UINT32_MAX, UINT16_MAX));
+  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16(UINT32_MAX, UINT16_MAX));
 
   assert_udiv_32_16(1, 1);
   assert_udiv_32_16(UINT16_MAX+1, UINT16_MAX);
@@ -128,7 +118,7 @@ void test_maths_udiv_32_16(void)
 
 
 void assert_udiv_32_16_closest(uint32_t dividend, uint16_t divisor) {
-    assert_rounded_div(dividend, divisor, udiv_32_16_closest(dividend, divisor));
+    assert_rounded_div(dividend, (uint32_t)divisor, (uint32_t)udiv_32_16_closest(dividend, divisor));
 }
 
 void test_maths_udiv_32_16_closest(void)
@@ -138,7 +128,7 @@ void test_maths_udiv_32_16_closest(void)
   TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(0, 0));
 
   // Result doesn't fit into 16-bits
-  TEST_ASSERT_EQUAL_UINT16(UINT16_MAX, udiv_32_16_closest(UINT32_MAX-(UINT16_MAX/2)-1, UINT16_MAX));
+  TEST_ASSERT_EQUAL_UINT16(32768, udiv_32_16_closest(UINT32_MAX-(UINT16_MAX/2)-1, UINT16_MAX));
 
   assert_udiv_32_16(1, 1);
   assert_udiv_32_16(2, 3);

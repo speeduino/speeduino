@@ -146,7 +146,7 @@ void calculateSecondarySpark(const config2 &page2, const config10 &page10, const
       current.secondSparkTableActive = true;
       uint8_t spark2Percent = (uint8_t)clamp(lookupSpark2(page10, sparkLookupTable, current), (int16_t)0, (int16_t)UINT8_MAX);
       //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-      int16_t combinedAdvance = div100((int16_t)spark2Percent * (int16_t)current.advance1);
+      int16_t combinedAdvance = div100((int16_t)(spark2Percent * current.advance1));
       //make sure we don't overflow and accidentally set negative timing: current.advance can only hold a signed 8 bit value
       current.advance = constrainAdvance(combinedAdvance);
 

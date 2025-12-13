@@ -685,11 +685,8 @@ static void test_corrections_bat_normal(void) {
 
   currentStatus.battery10 = 75;
   configPage2.injOpen = 10;
-  uint8_t correctionValue = correctionBatVoltage();
 
-  TEST_ASSERT_EQUAL(108U, correctionValue);
-  correctionsFuel();
-  TEST_ASSERT_EQUAL(configPage2.injOpen * correctionValue, inj_opentime_uS );
+  TEST_ASSERT_EQUAL(108U, correctionBatVoltage() );
 }
 
 static void test_corrections_bat(void)

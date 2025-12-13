@@ -132,7 +132,6 @@ uint16_t correctionsFuel(void)
 
   //Voltage correction is applied to the injector opening time
   currentStatus.batCorrection = correctionBatVoltage();
-  inj_opentime_uS = configPage2.injOpen * currentStatus.batCorrection; // Apply voltage correction to injector open time.
 
   currentStatus.iatCorrection = correctionIATDensity();
   if (currentStatus.iatCorrection != 100) { sumCorrections = div100(sumCorrections * currentStatus.iatCorrection); }
@@ -1118,11 +1117,11 @@ uint16_t correctionsDwell(uint16_t dwell)
     pulsesPerRevolution = (configPage2.nCylinders >> 1);
     dwellPerRevolution = dwellPerRevolution * pulsesPerRevolution;
   }
-  if(dwellPerRevolution > revolutionTime)
+  if(dwellPerRevolution > currentStatus.revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
-    uint16_t adjustedSparkDur = udiv_32_16(sparkDur_uS * revolutionTime, dwellPerRevolution);
-    tempDwell = udiv_32_16(revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
+    uint16_t adjustedSparkDur = udiv_32_16(sparkDur_uS * currentStatus.revolutionTime, dwellPerRevolution);
+    tempDwell = udiv_32_16(currentStatus.revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
   }
 
   return tempDwell;
