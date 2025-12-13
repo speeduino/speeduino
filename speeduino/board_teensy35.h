@@ -19,10 +19,16 @@
 #define BOARD_MAX_ADC_PINS  26 //Number of analog pins
 #ifdef USE_SPI_EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
+  using eeprom_address_t = uint16_t;
+  class SPI_EEPROM_Class;
+  using EEPROM_t = SPI_EEPROM_Class;
+  #define MAX_BLOCK_WRITE_BYTES 20
 #else
   #define EEPROM_LIB_H <EEPROM.h>
-  typedef int eeprom_address_t;
+  using eeprom_address_t = int;
+  class EEPROMClass;
+  using EEPROM_t = EEPROMClass;
+  #define MAX_BLOCK_WRITE_BYTES 64
 #endif
 #define RTC_ENABLED
 #define RTC_LIB_H "TimeLib.h"

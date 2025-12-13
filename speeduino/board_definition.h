@@ -38,6 +38,9 @@ void jumpToBootloader(void);
 /** @brief Get the board temp for display in TunerStudio (optional) */
 uint8_t getSystemTemp(void);
 
+/** @brief Initialise the board storage */
+void initialiseStorage(void);
+
 // Include a specific header for a board.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #include "board_avr2560.h"

@@ -41,11 +41,6 @@
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define TIMER_RESOLUTION 4
 
-//Select one for EEPROM,the default is EEPROM emulation on internal flash.
-//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash on BlackF407VE*/
-//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
-
 #ifndef word
   #define word(h, l) (((h) << 8) | (l)) //word() function not defined for this platform in the main library
 #endif  
@@ -139,41 +134,11 @@ extern STM32RTC& rtc;
 ***********************************************************************************************************
 * EEPROM emulation
 */
-#if defined(SRAM_AS_EEPROM)
-    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern BackupSramAsEEPROM EEPROM;
-
-#elif defined(USE_SPI_EEPROM)
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
- 
-    //windbond W25Q16 SPI flash EEPROM emulation
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-    extern Flash_SPI_Config SPIconfig;
-    extern SPI_EEPROM_Class EEPROM;
-
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H "src/FRAM/Fram.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    #if defined(STM32F407xx)
-      extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-    #else
-      extern FramClass EEPROM; //Blue/Black Pills
-    #endif
-
-#else //default case, internal flash as EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
-  #include EEPROM_LIB_H
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
-  #if defined(STM32F401xC)
-    #define SMALL_FLASH_MODE
-  #endif
+#if defined(USE_SPI_EEPROM)
+  #define MAX_BLOCK_WRITE_BYTES 20
+#endif
+#if !defined(MAX_BLOCK_WRITE_BYTES)
+    #define MAX_BLOCK_WRITE_BYTES 64
 #endif
 
 #define RTC_LIB_H "STM32RTC.h"

@@ -1,10 +1,37 @@
 #include "board_definition.h"
 
 #if defined(CORE_AVR)
-#include "globals.h"
+#include <avr/eeprom.h>
+#include <avr/io.h> 
 #include "auxiliaries.h"
 #include "comms_secondary.h"
 #include "idle.h"
+#include "storage_api.h"
+
+static byte eeprom_read(uint16_t address) {
+  return eeprom_read_byte( (uint8_t*) address );
+}
+static void eeprom_write(uint16_t address, byte val) {
+  eeprom_write_byte( (uint8_t*) address, val );
+}
+static constexpr uint16_t eeprom_length(void) {
+  return E2END + 1;
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<eeprom_length(); ++address) {
+    eeprom_update_byte((uint8_t*)address, UINT8_MAX);
+  }   
+}
+
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = eeprom_read,
+    .write = eeprom_write,
+    .length = eeprom_length,
+    .clear = eeprom_clear,
+  });
+}
+
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))

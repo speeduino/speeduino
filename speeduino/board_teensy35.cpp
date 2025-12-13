@@ -1,6 +1,7 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
+#include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -16,6 +17,31 @@
 //   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
 //   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 // #endif
+#include "storage_api.h"
+
+static byte eeprom_read(uint16_t address) {
+  return EEPROM.read(address);
+}
+static void eeprom_write(uint16_t address, byte val) {
+  EEPROM.write(address, val);
+}
+static uint16_t eeprom_length(void) {
+  return EEPROM.length();
+}
+static void eeprom_clear(void) {
+  for (uint16_t address=0; address<EEPROM.length(); ++address) {
+    EEPROM.update(address, UINT8_MAX);
+  }   
+}
+
+void initialiseStorage(void) {
+  setStorageAPI(storage_api_t {
+    .read = eeprom_read,
+    .write = eeprom_write,
+    .length = eeprom_length,
+    .clear = eeprom_clear,
+  });
+}
 
 
 void initBoard(uint32_t baudRate)

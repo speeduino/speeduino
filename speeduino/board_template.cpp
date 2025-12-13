@@ -1,8 +1,12 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEMPLATE)
+#include "storage_api.h"
 
-
+void initialiseStorage(void) {
+    // Call setStorageAPI
+}
+  
 void initBoard(uint32_t baudRate)
 {
     /*
