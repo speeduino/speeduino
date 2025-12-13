@@ -34,10 +34,32 @@ void initCAN()
   #if defined (NATIVE_CAN_AVAILABLE)
     configPage9.intcan_available = 1;   // device has internal canbus
     //Teensy uses the Flexcan_T4 library to use the internal canbus
+    uint32_t can_speed = 500000;
+
+    if(configPage9.enable_intcan) {
+      // Get the baud rate from your new variable
+      switch(configPage9.internal_can_baud_rate) {
+        case 0: // 500k
+          can_speed = 500000;
+          break;
+        case 1: // 250k
+          can_speed = 250000;
+          break;
+        case 2: // 125k
+          can_speed = 125000;
+          break;
+        case 3: // 50k
+          can_speed = 50000;
+          break;
+        default: // Fallback to 250k if value is invalid
+          can_speed = 500000;
+          break;
+      }
+    }
     //enable local can interface
     //setup can interface to 500k   
     Can0.begin();
-    Can0.setBaudRate(500000);
+    Can0.setBaudRate(can_speed);
     Can0.enableFIFO();
     /* Note: This must come after the call to setPinMapping() or else pins 29 and 30 will become unusable as outputs.
      * Workaround for: https://github.com/tonton81/FlexCAN_T4/issues/14 */
