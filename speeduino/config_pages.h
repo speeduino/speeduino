@@ -15,144 +15,144 @@
 
 using byte = uint8_t;
 
-#define EGO_TYPE_OFF    0U
-#define EGO_TYPE_NARROW 1U
-#define EGO_TYPE_WIDE   2U
+constexpr uint8_t EGO_TYPE_OFF    = 0U;
+constexpr uint8_t EGO_TYPE_NARROW = 1U;
+constexpr uint8_t EGO_TYPE_WIDE   = 2U;
 
-#define INJ_TYPE_PORT  0U
-#define INJ_TYPE_TBODY 1U
+constexpr uint8_t INJ_TYPE_PORT  = 0U;
+constexpr uint8_t INJ_TYPE_TBODY = 1U;
 
-#define INJ_PAIRED          0U
-#define INJ_SEMISEQUENTIAL  1U
-#define INJ_BANKED          2U
-#define INJ_SEQUENTIAL      3U
+constexpr uint8_t INJ_PAIRED          = 0U;
+constexpr uint8_t INJ_SEMISEQUENTIAL  = 1U;
+constexpr uint8_t INJ_BANKED          = 2U;
+constexpr uint8_t INJ_SEQUENTIAL      = 3U;
 
-#define INJ_PAIR_13_24      0U
-#define INJ_PAIR_14_23      1U
+constexpr uint8_t INJ_PAIR_13_24      = 0U;
+constexpr uint8_t INJ_PAIR_14_23      = 1U;
 
-#define IGN_MODE_WASTED     0U
-#define IGN_MODE_SINGLE     1U
-#define IGN_MODE_WASTEDCOP  2U
-#define IGN_MODE_SEQUENTIAL 3U
-#define IGN_MODE_ROTARY     4U
+constexpr uint8_t IGN_MODE_WASTED     = 0U;
+constexpr uint8_t IGN_MODE_SINGLE     = 1U;
+constexpr uint8_t IGN_MODE_WASTEDCOP  = 2U;
+constexpr uint8_t IGN_MODE_SEQUENTIAL = 3U;
+constexpr uint8_t IGN_MODE_ROTARY     = 4U;
 
-#define SEC_TRIGGER_SINGLE   0U
-#define SEC_TRIGGER_4_1      1U
-#define SEC_TRIGGER_POLL     2U
-#define SEC_TRIGGER_5_3_2    3U
-#define SEC_TRIGGER_TOYOTA_3 4U
+constexpr uint8_t SEC_TRIGGER_SINGLE   = 0U;
+constexpr uint8_t SEC_TRIGGER_4_1      = 1U;
+constexpr uint8_t SEC_TRIGGER_POLL     = 2U;
+constexpr uint8_t SEC_TRIGGER_5_3_2    = 3U;
+constexpr uint8_t SEC_TRIGGER_TOYOTA_3 = 4U;
 
-#define ROTARY_IGN_FC       0U
-#define ROTARY_IGN_FD       1U
-#define ROTARY_IGN_RX8      2U
+constexpr uint8_t ROTARY_IGN_FC       = 0U;
+constexpr uint8_t ROTARY_IGN_FD       = 1U;
+constexpr uint8_t ROTARY_IGN_RX8      = 2U;
 
-#define BOOST_MODE_SIMPLE   0U
-#define BOOST_MODE_FULL     1U
+constexpr uint8_t BOOST_MODE_SIMPLE   = 0U;
+constexpr uint8_t BOOST_MODE_FULL     = 1U;
 
-#define EN_BOOST_CONTROL_BARO   0U
-#define EN_BOOST_CONTROL_FIXED  1U
+constexpr uint8_t EN_BOOST_CONTROL_BARO   = 0U;
+constexpr uint8_t EN_BOOST_CONTROL_FIXED  = 1U;
 
-#define WMI_MODE_SIMPLE       0U
-#define WMI_MODE_PROPORTIONAL 1U
-#define WMI_MODE_OPENLOOP     2U
-#define WMI_MODE_CLOSEDLOOP   3U
+constexpr uint8_t WMI_MODE_SIMPLE       = 0U;
+constexpr uint8_t WMI_MODE_PROPORTIONAL = 1U;
+constexpr uint8_t WMI_MODE_OPENLOOP     = 2U;
+constexpr uint8_t WMI_MODE_CLOSEDLOOP   = 3U;
 
-#define HARD_CUT_FULL       0U
-#define HARD_CUT_ROLLING    1U
+constexpr uint8_t HARD_CUT_FULL       = 0U;
+constexpr uint8_t HARD_CUT_ROLLING    = 1U;
 
-#define EVEN_FIRE           0U
-#define ODD_FIRE            1U
+constexpr uint8_t EVEN_FIRE           = 0U;
+constexpr uint8_t ODD_FIRE            = 1U;
 
-#define EGO_ALGORITHM_SIMPLE   0U
-#define EGO_ALGORITHM_INVALID1 1U
-#define EGO_ALGORITHM_PID      2U
-#define EGO_ALGORITHM_NONE     3U
+constexpr uint8_t EGO_ALGORITHM_SIMPLE   = 0U;
+constexpr uint8_t EGO_ALGORITHM_INVALID1 = 1U;
+constexpr uint8_t EGO_ALGORITHM_PID      = 2U;
+constexpr uint8_t EGO_ALGORITHM_NONE     = 3U;
 
-#define STAGING_MODE_TABLE  0U
-#define STAGING_MODE_AUTO   1U
+constexpr uint8_t STAGING_MODE_TABLE  = 0U;
+constexpr uint8_t STAGING_MODE_AUTO   = 1U;
 
-#define NITROUS_OFF         0U
-#define NITROUS_STAGE1      1U
-#define NITROUS_STAGE2      2U
-#define NITROUS_BOTH        3U
+constexpr uint8_t NITROUS_OFF         = 0U;
+constexpr uint8_t NITROUS_STAGE1      = 1U;
+constexpr uint8_t NITROUS_STAGE2      = 2U;
+constexpr uint8_t NITROUS_BOTH        = 3U;
 
-#define PROTECT_CUT_OFF     0U
-#define PROTECT_CUT_IGN     1U
-#define PROTECT_CUT_FUEL    2U
-#define PROTECT_CUT_BOTH    3U
-#define PROTECT_IO_ERROR    7U
+constexpr uint8_t PROTECT_CUT_OFF     = 0U;
+constexpr uint8_t PROTECT_CUT_IGN     = 1U;
+constexpr uint8_t PROTECT_CUT_FUEL    = 2U;
+constexpr uint8_t PROTECT_CUT_BOTH    = 3U;
+constexpr uint8_t PROTECT_IO_ERROR    = 7U;
 
-#define AE_MODE_TPS         0U
-#define AE_MODE_MAP         1U
+constexpr uint8_t AE_MODE_TPS         = 0U;
+constexpr uint8_t AE_MODE_MAP         = 1U;
 
-#define AE_MODE_MULTIPLIER  0U
-#define AE_MODE_ADDER       1U
+constexpr uint8_t AE_MODE_MULTIPLIER  = 0U;
+constexpr uint8_t AE_MODE_ADDER       = 1U;
 
-#define KNOCK_MODE_OFF      0U
-#define KNOCK_MODE_DIGITAL  1U
-#define KNOCK_MODE_ANALOG   2U
+constexpr uint8_t KNOCK_MODE_OFF      = 0U;
+constexpr uint8_t KNOCK_MODE_DIGITAL  = 1U;
+constexpr uint8_t KNOCK_MODE_ANALOG   = 2U;
 
-#define KNOCK_TRIGGER_HIGH  0U
-#define KNOCK_TRIGGER_LOW   1U
+constexpr uint8_t KNOCK_TRIGGER_HIGH  = 0U;
+constexpr uint8_t KNOCK_TRIGGER_LOW   = 1U;
 
-#define FUEL2_MODE_OFF      0U
-#define FUEL2_MODE_MULTIPLY 1U
-#define FUEL2_MODE_ADD      2U
-#define FUEL2_MODE_CONDITIONAL_SWITCH   3U
-#define FUEL2_MODE_INPUT_SWITCH 4U
+constexpr uint8_t FUEL2_MODE_OFF      = 0U;
+constexpr uint8_t FUEL2_MODE_MULTIPLY = 1U;
+constexpr uint8_t FUEL2_MODE_ADD      = 2U;
+constexpr uint8_t FUEL2_MODE_CONDITIONAL_SWITCH   = 3U;
+constexpr uint8_t FUEL2_MODE_INPUT_SWITCH = 4U;
 
-#define SPARK2_MODE_OFF      0U
-#define SPARK2_MODE_MULTIPLY 1U
-#define SPARK2_MODE_ADD      2U
-#define SPARK2_MODE_CONDITIONAL_SWITCH   3U
-#define SPARK2_MODE_INPUT_SWITCH 4U
+constexpr uint8_t SPARK2_MODE_OFF      = 0U;
+constexpr uint8_t SPARK2_MODE_MULTIPLY = 1U;
+constexpr uint8_t SPARK2_MODE_ADD      = 2U;
+constexpr uint8_t SPARK2_MODE_CONDITIONAL_SWITCH   = 3U;
+constexpr uint8_t SPARK2_MODE_INPUT_SWITCH = 4U;
 
-#define FUEL2_CONDITION_RPM 0U
-#define FUEL2_CONDITION_MAP 1U
-#define FUEL2_CONDITION_TPS 2U
-#define FUEL2_CONDITION_ETH 3U
+constexpr uint8_t FUEL2_CONDITION_RPM = 0U;
+constexpr uint8_t FUEL2_CONDITION_MAP = 1U;
+constexpr uint8_t FUEL2_CONDITION_TPS = 2U;
+constexpr uint8_t FUEL2_CONDITION_ETH = 3U;
 
-#define SPARK2_CONDITION_RPM 0U
-#define SPARK2_CONDITION_MAP 1U
-#define SPARK2_CONDITION_TPS 2U
-#define SPARK2_CONDITION_ETH 3U
+constexpr uint8_t SPARK2_CONDITION_RPM = 0U;
+constexpr uint8_t SPARK2_CONDITION_MAP = 1U;
+constexpr uint8_t SPARK2_CONDITION_TPS = 2U;
+constexpr uint8_t SPARK2_CONDITION_ETH = 3U;
 
-#define RESET_CONTROL_DISABLED             0U
-#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1U
-#define RESET_CONTROL_PREVENT_ALWAYS       2U
-#define RESET_CONTROL_SERIAL_COMMAND       3U
+constexpr uint8_t RESET_CONTROL_DISABLED             = 0U;
+constexpr uint8_t RESET_CONTROL_PREVENT_WHEN_RUNNING = 1U;
+constexpr uint8_t RESET_CONTROL_PREVENT_ALWAYS       = 2U;
+constexpr uint8_t RESET_CONTROL_SERIAL_COMMAND       = 3U;
 
-#define OPEN_LOOP_BOOST     0U
-#define CLOSED_LOOP_BOOST   1U
+constexpr uint8_t OPEN_LOOP_BOOST     = 0U;
+constexpr uint8_t CLOSED_LOOP_BOOST   = 1U;
 
-#define SOFT_LIMIT_FIXED        0U
-#define SOFT_LIMIT_RELATIVE     1U
+constexpr uint8_t SOFT_LIMIT_FIXED        = 0U;
+constexpr uint8_t SOFT_LIMIT_RELATIVE     = 1U;
 
-#define VVT_MODE_ONOFF       0U
-#define VVT_MODE_OPEN_LOOP   1U
-#define VVT_MODE_CLOSED_LOOP 2U
+constexpr uint8_t VVT_MODE_ONOFF       = 0U;
+constexpr uint8_t VVT_MODE_OPEN_LOOP   = 1U;
+constexpr uint8_t VVT_MODE_CLOSED_LOOP = 2U;
 
-#define VVT_LOAD_MAP      0U
-#define VVT_LOAD_TPS      1U
+constexpr uint8_t VVT_LOAD_MAP      = 0U;
+constexpr uint8_t VVT_LOAD_TPS      = 1U;
 
-#define MULTIPLY_MAP_MODE_OFF   0U
-#define MULTIPLY_MAP_MODE_BARO  1U
-#define MULTIPLY_MAP_MODE_100   2U
+constexpr uint8_t MULTIPLY_MAP_MODE_OFF   = 0U;
+constexpr uint8_t MULTIPLY_MAP_MODE_BARO  = 1U;
+constexpr uint8_t MULTIPLY_MAP_MODE_100   = 2U;
 
-#define FOUR_STROKE         0U
-#define TWO_STROKE          1U
+constexpr uint8_t FOUR_STROKE         = 0U;
+constexpr uint8_t TWO_STROKE          = 1U;
 
-#define GOING_LOW         0U
-#define GOING_HIGH        1U
+constexpr uint8_t GOING_LOW         = 0U;
+constexpr uint8_t GOING_HIGH        = 1U;
 
-#define IAC_ALGORITHM_NONE    0U
-#define IAC_ALGORITHM_ONOFF   1U
-#define IAC_ALGORITHM_PWM_OL  2U
-#define IAC_ALGORITHM_PWM_CL  3U
-#define IAC_ALGORITHM_STEP_OL 4U
-#define IAC_ALGORITHM_STEP_CL 5U
-#define IAC_ALGORITHM_PWM_OLCL  6U //Openloop plus closedloop IAC control
-#define IAC_ALGORITHM_STEP_OLCL  7U //Openloop plus closedloop IAC control
+constexpr uint8_t IAC_ALGORITHM_NONE    = 0U;
+constexpr uint8_t IAC_ALGORITHM_ONOFF   = 1U;
+constexpr uint8_t IAC_ALGORITHM_PWM_OL  = 2U;
+constexpr uint8_t IAC_ALGORITHM_PWM_CL  = 3U;
+constexpr uint8_t IAC_ALGORITHM_STEP_OL = 4U;
+constexpr uint8_t IAC_ALGORITHM_STEP_CL = 5U;
+constexpr uint8_t IAC_ALGORITHM_PWM_OLCL  = 6U; //Openloop plus closedloop IAC control
+constexpr uint8_t IAC_ALGORITHM_STEP_OLCL  = 7U; //Openloop plus closedloop IAC control
 
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
@@ -334,12 +334,12 @@ struct config2 {
   } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
-#define IDLEADVANCE_MODE_OFF      0U
-#define IDLEADVANCE_MODE_ADDED    1U
-#define IDLEADVANCE_MODE_SWITCHED 2U
+constexpr uint8_t IDLEADVANCE_MODE_OFF      = 0U;
+constexpr uint8_t IDLEADVANCE_MODE_ADDED    = 1U;
+constexpr uint8_t IDLEADVANCE_MODE_SWITCHED = 2U;
 
-#define IDLEADVANCE_ALGO_TPS      0U
-#define IDLEADVANCE_ALGO_CTPS     1U
+constexpr uint8_t IDLEADVANCE_ALGO_TPS      = 0U;
+constexpr uint8_t IDLEADVANCE_ALGO_CTPS     = 1U;
 
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
