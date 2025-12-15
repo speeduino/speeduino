@@ -145,8 +145,14 @@ using byte = uint8_t;
 #define GOING_LOW         0U
 #define GOING_HIGH        1U
 
-#define BATTV_COR_MODE_WHOLE 0U
-#define BATTV_COR_MODE_OPENTIME 1U
+#define IAC_ALGORITHM_NONE    0U
+#define IAC_ALGORITHM_ONOFF   1U
+#define IAC_ALGORITHM_PWM_OL  2U
+#define IAC_ALGORITHM_PWM_CL  3U
+#define IAC_ALGORITHM_STEP_OL 4U
+#define IAC_ALGORITHM_STEP_CL 5U
+#define IAC_ALGORITHM_PWM_OLCL  6U //Openloop plus closedloop IAC control
+#define IAC_ALGORITHM_STEP_OLCL  7U //Openloop plus closedloop IAC control
 
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
