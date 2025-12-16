@@ -38,19 +38,19 @@
 /// @cond 
 // PP_INC() support macros
 #define PP_INC_I(x) PP_INC_ ## x
-#define PP_INC_0 1
-#define PP_INC_1 2
-#define PP_INC_2 3
-#define PP_INC_3 4
-#define PP_INC_4 5
-#define PP_INC_5 6
-#define PP_INC_6 7
-#define PP_INC_7 8
-#define PP_INC_8 9
-#define PP_INC_9 10
-#define PP_INC_10 11
-#define PP_INC_11 12
-#define PP_INC_12 13
+#define PP_INC_0 1 // NOSONAR
+#define PP_INC_1 2 // NOSONAR
+#define PP_INC_2 3 // NOSONAR
+#define PP_INC_3 4 // NOSONAR
+#define PP_INC_4 5 // NOSONAR
+#define PP_INC_5 6 // NOSONAR
+#define PP_INC_6 7 // NOSONAR
+#define PP_INC_7 8 // NOSONAR
+#define PP_INC_8 9 // NOSONAR
+#define PP_INC_9 10 // NOSONAR
+#define PP_INC_10 11 // NOSONAR
+#define PP_INC_11 12 // NOSONAR
+#define PP_INC_12 13 // NOSONAR
 /// @endcond
 
 /// @cond 
