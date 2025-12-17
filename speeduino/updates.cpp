@@ -16,6 +16,7 @@
 #include "comms_CAN.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 #include "units.h"
+#include "preprocessor.h"
 
 void doUpdates(void)
 {

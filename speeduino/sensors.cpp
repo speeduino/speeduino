@@ -24,6 +24,7 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "atomic.h"
 #include "board_definition.h"
+#include "preprocessor.h"
 
 uint8_t statusSensors = 0;
 
