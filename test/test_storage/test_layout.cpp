@@ -6,7 +6,7 @@
 #include "config_pages.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
-extern const eeprom_address_t MAX_PAGE_ADDRESS;
+extern const uint16_t MAX_PAGE_ADDRESS;
 extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
 extern const uint16_t STORAGE_SIZE;
 
