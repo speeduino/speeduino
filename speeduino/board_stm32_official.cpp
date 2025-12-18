@@ -407,4 +407,9 @@ void boardInitPins(void)
   // Do nothing
 }
 
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
+}
+
 #endif

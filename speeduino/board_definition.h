@@ -62,3 +62,6 @@ uint8_t getSystemTemp(void);
 /** @brief Board specific RTC system initialisation (optional) */
 void boardInitRTC(void);
 #endif
+
+/** @brief Access the EEPROM singleton */
+EEPROM_t& getEEPROM(void);
