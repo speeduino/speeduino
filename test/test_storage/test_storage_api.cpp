@@ -199,6 +199,140 @@ static void test_fillBlock_write_if_different(void) {
 //     TEST_ASSERT_EQUAL(1, clearMockCounter);
 // }
 
+static constexpr uint16_t MOVE_BLOCK_SIZE = 37; // An non-power of 2 size is a good test
+
+static void test_moveBlock_up_nooverlap_noochanges(void) {
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    moveBlock(api, MOVE_BLOCK_SIZE*3, 0, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(0, writeCounter);    
+}
+
+static void test_moveBlock_down_nooverlap_noochanges(void) {
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    moveBlock(api, 0, MOVE_BLOCK_SIZE*3, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(0, writeCounter);    
+}
+
+static uint16_t moveBlockReadAddresses[MOVE_BLOCK_SIZE*2];
+static uint8_t sourceValue;
+static uint8_t destValue;
+static bool readingSource;
+
+static byte moveBlockReadMock(uint16_t address) {
+    TEST_ASSERT_LESS_THAN(_countof(moveBlockReadAddresses), readCounter);
+    moveBlockReadAddresses[readCounter] = address;
+    if (readingSource) {
+        readValue = sourceValue;
+    } else {
+        readValue = destValue;
+    }
+    readingSource = !readingSource;
+    return countingReadMock(address);
+}
+
+static uint16_t moveBlockWriteAddresses[MOVE_BLOCK_SIZE];
+static void moveBlockWriteMock(uint16_t address, byte value) {
+    TEST_ASSERT_LESS_THAN(_countof(moveBlockWriteAddresses), writeCounter);
+    moveBlockWriteAddresses[writeCounter] = address;
+    countingWriteMock(address, value);
+}
+
+static uint16_t findWriteAddressIndex(uint16_t address) {
+    for (uint8_t index=0; index<_countof(moveBlockWriteAddresses); ++index) {
+        if (moveBlockWriteAddresses[index]==address) {
+            return index;
+        }
+    }
+    return _countof(moveBlockWriteAddresses);
+}
+
+static void assert_moveBlock_read_before_write(int16_t distanceMoved) {
+    for (uint8_t index=0; index<_countof(moveBlockReadAddresses); index+=2) {
+        char szMsg[64];
+        sprintf_P(szMsg, PSTR("Index %" PRIu8 ", Distance %" PRIi16), index, distanceMoved);
+        // Confirm the source was read, then the destination
+        TEST_ASSERT_EQUAL_MESSAGE((int16_t)moveBlockReadAddresses[index]+distanceMoved, moveBlockReadAddresses[index+1], szMsg);
+        // Confirm the 2nd read address matches the write address 
+        TEST_ASSERT_EQUAL_MESSAGE((int16_t)moveBlockReadAddresses[index]+distanceMoved, moveBlockWriteAddresses[index/2], szMsg);
+
+        // Confirm there was no earlier write to the source read address
+        sprintf_P(szMsg, PSTR("Address written to before read. Index %" PRIu8 ", Distance %" PRIi16), index, distanceMoved);
+        TEST_ASSERT_GREATER_OR_EQUAL_MESSAGE(index/2, findWriteAddressIndex(moveBlockReadAddresses[index]), szMsg);
+    }
+}
+
+static void test_moveBlock_up_overlap(void) {
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    sourceValue = 7;
+    destValue = 19;
+    readingSource = true;
+
+    moveBlock(api, MOVE_BLOCK_SIZE/2, 0, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE, writeCounter);
+
+    assert_moveBlock_read_before_write(MOVE_BLOCK_SIZE/2);
+}
+
+static void test_moveBlock_down_overlap(void) {
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    sourceValue = 7;
+    destValue = 19;
+    readingSource = true;
+
+    moveBlock(api, 0, MOVE_BLOCK_SIZE/2, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE, writeCounter);
+
+    assert_moveBlock_read_before_write(-1*(int16_t)MOVE_BLOCK_SIZE/2);
+}
+
+static void test_moveBlock_up_adjacent(void) {
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    sourceValue = 7;
+    destValue = 19;
+    readingSource = true;
+
+    moveBlock(api, MOVE_BLOCK_SIZE, 0, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE, writeCounter);
+
+    assert_moveBlock_read_before_write(MOVE_BLOCK_SIZE);
+}
+
+static void test_moveBlock_down_adjacent(void) {
+    storage_api_t api = { .read = moveBlockReadMock, .write = moveBlockWriteMock, .length = lengthMock, };
+
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    sourceValue = 7;
+    destValue = 19;
+    readingSource = true;
+
+    moveBlock(api, 0, MOVE_BLOCK_SIZE, MOVE_BLOCK_SIZE);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE*2, readCounter);
+    TEST_ASSERT_EQUAL(MOVE_BLOCK_SIZE, writeCounter);
+
+    assert_moveBlock_read_before_write(-1*(int16_t)MOVE_BLOCK_SIZE);
+}
+
 void testStorageApi(void) {
     Unity.TestFile = __FILE__;    
 
@@ -212,5 +346,10 @@ void testStorageApi(void) {
     RUN_TEST_P(test_loadBlock);
     RUN_TEST_P(test_fillBlock_nochange_nowrite);
     RUN_TEST_P(test_fillBlock_write_if_different);
+    RUN_TEST_P(test_moveBlock_up_nooverlap_noochanges);
+    RUN_TEST_P(test_moveBlock_down_nooverlap_noochanges);
+    RUN_TEST_P(test_moveBlock_up_overlap);
+    RUN_TEST_P(test_moveBlock_down_overlap);
+    RUN_TEST_P(test_moveBlock_up_adjacent);
+    RUN_TEST_P(test_moveBlock_down_adjacent);
 }
- 
