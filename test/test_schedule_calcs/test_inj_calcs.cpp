@@ -24,16 +24,14 @@ struct inj_test_parameters
     uint32_t running;       // Expected delay when channel status is RUNNING
 };
 
-static void nullInjCallback(void) { }
-
 static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     static constexpr uint16_t injAngle = 355;
     char msg[150];
     uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
-    FuelSchedule schedule(FUEL2_COUNTER, FUEL2_COMPARE, nullInjCallback, nullInjCallback);
-    uint16_t startAngle = 0;
+    FuelSchedule schedule(FUEL2_COUNTER, FUEL2_COMPARE);
+
     /*
     //Pending schedules are no longer tested as will always return 0;
     schedule.Status = PENDING;
@@ -43,7 +41,7 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
     */
     
     schedule.Status = RUNNING;
-    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
+    uint16_t startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
     sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
 }
