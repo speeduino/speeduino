@@ -347,7 +347,7 @@ static table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.pr
 void beginInjectorPriming(void)
 {
   uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(currentStatus.coolant));
-  if( (primingValue > 0) && (currentStatus.TPS <= configPage4.floodClear) )
+  if( (primingValue > 0U) && (currentStatus.TPS <= configPage4.floodClear) )
   {
     constexpr uint32_t PRIMING_DELAY = 100U; // 100us
     // The prime pulse value is in ms*2, so need to multiply by 500 to get to µS
@@ -641,6 +641,7 @@ void disableFuelSchedule(uint8_t channel)
 {
   switch(channel)
   {
+    default:
     case 0: disableSchedule(fuelSchedule1); break;
     case 1: disableSchedule(fuelSchedule2); break;
     case 2: disableSchedule(fuelSchedule3); break;
@@ -663,6 +664,7 @@ void disableIgnSchedule(uint8_t channel)
 {
   switch(channel)
   {
+    default:
     case 0: disableSchedule(ignitionSchedule1); break;
     case 1: disableSchedule(ignitionSchedule2); break;
     case 2: disableSchedule(ignitionSchedule3); break;
@@ -680,7 +682,7 @@ void disableIgnSchedule(uint8_t channel)
   }
 }
 
-void disableAllFuelSchedules()
+void disableAllFuelSchedules(void)
 {
   disableFuelSchedule(0);
   disableFuelSchedule(1);
@@ -691,7 +693,7 @@ void disableAllFuelSchedules()
   disableFuelSchedule(6);
   disableFuelSchedule(7);
 }
-void disableAllIgnSchedules()
+void disableAllIgnSchedules(void)
 {
   disableIgnSchedule(0);
   disableIgnSchedule(1);
