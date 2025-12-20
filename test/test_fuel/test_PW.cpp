@@ -159,7 +159,11 @@ void test_PW_4Cyl_PW0(void)
   context.page2.injLayout = INJ_PAIRED;
   context.page10.stagingEnabled = false; //Staging must be off or channels 3 and 4 will be used
 
-  loop();
+  applyPwToInjectorChannels(computePulseWidths(
+                                context.page2,
+                                context.page6,
+                                context.page10, 
+                                context.current), context.page2, context.current);
   TEST_ASSERT_EQUAL(0, context.current.PW3);
   TEST_ASSERT_EQUAL(0, context.current.PW4);
 }
