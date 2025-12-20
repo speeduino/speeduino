@@ -109,6 +109,7 @@ static void test_tableLookup_roundUp(void)
 
 static void test_all_incrementing(void)
 {
+#if defined(NATIVE_BOARD)
   //Test the when going up both the load and RPM axis that the returned value is always equal or higher to the previous one
   //Tests all combinations of load/rpm from between 0-200 load and 0-9000 rpm
   //WARNING: This can take a LONG time to run. It is disabled by default for this reason
@@ -141,6 +142,9 @@ static void test_all_incrementing(void)
       tempVE = newVE;
     }
   }
+#else
+  TEST_IGNORE_MESSAGE("Test takes too long on device");
+#endif
 }
 extern table3d_dim_t linear_bin_search(const table3d_axis_t *array, 
                             const table3d_dim_t length,
@@ -262,7 +266,6 @@ void testTables()
   RUN_TEST(test_mulQU1X8);
   RUN_TEST(test_compute_bin_position);
   RUN_TEST(test_bilinear_interpolation);
-  // RUN_TEST(test_all_incrementing);
-
+  RUN_TEST(test_all_incrementing);
   }  
 }
