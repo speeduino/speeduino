@@ -1,0 +1,91 @@
+name: Generate code coverage reports
+
+on:
+  - push
+  - pull_request
+  - workflow_dispatch
+  
+jobs:
+  code-coverage:
+
+    runs-on: ubuntu-latest
+
+    env:
+      PIO_ENV: native_code_coverage
+      COBERTURA_FILE: speeduino.cobertura.xml
+      HTML_FILE_ROOT: speeduino_coverage
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+          cache: 'pip' # Enables caching for dependencies
+
+    - name: Create Python venv
+      run: |
+        sudo apt-get install python3-venv
+        python3 -m venv PIO
+
+    - name: Install PlatformIO
+      run: |
+        source PIO/bin/activate
+        pip install platformio
+       
+    - name: Run Code Coverage Tests
+      run: | 
+        source PIO/bin/activate
+        platformio test -v -e ${{ env.PIO_ENV }}
+
+    - name: Install gcovr
+      run: |
+        source PIO/bin/activate
+        pip install gcovr
+
+    - name: Generate report (gcovr)
+      run: |
+        source PIO/bin/activate
+        cd .pio/build/${{ env.PIO_ENV }}
+        gcovr \
+          -r ../../.. \
+          -e ../../../test/ \
+          -e ../../libdeps/ \
+          -e ../../../speeduino/src/BackupSram/ \
+          -e ../../../speeduino/src/FlashStorage/ \
+          -e ../../../speeduino/src/FRAM/ \
+          -e ../../../speeduino/src/SPIAsEEPROM/ \
+          -e ../../../speeduino/src/STM32_CAN/ \
+          -e '(.+/)?unity_config\.c$' \
+          -e '(.+/)?board_native\.(?:h|cpp)$' \
+          --merge-mode-functions merge-use-line-0 \
+          --html-details ${{ env.HTML_FILE_ROOT }}.html \
+          --cobertura ${{ env.COBERTURA_FILE }}
+
+    - name: Generate report (markdown)
+      uses: irongut/CodeCoverageSummary@v1.3.0
+      if: github.event_name == 'pull_request'
+      with:
+        filename: .pio/build/${{ env.PIO_ENV }}/${{ env.COBERTURA_FILE }}
+        badge: true
+        fail_below_min: false
+        format: markdown
+        hide_branch_rate: false
+        hide_complexity: true
+        indicators: true
+        output: both
+        thresholds: '60 80'
+
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: code-coverage-results.md
+
+    - name: Upload reports
+      uses: actions/upload-artifact@v4
+      with:
+        path: |
+          .pio/build/${{ env.PIO_ENV }}/${{ env.HTML_FILE_ROOT }}.*
+          .pio/build/${{ env.PIO_ENV }}/${{ env.COBERTURA_FILE }}
