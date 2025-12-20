@@ -1,4 +1,5 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
 #include "engineProtection.h"
 #include "../test_utils.h"
 
@@ -489,4 +490,4 @@ void runAllTests(void)
     }
 }
 
-DEVICE_TEST(runAllTests)
+TEST_HARNESS(runAllTests)

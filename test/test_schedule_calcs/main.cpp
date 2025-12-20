@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllScheduleCalcTests(void)
 {
@@ -11,4 +13,4 @@ void runAllScheduleCalcTests(void)
   test_adjust_crank_angle();
 }
 
-DEVICE_TEST(runAllScheduleCalcTests)
+TEST_HARNESS(runAllScheduleCalcTests)
