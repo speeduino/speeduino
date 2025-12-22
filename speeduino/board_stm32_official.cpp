@@ -7,6 +7,7 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include EEPROM_LIB_H
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -404,6 +405,11 @@ void boardInitRTC(void)
 void boardInitPins(void)
 {
   // Do nothing
+}
+
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
 }
 
 #endif

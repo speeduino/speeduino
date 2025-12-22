@@ -8,6 +8,7 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include EEPROM_LIB_H
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -404,5 +405,9 @@ void boardInitPins(void)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
+}
 
 #endif
