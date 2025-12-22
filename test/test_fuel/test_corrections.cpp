@@ -13,6 +13,8 @@ extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, CLT_READ_TIMER_BIT) ;
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
@@ -84,21 +86,27 @@ static void test_corrections_WUE(void)
 extern uint16_t correctionCranking(void);
 extern table2D_u8_u8_4 crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
 
-static void setup_correctionCranking_table(void) {
+static void setup_correctionCranking(void) {
   initialiseCorrections();
 
-  uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
-  uint8_t bins[] = { 
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) - 10U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 10U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 20U),
-    (uint8_t)(temperatureAddOffset(currentStatus.coolant) + 30U)
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
+  currentStatus.coolant = COOLANT_INITIAL;
+
+  TEST_DATA_P uint8_t values[] = { 120U / 5U, 130U / 5U, 140U / 5U, 150U / 5U };
+  TEST_DATA_P uint8_t bins[] = { 
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) - 10U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 10U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 20U),
+    (uint8_t)(temperatureAddOffset(COOLANT_INITIAL) + 30U)
   };
-  populate_2dtable(&crankingEnrichTable, values, bins);
+  populate_2dtable_P(&crankingEnrichTable, values, bins);
 }
 
 static void test_corrections_cranking_inactive(void) {
-  initialiseCorrections();
+  setup_correctionCranking();
+  
   currentStatus.engineIsCranking = false;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
@@ -107,24 +115,22 @@ static void test_corrections_cranking_inactive(void) {
 } 
 
 static void test_corrections_cranking_cranking(void) {
+  setup_correctionCranking();
+  
   currentStatus.engineIsCranking = true;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
 
   // Should be half way between the 2 table values.
   TEST_ASSERT_EQUAL(125, correctionCranking() );
 } 
 
 static void test_corrections_cranking_taper_noase(void) {
+  setup_correctionCranking();
   currentStatus.aseIsActive = false;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  
   configPage10.crankingEnrichTaper = 100U;
   currentStatus.ASEValue = 100U;
-  
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
 
   // Reset taper
   currentStatus.engineIsCranking = true;
@@ -152,12 +158,9 @@ static void test_corrections_cranking_taper_noase(void) {
 
 
 static void test_corrections_cranking_taper_withase(void) {
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  setup_correctionCranking();
   configPage10.crankingEnrichTaper = 100U;
   
-  currentStatus.coolant = temperatureRemoveOffset(150);
-  setup_correctionCranking_table();
-
   currentStatus.aseIsActive = true;
   currentStatus.ASEValue = 50U;
 
@@ -212,10 +215,10 @@ static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
   currentStatus.engineIsCranking = false;
+  LOOP_TIMER = 0;
   BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
-  currentStatus.ASEValue = 0U;
   currentStatus.runSecs = 3;
 
   {
@@ -318,6 +321,7 @@ static void test_corrections_floodclear(void)
 }
 
 uint8_t correctionAFRClosedLoop(void);
+extern uint16_t AFRnextCycle;
 
 static void setup_valid_ego_cycle(void) {
   AFRnextCycle = 4196;
@@ -674,6 +678,9 @@ extern table2D_u8_u8_6 injectorVCorrectionTable; ///< 6 bin injector voltage cor
 
 static void setup_battery_correction(void) {
   initialiseCorrections();
+  
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BAT_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
@@ -822,6 +829,7 @@ static void setup_DFCO_on_taper_on_no_delay()
 }
 
 extern byte correctionDFCOfuel(void);
+extern int8_t correctionDFCOignition(int8_t advance);
 
 static void test_correctionDFCOfuel_DFCO_off()
 {
@@ -882,8 +890,6 @@ static void test_correctionDFCOfuel_taper()
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
 }
-
-extern int8_t correctionDFCOignition(int8_t advance);
 
 static void test_correctionDFCOignition_DFCO_off()
 {
@@ -977,6 +983,8 @@ static void setup_TAE()
 {
   setup_AE();
 
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, TPS_READ_TIMER_BIT);
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
   TEST_DATA_P uint8_t bins[] = { 0, 8, 22, 97 };
@@ -1034,10 +1042,10 @@ static void test_corrections_TAE_no_rpm_taper()
   // Large change
   reset_AE();
   currentStatus.TPSlast = 0;
-  currentStatus.TPS = 200;
+  currentStatus.TPS = 100;
   accelValue = correctionAccel(); //Run the AE calcs
-  TEST_ASSERT_EQUAL(3000, currentStatus.tpsDOT);
-  TEST_ASSERT_EQUAL(100+127, accelValue);
+  TEST_ASSERT_EQUAL(1500, currentStatus.tpsDOT);
+  TEST_ASSERT_EQUAL(100+136, accelValue);
 	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
 	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
 }
@@ -1194,6 +1202,8 @@ static void setup_MAE(void)
   setup_AE();
 
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, MAP_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 0, 15, 19, 50 };
   TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
@@ -1274,7 +1284,7 @@ static void test_corrections_MAE_no_rpm_taper()
   getMapLast().lastMAPValue = 10;
   currentStatus.MAP = 1000;
   accelValue = correctionAccel(); //Run the AE calcs
-  TEST_ASSERT_EQUAL(6960, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(2550, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL((100+136), accelValue);
 	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged on
 	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
@@ -1285,7 +1295,7 @@ static void test_corrections_MAE_no_rpm_taper()
   getMapLast().lastMAPValue = 10;
   currentStatus.MAP = 1000;
   accelValue = correctionAccel(); //Run the AE calcs
-  TEST_ASSERT_EQUAL(6930, currentStatus.mapDOT);
+  TEST_ASSERT_EQUAL(2550, currentStatus.mapDOT);
   TEST_ASSERT_EQUAL(100+136, accelValue);
 	TEST_ASSERT_TRUE(currentStatus.isAcceleratingTPS); //Confirm AE is flagged pn  
 	TEST_ASSERT_FALSE(currentStatus.isDeceleratingTPS); //Confirm AE is flagged on
@@ -1529,19 +1539,54 @@ extern byte correctionBaro(void);
 extern table2D_u8_u8_9 IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
 extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 
+static void setup_baro_correction(void) {
+  initialiseCorrections();
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+
+  TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110, 120, 130 };
+  TEST_DATA_P uint8_t values[] = { 120, 110, 100, 90, 80, 70, 70, 70 };
+  populate_2dtable_P(&baroFuelTable, values, bins);
+}
+
+// Battery correction will recalculates at 10Hz, otherwise it will re-use cached values. 
+static void test_corrections_baro_lookup(void) {
+  setup_baro_correction();
+
+  currentStatus.baro = 65;
+  currentStatus.baroCorrection = 1U;
+  TEST_ASSERT_NOT_EQUAL(currentStatus.baroCorrection, correctionBaro());
+  TEST_ASSERT_EQUAL(115, correctionBaro());
+
+  currentStatus.baro = 105;
+  currentStatus.baroCorrection = 1U;
+  TEST_ASSERT_EQUAL(75, correctionBaro());
+  TEST_ASSERT_EQUAL(75, correctionBaro());
+}
+
+static void test_corrections_baro(void)
+{
+  RUN_TEST_P(test_corrections_baro_lookup);
+}
+
+
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
-  populate_2dtable(&injectorVCorrectionTable, (uint8_t)100, (uint8_t)100);
-  populate_2dtable(&baroFuelTable, (uint8_t)100, (uint8_t)100);
-  populate_2dtable(&IATDensityCorrectionTable, (uint8_t)100, (uint8_t)100);
-  populate_2dtable(&flexFuelTable, (uint8_t)100, (uint8_t)100);
-  populate_2dtable(&fuelTempTable, (uint8_t)100, (uint8_t)100);
+  // Makes no sense in real life, but this is an artifical test
+  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
+  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  populate_2dtable(&injectorVCorrectionTable, (uint8_t)100U, (uint8_t)100U);
+  populate_2dtable(&baroFuelTable, (uint8_t)100U, (uint8_t)100U);
+  populate_2dtable(&IATDensityCorrectionTable, (uint8_t)100U, (uint8_t)100U);
+  populate_2dtable(&flexFuelTable, (uint8_t)100U, (uint8_t)100U);
+  populate_2dtable(&fuelTempTable, (uint8_t)100U, (uint8_t)100U);
 
   //Disable the taper
   currentStatus.RPM = 2000;
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
   configPage2.decelAmount = 33U;
+  configPage2.aseTaperTime = 0U;
 
   currentStatus.TPSlast = 0;
   currentStatus.TPS = 50; //25% actual value
@@ -1553,6 +1598,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
   currentStatus.engineIsCranking = false;
+  currentStatus.ASEValue = 100U;
 
   configPage2.dfcoEnabled = 0;
   configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper
@@ -1620,8 +1666,16 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   populate_2dtable(&flexFuelTable, (uint8_t)255, (uint8_t)100);
   populate_2dtable(&fuelTempTable, (uint8_t)255, (uint8_t)100);
 
+  LOOP_TIMER = 0;
+  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
+  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+
   configPage2.flexEnabled = 1;
   configPage2.dfcoEnabled = 0;
+  configPage2.aseTaperTime = 0U;
+  configPage2.taeThresh = UINT8_MAX;
+  configPage2.taeMinChange = UINT8_MAX;
+  configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
   currentStatus.coolant = 212;
   currentStatus.runSecs = 255; 
   currentStatus.battery10 = 100;  
@@ -1630,6 +1684,10 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.ethanolPct = 100;
   currentStatus.launchingHard = false;
   currentStatus.launchingSoft = false;
+  currentStatus.AEamount = 100U;
+  currentStatus.ASEValue = 100U;
+  currentStatus.TPSlast = 0;
+  currentStatus.TPS = currentStatus.TPSlast;
   currentStatus.AEamount = 100;
 
   configPage4.wueBins[9] = 100;
@@ -1676,5 +1734,6 @@ void testCorrections()
     test_corrections_afrtarget();
     test_corrections_closedloop();
     test_corrections_correctionsFuel();
+    test_corrections_baro();
   }
 }

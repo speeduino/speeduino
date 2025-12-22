@@ -687,7 +687,7 @@ void boostControl(void)
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
       //Open loop
-      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+      if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
       else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
@@ -701,7 +701,7 @@ void boostControl(void)
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+        if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
 
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
