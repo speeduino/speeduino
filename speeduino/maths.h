@@ -10,7 +10,6 @@
 // libdivide generator functions (E.g. libdivide_s32_gen)
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
 #include "src/libdivide/libdivide.h"
-#include "src/libdivide/constant_fast_div.h"
 #endif
 
 uint8_t random1to100(void);
@@ -124,7 +123,12 @@ static inline uint16_t div100(uint16_t n) {
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
     // (unlike the signed integer overload, where __divmodhi4 is still called
     // see https://godbolt.org/z/c5bs5noT1)
+#ifdef USE_LIBDIVIDE
+    constexpr libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = 18351, .more = 70 };
+    return libdivide::libdivide_u16_do_raw(n + DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_u16_100.magic, libdiv_u16_100.more);
+#else
     return UDIV_ROUND_CLOSEST(n, UINT16_C(100), uint16_t);
+#endif
 }
 
 static inline int16_t div100(int16_t n) {
@@ -135,7 +139,8 @@ static inline int16_t div100(int16_t n) {
     }
     // Negative values here, so adjust pre-division to get same
     // behavior as roundf(float)
-    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), S16_MAGIC(100), S16_MORE(100));
+    constexpr libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = 20972, .more = 5 };
+    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_s16_100.magic, libdiv_s16_100.more);
 #else
     return DIV_ROUND_CLOSEST(n, UINT16_C(100), int16_t);
 #endif
@@ -146,7 +151,8 @@ static inline uint32_t div100(uint32_t n) {
     if (n<=(uint32_t)UINT16_MAX) {
         return div100((uint16_t)n);
     }
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), 2748779070L, 6);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), libdiv_u32_100.magic, libdiv_u32_100.more);
 #else
     return UDIV_ROUND_CLOSEST(n, UINT32_C(100), uint32_t);
 #endif
@@ -157,7 +163,8 @@ static inline int32_t div100(int32_t n) {
     if (n<=INT16_MAX && n>=INT16_MIN) {
         return div100((int16_t)n);            
     }
-    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
+    constexpr libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
+    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), libdiv_s32_100.magic, libdiv_s32_100.more);
 #else
     return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
@@ -172,7 +179,8 @@ static inline int32_t div100(int32_t n) {
  */
 static inline uint32_t div360(uint32_t n) {
 #ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), 1813430637L, 72);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), libdiv_u32_360.magic, libdiv_u32_360.more);
 #else
     return (uint32_t)UDIV_ROUND_CLOSEST(n, UINT32_C(360), uint32_t);
 #endif
@@ -267,7 +275,8 @@ static inline uint32_t percentage(uint16_t percent, uint32_t value)
 static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
     uint32_t x200 = (uint32_t)percent * (uint32_t)value;
 #ifdef USE_LIBDIVIDE    
-    return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), 2748779070L, 7);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
+    return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), libdiv_u32_200.magic, libdiv_u32_200.more);
 #else
     return (uint16_t)UDIV_ROUND_CLOSEST(x200, UINT16_C(200), uint32_t);
 #endif
