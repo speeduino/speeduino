@@ -477,7 +477,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
       case 10:        // PID-0x0A , Fuel Pressure (Gauge) , range is 0 to 765 kPa , formula == A / 3)
         uint16_t temp_fuelpressure;
         // Fuel pressure is in PSI. PSI to kPa is 6.89475729, but that needs to be divided by 3 for OBD2 formula. So 2.298.... 2.3 is close enough, so that in fraction.
-        temp_fuelpressure = udiv_32_16((23u * currentStatus.fuelPressure), 10);
+        temp_fuelpressure = fast_div32_16((23u * currentStatus.fuelPressure), 10);
         outMsg.buf[0] =  0x03;    // sending 3 byte
         outMsg.buf[1] =  0x41;    // 
         outMsg.buf[2] =  0x0A;    // pid code
@@ -604,7 +604,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         //uint16_t O2_1e ;
         //int16_t O2_1v ; 
         obdcalcF32 = currentStatus.O2;            // afr(is *10 so 25.5 is 255) , needs a 32bit else will overflow
-        obdcalcG16 = udiv_32_16((obdcalcF32 * 32768u), configPage2.stoich);
+        obdcalcG16 = fast_div32_16((obdcalcF32 * 32768u), configPage2.stoich);
         obdcalcA = highByte(obdcalcG16);
         obdcalcB = lowByte(obdcalcG16);       
 
@@ -627,7 +627,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
         //uint16_t O2_2e ;
         //int16_t O2_2V ; 
         obdcalcF32 = currentStatus.O2_2;            // afr(is *10 so 25.5 is 255) , needs a 32bit else will overflow
-        obdcalcG16 = udiv_32_16((obdcalcF32 * 32768u), configPage2.stoich);
+        obdcalcG16 = fast_div32_16((obdcalcF32 * 32768u), configPage2.stoich);
         obdcalcA = highByte(obdcalcG16);
         obdcalcB = lowByte(obdcalcG16);       
 

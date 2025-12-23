@@ -290,12 +290,12 @@ static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_avera
     // Record this since we're about to overwrite it....
     map_adc_readings_t rawReadings = sensorReadings;
 
-    sensorReadings.mapADC = udiv_32_16(cycle_average.mapAdcRunningTotal, cycle_average.sampleCount);
+    sensorReadings.mapADC = fast_div32_16((uint32_t)cycle_average.mapAdcRunningTotal, cycle_average.sampleCount);
 
     //If EMAP is enabled, the process is identical to the above
     if(sensorReadings.emapADC!=UINT16_MAX)
     {
-      sensorReadings.emapADC = udiv_32_16(cycle_average.emapAdcRunningTotal, cycle_average.sampleCount); //Note that the MAP count can be reused here as it will always be the same count.
+      sensorReadings.emapADC = fast_div32_16((uint32_t)cycle_average.emapAdcRunningTotal, cycle_average.sampleCount); //Note that the MAP count can be reused here as it will always be the same count.
     }
     reset(current, cycle_average, rawReadings);
     // We can now derive new map values
@@ -413,7 +413,7 @@ static inline bool eventAverageEndEvent(map_event_average_t &eventAverage, map_a
   {
     // Record this since we're about to overwrite it....
     map_adc_readings_t rawReadings = sensorReadings;
-    sensorReadings.mapADC = udiv_32_16(eventAverage.mapAdcRunningTotal, eventAverage.sampleCount);
+    sensorReadings.mapADC = fast_div32_16((uint32_t)eventAverage.mapAdcRunningTotal, eventAverage.sampleCount);
     reset(eventAverage, rawReadings);
     // We can now derive new map values
     return true;
@@ -783,7 +783,7 @@ uint16_t getSpeed(void)
     // Adjust the reading by dividing it by set amount.
     else
     {
-      tempSpeed = (currentStatus.canin[configPage2.vssAuxCh] / configPage2.vssPulsesPerKm);
+      tempSpeed = fast_div(currentStatus.canin[configPage2.vssAuxCh], configPage2.vssPulsesPerKm);
     }
     tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
@@ -799,11 +799,11 @@ uint16_t getSpeed(void)
       vssTotalTime += vssGetPulseGap(x);
     }
 
-    pulseTime = vssTotalTime / ((uint32_t)VSS_SAMPLES - 1UL);
+    pulseTime = fast_div(vssTotalTime,  VSS_SAMPLES - 1UL);
     if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
-      tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = fast_div(MICROS_PER_HOUR, pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
       tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000U) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue
@@ -821,7 +821,7 @@ byte getGear(void)
     //If the speed is non-zero, default to the last calculated gear
     tempGear = currentStatus.gear;
 
-    uint16_t pulsesPer1000rpm = udiv_32_16(currentStatus.vss * 10000UL, currentStatus.RPM); //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
+    uint16_t pulsesPer1000rpm = fast_div32_16((uint32_t)(currentStatus.vss * 10000UL), currentStatus.RPM); //Gives the current pulses per 1000RPM, multiplied by 10 (10x is the multiplication factor for the ratios in TS)
     //Begin gear detection
     if( (pulsesPer1000rpm > (configPage2.vssRatio1 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio1 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 1; }
     else if( (pulsesPer1000rpm > (configPage2.vssRatio2 - VSS_GEAR_HYSTERESIS)) && (pulsesPer1000rpm < (configPage2.vssRatio2 + VSS_GEAR_HYSTERESIS)) ) { tempGear = 2; }

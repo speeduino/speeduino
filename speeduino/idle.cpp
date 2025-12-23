@@ -31,7 +31,7 @@ uint16_t idle_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int idle_pwm_cur_value;
 long idle_pid_target_value;
 long FeedForwardTerm;
-unsigned long idle_pwm_target_value;
+static uint32_t idle_pwm_target_value;
 long idle_cl_target_rpm;
 
 port_register_t idle_pin_port;
@@ -469,7 +469,7 @@ void idleControl(void)
 
           // Now assign the real PWM value
           idle_pwm_target_value = TEMP_idle_pwm_target_value>>2; //increased resolution
-          currentStatus.idleLoad = udiv_32_16(idle_pwm_target_value * 100UL, idle_pwm_max_count);
+          currentStatus.idleLoad = fast_div32_16((uint32_t)(idle_pwm_target_value * 100UL), idle_pwm_max_count);
         }
         idleCounter++;
       }

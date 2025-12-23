@@ -1120,8 +1120,8 @@ uint16_t correctionsDwell(uint16_t dwell)
   if(dwellPerRevolution > currentStatus.revolutionTime)
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
-    uint16_t adjustedSparkDur = udiv_32_16(sparkDur_uS * currentStatus.revolutionTime, dwellPerRevolution);
-    tempDwell = udiv_32_16(currentStatus.revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
+    uint16_t adjustedSparkDur = fast_div32_16(sparkDur_uS * currentStatus.revolutionTime, dwellPerRevolution);
+    tempDwell = fast_div32_16(currentStatus.revolutionTime, (uint16_t)pulsesPerRevolution) - adjustedSparkDur;
   }
 
   return tempDwell;

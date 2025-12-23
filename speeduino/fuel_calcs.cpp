@@ -22,7 +22,7 @@ static inline uint8_t calcNitrousStagePercent(uint8_t minRPMDiv100, uint8_t maxR
   uint16_t minRPM = minRPMDiv100*UINT16_C(100);
   uint16_t maxRPM = maxRPMDiv100*UINT16_C(100);
   uint16_t rpmRange = maxRPM - minRPM;
-  auto adderPercent = (uint8_t)udiv_32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
+  auto adderPercent = (uint8_t)fast_div32_16((current.RPM - minRPM) * UINT32_C(100), rpmRange); //The percentage of the way through the RPM range
   return 100U - adderPercent; //Flip the percentage as we go from a higher adder to a lower adder as the RPMs rise
 }
 
@@ -73,7 +73,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
       break;
     default:
       //Non-PoT squirts value. Perform (slow) uint32_t division
-      tempLimit = tempLimit / current.nSquirts;
+      tempLimit = fast_div (tempLimit, current.nSquirts);
       break;
   }
   return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
@@ -82,11 +82,11 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
 
 static inline uint32_t applyMapMode(uint32_t intermediate, const config2 &page2, const statuses &current) {
   if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
-    uint16_t multiplier = div100((uint16_t)((uint16_t)current.MAP << 7U));
+    uint16_t multiplier = div100(lshift<7U>((uint32_t)current.MAP));
     return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
   if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-     uint16_t multiplier = ((uint16_t)current.MAP << 7U) / current.baro; 
+     uint16_t multiplier = fast_div32_16(lshift<7U>((uint32_t)current.MAP), current.baro); 
     return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
   return intermediate;
@@ -95,12 +95,12 @@ static inline uint32_t applyMapMode(uint32_t intermediate, const config2 &page2,
 static inline uint32_t applyAFRMultiplier(uint32_t intermediate, const config2 &page2, const config6 &page6, const statuses &current) {
   if (page2.includeAFR == true) {
     if ((page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
-      uint16_t multiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
+      uint16_t multiplier = fast_div(lshift<7U>((uint16_t)current.O2), current.afrTarget);  //Include AFR (vs target) if enabled
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
   } else {
     if ( page2.incorporateAFR ) {
-      uint16_t multiplier = ((uint16_t)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+      uint16_t multiplier = fast_div(lshift<7U>((uint16_t)page2.stoich), current.afrTarget);  //Incorporate stoich vs target AFR, if enabled.
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
   }
@@ -176,10 +176,10 @@ static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime
 }
 
 static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) {
-  return fastDiv(totalPw, page10.stagedInjSizePri);
+  return fast_div(totalPw, page10.stagedInjSizePri);
 }
 static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) {
-  return fastDiv(totalPw, page10.stagedInjSizeSec);
+  return fast_div(totalPw, page10.stagedInjSizeSec);
 }
 
 static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t injOpenTime, const config10 &page10, const statuses &current) {
@@ -210,7 +210,7 @@ static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLi
   if(pwPrimaryStaged > pwLimit)
   {
     uint32_t extraPW = pwPrimaryStaged - pwLimit + injOpenTime; //The open time must be added here AND below because pwPrimaryStaged does not include an open time. The addition of it here takes into account the fact that pwLlimit does not contain an allowance for an open time. 
-    uint32_t secondary = fastDiv(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
+    uint32_t secondary = fast_div(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
     return { 
       pwLimit,
       (uint16_t)min(secondary, (uint32_t)UINT16_MAX),

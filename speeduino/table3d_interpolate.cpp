@@ -177,7 +177,7 @@ TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const
   // But since we are computing the ratio (0 to 1), p is guaranteed to be
   // less than binWidth and thus the division below will result in a value
   // <=1. So we can reduce the data type from 24.8 (uint32_t) to 1.8 (uint16_t)
-  return udiv_32_16(p, (uint16_t)binWidth);  
+  return fast_div32_16(p, (uint16_t)binWidth);  
 }
 
 /** @brief Row and column coordinates in a 2D table */

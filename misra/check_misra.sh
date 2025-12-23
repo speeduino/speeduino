@@ -94,15 +94,7 @@ if [ $output_xml -eq 1 ]; then
   cppcheck_parameters+=(--xml)
 fi
 
-# There is no way to tell the misra add on to skip certain headers
-# libdivide adds 10+ minutes to each file so rename the folder 
-# before the scan
-mv "$source_folder"/src/libdivide "$source_folder"/src/_libdivide
-
 "$cppcheck_bin" ${cppcheck_parameters[@]} 2> $cppcheck_out_file
-
-# Restore libdivide folder name after scan
-mv "$source_folder"/src/_libdivide "$source_folder"/src/libdivide
 
 # Count lines for Mandatory or Required rules
 error_count=`grep -i "Mandatory - \|Required - " < "$cppcheck_out_file" | wc -l`
