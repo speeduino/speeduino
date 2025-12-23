@@ -783,7 +783,7 @@ uint16_t getSpeed(void)
     // Adjust the reading by dividing it by set amount.
     else
     {
-      tempSpeed = (currentStatus.canin[configPage2.vssAuxCh] / configPage2.vssPulsesPerKm);
+      tempSpeed = fast_div(currentStatus.canin[configPage2.vssAuxCh], configPage2.vssPulsesPerKm);
     }
     tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
@@ -799,11 +799,11 @@ uint16_t getSpeed(void)
       vssTotalTime += vssGetPulseGap(x);
     }
 
-    pulseTime = vssTotalTime / ((uint32_t)VSS_SAMPLES - 1UL);
+    pulseTime = fast_div(vssTotalTime,  VSS_SAMPLES - 1UL);
     if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
-      tempSpeed = MICROS_PER_HOUR / (pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
+      tempSpeed = fast_div(MICROS_PER_HOUR, pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h
       tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
     }
     if(tempSpeed > 1000U) { tempSpeed = currentStatus.vss; } //Safety check. This usually occurs when there is a hardware issue

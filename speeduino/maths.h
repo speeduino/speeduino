@@ -348,11 +348,12 @@ template <typename T, typename TPrime>
 static inline T LOW_PASS_FILTER_8BIT(T input, uint8_t alpha, T prior) {
   // Intermediate steps are for MISRA compliance
   // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
-  static constexpr T ALPHA_MAX = (T)256;
-  T inv_alpha = ALPHA_MAX - (T)alpha;
+  static constexpr uint16_t ALPHA_MAX_SHIFT = 8U;
+  static constexpr uint16_t ALPHA_MAX = 2U << (ALPHA_MAX_SHIFT-1U);
+  uint16_t inv_alpha = ALPHA_MAX - alpha;
   TPrime prior_alpha = (prior * (TPrime)alpha);
   TPrime preshift = (input * (TPrime)inv_alpha) + prior_alpha;
-  return (T)(preshift / ALPHA_MAX); // Division should resolve to a shift & avoids a MISRA violation
+  return (T)(preshift >> (TPrime)ALPHA_MAX_SHIFT);
 }
 
 /// @endcond

@@ -6065,8 +6065,8 @@ void triggerSec_FordTFI(void)
   {     
     if ((curGap > 0) && (curGap < 20000000)) // Limit to prevent overflow
     {  
-      targetGap2 = curGap * 110UL / 100UL; // Wide last teeth gap min
-      targetGap3 = curGap * 90UL / 100UL; // Narrow last teeth minus one gap max
+      targetGap2 = percentage(110, curGap); // Wide last teeth gap min
+      targetGap3 = percentage(90, curGap); // Narrow last teeth minus one gap max
     }
     else 
     {

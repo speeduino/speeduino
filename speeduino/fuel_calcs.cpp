@@ -73,7 +73,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
       break;
     default:
       //Non-PoT squirts value. Perform (slow) uint32_t division
-      tempLimit = tempLimit / current.nSquirts;
+      tempLimit = fast_div (tempLimit, current.nSquirts);
       break;
   }
   return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
@@ -82,11 +82,11 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
 
 static inline uint32_t applyMapMode(uint32_t intermediate, const config2 &page2, const statuses &current) {
   if ( page2.multiplyMAP == MULTIPLY_MAP_MODE_100) { 
-    uint16_t multiplier = div100((uint16_t)((uint16_t)current.MAP << 7U));
+    uint16_t multiplier = div100(lshift<7U>((uint32_t)current.MAP));
     return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
   if( page2.multiplyMAP == MULTIPLY_MAP_MODE_BARO) { 
-     uint16_t multiplier = ((uint16_t)current.MAP << 7U) / current.baro; 
+     uint16_t multiplier = fast_div32_16(lshift<7U>((uint32_t)current.MAP), current.baro); 
     return rshift<7U>(intermediate * (uint32_t)multiplier); 
   }
   return intermediate;
@@ -95,12 +95,12 @@ static inline uint32_t applyMapMode(uint32_t intermediate, const config2 &page2,
 static inline uint32_t applyAFRMultiplier(uint32_t intermediate, const config2 &page2, const config6 &page6, const statuses &current) {
   if (page2.includeAFR == true) {
     if ((page6.egoType == EGO_TYPE_WIDE) && (current.runSecs > page6.ego_sdelay) ) {
-      uint16_t multiplier = ((uint16_t)current.O2 << 7U) / current.afrTarget;  //Include AFR (vs target) if enabled
+      uint16_t multiplier = fast_div(lshift<7U>((uint16_t)current.O2), current.afrTarget);  //Include AFR (vs target) if enabled
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
   } else {
     if ( page2.incorporateAFR ) {
-      uint16_t multiplier = ((uint16_t)page2.stoich << 7U) / current.afrTarget;  //Incorporate stoich vs target AFR, if enabled.
+      uint16_t multiplier = fast_div(lshift<7U>((uint16_t)page2.stoich), current.afrTarget);  //Incorporate stoich vs target AFR, if enabled.
       return rshift<7U>(intermediate * (uint32_t)multiplier); 
     }
   }
