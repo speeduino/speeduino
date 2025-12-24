@@ -81,7 +81,7 @@ void setup(void)
 static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, uint16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
-    return percentage(pw1percent, currentPW);
+    return percentageApprox(pw1percent, currentPW);
 }
 
 /** Lookup the current VE value from the primary 3D fuel map.

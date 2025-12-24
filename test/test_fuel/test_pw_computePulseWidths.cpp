@@ -49,7 +49,7 @@ static void test_PW_ae_adder(void) {
   uint16_t expectedOffset = (reqFuel*(context.current.AEamount-100U))/100;
 
   pulseWidths result = computePulseWidths(context);
-  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
+  TEST_ASSERT_UINT16_WITHIN(1U, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
@@ -62,7 +62,7 @@ static void test_PW_nitrous_stageboth(void) {
   context.current.nitrous_status = NITROUS_BOTH;
 
   pulseWidths result = computePulseWidths(context);
-  TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED+NITROUS_STAGE1_BOTH+NITROUS_STAGE2_ADDPW, result.primary);
+  TEST_ASSERT_UINT16_WITHIN(1U, NO_MULTIPLY_EXPECTED+NITROUS_STAGE1_BOTH+NITROUS_STAGE2_ADDPW, result.primary);
   TEST_ASSERT_EQUAL(0, result.secondary);
 }
 
