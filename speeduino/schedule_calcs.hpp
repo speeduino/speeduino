@@ -27,14 +27,18 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
 {
   int16_t delta = openAngle - crankAngle;
 
-  if ( (schedule.Status == RUNNING) || (schedule.Status == OFF)) 
+  if (delta<0)
   {
-    while(delta < 0) { 
-      delta += CRANK_ANGLE_MAX_INJ; 
+    if (schedule.Status != PENDING)
+    {
+      while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
     }
-  } 
-  
-  return angleToTimeMicroSecPerDegree((uint16_t)max((int16_t)0, delta));
+    else
+    {
+      delta = 0;
+    }
+  }
+  return angleToTimeMicroSecPerDegree((uint16_t)delta);
 }
 
 static inline void calculateIgnitionAngle(const uint16_t dwellAngle, const uint16_t channelIgnDegrees, int8_t advance, int *pEndAngle, int *pStartAngle)
