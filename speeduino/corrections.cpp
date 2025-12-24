@@ -273,7 +273,7 @@ static inline uint8_t applyAeRpmTaper(uint8_t accelCorrection) {
         const auto taperPercent = (uint8_t)map(currentStatus.RPM,
                                                   taperMinRpm, taperMaxRpm,
                                                   ONE_HUNDRED_PCT, 0U); 
-        accelCorrection = (uint8_t)percentage(taperPercent, accelCorrection); //Calculate the above percentage of the calculated accel amount. 
+        accelCorrection = (uint8_t)percentageApprox(taperPercent, accelCorrection); //Calculate the above percentage of the calculated accel amount. 
       }
     }
   }
@@ -291,7 +291,7 @@ static inline uint16_t applyAeCoolantTaper(uint16_t accelCorrection) {
     //If CLT is less than taper min temp, apply full modifier on top of accelCorrection
     if ( currentStatus.coolant <= temperatureRemoveOffset(configPage2.aeColdTaperMin) )
     {
-      accelCorrection =  (uint16_t)percentage(configPage2.aeColdPct, accelCorrection);
+      accelCorrection =  (uint16_t)percentageApprox(configPage2.aeColdPct, accelCorrection);
     }
     //If CLT is between taper min and max, taper the modifier value and apply it on top of accelCorrection
     else
@@ -301,7 +301,7 @@ static inline uint16_t applyAeCoolantTaper(uint16_t accelCorrection) {
       const uint8_t coldPct = BASELINE_FUEL_CORRECTION + map( temperatureAddOffset(currentStatus.coolant),
                                                               configPage2.aeColdTaperMin, configPage2.aeColdTaperMax,
                                                               configPage2.aeColdPct-ONE_HUNDRED_PCT, 0U);       
-      accelCorrection = (uint16_t)percentage(coldPct, accelCorrection);
+      accelCorrection = (uint16_t)percentageApprox(coldPct, accelCorrection);
     }
   }
 
@@ -809,7 +809,7 @@ static inline uint32_t combineCorrections(uint32_t sumCorrections, uint16_t corr
   if (correction == NO_FUEL_CORRECTION) {
     return sumCorrections;
   }
-  return percentage(correction, sumCorrections);
+  return percentageApprox(correction, sumCorrections);
 }
 
 /** Dispatch calculations for all fuel related corrections.
