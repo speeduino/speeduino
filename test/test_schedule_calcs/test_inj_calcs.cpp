@@ -4,16 +4,10 @@
 #include "schedule_calcs.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
+#include "type_traits.h"
 
-#if !defined(_countof)
-#define _countof(x) (sizeof(x) / sizeof (x[0]))
-#endif
-// void printFreeRam()
-// {
-//     char msg[128];
-//     sprintf(msg, "freeRam: %u", freeRam());
-//     TEST_MESSAGE(msg);
-// }
+using raw_counter_t = type_traits::remove_reference<FuelSchedule::counter_t>::type;
+using raw_compare_t = type_traits::remove_reference<FuelSchedule::compare_t>::type;
 
 struct inj_test_parameters
 {
@@ -30,7 +24,9 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
     char msg[150];
     uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
-    FuelSchedule schedule(FUEL2_COUNTER, FUEL2_COMPARE);
+    auto counter = raw_counter_t();
+    auto compare = raw_compare_t();
+    FuelSchedule schedule(counter, compare);
 
     /*
     //Pending schedules are no longer tested as will always return 0;
@@ -281,6 +277,30 @@ static void test_calc_inj_timeout_720()
   test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
+static void test_calculateInjectorTimeout(void)
+{
+  auto counter = raw_counter_t();
+  auto compare = raw_compare_t();
+  FuelSchedule schedule(counter, compare);
+  setEngineSpeed(4000, 360);
+
+  schedule.Status = OFF;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = PENDING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = RUNNING_WITHNEXT;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = RUNNING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+}
+
 // 
 void test_calc_inj_timeout(void)
 {
@@ -288,5 +308,6 @@ void test_calc_inj_timeout(void)
 
     RUN_TEST(test_calc_inj_timeout_360);
     RUN_TEST(test_calc_inj_timeout_720);
+    RUN_TEST(test_calculateInjectorTimeout);
   }
 }
