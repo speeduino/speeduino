@@ -53,7 +53,7 @@ static inline int16_t injectorLimits(int16_t angle)
 void setAngleConverterRevolutionTime(uint32_t revolutionTime);
 
 /**
- * @name Converts angular degrees to the time interval that amount of rotation
+ * @brief Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
  * 
  * Based on angle of [0,720] and min/max RPM, result ranges from
@@ -65,7 +65,15 @@ void setAngleConverterRevolutionTime(uint32_t revolutionTime);
 uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
 
 /**
- * @name Converts a time interval in microsecods to the equivalent degrees of angular (crank)
+ * @brief Converts angular degrees to the equivalent timer ticks at current RPM.
+ * 
+ * @param angle Angle in degrees
+ * @return Number of timer ticks 
+ */
+COMPARE_TYPE angleToTimerTicks(uint16_t angle);
+
+/**
+ * @brief Converts a time interval in microsecods to the equivalent degrees of angular (crank)
  * rotation at current RPM.
  *
  * Inverse of angleToTimeMicroSecPerDegree
