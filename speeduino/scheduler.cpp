@@ -419,7 +419,7 @@ static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
 }
 
 /** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */
-static inline void ignitionPendingToRunning(Schedule *pSchedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionPendingToRunning(Schedule *pSchedule) {
   defaultPendingToRunning(pSchedule);
 
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
@@ -427,20 +427,23 @@ static inline void ignitionPendingToRunning(Schedule *pSchedule) {
   pIgnition->startTime = micros();
   if(pIgnition->endScheduleSetByDecoder) { SET_COMPARE(pIgnition->_compare, pIgnition->endCompare); }
 }
+END_LTO_INLINE()
 
 /** @brief Called when the supplied schedule transitions from a RUNNING state to OFF */
-static inline void ignitionRunningToOff(Schedule *pSchedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToOff(Schedule *pSchedule) {
   defaultRunningToOff(pSchedule);
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
   onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
 }
+END_LTO_INLINE()
 
 /** @brief Called when the supplied schedule transitions from a RUNNING state to PENDING */
-static inline void ignitionRunningToPending(Schedule *pSchedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToPending(Schedule *pSchedule) {
   defaultRunningToPending(pSchedule);
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
   onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
 }
+END_LTO_INLINE()
 
 void moveToNextState(IgnitionSchedule &schedule)
 {
