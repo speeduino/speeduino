@@ -1,28 +1,32 @@
 #include "schedule_state_machine.h"
 #include "timers.h"
+#include "preprocessor.h"
 
-void defaultPendingToRunning(Schedule *schedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) defaultPendingToRunning(Schedule *schedule) {
   schedule->pStartCallback();
   schedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
   SET_COMPARE(schedule->_compare, schedule->_counter + schedule->duration);
 }
+END_LTO_INLINE()
 
-void defaultRunningToOff(Schedule *schedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToOff(Schedule *schedule) {
   schedule->pEndCallback();
   schedule->Status = OFF;
 }
+END_LTO_INLINE()
 
-void defaultRunningToPending(Schedule *schedule) {
+BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToPending(Schedule *schedule) {
   schedule->pEndCallback();
   SET_COMPARE(schedule->_compare, schedule->nextStartCompare);
   schedule->Status = PENDING;
 }
+END_LTO_INLINE()
 
 static inline bool hasNextSchedule(const Schedule &schedule) {
   return schedule.Status==RUNNING_WITHNEXT;
 }
 
-void movetoNextState(Schedule &schedule, 
+BEGIN_LTO_ALWAYS_INLINE(void) movetoNextState(Schedule &schedule, 
                     scheduleStateTranstionFunc pendingToRunning, 
                     scheduleStateTranstionFunc runningToOff,
                     scheduleStateTranstionFunc runningToPending)
@@ -43,3 +47,4 @@ void movetoNextState(Schedule &schedule,
     // Nothing to do but keep MISRA checker happy
   }
 }
+END_LTO_INLINE()
