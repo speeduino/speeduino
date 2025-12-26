@@ -253,6 +253,7 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
 void __attribute__((always_inline)) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+      getTimerFlags();
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms

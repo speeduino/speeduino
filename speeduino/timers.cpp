@@ -49,13 +49,6 @@ volatile uint8_t testIgnitionPulseCount = 0;
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
-  loop5ms = 0;
-  loop20ms = 0;
-  loop33ms = 0;
-  loop66ms = 0;
-  loop100ms = 0;
-  loop250ms = 0;
-  loopSec = 0;
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
@@ -66,27 +59,36 @@ static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targ
   }
 }
 
-//Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//Executes every ~1ms.
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
+
+//All chips use millis() for this at the moment. Dummy function is here for compatibility with those that still have interrupt attached to this.
+#if defined(CORE_AVR)
 #else
-void oneMSInterval(void) //Most ARM chips can simply call a function
+void oneMSInterval(void) //dummy function for non-AVR chips, some still have interrupts attached to this name.
+{}
 #endif
+
+void getTimerFlags(void)
 {
-  BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
-  ms_counter++;
+  static uint8_t previousMillis1ms=0;
+  static uint8_t previousMillis1ms2=0;
+  static uint8_t previousMillis5ms=0;
+  static uint8_t previousMillis20ms=0;
+  static uint8_t previousMillis33ms=0;
+  static uint8_t previousMillis66ms=0;
+  static uint8_t previousMillis100ms=0;
+  static uint16_t previousMillis250ms=0;
+  static uint16_t previousMillis1000ms=0;
+  uint16_t currentMillis;
+  uint8_t interval;
 
-  //Increment Loop Counters
-  loop5ms++;
-  loop20ms++;
-  loop33ms++;
-  loop66ms++;
-  loop100ms++;
-  loop250ms++;
-  loopSec++;
-
+    currentMillis =(uint16_t)millis(); // capture the latest value of millis()
+  //1000Hz loop
+  interval=lowByte(currentMillis) - lowByte(previousMillis1ms);
+  if(interval >= (uint8_t)1U )
+  {
+    previousMillis1ms=lowByte(currentMillis);
+    BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
+  
   //Overdwell check
   uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
   bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
@@ -164,26 +166,28 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       tachoOutputFlag = TACHO_INACTIVE;
     }
   }
-
+  }
   //200Hz loop
-  if(loop5ms == 5)
+  interval=lowByte(currentMillis) - previousMillis5ms;
+  if(interval >= (uint8_t)5U )
   {
-    loop5ms = 0; //Reset counter
+    previousMillis5ms=lowByte(currentMillis); 
     BIT_SET(TIMER_mask, BIT_TIMER_200HZ);
   }
-
+  
   //50Hz loop
-  if(loop20ms == 20)
+  interval=lowByte(currentMillis) - previousMillis20ms;
+  if(interval >= (uint8_t)20U )
   {
-    loop20ms = 0; //Reset counter
+    previousMillis20ms=lowByte(currentMillis); 
     BIT_SET(TIMER_mask, BIT_TIMER_50HZ);
   }
 
   //30Hz loop
-  if (loop33ms == 33)
+  interval=lowByte(currentMillis) - previousMillis33ms;
+  if(interval >= (uint8_t)33U )
   {
-    loop33ms = 0;
-
+    previousMillis33ms=lowByte(currentMillis);
     //Pulse fuel and ignition test outputs are set at 30Hz
     if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
     {
@@ -214,16 +218,18 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   }
 
   //15Hz loop
-  if (loop66ms == 66)
+  interval=lowByte(currentMillis) - previousMillis66ms;
+  if(interval >= (uint8_t)66U )
   {
-    loop66ms = 0;
+    previousMillis66ms=lowByte(currentMillis);
     BIT_SET(TIMER_mask, BIT_TIMER_15HZ);
   }
 
   //10Hz loop
-  if (loop100ms == 100)
+  interval=lowByte(currentMillis) - previousMillis100ms;
+  if(interval >= (uint8_t)100U )
   {
-    loop100ms = 0; //Reset counter
+    previousMillis100ms=lowByte(currentMillis);
     BIT_SET(TIMER_mask, BIT_TIMER_10HZ);
 
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
@@ -238,22 +244,11 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       currentStatus.injPrimed = true; 
     }
     seclx10++;
-  }
 
-  //4Hz loop
-  if (loop250ms == 250)
+  //1Hz loop, must run inside 10 Hz loop because some things in the idle.ino depend on both flags being on simultaneously
+  if((uint16_t)(currentMillis - previousMillis1000ms) >= (uint16_t)1000U )
   {
-    loop250ms = 0; //Reset Counter
-    BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
-    #if defined(CORE_STM32) //debug purpose, only visual for running code
-      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    #endif
-  }
-
-  //1Hz loop
-  if (loopSec == 1000)
-  {
-    loopSec = 0; //Reset counter.
+    previousMillis1000ms=(uint16_t)currentMillis;
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
     dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
@@ -337,7 +332,24 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }
+  }
 
+  //4Hz loop
+  if((uint16_t)(currentMillis - previousMillis250ms) >= (uint16_t)250U )
+  {
+    previousMillis250ms+=(uint16_t)250U;
+    BIT_SET(TIMER_mask, BIT_TIMER_4HZ);
+    #if defined(CORE_STM32) //debug purpose, only visual for running code
+      digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    #endif
+  }
+
+
+  //another 1000Hz loop, just here for avoiding too much code relocating
+  interval=lowByte(currentMillis) - lowByte(previousMillis1ms2);
+  if(interval >= (uint8_t)1U )
+  {
+    previousMillis1ms2=lowByte(currentMillis);
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
   if( currentStatus.isTestModeActive )
   {
@@ -381,10 +393,6 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     }
     
   }
+  }
 
-
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-    //Reset Timer2 to trigger in another ~1ms
-    TCNT2 = 131;            //Preload timer2 with 100 cycles, leaving 156 till overflow.
-#endif
 }
