@@ -38,7 +38,6 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
     
     schedule._compare = 101;
     schedule._counter = 100;
-    schedule.endCompare = 100;
     schedule.Status = PENDING;
 
     constexpr uint16_t newCrankAngle = 180;
@@ -64,7 +63,6 @@ void test_adjust_crank_angle_running()
 
     schedule._compare = 101;
     schedule._counter = 100;
-    schedule.endCompare = 100;
     constexpr uint16_t newCrankAngle = 180;
     constexpr uint16_t chargeAngle = 359;
     schedule.endAngle = chargeAngle;
@@ -73,7 +71,6 @@ void test_adjust_crank_angle_running()
 
     TEST_ASSERT_EQUAL(schedule._counter+uS_TO_TIMER_COMPARE(angleToTimeMicroSecPerDegree(chargeAngle-newCrankAngle)), schedule._compare);
     TEST_ASSERT_EQUAL(100, schedule._counter);
-    TEST_ASSERT_EQUAL(100, schedule.endCompare);
 }
 
 void test_adjust_crank_angle()
