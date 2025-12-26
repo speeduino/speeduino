@@ -31,6 +31,7 @@ A full copy of the license may be found in the projects root directory
 #include "schedule_calcs.h"
 #include "preprocessor.h"
 #include "units.h"
+#include "schedule_state_machine.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
@@ -379,251 +380,75 @@ void beginInjectorPriming(void)
   }
 }
 
-// Shared ISR function for all fuel timers.
-// This is completely inlined into the ISR - there is no function call
-// overhead.
-static inline __attribute__((always_inline)) void fuelScheduleISR(FuelSchedule &schedule)
-{
-  if (schedule.Status == PENDING) //Check to see if this schedule is turn on
-  {
-    schedule.pStartCallback();
-    schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); //Doing this here prevents a potential overflow on restarts
-  }
-  else if (isRunning(schedule))
-  {
-    schedule.pEndCallback();
+/**
+ * @defgroup fuel-schedule-ISR Fuel schedule timer ISRs 
+ *   
+ * @{
+ */
 
-    //If there is a next schedule queued up, activate it
-    if(schedule.Status==RUNNING_WITHNEXT)
-    {
-      SET_COMPARE(schedule._compare, schedule.nextStartCompare); //Flip the next start compare time to be the current one. The duration of this next pulse will already have been set in _setFuelScheduleNext()
-      schedule.Status = PENDING;
-    } else {
-      schedule.Status = OFF; //Turn off the schedule
-    }
-  }
-  else
-  {
-    // Schedule is off, so do nothing but keep the MISRA checker happy
-  }
+void moveToNextState(FuelSchedule &schedule)
+{
+  movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
 
-/*******************************************************************************************************************************************************************************************************/
-/** fuelSchedule*Interrupt (All 8 ISR functions below) get called (as timed interrupts) when either the start time or the duration time are reached.
-* This calls the relevant callback function (startCallback or endCallback) depending on the status (PENDING => Needs to run, RUNNING => Needs to stop) of the schedule.
-* The status of schedule is managed here based on startCallback /endCallback function called:
-* - startCallback - change scheduler into RUNNING state
-* - endCallback - change scheduler into OFF state (or PENDING if schedule.hasNextSchedule is set)
-*/
-//Timer3A (fuel schedule 1) Compare Vector
-#ifdef CORE_AVR //AVR chips use the ISR for this
-//fuelSchedules 1 and 5
-ISR(TIMER3_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule1Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule1);
-  }
+///@}
 
+/**
+ * @defgroup ignition-schedule-ISR Ignition schedule timer ISRs 
+ *   
+ * @{
+ */
 
-#ifdef CORE_AVR
-ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule2Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule2);
-  }
-
-
-#ifdef CORE_AVR
-ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule3Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule3);
-  }
-
-
-#ifdef CORE_AVR
-ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule4Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule4);
-  }
-
-#if INJ_CHANNELS >= 5
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule5Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule5);
-  }
-#endif
-
-#if INJ_CHANNELS >= 6
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule6Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule6);
-  }
-#endif
-
-#if INJ_CHANNELS >= 7
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule7Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule7);
-  }
-#endif
-
-#if INJ_CHANNELS >= 8
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void fuelSchedule8Interrupt() //Most ARM chips can simply call a function
-#endif
-  {
-    fuelScheduleISR(fuelSchedule8);
-  }
-#endif
-
+///@cond
+// Dwell smoothing macros. They are split up like this for MISRA compliance.
 #define DWELL_AVERAGE_ALPHA 30
 #define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
+//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
+///@endcond
 
-// Shared ISR function for all ignition timers.
-// This is completely inlined into the ISR - there is no function call
-// overhead.
-static inline __attribute__((always_inline)) void ignitionScheduleISR(IgnitionSchedule &schedule)
-{
-  if (schedule.Status == PENDING) //Check to see if this schedule is turn on
-  {
-    schedule.pStartCallback();
-    schedule.Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-    schedule.startTime = micros();
-    if(schedule.endScheduleSetByDecoder == true) { SET_COMPARE(schedule._compare, schedule.endCompare); }
-    else { SET_COMPARE(schedule._compare, schedule._counter + schedule.duration); } //Doing this here prevents a potential overflow on restarts
-  }
-  else if (isRunning(schedule))
-  {
-    schedule.pEndCallback();
-    schedule.endScheduleSetByDecoder = false;
-    ignitionCount = ignitionCount + 1U; //Increment the ignition counter
-    currentStatus.actualDwell = DWELL_AVERAGE( (micros() - schedule.startTime) );
-
-    //If there is a next schedule queued up, activate it
-    if(schedule.Status==RUNNING_WITHNEXT)
-    {
-      SET_COMPARE(schedule._compare, schedule.nextStartCompare);
-      schedule.Status = PENDING;
-    } else {
-      schedule.Status = OFF; //Turn off the schedule
-    }
-  }
-  else
-  {
-    // Schedule is off, so do nothing but keep the MISRA checker happy
-  }  
+/**
+ * @brief Called when an ignition event ends. I.e. a spark fires
+ * 
+ * @param pSchedule Pointer to the schedule that fired the spark
+ */
+static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
+  pSchedule->endScheduleSetByDecoder = false;
+  ignitionCount = ignitionCount + 1U; //Increment the ignition counter
+  int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
+  currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
 }
 
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule1Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule1);
-  }
+/** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionPendingToRunning(Schedule *pSchedule) {
+  defaultPendingToRunning(pSchedule);
 
-#if IGN_CHANNELS >= 2
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule2Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule2);
-  }
-#endif
+  // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
+  IgnitionSchedule *pIgnition = (IgnitionSchedule *)pSchedule;
+  pIgnition->startTime = micros();
+  if(pIgnition->endScheduleSetByDecoder) { SET_COMPARE(pIgnition->_compare, pIgnition->endCompare); }
+}
+END_LTO_INLINE()
 
-#if IGN_CHANNELS >= 3
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER5_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule3Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule3);
-  }
-#endif
+/** @brief Called when the supplied schedule transitions from a RUNNING state to OFF */
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToOff(Schedule *pSchedule) {
+  defaultRunningToOff(pSchedule);
+  // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
+  onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
+}
+END_LTO_INLINE()
 
-#if IGN_CHANNELS >= 4
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule4Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule4);
-  }
-#endif
+/** @brief Called when the supplied schedule transitions from a RUNNING state to PENDING */
+BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToPending(Schedule *pSchedule) {
+  defaultRunningToPending(pSchedule);
+  // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
+  onEndIgnitionEvent((IgnitionSchedule *)pSchedule);
+}
+END_LTO_INLINE()
 
-#if IGN_CHANNELS >= 5
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule5Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule5);
-  }
-#endif
-
-#if IGN_CHANNELS >= 6
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER4_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule6Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule6);
-  }
-#endif
-
-#if IGN_CHANNELS >= 7
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule7Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule7);
-  }
-#endif
-
-#if IGN_CHANNELS >= 8
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER3_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void ignitionSchedule8Interrupt(void) //Most ARM chips can simply call a function
-#endif
-  {
-    ignitionScheduleISR(ignitionSchedule8);
-  }
-#endif
+void moveToNextState(IgnitionSchedule &schedule)
+{
+  movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
+}
 
 static void disableSchedule(Schedule &schedule)
 {
