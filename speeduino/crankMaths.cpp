@@ -40,6 +40,12 @@ BEGIN_LTO_ALWAYS_INLINE(uint32_t) angleToTimeMicroSecPerDegree(uint16_t angle) {
 }
 END_LTO_INLINE()
 
+BEGIN_LTO_ALWAYS_INLINE(COMPARE_TYPE) angleToTimerTicks(uint16_t angle) {
+    uint32_t micros = angleToTimeMicroSecPerDegree(angle);
+    return (COMPARE_TYPE)uS_TO_TIMER_COMPARE(micros);
+}
+END_LTO_INLINE()
+
 BEGIN_LTO_ALWAYS_INLINE(uint16_t) timeToAngleDegPerMicroSec(uint32_t time) {
     uint32_t degFixed = time * (uint32_t)degreesPerMicro;
     return rshift_round<degreesPerMicro_Shift>(degFixed);

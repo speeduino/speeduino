@@ -144,9 +144,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
         // Coil is charging so change the charge time so the spark fires at
         // the requested crank angle (this could reduce dwell time & potentially
         // result in a weaker spark).
-        uint32_t timeToSpark = angleToTimeMicroSecPerDegree( ignitionLimits(schedule.dischargeAngle-crankAngle) );
-        COMPARE_TYPE ticksToSpark = (COMPARE_TYPE)uS_TO_TIMER_COMPARE( timeToSpark );
-        schedule._compare = schedule._counter + ticksToSpark;
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( ignitionLimits(schedule.dischargeAngle-crankAngle) )); 
       } 
     }
     else if( (schedule.Status==PENDING) ) {
@@ -154,9 +152,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
         // We are waiting for the timer to fire & start charging the coil.
         // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
         // the spark fires at the requested crank angle.
-        uint32_t timeToRun = angleToTimeMicroSecPerDegree( ignitionLimits(schedule.chargeAngle-crankAngle) );
-        COMPARE_TYPE ticksToRun = (COMPARE_TYPE)uS_TO_TIMER_COMPARE( timeToRun );
-        schedule._compare = schedule._counter + ticksToRun; 
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( ignitionLimits(schedule.chargeAngle-crankAngle) )); 
       }
     } else {
       // Unknown state, so no adjustment possible
