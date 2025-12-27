@@ -4418,18 +4418,6 @@ static void triggerPri_Webber(void)
         revolutionOne = 0; //Sequential revolution reset
       }
     }
-
-    //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
-    {
-      int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-      {
-        crankAngle += 360;
-        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
-      }
-      else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
-    }
   } //Trigger filter
 }
 
