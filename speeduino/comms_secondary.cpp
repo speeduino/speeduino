@@ -160,31 +160,31 @@ void secondserial_Command(void)
 
 void RealdashCAN(void)
 {
-  static uint16_t contrl = 0; 
+  static uint16_t control = 0; 
 
   static uint16_t baseId = 0x200;
 
-  if (contrl < LOG_ENTRY_SIZE)
+  if (control < LOG_ENTRY_SIZE)
   {
     rdCanSender1.sendRdCanFrame(
         baseId,
-        getTSLogEntry(contrl),
-        getTSLogEntry(contrl + 1),
-        getTSLogEntry(contrl + 2),
-        getTSLogEntry(contrl + 3),
-        getTSLogEntry(contrl + 4),
-        getTSLogEntry(contrl + 5),
-        getTSLogEntry(contrl + 6),
-        getTSLogEntry(contrl + 7));
+        getTSLogEntry(control),
+        getTSLogEntry(control + 1),
+        getTSLogEntry(control + 2),
+        getTSLogEntry(control + 3),
+        getTSLogEntry(control + 4),
+        getTSLogEntry(control + 5),
+        getTSLogEntry(control + 6),
+        getTSLogEntry(control + 7));
 
     baseId++;
-    contrl = (contrl + 8);
+    control = (control + 8);
 
-    if (contrl >= LOG_ENTRY_SIZE)
+    if (control >= LOG_ENTRY_SIZE)
 
     {
       baseId = 0x200;
-      contrl = 0;
+      control = 0;
     }
   }
 }
