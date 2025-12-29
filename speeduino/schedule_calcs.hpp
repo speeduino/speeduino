@@ -98,32 +98,6 @@ static inline void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, ui
   trailing.chargeAngle = (int16_t)ignitionLimits(trailing.dischargeAngle - (int16_t)dwellAngle); 
 }
 
-static inline __attribute__((always_inline)) uint32_t __calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle) 
-{
-  int16_t delta = schedule.chargeAngle - crankAngle;
-  if (delta < 0)
-  {
-    if ((isRunning(schedule)) && (delta>-CRANK_ANGLE_MAX_IGN)) 
-    { 
-      // Must be >0
-      delta = delta + CRANK_ANGLE_MAX_IGN; 
-    }
-    else
-    {
-      return 0U;
-    }
-  }
-
-  return angleToTimeMicroSecPerDegree(delta);
-}
-
-static inline uint16_t _adjustToIgnChannel(int16_t angle, int16_t channelInjDegrees) 
-{
-  angle = angle - channelInjDegrees;
-  if( angle < 0) { return angle + CRANK_ANGLE_MAX_IGN; }
-  return angle;
-}
-
 static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
 {
   return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
