@@ -1271,14 +1271,24 @@ static inline uint8_t getPulsesPerRev(void) {
   return 1U;
 }
 
-static inline uint16_t adjustDwellClosedLoop(uint16_t dwell) {
-    int16_t error = dwell - currentStatus.actualDwell;
-    if(dwell > (uint16_t)INT16_MAX) { dwell = (uint16_t)INT16_MAX; } //Prevent overflow when casting to signed int
-    if(error > ((int16_t)dwell / 2)) { error += error; } //Double correction amount if actual dwell is less than 50% of the requested dwell
+/**
+ * @brief Dwell error correction is a basic closed loop correction to keep the dwell 
+ * time consistent even when adjusting its end time for the per tooth timing.
+ * 
+ * This is mostly of benefit to low resolution triggers at low rpm (<1500)
+ * 
+ * @param computedDwell A computed dwell time in microseconds
+ * @param actualDwell The most recently measured actual dwell time in microseconds
+ * @return computedDwell, with correction applied if needed 
+ */
+TESTABLE_INLINE_STATIC uint16_t correctDwellClosedLoop(uint16_t computedDwell, uint16_t actualDwell) {
+    int16_t error = (int16_t)(computedDwell - actualDwell); //Positive error means actual dwell is less than requested
+    if(computedDwell > (uint16_t)INT16_MAX) { computedDwell = (uint16_t)INT16_MAX; } //Prevent overflow when casting to signed int
+    if(error > ((int16_t)computedDwell / 2)) { error *= 2; } //Double correction amount if actual dwell is less than 50% of the requested dwell
     if(error > 0) { 
-      return dwell + (uint16_t)error;
+      return computedDwell + (uint16_t)error;
     }
-    return dwell;
+    return computedDwell;
 }
 
 uint16_t correctionsDwell(uint16_t dwell)
@@ -1302,7 +1312,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   //Dwell error correction is a basic closed loop to keep the dwell time consistent even when adjusting its end time for the per tooth timing.
   //This is mostly of benefit to low resolution triggers at low rpm (<1500)
   if( (configPage2.perToothIgn  == true) && (configPage4.dwellErrCorrect == 1U) ) {
-    dwell = adjustDwellClosedLoop(dwell);
+    dwell = correctDwellClosedLoop(dwell, currentStatus.actualDwell);
   }
 
   //**************************************************************************************************************************

@@ -786,6 +786,32 @@ static void setup_correctionsDwell(void) {
     populate_2dtable_P(&dwellVCorrectionTable, values, bins);   
 }
 
+extern uint16_t correctDwellClosedLoop(uint16_t computedDwell, uint16_t actualDwell);
+
+static void test_correctDwellClosedLoop_nochange(void) {
+    TEST_ASSERT_EQUAL(1000U, correctDwellClosedLoop(1000U, 1000U));
+}
+
+static void test_correctDwellClosedLoop_smallError(void) {
+    // computed 1000, actual 900 -> error 100 -> returned 1100
+    TEST_ASSERT_EQUAL(1100U, correctDwellClosedLoop(1000U, 900U));
+}
+
+static void test_correctDwellClosedLoop_largeError(void) {
+    // computed 1000, actual 400 -> error 600 > 500 -> doubled to 1200 -> returned 2200
+    TEST_ASSERT_EQUAL(2200U, correctDwellClosedLoop(1000U, 400U));
+}
+
+static void test_correctDwellClosedLoop_clipComputed(void) {
+    // computed value greater than INT16_MAX should be clipped to 32767
+    TEST_ASSERT_EQUAL(32767U, correctDwellClosedLoop(40000U, 40000U));
+}
+
+static void test_correctDwellClosedLoop_actualGreater(void) {
+    // actual value greater than computed value should increase computed value
+    TEST_ASSERT_EQUAL(6600U, correctDwellClosedLoop(6600U, 8800U));
+}
+
 static void test_correctionsDwell_nopertooth(void) {
     setup_correctionsDwell();
 
@@ -857,6 +883,11 @@ static void test_correctionsDwell(void) {
     RUN_TEST_P(test_correctionsDwell_wasted_nopertooth_largerevolutiontime);
     RUN_TEST_P(test_correctionsDwell_initialises_current_actualDwell);
     RUN_TEST_P(test_correctionsDwell_uses_batvcorrection);
+    RUN_TEST_P(test_correctDwellClosedLoop_nochange);
+    RUN_TEST_P(test_correctDwellClosedLoop_smallError);
+    RUN_TEST_P(test_correctDwellClosedLoop_largeError);
+    RUN_TEST_P(test_correctDwellClosedLoop_clipComputed);
+    RUN_TEST_P(test_correctDwellClosedLoop_actualGreater);
 }
 
 void testIgnCorrections(void) {
