@@ -54,7 +54,7 @@ static byte buildStatus2(const statuses &current)
     false, // Unused
     false, // Unused
     current.idleOn,
-    current.hasFullSync,
+    current.hasSync,
   };
   return setStatusBits(0U, bits);
 }
@@ -516,7 +516,6 @@ float getReadableFloatLogEntry(uint16_t logIndex)
 uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
 {
   uint8_t statusValue = 0;
-  currentStatus.hasFullSync = currentStatus.hasSync; //Set the sync bit of the Spark variable to match the hasSync variable
 
   switch(byteNum)
   {
