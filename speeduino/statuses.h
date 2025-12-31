@@ -116,9 +116,6 @@ struct statuses {
   bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
-  // TODO: resolve duplication with hasSync
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
 
   // Status3 fields as defined in the INI.   
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -130,7 +127,7 @@ struct statuses {
   bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
-  // TODO: resolve duplication with hasSync & hasFullSync
+  // TODO: resolve duplication with hasSync
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool halfSync : 1;  ///< 
   // TODO: resolve duplication with nSquirts
