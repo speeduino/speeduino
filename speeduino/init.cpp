@@ -3689,18 +3689,19 @@ void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &
   if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_IGN = 360;
-    current.maxIgnOutputs = page2.nCylinders / 2;
     switch (page2.nCylinders)
     {
       case 4:
         setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
         setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+        current.maxIgnOutputs = page2.nCylinders / 2;
         break;
             
       case 6:
         setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
         setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
         setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+        current.maxIgnOutputs = page2.nCylinders / 2;
         break;
 
       case 8:
@@ -3708,6 +3709,7 @@ void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &
         setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
         setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
         setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+        current.maxIgnOutputs = page2.nCylinders / 2;
         break;
     }
   }
