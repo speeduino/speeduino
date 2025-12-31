@@ -317,13 +317,13 @@ static void test_partial_sync(void)
   // Initial state
   assert_cylinder4_stroke4_seq_even();
 
-  changeFullToHalfSync();
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
     const uint16_t angle[] = {0,180,360,540,0,0,0,0};
     assert_ignition_schedules(360U, 2U, angle);
   }
 
-  changeHalfToFullSync();
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_cylinder4_stroke4_seq_even();
 }
 

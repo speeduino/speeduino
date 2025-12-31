@@ -984,15 +984,15 @@ static void test_partial_sync(void)
   assert_4cylinder_4stroke_seq_nostage();
 
   currentStatus.halfSync = true;
-  changeFullToHalfSync();
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, false, false, false, false, false, false};
 	  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);    
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
   currentStatus.halfSync = false;
-  changeHalfToFullSync();
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_seq_nostage();
 }
 
