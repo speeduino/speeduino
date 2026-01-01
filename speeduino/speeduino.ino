@@ -317,8 +317,6 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
       resetDecoder();
-      currentStatus.hasSync = false;
-      currentStatus.halfSync = false;
       currentStatus.runSecs = 0; //Reset the counter for number of seconds running.
       currentStatus.startRevolutions = 0;
       resetMAPcycleAndEvent();
@@ -582,7 +580,7 @@ void __attribute__((always_inline)) loop(void)
 
     //Always check for sync
     //Main loop runs within this clause
-    if ((currentStatus.hasSync || currentStatus.halfSync) && (currentStatus.RPM > 0))
+    if ((getSyncStatus()!=SyncStatus::None) && (currentStatus.RPM > 0))
     {
         //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
@@ -703,7 +701,7 @@ void __attribute__((always_inline)) loop(void)
         case 4:
           injectionStartAngles[1] = calculateInjectorStartAngle(PWdivTimerPerDegree, channel2InjDegrees, currentStatus.injAngle);
 
-          if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+          if((configPage2.injLayout == INJ_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
           {
             if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -736,7 +734,7 @@ void __attribute__((always_inline)) loop(void)
           }
           else
           {
-            if( currentStatus.halfSync && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+            if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
           }
           break;
         //5 cylinders
@@ -764,7 +762,7 @@ void __attribute__((always_inline)) loop(void)
           injectionStartAngles[2] = calculateInjectorStartAngle(PWdivTimerPerDegree, channel3InjDegrees, currentStatus.injAngle);
           
           #if INJ_CHANNELS >= 6
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
             {
               if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -795,7 +793,7 @@ void __attribute__((always_inline)) loop(void)
             }
             else
             {
-              if( currentStatus.halfSync && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+              if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
 
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
@@ -814,7 +812,7 @@ void __attribute__((always_inline)) loop(void)
           injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, channel4InjDegrees, currentStatus.injAngle);
 
           #if INJ_CHANNELS >= 8
-            if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.hasSync)
+            if((configPage2.injLayout == INJ_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
             {
               if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -837,7 +835,7 @@ void __attribute__((always_inline)) loop(void)
             }
             else
             {
-              if( currentStatus.halfSync && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+              if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
 
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
@@ -1131,7 +1129,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngle(dwellAngle, channel2IgnDegrees, currentStatus.advance, &ignition2EndAngle, &ignition2StartAngle);
 
       #if IGN_CHANNELS >= 4
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -1149,7 +1147,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       }
       else
       {
-        if( currentStatus.halfSync && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+        if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
@@ -1170,7 +1168,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngle(dwellAngle, channel3IgnDegrees, currentStatus.advance, &ignition3EndAngle, &ignition3StartAngle);
 
       #if IGN_CHANNELS >= 6
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -1180,7 +1178,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       }
       else
       {
-        if( currentStatus.halfSync && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+        if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
@@ -1192,7 +1190,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngle(dwellAngle, channel4IgnDegrees, currentStatus.advance, &ignition4EndAngle, &ignition4StartAngle);
 
       #if IGN_CHANNELS >= 8
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.hasSync)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && getSyncStatus()==SyncStatus::Full)
       {
         if( CRANK_ANGLE_MAX_IGN != 720 ) { changeHalfToFullSync(configPage2, configPage4, currentStatus); }
 
@@ -1203,7 +1201,7 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       }
       else
       {
-        if( currentStatus.halfSync && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
+        if( getSyncStatus()==SyncStatus::Partial && (CRANK_ANGLE_MAX_IGN != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
