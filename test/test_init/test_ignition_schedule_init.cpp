@@ -21,7 +21,7 @@ static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channel
   TEST_ASSERT_TRUE_MESSAGE(channel>=currentStatus.maxIgnOutputs || (endFunction!=nullCallback), msg);
 }
 
-static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutputs, const uint16_t angle[])
+static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutputs, const uint16_t (&angle)[8])
 {
   char msg[48];
 
