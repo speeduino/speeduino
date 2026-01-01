@@ -321,7 +321,7 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_avera
 
 TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && getSyncStatus()!=SyncStatus::None && (current.startRevolutions > 1U);
   }
   return false; // Just here to avoid compiler warning.
 }
@@ -435,7 +435,7 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 
 TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && HasAnySyncUnsafe(current) && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && getSyncStatus()!=SyncStatus::None && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
   }
   return false; // Just here to avoid compiler warning.
 }
