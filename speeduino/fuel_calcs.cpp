@@ -2,10 +2,11 @@
 #include "maths.h"
 #include "unit_testing.h"
 #include "globals.h"
+#include "decoders.h"
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
-  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (current.halfSync)))
+  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (getSyncStatus()==SyncStatus::Partial)))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
     //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
