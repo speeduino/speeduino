@@ -1,0 +1,97 @@
+#include "decoder_builder.h"
+
+#pragma GCC optimize ("Os")
+
+static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
+static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
+static int nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static bool nullEngineIsRunning(uint32_t) { return false; }
+
+decoder_builder_t::decoder_builder_t(void)
+{
+    setPrimaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
+    setSecondaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
+    setTertiaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
+    setGetRPM(&nullGetRPM);
+    setGetCrankAngle(&nullGetCrankAngle);
+    setSetEndTeeth(&nullTriggerHandler);
+    setReset(&nullTriggerHandler);
+    setIsEngineRunning(&nullEngineIsRunning);
+}
+decoder_builder_t::decoder_builder_t(const decoder_t decoder)
+: _decoder(decoder)
+{
+    // TODO: validate _decoder.
+}
+
+decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
+{
+    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
+    {
+        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
+    } 
+    _decoder.primary = trigger;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setPrimaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t trigger)
+{
+    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
+    {
+        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
+    }
+    _decoder.secondary = trigger;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setSecondaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t trigger)
+{
+    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
+    {
+        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
+    }
+    _decoder.tertiary = trigger;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setTertiaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setGetRPM(decoder_t::getRPM_t getRPM)
+{
+    _decoder.getRPM = getRPM==nullptr ? &nullGetRPM : getRPM;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle)
+{
+    _decoder.getCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth)
+{
+    _decoder.setEndTeeth = setEndTeeth==nullptr ? &nullTriggerHandler : setEndTeeth;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
+{
+    _decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_running_t isRunning)
+{
+    _decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
+    return *this;
+}

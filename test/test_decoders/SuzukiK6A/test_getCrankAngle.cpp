@@ -2,16 +2,20 @@
 #include "../../test_utils.h"
 #include "decoders.h"
 #include "init.h"
+#include "globals.h"
+
+extern volatile uint16_t triggerToothAngle;
+extern volatile uint16_t toothCurrentCount;
 
 static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCrankAngle, uint16_t expectedToothAngle) {
-    triggerSetup_SuzukiK6A();
+    decoder_t decoder = triggerSetup_SuzukiK6A();
     configPage4.triggerAngle = 0U;
 
     extern volatile unsigned long toothLastToothTime;
     toothLastToothTime = micros() - 150U;
     toothCurrentCount = toothNum;
     // Allow some variance since the algorithm relies on calling micros();
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expectedCrankAngle, getCrankAngle_SuzukiK6A(), "Crank Angle");
+    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expectedCrankAngle, decoder.getCrankAngle(), "Crank Angle");
     TEST_ASSERT_EQUAL_MESSAGE(expectedToothAngle, triggerToothAngle, "Tooth Angle");
 }
 

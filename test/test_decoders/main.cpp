@@ -1,4 +1,12 @@
 #include "../device_test_harness.h"
+#include "globals.h"
+
+void tearDown(void) 
+{ 
+  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
+  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+}
 
 void runAllDecoderTests(void)
 {
@@ -11,7 +19,10 @@ void runAllDecoderTests(void)
     extern void testSuzukiK6A_setEndTeeth(void);
     extern void testSuzukiK6A_getCrankAngle(void);
     extern void testDecoder_General(void);
-
+    extern void testToothLoggers(void);
+    extern void testDecoderBuilder(void);
+    extern void testDecoderInit(void);
+    
     testMissingTooth();
     testDualWheel();
     testRenix();
@@ -21,6 +32,9 @@ void runAllDecoderTests(void)
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
     testDecoder_General();
+    testToothLoggers();
+    testDecoderBuilder();
+    testDecoderInit();
 }
 
 DEVICE_TEST(runAllDecoderTests)
