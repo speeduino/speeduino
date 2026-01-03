@@ -270,6 +270,13 @@ static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) {
     return _percentageApprox<8U>(percent, value);
 }
 
+/** @brief This is only here to eliminate magic numbers
+ * 
+ * DO NOT USE UNLESS YOU REALLY ARE WORKING IN PERCENTAGES - it will be very
+ * confusing for maintainers (which is what we are trying to avoid!)
+ */
+static constexpr uint8_t ONE_HUNDRED_PCT = 100U;
+
 /**
  * @brief Integer based percentage calculation.
  * 
