@@ -1041,103 +1041,86 @@ END_LTO_INLINE()
 
 #endif //Unit test guard
 
+static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
+{
+#if IGN_CHANNELS>=4
+  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+  uint8_t splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)current.ignLoad);
+
+  //The trailing angles are set relative to the leading ones
+  calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
+  calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
+#endif
+}
+
+static inline void calculateNonRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
+{
+  switch (current.maxIgnOutputs)
+  {
+  case 8:
+#if IGN_CHANNELS >= 8
+    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 7:
+#if IGN_CHANNELS >= 7
+    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 6:
+#if IGN_CHANNELS >= 6
+    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 5:
+#if IGN_CHANNELS >= 5
+    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 4:
+#if IGN_CHANNELS >= 4
+    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 3:
+#if IGN_CHANNELS >= 3
+    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 2:
+#if IGN_CHANNELS >= 2
+    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  case 1:
+    calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
+    [[gnu::fallthrough]];
+  default:
+    // Do nothing
+    break;
+  }
+}
+
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-void calculateIgnitionAngles(uint16_t dwellAngle)
+void __attribute__((flatten)) calculateIgnitionAngles(uint16_t dwellAngle)
 {
   matchIgnitionSchedulersToSyncState(configPage2, configPage4, getDecoderStatus(), currentStatus);
 
-  //This test for more cylinders and do the same thing
-  switch (configPage2.nCylinders)
+  if (currentStatus.maxIgnOutputs==4U && (configPage4.sparkMode == IGN_MODE_ROTARY))
   {
-    //1 cylinder
-    case 1:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      break;
-    //2 cylinders
-    case 2:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-      break;
-    //3 cylinders
-    case 3:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
-      break;
-    //4 cylinders
-    case 4:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-
-      #if IGN_CHANNELS >= 4
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
-      {
-        calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
-      }
-      else if(configPage4.sparkMode == IGN_MODE_ROTARY)
-      {
-        byte splitDegrees = 0;
-        splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)currentStatus.ignLoad);
-
-        //The trailing angles are set relative to the leading ones
-        calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
-        calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
-      }
-      #endif
-      break;
-    //5 cylinders
-    case 5:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
-#if (IGN_CHANNELS >= 5)
-      calculateIgnitionAngles(ignitionSchedule5, dwellAngle, currentStatus.advance);
-#endif
-      break;
-    //6 cylinders
-    case 6:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
-
-      #if IGN_CHANNELS >= 6
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
-      {
-        calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule5, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule6, dwellAngle, currentStatus.advance);
-      }
-      #endif
-      break;
-    //8 cylinders
-    case 8:
-      calculateIgnitionAngles(ignitionSchedule1, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
-      calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
-
-      #if IGN_CHANNELS >= 8
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
-      {
-        calculateIgnitionAngles(ignitionSchedule5, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule6, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule7, dwellAngle, currentStatus.advance);
-        calculateIgnitionAngles(ignitionSchedule8, dwellAngle, currentStatus.advance);
-      }
-      #endif
-      break;
-
-    //Will hit the default case on >8 cylinders. Do nothing in these cases
-    default:
-      break;
+    //Rotary mode with 4 outputs
+    calculateRotaryIgnitionAngles(dwellAngle, currentStatus);
+  }
+  else 
+  {
+    //Non-rotary mode
+    calculateNonRotaryIgnitionAngles(dwellAngle, currentStatus);
   }
 }
-
 
 void checkLaunchAndFlatShift()
 {
