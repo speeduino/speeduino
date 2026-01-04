@@ -320,6 +320,6 @@ extern FuelSchedule fuelSchedule8;
 void changeHalfToFullSync(const config2 &page2, statuses &current);
 void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current);
 
-void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current);
+void calculateIgnitionAngles(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current);
 
 #endif // SCHEDULER_H
