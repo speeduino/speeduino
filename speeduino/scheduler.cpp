@@ -516,3 +516,218 @@ void applyOverDwellProtection(void)
 #endif
   }
 }
+
+static inline bool isAnyFuelScheduleRunning(void) {
+  ATOMIC() {
+    return isRunning(fuelSchedule1)
+        || isRunning(fuelSchedule2)
+        || isRunning(fuelSchedule3)
+        || isRunning(fuelSchedule4)
+  #if INJ_CHANNELS >= 5      
+        || isRunning(fuelSchedule5)
+  #endif
+  #if INJ_CHANNELS >= 6
+        || isRunning(fuelSchedule6)
+  #endif
+  #if INJ_CHANNELS >= 7
+        || isRunning(fuelSchedule7)
+  #endif
+  #if INJ_CHANNELS >= 8
+        || isRunning(fuelSchedule8)
+  #endif
+        ;
+  }
+  return false;// Avoid compiler warning, but optimized out
+}
+
+static inline bool isAnyIgnScheduleRunning(void) {
+  ATOMIC() {
+    return isRunning(ignitionSchedule1)      
+  #if IGN_CHANNELS >= 2 
+        || isRunning(ignitionSchedule2)
+  #endif      
+  #if IGN_CHANNELS >= 3 
+        || isRunning(ignitionSchedule3)
+  #endif      
+  #if IGN_CHANNELS >= 4       
+        || isRunning(ignitionSchedule4)
+  #endif      
+  #if IGN_CHANNELS >= 5      
+        || isRunning(ignitionSchedule5)
+  #endif
+  #if IGN_CHANNELS >= 6
+        || isRunning(ignitionSchedule6)
+  #endif
+  #if IGN_CHANNELS >= 7
+        || isRunning(ignitionSchedule7)
+  #endif
+  #if IGN_CHANNELS >= 8
+        || isRunning(ignitionSchedule8)
+  #endif
+        ;
+  }
+  return false;// Avoid compiler warning, but optimized out
+}
+
+static inline void changeFuellingToFullSequential(const config2 &page2, statuses &current)
+{
+  if( (page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
+  {
+    ATOMIC() {
+      CRANK_ANGLE_MAX_INJ = 720;
+      current.maxInjOutputs = page2.nCylinders;
+      
+      setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
+      setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
+      setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
+      setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
+  #if INJ_CHANNELS >= 5
+      setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
+  #endif
+  #if INJ_CHANNELS >= 6
+      setCallbacks(fuelSchedule6, openInjector6, closeInjector6);
+  #endif
+  #if INJ_CHANNELS >= 7
+      setCallbacks(fuelSchedule7, openInjector7, closeInjector7);
+  #endif
+  #if INJ_CHANNELS >= 8
+      setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
+  #endif
+    }
+  }
+}
+
+static inline void changeIgnitionToFullSequential(const config2 &page2, const config4 &page4, statuses &current)
+{
+  if( (IGN_CHANNELS>=page2.nCylinders) && (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
+  {
+    ATOMIC() {
+      CRANK_ANGLE_MAX_IGN = 720;
+      current.maxIgnOutputs = page2.nCylinders;
+      switch (page2.nCylinders)
+      {
+      case 4:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        break;
+
+      case 6:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+        break;
+
+      case 8:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
+        break;
+
+      default:
+        break; //No actions required for other cylinder counts 
+      }
+    }
+  }
+}
+
+/** Change injectors or/and ignition angles to 720deg.
+ * Roll back req_fuel size and set number of outputs equal to cylinder count.
+* */
+void changeHalfToFullSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  changeFuellingToFullSequential(page2, current);
+  changeIgnitionToFullSequential(page2, page4, current);
+}
+
+
+static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  if((page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 360))
+  {
+    ATOMIC()
+    {
+      CRANK_ANGLE_MAX_INJ = 360;
+      switch (page2.nCylinders)
+      {
+        case 4:
+          if(page4.inj4cylPairing == INJ_PAIR_13_24)
+          {
+            setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
+            setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
+          }
+          else
+          {
+            setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+            setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
+          }
+          current.maxInjOutputs = 2U;
+          break;
+              
+        case 6:
+          setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+          setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
+          setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
+          current.maxInjOutputs = 3U;
+          break;
+
+        case 8:
+          setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
+          setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
+          setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
+          setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
+          current.maxInjOutputs = 4U;
+          break;
+
+        default:
+          break; //No actions required for other cylinder counts 
+      }
+    }
+  }
+}
+
+static inline void changeIgnitionToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  if((page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN!=360))
+  {
+    ATOMIC()
+    {
+      CRANK_ANGLE_MAX_IGN = 360;
+      switch (page2.nCylinders)
+      {
+        case 4:
+          setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+          setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+          current.maxIgnOutputs = 2U;
+          break;
+              
+        case 6:
+          setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
+          setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+          setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+          current.maxIgnOutputs = 3U;
+          break;
+
+        case 8:
+          setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
+          setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
+          setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+          setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+          current.maxIgnOutputs = 4U;
+          break;
+          
+        default:
+          break; //No actions required for other cylinder counts 
+      }
+    }
+  }
+}
+/** Change injectors or/and ignition angles to 360deg.
+ * In semi sequentiol mode req_fuel size is half.
+ * Set number of outputs equal to half cylinder count.
+* */
+void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  changeFuellingtoHalfSync(page2, page4, current);
+  changeIgnitionToHalfSync(page2, page4, current);
+}
