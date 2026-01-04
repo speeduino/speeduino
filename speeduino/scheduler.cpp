@@ -33,6 +33,7 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "schedule_state_machine.h"
 #include "unit_testing.h"
+#include "decoders.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
@@ -541,32 +542,29 @@ static inline bool isAnyFuelScheduleRunning(void) {
 }
 
 static inline bool isAnyIgnScheduleRunning(void) {
-  ATOMIC() {
-    return isRunning(ignitionSchedule1)      
-  #if IGN_CHANNELS >= 2 
-        || isRunning(ignitionSchedule2)
-  #endif      
-  #if IGN_CHANNELS >= 3 
-        || isRunning(ignitionSchedule3)
-  #endif      
-  #if IGN_CHANNELS >= 4       
-        || isRunning(ignitionSchedule4)
-  #endif      
-  #if IGN_CHANNELS >= 5      
-        || isRunning(ignitionSchedule5)
-  #endif
-  #if IGN_CHANNELS >= 6
-        || isRunning(ignitionSchedule6)
-  #endif
-  #if IGN_CHANNELS >= 7
-        || isRunning(ignitionSchedule7)
-  #endif
-  #if IGN_CHANNELS >= 8
-        || isRunning(ignitionSchedule8)
-  #endif
-        ;
-  }
-  return false;// Avoid compiler warning, but optimized out
+  return isRunning(ignitionSchedule1)      
+#if IGN_CHANNELS >= 2 
+      || isRunning(ignitionSchedule2)
+#endif      
+#if IGN_CHANNELS >= 3 
+      || isRunning(ignitionSchedule3)
+#endif      
+#if IGN_CHANNELS >= 4       
+      || isRunning(ignitionSchedule4)
+#endif      
+#if IGN_CHANNELS >= 5      
+      || isRunning(ignitionSchedule5)
+#endif
+#if IGN_CHANNELS >= 6
+      || isRunning(ignitionSchedule6)
+#endif
+#if IGN_CHANNELS >= 7
+      || isRunning(ignitionSchedule7)
+#endif
+#if IGN_CHANNELS >= 8
+      || isRunning(ignitionSchedule8)
+#endif
+      ;
 }
 
 static inline void changeFuellingToFullSequential(const config2 &page2, statuses &current)
@@ -597,47 +595,12 @@ static inline void changeFuellingToFullSequential(const config2 &page2, statuses
   }
 }
 
-static inline void changeIgnitionToFullSequential(const config2 &page2, const config4 &page4, statuses &current)
-{
-  if( (IGN_CHANNELS>=page2.nCylinders) && (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
-  {
-    ATOMIC() {
-      CRANK_ANGLE_MAX_IGN = 720;
-      current.maxIgnOutputs = page2.nCylinders;
-      switch (page2.nCylinders)
-      {
-      case 4:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        break;
-
-      case 6:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        break;
-
-      case 8:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        break;
-
-      default:
-        break; //No actions required for other cylinder counts 
-      }
-    }
-  }
-}
-
 /** Change injectors or/and ignition angles to 720deg.
  * Roll back req_fuel size and set number of outputs equal to cylinder count.
 * */
-void changeHalfToFullSync(const config2 &page2, const config4 &page4, statuses &current)
+void changeHalfToFullSync(const config2 &page2, statuses &current)
 {
   changeFuellingToFullSequential(page2, current);
-  changeIgnitionToFullSequential(page2, page4, current);
 }
 
 
@@ -686,12 +649,42 @@ static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 
   }
 }
 
-static inline void changeIgnitionToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+/** Change injectors or/and ignition angles to 360deg.
+ * In semi sequentiol mode req_fuel size is half.
+ * Set number of outputs equal to half cylinder count.
+* */
+void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
 {
-  if((page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN!=360))
+  changeFuellingtoHalfSync(page2, page4, current);
+}
+
+
+static inline bool isSwitchableCylinderCount(const config2 &page2)
+{
+  return (page2.nCylinders==4U)
+      || (page2.nCylinders==6U)
+      || (page2.nCylinders==8U)
+      ;
+}
+
+static inline bool isSemiSequentialIgnition(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus)
+{
+  return (page4.sparkMode == IGN_MODE_SEQUENTIAL) 
+      && isSwitchableCylinderCount(page2)
+      && decoderStatus.syncStatus==SyncStatus::Partial;
+}
+
+static inline bool isFullSequentialIgnition(const config4 &page4, const decoder_status_t &decoderStatus)
+{
+  return (page4.sparkMode == IGN_MODE_SEQUENTIAL) 
+      && decoderStatus.syncStatus==SyncStatus::Full;
+}
+
+static inline void changeIgnitionToHalfSync(const config2 &page2, statuses &current)
+{
+  ATOMIC()
   {
-    ATOMIC()
-    {
+    if (!isAnyIgnScheduleRunning()) {
       CRANK_ANGLE_MAX_IGN = 360;
       switch (page2.nCylinders)
       {
@@ -722,12 +715,48 @@ static inline void changeIgnitionToHalfSync(const config2 &page2, const config4 
     }
   }
 }
-/** Change injectors or/and ignition angles to 360deg.
- * In semi sequentiol mode req_fuel size is half.
- * Set number of outputs equal to half cylinder count.
-* */
-void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+
+static inline void changeIgnitionToFullSequential(const config2 &page2, statuses &current)
 {
-  changeFuellingtoHalfSync(page2, page4, current);
-  changeIgnitionToHalfSync(page2, page4, current);
+  ATOMIC()
+  {
+    if (!isAnyIgnScheduleRunning()) {
+      CRANK_ANGLE_MAX_IGN = 720;
+      current.maxIgnOutputs = min((uint8_t)IGN_CHANNELS, page2.nCylinders);
+      switch (current.maxIgnOutputs)
+      {
+      case 4:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        break;
+
+      case 6:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+        break;
+
+      case 8:
+        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
+        break;
+
+      default:
+        break; //No actions required for other cylinder counts 
+      }
+    }
+  }
+}
+
+void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current)
+{
+  if (isFullSequentialIgnition(page4, decoderStatus) && ( CRANK_ANGLE_MAX_IGN != 720 )) {
+    changeIgnitionToFullSequential(page2, current);
+  } else if(isSemiSequentialIgnition(page2, page4, decoderStatus) && (CRANK_ANGLE_MAX_IGN != 360) ) { 
+    changeIgnitionToHalfSync(page2, current);
+  } else {
+    // Ignition layout matches current sync - nothing to do but keep MISRA checker happy
+  }
 }
