@@ -44,6 +44,7 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #include "globals.h"
 #include "crankMaths.h"
 #include "scheduledIO.h"
+#include "decoders.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
@@ -316,7 +317,9 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 #endif
 
-void changeHalfToFullSync(const config2 &page2, const config4 &page4, statuses &current);
+void changeHalfToFullSync(const config2 &page2, statuses &current);
 void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current);
+
+void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current);
 
 #endif // SCHEDULER_H
