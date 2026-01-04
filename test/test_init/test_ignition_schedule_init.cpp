@@ -403,7 +403,7 @@ static void test_partial_sync_4_cylinder(void)
   assert_cylinder4_stroke4_seq_even();
 
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  { 
+  {
     const uint16_t angle[] = {0,180,360,540,0,0,0,0};
     assert_ignition_schedules(360U, 2U, angle);
   }
