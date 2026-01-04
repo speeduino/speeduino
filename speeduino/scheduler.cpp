@@ -465,13 +465,13 @@ void disableIgnSchedule(uint8_t channel)
 
 void disableAllFuelSchedules(void)
 {
-  for (uint8_t index=0; index<INJ_CHANNELS; ++index) {
+  for (uint8_t index=0; index<(uint8_t)INJ_CHANNELS; ++index) {
     disableFuelSchedule(index);
   }
 }
 void disableAllIgnSchedules(void)
 {
-  for (uint8_t index=0; index<IGN_CHANNELS; ++index) {
+  for (uint8_t index=0; index<(uint8_t)IGN_CHANNELS; ++index) {
     disableIgnSchedule(index);
   }
 }
@@ -836,7 +836,7 @@ static inline void calculateNonRotaryIgnitionAngles(uint16_t dwellAngle, const s
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-void __attribute__((flatten)) calculateIgnitionAngles(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current)
+void calculateIgnitionAngles(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current)
 {
   matchIgnitionSchedulersToSyncState(page2, page4, decoderStatus, current);
 
@@ -850,4 +850,70 @@ void __attribute__((flatten)) calculateIgnitionAngles(const config2 &page2, cons
   {
     calculateNonRotaryIgnitionAngles(dwellAngle, current);
   }
+}
+
+static inline __attribute__((always_inline)) void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellTime, byte channelMask, uint8_t channelIdx)
+{
+  if (BIT_CHECK(channelMask, (channelIdx)-1U)) {
+    setIgnitionSchedule(schedule, crankAngle, dwellTime);
+  } else {
+    disableSchedule(schedule);
+  }
+}
+
+void setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime, byte channelMask) {
+  #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, channelMask, channelIdx);
+
+  switch (current.maxIgnOutputs)
+  {
+  case 8:
+#if IGN_CHANNELS >= 8
+    SET_IGNITION_CHANNEL(8)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 7:
+#if IGN_CHANNELS >= 7
+    SET_IGNITION_CHANNEL(7)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 6:
+#if IGN_CHANNELS >= 6
+    SET_IGNITION_CHANNEL(6)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 5:
+#if IGN_CHANNELS >= 5
+    SET_IGNITION_CHANNEL(5)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 4:
+#if IGN_CHANNELS >= 4
+    SET_IGNITION_CHANNEL(4)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 3:
+#if IGN_CHANNELS >= 3
+    SET_IGNITION_CHANNEL(3)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 2:
+#if IGN_CHANNELS >= 2
+    SET_IGNITION_CHANNEL(2)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 1:
+    SET_IGNITION_CHANNEL(1)
+    break;
+  default:
+    break;
+  }
+
+#undef SET_IGNITION_CHANNEL
 }

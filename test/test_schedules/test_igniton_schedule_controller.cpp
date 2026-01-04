@@ -60,19 +60,22 @@ static void test_calculateIgnitionAngles_nonrotary(void)
 {
     ignition_test_context_t context;
     CRANK_ANGLE_MAX_IGN = 720U;
-    context.page2.nCylinders = 8U;
-    context.current.maxIgnOutputs = 8U;
     context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
     context.decoderStatus.syncStatus = SyncStatus::Full;
-
     setup_ignition_channel_angles();
-    context.calculateIgnitionAngles();
-    assert_ignition_angles(context);
+    
+    for (uint8_t index=0; index<=IGN_CHANNELS; ++index)
+    {
+        context.current.maxIgnOutputs = index;
+        context.calculateIgnitionAngles();
+        assert_ignition_angles(context);
+    }
 }
 
 static void test_calculateIgnitionAngles_rotary(void)
 {
     ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 360;
     context.current.maxIgnOutputs = 4U;
     context.page4.sparkMode = IGN_MODE_ROTARY;
     context.page2.nCylinders = 4U;
@@ -85,6 +88,7 @@ static void test_calculateIgnitionAngles_rotary(void)
 static void test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary(void)
 {
     ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 720;
     context.current.maxIgnOutputs = 5U;  // Not 4
     context.page4.sparkMode = IGN_MODE_ROTARY;
 
@@ -114,6 +118,33 @@ static void test_calculateIgnitionAngles_sync_state_transitions(void)
     TEST_ASSERT_EQUAL_UINT16(360U, CRANK_ANGLE_MAX_IGN);
 }
 
+static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
+{
+    ignition_test_context_t context;
+    context.current.maxIgnOutputs = IGN_CHANNELS;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    CRANK_ANGLE_MAX_IGN = 720U;
+    setup_ignition_channel_angles();
+    context.calculateIgnitionAngles();
+
+    for (uint8_t index=0; index<=IGN_CHANNELS; ++index)
+    {
+        context.current.maxIgnOutputs = index;
+        // Enable channels 1, 3, 5 & 7
+        setIgnitionChannels(context.current, 0U, context.current.dwell, 0b01010101);
+
+        // Enabled channels should be pending, disabled should remain OFF
+        RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule1.Status); } }, {});
+        RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule2.Status); } }, {});
+        RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule3.Status); } }, {});
+        RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule4.Status); } }, {});
+        RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule5.Status); } }, {});
+        RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule6.Status); } }, {});
+        RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule7.Status); } }, {});
+        RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule8.Status); } }, {});
+    }
+}
+
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -121,5 +152,6 @@ void test_ignition_schedule_controller(void)
     RUN_TEST(test_calculateIgnitionAngles_rotary);
     RUN_TEST(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
     RUN_TEST(test_calculateIgnitionAngles_sync_state_transitions);
+    RUN_TEST(test_setIgnitionChannels_mask_enables_and_disables_channels);
   }
 }

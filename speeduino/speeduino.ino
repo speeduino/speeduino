@@ -156,60 +156,6 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 #undef SET_FUEL_CHANNEL
 }
 
-static inline __attribute__((always_inline))  void setIgnitionChannel(IgnitionSchedule &schedule, uint8_t channel, uint16_t crankAngle, uint16_t dwell) {
-  if ((currentStatus.maxIgnOutputs >= channel) && BIT_CHECK(ignitionChannelsOn, channel-1U)) {
-    setIgnitionSchedule(schedule, crankAngle, dwell);
-  }
-}
-
-static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t crankAngle, uint16_t dwell) {
-#define SET_IGNITION_CHANNEL(channelIdx) \
-  setIgnitionChannel(ignitionSchedule ##channelIdx, UINT8_C((channelIdx)), crankAngle, dwell);
-
-#if IGN_CHANNELS >= 1
-  SET_IGNITION_CHANNEL(1)
-#endif
-
-#if defined(USE_IGN_REFRESH)
-  if( (isRunning(ignitionSchedule1)) && (ignitionSchedule1.dischargeAngle > (int)crankAngle) && (configPage4.StgCycles == 0) && (configPage2.perToothIgn != true) )
-  {
-    crankAngle = ignitionLimits(getCrankAngle()); //Refresh the crank angle info
-
-    adjustCrankAngle(ignitionSchedule1, crankAngle);
-  }
-#endif
-  
-#if IGN_CHANNELS >= 2
-  SET_IGNITION_CHANNEL(2)
-#endif
-
-#if IGN_CHANNELS >= 3
-  SET_IGNITION_CHANNEL(3)
-#endif
-
-#if IGN_CHANNELS >= 4
-  SET_IGNITION_CHANNEL(4)
-#endif
-
-#if IGN_CHANNELS >= 5
-  SET_IGNITION_CHANNEL(5)
-#endif
-
-#if IGN_CHANNELS >= 6
-  SET_IGNITION_CHANNEL(6)
-#endif
-
-#if IGN_CHANNELS >= 7
-  SET_IGNITION_CHANNEL(7)
-#endif
-
-#if IGN_CHANNELS >= 8
-  SET_IGNITION_CHANNEL(8)
-#endif
-
-#undef SET_IGNITION_CHANNEL
-}
-
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -1017,10 +963,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       else { fixedCrankingOverride = 0; }
 
-      if(ignitionChannelsOn > 0)
-      {
-        setIgnitionChannels(ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride);
-      } //Ignition schedules on
+      setIgnitionChannels(currentStatus, ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, ignitionChannelsOn);
 
       if ( (!currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
       {
