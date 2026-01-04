@@ -217,3 +217,67 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
   }
 }
 END_LTO_INLINE()
+
+static inline __attribute__((always_inline)) void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellTime, byte channelMask, uint8_t channelIdx)
+{
+  if (BIT_CHECK(channelMask, (channelIdx)-1U)) {
+    setIgnitionSchedule(schedule, crankAngle, dwellTime);
+  }
+}
+
+void setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime) {
+  #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
+
+  switch (current.maxIgnOutputs)
+  {
+  case 8:
+#if IGN_CHANNELS >= 8
+    SET_IGNITION_CHANNEL(8)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 7:
+#if IGN_CHANNELS >= 7
+    SET_IGNITION_CHANNEL(7)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 6:
+#if IGN_CHANNELS >= 6
+    SET_IGNITION_CHANNEL(6)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 5:
+#if IGN_CHANNELS >= 5
+    SET_IGNITION_CHANNEL(5)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 4:
+#if IGN_CHANNELS >= 4
+    SET_IGNITION_CHANNEL(4)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 3:
+#if IGN_CHANNELS >= 3
+    SET_IGNITION_CHANNEL(3)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 2:
+#if IGN_CHANNELS >= 2
+    SET_IGNITION_CHANNEL(2)
+#endif
+  [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 1:
+    SET_IGNITION_CHANNEL(1)
+    break;
+  default:
+    break;
+  }
+
+#undef SET_IGNITION_CHANNEL
+}
