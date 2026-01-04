@@ -865,7 +865,7 @@ static void test_correctionsDwell(void) {
 }
 
 void testIgnCorrections(void) {
-    Unity.TestFile = __FILE__;
+    SET_UNITY_FILENAME() {
 
     test_correctionFixedTiming();
     test_correctionCLTadvance();
@@ -881,4 +881,6 @@ void testIgnCorrections(void) {
     test_correctionKnock();
     // correctionDFCOignition() is tested in the fueling unit tests, since it is tightly coupled to fuel DFCO
     test_correctionsDwell();
+
+    }
 }

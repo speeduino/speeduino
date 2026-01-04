@@ -3,7 +3,10 @@
 void runAllIgnitionTests(void)
 {
     extern void testIgnCorrections(void);
+    extern void testDwell(void);
+
     testIgnCorrections();
+    testDwell();
 }
 
 DEVICE_TEST(runAllIgnitionTests)

@@ -51,6 +51,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "units.h"
 #include "fuel_calcs.h"
 #include "preprocessor.h"
+#include "dwell.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -861,22 +862,7 @@ void __attribute__((always_inline)) loop(void)
       //| BEGIN IGNITION CALCULATIONS
 
       //Set dwell
-      //Dwell is stored as ms * 10. ie Dwell of 4.3ms would be 43 in configPage4. This number therefore needs to be multiplied by 100 to get dwell in uS
-      if ( currentStatus.engineIsCranking ) {
-        currentStatus.dwell =  (configPage4.dwellCrank * 100U); //use cranking dwell
-      }
-      else 
-      {
-        if ( configPage2.useDwellMap == true )
-        {
-          currentStatus.dwell = (get3DTableValue(&dwellTable, currentStatus.ignLoad, currentStatus.RPM) * 100U); //use running dwell from map
-        }
-        else
-        {
-          currentStatus.dwell =  (configPage4.dwellRun * 100U); //use fixed running dwell
-        }
-      }
-      currentStatus.dwell = correctionsDwell(currentStatus.dwell);
+      currentStatus.dwell = correctionsDwell(computeDwell(currentStatus, configPage2, configPage4, dwellTable));
 
       // Convert the dwell time to dwell angle based on the current engine speed
       calculateIgnitionAngles(timeToAngleDegPerMicroSec(currentStatus.dwell));
