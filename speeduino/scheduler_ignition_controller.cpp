@@ -1,5 +1,8 @@
 #include "scheduler_ignition_controller.h"
+#include "schedule_calcs.hpp"
+#include "globals.h"
 
+constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
 static inline bool isAnyIgnScheduleRunning(void) {
   return isRunning(ignitionSchedule1)      
@@ -128,3 +131,89 @@ void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &pag
     // Ignition layout matches current sync - nothing to do but keep MISRA checker happy
   }
 }
+
+static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
+{
+#if IGN_CHANNELS>=4
+  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+  uint8_t splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)current.ignLoad);
+
+  //The trailing angles are set relative to the leading ones
+  calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
+  calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
+#endif
+}
+
+static inline void calculateNonRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
+{
+  switch (current.maxIgnOutputs)
+  {
+  case 8:
+#if IGN_CHANNELS >= 8
+    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 7:
+#if IGN_CHANNELS >= 7
+    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 6:
+#if IGN_CHANNELS >= 6
+    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 5:
+#if IGN_CHANNELS >= 5
+    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 4:
+#if IGN_CHANNELS >= 4
+    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 3:
+#if IGN_CHANNELS >= 3
+    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, current.advance);
+#endif
+    [[gnu::fallthrough]];
+  //cppcheck-suppress misra-c2012-16.3
+  case 2:
+#if IGN_CHANNELS >= 2
+    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+#endif
+    break;
+  default:
+    // Do nothing
+    break;
+  }
+  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
+}
+
+/** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
+ * both start and end angles are calculated for each channel.
+ * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
+ */
+BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(const config2 &page2, const config4 &page4, statuses &current)
+{
+  matchIgnitionSchedulersToSyncState(page2, page4, current);
+
+  uint16_t dwellAngle = timeToAngleDegPerMicroSec(current.dwell);
+
+  if((current.maxIgnOutputs==4U) && (page4.sparkMode == IGN_MODE_ROTARY))
+  {
+    calculateRotaryIgnitionAngles(dwellAngle, current);
+  }
+  else
+  {
+    calculateNonRotaryIgnitionAngles(dwellAngle, current);
+  }
+}
+END_LTO_INLINE()
