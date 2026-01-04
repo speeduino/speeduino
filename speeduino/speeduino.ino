@@ -901,6 +901,8 @@ END_LTO_INLINE()
  */
 void calculateIgnitionAngles(uint16_t dwellAngle)
 {
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus);
+
   //This test for more cylinders and do the same thing
   switch (configPage2.nCylinders)
   {
@@ -925,10 +927,8 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngles(ignitionSchedule2, dwellAngle, currentStatus.advance);
 
       #if IGN_CHANNELS >= 4
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
       {
-        if( CRANK_ANGLE_MAX_IGN != 720 ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
-
         calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
       }
@@ -940,10 +940,6 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
         //The trailing angles are set relative to the leading ones
         calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
         calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
-      }
-      else
-      {
-        if( (currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial) && (CRANK_ANGLE_MAX_IGN != 360) ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
@@ -964,17 +960,11 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngles(ignitionSchedule3, dwellAngle, currentStatus.advance);
 
       #if IGN_CHANNELS >= 6
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
       {
-        if( CRANK_ANGLE_MAX_IGN != 720 ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
-
         calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule5, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule6, dwellAngle, currentStatus.advance);
-      }
-      else
-      {
-        if( (currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial) && (CRANK_ANGLE_MAX_IGN != 360) ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
@@ -986,18 +976,12 @@ void calculateIgnitionAngles(uint16_t dwellAngle)
       calculateIgnitionAngles(ignitionSchedule4, dwellAngle, currentStatus.advance);
 
       #if IGN_CHANNELS >= 8
-      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
+      if((configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
       {
-        if( CRANK_ANGLE_MAX_IGN != 720 ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
-
         calculateIgnitionAngles(ignitionSchedule5, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule6, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule7, dwellAngle, currentStatus.advance);
         calculateIgnitionAngles(ignitionSchedule8, dwellAngle, currentStatus.advance);
-      }
-      else
-      {
-        if( (currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial) && (CRANK_ANGLE_MAX_IGN != 360) ) { matchIgnitionSchedulersToSyncState(configPage2, configPage4, currentStatus); }
       }
       #endif
       break;
