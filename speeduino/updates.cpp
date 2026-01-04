@@ -502,8 +502,6 @@ void doUpdates(void)
     saveEEPROMVersion(16);
   }
 
-  //Move this #endif to only do latest updates to safe ROM space on small devices.
-  #endif
   if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
@@ -847,6 +845,8 @@ void doUpdates(void)
     saveEEPROMVersion(25);
   }
   upgradeV25toV26();
+  //Move this #endif to only do latest updates to safe ROM space on small devices.
+  #endif
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )
