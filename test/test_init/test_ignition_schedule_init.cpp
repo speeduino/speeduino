@@ -340,6 +340,8 @@ static void assert_4cylinder_half_sync(void)
   assert_ignition_schedules(360U, 2U, angle);
 }
 
+extern void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current);
+
 static void setupPartialSyncTest(uint8_t cylinders)
 {
   prepareForInitialiseAll(3U);

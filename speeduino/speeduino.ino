@@ -56,7 +56,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define CRANK_RUN_HYSTER    15
 
 // Forward declarations
-void calculateIgnitionAngles(uint16_t dwellAngle);
 void checkLaunchAndFlatShift();
 
 uint8_t ignitionChannelsOn; /**< The current state of the ignition system (on or off) */
@@ -66,7 +65,6 @@ uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a diffe
 uint32_t revLimitAllowedEndTime = 0;
 
 constexpr table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
-constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 constexpr table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 constexpr table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.iacCLValues);
 
@@ -819,7 +817,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.dwell = correctionsDwell(computeDwell(currentStatus, configPage2, configPage4, dwellTable));
 
       // Convert the dwell time to dwell angle based on the current engine speed
-      calculateIgnitionAngles(timeToAngleDegPerMicroSec(currentStatus.dwell));
+      calculateIgnitionAngles(configPage2, configPage4, getDecoderStatus(), currentStatus);
 
       //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
       //This only needs to be run if the advance figure has changed, otherwise the end teeth will still be the same
@@ -1040,87 +1038,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 END_LTO_INLINE()
 
 #endif //Unit test guard
-
-static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
-{
-#if IGN_CHANNELS>=4
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
-  calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
-  uint8_t splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)current.ignLoad);
-
-  //The trailing angles are set relative to the leading ones
-  calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
-  calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
-#endif
-}
-
-static inline void calculateNonRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
-{
-  switch (current.maxIgnOutputs)
-  {
-  case 8:
-#if IGN_CHANNELS >= 8
-    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 7:
-#if IGN_CHANNELS >= 7
-    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 6:
-#if IGN_CHANNELS >= 6
-    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 5:
-#if IGN_CHANNELS >= 5
-    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 4:
-#if IGN_CHANNELS >= 4
-    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 3:
-#if IGN_CHANNELS >= 3
-    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 2:
-#if IGN_CHANNELS >= 2
-    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
-#endif
-    [[gnu::fallthrough]];
-  case 1:
-    calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
-    [[gnu::fallthrough]];
-  default:
-    // Do nothing
-    break;
-  }
-}
-
-/** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
- * both start and end angles are calculated for each channel.
- * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
- */
-void __attribute__((flatten)) calculateIgnitionAngles(uint16_t dwellAngle)
-{
-  matchIgnitionSchedulersToSyncState(configPage2, configPage4, getDecoderStatus(), currentStatus);
-
-  if (currentStatus.maxIgnOutputs==4U && (configPage4.sparkMode == IGN_MODE_ROTARY))
-  {
-    //Rotary mode with 4 outputs
-    calculateRotaryIgnitionAngles(dwellAngle, currentStatus);
-  }
-  else 
-  {
-    //Non-rotary mode
-    calculateNonRotaryIgnitionAngles(dwellAngle, currentStatus);
-  }
-}
 
 void checkLaunchAndFlatShift()
 {
