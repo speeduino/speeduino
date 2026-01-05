@@ -52,6 +52,29 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(statuses &current, const config6 &pa
   return current.engineProtectBoostCut;
 }
 
+static inline uint8_t getAfrO2Limit(const statuses &current, const config9 &page9)
+{
+  if (page9.afrProtectEnabled==AFR_PROTECT_FIXED) {
+    return page9.afrProtectDeviation;
+  } if (page9.afrProtectEnabled==AFR_PROTECT_TABLE) {
+    return current.afrTarget + page9.afrProtectDeviation;
+  } else {
+    return 0U;
+  }
+}
+
+static inline bool afrLimitAfrCondition(const statuses &current, const config9 &page9)
+{
+  /*
+    Depending on selected mode, this could either be fixed AFR value or a
+    value set to be the maximum deviation from AFR target table.
+
+    1 = fixed value mode, 2 = target table mode
+  */
+  return (page9.afrProtectEnabled!=AFR_PROTECT_OFF)
+      && (current.O2 >=getAfrO2Limit(current, page9));
+}
+
 TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
 {
   static constexpr char X2_MULTIPLIER = 2;
@@ -88,25 +111,12 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page
     - whether AFR protection is enabled
     - whether wideband sensor is used
   */
-  if(page6.engineProtectType != PROTECT_CUT_OFF && page9.afrProtectEnabled && page6.egoType == EGO_TYPE_WIDE) {
+  if((page6.engineProtectType != PROTECT_CUT_OFF) && (page9.afrProtectEnabled!=AFR_PROTECT_OFF) && (page6.egoType == EGO_TYPE_WIDE)) {
     /* Conditions */
-    bool mapCondition = (current.MAP >= (page9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
-    bool rpmCondition = (current.RPMdiv100 >= page9.afrProtectMinRPM) ? true : false;
-    bool tpsCondition = (current.TPS >= page9.afrProtectMinTPS) ? true : false;
-
-    /*
-      Depending on selected mode, this could either be fixed AFR value or a
-      value set to be the maximum deviation from AFR target table.
-
-      1 = fixed value mode, 2 = target table mode
-    */
-    bool afrCondition;
-    switch(page9.afrProtectEnabled)
-    {
-      case 1: afrCondition = (current.O2 >= page9.afrProtectDeviation) ? true : false; break; /* Fixed value */
-      case 2: afrCondition = (current.O2 >= (current.afrTarget + page9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
-      default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
-    }
+    bool mapCondition = (current.MAP >= (page9.afrProtectMinMAP * X2_MULTIPLIER));
+    bool rpmCondition = (current.RPMdiv100 >= page9.afrProtectMinRPM);
+    bool tpsCondition = (current.TPS >= page9.afrProtectMinTPS);
+    bool afrCondition = afrLimitAfrCondition(current, page9);
 
     /* Check if conditions above are fulfilled */
     if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
