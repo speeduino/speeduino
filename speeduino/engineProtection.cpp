@@ -39,12 +39,12 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(statuses &current, const confi
   return current.engineProtectOil;
 }
 
-static inline byte checkBoostLimit(void)
+TESTABLE_INLINE_STATIC bool checkBoostLimit(statuses &current, const config6 &page6)
 {
-  currentStatus.engineProtectBoostCut = (configPage6.engineProtectType != PROTECT_CUT_OFF)
-                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (long)(configPage6.boostLimit * 2U)) );
+  current.engineProtectBoostCut = (page6.engineProtectType != PROTECT_CUT_OFF)
+                                   &&  ((page6.boostCutEnabled > 0) && (current.MAP > ((long)page6.boostLimit * 2L)) );
 
-  return currentStatus.engineProtectBoostCut;
+  return current.engineProtectBoostCut;
 }
 
 static byte checkAFRLimit(void)
@@ -149,7 +149,7 @@ static byte checkAFRLimit(void)
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkBoostLimit() || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit() )
+  if(checkBoostLimit(currentStatus, configPage6) || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit() )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }

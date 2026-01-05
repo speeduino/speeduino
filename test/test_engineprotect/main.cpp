@@ -7,6 +7,8 @@ extern bool checkOilPressureLimit(statuses &current, const config6 &page6, const
 extern table2D_u8_u8_4 oilPressureProtectTable;
 extern uint8_t oilProtStartTime;
 
+extern bool checkBoostLimit(statuses &current, const config6 &page6);
+
 static void setup_oil_protect_table(void) {
     // Simple axis: 0..3 mapped to same min value
     TEST_DATA_P uint8_t bins[] = { 0, 100, 200, 255 };
@@ -104,6 +106,58 @@ static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
     TEST_ASSERT_FALSE(current.engineProtectOil);
 }
 
+static void test_checkBoostLimit_disabled_by_engineProtectType(void) {
+    statuses current = {};
+    config6 page6 = {};
+
+    page6.engineProtectType = PROTECT_CUT_OFF;
+    page6.boostCutEnabled = 1;
+    page6.boostLimit = 50;
+    current.MAP = (long)(page6.boostLimit * 2UL) + 10;
+
+    TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+}
+
+static void test_checkBoostLimit_disabled_by_flag(void) {
+    statuses current = {};
+    config6 page6 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.boostCutEnabled = 0;
+    page6.boostLimit = 40;
+    current.MAP = (long)(page6.boostLimit * 2UL) + 1;
+
+    TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+}
+
+static void test_checkBoostLimit_activate_when_conditions_met(void) {
+    statuses current = {};
+    config6 page6 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.boostCutEnabled = 1;
+    page6.boostLimit = 30;
+    current.MAP = (long)(page6.boostLimit * 2UL) + 1;
+
+    TEST_ASSERT_TRUE(checkBoostLimit(current, page6));
+    TEST_ASSERT_TRUE(current.engineProtectBoostCut);
+}
+
+static void test_checkBoostLimit_no_activate_when_map_low(void) {
+    statuses current = {};
+    config6 page6 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.boostCutEnabled = 1;
+    page6.boostLimit = 60;
+    current.MAP = (long)(page6.boostLimit * 2UL) - 1;
+
+    TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -112,7 +166,10 @@ void runAllTests(void)
     RUN_TEST_P(test_checkOilPressureLimit_activate_immediate_when_time_zero);
     RUN_TEST_P(test_checkOilPressureLimit_no_activation_when_above_limit);
     RUN_TEST_P(test_checkOilPressureLimit_activate_when_time_expires);
-
+    RUN_TEST_P(test_checkBoostLimit_disabled_by_engineProtectType);
+    RUN_TEST_P(test_checkBoostLimit_disabled_by_flag);
+    RUN_TEST_P(test_checkBoostLimit_activate_when_conditions_met);
+    RUN_TEST_P(test_checkBoostLimit_no_activate_when_map_low);
     }
 }
 
