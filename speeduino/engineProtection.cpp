@@ -4,65 +4,11 @@
 #include "units.h"
 #include "preprocessor.h"
 
-byte oilProtStartTime = 0;
+static byte oilProtStartTime = 0;
 static table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
 static table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
-byte checkEngineProtect(void)
-{
-  byte protectActive = 0;
-  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
-  {
-    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
-  }
-
-  return protectActive;
-}
-
-byte checkRevLimit(void)
-{
-  //Hardcut RPM limit
-  byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  currentStatus.engineProtectRpm = false;
-  currentStatus.engineProtectClt = false;
-
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
-  {
-    if(configPage9.hardRevMode == HARD_REV_FIXED)
-    {
-      currentLimitRPM = configPage4.HardRevLim;
-      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
-      { 
-        currentStatus.engineProtectRpm = true;
-      } 
-      else 
-      { 
-        currentStatus.engineProtectRpm = false;
-      }
-    }
-    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
-    {
-      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(currentStatus.coolant)));
-      if(currentStatus.RPMdiv100 > currentLimitRPM)
-      {
-        currentStatus.engineProtectClt = true;
-        currentStatus.engineProtectRpm = true;
-      } 
-    }
-  }
-
-  return currentLimitRPM;
-}
-
-byte checkBoostLimit(void)
-{
-  currentStatus.engineProtectBoostCut = (configPage6.engineProtectType != PROTECT_CUT_OFF)
-                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (long)(configPage6.boostLimit * 2U)) );
-
-  return currentStatus.engineProtectBoostCut;
-}
-
-byte checkOilPressureLimit(void)
+static inline byte checkOilPressureLimit(void)
 {
   bool alreadyActive = currentStatus.engineProtectOil;
   currentStatus.engineProtectOil = false; //Will be set true below if required
@@ -91,7 +37,15 @@ byte checkOilPressureLimit(void)
   return currentStatus.engineProtectOil;
 }
 
-byte checkAFRLimit(void)
+static inline byte checkBoostLimit(void)
+{
+  currentStatus.engineProtectBoostCut = (configPage6.engineProtectType != PROTECT_CUT_OFF)
+                                   &&  ((configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (long)(configPage6.boostLimit * 2U)) );
+
+  return currentStatus.engineProtectBoostCut;
+}
+
+static byte checkAFRLimit(void)
 {
   static bool checkAFRLimitActive = false;
   static bool afrProtectCountEnabled = false;
@@ -189,3 +143,49 @@ byte checkAFRLimit(void)
   return checkAFRLimitActive;
 }
 
+
+byte checkEngineProtect(void)
+{
+  byte protectActive = 0;
+  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  {
+    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
+  }
+
+  return protectActive;
+}
+
+byte checkRevLimit(void)
+{
+  //Hardcut RPM limit
+  byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
+  currentStatus.engineProtectRpm = false;
+  currentStatus.engineProtectClt = false;
+
+  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  {
+    if(configPage9.hardRevMode == HARD_REV_FIXED)
+    {
+      currentLimitRPM = configPage4.HardRevLim;
+      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
+      { 
+        currentStatus.engineProtectRpm = true;
+      } 
+      else 
+      { 
+        currentStatus.engineProtectRpm = false;
+      }
+    }
+    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
+    {
+      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(currentStatus.coolant)));
+      if(currentStatus.RPMdiv100 > currentLimitRPM)
+      {
+        currentStatus.engineProtectClt = true;
+        currentStatus.engineProtectRpm = true;
+      } 
+    }
+  }
+
+  return currentLimitRPM;
+}

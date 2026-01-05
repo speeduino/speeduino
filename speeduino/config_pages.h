@@ -546,6 +546,9 @@ struct config6 {
   } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 #endif
 
+#define HARD_REV_FIXED    1
+#define HARD_REV_COOLANT  2
+
 /** Page 9 of the config - mostly deals with CANBUS control.
 See ini file for further info (Config Page 10 in the ini).
 */
