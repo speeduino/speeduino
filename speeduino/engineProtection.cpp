@@ -158,13 +158,8 @@ TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 
   current.engineProtectOil = checkOilPressureLimit(current, page6, page10, currMillis);
   current.engineProtectAfr = checkAFRLimit(current, page6, page9, currMillis);
 
-  byte protectActive = 0;
-  if(current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
-  {
-    if( current.RPMdiv100 > page4.engineProtectMaxRPM ) { protectActive = 1; }
-  }
-
-  return protectActive;
+  return (current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
+      && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
 }
 
 bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
@@ -175,7 +170,7 @@ bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &
 uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   //Hardcut RPM limit
-  byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
+  uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
   current.engineProtectRpm = false;
   current.engineProtectClt = false;
 
@@ -184,14 +179,8 @@ uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &pa
     if(page9.hardRevMode == HARD_REV_FIXED)
     {
       currentLimitRPM = page4.HardRevLim;
-      if ( (current.RPMdiv100 >= page4.HardRevLim) || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim)) )
-      { 
-        current.engineProtectRpm = true;
-      } 
-      else 
-      { 
-        current.engineProtectRpm = false;
-      }
+      current.engineProtectRpm = (current.RPMdiv100 >= page4.HardRevLim) 
+                              || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim));
     }
     else if(page9.hardRevMode == HARD_REV_COOLANT )
     {
