@@ -184,7 +184,7 @@ uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &pa
     }
     else if(page9.hardRevMode == HARD_REV_COOLANT )
     {
-      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
+      currentLimitRPM = table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
       if(current.RPMdiv100 > currentLimitRPM)
       {
         current.engineProtectClt = true;
