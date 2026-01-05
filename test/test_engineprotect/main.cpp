@@ -180,17 +180,17 @@ static void test_checkAFRLimit_disabled_conditions(void) {
 
     // Disabled via engineProtectType
     page6.engineProtectType = PROTECT_CUT_OFF;
-    page9.afrProtectEnabled = 1;
+    page9.afrProtectEnabled = AFR_PROTECT_FIXED;
     page6.egoType = EGO_TYPE_WIDE;
     TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
 
     // Disabled via afrProtectEnabled flag
     page6.engineProtectType = PROTECT_CUT_IGN;
-    page9.afrProtectEnabled = 0;
+    page9.afrProtectEnabled = AFR_PROTECT_OFF;
     TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
 
     // Disabled via egoType not wide
-    page9.afrProtectEnabled = 1;
+    page9.afrProtectEnabled = AFR_PROTECT_FIXED;
     page6.egoType = 0; // not EGO_TYPE_WIDE
     TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
 }
@@ -203,7 +203,7 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
 
     page6.engineProtectType = PROTECT_CUT_IGN;
     page6.egoType = EGO_TYPE_WIDE;
-    page9.afrProtectEnabled = 1; // fixed value mode
+    page9.afrProtectEnabled = AFR_PROTECT_FIXED; // fixed value mode
     page9.afrProtectMinMAP = 50; // minMAP*2 = 100
     page9.afrProtectMinRPM = 10;
     page9.afrProtectMinTPS = 10;
