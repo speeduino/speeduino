@@ -158,45 +158,45 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page
 }
 
 
-byte checkEngineProtect(void)
+bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   byte protectActive = 0;
-  if(checkBoostLimit(currentStatus, configPage6) || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit(currentStatus, configPage6, configPage9, millis()) )
+  if(checkBoostLimit(current, page6) || checkOilPressureLimit(current, page6, page10, millis()) || checkAFRLimit(current, page6, page9, millis()) )
   {
-    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
+    if( current.RPMdiv100 > page4.engineProtectMaxRPM ) { protectActive = 1; }
   }
 
   return protectActive;
 }
 
-byte checkRevLimit(void)
+uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   //Hardcut RPM limit
   byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  currentStatus.engineProtectRpm = false;
-  currentStatus.engineProtectClt = false;
+  current.engineProtectRpm = false;
+  current.engineProtectClt = false;
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  if (page6.engineProtectType != PROTECT_CUT_OFF) 
   {
-    if(configPage9.hardRevMode == HARD_REV_FIXED)
+    if(page9.hardRevMode == HARD_REV_FIXED)
     {
-      currentLimitRPM = configPage4.HardRevLim;
-      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
+      currentLimitRPM = page4.HardRevLim;
+      if ( (current.RPMdiv100 >= page4.HardRevLim) || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim)) )
       { 
-        currentStatus.engineProtectRpm = true;
+        current.engineProtectRpm = true;
       } 
       else 
       { 
-        currentStatus.engineProtectRpm = false;
+        current.engineProtectRpm = false;
       }
     }
-    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
+    else if(page9.hardRevMode == HARD_REV_COOLANT )
     {
-      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(currentStatus.coolant)));
-      if(currentStatus.RPMdiv100 > currentLimitRPM)
+      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
+      if(current.RPMdiv100 > currentLimitRPM)
       {
-        currentStatus.engineProtectClt = true;
-        currentStatus.engineProtectRpm = true;
+        current.engineProtectClt = true;
+        current.engineProtectRpm = true;
       } 
     }
   }
