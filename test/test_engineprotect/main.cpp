@@ -9,7 +9,7 @@ extern uint8_t oilProtStartTime;
 
 extern bool checkBoostLimit(const statuses &current, const config6 &page6);
 
-extern bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
+extern bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
 extern bool checkAFRLimitActive;
 extern bool afrProtectCountEnabled;
 extern unsigned long afrProtectCount;
@@ -223,13 +223,11 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     // At delay expiry -> becomes active
     TEST_ASSERT_TRUE(checkAFRLimit(current, page6, page9, start + (page9.afrProtectCutTime * 100)));
     TEST_ASSERT_TRUE(checkAFRLimitActive);
-    TEST_ASSERT_TRUE(current.engineProtectAfr);
 
     // Now simulate TPS drop below reactivation threshold to clear protection
     current.TPS = page9.afrProtectReactivationTPS;
     TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, start + (page9.afrProtectCutTime * 100) + 1));
     TEST_ASSERT_FALSE(checkAFRLimitActive);
-    TEST_ASSERT_FALSE(current.engineProtectAfr);
 }
 
 static void test_checkEngineProtect_no_protections(void) {
@@ -244,6 +242,9 @@ static void test_checkEngineProtect_no_protections(void) {
     current.RPMdiv100 = 10;
 
     TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, 0));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+    TEST_ASSERT_FALSE(current.engineProtectOil);
+    TEST_ASSERT_FALSE(current.engineProtectAfr);
 }
 
 static void test_checkEngineProtect_protection_but_rpm_low(void) {
@@ -263,6 +264,9 @@ static void test_checkEngineProtect_protection_but_rpm_low(void) {
     current.RPMdiv100 = 5; // not greater than max
 
     TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+    TEST_ASSERT_FALSE(current.engineProtectOil);
+    TEST_ASSERT_FALSE(current.engineProtectAfr);
 }
 
 static void test_checkEngineProtect_protection_and_rpm_high(void) {
@@ -283,6 +287,9 @@ static void test_checkEngineProtect_protection_and_rpm_high(void) {
     oilProtStartTime = 0;
 
     TEST_ASSERT_TRUE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
+    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
+    TEST_ASSERT_TRUE(current.engineProtectOil);
+    TEST_ASSERT_FALSE(current.engineProtectAfr);
 }
 
 static void test_checkRevLimit_disabled(void) {

@@ -71,7 +71,7 @@ static inline bool afrLimitAfrCondition(const statuses &current, const config9 &
       && (current.O2 >=getAfrO2Limit(current, page9));
 }
 
-TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
+TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
 {
   static constexpr char X2_MULTIPLIER = 2;
   static constexpr char X100_MULTIPLIER = 100;
@@ -128,7 +128,6 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page
       if(currMillis >= (afrProtectCount + (page9.afrProtectCutTime * X100_MULTIPLIER))) 
       {
         checkAFRLimitActive = true;
-        current.engineProtectAfr = true;
       }
     } 
     else 
@@ -146,7 +145,6 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page
     {
       checkAFRLimitActive = false;
       afrProtectCountEnabled = false;
-      current.engineProtectAfr = false;
     }
   }
 
@@ -158,9 +156,10 @@ TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 
 {
   current.engineProtectBoostCut = checkBoostLimit(current, page6);
   current.engineProtectOil = checkOilPressureLimit(current, page6, page10, currMillis);
-  
+  current.engineProtectAfr = checkAFRLimit(current, page6, page9, currMillis);
+
   byte protectActive = 0;
-  if(current.engineProtectBoostCut || current.engineProtectOil || checkAFRLimit(current, page6, page9, currMillis) )
+  if(current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
   {
     if( current.RPMdiv100 > page4.engineProtectMaxRPM ) { protectActive = 1; }
   }
