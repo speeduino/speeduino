@@ -7,7 +7,7 @@ extern bool checkOilPressureLimit(statuses &current, const config6 &page6, const
 extern table2D_u8_u8_4 oilPressureProtectTable;
 extern uint8_t oilProtStartTime;
 
-extern bool checkBoostLimit(statuses &current, const config6 &page6);
+extern bool checkBoostLimit(const statuses &current, const config6 &page6);
 
 extern bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
 extern bool checkAFRLimitActive;
@@ -128,7 +128,6 @@ static void test_checkBoostLimit_disabled_by_engineProtectType(void) {
     current.MAP = (long)(page6.boostLimit * 2UL) + 10;
 
     TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
-    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
 }
 
 static void test_checkBoostLimit_disabled_by_flag(void) {
@@ -141,7 +140,6 @@ static void test_checkBoostLimit_disabled_by_flag(void) {
     current.MAP = (long)(page6.boostLimit * 2UL) + 1;
 
     TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
-    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
 }
 
 static void test_checkBoostLimit_activate_when_conditions_met(void) {
@@ -154,7 +152,6 @@ static void test_checkBoostLimit_activate_when_conditions_met(void) {
     current.MAP = (long)(page6.boostLimit * 2UL) + 1;
 
     TEST_ASSERT_TRUE(checkBoostLimit(current, page6));
-    TEST_ASSERT_TRUE(current.engineProtectBoostCut);
 }
 
 static void test_checkBoostLimit_no_activate_when_map_low(void) {
@@ -167,7 +164,6 @@ static void test_checkBoostLimit_no_activate_when_map_low(void) {
     current.MAP = (long)(page6.boostLimit * 2UL) - 1;
 
     TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
-    TEST_ASSERT_FALSE(current.engineProtectBoostCut);
 }
 
 static statuses setup_afr_protect_active(void) {
