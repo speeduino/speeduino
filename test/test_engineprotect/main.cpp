@@ -14,6 +14,8 @@ extern bool checkAFRLimitActive;
 extern bool afrProtectCountEnabled;
 extern unsigned long afrProtectCount;
 
+extern bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis);
+
 static void setup_oil_protect_table(void) {
     // Simple axis: 0..3 mapped to same min value
     TEST_DATA_P uint8_t bins[] = { 0, 100, 200, 255 };
@@ -68,6 +70,7 @@ static void test_checkOilPressureLimit_activate_immediate_when_time_zero(void) {
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 1;
     page10.oilPressureProtTime = 0; // immediate
+    oilProtStartTime = 0;
 
     TEST_ASSERT_TRUE(checkOilPressureLimit(current, page6, page10, millis()));
     TEST_ASSERT_TRUE(current.engineProtectOil);
@@ -101,6 +104,7 @@ static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 1;
     page10.oilPressureProtTime = 0;
+    oilProtStartTime = 0;
 
     setup_oil_protect_table();
 
@@ -238,6 +242,59 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     TEST_ASSERT_FALSE(current.engineProtectAfr);
 }
 
+static void test_checkEngineProtect_no_protections(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+    config10 page10 = {};
+
+    // Ensure RPM above threshold but no protection conditions set
+    page4.engineProtectMaxRPM = 5;
+    current.RPMdiv100 = 10;
+
+    TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, 0));
+}
+
+static void test_checkEngineProtect_protection_but_rpm_low(void) {
+    // Set up oil protection to be active but RPM not above max -> no protectActive
+    statuses current = setup_oil_protect_table_active();
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+    config10 page10 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page10.oilPressureProtEnbl = 1;
+    page10.oilPressureEnable = 1;
+    page10.oilPressureProtTime = 0; // immediate
+
+    page4.engineProtectMaxRPM = 5;
+    current.RPMdiv100 = 5; // not greater than max
+
+    TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
+}
+
+static void test_checkEngineProtect_protection_and_rpm_high(void) {
+    // Oil protection active and RPM above max -> protectActive should be true
+    statuses current = setup_oil_protect_table_active();
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+    config10 page10 = {};
+
+    page4.engineProtectMaxRPM = 5;
+    current.RPMdiv100 = 6; // greater than max
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page10.oilPressureProtEnbl = 1;
+    page10.oilPressureEnable = 1;
+    page10.oilPressureProtTime = 0; // immediate
+    oilProtStartTime = 0;
+
+    TEST_ASSERT_TRUE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -252,6 +309,9 @@ void runAllTests(void)
     RUN_TEST_P(test_checkBoostLimit_no_activate_when_map_low);
     RUN_TEST_P(test_checkAFRLimit_disabled_conditions);
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
+    RUN_TEST_P(test_checkEngineProtect_no_protections);
+    RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
+    RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);
     }
 }
 

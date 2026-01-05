@@ -158,15 +158,20 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page
 }
 
 
-bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis)
 {
   byte protectActive = 0;
-  if(checkBoostLimit(current, page6) || checkOilPressureLimit(current, page6, page10, millis()) || checkAFRLimit(current, page6, page9, millis()) )
+  if(checkBoostLimit(current, page6) || checkOilPressureLimit(current, page6, page10, currMillis) || checkAFRLimit(current, page6, page9, currMillis) )
   {
     if( current.RPMdiv100 > page4.engineProtectMaxRPM ) { protectActive = 1; }
   }
 
   return protectActive;
+}
+
+bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+{
+  return checkEngineProtect(current, page4, page6, page9, page10, millis());
 }
 
 uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
