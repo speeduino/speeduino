@@ -8,6 +8,11 @@ TESTABLE_STATIC uint8_t oilProtStartTime = 0;
 TESTABLE_STATIC table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
 TESTABLE_STATIC table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
+/* AFR protection state moved to file scope so unit tests can control/reset it */
+TESTABLE_STATIC bool checkAFRLimitActive = false;
+TESTABLE_STATIC bool afrProtectCountEnabled = false;
+TESTABLE_STATIC unsigned long afrProtectCount = 0;
+
 TESTABLE_INLINE_STATIC bool checkOilPressureLimit(statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis)
 {
   bool alreadyActive = current.engineProtectOil;
@@ -47,11 +52,8 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(statuses &current, const config6 &pa
   return current.engineProtectBoostCut;
 }
 
-static byte checkAFRLimit(void)
+TESTABLE_INLINE_STATIC bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
 {
-  static bool checkAFRLimitActive = false;
-  static bool afrProtectCountEnabled = false;
-  static unsigned long afrProtectCount = 0;
   static constexpr char X2_MULTIPLIER = 2;
   static constexpr char X100_MULTIPLIER = 100;
 
@@ -86,11 +88,11 @@ static byte checkAFRLimit(void)
     - whether AFR protection is enabled
     - whether wideband sensor is used
   */
-  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE) {
+  if(page6.engineProtectType != PROTECT_CUT_OFF && page9.afrProtectEnabled && page6.egoType == EGO_TYPE_WIDE) {
     /* Conditions */
-    bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
-    bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
-    bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
+    bool mapCondition = (current.MAP >= (page9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
+    bool rpmCondition = (current.RPMdiv100 >= page9.afrProtectMinRPM) ? true : false;
+    bool tpsCondition = (current.TPS >= page9.afrProtectMinTPS) ? true : false;
 
     /*
       Depending on selected mode, this could either be fixed AFR value or a
@@ -99,10 +101,10 @@ static byte checkAFRLimit(void)
       1 = fixed value mode, 2 = target table mode
     */
     bool afrCondition;
-    switch(configPage9.afrProtectEnabled)
+    switch(page9.afrProtectEnabled)
     {
-      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break; /* Fixed value */
-      case 2: afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
+      case 1: afrCondition = (current.O2 >= page9.afrProtectDeviation) ? true : false; break; /* Fixed value */
+      case 2: afrCondition = (current.O2 >= (current.afrTarget + page9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
       default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
     }
 
@@ -113,14 +115,14 @@ static byte checkAFRLimit(void)
       if(!afrProtectCountEnabled) 
       {
         afrProtectCountEnabled = true;
-        afrProtectCount = millis();
+        afrProtectCount = currMillis;
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
+      if(currMillis >= (afrProtectCount + (page9.afrProtectCutTime * X100_MULTIPLIER))) 
       {
         checkAFRLimitActive = true;
-        currentStatus.engineProtectAfr = true;
+        current.engineProtectAfr = true;
       }
     } 
     else 
@@ -134,11 +136,11 @@ static byte checkAFRLimit(void)
     }
 
     /* Check if condition for reactivation is fulfilled */
-    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) 
+    if(checkAFRLimitActive && (current.TPS <= page9.afrProtectReactivationTPS)) 
     {
       checkAFRLimitActive = false;
       afrProtectCountEnabled = false;
-      currentStatus.engineProtectAfr = false;
+      current.engineProtectAfr = false;
     }
   }
 
@@ -149,7 +151,7 @@ static byte checkAFRLimit(void)
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkBoostLimit(currentStatus, configPage6) || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit() )
+  if(checkBoostLimit(currentStatus, configPage6) || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit(currentStatus, configPage6, configPage9, millis()) )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }

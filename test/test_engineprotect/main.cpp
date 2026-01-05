@@ -9,6 +9,11 @@ extern uint8_t oilProtStartTime;
 
 extern bool checkBoostLimit(statuses &current, const config6 &page6);
 
+extern bool checkAFRLimit(statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
+extern bool checkAFRLimitActive;
+extern bool afrProtectCountEnabled;
+extern unsigned long afrProtectCount;
+
 static void setup_oil_protect_table(void) {
     // Simple axis: 0..3 mapped to same min value
     TEST_DATA_P uint8_t bins[] = { 0, 100, 200, 255 };
@@ -158,6 +163,81 @@ static void test_checkBoostLimit_no_activate_when_map_low(void) {
     TEST_ASSERT_FALSE(current.engineProtectBoostCut);
 }
 
+static statuses setup_afr_protect_active(void) {
+    statuses current = {};
+    current.MAP = 200; // kPa-like units; ensure above any small min*2
+    current.RPMdiv100 = 50;
+    current.TPS = 50;
+    current.O2 = 20;
+    current.afrTarget = 10;
+    return current;
+}
+
+static void test_checkAFRLimit_disabled_conditions(void) {
+    statuses current = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    // Disabled via engineProtectType
+    page6.engineProtectType = PROTECT_CUT_OFF;
+    page9.afrProtectEnabled = 1;
+    page6.egoType = EGO_TYPE_WIDE;
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
+
+    // Disabled via afrProtectEnabled flag
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page9.afrProtectEnabled = 0;
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
+
+    // Disabled via egoType not wide
+    page9.afrProtectEnabled = 1;
+    page6.egoType = 0; // not EGO_TYPE_WIDE
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
+}
+
+static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) {
+    // Prepare configs and status to meet AFR protection conditions
+    config6 page6 = {};
+    config9 page9 = {};
+    statuses current = setup_afr_protect_active();
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.egoType = EGO_TYPE_WIDE;
+    page9.afrProtectEnabled = 1; // fixed value mode
+    page9.afrProtectMinMAP = 50; // minMAP*2 = 100
+    page9.afrProtectMinRPM = 10;
+    page9.afrProtectMinTPS = 10;
+    page9.afrProtectDeviation = 15; // current.O2 (20) >= 15 -> triggers
+    page9.afrProtectCutTime = 1; // 1 * 100ms = 100ms delay
+    page9.afrProtectReactivationTPS = 20;
+
+    // Reset file-scoped state
+    checkAFRLimitActive = false;
+    afrProtectCountEnabled = false;
+    afrProtectCount = 0;
+
+    uint32_t t0 = 1000;
+
+    // First call should start the counter but not activate yet
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, t0));
+    TEST_ASSERT_TRUE(afrProtectCountEnabled);
+    unsigned long start = afrProtectCount;
+
+    // Before delay expires -> still not active
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, start + (page9.afrProtectCutTime * 100) - 1));
+
+    // At delay expiry -> becomes active
+    TEST_ASSERT_TRUE(checkAFRLimit(current, page6, page9, start + (page9.afrProtectCutTime * 100)));
+    TEST_ASSERT_TRUE(checkAFRLimitActive);
+    TEST_ASSERT_TRUE(current.engineProtectAfr);
+
+    // Now simulate TPS drop below reactivation threshold to clear protection
+    current.TPS = page9.afrProtectReactivationTPS;
+    TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, start + (page9.afrProtectCutTime * 100) + 1));
+    TEST_ASSERT_FALSE(checkAFRLimitActive);
+    TEST_ASSERT_FALSE(current.engineProtectAfr);
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -170,6 +250,8 @@ void runAllTests(void)
     RUN_TEST_P(test_checkBoostLimit_disabled_by_flag);
     RUN_TEST_P(test_checkBoostLimit_activate_when_conditions_met);
     RUN_TEST_P(test_checkBoostLimit_no_activate_when_map_low);
+    RUN_TEST_P(test_checkAFRLimit_disabled_conditions);
+    RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
     }
 }
 
