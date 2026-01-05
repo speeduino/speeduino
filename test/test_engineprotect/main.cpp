@@ -15,6 +15,9 @@ extern bool afrProtectCountEnabled;
 extern unsigned long afrProtectCount;
 
 extern bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis);
+extern uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
+extern table2D_u8_u8_6 coolantProtectTable;
+extern uint8_t softLimitTime;
 
 static void setup_oil_protect_table(void) {
     // Simple axis: 0..3 mapped to same min value
@@ -295,6 +298,85 @@ static void test_checkEngineProtect_protection_and_rpm_high(void) {
     TEST_ASSERT_TRUE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
 }
 
+static void test_checkRevLimit_disabled(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    page6.engineProtectType = PROTECT_CUT_OFF;
+    uint8_t limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, limit);
+    TEST_ASSERT_FALSE(current.engineProtectRpm);
+    TEST_ASSERT_FALSE(current.engineProtectClt);
+}
+
+static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page9.hardRevMode = HARD_REV_FIXED;
+    page4.HardRevLim = 50;
+    softLimitTime = 0;
+
+    current.RPMdiv100 = 49;
+    uint8_t limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(50, limit);
+    TEST_ASSERT_FALSE(current.engineProtectRpm);
+
+    current.RPMdiv100 = 50;
+    limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(50, limit);
+    TEST_ASSERT_TRUE(current.engineProtectRpm);
+}
+
+static void test_checkRevLimit_softlimit_triggers(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page9.hardRevMode = HARD_REV_FIXED;
+    page4.HardRevLim = 100;
+    page4.SoftRevLim = 60;
+    page4.SoftLimMax = 5;
+
+    // Simulate soft limiter running longer than allowed
+    softLimitTime = page4.SoftLimMax + 1;
+    current.RPMdiv100 = page4.SoftRevLim;
+
+    uint8_t limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(page4.HardRevLim, limit);
+    TEST_ASSERT_TRUE(current.engineProtectRpm);
+}
+
+static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page9.hardRevMode = HARD_REV_COOLANT;
+
+    // Populate coolant protection table with a constant limit (e.g., 40)
+    TEST_DATA_P uint8_t bins[] = { 0, 50, 100, 150, 200, 255 };
+    TEST_DATA_P uint8_t values[] = { 40, 40, 40, 40, 40, 40 };
+    populate_2dtable_P(&coolantProtectTable, values, bins);
+
+    current.coolant = 0;
+    current.RPMdiv100 = 41; // greater than 40 -> should trigger
+
+    uint8_t limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(40, limit);
+    TEST_ASSERT_TRUE(current.engineProtectClt);
+    TEST_ASSERT_TRUE(current.engineProtectRpm);
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -312,6 +394,10 @@ void runAllTests(void)
     RUN_TEST_P(test_checkEngineProtect_no_protections);
     RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
     RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);
+    RUN_TEST_P(test_checkRevLimit_disabled);
+    RUN_TEST_P(test_checkRevLimit_fixed_mode_no_trigger_and_trigger);
+    RUN_TEST_P(test_checkRevLimit_softlimit_triggers);
+    RUN_TEST_P(test_checkRevLimit_coolant_mode_triggers_clt);
     }
 }
 
