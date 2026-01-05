@@ -3,7 +3,7 @@
 #include "config_pages.h"
 #include "../test_utils.h"
 
-extern bool checkOilPressureLimit(statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
+extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_4 oilPressureProtectTable;
 extern uint8_t oilProtStartTime;
 
@@ -43,25 +43,21 @@ static void test_checkOilPressureLimit_disabled(void) {
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 1;
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
 
     page6.engineProtectType = PROTECT_CUT_BOTH;
     page10.oilPressureProtEnbl = 0;
     page10.oilPressureEnable = 0;
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
 
     page6.engineProtectType = PROTECT_CUT_BOTH;
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 0;
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
 
     page6.engineProtectType = PROTECT_CUT_BOTH;
     page10.oilPressureProtEnbl = 0;
     page10.oilPressureEnable = 1;
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
 }
 
 static void test_checkOilPressureLimit_activate_immediate_when_time_zero(void) {
@@ -76,7 +72,6 @@ static void test_checkOilPressureLimit_activate_immediate_when_time_zero(void) {
     oilProtStartTime = 0;
 
     TEST_ASSERT_TRUE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_TRUE(current.engineProtectOil);
 }
 
 static void test_checkOilPressureLimit_activate_when_time_expires(void) {
@@ -91,11 +86,8 @@ static void test_checkOilPressureLimit_activate_when_time_expires(void) {
     oilProtStartTime = 100;
 
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, (oilProtStartTime+page10.oilPressureProtTime-1)*100));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
     TEST_ASSERT_TRUE(checkOilPressureLimit(current, page6, page10, (oilProtStartTime+page10.oilPressureProtTime)*100));
-    TEST_ASSERT_TRUE(current.engineProtectOil);
     TEST_ASSERT_TRUE(checkOilPressureLimit(current, page6, page10, (oilProtStartTime+page10.oilPressureProtTime+1)*100));
-    TEST_ASSERT_TRUE(current.engineProtectOil);
 }
 
 static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
@@ -115,7 +107,6 @@ static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
     current.RPMdiv100 = 0;
 
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
-    TEST_ASSERT_FALSE(current.engineProtectOil);
 }
 
 static void test_checkBoostLimit_disabled_by_engineProtectType(void) {
