@@ -2,39 +2,41 @@
 #include "engineProtection.h"
 #include "maths.h"
 #include "units.h"
-#include "preprocessor.h"
+#include "unit_testing.h"
 
-static byte oilProtStartTime = 0;
-static table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
-static table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
+TESTABLE_STATIC uint8_t oilProtStartTime = 0;
+TESTABLE_STATIC table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
+TESTABLE_STATIC table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
-static inline byte checkOilPressureLimit(void)
+TESTABLE_INLINE_STATIC bool checkOilPressureLimit(statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis)
 {
-  bool alreadyActive = currentStatus.engineProtectOil;
-  currentStatus.engineProtectOil = false; //Will be set true below if required
+  bool alreadyActive = current.engineProtectOil;
+  
+  current.engineProtectOil = false; //Will be set true below if required
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
+  if (page6.engineProtectType != PROTECT_CUT_OFF) 
   {
-    if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
+    if( (page10.oilPressureProtEnbl == true) && (page10.oilPressureEnable == true) )
     {
-      byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
-      if(currentStatus.oilPressure < oilLimit)
+      uint8_t oilLimit = table2D_getValue(&oilPressureProtectTable, current.RPMdiv100);
+      if(current.oilPressure < oilLimit)
       {
         //Check if this is the first time we've been below the limit
-        if(oilProtStartTime == 0) { oilProtStartTime = div100(millis()); }
-
+        if(oilProtStartTime == 0U) { oilProtStartTime = div100(currMillis); }
         /* Check if countdown has reached its target, if so then instruct to cut */
-        if( (uint8_t(div100(millis())) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
+        if( (uint8_t(div100(currMillis)) >= (uint16_t(oilProtStartTime + page10.oilPressureProtTime)) ) || (alreadyActive > 0) )
         {
-          currentStatus.engineProtectOil = true;
+          current.engineProtectOil = true;
         }
-        
       }
-      else { oilProtStartTime = 0; } //Reset the timer
+      else 
+      { 
+        oilProtStartTime = 0; //Reset the timer
+      }
     }
   }
 
-  return currentStatus.engineProtectOil;
+  return current.engineProtectOil;
 }
 
 static inline byte checkBoostLimit(void)
@@ -147,7 +149,7 @@ static byte checkAFRLimit(void)
 byte checkEngineProtect(void)
 {
   byte protectActive = 0;
-  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  if(checkBoostLimit() || checkOilPressureLimit(currentStatus, configPage6, configPage10, millis()) || checkAFRLimit() )
   {
     if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
   }
