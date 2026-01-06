@@ -208,6 +208,62 @@ statuses::engine_protect_flags_t checkEngineProtection(const statuses &current, 
   return flags;
 };
 
+TESTABLE_INLINE_STATIC uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9)
+{
+  if (page9.hardRevMode == HARD_REV_FIXED)
+  {
+    return page4.HardRevLim;
+  }
+  if (page9.hardRevMode == HARD_REV_COOLANT)
+  {
+    return table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
+  }
+  return UINT8_MAX;
+}
+
+TESTABLE_INLINE_STATIC uint8_t applyEngineProtectionRevLimit(uint8_t curLimit, const statuses &current, const config4 &page4)
+{
+  if ((current.engineProtect.boostCut) || (current.engineProtect.oil) || (current.engineProtect.afr))
+  {
+    return min(curLimit, page4.engineProtectMaxRPM);
+  }
+
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const statuses &current, const config6 &page6)
+{
+  if (current.launchingHard)
+  {
+    return min(curLimit, page6.lnchHardLim);
+  }
+
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint16_t applyFlatShiftRevLimit(uint16_t curLimit, const statuses &current)
+{
+  if ( current.flatShiftingHard ) 
+  {
+    return min(curLimit, (uint16_t)current.clutchEngagedRPM);
+  }
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+{
+  // The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc).
+  // Divided by 100.
+  return applyFlatShiftRevLimit(
+          (uint16_t)applyHardLaunchRevLimit(
+              applyEngineProtectionRevLimit(
+                getHardRevLimit(current, page4, page9), 
+                current, page4),
+              current, page6) * 100U,
+            current);
+  
+}
+
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 

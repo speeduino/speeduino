@@ -49,6 +49,13 @@ struct rollingCutRandFunc_override_t
     randFunc _oldFunc;
 };
 
+extern uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
+
+extern uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9);
+extern uint8_t applyEngineProtectionRevLimit(uint8_t curLimit, const statuses &current, const config4 &page4);
+extern uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const statuses &current, const config6 &page6);
+extern uint16_t applyFlatShiftRevLimit(uint16_t curLimit, const statuses &current);
+
 static void resetInternalState(void)
 {
     oilProtEndTime = 0;
@@ -134,8 +141,7 @@ struct engineProtection_test_context_t
         page4.HardRevLim = 80;
         page4.SoftRevLim = 60;
         page4.SoftLimMax = 5;
-        current.RPMdiv100 = page4.HardRevLim;
-        current.RPM = current.RPMdiv100 * 100U;
+        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim));
     }
 
     void setBeyondStaging(void)
@@ -174,7 +180,7 @@ struct engineProtection_test_context_t
         populateCoolantProtectTable();
 
         current.coolant = 0;
-        current.RPMdiv100 = coolantProtectTable.values[0] + 1; // greater -> trigger
+        setRpm(current, RPM_COARSE.toUser(coolantProtectTable.values[0]+1U)); // greater -> trigger
     }
 };
 
@@ -452,6 +458,181 @@ static void test_checkEngineProtect_protection_and_rpm_high(void) {
     TEST_ASSERT_FALSE(context.current.engineProtect.afr);
 }
 
+static void test_getHardRevLimit(void)
+{
+    engineProtection_test_context_t context;
+
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 65; // div100
+    TEST_ASSERT_EQUAL_UINT8(65, getHardRevLimit(context.current, context.page4, context.page9));
+
+    context.page9.hardRevMode = HARD_REV_COOLANT;
+    populateCoolantProtectTable(); // constant 40
+    context.current.coolant = 50; // should map to 40 in table
+    TEST_ASSERT_EQUAL_UINT8(40, getHardRevLimit(context.current, context.page4, context.page9));
+
+    context.page9.hardRevMode = 0; // or undefined
+    context.page4.HardRevLim = 50; // should be ignored
+    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, getHardRevLimit(context.current, context.page4, context.page9));
+
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 0;
+    TEST_ASSERT_EQUAL_UINT8(0, getHardRevLimit(context.current, context.page4, context.page9));
+
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 255; // max uint8
+    TEST_ASSERT_EQUAL_UINT8(255, getHardRevLimit(context.current, context.page4, context.page9));
+}
+
+static void test_applyEngineProtectionRevLimit(void)
+{
+    engineProtection_test_context_t context;
+
+    // All protection flags false -> no clamping
+    uint8_t curLimit = 80;
+    {
+        engineProtection_test_context_t context;
+        TEST_ASSERT_EQUAL_UINT8(curLimit, applyEngineProtectionRevLimit(curLimit, context.current, context.page4));
+    }
+
+    {
+        engineProtection_test_context_t context;
+        context.current.engineProtect.oil = true;
+        context.page4.engineProtectMaxRPM = curLimit + 10; // lower than current limit
+        TEST_ASSERT_EQUAL_UINT8(curLimit, applyEngineProtectionRevLimit(curLimit, context.current, context.page4));
+    }
+    
+    {
+        engineProtection_test_context_t context;
+        context.current.engineProtect.oil = true;
+        context.page4.engineProtectMaxRPM = curLimit - 10; // lower than current limit
+        TEST_ASSERT_EQUAL_UINT8(context.page4.engineProtectMaxRPM, applyEngineProtectionRevLimit(curLimit, context.current, context.page4));
+    }
+
+    {
+        engineProtection_test_context_t context;
+        context.current.engineProtect.boostCut = true;
+        context.page4.engineProtectMaxRPM = 60;
+        TEST_ASSERT_EQUAL_UINT8(context.page4.engineProtectMaxRPM, applyEngineProtectionRevLimit(curLimit, context.current, context.page4));
+    }
+
+    {
+        engineProtection_test_context_t context;
+        context.current.engineProtect.afr = true;
+        context.page4.engineProtectMaxRPM = 45;
+        TEST_ASSERT_EQUAL_UINT8(context.page4.engineProtectMaxRPM, applyEngineProtectionRevLimit(curLimit, context.current, context.page4));
+    }
+}
+
+static void test_applyEngineProtectionRevLimit_multiple_protections_lowest_wins(void)
+{
+    engineProtection_test_context_t context;
+
+    context.current.engineProtect.oil = true;
+    context.current.engineProtect.boostCut = true;
+    context.current.engineProtect.afr = true;
+    context.page4.engineProtectMaxRPM = 40; // all use same limit
+
+    uint8_t curLimit = 90;
+    uint8_t result = applyEngineProtectionRevLimit(curLimit, context.current, context.page4);
+
+    TEST_ASSERT_EQUAL_UINT8(40, result);
+}
+
+static void test_applyHardLaunchRevLimit(void)
+{
+    uint8_t curLimit = 80;
+
+    engineProtection_test_context_t context;
+    context.current.launchingHard = false;
+    context.page6.lnchHardLim = curLimit-10;
+    TEST_ASSERT_EQUAL_UINT8(curLimit, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
+
+    context.current.launchingHard = true;
+    TEST_ASSERT_EQUAL_UINT8(context.page6.lnchHardLim, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
+
+    context.current.launchingHard = true;
+    context.page6.lnchHardLim = curLimit+10;
+    TEST_ASSERT_EQUAL_UINT8(curLimit, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
+}
+
+static void test_applyFlatShiftRevLimit(void)
+{
+    uint16_t curLimit = 8000;
+    engineProtection_test_context_t context;
+
+    context.current.flatShiftingHard = false;
+    context.current.clutchEngagedRPM = curLimit-100;
+    TEST_ASSERT_EQUAL_UINT16(curLimit, applyFlatShiftRevLimit(curLimit, context.current)); // no change
+   
+    context.current.flatShiftingHard = true;
+    TEST_ASSERT_EQUAL_UINT16(context.current.clutchEngagedRPM, applyFlatShiftRevLimit(curLimit, context.current)); // no change
+
+    context.current.clutchEngagedRPM = curLimit+100;
+    TEST_ASSERT_EQUAL_UINT16(curLimit, applyFlatShiftRevLimit(curLimit, context.current)); // no change
+}
+
+static void test_getMaxRpm_hard_fixed_limit(void)
+{
+    engineProtection_test_context_t context;
+    // Hard fixed mode
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 50; // div100 -> 5000 RPM
+
+    uint16_t result = getMaxRpm(context.current, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_UINT16(5000, result);
+}
+
+static void test_getMaxRpm_coolant_limit(void)
+{
+    engineProtection_test_context_t context;
+    // Coolant table must be populated
+    populateCoolantProtectTable();
+    context.page9.hardRevMode = HARD_REV_COOLANT;
+    context.current.coolant = 0; // index hitting first bin -> table value 40
+
+    uint16_t result = getMaxRpm(context.current, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_UINT16((uint16_t)coolantProtectTable.values[0] * 100U, result);
+}
+
+static void test_getMaxRpm_engineProtectMaxRPM_applies(void)
+{
+    engineProtection_test_context_t context;
+    // Hard fixed high, but engine protection active should clamp to engineProtectMaxRPM
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 80; // 8000
+    context.current.engineProtect.boostCut = true; // any protection bit triggers the clamp
+    context.page4.engineProtectMaxRPM = 60; // clamp to 6000
+
+    uint16_t result = getMaxRpm(context.current, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_UINT16(6000, result);
+}
+
+static void test_getMaxRpm_launch_and_flatshift_priority(void)
+{
+    engineProtection_test_context_t context;
+
+    // Part A: launchingHard should apply lnchHardLim
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 80; // 8000
+    context.current.launchingHard = true;
+    context.page6.lnchHardLim = 30; // div100 -> 3000
+
+    uint16_t resultA = getMaxRpm(context.current, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_UINT16(3000, resultA);
+
+    // Part B: flat shift clamps to absolute clutchEngagedRPM
+    context.current.launchingHard = false;
+    context.current.flatShiftingHard = true;
+    context.current.clutchEngagedRPM = 2500; // absolute RPM clamp
+    // Ensure other limits would be higher (force engine protect active to produce > 2500)
+    context.current.engineProtect.boostCut = true;
+    context.page4.engineProtectMaxRPM = 40; // 4000
+
+    uint16_t resultB = getMaxRpm(context.current, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_UINT16(2500, resultB);
+}
+
 static void test_checkRevLimit_disabled(void) {
     engineProtection_test_context_t context;
     context.setRpmActive(HARD_REV_FIXED);
@@ -543,7 +724,7 @@ static void test_checkRpmLimit_disabled(void) {
 
     // soft limit active and RPM < soft rev lim should not trigger
     context.setRpmActive(HARD_REV_FIXED);
-    context.current.RPMdiv100 = context.page4.SoftRevLim-1U;
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim-1U));
     softLimitTime = context.page4.SoftLimMax + 1;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 }
@@ -553,8 +734,7 @@ static void test_checkRpmLimit_fixed_and_softlimit(void) {
     context.setRpmActive(HARD_REV_FIXED);
 
     // below hard limit
-    context.current.RPMdiv100 = context.page4.HardRevLim - 1U;
-    context.current.RPM = context.current.RPMdiv100 * 100U;
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim - 1U));
     softLimitTime = 0;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 
@@ -564,15 +744,13 @@ static void test_checkRpmLimit_fixed_and_softlimit(void) {
 
     // soft limit active and RPM >= soft rev lim should trigger
     context.setRpmActive(HARD_REV_FIXED);
-    context.current.RPMdiv100 = context.page4.SoftRevLim;
-    context.current.RPM = context.current.RPMdiv100 * 100U;
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
     softLimitTime = context.page4.SoftLimMax + 1;
     TEST_ASSERT_TRUE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 
     // soft limit equality should not trigger
     context.setRpmActive(HARD_REV_FIXED);
-    context.current.RPMdiv100 = context.page4.SoftRevLim;
-    context.current.RPM = context.current.RPMdiv100 * 100U;
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
     softLimitTime = context.page4.SoftLimMax;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 }
@@ -604,7 +782,7 @@ static void test_checkCoolantLimit_trigger_and_equal(void) {
     TEST_ASSERT_TRUE(checkCoolantLimit(context.current, context.page6, context.page9));
 
     context.setCoolantActive();
-    context.current.RPMdiv100 = coolantProtectTable.values[0]; // equal -> no trigger
+    setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0]));
     TEST_ASSERT_FALSE(checkCoolantLimit(context.current, context.page6, context.page9));
 }
 
@@ -887,12 +1065,21 @@ void runAllTests(void)
     RUN_TEST_P(test_checkCoolantLimit_disabled);
     RUN_TEST_P(test_checkCoolantLimit_trigger_and_equal);
     RUN_TEST_P(test_checkEngineProtection);
+    RUN_TEST_P(test_getHardRevLimit);
+    RUN_TEST_P(test_applyEngineProtectionRevLimit);
+    RUN_TEST_P(test_applyEngineProtectionRevLimit_multiple_protections_lowest_wins);
+    RUN_TEST_P(test_applyHardLaunchRevLimit);
+    RUN_TEST_P(test_applyFlatShiftRevLimit);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_nosync);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_both);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels_cut);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_cut);
+    RUN_TEST_P(test_getMaxRpm_hard_fixed_limit);
+    RUN_TEST_P(test_getMaxRpm_coolant_limit);
+    RUN_TEST_P(test_getMaxRpm_engineProtectMaxRPM_applies);
+    RUN_TEST_P(test_getMaxRpm_launch_and_flatshift_priority);
     }
 }
 
