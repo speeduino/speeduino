@@ -148,13 +148,7 @@ TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 
       && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
 }
 
-BEGIN_LTO_ALWAYS_INLINE(bool) checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
-{
-  return checkEngineProtect(current, page4, page6, page9, page10, millis());
-}
-END_LTO_INLINE();
-
-uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   //Hardcut RPM limit
   uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
@@ -201,7 +195,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   //Check for any of the engine protections or rev limiters being turned on
   uint16_t maxAllowedRPM = checkRevLimit(current, page4, page6, page9); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
   //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
-  if( checkEngineProtect(current, page4, page6, page9, page10) && (page4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = page4.engineProtectMaxRPM; }
+  if( checkEngineProtect(current, page4, page6, page9, page10, millis()) && (page4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = page4.engineProtectMaxRPM; }
   if ( (current.launchingHard == true) && (page6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = page6.lnchHardLim; }
   maxAllowedRPM = maxAllowedRPM * 100U; //All of the above limits are divided by 100, convert back to RPM
   if ( (current.flatShiftingHard == true) && (current.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = current.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
