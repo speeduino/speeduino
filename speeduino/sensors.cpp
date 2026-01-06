@@ -207,7 +207,7 @@ void initialiseADC(void)
       if( pinIsUsed(pinNumber) )
       {
         //Do nothing here as the pin is already in use.
-        currentStatus.engineProtectIoError = true; //Tell user that there is problem by lighting up the I/O error indicator
+        currentStatus.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
       }
       else
       {
@@ -225,7 +225,7 @@ void initialiseADC(void)
        if( pinIsUsed(pinNumber) )
        {
           //Do nothing here as the pin is already in use.
-          currentStatus.engineProtectIoError = true; //Tell user that there is problem by lighting up the I/O error indicator
+          currentStatus.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
        }
        else
        {
@@ -436,7 +436,7 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 
 TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && (current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && (current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.startRevolutions > 1U) && (!current.engineProtect.isActive());
   }
   return false; // Just here to avoid compiler warning.
 }
