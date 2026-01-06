@@ -30,7 +30,7 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const
       //Check if this is the first time we've been below the limit
       if(oilProtEndTime == 0U) { oilProtEndTime = currMillis + TIME_TEN_MILLIS.toUser(page10.oilPressureProtTime); }
       /* Check if countdown has reached its target, if so then instruct to cut */
-      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtectOil);
+      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtect.oil);
     }
     else 
     { 
@@ -140,11 +140,11 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
 
 TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis)
 {
-  current.engineProtectBoostCut = checkBoostLimit(current, page6);
-  current.engineProtectOil = checkOilPressureLimit(current, page6, page10, currMillis);
-  current.engineProtectAfr = checkAFRLimit(current, page6, page9, currMillis);
+  current.engineProtect.boostCut = checkBoostLimit(current, page6);
+  current.engineProtect.oil = checkOilPressureLimit(current, page6, page10, currMillis);
+  current.engineProtect.afr = checkAFRLimit(current, page6, page9, currMillis);
 
-  return (current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
+  return (current.engineProtect.boostCut || current.engineProtect.oil || current.engineProtect.afr)
       && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
 }
 
@@ -152,15 +152,15 @@ TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &p
 {
   //Hardcut RPM limit
   uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  current.engineProtectRpm = false;
-  current.engineProtectClt = false;
+  current.engineProtect.rpm = false;
+  current.engineProtect.coolant = false;
 
   if (page6.engineProtectType != PROTECT_CUT_OFF) 
   {
     if(page9.hardRevMode == HARD_REV_FIXED)
     {
       currentLimitRPM = page4.HardRevLim;
-      current.engineProtectRpm = (current.RPMdiv100 >= page4.HardRevLim) 
+      current.engineProtect.rpm = (current.RPMdiv100 >= page4.HardRevLim) 
                               || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim));
     }
     else if(page9.hardRevMode == HARD_REV_COOLANT )
@@ -168,8 +168,8 @@ TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &p
       currentLimitRPM = table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
       if(current.RPMdiv100 > currentLimitRPM)
       {
-        current.engineProtectClt = true;
-        current.engineProtectRpm = true;
+        current.engineProtect.coolant = true;
+        current.engineProtect.rpm = true;
       } 
     }
   }
@@ -218,7 +218,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
         //Make sure all channels are turned on
         cutState.ignitionChannels = 0xFF;
         cutState.fuelChannels = 0xFF;
-        resetEngineProtect(current);
+        current.engineProtect.reset();
         break;
       case PROTECT_CUT_IGN:
         cutState.ignitionChannels = 0;
@@ -307,7 +307,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   } //Rolling cut check
   else
   {
-    resetEngineProtect(current);
+    current.engineProtect.reset();
     //No engine protection active, so turn all the channels on
     if(current.startRevolutions >= page4.StgCycles)
     { 

@@ -248,7 +248,7 @@ static eventAverageMAPReading_test_data setup_event_average(void) {
   context.page2.mapSwitchPoint = 15; 
   context.current.startRevolutions = 55;
   decoderStatus.syncStatus = SyncStatus::Full;
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 
   context.event_average.eventStartIndex = 0;
   context.event_average.sampleCount = 0;
@@ -279,25 +279,25 @@ static void test_canUseEventAverage(void) {
   setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseEventAverage(context.current, context.page2));
 
-  context.current.engineProtectRpm = true;
+  context.current.engineProtect.rpm = true;
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 
-  context.current.engineProtectBoostCut = true;
+  context.current.engineProtect.boostCut = true;
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 
-  context.current.engineProtectOil = true;
+  context.current.engineProtect.oil = true;
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 
-  context.current.engineProtectAfr = true;
+  context.current.engineProtect.afr = true;
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 
-  context.current.engineProtectClt = true;
+  context.current.engineProtect.coolant = true;
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  resetEngineProtect(context.current);
+  context.current.engineProtect.reset();
 }
 
 static void test_eventAverageMAPReading_fallback_instantaneous(void) {
@@ -459,7 +459,7 @@ static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Ensure engine protect flags cleared
-  resetEngineProtect(current);
+  current.engineProtect.reset();
   // Set ignitionCount and eventStartIndex equal to trigger accumulate
   ignitionCount = 0;
   alg.event_average.eventStartIndex = (uint8_t)ignitionCount;
