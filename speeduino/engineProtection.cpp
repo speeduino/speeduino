@@ -148,6 +148,21 @@ TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 
       && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
 }
 
+TESTABLE_INLINE_STATIC bool checkRpmLimit(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+{
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.hardRevMode == HARD_REV_FIXED)
+      && ((current.RPMdiv100 >= page4.HardRevLim) 
+        || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim)));
+}
+
+TESTABLE_INLINE_STATIC bool checkCoolantLimit(const statuses &current, const config6 &page6, const config9 &page9)
+{
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.hardRevMode == HARD_REV_COOLANT)
+      && (current.RPMdiv100 > table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
+}
+
 TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   //Hardcut RPM limit
@@ -176,6 +191,22 @@ TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &p
 
   return currentLimitRPM;
 }
+
+statuses::engine_protect_flags_t checkEngineProtection(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+{
+  statuses::engine_protect_flags_t flags = { false, false, false, false, false };
+
+  if (page6.engineProtectType != PROTECT_CUT_OFF) 
+  {
+    flags.boostCut = checkBoostLimit(current, page6);
+    flags.oil = checkOilPressureLimit(current, page6, page10, millis());
+    flags.afr = checkAFRLimit(current, page6, page9, millis());
+    flags.coolant = checkCoolantLimit(current, page6, page9);
+    flags.rpm = flags.coolant || checkRpmLimit(current, page4, page6, page9);
+  }
+
+  return flags;
+};
 
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
