@@ -2,6 +2,13 @@
 #include "../test_harness_native.h"
 #include "engineProtection.h"
 #include "../test_utils.h"
+#include "decoders.h"
+
+static void setSyncStatus(SyncStatus syncStatus)
+{
+    extern decoder_status_t decoderStatus;
+    decoderStatus.syncStatus = syncStatus;
+}
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_4 oilPressureProtectTable;
@@ -48,7 +55,7 @@ static void test_checkOilPressureLimit_disabled(void) {
     config6 page6 = {};
     config10 page10 = {};
     auto current = setup_oil_protect_table_active();
-
+    
     page6.engineProtectType = PROTECT_CUT_OFF;
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 1;
@@ -303,6 +310,7 @@ static void test_checkEngineProtect_no_protections(void) {
     // Ensure RPM above threshold but no protection conditions set
     page4.engineProtectMaxRPM = 5;
     setRpm(current, 1000U);
+    oilProtStartTime = 0;
 
     TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, 0));
     TEST_ASSERT_FALSE(current.engineProtectBoostCut);
@@ -323,6 +331,7 @@ static void test_checkEngineProtect_protection_but_rpm_low(void) {
     page10.oilPressureProtEnbl = 1;
     page10.oilPressureEnable = 1;
     page10.oilPressureProtTime = 0; // immediate
+    oilProtStartTime = 0;
 
      page4.engineProtectMaxRPM = 5;
     setRpm(current, page4.engineProtectMaxRPM * 100U); // not greater than max
@@ -462,6 +471,79 @@ static void test_checkRevLimit_coolant_equal_no_trigger(void) {
     TEST_ASSERT_FALSE(current.engineProtectRpm);
 }
 
+struct calculateFuelIgnitionChannelCut_context_t
+{
+    statuses current = {};
+    config2 page2 = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+    config10 page10 = {};
+};
+
+static void test_calculateFuelIgnitionChannelCut_nosync(void)
+{
+    calculateFuelIgnitionChannelCut_context_t context;
+    resetInternalState();
+    setSyncStatus(SyncStatus::None);
+
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    TEST_ASSERT_EQUAL(0, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL(0, onOff.ignitionChannels);
+}
+
+static void test_calculateFuelIgnitionChannelCut_staging_complete_all_on(void)
+{
+    calculateFuelIgnitionChannelCut_context_t context;
+    resetInternalState();
+    setSyncStatus(SyncStatus::Full);
+    context.current.startRevolutions = 10;
+    context.page4.StgCycles = 5; // staging complete
+
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
+}
+
+static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void)
+{
+    calculateFuelIgnitionChannelCut_context_t context;
+    resetInternalState();
+    setSyncStatus(SyncStatus::Full);
+    context.current.startRevolutions = 10;
+
+    // Force a very low rev limit so current RPM exceeds it
+    context.page2.hardCutType = HARD_CUT_FULL;
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 1; // limit (div100)
+    context.current.RPM = 200; // well over 1*100
+
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels); // fuel remains on
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels); // ignition cut
+    TEST_ASSERT_TRUE(context.current.hardLimitActive);
+}
+
+static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
+{
+    calculateFuelIgnitionChannelCut_context_t context;
+    resetInternalState();
+    setSyncStatus(SyncStatus::Full);
+    context.current.startRevolutions = 10;
+
+    context.page2.hardCutType = HARD_CUT_FULL;
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    context.page4.HardRevLim = 1;
+    context.current.RPM = 200;
+
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
+    TEST_ASSERT_TRUE(context.current.hardLimitActive);
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -487,6 +569,10 @@ void runAllTests(void)
     RUN_TEST_P(test_checkRevLimit_softlimit_triggers);
     RUN_TEST_P(test_checkRevLimit_coolant_mode_triggers_clt);
     RUN_TEST_P(test_checkRevLimit_coolant_equal_no_trigger);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_nosync);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_both);
     }
 }
 

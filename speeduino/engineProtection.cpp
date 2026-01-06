@@ -4,6 +4,7 @@
 #include "units.h"
 #include "unit_testing.h"
 #include "preprocessor.h"
+#include "decoders.h"
 
 TESTABLE_STATIC uint8_t oilProtStartTime = 0;
 TESTABLE_CONSTEXPR table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
@@ -196,4 +197,145 @@ uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &pa
   }
 
   return currentLimitRPM;
+}
+
+TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
+TESTABLE_STATIC uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
+TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
+
+schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+{
+  if (getDecoderStatus().syncStatus==SyncStatus::None)
+  {
+    return { 0x0, 0x0 };
+  }
+
+  schedulers_onoff_t onOff = { 0xFF, 0xFF };
+
+  //Check for any of the engine protections or rev limiters being turned on
+  uint16_t maxAllowedRPM = checkRevLimit(current, page4, page6, page9); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
+  //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
+  if( checkEngineProtect(current, page4, page6, page9, page10) && (page4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = page4.engineProtectMaxRPM; }
+  if ( (current.launchingHard == true) && (page6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = page6.lnchHardLim; }
+  maxAllowedRPM = maxAllowedRPM * 100U; //All of the above limits are divided by 100, convert back to RPM
+  if ( (current.flatShiftingHard == true) && (current.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = current.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
+
+  if(current.RPM >= maxAllowedRPM)
+  {
+    current.hardLimitActive = true;
+  }
+  else if(current.hardLimitActive)
+  {
+    current.hardLimitActive = false;
+  }
+
+  if( (page2.hardCutType == HARD_CUT_FULL) && current.hardLimitActive)
+  {
+    //Full hard cut turns outputs off completely. 
+    switch(page6.engineProtectType)
+    {
+      case PROTECT_CUT_OFF:
+        //Make sure all channels are turned on
+        onOff.ignitionChannels = 0xFF;
+        onOff.fuelChannels = 0xFF;
+        resetEngineProtect(current);
+        break;
+      case PROTECT_CUT_IGN:
+        onOff.ignitionChannels = 0;
+        break;
+      case PROTECT_CUT_FUEL:
+        onOff.fuelChannels = 0;
+        break;
+      case PROTECT_CUT_BOTH:
+        onOff.ignitionChannels = 0;
+        onOff.fuelChannels = 0;
+        break;
+      default:
+        onOff.ignitionChannels = 0;
+        onOff.fuelChannels = 0;
+        break;
+    }
+  } //Hard cut check
+  else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+  { 
+    uint8_t revolutionsToCut = 1;
+    if(page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
+    if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+
+    if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
+    if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (current.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
+    { 
+      uint8_t cutPercent = 0;
+      int16_t rpmDelta = current.RPM - maxAllowedRPM;
+      if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
+      else { cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); } //
+      
+
+      for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
+      {  
+        if( (cutPercent == 100) || (random1to100() < cutPercent) )
+        {
+          switch(page6.engineProtectType)
+          {
+            case PROTECT_CUT_OFF:
+              //Make sure all channels are turned on
+              onOff.ignitionChannels = 0xFF;
+              onOff.fuelChannels = 0xFF;
+              break;
+            case PROTECT_CUT_IGN:
+              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
+              break;
+            case PROTECT_CUT_FUEL:
+              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              break;
+            case PROTECT_CUT_BOTH:
+              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              break;
+            default:
+              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              break;
+          }
+        }
+        else
+        {
+          //Turn fuel and ignition channels on
+
+          //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+          if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
+              (BIT_CHECK(onOff.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+              (page6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
+            )
+          { BIT_SET(ignitionChannelsPending, x); } //Set this ignition channel as pending
+          else { BIT_SET(onOff.ignitionChannels, x); } //Turn on this ignition channel
+            
+          
+          BIT_SET(onOff.fuelChannels, x); //Turn on this fuel channel
+        }
+      }
+      rollingCutLastRev = current.startRevolutions;
+    }
+
+    //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+    //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+    if( (ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
+    {
+      onOff.ignitionChannels = onOff.fuelChannels;
+      ignitionChannelsPending = 0;
+    }
+  } //Rolling cut check
+  else
+  {
+    resetEngineProtect(current);
+    //No engine protection active, so turn all the channels on
+    if(current.startRevolutions >= page4.StgCycles)
+    { 
+      //Enable the fuel and ignition, assuming staging revolutions are complete 
+      onOff.ignitionChannels = 0xff; 
+      onOff.fuelChannels = 0xff; 
+    } 
+  }
+
+  return onOff;
 }
