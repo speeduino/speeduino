@@ -229,18 +229,38 @@ struct statuses {
   byte oilPressure;  /**< Oil pressure in PSI */
 
   // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  struct engine_protect_flags_t
+  {
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool rpm : 1;
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool coolant : 1;
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool boostCut : 1;
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool oil : 1;
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool afr : 1;
+
+    inline bool isActive(void) const {
+      return rpm
+            || coolant
+            || boostCut
+            || oil
+            || afr
+            ;
+    }
+    inline void reset(void) {
+      rpm = false;
+      boostCut = false;
+      oil = false;
+      afr = false;
+      coolant = false;
+    }  
+  };
+  engine_protect_flags_t engineProtect;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectIoError : 1; ///<
+  bool ioError : 1; ///<
 
   byte fanDuty;
   byte wmiPW;
@@ -298,24 +318,6 @@ struct statuses {
   };
   scheduler_cut_t schedulerCutState;
 };
-
-static inline bool isEngineProtectActive(const statuses &status) {
-  return status.engineProtectRpm
-        || status.engineProtectBoostCut
-        || status.engineProtectOil
-        || status.engineProtectAfr
-        || status.engineProtectClt;
-}
-
-static inline void resetEngineProtect(statuses &status) {
-  status.engineProtectRpm = false;
-  status.engineProtectBoostCut = false;
-  status.engineProtectOil = false;
-  status.engineProtectAfr = false;
-  status.engineProtectClt = false;
-  status.engineProtectIoError = false;
-}
-
 
 /**
  * @brief Set the RPM field, keeping RPMDiv100 in sync.

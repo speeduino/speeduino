@@ -234,7 +234,7 @@ static void test_checkOilPressureLimit_existing_engineProtect_forces_cut(void)
     oilProtEndTime = now + 5000UL; // future
 
     // Even though timer hasn't expired, existing engineProtect.oil should force a cut
-    context.current.engineProtectOil = true;
+    context.current.engineProtect.oil = true;
     TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, now));
 }
 
@@ -400,9 +400,9 @@ static void test_checkEngineProtect_no_protections(void) {
     setRpm(context.current, 1000);
 
     TEST_ASSERT_FALSE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, 0));
-    TEST_ASSERT_FALSE(context.current.engineProtectBoostCut);
-    TEST_ASSERT_FALSE(context.current.engineProtectOil);
-    TEST_ASSERT_FALSE(context.current.engineProtectAfr);
+    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
+    TEST_ASSERT_FALSE(context.current.engineProtect.oil);
+    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
 }
 
 static void test_checkEngineProtect_protection_but_rpm_low(void) {
@@ -414,9 +414,9 @@ static void test_checkEngineProtect_protection_but_rpm_low(void) {
     setRpm(context.current, RPM_COARSE.toUser(context.page4.engineProtectMaxRPM)); // not greater than max
 
     TEST_ASSERT_FALSE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, millis()));
-    TEST_ASSERT_FALSE(context.current.engineProtectBoostCut);
-    TEST_ASSERT_TRUE(context.current.engineProtectOil);
-    TEST_ASSERT_FALSE(context.current.engineProtectAfr);
+    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
+    TEST_ASSERT_TRUE(context.current.engineProtect.oil);
+    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
 }
 
 static void test_checkEngineProtect_protection_and_rpm_high(void) {
@@ -427,9 +427,9 @@ static void test_checkEngineProtect_protection_and_rpm_high(void) {
     setRpm(context.current, RPM_COARSE.toUser(context.page4.engineProtectMaxRPM+1U)); // greater than max
 
     TEST_ASSERT_TRUE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, millis()));
-    TEST_ASSERT_FALSE(context.current.engineProtectBoostCut);
-    TEST_ASSERT_TRUE(context.current.engineProtectOil);
-    TEST_ASSERT_FALSE(context.current.engineProtectAfr);
+    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
+    TEST_ASSERT_TRUE(context.current.engineProtect.oil);
+    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
 }
 
 static void test_checkRevLimit_disabled(void) {
@@ -438,8 +438,8 @@ static void test_checkRevLimit_disabled(void) {
 
     context.page6.engineProtectType = PROTECT_CUT_OFF;
     TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtectRpm);
-    TEST_ASSERT_FALSE(context.current.engineProtectClt);
+    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
+    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
 }
 
 static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
@@ -449,13 +449,13 @@ static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
 
     setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U));
     TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtectClt);
-    TEST_ASSERT_FALSE(context.current.engineProtectRpm);
+    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
+    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
 
     setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim));
     TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtectClt);
-    TEST_ASSERT_TRUE(context.current.engineProtectRpm);
+    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
+    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
 }
 
 static void test_checkRevLimit_softlimit_triggers(void) {
@@ -471,7 +471,7 @@ static void test_checkRevLimit_softlimit_triggers(void) {
     setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
 
     TEST_ASSERT_EQUAL_UINT8(context.page4.HardRevLim, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_TRUE(context.current.engineProtectRpm);
+    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
 }
 
 static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
@@ -482,8 +482,8 @@ static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
     setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0]+1U)); // greater than 40 -> should trigger
 
     TEST_ASSERT_EQUAL_UINT8(40, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_TRUE(context.current.engineProtectClt);
-    TEST_ASSERT_TRUE(context.current.engineProtectRpm);
+    TEST_ASSERT_TRUE(context.current.engineProtect.coolant);
+    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
 }
 
 static void test_checkRevLimit_coolant_equal_no_trigger(void) {
@@ -494,8 +494,8 @@ static void test_checkRevLimit_coolant_equal_no_trigger(void) {
     setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0])); // equal to limit -> should NOT trigger (uses >)
 
     TEST_ASSERT_EQUAL_UINT8(40, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtectClt);
-    TEST_ASSERT_FALSE(context.current.engineProtectRpm);
+    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
+    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
 }
 
 static void test_calculateFuelIgnitionChannelCut_nosync(void)

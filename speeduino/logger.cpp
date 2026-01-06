@@ -154,13 +154,13 @@ static byte buildAirConStatus(const statuses &current)
 static byte buildEngineProtectStatus(const statuses &current)
 {
   bool bits[] = {
-    current.engineProtectRpm,
-    current.engineProtectBoostCut,
-    current.engineProtectOil,
-    current.engineProtectAfr,
-    current.engineProtectClt,
+    current.engineProtect.rpm,
+    current.engineProtect.boostCut,
+    current.engineProtect.oil,
+    current.engineProtect.afr,
+    current.engineProtect.coolant,
     false, // Unused
-    current.engineProtectIoError,    
+    current.ioError,    
   };
   return setStatusBits(0, bits);
 }
