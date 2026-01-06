@@ -568,6 +568,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
           }
         }
+
+      currentStatus.engineProtect = checkEngineProtection(currentStatus, configPage4, configPage6, configPage9, configPage10);
       //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
 

@@ -16,6 +16,8 @@ extern table2D_u8_u8_4 oilPressureProtectTable;
 extern uint32_t oilProtEndTime;
 
 extern bool checkBoostLimit(const statuses &current, const config6 &page6);
+extern bool checkRpmLimit(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
+extern bool checkCoolantLimit(const statuses &current, const config6 &page6, const config9 &page9);
 
 extern bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
 extern bool checkAFRLimitActive;
@@ -129,6 +131,11 @@ struct engineProtection_test_context_t
 
         page6.engineProtectType = PROTECT_CUT_IGN;
         page9.hardRevMode = type;
+        page4.HardRevLim = 80;
+        page4.SoftRevLim = 60;
+        page4.SoftLimMax = 5;
+        current.RPMdiv100 = page4.HardRevLim;
+        current.RPM = current.RPMdiv100 * 100U;
     }
 
     void setBeyondStaging(void)
@@ -155,6 +162,19 @@ struct engineProtection_test_context_t
         page4.HardRevLim = 10; // div100 -> 1000 RPM
         setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10)); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
         current.schedulerCutState = { 0x00, 0xFF, 0xFF };
+    }
+
+    void setCoolantActive(void)
+    {
+        resetInternalState();
+        page9.hardRevMode = HARD_REV_COOLANT;
+        page6.engineProtectType = PROTECT_CUT_IGN;
+
+        // populate table with constant 40
+        populateCoolantProtectTable();
+
+        current.coolant = 0;
+        current.RPMdiv100 = coolantProtectTable.values[0] + 1; // greater -> trigger
     }
 };
 
@@ -498,6 +518,139 @@ static void test_checkRevLimit_coolant_equal_no_trigger(void) {
     TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
 }
 
+static void test_checkRpmLimit_disabled(void) {
+    engineProtection_test_context_t context;
+
+    context.setRpmActive(HARD_REV_FIXED);
+    context.page6.engineProtectType = PROTECT_CUT_OFF;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    context.setRpmActive(HARD_REV_COOLANT);
+    context.page6.engineProtectType = PROTECT_CUT_OFF;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    context.setRpmActive(HARD_REV_COOLANT);
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    context.setRpmActive(HARD_REV_COOLANT);
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    context.setRpmActive(HARD_REV_COOLANT);
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    // soft limit active and RPM < soft rev lim should not trigger
+    context.setRpmActive(HARD_REV_FIXED);
+    context.current.RPMdiv100 = context.page4.SoftRevLim-1U;
+    softLimitTime = context.page4.SoftLimMax + 1;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+}
+
+static void test_checkRpmLimit_fixed_and_softlimit(void) {
+    engineProtection_test_context_t context;
+    context.setRpmActive(HARD_REV_FIXED);
+
+    // below hard limit
+    context.current.RPMdiv100 = context.page4.HardRevLim - 1U;
+    context.current.RPM = context.current.RPMdiv100 * 100U;
+    softLimitTime = 0;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    // equal to hard limit triggers
+    context.setRpmActive(HARD_REV_FIXED);
+    TEST_ASSERT_TRUE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    // soft limit active and RPM >= soft rev lim should trigger
+    context.setRpmActive(HARD_REV_FIXED);
+    context.current.RPMdiv100 = context.page4.SoftRevLim;
+    context.current.RPM = context.current.RPMdiv100 * 100U;
+    softLimitTime = context.page4.SoftLimMax + 1;
+    TEST_ASSERT_TRUE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+
+    // soft limit equality should not trigger
+    context.setRpmActive(HARD_REV_FIXED);
+    context.current.RPMdiv100 = context.page4.SoftRevLim;
+    context.current.RPM = context.current.RPMdiv100 * 100U;
+    softLimitTime = context.page4.SoftLimMax;
+    TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
+}
+
+static void test_checkCoolantLimit_disabled(void) {
+    engineProtection_test_context_t context;
+
+    context.setCoolantActive();
+    context.page6.engineProtectType = PROTECT_CUT_OFF;
+    TEST_ASSERT_FALSE(checkCoolantLimit(context.current, context.page6, context.page9));
+
+    context.setCoolantActive();
+    context.page9.hardRevMode = HARD_REV_FIXED;
+    TEST_ASSERT_FALSE(checkCoolantLimit(context.current, context.page6, context.page9));
+}
+
+static void test_checkCoolantLimit_trigger_and_equal(void) {
+    engineProtection_test_context_t context;
+
+    context.setCoolantActive();
+    TEST_ASSERT_TRUE(checkCoolantLimit(context.current, context.page6, context.page9));
+
+    context.setCoolantActive();
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    TEST_ASSERT_TRUE(checkCoolantLimit(context.current, context.page6, context.page9));
+
+    context.setCoolantActive();
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    TEST_ASSERT_TRUE(checkCoolantLimit(context.current, context.page6, context.page9));
+
+    context.setCoolantActive();
+    context.current.RPMdiv100 = coolantProtectTable.values[0]; // equal -> no trigger
+    TEST_ASSERT_FALSE(checkCoolantLimit(context.current, context.page6, context.page9));
+}
+
+static void test_checkEngineProtection(void) {
+    {
+        engineProtection_test_context_t context;
+        context.setOilPressureActive();
+        context.setBoostActive();
+        context.setAfrActive();
+        context.setCoolantActive();
+        auto flags = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+        TEST_ASSERT_TRUE(flags.boostCut);
+        TEST_ASSERT_TRUE(flags.oil);
+        TEST_ASSERT_TRUE(flags.afr);
+        TEST_ASSERT_TRUE(flags.coolant);
+        TEST_ASSERT_TRUE(flags.rpm); // Active when coolant active
+    }
+
+    {
+        engineProtection_test_context_t context;
+        context.setRpmActive(HARD_REV_FIXED);
+        auto flags = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+        TEST_ASSERT_FALSE(flags.boostCut);
+        TEST_ASSERT_FALSE(flags.oil);
+        TEST_ASSERT_FALSE(flags.afr);
+        TEST_ASSERT_FALSE(flags.coolant);
+        TEST_ASSERT_TRUE(flags.rpm);
+    }
+
+    // Even if parameters would normally trigger, engineProtectType off disables checks
+    {
+        engineProtection_test_context_t context;
+        context.setOilPressureActive();
+        context.setBoostActive();
+        context.setAfrActive();
+        context.setCoolantActive();
+        context.page6.engineProtectType = PROTECT_CUT_OFF;
+        auto flags = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+        TEST_ASSERT_FALSE(flags.boostCut);
+        TEST_ASSERT_FALSE(flags.oil);
+        TEST_ASSERT_FALSE(flags.afr);
+        TEST_ASSERT_FALSE(flags.coolant);
+        TEST_ASSERT_FALSE(flags.rpm);
+    }
+}
+
 static void test_calculateFuelIgnitionChannelCut_nosync(void)
 {
     engineProtection_test_context_t context;
@@ -729,6 +882,11 @@ void runAllTests(void)
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastRev);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_pending_ignition_clears_deterministic);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_lastRev);
+    RUN_TEST_P(test_checkRpmLimit_disabled);
+    RUN_TEST_P(test_checkRpmLimit_fixed_and_softlimit);
+    RUN_TEST_P(test_checkCoolantLimit_disabled);
+    RUN_TEST_P(test_checkCoolantLimit_trigger_and_equal);
+    RUN_TEST_P(test_checkEngineProtection);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_nosync);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only);
