@@ -1,6 +1,5 @@
 #include "../device_test_harness.h"
-#include "statuses.h"
-#include "config_pages.h"
+#include "engineProtection.h"
 #include "../test_utils.h"
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
@@ -157,6 +156,18 @@ static void test_checkBoostLimit_no_activate_when_map_low(void) {
     TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
 }
 
+static void test_checkBoostLimit_equal_to_threshold_no_trigger(void) {
+    statuses current = {};
+    config6 page6 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.boostCutEnabled = 1;
+    page6.boostLimit = 50;
+    current.MAP = (long)(page6.boostLimit * 2UL); // exactly equal
+
+    TEST_ASSERT_FALSE(checkBoostLimit(current, page6));
+}
+
 static statuses setup_afr_protect_active(void) {
     statuses current = {};
     current.MAP = 200; // kPa-like units; ensure above any small min*2
@@ -187,6 +198,52 @@ static void test_checkAFRLimit_disabled_conditions(void) {
     page9.afrProtectEnabled = AFR_PROTECT_FIXED;
     page6.egoType = 0; // not EGO_TYPE_WIDE
     TEST_ASSERT_FALSE(checkAFRLimit(current, page6, page9, 0));
+}
+
+static void test_checkAFRLimit_immediate_cut_time_zero(void) {
+    config6 page6 = {};
+    config9 page9 = {};
+    statuses current = setup_afr_protect_active();
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.egoType = EGO_TYPE_WIDE;
+    page9.afrProtectEnabled = AFR_PROTECT_FIXED;
+    page9.afrProtectMinMAP = 1;
+    page9.afrProtectMinRPM = 1;
+    page9.afrProtectMinTPS = 1;
+    page9.afrProtectDeviation = 15; // current.O2=20 >= 15
+    page9.afrProtectCutTime = 0; // immediate
+
+    checkAFRLimitActive = false;
+    afrProtectCountEnabled = false;
+    afrProtectCount = 0;
+
+    TEST_ASSERT_TRUE(checkAFRLimit(current, page6, page9, 1234));
+    TEST_ASSERT_TRUE(checkAFRLimitActive);
+}
+
+static void test_checkAFRLimit_table_mode_boundary(void) {
+    config6 page6 = {};
+    config9 page9 = {};
+    statuses current = setup_afr_protect_active();
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page6.egoType = EGO_TYPE_WIDE;
+    page9.afrProtectEnabled = AFR_PROTECT_TABLE;
+    page9.afrProtectMinMAP = 50;
+    page9.afrProtectMinRPM = 10;
+    page9.afrProtectMinTPS = 10;
+    page9.afrProtectDeviation = 5; // will be added to afrTarget (10) -> limit 15
+    page9.afrProtectCutTime = 0;
+
+    // current.O2 exactly at target+deviation (10+5=15) should trigger
+    current.O2 = current.afrTarget + page9.afrProtectDeviation;
+
+    checkAFRLimitActive = false;
+    afrProtectCountEnabled = false;
+    afrProtectCount = 0;
+
+    TEST_ASSERT_TRUE(checkAFRLimit(current, page6, page9, 0));
 }
 
 static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) {
@@ -371,6 +428,29 @@ static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
     TEST_ASSERT_TRUE(current.engineProtectRpm);
 }
 
+static void test_checkRevLimit_coolant_equal_no_trigger(void) {
+    statuses current = {};
+    config4 page4 = {};
+    config6 page6 = {};
+    config9 page9 = {};
+
+    page6.engineProtectType = PROTECT_CUT_IGN;
+    page9.hardRevMode = HARD_REV_COOLANT;
+
+    // Populate coolant protection table with constant 40 (6-entry axis)
+    TEST_DATA_P uint8_t bins[] = { 0, 50, 100, 150, 200, 255 };
+    TEST_DATA_P uint8_t values[] = { 40, 40, 40, 40, 40, 40 };
+    populate_2dtable_P(&coolantProtectTable, values, bins);
+
+    current.coolant = 0;
+    current.RPMdiv100 = 40; // equal to limit -> should NOT trigger (uses >)
+
+    uint8_t limit = checkRevLimit(current, page4, page6, page9);
+    TEST_ASSERT_EQUAL_UINT8(40, limit);
+    TEST_ASSERT_FALSE(current.engineProtectClt);
+    TEST_ASSERT_FALSE(current.engineProtectRpm);
+}
+
 void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
@@ -383,8 +463,11 @@ void runAllTests(void)
     RUN_TEST_P(test_checkBoostLimit_disabled_by_flag);
     RUN_TEST_P(test_checkBoostLimit_activate_when_conditions_met);
     RUN_TEST_P(test_checkBoostLimit_no_activate_when_map_low);
+    RUN_TEST_P(test_checkBoostLimit_equal_to_threshold_no_trigger);
     RUN_TEST_P(test_checkAFRLimit_disabled_conditions);
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
+    RUN_TEST_P(test_checkAFRLimit_immediate_cut_time_zero);
+    RUN_TEST_P(test_checkAFRLimit_table_mode_boundary);
     RUN_TEST_P(test_checkEngineProtect_no_protections);
     RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
     RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);
@@ -392,6 +475,7 @@ void runAllTests(void)
     RUN_TEST_P(test_checkRevLimit_fixed_mode_no_trigger_and_trigger);
     RUN_TEST_P(test_checkRevLimit_softlimit_triggers);
     RUN_TEST_P(test_checkRevLimit_coolant_mode_triggers_clt);
+    RUN_TEST_P(test_checkRevLimit_coolant_equal_no_trigger);
     }
 }
 
