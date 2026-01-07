@@ -665,7 +665,7 @@ void doUpdates(void)
     }
 
     //AFR Protection added, add default values
-    configPage9.afrProtectEnabled = 0; //Disable by default
+    configPage9.afrProtectEnabled = AFR_PROTECT_OFF; //Disable by default
     configPage9.afrProtectMinMAP = 90; //Is divided by 2, value represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min

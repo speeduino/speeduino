@@ -1,9 +1,8 @@
+#pragma once
 
-#define HARD_REV_FIXED    1
-#define HARD_REV_COOLANT  2
+#include "statuses.h"
+#include "config_pages.h"
 
-byte checkEngineProtect(void);
-byte checkRevLimit(void);
-byte checkBoostLimit(void);
-byte checkOilPressureLimit(void);
-byte checkAFRLimit(void);
+bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10);
+
+uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
