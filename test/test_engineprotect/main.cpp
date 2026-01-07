@@ -13,7 +13,7 @@ static void setSyncStatus(SyncStatus syncStatus)
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_4 oilPressureProtectTable;
-extern uint8_t oilProtStartTime;
+extern uint32_t oilProtEndTime;
 
 extern bool checkBoostLimit(const statuses &current, const config6 &page6);
 
@@ -29,7 +29,7 @@ extern uint8_t softLimitTime;
 
 static void resetInternalState(void)
 {
-    oilProtStartTime = 0;
+    oilProtEndTime = 0;
     checkAFRLimitActive = false;
     afrProtectCountEnabled = false;
     afrProtectCount = 0;
@@ -150,12 +150,11 @@ static void test_checkOilPressureLimit_activate_when_time_expires(void) {
     engineProtection_test_context_t context;
     context.setOilPressureActive(); 
 
-    context.page10.oilPressureProtTime = 21; 
-    oilProtStartTime = 100;
+    oilProtEndTime = 10000;
 
-    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, (oilProtStartTime+context.page10.oilPressureProtTime-1)*100));
-    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, (oilProtStartTime+context.page10.oilPressureProtTime)*100));
-    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, (oilProtStartTime+context.page10.oilPressureProtTime+1)*100));
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime-1));
+    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime));
+    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime+1));
 }
 
 static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {

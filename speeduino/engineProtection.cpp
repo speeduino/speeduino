@@ -5,8 +5,9 @@
 #include "unit_testing.h"
 #include "preprocessor.h"
 #include "decoders.h"
+#include "units.h"
 
-TESTABLE_STATIC uint8_t oilProtStartTime = 0;
+TESTABLE_STATIC uint32_t oilProtEndTime;
 TESTABLE_CONSTEXPR table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
 TESTABLE_CONSTEXPR table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
@@ -27,16 +28,13 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const
     if(current.oilPressure < oilLimit)
     {
       //Check if this is the first time we've been below the limit
-      if(oilProtStartTime == 0U) { oilProtStartTime = div100(currMillis); }
+      if(oilProtEndTime == 0U) { oilProtEndTime = currMillis + TIME_TEN_MILLIS.toUser(page10.oilPressureProtTime); }
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if( (uint8_t(div100(currMillis)) >= (uint16_t(oilProtStartTime + page10.oilPressureProtTime)) ) || (current.engineProtectOil) )
-      {
-        engineProtectOil = true;
-      }
+      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtectOil);
     }
     else 
     { 
-      oilProtStartTime = 0; //Reset the timer
+      oilProtEndTime = 0; //Reset the timer
     }
   }
 
