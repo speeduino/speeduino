@@ -306,33 +306,25 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   //Check for any of the engine protections or rev limiters being turned on
   uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
 
-  if(current.RPM >= maxAllowedRPM)
-  {
-    cutState.hardLimitActive = true;
-  }
-  else if(cutState.hardLimitActive)
-  {
-    cutState.hardLimitActive = false;
-  }
-
-  if( (page2.hardCutType == HARD_CUT_FULL) && cutState.hardLimitActive)
+  // Full cut is always applied if RPM exceeds max allowed
+  // regardless of page2.hardCutType
+  if (current.RPM >= maxAllowedRPM)
   {
     return applyFullCut(page6);
   } //Hard cut check
   else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
   { 
+    cutState.hardLimitActive = false; 
     uint8_t revolutionsToCut = 1;
     if(page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
     if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
 
     if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
-    if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (current.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
+    if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
     { 
       uint8_t cutPercent = 0;
       int16_t rpmDelta = current.RPM - maxAllowedRPM;
-      if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
-      else { cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); } //
-      
+      cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) );      
 
       for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
       {  
@@ -385,6 +377,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   } //Rolling cut check
   else
   {
+    cutState.hardLimitActive = false; 
     current.engineProtect.reset();
     return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .hardLimitActive = false };
   }
