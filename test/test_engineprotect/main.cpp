@@ -49,6 +49,7 @@ struct rollingCutRandFunc_override_t
     randFunc _oldFunc;
 };
 
+extern bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM);
 extern uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
 
 extern uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9);
@@ -82,8 +83,8 @@ static void populateCoolantProtectTable(void)
 
 static void populateRollingCutTable(void)
 {
-    TEST_DATA_P int8_t bins[] = { -20, -10, 0, 10 };
-    TEST_DATA_P uint8_t values[] = { 100, 50, 25, 0 };
+    TEST_DATA_P int8_t bins[] = { -20, -15, -10, -1 };
+    TEST_DATA_P uint8_t values[] = { 0, 25, 50, 100 };
     populate_2dtable_P(&rollingCutTable, values, bins);
 }
 
@@ -984,6 +985,35 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     TEST_ASSERT_EQUAL_UINT32(0U, rollingCutLastRev);
 }
 
+static void test_useRollingCut(void)
+{
+    engineProtection_test_context_t context;
+    constexpr uint16_t maxRPM = 5000U;
+    
+    // Test with HARD_CUT_FULL
+    context.setHardCutRolling();
+    context.page2.hardCutType = HARD_CUT_FULL;
+    setRpm(context.current, maxRPM);
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+    setRpm(context.current, maxRPM + (rollingCutTable.axis[2] * 10));
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+
+    context.setHardCutRolling();
+    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)-1); // below threshold    
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)); // exactly at threshold - should NOT trigger (needs >)
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)+1); // just above threshold - cut
+    TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
+
+    setRpm(context.current, maxRPM); // At max - no rolling cut
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+    setRpm(context.current, maxRPM+1); // Above max - no rolling cut
+    TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
+    setRpm(context.current, maxRPM - 1); // just below threshold - cut
+    TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
+}
+
 // Deterministic RNG stubs for tests
 static uint8_t deterministic_rand_low(void)  { return 1U; }   // always triggers (< cutPercent)
 static uint8_t deterministic_rand_high(void) { return 255U; } // never triggers (>= cutPercent)
@@ -1084,6 +1114,7 @@ void runAllTests(void)
     RUN_TEST_P(test_getMaxRpm_coolant_limit);
     RUN_TEST_P(test_getMaxRpm_engineProtectMaxRPM_applies);
     RUN_TEST_P(test_getMaxRpm_launch_and_flatshift_priority);
+    RUN_TEST_P(test_useRollingCut);
     }
 }
 
