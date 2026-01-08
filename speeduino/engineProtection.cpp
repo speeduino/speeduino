@@ -272,9 +272,15 @@ TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
 
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
-  if (getDecoderStatus().syncStatus==SyncStatus::None)
+  if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
   {
-    return { 0x0, 0x0, 0x0, false };
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .hardLimitActive = false };
+  }
+  if (page6.engineProtectType==PROTECT_CUT_OFF)
+  {
+    //Make sure all channels are turned on
+    current.engineProtect.reset();
+    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .hardLimitActive = false };
   }
 
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
@@ -344,11 +350,6 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
         {
           switch(page6.engineProtectType)
           {
-            case PROTECT_CUT_OFF:
-              //Make sure all channels are turned on
-              cutState.ignitionChannels = 0xFF;
-              cutState.fuelChannels = 0xFF;
-              break;
             case PROTECT_CUT_IGN:
               BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
               break;
@@ -395,13 +396,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   else
   {
     current.engineProtect.reset();
-    //No engine protection active, so turn all the channels on
-    if(current.startRevolutions >= page4.StgCycles)
-    { 
-      //Enable the fuel and ignition, assuming staging revolutions are complete 
-      cutState.ignitionChannels = 0xff; 
-      cutState.fuelChannels = 0xff; 
-    } 
+    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .hardLimitActive = false };
   }
 
   return cutState;
