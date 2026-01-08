@@ -51,6 +51,7 @@ struct rollingCutRandFunc_override_t
 
 extern bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM);
 extern uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4);
+extern uint8_t calcRollingCutPercentage(const statuses &current, uint16_t maxAllowedRPM);
 extern uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
 
 extern uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9);
@@ -1061,6 +1062,26 @@ static void test_calcRollingCutRevolutions(void)
     TEST_ASSERT_EQUAL_UINT8(4, calcRollingCutRevolutions(context.page2, context.page4));
 }
 
+static void test_calcRollingCutPercentage(void)
+{
+    engineProtection_test_context_t context;
+    context.setHardCutRolling();    
+    constexpr uint16_t maxRPM = 5000U;
+    
+    setRpm(context.current, maxRPM);
+    TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
+    setRpm(context.current, maxRPM+1);
+    TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
+    setRpm(context.current, maxRPM+1000);
+    TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
+    
+    setRpm(context.current, maxRPM+(rollingCutTable.axis[2]*10));
+    TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[2], calcRollingCutPercentage(context.current, maxRPM));
+    
+    // Test division underflow.
+    setRpm(context.current, maxRPM+(INT8_MIN*11));
+    TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[0], calcRollingCutPercentage(context.current, maxRPM));
+}
 
 // Deterministic RNG stubs for tests
 static uint8_t deterministic_rand_low(void)  { return 1U; }   // always triggers (< cutPercent)
@@ -1164,6 +1185,7 @@ void runAllTests(void)
     RUN_TEST_P(test_getMaxRpm_launch_and_flatshift_priority);
     RUN_TEST_P(test_useRollingCut);
     RUN_TEST_P(test_calcRollingCutRevolutions);
+    RUN_TEST_P(test_calcRollingCutPercentage);
     }
 }
 

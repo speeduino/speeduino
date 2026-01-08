@@ -305,6 +305,22 @@ TESTABLE_INLINE_STATIC uint8_t calcRollingCutRevolutions(const config2 &page2, c
   return revolutionsToCut;
 }
 
+TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current, uint16_t maxAllowedRPM)
+{
+  int16_t rpmDelta = current.RPM - maxAllowedRPM;
+  //If the current RPM is over the max allowed RPM then cut is full (100%)
+  if (rpmDelta >= 0) { 
+    // 101 is used to make the comparison below simpler
+    return 101U; 
+  }
+  // Avoid underflow
+  if (rpmDelta<((int16_t)INT8_MIN*10)) {
+    return rollingCutTable.values[0];
+  }
+  
+  return table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); 
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
@@ -337,13 +353,11 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
     uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
     if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
     { 
-      uint8_t cutPercent = 0;
-      int16_t rpmDelta = current.RPM - maxAllowedRPM;
-      cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) );      
+      uint8_t cutPercent = calcRollingCutPercentage(current, maxAllowedRPM);
 
       for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
       {  
-        if( (cutPercent == 100) || (rollingCutRandFunc() < cutPercent) )
+        if( rollingCutRandFunc() < cutPercent )
         {
           switch(page6.engineProtectType)
           {
