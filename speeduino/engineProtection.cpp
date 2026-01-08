@@ -265,7 +265,6 @@ TESTABLE_INLINE_STATIC uint16_t getMaxRpm(const statuses &current, const config4
 }
 
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
-TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
 // Test-hookable RNG for rolling cut (defaults to existing random1to100)
 TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
@@ -286,6 +285,16 @@ static inline statuses::scheduler_cut_t applyFullCut(const config6 &page6)
       return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .hardLimitActive = true };
       break;
   }
+}
+
+TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
+
+TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM)
+{
+  //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+  return (page2.hardCutType == HARD_CUT_ROLLING) 
+      && (current.RPM < maxAllowedRPM)
+      && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10)));
 }
 
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
@@ -311,8 +320,8 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   if (current.RPM >= maxAllowedRPM)
   {
     return applyFullCut(page6);
-  } //Hard cut check
-  else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+  }
+  else if (useRollingCut(current, page2, maxAllowedRPM))
   { 
     cutState.hardLimitActive = false; 
     uint8_t revolutionsToCut = 1;
