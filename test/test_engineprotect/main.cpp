@@ -50,6 +50,7 @@ struct rollingCutRandFunc_override_t
 };
 
 extern bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM);
+extern uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4);
 extern uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
 
 extern uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9);
@@ -1014,6 +1015,53 @@ static void test_useRollingCut(void)
     TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
 }
 
+static void test_calcRollingCutRevolutions(void)
+{
+    engineProtection_test_context_t context;
+    
+    // Create a lookup of all possible configurations
+    // 2 stroke types × 2 ignition types × 2 fuel types = 8 combinations
+    
+    // Config 1: 2-stroke, seq ign, seq fuel -> 1
+    context.page2.strokes = TWO_STROKE;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.injLayout = INJ_SEQUENTIAL;
+    TEST_ASSERT_EQUAL_UINT8(1, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 2: 2-stroke, non-seq ign, seq fuel -> 2
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    TEST_ASSERT_EQUAL_UINT8(2, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 3: 2-stroke, seq ign, non-seq fuel -> 2
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.injLayout = INJ_BANKED;
+    TEST_ASSERT_EQUAL_UINT8(2, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 4: 2-stroke, non-seq ign, non-seq fuel -> 2
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    TEST_ASSERT_EQUAL_UINT8(2, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 5: 4-stroke, seq ign, seq fuel -> 2
+    context.page2.strokes = FOUR_STROKE;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.injLayout = INJ_SEQUENTIAL;
+    TEST_ASSERT_EQUAL_UINT8(2, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 6: 4-stroke, non-seq ign, seq fuel -> 4
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    TEST_ASSERT_EQUAL_UINT8(4, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 7: 4-stroke, seq ign, non-seq fuel -> 4
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.injLayout = INJ_BANKED;
+    TEST_ASSERT_EQUAL_UINT8(4, calcRollingCutRevolutions(context.page2, context.page4));
+    
+    // Config 8: 4-stroke, non-seq ign, non-seq fuel -> 4
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    TEST_ASSERT_EQUAL_UINT8(4, calcRollingCutRevolutions(context.page2, context.page4));
+}
+
+
 // Deterministic RNG stubs for tests
 static uint8_t deterministic_rand_low(void)  { return 1U; }   // always triggers (< cutPercent)
 static uint8_t deterministic_rand_high(void) { return 255U; } // never triggers (>= cutPercent)
@@ -1115,6 +1163,7 @@ void runAllTests(void)
     RUN_TEST_P(test_getMaxRpm_engineProtectMaxRPM_applies);
     RUN_TEST_P(test_getMaxRpm_launch_and_flatshift_priority);
     RUN_TEST_P(test_useRollingCut);
+    RUN_TEST_P(test_calcRollingCutRevolutions);
     }
 }
 

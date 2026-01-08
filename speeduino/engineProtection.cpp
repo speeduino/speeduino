@@ -297,6 +297,14 @@ TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2
       && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10)));
 }
 
+TESTABLE_INLINE_STATIC uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4)
+{
+  uint8_t revolutionsToCut = 1;
+  if (page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
+  if ( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+  return revolutionsToCut;
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
@@ -324,11 +332,9 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   else if (useRollingCut(current, page2, maxAllowedRPM))
   { 
     cutState.hardLimitActive = false; 
-    uint8_t revolutionsToCut = 1;
-    if(page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
-    if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
-
     if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
+
+    uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
     if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
     { 
       uint8_t cutPercent = 0;
