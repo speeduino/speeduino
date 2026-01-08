@@ -87,7 +87,7 @@ struct engineProtection_test_context_t
         page6.engineProtectType = PROTECT_CUT_IGN;
         page6.boostCutEnabled = 1;
         page6.boostLimit = 30;
-        current.MAP = (long)(page6.boostLimit * 2UL) + 1;
+        current.MAP = MAP.toUser(page6.boostLimit) + 1;
     }
 
     void setAfrActive(void)
@@ -134,12 +134,12 @@ struct engineProtection_test_context_t
         populateRollingCutTable();
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 10; // div100 -> 1000 RPM
-        current.RPM = (page4.HardRevLim*100U) - (rollingCutTable.axis[0]*10); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
+        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10)); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
         current.schedulerCutState = { 0x00, 0xFF, 0xFF };
     }
 };
 
-static void test_checkOilPressureLimit_disabled(void) {
+static void test_checkOilPressureLimit_disabled_conditions(void) {
     engineProtection_test_context_t context;
     
     context.setOilPressureActive(); 
@@ -165,21 +165,21 @@ static void test_checkOilPressureLimit_disabled(void) {
     context.page10.oilPressureProtEnbl = 0;
     context.page10.oilPressureEnable = 1;
     TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
-}
 
-static void test_checkOilPressureLimit_activate_immediate_when_time_zero(void) {
-    engineProtection_test_context_t context;
     context.setOilPressureActive(); 
-
-    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
+    context.current.oilPressure = 60; // above table min
+    setRpm(context.current, 0U);
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
 }
 
 static void test_checkOilPressureLimit_activate_when_time_expires(void) {
     engineProtection_test_context_t context;
     context.setOilPressureActive(); 
 
-    oilProtEndTime = 10000;
+    oilProtEndTime = 0;
+    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
 
+    oilProtEndTime = 10000;
     TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime-1));
     TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime));
     TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime+1));
@@ -205,7 +205,7 @@ struct checkBoostLimit_context_t
         page6.engineProtectType = PROTECT_CUT_IGN;
         page6.boostCutEnabled = 1;
         page6.boostLimit = 30;
-        current.MAP = (long)(page6.boostLimit * 2UL) + 1;
+        current.MAP = MAP.toUser(page6.boostLimit) + 1;
     }
 
     bool operator()(void)
@@ -219,16 +219,18 @@ static void test_checkBoostLimit_disabled_by_engineProtectType(void) {
 
     context.setBoostActive();
     context.page6.engineProtectType = PROTECT_CUT_OFF;
-
     TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
-}
-
-static void test_checkBoostLimit_disabled_by_flag(void) {
-    engineProtection_test_context_t context;
 
     context.setBoostActive();
     context.page6.boostCutEnabled = 0;
+    TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
 
+    context.setBoostActive();
+    context.current.MAP = (long)(context.page6.boostLimit * 2UL) - 1;
+    TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
+
+    context.setBoostActive();
+    context.current.MAP = (long)(context.page6.boostLimit * 2UL); // exactly equal
     TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
 }
 
@@ -238,24 +240,6 @@ static void test_checkBoostLimit_activate_when_conditions_met(void) {
     context.setBoostActive();
 
     TEST_ASSERT_TRUE(checkBoostLimit(context.current, context.page6));
-}
-
-static void test_checkBoostLimit_no_activate_when_map_low(void) {
-    engineProtection_test_context_t context;
-
-    context.setBoostActive();
-    context.current.MAP = (long)(context.page6.boostLimit * 2UL) - 1;
-
-    TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
-}
-
-static void test_checkBoostLimit_equal_to_threshold_no_trigger(void) {
-    engineProtection_test_context_t context;
-
-    context.setBoostActive();
-    context.current.MAP = (long)(context.page6.boostLimit * 2UL); // exactly equal
-
-    TEST_ASSERT_FALSE(checkBoostLimit(context.current, context.page6));
 }
 
 static void test_checkAFRLimit_disabled_conditions(void) {
@@ -394,10 +378,12 @@ static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
 
     setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U));
     TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
+    TEST_ASSERT_FALSE(context.current.engineProtectClt);
     TEST_ASSERT_FALSE(context.current.engineProtectRpm);
 
     setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim));
     TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
+    TEST_ASSERT_FALSE(context.current.engineProtectClt);
     TEST_ASSERT_TRUE(context.current.engineProtectRpm);
 }
 
@@ -630,15 +616,11 @@ void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
 
-    RUN_TEST_P(test_checkOilPressureLimit_disabled);
-    RUN_TEST_P(test_checkOilPressureLimit_activate_immediate_when_time_zero);
-    RUN_TEST_P(test_checkOilPressureLimit_no_activation_when_above_limit);
+    RUN_TEST_P(test_checkOilPressureLimit_disabled_conditions);
     RUN_TEST_P(test_checkOilPressureLimit_activate_when_time_expires);
+    RUN_TEST_P(test_checkOilPressureLimit_no_activation_when_above_limit);
     RUN_TEST_P(test_checkBoostLimit_disabled_by_engineProtectType);
-    RUN_TEST_P(test_checkBoostLimit_disabled_by_flag);
     RUN_TEST_P(test_checkBoostLimit_activate_when_conditions_met);
-    RUN_TEST_P(test_checkBoostLimit_no_activate_when_map_low);
-    RUN_TEST_P(test_checkBoostLimit_equal_to_threshold_no_trigger);
     RUN_TEST_P(test_checkAFRLimit_disabled_conditions);
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
     RUN_TEST_P(test_checkAFRLimit_immediate_cut_time_zero);
