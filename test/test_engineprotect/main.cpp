@@ -550,6 +550,32 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
     TEST_ASSERT_EQUAL_UINT32(revBefore, rollingCutLastRev);
 }
 
+static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_deterministic(void)
+{
+    engineProtection_test_context_t context;
+    context.setHardCutRolling();
+    context.setRpmActive(HARD_REV_FIXED);
+
+    context.page2.strokes = FOUR_STROKE;
+    context.current.RPM = (context.page4.HardRevLim-1U)*100U; // between (maxAllowed + axis[0]*10) and maxAllowed
+    context.current.maxIgnOutputs = 2;
+    context.current.maxInjOutputs = 2;
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+
+    // Prepare a schedulerCutState where ignition channels are pending
+    context.current.schedulerCutState.fuelChannels = 0x03; // channels 0-1 on
+    context.current.schedulerCutState.ignitionChannels = 0x00;
+    context.current.schedulerCutState.ignitionChannelsPending = 0x03;
+
+    // Ensure rollingCutLastRev is 3 revolutions earlier so inner cut doesn't run but pending clear will
+    rollingCutLastRev = context.current.startRevolutions - 3;
+
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+
+    TEST_ASSERT_EQUAL_HEX8(cut.fuelChannels, cut.ignitionChannels);
+    TEST_ASSERT_EQUAL_UINT8(0, cut.ignitionChannelsPending);
+}
+
 static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_lastRev(void)
 {
     engineProtection_test_context_t context;
@@ -566,7 +592,33 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     TEST_ASSERT_EQUAL_UINT32(0U, rollingCutLastRev);
 }
 
-#if 0
+#if 0 // TODO: refactor calculateFuelIgnitionChannelCut to workaround randomness 
+static void test_calculateFuelIgnitionChannelCut_sets_pending_ignition(void)
+{
+    engineProtection_test_context_t context;
+    context.setHardCutRolling();
+    context.setRpmActive(HARD_REV_FIXED);
+
+    // Use four-stroke mode to exercise the pending-ignition code path
+    context.page2.strokes = FOUR_STROKE;
+    context.current.RPM = (context.page4.HardRevLim-1U)*100U; // sit between thresholds
+    context.current.maxIgnOutputs = 2;
+    context.current.maxInjOutputs = 2;
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+
+    // Ensure scheduler start state has no pending bits
+    context.current.schedulerCutState.fuelChannels = 0x03;
+    context.current.schedulerCutState.ignitionChannels = 0x03;
+    context.current.schedulerCutState.ignitionChannelsPending = 0x00;
+
+    // Ensure rollingCutLastRev is recent so the algorithm may schedule pending ignition
+    rollingCutLastRev = context.current.startRevolutions;
+
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+
+    TEST_ASSERT_NOT_EQUAL(0, cut.ignitionChannelsPending);
+}
+
 static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_after_two_revs(void)
 {
     // This test was removed due to unreliable internal state interactions (random1to100)
@@ -603,6 +655,7 @@ void runAllTests(void)
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_both);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullcut);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastRev);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_pending_ignition_clears_deterministic);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_lastRev);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_nosync);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
