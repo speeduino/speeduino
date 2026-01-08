@@ -270,6 +270,24 @@ TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMD
 // Test-hookable RNG for rolling cut (defaults to existing random1to100)
 TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
 
+static inline statuses::scheduler_cut_t applyFullCut(const config6 &page6)
+{
+  //Full hard cut turns outputs off completely. 
+  switch(page6.engineProtectType)
+  {
+    case PROTECT_CUT_IGN:
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0xFF, .hardLimitActive = true };
+      break;
+    case PROTECT_CUT_FUEL:
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0x00, .hardLimitActive = true };
+      break;
+    case PROTECT_CUT_BOTH:
+    default:
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .hardLimitActive = true };
+      break;
+  }
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
@@ -299,30 +317,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
 
   if( (page2.hardCutType == HARD_CUT_FULL) && cutState.hardLimitActive)
   {
-    //Full hard cut turns outputs off completely. 
-    switch(page6.engineProtectType)
-    {
-      case PROTECT_CUT_OFF:
-        //Make sure all channels are turned on
-        cutState.ignitionChannels = 0xFF;
-        cutState.fuelChannels = 0xFF;
-        current.engineProtect.reset();
-        break;
-      case PROTECT_CUT_IGN:
-        cutState.ignitionChannels = 0;
-        break;
-      case PROTECT_CUT_FUEL:
-        cutState.fuelChannels = 0;
-        break;
-      case PROTECT_CUT_BOTH:
-        cutState.ignitionChannels = 0;
-        cutState.fuelChannels = 0;
-        break;
-      default:
-        cutState.ignitionChannels = 0;
-        cutState.fuelChannels = 0;
-        break;
-    }
+    return applyFullCut(page6);
   } //Hard cut check
   else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
   { 
