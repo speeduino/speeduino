@@ -274,7 +274,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
 {
   if (getDecoderStatus().syncStatus==SyncStatus::None)
   {
-    return { 0x0, 0x0, 0x0 };
+    return { 0x0, 0x0, 0x0, false };
   }
 
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
@@ -289,14 +289,14 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
 
   if(current.RPM >= maxAllowedRPM)
   {
-    current.hardLimitActive = true;
+    cutState.hardLimitActive = true;
   }
-  else if(current.hardLimitActive)
+  else if(cutState.hardLimitActive)
   {
-    current.hardLimitActive = false;
+    cutState.hardLimitActive = false;
   }
 
-  if( (page2.hardCutType == HARD_CUT_FULL) && current.hardLimitActive)
+  if( (page2.hardCutType == HARD_CUT_FULL) && cutState.hardLimitActive)
   {
     //Full hard cut turns outputs off completely. 
     switch(page6.engineProtectType)

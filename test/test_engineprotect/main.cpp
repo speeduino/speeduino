@@ -156,7 +156,7 @@ struct engineProtection_test_context_t
     {
         setBeyondStaging();
         page2.hardCutType = HARD_CUT_FULL;
-        current.schedulerCutState = { 0x00, 0xFF, 0xFF };
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF, false };
     }
 
     void setHardCutRolling(void)
@@ -167,7 +167,7 @@ struct engineProtection_test_context_t
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 10; // div100 -> 1000 RPM
         setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10)); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
-        current.schedulerCutState = { 0x00, 0xFF, 0xFF };
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF, false };
     }
 
     void setCoolantActive(void)
@@ -859,7 +859,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels); // fuel remains on
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels); // ignition cut
-    TEST_ASSERT_TRUE(context.current.hardLimitActive);
+    TEST_ASSERT_TRUE(onOff.hardLimitActive);
 }
 
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
@@ -873,7 +873,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
-    TEST_ASSERT_TRUE(context.current.hardLimitActive);
+    TEST_ASSERT_TRUE(onOff.hardLimitActive);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)

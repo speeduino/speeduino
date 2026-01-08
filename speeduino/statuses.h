@@ -109,8 +109,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
@@ -315,6 +313,7 @@ struct statuses {
     byte ignitionChannelsPending; ///< Any ignition channels that are pending injections before they are resumed
     byte ignitionChannels; ///< Which ignition channels are on (1) or off (0)
     byte fuelChannels; ///< Which fuel channels are on (1) or off (0)
+    bool hardLimitActive; ///< Hard limit status: true == on, false == off 
   };
   scheduler_cut_t schedulerCutState;
 };

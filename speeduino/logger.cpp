@@ -49,7 +49,7 @@ static byte buildStatus2(const statuses &current)
   bool bits[] = {
     current.hardLaunchActive,
     current.softLaunchActive,
-    current.hardLimitActive,
+    current.schedulerCutState.hardLimitActive,
     current.softLimitActive,
     false, // Unused
     false, // Unused
