@@ -287,6 +287,16 @@ struct statuses {
 
   uint8_t maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
   uint8_t maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
+  /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
+  struct scheduler_cut_t
+  {
+    // Using bytes for compactness ATM, but that limits us to 8 fuel and 
+    // 8 ignition channels
+    byte ignitionChannelsPending; ///< Any ignition channels that are pending injections before they are resumed
+    byte ignitionChannels; ///< Which ignition channels are on (1) or off (0)
+    byte fuelChannels; ///< Which fuel channels are on (1) or off (0)
+  };
+  scheduler_cut_t schedulerCutState;
 };
 
 static inline bool isEngineProtectActive(const statuses &status) {
