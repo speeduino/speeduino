@@ -854,9 +854,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //   }
       // }
       
-      auto schedulesOnOff = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10);
+      currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10);
       
-      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getCrankAngle()), schedulesOnOff.fuelChannels);
+      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
     
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
@@ -889,7 +889,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       else { fixedCrankingOverride = 0; }
 
-      setIgnitionChannels(ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, schedulesOnOff.ignitionChannels);
+      setIgnitionChannels(ignitionLimits(getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, currentStatus.schedulerCutState.ignitionChannels);
 
       if ( (!currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
       {

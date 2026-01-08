@@ -28,7 +28,6 @@ extern table2D_u8_u8_6 coolantProtectTable;
 extern uint8_t softLimitTime;
 extern table2D_i8_u8_4 rollingCutTable;
 extern uint32_t rollingCutLastRev;
-extern uint8_t ignitionChannelsPending;
 
 static void resetInternalState(void)
 {
@@ -38,7 +37,6 @@ static void resetInternalState(void)
     afrProtectCount = 0;
     softLimitTime = 0;
     rollingCutLastRev = 0;
-    ignitionChannelsPending = 0;
 }
 
 static void setup_oil_protect_table(void) {
@@ -122,6 +120,13 @@ struct engineProtection_test_context_t
         page4.StgCycles = current.startRevolutions-1; // staging complete
     }
 
+    void setHardCutFull(void)
+    {
+        setBeyondStaging();
+        page2.hardCutType = HARD_CUT_FULL;
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF };
+    }
+
     void setHardCutRolling(void)
     {
         // Prepare rolling cut table and limits so rolling cut branch triggers
@@ -130,6 +135,7 @@ struct engineProtection_test_context_t
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 10; // div100 -> 1000 RPM
         current.RPM = (page4.HardRevLim*100U) - (rollingCutTable.axis[0]*10); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF };
     }
 };
 
@@ -459,10 +465,8 @@ static void test_calculateFuelIgnitionChannelCut_staging_complete_all_on(void)
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void)
 {
     engineProtection_test_context_t context;
-    context.setBeyondStaging();
+    context.setHardCutFull();
     context.setRpmActive(HARD_REV_FIXED);
-
-    context.page2.hardCutType = HARD_CUT_FULL;
     
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels); // fuel remains on
@@ -473,10 +477,9 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
 {
     engineProtection_test_context_t context;
-    context.setBeyondStaging();
+    context.setHardCutFull();
     context.setRpmActive(HARD_REV_FIXED);
 
-    context.page2.hardCutType = HARD_CUT_FULL;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);

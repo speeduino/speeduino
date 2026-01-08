@@ -198,17 +198,16 @@ uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &pa
 }
 
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
-TESTABLE_STATIC uint8_t ignitionChannelsPending = 0; /**< Any ignition channels that are pending injections before they are resumed */
 TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
-schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+statuses::scheduler_cut_t calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if (getDecoderStatus().syncStatus==SyncStatus::None)
   {
-    return { 0x0, 0x0 };
+    return { 0x0, 0x0, 0x0 };
   }
 
-  schedulers_onoff_t onOff = { 0xFF, 0xFF };
+  statuses::scheduler_cut_t cutState = current.schedulerCutState;
 
   //Check for any of the engine protections or rev limiters being turned on
   uint16_t maxAllowedRPM = checkRevLimit(current, page4, page6, page9); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
@@ -234,23 +233,23 @@ schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const conf
     {
       case PROTECT_CUT_OFF:
         //Make sure all channels are turned on
-        onOff.ignitionChannels = 0xFF;
-        onOff.fuelChannels = 0xFF;
+        cutState.ignitionChannels = 0xFF;
+        cutState.fuelChannels = 0xFF;
         resetEngineProtect(current);
         break;
       case PROTECT_CUT_IGN:
-        onOff.ignitionChannels = 0;
+        cutState.ignitionChannels = 0;
         break;
       case PROTECT_CUT_FUEL:
-        onOff.fuelChannels = 0;
+        cutState.fuelChannels = 0;
         break;
       case PROTECT_CUT_BOTH:
-        onOff.ignitionChannels = 0;
-        onOff.fuelChannels = 0;
+        cutState.ignitionChannels = 0;
+        cutState.fuelChannels = 0;
         break;
       default:
-        onOff.ignitionChannels = 0;
-        onOff.fuelChannels = 0;
+        cutState.ignitionChannels = 0;
+        cutState.fuelChannels = 0;
         break;
     }
   } //Hard cut check
@@ -277,22 +276,22 @@ schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const conf
           {
             case PROTECT_CUT_OFF:
               //Make sure all channels are turned on
-              onOff.ignitionChannels = 0xFF;
-              onOff.fuelChannels = 0xFF;
+              cutState.ignitionChannels = 0xFF;
+              cutState.fuelChannels = 0xFF;
               break;
             case PROTECT_CUT_IGN:
-              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
               break;
             case PROTECT_CUT_FUEL:
-              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
               break;
             case PROTECT_CUT_BOTH:
-              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
               break;
             default:
-              BIT_CLEAR(onOff.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(onOff.fuelChannels, x); //Turn off this fuel channel
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
               break;
           }
         }
@@ -302,14 +301,14 @@ schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const conf
 
           //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
           if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
-              (BIT_CHECK(onOff.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+              (BIT_CHECK(cutState.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
               (page6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
             )
-          { BIT_SET(ignitionChannelsPending, x); } //Set this ignition channel as pending
-          else { BIT_SET(onOff.ignitionChannels, x); } //Turn on this ignition channel
+          { BIT_SET(cutState.ignitionChannelsPending, x); } //Set this ignition channel as pending
+          else { BIT_SET(cutState.ignitionChannels, x); } //Turn on this ignition channel
             
           
-          BIT_SET(onOff.fuelChannels, x); //Turn on this fuel channel
+          BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
         }
       }
       rollingCutLastRev = current.startRevolutions;
@@ -317,10 +316,10 @@ schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const conf
 
     //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
     //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
-    if( (ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
+    if( (cutState.ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
     {
-      onOff.ignitionChannels = onOff.fuelChannels;
-      ignitionChannelsPending = 0;
+      cutState.ignitionChannels = cutState.fuelChannels;
+      cutState.ignitionChannelsPending = 0;
     }
   } //Rolling cut check
   else
@@ -330,10 +329,10 @@ schedulers_onoff_t calculateFuelIgnitionChannelCut(statuses &current, const conf
     if(current.startRevolutions >= page4.StgCycles)
     { 
       //Enable the fuel and ignition, assuming staging revolutions are complete 
-      onOff.ignitionChannels = 0xff; 
-      onOff.fuelChannels = 0xff; 
+      cutState.ignitionChannels = 0xff; 
+      cutState.fuelChannels = 0xff; 
     } 
   }
 
-  return onOff;
+  return cutState;
 }
