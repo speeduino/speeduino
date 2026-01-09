@@ -297,12 +297,24 @@ TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2
       && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10)));
 }
 
+static inline bool isNonSequential(const config2 &page2, const config4 &page4)
+{
+  return (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL);
+}
+
+static inline uint8_t calcBaseCutRevolutions(const config2 &page2)
+{
+  return (page2.strokes == FOUR_STROKE) ? 2U : 1U;
+}
+
 TESTABLE_INLINE_STATIC uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4)
 {
-  uint8_t revolutionsToCut = 1;
-  if (page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
-  if ( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
-  return revolutionsToCut;
+  // 4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+  if ( isNonSequential(page2, page4) ) 
+  { 
+    return calcBaseCutRevolutions(page2) * 2U; 
+  } 
+  return calcBaseCutRevolutions(page2);
 }
 
 TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current, uint16_t maxAllowedRPM)
@@ -340,9 +352,15 @@ static inline statuses::scheduler_cut_t cutChannel(statuses::scheduler_cut_t cut
   return cutState;
 }
 
-static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, uint8_t revolutionsToCut)
+static inline bool supportPendingIgnitionCut(const config2 &page2, const config4 &page4)
+{
+  return (page2.strokes == FOUR_STROKE) && isNonSequential(page2, page4);
+}
+
+static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint8_t cutPercent)
 {
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
+  bool pendingIgnitionCut = supportPendingIgnitionCut(page2, page4) && (page6.engineProtectType == PROTECT_CUT_BOTH);
   cutState.status = SchedulerCutStatus::Rolling;
   for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
   {  
@@ -356,10 +374,9 @@ static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses
 
       // Special case for non-sequential, 4-stroke where both fuel and ignition are cut.
       // The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
-      if( (revolutionsToCut == 4U) &&                          //4 stroke and non-sequential
-          (BIT_CHECK(cutState.fuelChannels, x) == false) &&   //Fuel on this channel is currently off, meaning it is the first revolution after a cut
-          (page6.engineProtectType == PROTECT_CUT_BOTH)       //Both fuel and ignition are cut
-        )
+      if( pendingIgnitionCut &&
+         //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+         (BIT_CHECK(cutState.fuelChannels, x) == false))
       { 
         BIT_SET(cutState.ignitionChannelsPending, x); //Set this ignition channel as pending
       }
@@ -408,7 +425,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
     if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
     { 
       rollingCutLastRev = current.startRevolutions;
-      cutState = applyRollingCutPercentage(current, page6, calcRollingCutPercentage(current, maxAllowedRPM), revolutionsToCut);
+      cutState = applyRollingCutPercentage(current, page2, page4, page6, calcRollingCutPercentage(current, maxAllowedRPM));
     }
 
     //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
