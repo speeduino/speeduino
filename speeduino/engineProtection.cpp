@@ -333,7 +333,7 @@ TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current,
   return table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); 
 }
 
-static inline statuses::scheduler_cut_t cutChannel(statuses::scheduler_cut_t cutState, const config6 &page6, uint8_t channel)
+static inline statuses::scheduler_cut_t channelOff(statuses::scheduler_cut_t cutState, const config6 &page6, uint8_t channel)
 {
   switch(page6.engineProtectType)
   {
@@ -352,6 +352,26 @@ static inline statuses::scheduler_cut_t cutChannel(statuses::scheduler_cut_t cut
   return cutState;
 }
 
+TESTABLE_INLINE_STATIC statuses::scheduler_cut_t channelOn(statuses::scheduler_cut_t cutState, bool pendingIgnitionCut, uint8_t channel)
+{
+  // Special case for non-sequential, 4-stroke where both fuel and ignition are cut.
+  // The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+  if( pendingIgnitionCut &&
+      //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+      (BIT_CHECK(cutState.fuelChannels, channel) == false))
+  { 
+    BIT_SET(cutState.ignitionChannelsPending, channel); //Set this ignition channel as pending
+  }
+  else 
+  { 
+    BIT_SET(cutState.ignitionChannels, channel); //Turn on this ignition channel
+  }
+          
+  BIT_SET(cutState.fuelChannels, channel); //Turn on this fuel channel
+
+  return cutState;
+}
+
 static inline bool supportPendingIgnitionCut(const config2 &page2, const config4 &page4)
 {
   return (page2.strokes == FOUR_STROKE) && isNonSequential(page2, page4);
@@ -359,36 +379,22 @@ static inline bool supportPendingIgnitionCut(const config2 &page2, const config4
 
 static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint8_t cutPercent)
 {
-  statuses::scheduler_cut_t cutState = current.schedulerCutState;
   bool pendingIgnitionCut = supportPendingIgnitionCut(page2, page4) && (page6.engineProtectType == PROTECT_CUT_BOTH);
-  cutState.status = SchedulerCutStatus::Rolling;
-  for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
+
+  statuses::scheduler_cut_t cutState = current.schedulerCutState;
+  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, current.maxInjOutputs); ++channel)
   {  
     if( rollingCutRandFunc() < cutPercent )
     {
-      cutState = cutChannel(cutState, page6, x);
+      cutState = channelOff(cutState, page6, channel);
     }
     else
     {
-      //Turn fuel and ignition channels on
-
-      // Special case for non-sequential, 4-stroke where both fuel and ignition are cut.
-      // The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
-      if( pendingIgnitionCut &&
-         //Fuel on this channel is currently off, meaning it is the first revolution after a cut
-         (BIT_CHECK(cutState.fuelChannels, x) == false))
-      { 
-        BIT_SET(cutState.ignitionChannelsPending, x); //Set this ignition channel as pending
-      }
-      else 
-      { 
-        BIT_SET(cutState.ignitionChannels, x); //Turn on this ignition channel
-      }
-             
-      BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
+      cutState = channelOn(cutState, pendingIgnitionCut, channel);
     }
   }
 
+  cutState.status = SchedulerCutStatus::Rolling;
   return cutState;
 }
 
