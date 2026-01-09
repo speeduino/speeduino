@@ -52,6 +52,7 @@ struct rollingCutRandFunc_override_t
 extern bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM);
 extern uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4);
 extern uint8_t calcRollingCutPercentage(const statuses &current, uint16_t maxAllowedRPM);
+extern statuses::scheduler_cut_t channelOn(statuses::scheduler_cut_t cutState, bool pendingIgnitionCut, uint8_t channel);
 extern uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
 
 extern uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9);
@@ -1089,6 +1090,82 @@ static void test_calcRollingCutPercentage(void)
     TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[0], calcRollingCutPercentage(context.current, maxRPM));
 }
 
+static void test_channelOn_without_pending(void)
+{
+    // When pendingIgnitionCut=false, both ignition and fuel should be turned on
+    statuses::scheduler_cut_t cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::None };
+    cutState = channelOn(cutState, false, 0);
+    TEST_ASSERT_EQUAL_HEX8(0x01, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x01, cutState.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannelsPending);
+
+    // Test that different channels can be turned on independently  
+    cutState = channelOn(cutState, false, 2);
+    TEST_ASSERT_EQUAL_HEX8(0x05, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x05, cutState.fuelChannels);
+    
+    cutState = channelOn(cutState, false, 5);
+    TEST_ASSERT_EQUAL_HEX8(0x25, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x25, cutState.fuelChannels);
+}
+
+static void test_channelOn_with_pending(void)
+{
+    // When pendingIgnitionCut=true and fuel is off, ignition should be set as pending
+    statuses::scheduler_cut_t cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::None };
+    
+    cutState = channelOn(cutState, true, 0);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x01, cutState.ignitionChannelsPending);
+    TEST_ASSERT_EQUAL_HEX8(0x01, cutState.fuelChannels);
+
+    // When pendingIgnitionCut=true but fuel is already on, ignition should turn on normally
+    cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0xFF, .status = SchedulerCutStatus::None };
+    cutState = channelOn(cutState, true, 0);
+    TEST_ASSERT_EQUAL_HEX8(0x01, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannelsPending);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, cutState.fuelChannels);
+
+    // Test pending logic for different channels
+    cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::None };
+    cutState = channelOn(cutState, true, 3);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x08, cutState.ignitionChannelsPending);  
+    cutState = channelOn(cutState, true, 7);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x88, cutState.ignitionChannelsPending);
+
+    // Ensure turning on one channel doesn't affect other ignition channels
+    cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x02, .fuelChannels = 0x02, .status = SchedulerCutStatus::None };  
+    cutState = channelOn(cutState, false, 4);
+    TEST_ASSERT_EQUAL_HEX8(0x12, cutState.ignitionChannels);  // 0x02 | 0x10 = 0x12
+    TEST_ASSERT_EQUAL_HEX8(0x12, cutState.fuelChannels);
+
+    // Ensure turning on one channel doesn't affect other fuel channels
+    cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x80, .status = SchedulerCutStatus::None };
+    cutState = channelOn(cutState, false, 1);
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x82, cutState.fuelChannels);  // 0x80 | 0x02 = 0x82
+}
+
+static void test_channelOn_pending_then_fuel_on(void)
+{
+    // Test transition: pending ignition when fuel off, then fuel turns on
+    statuses::scheduler_cut_t cutState = { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::None };
+    
+    // First call: pending ignition set
+    cutState = channelOn(cutState, true, 1);
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.ignitionChannelsPending);
+    TEST_ASSERT_EQUAL_HEX8(0x00, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.fuelChannels);
+    
+    // Second call: fuel is now on, so ignition should turn on immediately
+    cutState = channelOn(cutState, true, 1);
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.ignitionChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.ignitionChannelsPending);  // unchanged
+    TEST_ASSERT_EQUAL_HEX8(0x02, cutState.fuelChannels);
+}
+
 // Deterministic RNG stubs for tests
 static uint8_t deterministic_rand_low(void)  { return 1U; }   // always triggers (< cutPercent)
 static uint8_t deterministic_rand_high(void) { return 255U; } // never triggers (>= cutPercent)
@@ -1192,6 +1269,9 @@ void runAllTests(void)
     RUN_TEST_P(test_useRollingCut);
     RUN_TEST_P(test_calcRollingCutRevolutions);
     RUN_TEST_P(test_calcRollingCutPercentage);
+    RUN_TEST_P(test_channelOn_without_pending);
+    RUN_TEST_P(test_channelOn_with_pending);
+    RUN_TEST_P(test_channelOn_pending_then_fuel_on);
     }
 }
 
