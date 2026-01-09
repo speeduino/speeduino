@@ -398,6 +398,18 @@ static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses
   return cutState;
 }
 
+//Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+//Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+statuses::scheduler_cut_t applyPendingIgnitionCuts(statuses::scheduler_cut_t cutState, const statuses &current)
+{
+  if( (cutState.ignitionChannelsPending!=0U) && (current.startRevolutions >= (rollingCutLastRev + 2U)) )
+  {
+    cutState.ignitionChannels = cutState.fuelChannels;
+    cutState.ignitionChannelsPending = 0U;
+  }
+  return cutState;
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
@@ -434,13 +446,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
       cutState = applyRollingCutPercentage(current, page2, page4, page6, calcRollingCutPercentage(current, maxAllowedRPM));
     }
 
-    //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
-    //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
-    if( (cutState.ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
-    {
-      cutState.ignitionChannels = cutState.fuelChannels;
-      cutState.ignitionChannelsPending = 0;
-    }
+    cutState = applyPendingIgnitionCuts(cutState, current);
   } //Rolling cut check
   else
   {
