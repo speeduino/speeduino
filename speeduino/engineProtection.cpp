@@ -321,6 +321,60 @@ TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current,
   return table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); 
 }
 
+static inline statuses::scheduler_cut_t cutChannel(statuses::scheduler_cut_t cutState, const config6 &page6, uint8_t channel)
+{
+  switch(page6.engineProtectType)
+  {
+    case PROTECT_CUT_IGN:
+      BIT_CLEAR(cutState.ignitionChannels, channel); //Turn off this ignition channel
+      break;
+    case PROTECT_CUT_FUEL:
+      BIT_CLEAR(cutState.fuelChannels, channel); //Turn off this fuel channel
+      break;
+    case PROTECT_CUT_BOTH:
+    default:
+      BIT_CLEAR(cutState.ignitionChannels, channel); //Turn off this ignition channel
+      BIT_CLEAR(cutState.fuelChannels, channel); //Turn off this fuel channel
+      break;
+  }
+  return cutState;
+}
+
+static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, uint8_t revolutionsToCut)
+{
+  statuses::scheduler_cut_t cutState = current.schedulerCutState;
+  cutState.hardLimitActive = false;
+  for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
+  {  
+    if( rollingCutRandFunc() < cutPercent )
+    {
+      cutState = cutChannel(cutState, page6, x);
+    }
+    else
+    {
+      //Turn fuel and ignition channels on
+
+      // Special case for non-sequential, 4-stroke where both fuel and ignition are cut.
+      // The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+      if( (revolutionsToCut == 4U) &&                          //4 stroke and non-sequential
+          (BIT_CHECK(cutState.fuelChannels, x) == false) &&   //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+          (page6.engineProtectType == PROTECT_CUT_BOTH)       //Both fuel and ignition are cut
+        )
+      { 
+        BIT_SET(cutState.ignitionChannelsPending, x); //Set this ignition channel as pending
+      }
+      else 
+      { 
+        BIT_SET(cutState.ignitionChannels, x); //Turn on this ignition channel
+      }
+             
+      BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
+    }
+  }
+
+  return cutState;
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
@@ -353,47 +407,8 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
     uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
     if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
     { 
-      uint8_t cutPercent = calcRollingCutPercentage(current, maxAllowedRPM);
-
-      for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
-      {  
-        if( rollingCutRandFunc() < cutPercent )
-        {
-          switch(page6.engineProtectType)
-          {
-            case PROTECT_CUT_IGN:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              break;
-            case PROTECT_CUT_FUEL:
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-            case PROTECT_CUT_BOTH:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-            default:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-          }
-        }
-        else
-        {
-          //Turn fuel and ignition channels on
-
-          //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
-          if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
-              (BIT_CHECK(cutState.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
-              (page6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
-            )
-          { BIT_SET(cutState.ignitionChannelsPending, x); } //Set this ignition channel as pending
-          else { BIT_SET(cutState.ignitionChannels, x); } //Turn on this ignition channel
-            
-          
-          BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
-        }
-      }
       rollingCutLastRev = current.startRevolutions;
+      cutState = applyRollingCutPercentage(current, page6, calcRollingCutPercentage(current, maxAllowedRPM), revolutionsToCut);
     }
 
     //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
