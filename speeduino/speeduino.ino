@@ -101,13 +101,21 @@ static inline int8_t getAdvance1(void)
 
 static inline void setFuelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t pw, uint16_t startAngle, uint16_t crankAngle, byte fuelChannelsOn)
 {
-  if( (pw != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT+channel-1U)) )
+  if (!BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT+channel-1U))
+  {
+    disableFuelSchedule(channel);
+  }
+  else if (pw != 0U)
   {
     uint32_t timeOut = calculateInjectorTimeout(schedule, startAngle, crankAngle);
     if (timeOut>0U)
     {
       setFuelSchedule(schedule, timeOut, pw);
     }
+  }
+  else 
+  {
+    // Do nothing - let the current schedule expire
   }
 }
 
@@ -151,17 +159,25 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 #undef SET_FUEL_CHANNEL
 }
 
-static inline __attribute__((always_inline))  void setIgnitionChannel(IgnitionSchedule &schedule, uint8_t channel, uint16_t channelDegrees, uint16_t startAngle, uint16_t crankAngle, uint16_t dwell, byte ignitionChannelsOn) {
-  if ((currentStatus.maxIgnOutputs >= channel) && BIT_CHECK(ignitionChannelsOn, channel-1U)) {
+static inline __attribute__((always_inline)) void setIgnitionChannel(IgnitionSchedule &schedule, uint8_t channel, uint16_t channelDegrees, uint16_t startAngle, uint16_t crankAngle, uint16_t dwell, byte ignitionChannelsOn) {
+  if (!BIT_CHECK(ignitionChannelsOn, channel-1U))
+  {
+    disableIgnSchedule(channel);
+  }
+  else if (currentStatus.maxIgnOutputs >= channel) {
     uint32_t timeOut = calculateIgnitionTimeout(schedule, startAngle, channelDegrees, crankAngle);
     if (timeOut > 0U)
     {
       setIgnitionSchedule(schedule, timeOut, dwell);
     }
   }
+  else 
+  {
+    // Do nothing - let the current schedule expire
+  }
 }
 
-static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t crankAngle, uint16_t dwell, byte ignitionChannelsOn) {
+static inline __attribute__((always_inline)) void setIgnitionChannels(uint16_t crankAngle, uint16_t dwell, byte ignitionChannelsOn) {
 #define SET_IGNITION_CHANNEL(channelIdx) \
   setIgnitionChannel(ignitionSchedule ##channelIdx, UINT8_C((channelIdx)), channel ##channelIdx ##IgnDegrees, ignition ##channelIdx ##StartAngle, crankAngle, dwell, ignitionChannelsOn);
 
@@ -856,7 +872,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //   }
       // }
       
-      currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10);
+      currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9);
+      if (currentStatus.schedulerCutState.status==SchedulerCutStatus::None)
+      {
+        currentStatus.engineProtect.reset();
+      }
       
       setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
     

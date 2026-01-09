@@ -435,7 +435,7 @@ statuses::scheduler_cut_t applyPendingIgnitionCuts(statuses::scheduler_cut_t cut
   return cutState;
 }
 
-BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
   {
@@ -444,7 +444,6 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   if (page6.engineProtectType==PROTECT_CUT_OFF)
   {
     //Make sure all channels are turned on
-    current.engineProtect.reset();
     return CUT_NONE;
   }
 
@@ -474,7 +473,6 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   }
   else
   {
-    current.engineProtect.reset();
     return CUT_NONE;
   }
 }
