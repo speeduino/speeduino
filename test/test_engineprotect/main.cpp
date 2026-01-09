@@ -24,7 +24,6 @@ extern bool checkAFRLimitActive;
 extern unsigned long afrProtectedActivateTime;
 
 extern bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis);
-extern uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
 extern table2D_u8_u8_6 coolantProtectTable;
 extern uint8_t softLimitTime;
 extern table2D_i8_u8_4 rollingCutTable;
@@ -637,72 +636,6 @@ static void test_getMaxRpm_launch_and_flatshift_priority(void)
     TEST_ASSERT_EQUAL_UINT16(2500, resultB);
 }
 
-static void test_checkRevLimit_disabled(void) {
-    engineProtection_test_context_t context;
-    context.setRpmActive(HARD_REV_FIXED);
-
-    context.page6.engineProtectType = PROTECT_CUT_OFF;
-    TEST_ASSERT_EQUAL_UINT8(UINT8_MAX, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
-    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
-}
-
-static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
-    engineProtection_test_context_t context;
-    context.setRpmActive(HARD_REV_FIXED);
-    context.page4.HardRevLim = 50;
-
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U));
-    TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
-    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
-
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim));
-    TEST_ASSERT_EQUAL_UINT8(50, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
-    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
-}
-
-static void test_checkRevLimit_softlimit_triggers(void) {
-    engineProtection_test_context_t context;
-    context.setRpmActive(HARD_REV_FIXED);
-
-    context.page4.HardRevLim = 100;
-    context.page4.SoftRevLim = 60;
-    context.page4.SoftLimMax = 5;
-
-    // Simulate soft limiter running longer than allowed
-    softLimitTime = context.page4.SoftLimMax + 1;
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
-
-    TEST_ASSERT_EQUAL_UINT8(context.page4.HardRevLim, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
-}
-
-static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
-    engineProtection_test_context_t context;
-    context.setRpmActive(HARD_REV_COOLANT);
-
-    context.current.coolant = 0;
-    setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0]+1U)); // greater than 40 -> should trigger
-
-    TEST_ASSERT_EQUAL_UINT8(40, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_TRUE(context.current.engineProtect.coolant);
-    TEST_ASSERT_TRUE(context.current.engineProtect.rpm);
-}
-
-static void test_checkRevLimit_coolant_equal_no_trigger(void) {
-    engineProtection_test_context_t context;
-    context.setRpmActive(HARD_REV_COOLANT);
-
-    context.current.coolant = 0;
-    setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0])); // equal to limit -> should NOT trigger (uses >)
-
-    TEST_ASSERT_EQUAL_UINT8(40, checkRevLimit(context.current, context.page4, context.page6, context.page9));
-    TEST_ASSERT_FALSE(context.current.engineProtect.coolant);
-    TEST_ASSERT_FALSE(context.current.engineProtect.rpm);
-}
-
 static void test_checkRpmLimit_disabled(void) {
     engineProtection_test_context_t context;
 
@@ -1235,11 +1168,6 @@ void runAllTests(void)
     RUN_TEST_P(test_checkEngineProtect_no_protections);
     RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
     RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);
-    RUN_TEST_P(test_checkRevLimit_disabled);
-    RUN_TEST_P(test_checkRevLimit_fixed_mode_no_trigger_and_trigger);
-    RUN_TEST_P(test_checkRevLimit_softlimit_triggers);
-    RUN_TEST_P(test_checkRevLimit_coolant_mode_triggers_clt);
-    RUN_TEST_P(test_checkRevLimit_coolant_equal_no_trigger);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_both);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullcut);
