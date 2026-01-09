@@ -272,6 +272,14 @@ static inline statuses::scheduler_cut_t applyFullCut(const config6 &page6)
   }
 }
 
+/**
+ * @brief Immediately below max RPM, there is a range within which we can apply a rolling cut.
+ * 
+ * The rolling cut table defines a series of relative *negative* RPM offsets that
+ * define the window and percent cut for each offset. I.e.
+ *  RPM 0------------------------|++++++++++++++++++++|<- max RPM
+ *                               | rolling cut window |
+ */
 TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
 TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM)
@@ -407,7 +415,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
     return CUT_NONE;
   }
 
-  //Check for any of the engine protections or rev limiters being turned on
+  // Determine the absolute max RPM
   uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
 
   // Full cut is always applied if RPM exceeds max allowed
