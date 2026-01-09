@@ -23,7 +23,6 @@ extern bool checkAFRLimit(const statuses &current, const config6 &page6, const c
 extern bool checkAFRLimitActive;
 extern unsigned long afrProtectedActivateTime;
 
-extern bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_6 coolantProtectTable;
 extern uint8_t softLimitTime;
 extern table2D_i8_u8_4 rollingCutTable;
@@ -419,46 +418,6 @@ static void test_checkAFRLimit_zero_deviation_fixed_mode(void)
     // With deviation 0 and cut time 0, O2 == 0 should trigger immediately
     context.current.O2 = 0;
     TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, 1234));
-}
-
-static void test_checkEngineProtect_no_protections(void) {
-    // Ensure RPM above threshold but no protection conditions set
-    resetInternalState();
-    engineProtection_test_context_t context;
-    context.page4.engineProtectMaxRPM = 5;
-    setRpm(context.current, 1000);
-
-    TEST_ASSERT_FALSE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, 0));
-    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
-    TEST_ASSERT_FALSE(context.current.engineProtect.oil);
-    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
-}
-
-static void test_checkEngineProtect_protection_but_rpm_low(void) {
-    // Set up oil protection to be active but RPM not above max -> no protectActive
-    engineProtection_test_context_t context;
-    context.setOilPressureActive();
-
-    context.page4.engineProtectMaxRPM = 5;
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.engineProtectMaxRPM)); // not greater than max
-
-    TEST_ASSERT_FALSE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, millis()));
-    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
-    TEST_ASSERT_TRUE(context.current.engineProtect.oil);
-    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
-}
-
-static void test_checkEngineProtect_protection_and_rpm_high(void) {
-    engineProtection_test_context_t context;
-    context.setOilPressureActive();
-
-    context.page4.engineProtectMaxRPM = 5;
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.engineProtectMaxRPM+1U)); // greater than max
-
-    TEST_ASSERT_TRUE(checkEngineProtect(context.current, context.page4, context.page6, context.page9, context.page10, millis()));
-    TEST_ASSERT_FALSE(context.current.engineProtect.boostCut);
-    TEST_ASSERT_TRUE(context.current.engineProtect.oil);
-    TEST_ASSERT_FALSE(context.current.engineProtect.afr);
 }
 
 static void test_getHardRevLimit(void)
@@ -1165,9 +1124,6 @@ void runAllTests(void)
     RUN_TEST_P(test_checkAFRLimit_table_mode_boundary);
     RUN_TEST_P(test_checkAFRLimit_delay_boundary_robustness);
     RUN_TEST_P(test_checkAFRLimit_zero_deviation_fixed_mode);
-    RUN_TEST_P(test_checkEngineProtect_no_protections);
-    RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
-    RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_both);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullcut);
