@@ -185,36 +185,60 @@ static void test_checkOilPressureLimit_activate_when_time_expires(void) {
     TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime+1));
 }
 
-static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
+static void test_checkOilPressureLimit_timer_and_activation(void)
+{
     engineProtection_test_context_t context;
-    context.setOilPressureActive(); 
+    context.setOilPressureActive();
 
-    context.current.oilPressure = 60; // above table min
-    setRpm(context.current, 0U);
+    // Set a non-zero delay (2 -> 200ms)
+    context.page10.oilPressureProtTime = 2;
+    oilProtEndTime = 0;
 
-    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
+    unsigned long now = 12345UL;
+    // First call should arm the timer but not yet activate
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, now));
+    TEST_ASSERT_EQUAL_UINT32(now + ((uint16_t)context.page10.oilPressureProtTime * 100U), oilProtEndTime);
+
+    // Before expiry -> still false
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime - 1));
+    // At expiry -> true
+    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime));
 }
 
-struct checkBoostLimit_context_t
+static void test_checkOilPressureLimit_existing_engineProtect_forces_cut(void)
 {
-    statuses current = {};
-    config6 page6 = {};
+    engineProtection_test_context_t context;
+    context.setOilPressureActive();
 
-    void setActive(void)
-    {
-        page6.engineProtectType = PROTECT_CUT_IGN;
-        page6.boostCutEnabled = 1;
-        page6.boostLimit = 30;
-        current.MAP = MAP.toUser(page6.boostLimit) + 1;
-    }
+    context.page10.oilPressureProtTime = 10;
+    unsigned long now = 20000UL;
+    oilProtEndTime = now + 5000UL; // future
 
-    bool operator()(void)
-    {
-        return checkBoostLimit(current, page6);
-    }
-};
+    // Even though timer hasn't expired, existing engineProtect.oil should force a cut
+    context.current.engineProtectOil = true;
+    TEST_ASSERT_TRUE(checkOilPressureLimit(context.current, context.page6, context.page10, now));
+}
 
-static void test_checkBoostLimit_disabled_by_engineProtectType(void) {
+static void test_checkOilPressureLimit_timer_resets_when_pressure_recovers(void)
+{
+    engineProtection_test_context_t context;
+    context.setOilPressureActive();
+
+    context.page10.oilPressureProtTime = 5;
+    unsigned long now = 30000UL;
+    oilProtEndTime = 0;
+
+    // Arm the timer
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, now));
+    TEST_ASSERT_NOT_EQUAL(0U, oilProtEndTime);
+
+    // Simulate pressure recovery above the limit
+    context.current.oilPressure = table2D_getValue(&oilPressureProtectTable, context.current.RPMdiv100) + 10;
+    TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, now + 1));
+    TEST_ASSERT_EQUAL_UINT32(0U, oilProtEndTime);
+}
+
+static void test_checkBoostLimit_disabled_conditions(void) {
     engineProtection_test_context_t context;
 
     context.setBoostActive();
@@ -509,7 +533,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    context.current.RPM *= 2; // ensure rpmDelta >= 0 for full cut
+    setRpm(context.current, context.current.RPM * 2U); // ensure rpmDelta >= 0 for full cut
     context.current.maxIgnOutputs = 4;
     context.current.maxInjOutputs = 4;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
@@ -526,7 +550,7 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    context.current.RPM *= 2; // ensure rpmDelta >= 0 for full cut
+    setRpm(context.current, context.current.RPM * 2U); // ensure rpmDelta >= 0 for full cut
     context.current.maxIgnOutputs = 1;
     context.current.maxInjOutputs = 1;
 
@@ -543,7 +567,7 @@ static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_determi
     context.setRpmActive(HARD_REV_FIXED);
 
     context.page2.strokes = FOUR_STROKE;
-    context.current.RPM = (context.page4.HardRevLim-1U)*100U; // between (maxAllowed + axis[0]*10) and maxAllowed
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U)); // between (maxAllowed + axis[0]*10) and maxAllowed
     context.current.maxIgnOutputs = 2;
     context.current.maxInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
@@ -569,7 +593,7 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     context.setHardCutRolling();
 
     context.page4.HardRevLim = 200; // high limit so not triggered
-    context.current.RPM = 500; // below threshold
+    setRpm(context.current, 500); // below threshold
     context.current.maxIgnOutputs = 1;
     context.current.maxInjOutputs = 1;
     
@@ -618,8 +642,10 @@ void runAllTests(void)
 
     RUN_TEST_P(test_checkOilPressureLimit_disabled_conditions);
     RUN_TEST_P(test_checkOilPressureLimit_activate_when_time_expires);
-    RUN_TEST_P(test_checkOilPressureLimit_no_activation_when_above_limit);
-    RUN_TEST_P(test_checkBoostLimit_disabled_by_engineProtectType);
+    RUN_TEST_P(test_checkOilPressureLimit_timer_and_activation)
+    RUN_TEST_P(test_checkOilPressureLimit_existing_engineProtect_forces_cut);
+    RUN_TEST_P(test_checkOilPressureLimit_timer_resets_when_pressure_recovers);
+    RUN_TEST_P(test_checkBoostLimit_disabled_conditions);
     RUN_TEST_P(test_checkBoostLimit_activate_when_conditions_met);
     RUN_TEST_P(test_checkAFRLimit_disabled_conditions);
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
