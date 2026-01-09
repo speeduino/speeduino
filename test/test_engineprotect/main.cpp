@@ -159,7 +159,7 @@ struct engineProtection_test_context_t
     {
         setBeyondStaging();
         page2.hardCutType = HARD_CUT_FULL;
-        current.schedulerCutState = { 0x00, 0xFF, 0xFF, false };
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF, SchedulerCutStatus::None };
     }
 
     void setHardCutRolling(void)
@@ -169,8 +169,8 @@ struct engineProtection_test_context_t
         populateRollingCutTable();
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 50; // div100 -> 1000 RPM
-        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10)); // > (1000 + axis[0]*10) (-20*10 = -200 -> threshold 800)
-        current.schedulerCutState = { 0x00, 0xFF, 0xFF, false };
+        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10));
+        current.schedulerCutState = { 0x00, 0xFF, 0xFF, SchedulerCutStatus::None };
     }
 
     void setCoolantActive(void)
@@ -842,6 +842,7 @@ static void test_calculateFuelIgnitionChannelCut_nosync(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL(0, onOff.fuelChannels);
     TEST_ASSERT_EQUAL(0, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_staging_complete_all_on(void)
@@ -853,6 +854,7 @@ static void test_calculateFuelIgnitionChannelCut_staging_complete_all_on(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::None, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void)
@@ -865,7 +867,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels); // fuel remains on
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels); // ignition cut
-    TEST_ASSERT_TRUE(onOff.hardLimitActive);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
@@ -880,7 +882,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
-    TEST_ASSERT_TRUE(onOff.hardLimitActive);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
@@ -896,6 +898,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_BITS_HIGH(0x01, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
@@ -912,6 +915,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_BITS_LOW(0x01, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullcut(void)
@@ -930,6 +934,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
     // At least the lower 4 bits should be cleared -> 0xF0
     TEST_ASSERT_BITS_LOW(0x0F, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x0F, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastRev(void)
@@ -943,7 +948,7 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
-    TEST_ASSERT_FALSE(onOff.hardLimitActive);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, onOff.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_deterministic(void)
@@ -970,7 +975,7 @@ static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_determi
 
     TEST_ASSERT_EQUAL_HEX8(cut.fuelChannels, cut.ignitionChannels);
     TEST_ASSERT_EQUAL_UINT8(0, cut.ignitionChannelsPending);
-    TEST_ASSERT_FALSE(cut.hardLimitActive);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, cut.status);
 }
 
 static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_lastRev(void)
@@ -983,8 +988,9 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL_UINT32(0U, rollingCutLastRev);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::None, cut.status);
 }
 
 static void test_useRollingCut(void)

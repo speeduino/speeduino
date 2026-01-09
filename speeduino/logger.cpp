@@ -49,7 +49,7 @@ static byte buildStatus2(const statuses &current)
   bool bits[] = {
     current.hardLaunchActive,
     current.softLaunchActive,
-    current.schedulerCutState.hardLimitActive,
+    current.schedulerCutState.status == SchedulerCutStatus::Full,
     current.softLimitActive,
     false, // Unused
     false, // Unused

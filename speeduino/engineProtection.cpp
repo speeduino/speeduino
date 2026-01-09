@@ -275,14 +275,14 @@ static inline statuses::scheduler_cut_t applyFullCut(const config6 &page6)
   switch(page6.engineProtectType)
   {
     case PROTECT_CUT_IGN:
-      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0xFF, .hardLimitActive = true };
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0xFF, .status = SchedulerCutStatus::Full };
       break;
     case PROTECT_CUT_FUEL:
-      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0x00, .hardLimitActive = true };
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0x00, .status = SchedulerCutStatus::Full };
       break;
     case PROTECT_CUT_BOTH:
     default:
-      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .hardLimitActive = true };
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::Full };
       break;
   }
 }
@@ -343,7 +343,7 @@ static inline statuses::scheduler_cut_t cutChannel(statuses::scheduler_cut_t cut
 static inline statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, uint8_t revolutionsToCut)
 {
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
-  cutState.hardLimitActive = false;
+  cutState.status = SchedulerCutStatus::Rolling;
   for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
   {  
     if( rollingCutRandFunc() < cutPercent )
@@ -379,13 +379,13 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
 {
   if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
   {
-      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .hardLimitActive = false };
+      return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0x00, .fuelChannels = 0x00, .status = SchedulerCutStatus::Full };
   }
   if (page6.engineProtectType==PROTECT_CUT_OFF)
   {
     //Make sure all channels are turned on
     current.engineProtect.reset();
-    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .hardLimitActive = false };
+    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .status = SchedulerCutStatus::None };
   }
 
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
@@ -401,7 +401,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   }
   else if (useRollingCut(current, page2, maxAllowedRPM))
   { 
-    cutState.hardLimitActive = false; 
+    cutState.status = SchedulerCutStatus::Rolling; 
     if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
 
     uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
@@ -421,9 +421,8 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   } //Rolling cut check
   else
   {
-    cutState.hardLimitActive = false; 
     current.engineProtect.reset();
-    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .hardLimitActive = false };
+    return { .ignitionChannelsPending = 0x00, .ignitionChannels = 0xFF, .fuelChannels = 0xFF, .status = SchedulerCutStatus::None };
   }
 
   return cutState;
