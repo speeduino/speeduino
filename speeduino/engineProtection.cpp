@@ -163,35 +163,6 @@ TESTABLE_INLINE_STATIC bool checkCoolantLimit(const statuses &current, const con
       && (current.RPMdiv100 > table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
 }
 
-TESTABLE_INLINE_STATIC uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
-{
-  //Hardcut RPM limit
-  uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  current.engineProtect.rpm = false;
-  current.engineProtect.coolant = false;
-
-  if (page6.engineProtectType != PROTECT_CUT_OFF) 
-  {
-    if(page9.hardRevMode == HARD_REV_FIXED)
-    {
-      currentLimitRPM = page4.HardRevLim;
-      current.engineProtect.rpm = (current.RPMdiv100 >= page4.HardRevLim) 
-                              || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim));
-    }
-    else if(page9.hardRevMode == HARD_REV_COOLANT )
-    {
-      currentLimitRPM = table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
-      if(current.RPMdiv100 > currentLimitRPM)
-      {
-        current.engineProtect.coolant = true;
-        current.engineProtect.rpm = true;
-      } 
-    }
-  }
-
-  return currentLimitRPM;
-}
-
 statuses::engine_protect_flags_t checkEngineProtection(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   statuses::engine_protect_flags_t flags = { false, false, false, false, false };
