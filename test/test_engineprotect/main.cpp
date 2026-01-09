@@ -93,6 +93,8 @@ struct engineProtection_test_context_t
     void setAfrActive(void)
     {
         resetInternalState();
+        afrProtectCountEnabled = true;
+        afrProtectCount = 1;
         current.MAP = 200; // kPa-like units; ensure above any small min*2
         setRpm(current, 5000);
         current.TPS = 50;
@@ -101,6 +103,7 @@ struct engineProtection_test_context_t
         page6.engineProtectType = PROTECT_CUT_BOTH;
         page9.afrProtectEnabled = AFR_PROTECT_FIXED;
         page6.egoType = EGO_TYPE_WIDE;
+        page9.afrProtectCutTime = 0; // immediate
     }
 
     void setRpmActive(uint8_t type)
@@ -274,29 +277,31 @@ static void test_checkBoostLimit_activate_when_conditions_met(void) {
 static void test_checkAFRLimit_disabled_conditions(void) {
     engineProtection_test_context_t context;
 
+    constexpr uint32_t NOW = 1234U;
+
     // Disabled via engineProtectType
     context.setAfrActive();
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     context.page6.engineProtectType = PROTECT_CUT_OFF;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, 0));
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
 
     // Disabled via afrProtectEnabled flag
     context.setAfrActive();
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     context.page9.afrProtectEnabled = AFR_PROTECT_OFF;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, 0));
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
 
     // Disabled via egoType not wide
     context.setAfrActive();
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     context.page6.egoType = 0; // not EGO_TYPE_WIDE
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, 0));
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
 }
 
 static void test_checkAFRLimit_immediate_cut_time_zero(void) {
     engineProtection_test_context_t context;
     context.setAfrActive();
 
-    context.page9.afrProtectMinMAP = 1;
-    context.page9.afrProtectMinRPM = 1;
-    context.page9.afrProtectMinTPS = 1;
     context.page9.afrProtectDeviation = 15; // current.O2=20 >= 15
     context.page9.afrProtectCutTime = 0; // immediate
 
@@ -308,6 +313,7 @@ static void test_checkAFRLimit_table_mode_boundary(void) {
     engineProtection_test_context_t context;
     context.setAfrActive();
 
+    context.page9.afrProtectEnabled = AFR_PROTECT_TABLE;
     context.page9.afrProtectMinMAP = 50;
     context.page9.afrProtectMinRPM = 10;
     context.page9.afrProtectMinTPS = 10;
@@ -325,14 +331,12 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     engineProtection_test_context_t context;
     context.setAfrActive();
 
-    context.page9.afrProtectMinMAP = 50; // minMAP*2 = 100
-    context.page9.afrProtectMinRPM = 10;
-    context.page9.afrProtectMinTPS = 10;
-    context.page9.afrProtectDeviation = 15; // current.O2 (20) >= 15 -> triggers
     context.page9.afrProtectCutTime = 1; // 1 * 100ms = 100ms delay
     context.page9.afrProtectReactivationTPS = 20;
 
     // First call should start the counter but not activate yet
+    afrProtectCount = 0;
+    afrProtectCountEnabled = false;
     TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, 1000));
     TEST_ASSERT_TRUE(afrProtectCountEnabled);
     unsigned long start = afrProtectCount;
@@ -348,6 +352,54 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     context.current.TPS = context.page9.afrProtectReactivationTPS;
     TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, start + (context.page9.afrProtectCutTime * 100) + 1));
     TEST_ASSERT_FALSE(checkAFRLimitActive);
+}
+
+static void test_checkAFRLimit_counter_reset_on_condition_change(void)
+{
+    engineProtection_test_context_t context;
+    context.setAfrActive();
+
+    context.page9.afrProtectMinMAP = 1;
+    context.page9.afrProtectCutTime = 5;
+    afrProtectCountEnabled = false;
+    afrProtectCount = 0;
+
+    constexpr uint32_t now = 1000UL;
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now));
+    TEST_ASSERT_TRUE(afrProtectCountEnabled);
+    TEST_ASSERT_EQUAL_UINT32(now, afrProtectCount);
+
+    // Drop MAP below minimum -> counter should reset
+    context.current.MAP = 0;
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now + 1));
+    TEST_ASSERT_FALSE(afrProtectCountEnabled);
+    TEST_ASSERT_EQUAL_UINT32(0U, afrProtectCount);
+}
+
+static void test_checkAFRLimit_delay_boundary_robustness(void)
+{
+    engineProtection_test_context_t context;
+    context.setAfrActive();
+    context.page9.afrProtectCutTime = 2; // 200ms
+    constexpr uint32_t now = 5000UL;
+    afrProtectCount = now;
+    afrProtectCountEnabled = true;
+
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)-1));
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)));
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)+1));
+}
+
+static void test_checkAFRLimit_zero_deviation_fixed_mode(void)
+{
+    engineProtection_test_context_t context;
+    context.setAfrActive();
+
+    context.page9.afrProtectEnabled = AFR_PROTECT_FIXED;
+
+    // With deviation 0 and cut time 0, O2 == 0 should trigger immediately
+    context.current.O2 = 0;
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, 1234));
 }
 
 static void test_checkEngineProtect_no_protections(void) {
@@ -656,6 +708,9 @@ void runAllTests(void)
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
     RUN_TEST_P(test_checkAFRLimit_immediate_cut_time_zero);
     RUN_TEST_P(test_checkAFRLimit_table_mode_boundary);
+    RUN_TEST_P(test_checkAFRLimit_counter_reset_on_condition_change);
+    RUN_TEST_P(test_checkAFRLimit_delay_boundary_robustness);
+    RUN_TEST_P(test_checkAFRLimit_zero_deviation_fixed_mode);
     RUN_TEST_P(test_checkEngineProtect_no_protections);
     RUN_TEST_P(test_checkEngineProtect_protection_but_rpm_low);
     RUN_TEST_P(test_checkEngineProtect_protection_and_rpm_high);

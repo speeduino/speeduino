@@ -48,14 +48,14 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const confi
       && (current.MAP > ((long)page6.boostLimit * 2L));
 }
 
-static inline uint8_t getAfrO2Limit(const statuses &current, const config9 &page9)
+static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &page9)
 {
   if (page9.afrProtectEnabled==AFR_PROTECT_FIXED) {
     return page9.afrProtectDeviation;
   } if (page9.afrProtectEnabled==AFR_PROTECT_TABLE) {
     return current.afrTarget + page9.afrProtectDeviation;
   } else {
-    return 0U;
+    return UINT16_MAX;
   }
 }
 
@@ -125,29 +125,26 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      if(currMillis >= (afrProtectCount + (page9.afrProtectCutTime * X100_MULTIPLIER))) 
-      {
-        checkAFRLimitActive = true;
-      }
+      checkAFRLimitActive = currMillis >= (afrProtectCount + (page9.afrProtectCutTime * X100_MULTIPLIER));
     } 
     else 
     {
       /* Conditions have presumably changed - deactivate and reset counter */
-      if(afrProtectCountEnabled) 
-      {
-        afrProtectCountEnabled = false;
-        afrProtectCount = 0;
-      }
+      afrProtectCountEnabled = false;
+      afrProtectCount = 0;
     }
 
     /* Check if condition for reactivation is fulfilled */
-    if(checkAFRLimitActive && (current.TPS <= page9.afrProtectReactivationTPS)) 
+    if(current.TPS <= page9.afrProtectReactivationTPS)
     {
       checkAFRLimitActive = false;
       afrProtectCountEnabled = false;
     }
   }
-
+  else
+  {
+    checkAFRLimitActive = false;
+  }
   return checkAFRLimitActive;
 }
 
