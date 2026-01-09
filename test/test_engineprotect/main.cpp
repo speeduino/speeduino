@@ -262,7 +262,12 @@ static void test_checkBoostLimit_activate_when_conditions_met(void) {
     engineProtection_test_context_t context;
 
     context.setBoostActive();
+    TEST_ASSERT_TRUE(checkBoostLimit(context.current, context.page6));
 
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    TEST_ASSERT_TRUE(checkBoostLimit(context.current, context.page6));
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
     TEST_ASSERT_TRUE(checkBoostLimit(context.current, context.page6));
 }
 
