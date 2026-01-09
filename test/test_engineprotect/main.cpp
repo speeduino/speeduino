@@ -851,7 +851,7 @@ static void test_calculateFuelIgnitionChannelCut_nosync(void)
     context.setSyncStatus(SyncStatus::None);
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL(0, onOff.fuelChannels);
     TEST_ASSERT_EQUAL(0, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
@@ -863,7 +863,7 @@ static void test_calculateFuelIgnitionChannelCut_staging_complete_all_on(void)
     context.setBeyondStaging();
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::None, onOff.status);
@@ -876,7 +876,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void
     context.setRpmActive(HARD_REV_FIXED);
     
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels); // fuel remains on
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels); // ignition cut
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
@@ -891,7 +891,7 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
@@ -907,7 +907,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
     context.current.maxInjOutputs = 1;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_BITS_HIGH(0x01, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
@@ -924,7 +924,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_BITS_LOW(0x01, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
@@ -942,7 +942,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     // At least the lower 4 bits should be cleared -> 0xF0
     TEST_ASSERT_BITS_LOW(0x0F, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x0F, onOff.ignitionChannels);
@@ -958,7 +958,7 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
 
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, onOff.status);
 }
@@ -983,7 +983,7 @@ static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_determi
     // Ensure rollingCutLastRev is 3 revolutions earlier so inner cut doesn't run but pending clear will
     rollingCutLastRev = context.current.startRevolutions - 3;
 
-    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
 
     TEST_ASSERT_EQUAL_HEX8(cut.fuelChannels, cut.ignitionChannels);
     TEST_ASSERT_EQUAL_UINT8(0, cut.ignitionChannelsPending);
@@ -1000,7 +1000,7 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
-    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_UINT32(0U, rollingCutLastRev);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::None, cut.status);
 }
@@ -1196,7 +1196,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels
     // Inject deterministic RNG that always triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_low);
 
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     // lower 4 bits should be cleared -> 0xF0
     TEST_ASSERT_BITS_LOW(0x0F, onOff.fuelChannels);
     TEST_ASSERT_BITS_LOW(0x0F, onOff.ignitionChannels);
@@ -1219,7 +1219,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_c
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
 
-    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
 
     // No channels should be cut
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
