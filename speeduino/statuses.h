@@ -238,20 +238,21 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
 
-  // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  /** @brief Engine protection status fields. */
   struct engine_protect_flags_t
   {
     // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-    bool rpm : 1;
+    bool rpm : 1; ///< true if RPM limits have been breached, false otherwise
     // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-    bool coolant : 1;
+    bool coolant : 1; ///< true if coolant limits have been breached, false otherwise
     // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-    bool boostCut : 1;
+    bool boostCut : 1; ///< true if the boost limit has been breached, false otherwise
     // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-    bool oil : 1;
+    bool oil : 1; ///< true if the oil limit has been breached, false otherwise
     // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-    bool afr : 1;
+    bool afr : 1; ///< true if the afr limit has been breached, false otherwise
 
+    /** @brief Are any protections active */
     inline bool isActive(void) const {
       return rpm
             || coolant
@@ -260,6 +261,8 @@ struct statuses {
             || afr
             ;
     }
+
+    /** @brief Reset all protections to off */
     inline void reset(void) {
       rpm = false;
       boostCut = false;
@@ -270,7 +273,7 @@ struct statuses {
   };
   engine_protect_flags_t engineProtect;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool ioError : 1; ///<
+  bool ioError : 1; ///< true if there is an analog pin conflict
 
   byte fanDuty;
   byte wmiPW;
