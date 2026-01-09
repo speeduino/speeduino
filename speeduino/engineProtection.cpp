@@ -137,17 +137,6 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
   return checkAFRLimitActive;
 }
 
-
-TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis)
-{
-  current.engineProtect.boostCut = checkBoostLimit(current, page6);
-  current.engineProtect.oil = checkOilPressureLimit(current, page6, page10, currMillis);
-  current.engineProtect.afr = checkAFRLimit(current, page6, page9, currMillis);
-
-  return (current.engineProtect.boostCut || current.engineProtect.oil || current.engineProtect.afr)
-      && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
-}
-
 TESTABLE_INLINE_STATIC bool checkRpmLimit(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF) 
