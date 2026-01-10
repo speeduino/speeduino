@@ -79,14 +79,14 @@ cppcheck_parameters=( --inline-suppr
                       # It's used a lot and it's unsigned, which can trigger a lot
                       # of type mismatch violations.
                       -Dbyte=uint8_t
-                      # All violations from included libraries (*src* folders) are ignored
-                      --suppress="*:$source_folder/src/*"
-                      # No libdivide - analysis takes too long
-                      -UUSE_LIBDIVIDE
-                      # Don't parse the /src folder
-                      -i "$source_folder/src"
-                      "$source_folder/**.ino"
-                      "$source_folder/**.cpp")
+                      -i $source_folder/src/BackupSram
+                      -i $source_folder/src/FlashStorage
+                      -i $source_folder/src/FRAM
+                      -i $source_folder/src/PID_v1
+                      -i $source_folder/src/SPIAsEEPROM
+                      -i $source_folder/src/STM32_CAN
+                      "$source_folder"
+                      "$source_folder/*.ino")
 
 cppcheck_out_file="$out_folder/results.txt"
 if [ $output_xml -eq 1 ]; then
