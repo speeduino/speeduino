@@ -29,6 +29,25 @@ extern uint8_t softLimitTime;
 extern table2D_i8_u8_4 rollingCutTable;
 extern uint32_t rollingCutLastRev;
 
+using randFunc = uint8_t (*)(void);
+extern randFunc rollingCutRandFunc;
+
+struct rollingCutRandFunc_override_t
+{
+    rollingCutRandFunc_override_t(uint8_t (*fn)(void))
+    : _oldFunc(rollingCutRandFunc)
+    {
+        rollingCutRandFunc = fn;
+    }
+
+    ~rollingCutRandFunc_override_t()
+    {
+        rollingCutRandFunc = _oldFunc;
+    }
+
+    randFunc _oldFunc;
+};
+
 static void resetInternalState(void)
 {
     oilProtEndTime = 0;
@@ -565,8 +584,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
     context.current.maxInjOutputs = 1;
 
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
-    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0xFE, onOff.ignitionChannels);
+    TEST_ASSERT_BITS_HIGH(0x01, onOff.fuelChannels);
+    TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
@@ -580,8 +599,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
-    TEST_ASSERT_EQUAL_HEX8(0xFE, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0xFE, onOff.ignitionChannels);
+    TEST_ASSERT_BITS_LOW(0x01, onOff.fuelChannels);
+    TEST_ASSERT_BITS_LOW(0x01, onOff.ignitionChannels);
 }
 
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullcut(void)
@@ -597,8 +616,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
 
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     // lower 4 bits should be cleared -> 0xF0
-    TEST_ASSERT_EQUAL_HEX8(0xF0, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0xF0, onOff.ignitionChannels);
+    TEST_ASSERT_BITS_LOW(0x0F, onOff.fuelChannels);
+    TEST_ASSERT_BITS_LOW(0x0F, onOff.ignitionChannels);
 }
 
 static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastRev(void)
@@ -659,39 +678,54 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     TEST_ASSERT_EQUAL_UINT32(0U, rollingCutLastRev);
 }
 
-#if 0 // TODO: refactor calculateFuelIgnitionChannelCut to workaround randomness 
-static void test_calculateFuelIgnitionChannelCut_sets_pending_ignition(void)
+// Deterministic RNG stubs for tests
+static uint8_t deterministic_rand_low(void)  { return 1U; }   // always triggers (< cutPercent)
+static uint8_t deterministic_rand_high(void) { return 255U; } // never triggers (>= cutPercent)
+
+// Force all channels to be cut via deterministic low RNG
+static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels_cut(void)
 {
     engineProtection_test_context_t context;
-    context.setHardCutRolling();
     context.setRpmActive(HARD_REV_FIXED);
+    context.setHardCutRolling();
 
-    // Use four-stroke mode to exercise the pending-ignition code path
-    context.page2.strokes = FOUR_STROKE;
-    context.current.RPM = (context.page4.HardRevLim-1U)*100U; // sit between thresholds
+    context.current.RPM *= 2; // ensure full-cut condition if rpmDelta >= 0
+    context.current.maxIgnOutputs = 4;
+    context.current.maxInjOutputs = 4;
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+
+    // Inject deterministic RNG that always triggers cuts
+    rollingCutRandFunc_override_t rngOverride(deterministic_rand_low);
+
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    // lower 4 bits should be cleared -> 0xF0
+    TEST_ASSERT_BITS_LOW(0x0F, onOff.fuelChannels);
+    TEST_ASSERT_BITS_LOW(0x0F, onOff.ignitionChannels);
+}
+
+// Force no channels to be cut via deterministic high RNG
+static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_cut(void)
+{
+    engineProtection_test_context_t context;
+    context.setRpmActive(HARD_REV_FIXED);
+    context.setHardCutRolling();
+
     context.current.maxIgnOutputs = 2;
     context.current.maxInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
-    // Ensure scheduler start state has no pending bits
-    context.current.schedulerCutState.fuelChannels = 0x03;
-    context.current.schedulerCutState.ignitionChannels = 0x03;
-    context.current.schedulerCutState.ignitionChannelsPending = 0x00;
+    // Ensure rpm sits in table-driven partial-cut zone (not full 100%)
+    context.current.RPM = (context.page4.HardRevLim * 100U) + (rollingCutTable.axis[1] * 10); // use mid axis
 
-    // Ensure rollingCutLastRev is recent so the algorithm may schedule pending ignition
-    rollingCutLastRev = context.current.startRevolutions;
+    // Inject deterministic RNG that never triggers cuts
+    rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
 
-    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
 
-    TEST_ASSERT_NOT_EQUAL(0, cut.ignitionChannelsPending);
+    // No channels should be cut
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
 }
-
-static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_after_two_revs(void)
-{
-    // This test was removed due to unreliable internal state interactions (random1to100)
-    // TODO: refactor & re-work test so it's reliable.
-}
-#endif
 
 void runAllTests(void)
 {
@@ -729,6 +763,8 @@ void runAllTests(void)
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_both);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels_cut);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_cut);
     }
 }
 

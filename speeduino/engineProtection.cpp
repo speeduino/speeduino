@@ -197,6 +197,9 @@ uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &pa
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
+// Test-hookable RNG for rolling cut (defaults to existing random1to100)
+TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
+
 statuses::scheduler_cut_t calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if (getDecoderStatus().syncStatus==SyncStatus::None)
@@ -267,7 +270,7 @@ statuses::scheduler_cut_t calculateFuelIgnitionChannelCut(statuses &current, con
 
       for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
       {  
-        if( (cutPercent == 100) || (random1to100() < cutPercent) )
+        if( (cutPercent == 100) || (rollingCutRandFunc() < cutPercent) )
         {
           switch(page6.engineProtectType)
           {
