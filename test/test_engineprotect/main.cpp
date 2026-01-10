@@ -168,7 +168,7 @@ struct engineProtection_test_context_t
         populateRollingCutTable();
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 50; // div100 -> 1000 RPM
-        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - (rollingCutTable.axis[0]*10));
+        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]));
         current.schedulerCutState = { 0x00, 0xFF, 0xFF, SchedulerCutStatus::None };
     }
 
@@ -244,7 +244,7 @@ static void test_checkOilPressureLimit_timer_and_activation(void)
     unsigned long now = 12345UL;
     // First call should arm the timer but not yet activate
     TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, now));
-    TEST_ASSERT_EQUAL_UINT32(now + ((uint16_t)context.page10.oilPressureProtTime * 100U), oilProtEndTime);
+    TEST_ASSERT_EQUAL_UINT32(now + TIME_TEN_MILLIS.toUser(context.page10.oilPressureProtTime), oilProtEndTime);
 
     // Before expiry -> still false
     TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, oilProtEndTime - 1));
@@ -835,7 +835,7 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
     engineProtection_test_context_t context;
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim) + (rollingCutTable.axis[0]*10) + 1U);
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) + 1U);
 
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -877,7 +877,7 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    setRpm(context.current, (context.page4.HardRevLim*100U) + (rollingCutTable.axis[0]*10)-1); // below threshold
+    setRpm(context.current, (context.page4.HardRevLim*100U) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold
     
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -896,15 +896,15 @@ static void test_useRollingCut(void)
     context.page2.hardCutType = HARD_CUT_FULL;
     setRpm(context.current, maxRPM);
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + (rollingCutTable.axis[2] * 10));
+    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
 
     context.setHardCutRolling();
-    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)-1); // below threshold    
+    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold    
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)); // exactly at threshold - should NOT trigger (needs >)
+    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])); // exactly at threshold - should NOT trigger (needs >)
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + (rollingCutTable.axis[0] * 10)+1); // just above threshold - cut
+    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])+1); // just above threshold - cut
     TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
 
     setRpm(context.current, maxRPM); // At max - no rolling cut
@@ -974,7 +974,7 @@ static void test_calcRollingCutPercentage(void)
     setRpm(context.current, maxRPM+1000);
     TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
     
-    setRpm(context.current, maxRPM+(rollingCutTable.axis[2]*10));
+    setRpm(context.current, maxRPM+SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
     TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[2], calcRollingCutPercentage(context.current, maxRPM));
     
     // Test division underflow.

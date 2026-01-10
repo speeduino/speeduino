@@ -548,12 +548,12 @@ struct config6 : public config_page_t {
 
 } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
-#define HARD_REV_FIXED    1
-#define HARD_REV_COOLANT  2
+constexpr uint8_t HARD_REV_FIXED   = 1U;
+constexpr uint8_t HARD_REV_COOLANT = 2U;
 
-#define AFR_PROTECT_OFF     0U
-#define AFR_PROTECT_FIXED   1U
-#define AFR_PROTECT_TABLE   2U
+constexpr uint8_t AFR_PROTECT_OFF   = 0U;
+constexpr uint8_t AFR_PROTECT_FIXED = 1U;
+constexpr uint8_t AFR_PROTECT_TABLE = 2U;
 
 /** Page 9 of the config - mostly deals with CANBUS control.
 See ini file for further info (Config Page 10 in the ini).

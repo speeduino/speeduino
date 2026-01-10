@@ -44,8 +44,8 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const
 TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const config6 &page6)
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF)
-      && (page6.boostCutEnabled > 0) 
-      && (current.MAP > ((long)page6.boostLimit * 2L));
+      && (page6.boostCutEnabled) 
+      && (current.MAP > (long)MAP.toUser(page6.boostLimit));
 }
 
 static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
@@ -69,7 +69,7 @@ static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &pag
 
 static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-    return (current.MAP >= (long)(page9.afrProtectMinMAP * UINT16_C(2)))
+    return (current.MAP >= (long)MAP.toUser(page9.afrProtectMinMAP))
           && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
           && (current.TPS >= page9.afrProtectMinTPS) 
           && (current.O2 >= getAfrO2Limit(current, page9)); 
@@ -108,7 +108,7 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
       // All conditions fulfilled - start counter for 'protection delay'
       if(afrProtectedActivateTime==0U) 
       {
-        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * UINT16_C(100));
+        afrProtectedActivateTime = currMillis + TIME_TEN_MILLIS.toUser(page9.afrProtectCutTime);
       }
 
       // Check if countdown has reached its target, if so then instruct to cut
@@ -215,11 +215,11 @@ TESTABLE_INLINE_STATIC uint16_t getMaxRpm(const statuses &current, const config4
   // The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc).
   // Divided by 100.
   return applyFlatShiftRevLimit(
-          (uint16_t)applyHardLaunchRevLimit(
-              applyEngineProtectionRevLimit(
-                getHardRevLimit(current, page4, page9), 
-                current, page4),
-              current, page6) * 100U,
+          RPM_COARSE.toUser(applyHardLaunchRevLimit(
+                              applyEngineProtectionRevLimit(
+                                getHardRevLimit(current, page4, page9), 
+                                current, page4),
+                              current, page6)),
             current);
   
 }
@@ -287,7 +287,7 @@ TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2
   //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
   return (page2.hardCutType == HARD_CUT_ROLLING) 
       && (current.RPM < maxAllowedRPM)
-      && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10)));
+      && (current.RPM > (maxAllowedRPM - RPM_MEDIUM.toUser(rollingCutTable.axis[0]*-1)));
 }
 
 static inline bool isNonSequential(const config2 &page2, const config4 &page4)
@@ -319,11 +319,11 @@ TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current,
     return 101U; 
   }
   // Avoid underflow
-  if (rpmDelta<((int16_t)INT8_MIN*10)) {
+  if (rpmDelta<SIGNED_RPM_MEDIUM.toUser(INT8_MIN)) {
     return rollingCutTable.values[0];
   }
   
-  return table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); 
+  return table2D_getValue(&rollingCutTable, SIGNED_RPM_MEDIUM.toRaw(rpmDelta) ); 
 }
 
 static inline statuses::scheduler_cut_t channelOff(statuses::scheduler_cut_t cutState, const config6 &page6, uint8_t channel)
@@ -428,7 +428,7 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   { 
     statuses::scheduler_cut_t cutState = current.schedulerCutState;
     cutState.status = SchedulerCutStatus::Rolling; 
-    if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
+    if(rollingCutLastRev == 0U) { rollingCutLastRev = current.startRevolutions; } //First time check
 
     uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
     if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut))) //Check if the required number of revolutions have passed since the last cut
