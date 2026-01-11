@@ -13,8 +13,7 @@ TESTABLE_CONSTEXPR table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtT
 
 /* AFR protection state moved to file scope so unit tests can control/reset it */
 TESTABLE_STATIC bool checkAFRLimitActive = false;
-TESTABLE_STATIC bool afrProtectCountEnabled = false;
-TESTABLE_STATIC unsigned long afrProtectCount = 0;
+TESTABLE_STATIC unsigned long afrProtectedActivateTime = 0;
 
 TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis)
 {
@@ -118,27 +117,25 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
     if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
     {
       /* All conditions fulfilled - start counter for 'protection delay' */
-      if(!afrProtectCountEnabled) 
+      if(afrProtectedActivateTime==0U) 
       {
-        afrProtectCountEnabled = true;
-        afrProtectCount = currMillis;
+        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * X100_MULTIPLIER);
       }
 
       /* Check if countdown has reached its target, if so then instruct to cut */
-      checkAFRLimitActive = currMillis >= (afrProtectCount + (page9.afrProtectCutTime * X100_MULTIPLIER));
+      checkAFRLimitActive = currMillis >= afrProtectedActivateTime;
     } 
     else 
     {
       /* Conditions have presumably changed - deactivate and reset counter */
-      afrProtectCountEnabled = false;
-      afrProtectCount = 0;
+      afrProtectedActivateTime = 0U;
     }
 
     /* Check if condition for reactivation is fulfilled */
     if(current.TPS <= page9.afrProtectReactivationTPS)
     {
       checkAFRLimitActive = false;
-      afrProtectCountEnabled = false;
+      afrProtectedActivateTime = 0U;
     }
   }
   else

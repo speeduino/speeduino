@@ -19,8 +19,7 @@ extern bool checkBoostLimit(const statuses &current, const config6 &page6);
 
 extern bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis);
 extern bool checkAFRLimitActive;
-extern bool afrProtectCountEnabled;
-extern unsigned long afrProtectCount;
+extern unsigned long afrProtectedActivateTime;
 
 extern bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis);
 extern uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9);
@@ -52,8 +51,7 @@ static void resetInternalState(void)
 {
     oilProtEndTime = 0;
     checkAFRLimitActive = false;
-    afrProtectCountEnabled = false;
-    afrProtectCount = 0;
+    afrProtectedActivateTime = 0;
     softLimitTime = 0;
     rollingCutLastRev = 0;
 }
@@ -112,8 +110,7 @@ struct engineProtection_test_context_t
     void setAfrActive(void)
     {
         resetInternalState();
-        afrProtectCountEnabled = true;
-        afrProtectCount = 1;
+        afrProtectedActivateTime = 1;
         current.MAP = 200; // kPa-like units; ensure above any small min*2
         setRpm(current, 5000);
         current.TPS = 50;
@@ -350,26 +347,18 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     engineProtection_test_context_t context;
     context.setAfrActive();
 
-    context.page9.afrProtectCutTime = 1; // 1 * 100ms = 100ms delay
     context.page9.afrProtectReactivationTPS = 20;
 
-    // First call should start the counter but not activate yet
-    afrProtectCount = 0;
-    afrProtectCountEnabled = false;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, 1000));
-    TEST_ASSERT_TRUE(afrProtectCountEnabled);
-    unsigned long start = afrProtectCount;
-
-    // Before delay expires -> still not active
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, start + (context.page9.afrProtectCutTime * 100) - 1));
+    constexpr uint32_t NOW = 1000;
+    afrProtectedActivateTime = NOW;
 
     // At delay expiry -> becomes active
-    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, start + (context.page9.afrProtectCutTime * 100)));
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     TEST_ASSERT_TRUE(checkAFRLimitActive);
 
     // Now simulate TPS drop below reactivation threshold to clear protection
     context.current.TPS = context.page9.afrProtectReactivationTPS;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, start + (context.page9.afrProtectCutTime * 100) + 1));
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     TEST_ASSERT_FALSE(checkAFRLimitActive);
 }
 
@@ -380,19 +369,16 @@ static void test_checkAFRLimit_counter_reset_on_condition_change(void)
 
     context.page9.afrProtectMinMAP = 1;
     context.page9.afrProtectCutTime = 5;
-    afrProtectCountEnabled = false;
-    afrProtectCount = 0;
+    afrProtectedActivateTime = 0U;
 
     constexpr uint32_t now = 1000UL;
     TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now));
-    TEST_ASSERT_TRUE(afrProtectCountEnabled);
-    TEST_ASSERT_EQUAL_UINT32(now, afrProtectCount);
+    TEST_ASSERT_EQUAL_UINT32(now + (context.page9.afrProtectCutTime*100), afrProtectedActivateTime);
 
     // Drop MAP below minimum -> counter should reset
     context.current.MAP = 0;
     TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now + 1));
-    TEST_ASSERT_FALSE(afrProtectCountEnabled);
-    TEST_ASSERT_EQUAL_UINT32(0U, afrProtectCount);
+    TEST_ASSERT_EQUAL_UINT32(0U, afrProtectedActivateTime);
 }
 
 static void test_checkAFRLimit_delay_boundary_robustness(void)
@@ -401,12 +387,11 @@ static void test_checkAFRLimit_delay_boundary_robustness(void)
     context.setAfrActive();
     context.page9.afrProtectCutTime = 2; // 200ms
     constexpr uint32_t now = 5000UL;
-    afrProtectCount = now;
-    afrProtectCountEnabled = true;
+    afrProtectedActivateTime = now;
 
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)-1));
-    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)));
-    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now + (context.page9.afrProtectCutTime*100)+1));
+    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now - 1));
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now));
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, now + 1));
 }
 
 static void test_checkAFRLimit_zero_deviation_fixed_mode(void)
