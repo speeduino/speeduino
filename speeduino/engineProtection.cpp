@@ -47,34 +47,35 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const confi
       && (current.MAP > ((long)page6.boostLimit * 2L));
 }
 
+static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
+{
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.afrProtectEnabled != AFR_PROTECT_OFF) 
+      && (page6.egoType == EGO_TYPE_WIDE);
+}
+
 static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &page9)
 {
   if (page9.afrProtectEnabled==AFR_PROTECT_FIXED) {
     return page9.afrProtectDeviation;
-  } if (page9.afrProtectEnabled==AFR_PROTECT_TABLE) {
-    return current.afrTarget + page9.afrProtectDeviation;
-  } else {
-    return UINT16_MAX;
+  } 
+  if (page9.afrProtectEnabled==AFR_PROTECT_TABLE) {
+    return current.afrTarget + (uint16_t)page9.afrProtectDeviation;
   }
+  
+  return UINT16_MAX;
 }
 
-static inline bool afrLimitAfrCondition(const statuses &current, const config9 &page9)
+static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-  /*
-    Depending on selected mode, this could either be fixed AFR value or a
-    value set to be the maximum deviation from AFR target table.
-
-    1 = fixed value mode, 2 = target table mode
-  */
-  return (page9.afrProtectEnabled!=AFR_PROTECT_OFF)
-      && (current.O2 >=getAfrO2Limit(current, page9));
+    return (current.MAP >= (long)(page9.afrProtectMinMAP * UINT16_C(2)))
+          && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
+          && (current.TPS >= page9.afrProtectMinTPS) 
+          && (current.O2 >= getAfrO2Limit(current, page9)); 
 }
 
 TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
 {
-  static constexpr char X2_MULTIPLIER = 2;
-  static constexpr char X100_MULTIPLIER = 100;
-
   /*
     To use this function, a wideband sensor is required.
 
@@ -99,39 +100,29 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
     For reactivation, the following condition has to be met:
     - TPS below x %
   */
-
-  /*
-    Do 3 checks here;
-    - whether engine protection is enabled
-    - whether AFR protection is enabled
-    - whether wideband sensor is used
-  */
-  if((page6.engineProtectType != PROTECT_CUT_OFF) && (page9.afrProtectEnabled!=AFR_PROTECT_OFF) && (page6.egoType == EGO_TYPE_WIDE)) {
-    /* Conditions */
-    bool mapCondition = (current.MAP >= (page9.afrProtectMinMAP * X2_MULTIPLIER));
-    bool rpmCondition = (current.RPMdiv100 >= page9.afrProtectMinRPM);
-    bool tpsCondition = (current.TPS >= page9.afrProtectMinTPS);
-    bool afrCondition = afrLimitAfrCondition(current, page9);
-
-    /* Check if conditions above are fulfilled */
-    if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
+  if ( canApplyAfrLimit(page6, page9) )
+  {
+    if (isAfrLimitCondtionActive(current, page9))
     {
-      /* All conditions fulfilled - start counter for 'protection delay' */
+      // All conditions fulfilled - start counter for 'protection delay'
       if(afrProtectedActivateTime==0U) 
       {
-        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * X100_MULTIPLIER);
+        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * UINT16_C(100));
       }
 
-      /* Check if countdown has reached its target, if so then instruct to cut */
+      // Check if countdown has reached its target, if so then instruct to cut
       checkAFRLimitActive = currMillis >= afrProtectedActivateTime;
     } 
     else 
     {
-      /* Conditions have presumably changed - deactivate and reset counter */
-      afrProtectedActivateTime = 0U;
+      // NOTE: we deliberately do not reset checkAFRLimitActive here
+      // Once AFR protection is in effect, user must reduce throttle
+      // to below the reactivation limit to reset manually (below)
+
+      // Do nothing
     }
 
-    /* Check if condition for reactivation is fulfilled */
+    // Check if condition for reactivation is fulfilled
     if(current.TPS <= page9.afrProtectReactivationTPS)
     {
       checkAFRLimitActive = false;

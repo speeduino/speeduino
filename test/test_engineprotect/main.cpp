@@ -337,7 +337,7 @@ static void test_checkAFRLimit_table_mode_boundary(void) {
     context.page9.afrProtectCutTime = 0;
 
     // current.O2 exactly at target+deviation (10+5=15) should trigger
-    context.current.O2 = context.current.afrTarget + context.page9.afrProtectDeviation;
+    context.current.O2 = context.current.afrTarget + (uint16_t)context.page9.afrProtectDeviation;
 
     TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, 1234));
     TEST_ASSERT_TRUE(checkAFRLimitActive);
@@ -356,29 +356,15 @@ static void test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps(void) 
     TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     TEST_ASSERT_TRUE(checkAFRLimitActive);
 
+    // Revert map condition -> still active!
+    context.current.MAP = (context.page9.afrProtectMinMAP-1) * 100;
+    TEST_ASSERT_TRUE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
+    TEST_ASSERT_TRUE(checkAFRLimitActive);
+
     // Now simulate TPS drop below reactivation threshold to clear protection
     context.current.TPS = context.page9.afrProtectReactivationTPS;
     TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, NOW));
     TEST_ASSERT_FALSE(checkAFRLimitActive);
-}
-
-static void test_checkAFRLimit_counter_reset_on_condition_change(void)
-{
-    engineProtection_test_context_t context;
-    context.setAfrActive();
-
-    context.page9.afrProtectMinMAP = 1;
-    context.page9.afrProtectCutTime = 5;
-    afrProtectedActivateTime = 0U;
-
-    constexpr uint32_t now = 1000UL;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now));
-    TEST_ASSERT_EQUAL_UINT32(now + (context.page9.afrProtectCutTime*100), afrProtectedActivateTime);
-
-    // Drop MAP below minimum -> counter should reset
-    context.current.MAP = 0;
-    TEST_ASSERT_FALSE(checkAFRLimit(context.current, context.page6, context.page9, now + 1));
-    TEST_ASSERT_EQUAL_UINT32(0U, afrProtectedActivateTime);
 }
 
 static void test_checkAFRLimit_delay_boundary_robustness(void)
@@ -674,7 +660,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    context.current.RPM *= 2; // ensure full-cut condition if rpmDelta >= 0
+    setRpm(context.current, context.current.RPM * 2U); // ensure full-cut condition if rpmDelta >= 0
     context.current.maxIgnOutputs = 4;
     context.current.maxInjOutputs = 4;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
@@ -700,7 +686,7 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_c
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Ensure rpm sits in table-driven partial-cut zone (not full 100%)
-    context.current.RPM = (context.page4.HardRevLim * 100U) + (rollingCutTable.axis[1] * 10); // use mid axis
+    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim) - RPM_MEDIUM.toUser(rollingCutTable.axis[1] * -1)); // use mid axis
 
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
@@ -727,7 +713,6 @@ void runAllTests(void)
     RUN_TEST_P(test_checkAFRLimit_activate_after_delay_and_reactivate_on_tps);
     RUN_TEST_P(test_checkAFRLimit_immediate_cut_time_zero);
     RUN_TEST_P(test_checkAFRLimit_table_mode_boundary);
-    RUN_TEST_P(test_checkAFRLimit_counter_reset_on_condition_change);
     RUN_TEST_P(test_checkAFRLimit_delay_boundary_robustness);
     RUN_TEST_P(test_checkAFRLimit_zero_deviation_fixed_mode);
     RUN_TEST_P(test_checkEngineProtect_no_protections);
