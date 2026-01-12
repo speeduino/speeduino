@@ -152,7 +152,7 @@ TESTABLE_INLINE_STATIC bool checkCoolantLimit(const statuses &current, const con
       && (current.RPMdiv100 > table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
 }
 
-statuses::engine_protect_flags_t checkEngineProtection(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+BEGIN_LTO_ALWAYS_INLINE(statuses::engine_protect_flags_t) checkEngineProtection(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   statuses::engine_protect_flags_t flags = { false, false, false, false, false };
 
@@ -167,6 +167,7 @@ statuses::engine_protect_flags_t checkEngineProtection(const statuses &current, 
 
   return flags;
 };
+END_LTO_INLINE()
 
 TESTABLE_INLINE_STATIC uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9)
 {
