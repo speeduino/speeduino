@@ -341,6 +341,15 @@ constexpr uint8_t IDLEADVANCE_MODE_SWITCHED = 2U;
 constexpr uint8_t IDLEADVANCE_ALGO_TPS      = 0U;
 constexpr uint8_t IDLEADVANCE_ALGO_CTPS     = 1U;
 
+constexpr uint8_t VSS_MODE_OFF          = 0U;
+constexpr uint8_t VSS_MODE_INTERNAL_PIN = 1U;
+constexpr uint8_t VSS_MODE_EXTERNAL_KM  = 2U;
+constexpr uint8_t VSS_MODE_EXTERNAL_MI  = 3U;
+
+static inline bool isExternalVssMode(const config2 &page2) {
+  return page2.vssMode==VSS_MODE_EXTERNAL_KM
+      || page2.vssMode==VSS_MODE_EXTERNAL_MI;
+}
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */

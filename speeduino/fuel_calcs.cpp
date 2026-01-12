@@ -31,7 +31,7 @@ static inline uint16_t calcNitrousStagePulseWidth(uint8_t minRPMDiv100, uint8_t 
   uint16_t adderMin = adderMinDiv100 * UINT16_C(100);
   uint16_t adderMax = adderMaxDiv100 * UINT16_C(100);
   uint16_t adderRange = adderMin - adderMax;
-  return adderMax + percentage(calcNitrousStagePercent(minRPMDiv100, maxRPMDiv100, current), adderRange); //Calculate the above percentage of the calculated ms value.
+  return adderMax + percentageApprox(calcNitrousStagePercent(minRPMDiv100, maxRPMDiv100, current), adderRange); //Calculate the above percentage of the calculated ms value.
 }
 
 //Manual adder for nitrous. These are not in correctionsFuel() because they are direct adders to the ms value, not % based
@@ -125,7 +125,7 @@ static inline uint32_t includeOpenTime(uint32_t intermediate, uint16_t injOpen) 
 static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const config2 &page2, const statuses &current) {
   // We need to add Acceleration Enrichment pct increase if the engine is accelerating
   if ((current.isAcceleratingTPS) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
-    return intermediate + percentage(current.AEamount - 100U, REQ_FUEL);
+    return intermediate + percentageApprox((uint16_t)(current.AEamount - 100U), REQ_FUEL);
   }
   return intermediate;
 }
@@ -191,8 +191,8 @@ static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t inj
   if(stagingSplit > 0U) 
   { 
     uint32_t pwSecondaryStaged = calcStageSecondaryPw(totalPw, page10);
-    uint32_t primary = percentage(100U - stagingSplit, pwPrimaryStaged) + injOpenTime;
-    uint32_t secondary = percentage(stagingSplit, pwSecondaryStaged) + injOpenTime;
+    uint32_t primary = percentageApprox((uint8_t)(100U - stagingSplit), pwPrimaryStaged) + injOpenTime;
+    uint32_t secondary = percentageApprox(stagingSplit, pwSecondaryStaged) + injOpenTime;
     return { 
       (uint16_t)min(primary, (uint32_t)UINT16_MAX),
       (uint16_t)min(secondary, (uint32_t)UINT16_MAX),

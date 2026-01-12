@@ -25,6 +25,8 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "board_definition.h"
 #include "preprocessor.h"
+#include "static_for.hpp"
+#include "polling.hpp"
 
 uint8_t statusSensors = 0;
 
@@ -506,7 +508,7 @@ map_last_read_t& getMapLast(void){
 }
 #endif
 
-void readMAP(void)
+static inline void readMAP(void)
 {
   // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
   mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
@@ -555,56 +557,58 @@ uint32_t getMAPDeltaTime(void) {
 
 // ========================================== TPS ==========================================
 
-void readTPS(bool useFilter)
+static inline bool isCTPSSensorActive(void) {
+  if(configPage2.CTPSPolarity == 0U) { return !digitalRead(pinCTPS); } //Normal mode (ground switched)
+  return digitalRead(pinCTPS); //Inverted mode (5v activates closed throttle position sensor)
+}
+
+static inline void readTPS(uint8_t tpsADC)
 {
   currentStatus.TPSlast = currentStatus.TPS;
-  uint8_t tempTPS = (uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U); //Get the current raw TPS ADC value and map it into a uint8_t
+  currentStatus.tpsADC = tpsADC;
 
-  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
-  if(useFilter == true) { currentStatus.tpsADC = (uint8_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
-  else { currentStatus.tpsADC = tempTPS; }
-  uint8_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
-
-  if(configPage2.tpsMax > configPage2.tpsMin)
-  {
-    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
-    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
-    currentStatus.TPS = map(tempADC, configPage2.tpsMin, configPage2.tpsMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
-  }
-  else
+  uint8_t tempTPSMax = configPage2.tpsMax;
+  uint8_t tempTPSMin = configPage2.tpsMin;
+  if(configPage2.tpsMin > configPage2.tpsMax)
   {
     //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
-    tempADC = UINT8_MAX - tempADC; //Reverse the ADC values
-    uint8_t tempTPSMax = UINT8_MAX - configPage2.tpsMax;
-    uint8_t tempTPSMin = UINT8_MAX - configPage2.tpsMin;
-
-    //All checks below are reversed from the standard case above
-    tempADC = clamp(tempADC, tempTPSMin, tempTPSMax);
-    currentStatus.TPS = map(tempADC, tempTPSMin, tempTPSMax, 0, 200);
+    tpsADC = UINT8_MAX - tpsADC; //Reverse the ADC values
+    tempTPSMax = UINT8_MAX - configPage2.tpsMax;
+    tempTPSMin = UINT8_MAX - configPage2.tpsMin;
   }
+
+  //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+  tpsADC = clamp(tpsADC, tempTPSMin, tempTPSMax);
+  currentStatus.TPS = map(tpsADC, tempTPSMin, tempTPSMax, 0, 200); //Take the raw TPS ADC value and convert it into a TPS% based on the calibrated values
 
   //Check whether the closed throttle position sensor is active
-  if(configPage2.CTPSEnabled == true)
-  {
-    if(configPage2.CTPSPolarity == 0U) { currentStatus.CTPSActive = !digitalRead(pinCTPS); } //Normal mode (ground switched)
-    else { currentStatus.CTPSActive = digitalRead(pinCTPS); } //Inverted mode (5v activates closed throttle position sensor)
-  }
-  else { currentStatus.CTPSActive = 0; }
+  currentStatus.CTPSActive = configPage2.CTPSEnabled == true && isCTPSSensorActive();
 }
 
-void readCLT(bool useFilter)
+static inline void readTPS(void)
 {
-  uint16_t tempReading = readAnalogSensor(pinCLT);
-  //The use of the filter can be overridden if required. This is used on startup so there can be an immediately accurate coolant value for priming
-  if(useFilter == true) { currentStatus.cltADC = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_CLT, currentStatus.cltADC); }
-  else { currentStatus.cltADC = tempReading; }
-  
+  readTPS((uint8_t)LOW_PASS_FILTER((uint16_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U), configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC));
+}
+
+
+void initialiseTPS(void) { 
+  readTPS((uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U)); // Need to read tps to detect flood clear state
+}
+
+static inline void readCLT(void)
+{
+  currentStatus.cltADC = LOW_PASS_FILTER(readAnalogSensor(pinCLT), configPage4.ADCFILTER_CLT, currentStatus.cltADC);
   currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
 }
 
-void readIAT(void)
+void initialiseCLT(void) {
+  currentStatus.cltADC = readAnalogSensor(pinCLT);
+  currentStatus.coolant = temperatureRemoveOffset(table2D_getValue(&cltCalibrationTable, currentStatus.cltADC)); //Temperature calibration values are stored as positive bytes. We subtract 40 from them to allow for negative temperatures
+}
+
+static inline void readIAT(void)
 {
   currentStatus.iatADC = LOW_PASS_FILTER(readAnalogSensor(pinIAT), configPage4.ADCFILTER_IAT, currentStatus.iatADC);
   currentStatus.IAT = temperatureRemoveOffset(table2D_getValue(&iatCalibrationTable, currentStatus.iatADC));
@@ -647,7 +651,7 @@ static inline void setBaroFromMAP(void)
   }
 }
 
-void readBaro(void)
+static inline void readBaro(void)
 {
   if ( configPage6.useExtBaro != 0U  ) 
   {
@@ -692,7 +696,7 @@ void resetMAPcycleAndEvent(void)
 
 // ========================================== O2 ==========================================
 
-void readO2(void)
+static inline void readO2_1(void)
 {
   //An O2 read is only performed if an O2 sensor type is selected. This is to prevent potentially dangerous use of the O2 readings prior to proper setup/calibration
   if(configPage6.egoType > 0U)
@@ -708,15 +712,26 @@ void readO2(void)
   
 }
 
-void readO2_2(void)
+
+static inline void readO2_2(void)
 {
-  //Second O2 currently disabled as its not being used
-  //Get the current O2 value.
-  currentStatus.O2_2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
-  currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  // Read second O2 if configured.
+  if (pinO2_2!=0U)
+  {
+    currentStatus.O2_2ADC = LOW_PASS_FILTER(readAnalogSensor(pinO2_2), configPage4.ADCFILTER_O2, currentStatus.O2_2ADC);
+    currentStatus.O2_2 = table2D_getValue(&o2CalibrationTable, currentStatus.O2_2ADC);
+  }
 }
 
-void readBat(void)
+static inline void readO2(void)
+{
+  if (configPage2.canWBO == 0U) {
+    readO2_1();
+    readO2_2();
+  } 
+}
+
+static inline void readBat(void)
 {
   int16_t tempReading = fastMap10Bit(readAnalogSensor(pinBat), 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
 
@@ -747,6 +762,39 @@ void readBat(void)
   currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
+static void enableAnalogIsr(void)
+{
+  #if defined(ANALOG_ISR)
+    //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
+    BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
+  #endif
+}
+
+static void readSpeed(void);
+static void readGear(void);
+static void updateFuelPressure(void);
+static void updateOilPressure(void);
+
+void readPolledSensors(byte loopTimer)
+{
+  static constexpr polledAction_t polledSensors[] = {
+    {TPS_READ_TIMER_BIT, readTPS},
+    {CLT_READ_TIMER_BIT, readCLT},
+    {IAT_READ_TIMER_BIT, readIAT},
+    {O2_READ_TIMER_BIT, readO2},
+    {BAT_READ_TIMER_BIT, readBat},
+    {BARO_READ_TIMER_BIT, readBaro},
+    {MAP_READ_TIMER_BIT, readMAP},
+    {BIT_TIMER_200HZ, enableAnalogIsr},
+    {BIT_TIMER_10HZ, readSpeed},
+    {BIT_TIMER_10HZ, readGear},
+    {BIT_TIMER_4HZ, updateFuelPressure},
+    {BIT_TIMER_4HZ, updateOilPressure},
+  };
+  
+  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
+}
+
 /**
  * @brief Returns the VSS pulse gap for a given history point
  * 
@@ -769,11 +817,11 @@ uint32_t vssGetPulseGap(uint8_t historyIndex)
   return tempGap;
 }
 
-uint16_t getSpeed(void)
+static uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
   // Get VSS from CAN, Serial or Analog by using Aux input channels.
-  if(configPage2.vssMode == 1U)
+  if(configPage2.vssMode == VSS_MODE_INTERNAL_PIN)
   {
     // Direct reading from Aux channel
     if (configPage2.vssPulsesPerKm == 0U)
@@ -788,7 +836,7 @@ uint16_t getSpeed(void)
     tempSpeed = LOW_PASS_FILTER(tempSpeed, configPage2.vssSmoothing, currentStatus.vss); //Apply speed smoothing factor
   }
   // Interrupt driven mode
-  else if(configPage2.vssMode > 1U)
+  else if (isExternalVssMode(configPage2))
   {
     uint32_t pulseTime = 0U;
     uint32_t vssTotalTime = 0U;
@@ -813,7 +861,12 @@ uint16_t getSpeed(void)
   return tempSpeed;
 }
 
-byte getGear(void)
+static void readSpeed(void)
+{
+  currentStatus.vss = getSpeed();
+}
+
+static byte getGear(void)
 {
   byte tempGear = 0U; //Unknown gear
   if(currentStatus.vss > 0U)
@@ -837,7 +890,12 @@ byte getGear(void)
   return tempGear;
 }
 
-byte getFuelPressure(void)
+static void readGear(void)
+{
+  currentStatus.gear = getGear();
+}
+
+static byte getFuelPressure(void)
 {
   int16_t tempFuelPressure = 0;
 
@@ -852,7 +910,12 @@ byte getFuelPressure(void)
   return (byte)tempFuelPressure;
 }
 
-byte getOilPressure(void)
+static void updateFuelPressure(void)
+{
+  currentStatus.fuelPressure = getFuelPressure();
+}
+
+static byte getOilPressure(void)
 {
   int16_t tempOilPressure = 0;
 
@@ -867,6 +930,11 @@ byte getOilPressure(void)
 
 
   return (byte)tempOilPressure;
+}
+
+static void updateOilPressure(void)
+{
+  currentStatus.oilPressure = getOilPressure();
 }
 
 uint8_t getAnalogKnock(void)

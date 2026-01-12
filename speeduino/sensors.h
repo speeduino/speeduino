@@ -20,8 +20,6 @@
 #define VSS_GEAR_HYSTERESIS 10U
 #define VSS_SAMPLES         4U //Must be a power of 2 and smaller than 255
 
-#define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
-
 extern volatile byte flexCounter;
 extern volatile uint32_t flexPulseWidth;
 
@@ -42,29 +40,54 @@ extern volatile uint32_t flexPulseWidth;
 extern uint8_t statusSensors; //Uses the above status bits
 
 void initialiseADC(void);
-void readTPS(bool useFilter=true); //Allows the option to override the use of the filter
-void readO2_2(void);
 void flexPulse(void);
 void knockPulse(void);
 uint32_t vssGetPulseGap(byte toothHistoryIndex);
 void vssPulse(void);
-uint16_t getSpeed(void);
-byte getGear(void);
-byte getFuelPressure(void);
-byte getOilPressure(void);
 uint16_t readAuxanalog(uint8_t analogPin);
 uint16_t readAuxdigital(uint8_t digitalPin);
-void readCLT(bool useFilter=true); //Allows the option to override the use of the filter
-void readIAT(void);
-void readO2(void);
-void readBat(void);
-void readBaro(void);
+
+/** @brief Initial reading of the TPS sensor, primarily to detect flood clear state */
+void initialiseTPS(void);
+
+/** @brief Initial reading of the coolant sensor, primarily to make sure the priming pulsewidth is correct */
+void initialiseCLT(void);
+
+#define TPS_READ_FREQUENCY  30 //ONLY VALID VALUES ARE 15 or 30!!!
+
+/** @brief Define the TPS sensor read frequency. */
+#if TPS_READ_FREQUENCY==30
+#define TPS_READ_TIMER_BIT BIT_TIMER_30HZ
+#elif TPS_READ_FREQUENCY==15
+#define TPS_READ_TIMER_BIT BIT_TIMER_15HZ
+#else
+#error
+#endif
+
+/** @brief Define the coolant sensor read frequency. */
+#define CLT_READ_TIMER_BIT BIT_TIMER_4HZ
+
+/** @brief Define the IAT sensor read frequency. */
+#define IAT_READ_TIMER_BIT BIT_TIMER_4HZ
+
+/** @brief Define the O2 sensor read frequency. */
+#define O2_READ_TIMER_BIT BIT_TIMER_30HZ
+
+/** @brief Define the battery sensor read frequency. */
+#define BAT_READ_TIMER_BIT BIT_TIMER_4HZ
+
+/** @brief Define the baro sensor read frequency. */
+#define BARO_READ_TIMER_BIT BIT_TIMER_1HZ
+
+/** @brief Define the MAP sensor read frequency. */
+#define MAP_READ_TIMER_BIT BIT_TIMER_1KHZ
+
+/** @brief Read the sensors that are polled at every loop. This includes the TPS, MAP, CLT, IAT and O2 sensors */
+void readPolledSensors(byte loopTimer);
 
 /** @brief Initialize the MAP calculation & Baro values */
 void initialiseMAPBaro(void);
 void resetMAPcycleAndEvent(void);
-
-void readMAP(void);
 
 uint8_t getAnalogKnock(void);
 

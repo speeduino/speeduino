@@ -81,7 +81,7 @@ void setup(void)
 static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, uint16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
     uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
-    return percentage(pw1percent, currentPW);
+    return percentageApprox(pw1percent, currentPW);
 }
 
 /** Lookup the current VE value from the primary 3D fuel map.
@@ -324,7 +324,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.startRevolutions = 0;
       resetMAPcycleAndEvent();
       currentStatus.rpmDOT = 0;
-      AFRnextCycle = 0;
+      initialiseCorrections();
       ignitionCount = 0;
       ignitionChannelsOn = 0;
       fuelChannelsOn = 0;
@@ -349,18 +349,15 @@ void __attribute__((always_inline)) loop(void)
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
+    readPolledSensors(LOOP_TIMER);
+
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
-      readMAP();
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_200HZ);
-      #if defined(ANALOG_ISR)
-        //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
-        BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
-      #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
@@ -369,7 +366,6 @@ void __attribute__((always_inline)) loop(void)
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(50);
       #endif
-
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
@@ -380,14 +376,6 @@ void __attribute__((always_inline)) loop(void)
       vvtControl();
       //Water methanol injection
       wmiControl();
-      #if TPS_READ_FREQUENCY == 30
-        readTPS();
-      #endif
-      if (configPage2.canWBO == 0)
-      {
-        readO2();
-        readO2_2();
-      }
       
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(30);
@@ -411,9 +399,6 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
-      #if TPS_READ_FREQUENCY == 15
-        readTPS(); //TPS reading to be performed every 32 loops (any faster and it can upset the TPSdot sampling time)
-      #endif
       #if  defined(CORE_TEENSY35)       
           if (configPage9.enable_intcan == 1) // use internal can module
           {
@@ -441,9 +426,6 @@ void __attribute__((always_inline)) loop(void)
       // Air conditioning control
       airConControl();
 
-      currentStatus.vss = getSpeed();
-      currentStatus.gear = getGear();
-
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(10);
       #endif
@@ -455,14 +437,10 @@ void __attribute__((always_inline)) loop(void)
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
-      //The IAT and CLT readings can be done less frequently (4 times per second)
-      readCLT();
-      readIAT();
-      readBat();
       nitrousControl();
 
       //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
-      if( (configPage2.idleAdvEnabled >= 1) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
+      if( (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = table2D_getValue(&idleTargetTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         if(currentStatus.airconTurningOn) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
@@ -471,10 +449,7 @@ void __attribute__((always_inline)) loop(void)
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
-      
-      currentStatus.fuelPressure = getFuelPressure();
-      currentStatus.oilPressure = getOilPressure();
-      
+           
       if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
       {
         //TODO dazq to clean this right up :)
@@ -536,7 +511,6 @@ void __attribute__((always_inline)) loop(void)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       currentStatus.systemTemp = getSystemTemp();
-      readBaro(); //Infrequent baro readings are not an issue.
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )
       {
