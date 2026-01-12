@@ -102,7 +102,6 @@ static constexpr uint16_t percentOf = 57357;
 
 void test_maths_halfPercentage_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
     auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 200U; };
     auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += halfPercentage(index, percentOf); };
     TEST_MESSAGE("halfPercentage ");
@@ -112,6 +111,7 @@ void test_maths_halfPercentage_perf(void)
     // here to force the compiler to run the loops above
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 #endif
 }
@@ -119,7 +119,6 @@ void test_maths_halfPercentage_perf(void)
 
 void test_maths_percentage_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
     auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
     auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
     TEST_MESSAGE("Percentage ");
@@ -129,6 +128,7 @@ void test_maths_percentage_perf(void)
     // here to force the compiler to run the loops above
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 #endif
 }
@@ -136,7 +136,6 @@ void test_maths_percentage_perf(void)
 
 void test_maths_percentageApprox_perf(void)
 {
-#if defined(ARDUINO_ARCH_AVR)
     auto nativeTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((uint32_t)percentOf * index) / 100U; };
     auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += percentageApprox(index, percentOf); };
     auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_percent, end_percent, percent_step, nativeTest, optimizedTest);
@@ -144,11 +143,15 @@ void test_maths_percentageApprox_perf(void)
     // The checksums will be different due to rounding. This is only
     // here to force the compiler to run the loops above
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
 
     auto nativeTest2 = [] (uint16_t index, uint32_t &checkSum) { checkSum += percentage(index, percentOf); };
     auto comparison2 = compare_executiontime<uint16_t, uint32_t>(iters, start_percent, end_percent, percent_step, nativeTest2, optimizedTest);
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison2.timeA.result, comparison2.timeB.result);
+
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison2.timeA.durationMicros, comparison2.timeB.durationMicros);
 #endif
 }

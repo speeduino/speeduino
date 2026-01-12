@@ -52,6 +52,8 @@ static void test_duration_TooLarge(void) {
     setSchedule(schedule, TIMEOUT, MAX_TIMER_PERIOD+1UL, true);
     TEST_ASSERT_EQUAL(PENDING, schedule.Status);
     TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(MAX_TIMER_PERIOD - 1U), schedule.duration);
+#else
+    TEST_IGNORE_MESSAGE("Not applicable to this board");
 #endif
 }
 
