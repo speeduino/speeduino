@@ -5,6 +5,7 @@
 #include "unit_testing.h"
 #include "decoders.h"
 #include "units.h"
+#include "preprocessor.h"
 
 TESTABLE_STATIC uint32_t oilProtEndTime;
 TESTABLE_STATIC table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
@@ -186,7 +187,7 @@ TESTABLE_STATIC table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelt
 // Test-hookable RNG for rolling cut (defaults to existing random1to100)
 TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
 
-statuses::scheduler_cut_t calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   if (getSyncStatus()==SyncStatus::None)
   {
@@ -322,3 +323,4 @@ statuses::scheduler_cut_t calculateFuelIgnitionChannelCut(statuses &current, con
 
   return cutState;
 }
+END_LTO_INLINE()
