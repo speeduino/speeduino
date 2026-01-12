@@ -7,6 +7,7 @@
 #include "utilities.h"
 #include "../test_utils.h"
 #include "storage.h"
+#include "../test_schedules/channel_test_helpers.h"
 
 void prepareForInitialiseAll(uint8_t boardId);
 
@@ -50,26 +51,14 @@ static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle,
   
   assert_num_inj_channels(enabled);
 
-  assert_fuel_channel(enabled[0], angle[0], INJ1_CMD_BIT, channel1InjDegrees, fuelSchedule1.pStartCallback, fuelSchedule1.pEndCallback);
-  assert_fuel_channel(enabled[1], angle[1], INJ2_CMD_BIT, channel2InjDegrees, fuelSchedule2.pStartCallback, fuelSchedule2.pEndCallback);
-  assert_fuel_channel(enabled[2], angle[2], INJ3_CMD_BIT, channel3InjDegrees, fuelSchedule3.pStartCallback, fuelSchedule3.pEndCallback);
-  assert_fuel_channel(enabled[3], angle[3], INJ4_CMD_BIT, channel4InjDegrees, fuelSchedule4.pStartCallback, fuelSchedule4.pEndCallback);
-
-#if INJ_CHANNELS>=5
-  assert_fuel_channel(enabled[4], angle[4], INJ5_CMD_BIT, channel5InjDegrees, fuelSchedule5.pStartCallback, fuelSchedule5.pEndCallback);
-#endif
-
-#if INJ_CHANNELS>=6
-  assert_fuel_channel(enabled[5], angle[5], INJ6_CMD_BIT, channel6InjDegrees, fuelSchedule6.pStartCallback, fuelSchedule6.pEndCallback);
-#endif
-
-#if INJ_CHANNELS>=7
-  assert_fuel_channel(enabled[6], angle[6], INJ7_CMD_BIT, channel7InjDegrees, fuelSchedule7.pStartCallback, fuelSchedule7.pEndCallback);
-#endif
-
-#if INJ_CHANNELS>=8
-  assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, channel8InjDegrees, fuelSchedule8.pStartCallback, fuelSchedule8.pEndCallback);
-#endif 
+  RUNIF_INJCHANNEL1(assert_fuel_channel(enabled[0], angle[0], INJ1_CMD_BIT, channel1InjDegrees, fuelSchedule1.pStartCallback, fuelSchedule1.pEndCallback), {});
+  RUNIF_INJCHANNEL2(assert_fuel_channel(enabled[1], angle[1], INJ2_CMD_BIT, channel2InjDegrees, fuelSchedule2.pStartCallback, fuelSchedule2.pEndCallback), {});
+  RUNIF_INJCHANNEL3(assert_fuel_channel(enabled[2], angle[2], INJ3_CMD_BIT, channel3InjDegrees, fuelSchedule3.pStartCallback, fuelSchedule3.pEndCallback), {});
+  RUNIF_INJCHANNEL4(assert_fuel_channel(enabled[3], angle[3], INJ4_CMD_BIT, channel4InjDegrees, fuelSchedule4.pStartCallback, fuelSchedule4.pEndCallback), {});
+  RUNIF_INJCHANNEL5(assert_fuel_channel(enabled[4], angle[4], INJ5_CMD_BIT, channel5InjDegrees, fuelSchedule5.pStartCallback, fuelSchedule5.pEndCallback), {});
+  RUNIF_INJCHANNEL6(assert_fuel_channel(enabled[5], angle[5], INJ6_CMD_BIT, channel6InjDegrees, fuelSchedule6.pStartCallback, fuelSchedule6.pEndCallback), {});
+  RUNIF_INJCHANNEL7(assert_fuel_channel(enabled[6], angle[6], INJ7_CMD_BIT, channel7InjDegrees, fuelSchedule7.pStartCallback, fuelSchedule7.pEndCallback), {});
+  RUNIF_INJCHANNEL8(assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, channel8InjDegrees, fuelSchedule8.pStartCallback, fuelSchedule8.pEndCallback), {});
 }
 
 static void cylinder1_stroke4_seq_nostage(void)

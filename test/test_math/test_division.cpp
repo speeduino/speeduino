@@ -111,7 +111,6 @@ void test_maths_fast_div_closest(void)
 
 void test_maths_div100_s16_perf(void)
 {
-#if defined(__AVR__)
     constexpr int16_t iters = 1;
     constexpr int16_t start_index = -10000;
     constexpr int16_t end_index = -1;
@@ -125,6 +124,7 @@ void test_maths_div100_s16_perf(void)
     // here to force the compiler to run the loops above
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 #endif
 }
@@ -132,7 +132,6 @@ void test_maths_div100_s16_perf(void)
 void test_maths_div10_s16_perf(void)
 {
   // Unit test to confirm using div100 to divide by 10 is quicker than straight division by 10.
-#if defined(__AVR__)
   constexpr int16_t iters = 1;
   constexpr int16_t start_index = -3213;
   constexpr int16_t end_index = 3213;
@@ -146,13 +145,13 @@ void test_maths_div10_s16_perf(void)
   // here to force the compiler to run the loops above
   TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
+#if defined(__AVR__) // Speed up only noticeable on AVR
   TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 #endif
 }
 
 void test_maths_div100_s32_perf(void)
 {
-#if defined(__AVR__)
     constexpr int32_t iters = 1;
     constexpr int32_t start_index = -1439190;
     constexpr int32_t end_index = -1;
@@ -166,6 +165,7 @@ void test_maths_div100_s32_perf(void)
     // here to force the compiler to run the loops above
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, comparison.timeA.result, comparison.timeB.result);
 
+#if defined(__AVR__) // Speed up only noticeable on AVR
     TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
 #endif
 }

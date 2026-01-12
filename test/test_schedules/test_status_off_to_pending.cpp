@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
+#include "channel_test_helpers.h"
 
 #define TIMEOUT 1000
 #define DURATION 1000
@@ -19,50 +20,42 @@ void test_status_off_to_pending_inj(FuelSchedule &schedule)
 
 void test_status_off_to_pending_inj1(void)
 {
-    test_status_off_to_pending_inj(fuelSchedule1);
+    INJCHANNEL_TEST_HELPER1(test_status_off_to_pending_inj(fuelSchedule1));
 }
 
 void test_status_off_to_pending_inj2(void)
 {
-    test_status_off_to_pending_inj(fuelSchedule2);
+    INJCHANNEL_TEST_HELPER2(test_status_off_to_pending_inj(fuelSchedule2));
 }
 
 void test_status_off_to_pending_inj3(void)
 {
-    test_status_off_to_pending_inj(fuelSchedule3);
+    INJCHANNEL_TEST_HELPER3(test_status_off_to_pending_inj(fuelSchedule3));
 }
 
 void test_status_off_to_pending_inj4(void)
 {
-    test_status_off_to_pending_inj(fuelSchedule4);
+    INJCHANNEL_TEST_HELPER4(test_status_off_to_pending_inj(fuelSchedule4));
 }
 
 void test_status_off_to_pending_inj5(void)
 {
-#if INJ_CHANNELS >= 5
-    test_status_off_to_pending_inj(fuelSchedule5);
-#endif
+    INJCHANNEL_TEST_HELPER5(test_status_off_to_pending_inj(fuelSchedule5));
 }
 
 void test_status_off_to_pending_inj6(void)
 {
-#if INJ_CHANNELS >= 6
-    test_status_off_to_pending_inj(fuelSchedule6);
-#endif
+    INJCHANNEL_TEST_HELPER6(test_status_off_to_pending_inj(fuelSchedule6));
 }
 
 void test_status_off_to_pending_inj7(void)
 {
-#if INJ_CHANNELS >= 7
-    test_status_off_to_pending_inj(fuelSchedule7);
-#endif
+    INJCHANNEL_TEST_HELPER7(test_status_off_to_pending_inj(fuelSchedule7));
 }
 
 void test_status_off_to_pending_inj8(void)
 {
-#if INJ_CHANNELS >= 8
-    test_status_off_to_pending_inj(fuelSchedule8);
-#endif
+    INJCHANNEL_TEST_HELPER8(test_status_off_to_pending_inj(fuelSchedule8));
 }
 
 void test_status_off_to_pending_ign(IgnitionSchedule &schedule)
@@ -77,50 +70,42 @@ void test_status_off_to_pending_ign(IgnitionSchedule &schedule)
 
 void test_status_off_to_pending_ign1(void)
 {
-    test_status_off_to_pending_ign(ignitionSchedule1);
+    IGNCHANNEL_TEST_HELPER1(test_status_off_to_pending_ign(ignitionSchedule1));
 }
 
 void test_status_off_to_pending_ign2(void)
 {
-    test_status_off_to_pending_ign(ignitionSchedule2);
+    IGNCHANNEL_TEST_HELPER2(test_status_off_to_pending_ign(ignitionSchedule2));
 }
 
 void test_status_off_to_pending_ign3(void)
 {
-    test_status_off_to_pending_ign(ignitionSchedule3);
+    IGNCHANNEL_TEST_HELPER3(test_status_off_to_pending_ign(ignitionSchedule3));
 }
 
 void test_status_off_to_pending_ign4(void)
 {
-    test_status_off_to_pending_ign(ignitionSchedule4);
+    IGNCHANNEL_TEST_HELPER4(test_status_off_to_pending_ign(ignitionSchedule4));
 }
 
 void test_status_off_to_pending_ign5(void)
 {
-#if IGN_CHANNELS >= 5
-    test_status_off_to_pending_ign(ignitionSchedule5);
-#endif
+    IGNCHANNEL_TEST_HELPER5(test_status_off_to_pending_ign(ignitionSchedule5));
 }
 
 void test_status_off_to_pending_ign6(void)
 {
-#if IGN_CHANNELS >= 6
-    test_status_off_to_pending_ign(ignitionSchedule6);
-#endif
+    IGNCHANNEL_TEST_HELPER6(test_status_off_to_pending_ign(ignitionSchedule6));
 }
 
 void test_status_off_to_pending_ign7(void)
 {
-#if IGN_CHANNELS >= 7
-    test_status_off_to_pending_ign(ignitionSchedule7);
-#endif
+    IGNCHANNEL_TEST_HELPER7(test_status_off_to_pending_ign(ignitionSchedule7));
 }
 
 void test_status_off_to_pending_ign8(void)
 {
-#if IGN_CHANNELS >= 8
-    test_status_off_to_pending_ign(ignitionSchedule8);
-#endif
+    IGNCHANNEL_TEST_HELPER8(test_status_off_to_pending_ign(ignitionSchedule8));
 }
 
 void test_status_off_to_pending(void)

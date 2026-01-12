@@ -2,118 +2,98 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
+#include "channel_test_helpers.h"
+
+static void test_status_initial_off_inj(FuelSchedule &schedule)
+{
+    initialiseFuelSchedulers();
+    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+}
 
 static void test_status_initial_off_inj1(void)
 {
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule1.Status);
+    INJCHANNEL_TEST_HELPER1(test_status_initial_off_inj(fuelSchedule1));
 }
 
 static void test_status_initial_off_inj2(void)
 {
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule2.Status);
+    INJCHANNEL_TEST_HELPER2(test_status_initial_off_inj(fuelSchedule2));
 }
 
 static void test_status_initial_off_inj3(void)
 {
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule3.Status);
+    INJCHANNEL_TEST_HELPER3(test_status_initial_off_inj(fuelSchedule3));
 }
 
 static void test_status_initial_off_inj4(void)
 {
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule4.Status);
+    INJCHANNEL_TEST_HELPER4(test_status_initial_off_inj(fuelSchedule4));
 }
 
 static void test_status_initial_off_inj5(void)
 {
-#if INJ_CHANNELS >= 5
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule5.Status);
-#endif 
+    INJCHANNEL_TEST_HELPER5(test_status_initial_off_inj(fuelSchedule5));
 }
 
 static void test_status_initial_off_inj6(void)
 {
-#if INJ_CHANNELS >= 6
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule6.Status);
-#endif 
+    INJCHANNEL_TEST_HELPER6(test_status_initial_off_inj(fuelSchedule6));
 }
 
 static void test_status_initial_off_inj7(void)
 {
-#if INJ_CHANNELS >= 7
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule7.Status);
-#endif 
+    INJCHANNEL_TEST_HELPER7(test_status_initial_off_inj(fuelSchedule7));
 }
 
 static void test_status_initial_off_inj8(void)
 {
-#if INJ_CHANNELS >= 8
-    initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, fuelSchedule8.Status);
-#endif 
+    INJCHANNEL_TEST_HELPER8(test_status_initial_off_inj(fuelSchedule8));
 }
 
+static void test_status_initial_off_ign(IgnitionSchedule &schedule)
+{
+    initialiseIgnitionSchedulers();
+    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+}
 
 static void test_status_initial_off_ign1(void)
 {
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule1.Status);
+    IGNCHANNEL_TEST_HELPER1(test_status_initial_off_ign(ignitionSchedule1));
 }
 
 static void test_status_initial_off_ign2(void)
 {
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule2.Status);
+    IGNCHANNEL_TEST_HELPER2(test_status_initial_off_ign(ignitionSchedule2));
 }
 
 static void test_status_initial_off_ign3(void)
 {
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule3.Status);
+    IGNCHANNEL_TEST_HELPER3(test_status_initial_off_ign(ignitionSchedule3));
 }
 
 static void test_status_initial_off_ign4(void)
 {
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule4.Status);
+    IGNCHANNEL_TEST_HELPER4(test_status_initial_off_ign(ignitionSchedule4));
 }
 
 static void test_status_initial_off_ign5(void)
 {
-#if IGN_CHANNELS >= 5
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule5.Status);
-#endif
+    IGNCHANNEL_TEST_HELPER5(test_status_initial_off_ign(ignitionSchedule5));
 }
 
 static void test_status_initial_off_ign6(void)
 {
-#if IGN_CHANNELS >= 6
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule6.Status);
-#endif
+    IGNCHANNEL_TEST_HELPER6(test_status_initial_off_ign(ignitionSchedule6));
 }
 
 static void test_status_initial_off_ign7(void)
 {
-#if IGN_CHANNELS >= 7
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule7.Status);
-#endif
+    IGNCHANNEL_TEST_HELPER7(test_status_initial_off_ign(ignitionSchedule7));
 }
 
 static void test_status_initial_off_ign8(void)
 {
-#if IGN_CHANNELS >= 8
-    initialiseIgnitionSchedulers();
-    TEST_ASSERT_EQUAL(OFF, ignitionSchedule8.Status);
-#endif
+    IGNCHANNEL_TEST_HELPER8(test_status_initial_off_ign(ignitionSchedule8));
 }
 
 void test_status_initial_off(void)
