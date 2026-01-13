@@ -63,3 +63,11 @@
 #define CONCAT(A, B) \
     CAT_HELPER(A, B)
 #endif
+
+/** @brief Force an out-of-line function (I.e. defined in a cpp file) to be inlined. */
+#define BEGIN_LTO_ALWAYS_INLINE(returnType) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+    returnType __attribute__((always_inline)) // cppcheck-suppress misra-c2012-20.7
+#define END_LTO_INLINE() \
+    _Pragma("GCC diagnostic pop")
