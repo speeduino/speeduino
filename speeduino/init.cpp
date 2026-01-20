@@ -1368,8 +1368,8 @@ void setPinMapping(byte boardID)
       pinCoil1 = 40; //Pin for coil 1
       pinCoil2 = 38; //Pin for coil 2
       pinCoil3 = 52; //Pin for coil 3
-      pinCoil4 = 50; //Pin for coil 4
-      pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      //pinCoil4 = 50; //Pin for coil 4
+      //pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinTrigger = 19; //The CAS pin
       pinTrigger2 = 18; //The Cam Sensor pin
       pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1381,10 +1381,10 @@ void setPinMapping(byte boardID)
       pinBat = A4; //Battery reference voltage pin
       pinDisplayReset = 48; // OLED reset pin
       pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinIdle1 = 5; //Single wire idle control
+      //pinIdle1 = 5; //Single wire idle control
       pinIdle2 = 6; //2 wire idle control
       pinBoost = 7; //Boost control
-      pinVVT_1 = 4; //Default VVT output
+      //pinVVT_1 = 4; //Default VVT output
       pinVVT_2 = 48; //Default VVT2 output
       pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
       pinStepperDir = 16; //Direction pin  for DRV8825 driver

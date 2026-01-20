@@ -2168,7 +2168,7 @@ void triggerSetup_Jeep2000_4cyl(void)
   toothAngles[14] = 154;
   toothAngles[15] = 174;
 
-  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
+  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 120U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
   if(currentStatus.initialisationComplete == false) { toothCurrentCount = 17; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
