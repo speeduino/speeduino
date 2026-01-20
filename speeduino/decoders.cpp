@@ -2136,6 +2136,142 @@ void triggerSetEndTeeth_Jeep2000(void)
 }
 /** @} */
 
+/** Jeep 2000 - 16 crank teeth over 720 degrees, in groups of 4 ('91 to 2006 4 cylinder Jeep engines).
+* Cam wheel is high for 360 crank degrees. Quite similar to the 24X setup.
+* As we only need timing within 360 degrees for paired injection/ignition, only 12 tooth angles are used.
+* For sequential, all 720 degree tooth angles are required.
+* secondaryTriggerHandler() fires on every state change normally (every 360 degrees). For sequential, only fire on cam LOW (720 degrees).
+* Tooth number 1 represents the first tooth seen after the cam signal goes high (at angle 294 degrees).
+* https://www.speeduino.com/forum/download/file.php?id=14739
+* @defgroup dec_jeep Jeep 2000 (4 cyl)
+* @{
+*/
+void triggerSetup_Jeep2000_4cyl(void)
+{
+  triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary). Not needed since angles are just a lookup table, due to uneven spacing
+  toothAngles[0] = 294;
+  toothAngles[1] = 314;
+  toothAngles[2] = 334;
+  toothAngles[3] = 354;
+  toothAngles[4] = 474;
+  toothAngles[5] = 494;
+  toothAngles[6] = 514;
+  toothAngles[7] = 534;
+  
+  //only 8 teeth needed for paired injection/ignition. Next 8 also needed for sequential. (16 teeth in 2 crank rotations).
+  toothAngles[8] = 654;
+  toothAngles[9] = 674;
+  toothAngles[10] = 694;
+  toothAngles[11] = 714;
+  toothAngles[12] = 114;
+  toothAngles[13] = 134;
+  toothAngles[14] = 154;
+  toothAngles[15] = 174;
+
+  MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
+  if(currentStatus.initialisationComplete == false) { toothCurrentCount = 17; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
+  BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
+  BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+  BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  //unnecesary? Since decoder now supports sequential but doesn't require it, can the sequential bit just be set and left?
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  } else {
+    BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  }
+}
+
+void triggerPri_Jeep2000_4cyl(void)
+{
+  //if default value (num teeth + 1). This value never reached except for init.
+  if(toothCurrentCount == 17) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  else
+  {
+    curTime = micros();
+    curGap = curTime - toothLastToothTime;
+    if ( curGap >= triggerFilterTime )
+    {
+      if(toothCurrentCount == 0)
+      {
+         toothCurrentCount = 1; //Reset the counter
+         toothOneMinusOneTime = toothOneTime;
+         toothOneTime = curTime;
+         currentStatus.hasSync = true;
+         currentStatus.startRevolutions++; //Counter
+         triggerToothAngle = 120; //There are groups of 4 pulses (Each 20 degrees apart, 60 degree group) with each group being 120 degrees apart (180-60=120). Hence #1 is always 120
+      }
+      else
+      {
+        //Since two revolutions now happening in same code
+        if (toothCurrentCount == 8) {
+          currentStatus.startRevolutions++;//counter
+        }
+        toothCurrentCount++; //Increment the tooth counter
+        triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
+      }
+
+      setFilter(curGap); //Recalc the new filter value
+
+      BIT_SET(decoderState, BIT_DECODER_VALID_TRIGGER); //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+      toothLastMinusOneToothTime = toothLastToothTime;
+      toothLastToothTime = curTime;
+    } //Trigger filter
+  } //Sync check
+}
+void triggerSec_Jeep2000_4cyl(void)
+{
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    //secondaryTriggerHandler() usually triggers on each state change, even if set to only trigger on one edge.
+    if (READ_SEC_TRIGGER() == 0) {  //if cam signal went low only, trigger. This way all 24 teeth get counted.
+      toothCurrentCount = 0;
+    }
+  } else {
+    toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  }
+}
+
+uint16_t getRPM_Jeep2000_4cyl(void)
+{
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    return stdGetRPM(CAM_SPEED);
+  } else {
+    return stdGetRPM(CRANK_SPEED);
+  }
+  
+}
+int getCrankAngle_Jeep2000_4cyl(void)
+{
+    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
+    unsigned long tempToothLastToothTime;
+    int tempToothCurrentCount;
+    //Grab some variables that are used in the trigger code and assign them to temp variables.
+    noInterrupts();
+    tempToothCurrentCount = toothCurrentCount;
+    tempToothLastToothTime = toothLastToothTime;
+    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    interrupts();
+
+    int crankAngle;
+    if (toothCurrentCount == 0) { crankAngle = 174 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. Since  the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
+    else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+
+    //Estimate the number of degrees travelled since the last tooth}
+    elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
+    crankAngle += timeToAngleDegPerMicroSec(elapsedTime);
+
+    if (crankAngle >= 720) { crankAngle -= 720; }
+    if (crankAngle < 0) { crankAngle += 360; }
+
+    return crankAngle;
+}
+
+void triggerSetEndTeeth_Jeep2000_4cyl(void)
+{
+}
+/** @} */
+
 /** Audi with 135 teeth on the crank and 1 tooth on the cam.
 * This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360,
 * only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup.

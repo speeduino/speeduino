@@ -3264,6 +3264,22 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_JEEP2000_4cyl:
+      triggerSetup_Jeep2000_4cyl();
+      triggerHandler = triggerPri_Jeep2000_4cyl;
+      triggerSecondaryHandler = triggerSec_Jeep2000_4cyl;
+      getRPM = getRPM_Jeep2000_4cyl;
+      getCrankAngle = getCrankAngle_Jeep2000_4cyl;
+      triggerSetEndTeeth = triggerSetEndTeeth_Jeep2000_4cyl;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = CHANGE;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
+      break;
+
     case DECODER_AUDI135:
       triggerSetup_Audi135();
       triggerHandler = triggerPri_Audi135;
