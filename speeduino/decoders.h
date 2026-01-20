@@ -135,6 +135,13 @@ uint16_t getRPM_Jeep2000(void);
 int getCrankAngle_Jeep2000(void);
 void triggerSetEndTeeth_Jeep2000(void);
 
+void triggerSetup_Jeep2000_4cyl(void);
+void triggerPri_Jeep2000_4cyl(void);
+void triggerSec_Jeep2000_4cyl(void);
+uint16_t getRPM_Jeep2000_4cyl(void);
+int getCrankAngle_Jeep2000_4cyl(void);
+void triggerSetEndTeeth_Jeep2000_4cyl(void);
+
 void triggerSetup_Audi135(void);
 void triggerPri_Audi135(void);
 void triggerSec_Audi135(void);
