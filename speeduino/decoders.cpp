@@ -2094,10 +2094,6 @@ void triggerSec_Jeep2000(void)
   } else {
     toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
   }
-  
-  
-  toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  return;
 }
 
 uint16_t getRPM_Jeep2000(void)
