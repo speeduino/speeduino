@@ -1981,17 +1981,19 @@ void triggerSetEndTeeth_24X(void)
 }
 /** @} */
 
-/** Jeep 2000 - 24 crank teeth over 720 degrees, in groups of 4 ('91 to 2000 6 cylinder Jeep engines).
-* Crank wheel is high for 360 crank degrees. Quite similar to the 24X setup.
-* As we only need timing within 360 degrees, only 12 tooth angles are defined.
-* Tooth number 1 represents the first tooth seen after the cam signal goes high.
+/** Jeep 2000 - 24 crank teeth over 720 degrees, in groups of 4 ('91 to 2006 6 cylinder Jeep engines).
+* Cam wheel is high for 360 crank degrees. Quite similar to the 24X setup.
+* As we only need timing within 360 degrees for paired injection/ignition, only 12 tooth angles are used.
+* For sequential, all 720 degree tooth angles are required.
+* secondaryTriggerHandler() fires on every state change normally (every 360 degrees). For sequential, only fire on cam LOW (720 degrees).
+* Tooth number 1 represents the first tooth seen after the cam signal goes high (at angle 174 degrees).
 * www.speeduino.com/forum/download/file.php?id=205
 * @defgroup dec_jeep Jeep 2000 (6 cyl)
 * @{
 */
 void triggerSetup_Jeep2000(void)
 {
-  triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
+  triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary). Not needed since angles are just a lookup table, due to uneven spacing
   toothAngles[0] = 174;
   toothAngles[1] = 194;
   toothAngles[2] = 214;
@@ -2005,17 +2007,49 @@ void triggerSetup_Jeep2000(void)
   toothAngles[10] = 454;
   toothAngles[11] = 474;
 
+  //only 12 teeth needed for paired injection/ignition. Next 12 also needed for sequential. (24 teeth in 2 crank rotations).
+  toothAngles[12] = 534;
+  toothAngles[13] = 554;
+  toothAngles[14] = 574;
+  toothAngles[15] = 594;
+  toothAngles[16] = 654;
+  toothAngles[17] = 674;
+  toothAngles[18] = 694;
+  toothAngles[19] = 714;
+  toothAngles[20] = 54;
+  toothAngles[21] = 74;
+  toothAngles[22] = 94;
+  toothAngles[23] = 114;
+
+  //number toothCurrentCount initialized to. This number is never reached, so it can be the same for sequential and for batched.
+  //initToothStateCount would replace "25" in the "if(currentStatus.initialisationComplete == false)" statement below
+  /*
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    static uint8_t initToothStateCount = 25;
+  } else {
+    static uint8_t initToothStateCount = 13;
+  }
+  */
+
+
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
-  if(currentStatus.initialisationComplete == false) { toothCurrentCount = 13; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
+  if(currentStatus.initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   BIT_CLEAR(decoderState, BIT_DECODER_2ND_DERIV);
-  BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
   BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
   BIT_SET(decoderState, BIT_DECODER_HAS_SECONDARY);
+
+  //unnecesary? Since decoder now supports sequential but doesn't require it, can the sequential bit just be set and left?
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    BIT_SET(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  } else {
+    BIT_CLEAR(decoderState, BIT_DECODER_IS_SEQUENTIAL);
+  }
 }
 
 void triggerPri_Jeep2000(void)
 {
-  if(toothCurrentCount == 13) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  //if default value (num teeth + 1). This value never reached except for init.
+  if(toothCurrentCount == 25) { currentStatus.hasSync = false; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
     curTime = micros();
@@ -2033,6 +2067,10 @@ void triggerPri_Jeep2000(void)
       }
       else
       {
+        //Since two revolutions now happening in same code
+        if (toothCurrentCount == 12) {
+          currentStatus.startRevolutions++;//counter
+        }
         toothCurrentCount++; //Increment the tooth counter
         triggerToothAngle = toothAngles[(toothCurrentCount-1)] - toothAngles[(toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
       }
@@ -2048,13 +2086,28 @@ void triggerPri_Jeep2000(void)
 }
 void triggerSec_Jeep2000(void)
 {
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    //secondaryTriggerHandler() usually triggers on each state change, even if set to only trigger on one edge.
+    if (READ_SEC_TRIGGER() == 0) {  //if cam signal went low only, trigger. This way all 24 teeth get counted.
+      toothCurrentCount = 0;
+    }
+  } else {
+    toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  }
+  
+  
   toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
   return;
 }
 
 uint16_t getRPM_Jeep2000(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+  if (configPage2.injLayout == INJ_SEQUENTIAL) {
+    return stdGetRPM(CAM_SPEED);
+  } else {
+    return stdGetRPM(CRANK_SPEED);
+  }
+  
 }
 int getCrankAngle_Jeep2000(void)
 {
