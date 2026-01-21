@@ -125,29 +125,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer1.attachInterrupt(4, idleInterrupt);  //on first flash the configPage4.iacAlgorithm is invalid
 
 
-    /*
-    ***********************************************************************************************************
-    * Timers
-    */
-    #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB)
-      Timer4.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-      #if ( STM32_CORE_VERSION_MAJOR < 2 )
-      Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
-      Timer4.attachInterrupt(1, oneMSInterval);
-      #else //2.0 forward
-      Timer4.attachInterrupt(oneMSInterval);
-      #endif
-      Timer4.resume(); //Start Timer
-    #else
-      Timer11.setOverflow(1000, MICROSEC_FORMAT);  // Set up period
-      #if ( STM32_CORE_VERSION_MAJOR < 2 )
-      Timer11.setMode(1, TIMER_OUTPUT_COMPARE);
-      Timer11.attachInterrupt(1, oneMSInterval);
-      #else
-      Timer11.attachInterrupt(oneMSInterval);
-      #endif
-      Timer11.resume(); //Start Timer
-    #endif
     pinMode(LED_BUILTIN, OUTPUT); //Visual WDT
 
     /*
