@@ -41,13 +41,18 @@ static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutp
   RUNIF_IGNCHANNEL8(assert_ignition_channel(angle[7], 7, channel8IgnDegrees, ignitionSchedule8.pStartCallback, ignitionSchedule8.pEndCallback), {});
 }
 
+static void assert_cylinder1_stroke4_seq_even(void)
+{
+  const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+  assert_ignition_schedules(720U, 1U, angle);
+}
+
 static void cylinder1_stroke4_seq_even(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = EVEN_FIRE;
   initialiseAll(); //Run the main initialise function
-  const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_ignition_schedules(720U, 1U, angle);
+  assert_cylinder1_stroke4_seq_even();
 }
 
 static void cylinder1_stroke4_wasted_even(void)
@@ -79,13 +84,18 @@ static void run_1_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder1_stroke4_seq_odd);
 }
 
+static void assert_cylinder2_stroke4_seq_even(void)
+{
+  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  assert_ignition_schedules(720U, 2U, angle);
+}
+
 static void cylinder2_stroke4_seq_even(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = EVEN_FIRE;
   initialiseAll(); //Run the main initialise function
-  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_ignition_schedules(720U, 2U, angle);
+  assert_cylinder2_stroke4_seq_even();
 }
 
 static void cylinder2_stroke4_wasted_even(void)
@@ -121,13 +131,18 @@ static void run_2_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder2_stroke4_seq_odd);
 }
 
+static void assert_cylinder3_stroke4_seq_even(void)
+{
+  const uint16_t angle[] = {0,240,480,0,0,0,0,0};
+  assert_ignition_schedules(720U, 3U, angle);
+}
+
 static void cylinder3_stroke4_seq_even(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = EVEN_FIRE;
   initialiseAll(); //Run the main initialise function
-  const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-  assert_ignition_schedules(720U, 3U, angle);
+  assert_cylinder3_stroke4_seq_even();
 }
 
 static void cylinder3_stroke4_wasted_even(void)
@@ -209,13 +224,18 @@ static void run_4_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder4_stroke4_seq_odd);
 }
 
+static void assert_cylinder5_stroke4_seq_even(void)
+{
+  const uint16_t angle[] = {0,144,288,432,576,0,0,0};
+  assert_ignition_schedules(720U, 5U, angle);
+}
+
 static void cylinder5_stroke4_seq_even(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = EVEN_FIRE;
   initialiseAll(); //Run the main initialise function
-  const uint16_t angle[] = {0,144,288,432,576,0,0,0};
-  assert_ignition_schedules(720U, 5U, angle);
+  assert_cylinder5_stroke4_seq_even();
 }
 
 static void cylinder5_stroke4_wasted_even(void)
@@ -237,11 +257,8 @@ static void run_5_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder5_stroke4_wasted_even);
 }
 
-static void cylinder6_stroke4_seq_even(void)
+static void assert_cylinder6_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
 #if IGN_CHANNELS >= 6
   const uint16_t angle[] = {0,120,240,360,480,600,0,0};
   assert_ignition_schedules(720U, 6U, angle);
@@ -249,6 +266,14 @@ static void cylinder6_stroke4_seq_even(void)
   const uint16_t angle[] = {0,120,240,0,0,0,0,0};
   assert_ignition_schedules(360U, 3U, angle);
 #endif
+}
+
+static void cylinder6_stroke4_seq_even(void)
+{
+  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
+  configPage2.engineType = EVEN_FIRE;
+  initialiseAll(); //Run the main initialise function
+  assert_cylinder6_stroke4_seq_even();
 }
 
 static void cylinder6_stroke4_wasted_even(void)
@@ -270,12 +295,8 @@ static void run_6_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder6_stroke4_wasted_even); 
 }
 
-
-static void cylinder8_stroke4_seq_even(void)
+static void assert_cylinder8_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
 #if IGN_CHANNELS >= 8
   const uint16_t angle[] = {0,90,180,270,360,450,540,630};
   assert_ignition_schedules(720U, 8U, angle);
@@ -283,6 +304,14 @@ static void cylinder8_stroke4_seq_even(void)
   const uint16_t angle[] = {0,90,180,270,0,0,0,0};
   assert_ignition_schedules(360U, 4U, angle);
 #endif
+}
+
+static void cylinder8_stroke4_seq_even(void)
+{
+  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
+  configPage2.engineType = EVEN_FIRE;
+  initialiseAll(); //Run the main initialise function
+  assert_cylinder8_stroke4_seq_even();
 }
 
 static void cylinder8_stroke4_wasted_even(void)
@@ -304,27 +333,155 @@ static void run_8_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder8_stroke4_wasted_even);
 }
 
-static void test_partial_sync(void)
+static void setupPartialSyncTest(uint8_t cylinders)
 {
   prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 4;
+  configPage2.nCylinders = cylinders;
   configPage2.strokes = FOUR_STROKE;
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = EVEN_FIRE;
-
   initialiseAll(); //Run the main initialise function
+}
+
+static void test_partial_sync_1_cylinder(void)
+{
+  setupPartialSyncTest(1);
+
+  // Initial state
+  assert_cylinder1_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+    assert_ignition_schedules(360U, 1U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder1_stroke4_seq_even();
+}
+
+static void test_partial_sync_2_cylinder(void)
+{
+  setupPartialSyncTest(2);
+
+  // Initial state
+  assert_cylinder2_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+    assert_ignition_schedules(360U, 2U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder2_stroke4_seq_even();
+}
+
+static void test_partial_sync_3_cylinder(void)
+{
+  setupPartialSyncTest(3);
+
+  // Initial state
+  assert_cylinder3_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    // TODO: This must be wrong!
+    const uint16_t angle[] = {0,240,480,0,0,0,0,0};
+    assert_ignition_schedules(360U, 3U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder3_stroke4_seq_even();
+}
+
+static void test_partial_sync_4_cylinder(void)
+{
+  setupPartialSyncTest(4);
 
   // Initial state
   assert_cylinder4_stroke4_seq_even();
 
-  changeFullToHalfSync();
-  {
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  { 
     const uint16_t angle[] = {0,180,360,540,0,0,0,0};
     assert_ignition_schedules(360U, 2U, angle);
   }
 
-  changeHalfToFullSync();
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_cylinder4_stroke4_seq_even();
+}
+
+static void test_partial_sync_5_cylinder(void)
+{
+  setupPartialSyncTest(5);
+
+  // Initial state
+  assert_cylinder5_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    // TODO: This must be wrong!
+    const uint16_t angle[] = {0,144,288,432,576,0,0,0};
+    assert_ignition_schedules(360U, 5U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder5_stroke4_seq_even();
+}
+
+static void test_partial_sync_6_cylinder(void)
+{
+#if IGN_CHANNELS>=6
+  setupPartialSyncTest(6);
+
+  // Initial state
+  assert_cylinder6_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    const uint16_t angle[] = {0,120,240,360,480,600,0,0};
+    assert_ignition_schedules(360U, 3U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder6_stroke4_seq_even();
+#else
+  TEST_IGNORE_MESSAGE("Skipping 6 cylinder partial sync test - not enough injectors");
+#endif
+}
+
+
+static void test_partial_sync_8_cylinder(void)
+{
+#if IGN_CHANNELS>=8
+  setupPartialSyncTest(8);
+
+  // Initial state
+  assert_cylinder8_stroke4_seq_even();
+
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+    const uint16_t angle[] = {0,90,180,270,360,450,540,630};
+    assert_ignition_schedules(360U, 4U, angle);
+  }
+
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_cylinder8_stroke4_seq_even();
+#else
+  TEST_IGNORE_MESSAGE("Skipping 8 cylinder partial sync test - not enough injectors");
+#endif
+}
+
+static void run_partial_sync_tests(void)
+{
+  RUN_TEST_P(test_partial_sync_1_cylinder);
+  RUN_TEST_P(test_partial_sync_2_cylinder);
+  RUN_TEST_P(test_partial_sync_3_cylinder);
+  RUN_TEST_P(test_partial_sync_4_cylinder);
+  RUN_TEST_P(test_partial_sync_5_cylinder);
+  RUN_TEST_P(test_partial_sync_6_cylinder);
+  RUN_TEST_P(test_partial_sync_8_cylinder);
 }
 
 void testIgnitionScheduleInit()
@@ -338,7 +495,6 @@ void testIgnitionScheduleInit()
   run_5_cylinder_4stroke_tests();
   run_6_cylinder_4stroke_tests();
   run_8_cylinder_4stroke_tests();
-
-  RUN_TEST_P(test_partial_sync);
+  run_partial_sync_tests();
   }
 }

@@ -231,8 +231,6 @@ void initialiseAll(void)
     //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
     currentStatus.RPM = 0;
-    currentStatus.hasSync = false;
-    currentStatus.halfSync = false;
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     //currentStatus.seclx10 = 0;
@@ -3566,11 +3564,11 @@ static inline bool isAnyIgnScheduleRunning(void) {
 /** Change injectors or/and ignition angles to 720deg.
  * Roll back req_fuel size and set number of outputs equal to cylinder count.
 * */
-void changeHalfToFullSync(void)
+void changeHalfToFullSync(const config2 &page2, const config4 &page4, statuses &current)
 {
   //Need to do another check for injLayout as this function can be called from ignition
   noInterrupts();
-  if( (configPage2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
+  if( (page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
   {
     CRANK_ANGLE_MAX_INJ = 720;
     
@@ -3591,46 +3589,47 @@ void changeHalfToFullSync(void)
     setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
 #endif
 
-    switch (configPage2.nCylinders)
+    switch (page2.nCylinders)
     {
       case 4:
-        currentStatus.maxInjOutputs = 4;
+        current.maxInjOutputs = 4;
         break;
             
       case 6:
-        currentStatus.maxInjOutputs = 6;
+        current.maxInjOutputs = 6;
         break;
 
       case 8:
-        currentStatus.maxInjOutputs = 8;
+        current.maxInjOutputs = 8;
         break;
 
       default:
         break; //No actions required for other cylinder counts
-
     }
   }
   interrupts();
 
   //Need to do another check for sparkMode as this function can be called from injection
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
   {
     CRANK_ANGLE_MAX_IGN = 720;
-    currentStatus.maxIgnOutputs = configPage2.nCylinders;
-    switch (configPage2.nCylinders)
+    switch (page2.nCylinders)
     {
     case 4:
+      current.maxIgnOutputs = 4U;
       setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
       setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
       break;
 
     case 6:
+      current.maxIgnOutputs = 6U;
       setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
       setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
       setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
       break;
 
     case 8:
+      current.maxIgnOutputs = 8U;
       setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
       setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
       setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
@@ -3648,15 +3647,15 @@ void changeHalfToFullSync(void)
  * In semi sequentiol mode req_fuel size is half.
  * Set number of outputs equal to half cylinder count.
 * */
-void changeFullToHalfSync(void)
+void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
 {
-  if(configPage2.injLayout == INJ_SEQUENTIAL)
+  if(page2.injLayout == INJ_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_INJ = 360;
-    switch (configPage2.nCylinders)
+    switch (page2.nCylinders)
     {
       case 4:
-        if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
+        if(page4.inj4cylPairing == INJ_PAIR_13_24)
         {
           setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
           setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
@@ -3666,14 +3665,14 @@ void changeFullToHalfSync(void)
           setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
           setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
         }
-        currentStatus.maxInjOutputs = 2;
+        current.maxInjOutputs = 2U;
         break;
             
       case 6:
         setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
         setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
         setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
-        currentStatus.maxInjOutputs = 3;
+        current.maxInjOutputs = 3U;
         break;
 
       case 8:
@@ -3681,26 +3680,27 @@ void changeFullToHalfSync(void)
         setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
         setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
         setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
-        currentStatus.maxInjOutputs = 4;
+        current.maxInjOutputs = 4U;
         break;
     }
   }
 
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
+  if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
     CRANK_ANGLE_MAX_IGN = 360;
-    currentStatus.maxIgnOutputs = configPage2.nCylinders / 2;
-    switch (configPage2.nCylinders)
+    switch (page2.nCylinders)
     {
       case 4:
         setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
         setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+        current.maxIgnOutputs = 2U;
         break;
             
       case 6:
         setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
         setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
         setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+        current.maxIgnOutputs = 3U;
         break;
 
       case 8:
@@ -3708,6 +3708,7 @@ void changeFullToHalfSync(void)
         setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
         setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
         setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+        current.maxIgnOutputs = 4U;
         break;
     }
   }

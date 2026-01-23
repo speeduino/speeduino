@@ -8,7 +8,9 @@
 #include "../test_utils.h"
 #include "storage.h"
 #include "../test_schedules/channel_test_helpers.h"
+#include "decoders.h"
 
+extern void setSyncStatus(SyncStatus syncStatus);
 void prepareForInitialiseAll(uint8_t boardId);
 
 static constexpr uint16_t reqFuel = 86; // ms * 10
@@ -61,15 +63,20 @@ static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle,
   RUNIF_INJCHANNEL8(assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, channel8InjDegrees, fuelSchedule8.pStartCallback, fuelSchedule8.pEndCallback), {});
 }
 
+static void assert_1cylinder_4stroke_seq_nostage(void)
+{
+	const bool enabled[] = {true, false, false, false, false, false, false, false};
+	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);  
+}
+
 static void cylinder1_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, false, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+  assert_1cylinder_4stroke_seq_nostage();
 }
 
 static void cylinder1_stroke4_semiseq_nostage(void)
@@ -186,15 +193,20 @@ static void run_1_cylinder_2stroke_tests(void)
   RUN_TEST_P(cylinder1_stroke2_semiseq_staged);
 }
 
+static void assert_2cylinder_4stroke_seq_nostage()
+{
+	const bool enabled[] = {true, true, false, false, false, false, false, false};
+	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+}
+
 static void cylinder2_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+  assert_2cylinder_4stroke_seq_nostage();
 }
 
 static void cylinder2_stroke4_semiseq_nostage(void)
@@ -305,15 +317,21 @@ static void run_2_cylinder_2stroke_tests(void)
   RUN_TEST_P(cylinder2_stroke2_semiseq_staged);
 }
 
+static void assert_3cylinder_4stroke_seq_nostage(void)
+{
+	const bool enabled[] = {true, true, true, false, false, false, false, false};
+	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
+  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+}
+
 static void cylinder3_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage2.injTiming = true;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-  assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+  assert_3cylinder_4stroke_seq_nostage();
+
 }
 
 static void cylinder3_stroke4_semiseq_nostage_tb(void)
@@ -645,11 +663,8 @@ void run_4_cylinder_2stroke_tests(void)
   RUN_TEST_P(cylinder4_stroke2_semiseq_staged);  
 }
 
-static void cylinder5_stroke4_seq_nostage(void)
+static void assert_5cylinder_4stroke_seq_nostage(void)
 {
-  configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = false;
-  initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 5
 	const bool enabled[] = {true, true, true, true, true, false, false, false};
 	const uint16_t angle[] = {0,144,288,432,576,0,0,0};
@@ -658,6 +673,14 @@ static void cylinder5_stroke4_seq_nostage(void)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+}
+
+static void cylinder5_stroke4_seq_nostage(void)
+{
+  configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_5cylinder_4stroke_seq_nostage();
 }
 
 
@@ -718,11 +741,8 @@ void run_5_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder5_stroke4_semiseq_staged); 
 }
 
-static void cylinder6_stroke4_seq_nostage(void)
+static void assert_6cylinder_4stroke_seq_nostage(void)
 {
-  configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = false;
-  initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
 	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
@@ -731,6 +751,14 @@ static void cylinder6_stroke4_seq_nostage(void)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+}
+
+static void cylinder6_stroke4_seq_nostage(void)
+{
+  configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_6cylinder_4stroke_seq_nostage();
 }
 
 static void cylinder6_stroke4_semiseq_nostage(void)
@@ -791,11 +819,8 @@ void run_6_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder6_stroke4_semiseq_staged); 
 }
 
-static void cylinder8_stroke4_seq_nostage(void)
+static void assert_8cylinder_4stroke_seq_nostage(void)
 {
-  configPage2.injLayout = INJ_SEQUENTIAL;
-  configPage10.stagingEnabled = false;
-  initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS >= 8
 	const bool enabled[] = {true, true, true, true, true, true, true, true};
 	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
@@ -804,6 +829,14 @@ static void cylinder8_stroke4_seq_nostage(void)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, reqFuel * 100U, enabled, angle);
+}
+
+static void cylinder8_stroke4_seq_nostage(void)
+{
+  configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_8cylinder_4stroke_seq_nostage();
 }
 
 void run_8_cylinder_4stroke_tests(void)
@@ -968,34 +1001,183 @@ static void run_oddfire_tests()
   RUN_TEST_P(cylinder8_stroke4_seq_nostage);
 }
 
-static void test_partial_sync(void)
+static void setupPartialSyncTest(uint8_t cylinders)
 {
   prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 4;
-  configPage2.strokes = FOUR_STROKE;
+  configPage2.nCylinders = cylinders;
   configPage2.engineType = EVEN_FIRE;
   configPage2.injTiming = true;
   configPage2.reqFuel = reqFuel;
   configPage2.injLayout = INJ_SEQUENTIAL;
+  configPage2.strokes = FOUR_STROKE;
+  configPage2.divider = cylinders;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
+}
+
+static void test_partial_sync_1_cylinder(void)
+{
+  setupPartialSyncTest(1);
+
+  // Confirm initial state
+  assert_1cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, false, false, false, false, false, false, false};
+	  const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_1cylinder_4stroke_seq_nostage();
+}
+
+static void test_partial_sync_2_cylinder(void)
+{
+  setupPartialSyncTest(2);
+
+  // Confirm initial state
+  assert_2cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, true, false, false, false, false, false, false};
+	  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_2cylinder_4stroke_seq_nostage();
+}
+
+
+static void test_partial_sync_3_cylinder(void)
+{
+  setupPartialSyncTest(3);
+
+  // Confirm initial state
+  assert_3cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, true, true, false, false, false, false, false};
+	  const uint16_t angle[] = {0,240,480,0,0,0,0,0};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_3cylinder_4stroke_seq_nostage();
+}
+
+static void test_partial_sync_4_cylinder(void)
+{
+  setupPartialSyncTest(4);
 
   // Confirm initial state
   assert_4cylinder_4stroke_seq_nostage();
 
-  currentStatus.halfSync = true;
-  changeFullToHalfSync();
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, false, false, false, false, false, false};
 	  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);    
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  currentStatus.halfSync = false;
-  changeHalfToFullSync();
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_seq_nostage();
 }
 
+static void test_partial_sync_5_cylinder(void)
+{
+#if INJ_CHANNELS>=5
+  setupPartialSyncTest(5);
+
+  // Confirm initial state
+  assert_5cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, true, true, true, true, false, false, false};
+	  const uint16_t angle[] = {0,144,288,432,576,0,0,0};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_5cylinder_4stroke_seq_nostage();
+#else
+  TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
+#endif
+}
+
+static void test_partial_sync_6_cylinder(void)
+{
+#if INJ_CHANNELS>=6
+  setupPartialSyncTest(6);
+
+  // Confirm initial state
+  assert_6cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, true, true, false, false, false, false, false};
+	  const uint16_t angle[] = {0,120,240,360,480,600,0,0};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_6cylinder_4stroke_seq_nostage();
+#else
+  TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
+#endif
+}
+
+static void test_partial_sync_8_cylinder(void)
+{
+#if INJ_CHANNELS>=8
+  setupPartialSyncTest(8);
+
+  // Confirm initial state
+  assert_8cylinder_4stroke_seq_nostage();
+
+  setSyncStatus(SyncStatus::Partial);
+  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  {
+	  const bool enabled[] = {true, true, true, true, false, false, false, false};
+	  const uint16_t angle[] = {0,90,180,270,360,450,540,630};
+    assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
+  }
+
+  setSyncStatus(SyncStatus::Full);;
+  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  assert_8cylinder_4stroke_seq_nostage();
+#else
+  TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
+#endif
+}
+
+static void run_partial_sync_tests(void)
+{
+  RUN_TEST_P(test_partial_sync_1_cylinder);
+  RUN_TEST_P(test_partial_sync_2_cylinder);
+  RUN_TEST_P(test_partial_sync_3_cylinder);
+  RUN_TEST_P(test_partial_sync_4_cylinder);
+  RUN_TEST_P(test_partial_sync_5_cylinder);
+  RUN_TEST_P(test_partial_sync_6_cylinder);
+  RUN_TEST_P(test_partial_sync_8_cylinder);
+}
 
 void testFuelScheduleInit()
 {
@@ -1017,6 +1199,6 @@ void testFuelScheduleInit()
 
   run_oddfire_tests();
 
-  RUN_TEST_P(test_partial_sync);
+  run_partial_sync_tests();
   }
 }
