@@ -131,10 +131,10 @@ void writeCalibrationPage(uint8_t pageNum);
 void resetConfigPages(void);
 
 //These are utility functions that prevent other files from having to use EEPROM.h directly
-byte readLastBaro(void);
-void storeLastBaro(byte newValue);
+uint8_t readLastBaro(void);
+void storeLastBaro(uint8_t newValue);
 uint8_t readEEPROMVersion(void);
-void storeEEPROMVersion(byte newVersion);
+void storeEEPROMVersion(uint8_t newVersion);
 void storePageCRC32(uint8_t pageNum, uint32_t crcValue);
 uint32_t readPageCRC32(uint8_t pageNum);
 void storeCalibrationCRC32(uint8_t calibrationPageNum, uint32_t calibrationCRC);

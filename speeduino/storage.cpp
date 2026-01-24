@@ -615,13 +615,13 @@ uint16_t getEEPROMSize(void)
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 /// Read last stored barometer reading from EEPROM.
-byte readLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
+uint8_t readLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
 /// Write last acquired arometer reading to EEPROM.
-void storeLastBaro(byte newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+void storeLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
 /// Read EEPROM current data format version (from offset EEPROM_DATA_VERSION).
-byte readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
+uint8_t readEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
 /// Store EEPROM current data format version (to offset EEPROM_DATA_VERSION).
-void storeEEPROMVersion(byte newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+void storeEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
 
 #if defined(CORE_AVR)
 #pragma GCC pop_options
