@@ -241,17 +241,15 @@ static inline __attribute__((always_inline))  void setIgnitionChannels(uint16_t 
  * - it contains expire-bits for interval based frequency driven events (e.g. 15Hz, 4Hz, 1Hz)
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
  * 
+ * Sometimes loop() is inlined by LTO & sometimes not
+ * When not inlined, there is a huge difference in stack usage: 60+ bytes
+ * That eats into available RAM.
+ * Adding __attribute__((always_inline)) forces the LTO process to inline.
+ *
+ * Since the function is declared in an Arduino header, we can't change
+ * it to inline, so we need to suppress the resulting warning.
  */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes"
-// Sometimes loop() is inlined by LTO & sometimes not
-// When not inlined, there is a huge difference in stack usage: 60+ bytes
-// That eats into available RAM.
-// Adding __attribute__((always_inline)) forces the LTO process to inline.
-//
-// Since the function is declared in an Arduino header, we can't change
-// it to inline, so we need to suppress the resulting warning.
-void __attribute__((always_inline)) loop(void)
+BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
       LOOP_TIMER = TIMER_mask;
@@ -1055,7 +1053,7 @@ void __attribute__((always_inline)) loop(void)
       currentStatus.resetPreventActive = false;
     }
 } //loop()
-#pragma GCC diagnostic pop
+END_LTO_INLINE()
 
 #endif //Unit test guard
 
