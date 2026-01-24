@@ -11,7 +11,8 @@ void runAllScheduleTests(void)
   extern void test_accuracy_timeout(void);
   extern void test_accuracy_duration(void);
   extern void test_setSchedule(void);
-
+  extern void testScheduleStateMachine(void);
+  
   initialiseAll();
 
   test_status_initial_off();
@@ -22,6 +23,7 @@ void runAllScheduleTests(void)
   test_accuracy_timeout();
   test_accuracy_duration();
   test_setSchedule();
+  testScheduleStateMachine();
 }
 
 DEVICE_TEST(runAllScheduleTests)

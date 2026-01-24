@@ -68,50 +68,6 @@ void beginInjectorPriming(void);
 void disableFuelSchedule(uint8_t channel);
 void disableAllFuelSchedules(void);
 
-//The ARM cores use separate functions for their ISRs
-#if defined(ARDUINO_ARCH_STM32) || defined(CORE_TEENSY)
-  void fuelSchedule1Interrupt(void);
-  void fuelSchedule2Interrupt(void);
-  void fuelSchedule3Interrupt(void);
-  void fuelSchedule4Interrupt(void);
-#if (INJ_CHANNELS >= 5)
-  void fuelSchedule5Interrupt(void);
-#endif
-#if (INJ_CHANNELS >= 6)
-  void fuelSchedule6Interrupt(void);
-#endif
-#if (INJ_CHANNELS >= 7)
-  void fuelSchedule7Interrupt(void);
-#endif
-#if (INJ_CHANNELS >= 8)
-  void fuelSchedule8Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 1)
-  void ignitionSchedule1Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 2)
-  void ignitionSchedule2Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 3)
-  void ignitionSchedule3Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 4)
-  void ignitionSchedule4Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 5)
-  void ignitionSchedule5Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 6)
-  void ignitionSchedule6Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 7)
-  void ignitionSchedule7Interrupt(void);
-#endif
-#if (IGN_CHANNELS >= 8)
-  void ignitionSchedule8Interrupt(void);
-#endif
-#endif
-
 /** \enum ScheduleStatus
  * @brief The current state of a schedule
  * */
@@ -238,6 +194,29 @@ static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t dela
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
 
+/**
+ * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
+ * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
+ * 
+ * @param schedule The ignition schedule to move to the next state
+ */
+void moveToNextState(IgnitionSchedule &schedule);
+
+extern IgnitionSchedule ignitionSchedule1;
+extern IgnitionSchedule ignitionSchedule2;
+extern IgnitionSchedule ignitionSchedule3;
+extern IgnitionSchedule ignitionSchedule4;
+extern IgnitionSchedule ignitionSchedule5;
+#if IGN_CHANNELS >= 6
+extern IgnitionSchedule ignitionSchedule6;
+#endif
+#if IGN_CHANNELS >= 7
+extern IgnitionSchedule ignitionSchedule7;
+#endif
+#if IGN_CHANNELS >= 8
+extern IgnitionSchedule ignitionSchedule8;
+#endif
+
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
@@ -261,6 +240,14 @@ static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint1
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
 }
 
+/**
+ * @brief Shared fuel schedule timer ISR implementation. Should be called by the actual timer ISRs
+ * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
+ * 
+ * @param schedule The fuel schedule to move to the next state
+ */
+void moveToNextState(FuelSchedule &schedule);
+
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
 extern FuelSchedule fuelSchedule3;
@@ -276,21 +263,6 @@ extern FuelSchedule fuelSchedule7;
 #endif
 #if INJ_CHANNELS >= 8
 extern FuelSchedule fuelSchedule8;
-#endif
-
-extern IgnitionSchedule ignitionSchedule1;
-extern IgnitionSchedule ignitionSchedule2;
-extern IgnitionSchedule ignitionSchedule3;
-extern IgnitionSchedule ignitionSchedule4;
-extern IgnitionSchedule ignitionSchedule5;
-#if IGN_CHANNELS >= 6
-extern IgnitionSchedule ignitionSchedule6;
-#endif
-#if IGN_CHANNELS >= 7
-extern IgnitionSchedule ignitionSchedule7;
-#endif
-#if IGN_CHANNELS >= 8
-extern IgnitionSchedule ignitionSchedule8;
 #endif
 
 #endif // SCHEDULER_H
