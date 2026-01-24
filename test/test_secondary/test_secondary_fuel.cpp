@@ -53,7 +53,7 @@ static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode)
     current.VE1 = 200;
     current.VE = current.VE1;
     current.MAP = 100; //Load source value
-    current.RPM = 7000;
+    setRpm(current, 7000U);
 
     calculateSecondaryFuel(page10, lookupTable, current);
 
@@ -72,7 +72,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page
     current.VE1 = SIMPLE_VE1;
     current.VE = current.VE1;
     current.MAP = tempYAxis[0]; //Load source value
-    current.RPM = tempXAxis[0];
+    setRpm(current, tempXAxis[0]);
 }
 static void __attribute__((noinline)) test_fuel_mode_simple(uint8_t mode, uint8_t expectedVE) {
     config10 page10 = {};
@@ -112,7 +112,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 
     page10.fuel2SwitchValue = trigger;
 
     current.MAP = SWITCHED_LOAD; //Load source value
-    current.RPM = 3500;
+    setRpm(current, 3500U);
     current.TPS = 50;
     current.ethanolPct = 50;
 }

@@ -299,9 +299,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     currentLoopTime = micros();
     if ( engineIsRunning(currentLoopTime) )
     {
-      currentStatus.longRPM = getRPM(); //Long RPM is included here
-      currentStatus.RPM = currentStatus.longRPM;
-      currentStatus.RPMdiv100 = div100(currentStatus.RPM);
+      setRpm(currentStatus, getRPM());
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
       {
         FUEL_PUMP_ON();
@@ -310,8 +308,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     else
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
-      currentStatus.RPM = 0;
-      currentStatus.RPMdiv100 = 0;
+      setRpm(currentStatus, 0);
       currentStatus.PW1 = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;

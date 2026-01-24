@@ -10,7 +10,7 @@ static void test_pwApplyNitrous_No(void) {
   statuses current = {};
   config10 page10 = {};
   setup_nitrous_stage1(page10, current);
-  current.RPM = (page10.n2o_stage1_minRPM+4)*100;
+  setRpm(current, (page10.n2o_stage1_minRPM+4U)*100U);
 
   // No fuel, no nitrous adder
   TEST_ASSERT_EQUAL(0, pwApplyNitrous(0, page10, current));

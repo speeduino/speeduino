@@ -132,7 +132,7 @@ static void test_calculateSecondaryPw_table(uint8_t split, uint16_t expectedPrim
   auto context = getStageContext(STAGING_MODE_TABLE);
 
   context.current.fuelLoad = 50;  
-  context.current.RPM = 3500;
+  setRpm(context.current, 3500U);
 
   TEST_DATA_P table3d_axis_t xAxis[] = { 900U/100U, 1600U/100U, 2500U/100U, 3500U/100U, 4700U/100U, 5900U/100U, 6750U/100U, 7000U/100U};
   TEST_DATA_P table3d_axis_t yAxis[] = { 16U/2U,  31U/2U,   43U/2U,   52U/2U,   63U/2U,   75U/2U,   81U/2U,   103U/2U };

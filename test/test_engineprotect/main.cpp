@@ -38,7 +38,7 @@ static statuses setup_oil_protect_table_active(void) {
     setup_oil_protect_table();
     statuses current = {};
     current.oilPressure = 40; // below table min of 50
-    current.RPMdiv100 = 0;
+    setRpm(current, 0);
     return current;
 }
 
@@ -114,7 +114,7 @@ static void test_checkOilPressureLimit_no_activation_when_above_limit(void) {
     setup_oil_protect_table();
 
     current.oilPressure = 60; // above table min
-    current.RPMdiv100 = 0;
+    setRpm(current, 0);
 
     TEST_ASSERT_FALSE(checkOilPressureLimit(current, page6, page10, millis()));
 }
@@ -187,7 +187,7 @@ static void test_checkBoostLimit_equal_to_threshold_no_trigger(void) {
 static statuses setup_afr_protect_active(void) {
     statuses current = {};
     current.MAP = 200; // kPa-like units; ensure above any small min*2
-    current.RPMdiv100 = 50;
+    setRpm(current, 5000);
     current.TPS = 50;
     current.O2 = 20;
     current.afrTarget = 10;
@@ -301,7 +301,7 @@ static void test_checkEngineProtect_no_protections(void) {
 
     // Ensure RPM above threshold but no protection conditions set
     page4.engineProtectMaxRPM = 5;
-    current.RPMdiv100 = 10;
+    setRpm(current, 1000U);
 
     TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, 0));
     TEST_ASSERT_FALSE(current.engineProtectBoostCut);
@@ -323,8 +323,8 @@ static void test_checkEngineProtect_protection_but_rpm_low(void) {
     page10.oilPressureEnable = 1;
     page10.oilPressureProtTime = 0; // immediate
 
-    page4.engineProtectMaxRPM = 5;
-    current.RPMdiv100 = 5; // not greater than max
+     page4.engineProtectMaxRPM = 5;
+    setRpm(current, page4.engineProtectMaxRPM * 100U); // not greater than max
 
     TEST_ASSERT_FALSE(checkEngineProtect(current, page4, page6, page9, page10, millis()));
     TEST_ASSERT_FALSE(current.engineProtectBoostCut);
@@ -342,7 +342,7 @@ static void test_checkEngineProtect_protection_and_rpm_high(void) {
     config10 page10 = {};
 
     page4.engineProtectMaxRPM = 5;
-    current.RPMdiv100 = 6; // greater than max
+    setRpm(current, (page4.engineProtectMaxRPM+1U)*100U); // greater than max
 
     page6.engineProtectType = PROTECT_CUT_IGN;
     page10.oilPressureProtEnbl = 1;
@@ -380,12 +380,12 @@ static void test_checkRevLimit_fixed_mode_no_trigger_and_trigger(void) {
     page9.hardRevMode = HARD_REV_FIXED;
     page4.HardRevLim = 50;
 
-    current.RPMdiv100 = 49;
+    setRpm(current, (page4.HardRevLim-1U)*100U);
     uint8_t limit = checkRevLimit(current, page4, page6, page9);
     TEST_ASSERT_EQUAL_UINT8(50, limit);
     TEST_ASSERT_FALSE(current.engineProtectRpm);
 
-    current.RPMdiv100 = 50;
+    setRpm(current, page4.HardRevLim*100U);
     limit = checkRevLimit(current, page4, page6, page9);
     TEST_ASSERT_EQUAL_UINT8(50, limit);
     TEST_ASSERT_TRUE(current.engineProtectRpm);
@@ -406,7 +406,7 @@ static void test_checkRevLimit_softlimit_triggers(void) {
 
     // Simulate soft limiter running longer than allowed
     softLimitTime = page4.SoftLimMax + 1;
-    current.RPMdiv100 = page4.SoftRevLim;
+    setRpm(current, page4.SoftRevLim*100U);
 
     uint8_t limit = checkRevLimit(current, page4, page6, page9);
     TEST_ASSERT_EQUAL_UINT8(page4.HardRevLim, limit);
@@ -429,7 +429,7 @@ static void test_checkRevLimit_coolant_mode_triggers_clt(void) {
     populate_2dtable_P(&coolantProtectTable, values, bins);
 
     current.coolant = 0;
-    current.RPMdiv100 = 41; // greater than 40 -> should trigger
+    setRpm(current, (coolantProtectTable.values[0]+1U)*100U); // greater than 40 -> should trigger
 
     uint8_t limit = checkRevLimit(current, page4, page6, page9);
     TEST_ASSERT_EQUAL_UINT8(40, limit);
@@ -453,7 +453,7 @@ static void test_checkRevLimit_coolant_equal_no_trigger(void) {
     populate_2dtable_P(&coolantProtectTable, values, bins);
 
     current.coolant = 0;
-    current.RPMdiv100 = 40; // equal to limit -> should NOT trigger (uses >)
+    setRpm(current, (coolantProtectTable.values[0])*100U); // equal to limit -> should NOT trigger (uses >)
 
     uint8_t limit = checkRevLimit(current, page4, page6, page9);
     TEST_ASSERT_EQUAL_UINT8(40, limit);
