@@ -230,7 +230,7 @@ void initialiseAll(void)
     //Begin the main crank trigger interrupt pin setup
     //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
-    currentStatus.RPM = 0;
+    setRpm(currentStatus, 0U);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     //currentStatus.seclx10 = 0;

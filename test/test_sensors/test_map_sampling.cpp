@@ -18,7 +18,7 @@ extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2
 extern  bool canUseCycleAverage(const statuses &current, const config2 &page2);
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
-  current.RPMdiv100 = 43;
+  setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   setSyncStatus(SyncStatus::Full);
@@ -39,11 +39,11 @@ static void test_canUseCycleAverge(void) {
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   current.startRevolutions = 55;
 
-  current.RPMdiv100 = page2.mapSwitchPoint-1;
+  setRpm(current, (page2.mapSwitchPoint-1U)*100U);
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
-  current.RPMdiv100 = page2.mapSwitchPoint;
+  setRpm(current, (page2.mapSwitchPoint)*100U);
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
-  current.RPMdiv100 = page2.mapSwitchPoint+1;
+  setRpm(current, (page2.mapSwitchPoint+1U)*100U);
   TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
 }
 
@@ -152,7 +152,7 @@ struct cycleMinmumMAPReading_test_data {
 };
 
 static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
-  test_data.current.RPMdiv100 = 43;
+  setRpm(test_data.current, 4300U);
   test_data.current.startRevolutions = 0U;
   test_data.page2.mapSwitchPoint = 15; 
   test_data.cycle_min.cycleStartIndex = 0;
@@ -212,7 +212,7 @@ extern bool canUseEventAverage(const statuses &current, const config2 &page2);
 extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
 static void enable_event_average(statuses &current, config2 &page2) {
-  current.RPMdiv100 = 43;
+  setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   setSyncStatus(SyncStatus::Full);
@@ -234,11 +234,11 @@ static void test_canUseEventAverage(void) {
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
   current.startRevolutions = 55;
 
-  current.RPMdiv100 = page2.mapSwitchPoint-1;
+  setRpm(current, (page2.mapSwitchPoint-1U)*100U);
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
-  current.RPMdiv100 = page2.mapSwitchPoint;
+  setRpm(current, (page2.mapSwitchPoint)*100U);
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
-  current.RPMdiv100 = page2.mapSwitchPoint+1;
+  setRpm(current, (page2.mapSwitchPoint+1U)*100U);
   TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
 
   current.engineProtectRpm = true;

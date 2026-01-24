@@ -144,7 +144,7 @@ static void setup_WMIAdv(void) {
     configPage10.wmiTPS = 50;
     currentStatus.TPS = configPage10.wmiTPS + 1;
     configPage10.wmiRPM = 30;
-    currentStatus.RPM = RPM_COARSE.toUser(configPage10.wmiRPM + 1U);
+    setRpm(currentStatus, RPM_COARSE.toUser(configPage10.wmiRPM + 1U));
     configPage10.wmiMAP = 35;
     currentStatus.MAP = MAP.toUser(configPage10.wmiMAP+1L);
     configPage10.wmiIAT = 155;
@@ -200,7 +200,7 @@ static void test_correctionWMITiming_tpslow_inactive(void) {
 
 static void test_correctionWMITiming_rpmlow_inactive(void) {
     setup_WMIAdv();
-    currentStatus.RPM = configPage10.wmiRPM - 1U;
+    setRpm(currentStatus, configPage10.wmiRPM - 1U);
 
     TEST_ASSERT_EQUAL(8, correctionWMITiming(8));
     TEST_ASSERT_EQUAL(-3, correctionWMITiming(-3));
@@ -295,7 +295,7 @@ static void setup_correctionIdleAdvance(void) {
     currentStatus.engineIsRunning = true;
     // int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     currentStatus.CLIdleTarget = 100;
-    currentStatus.RPM = (configPage2.idleAdvRPM * 100) - 1U;
+    setRpm(currentStatus, (configPage2.idleAdvRPM * 100U) - 1U);
     
     setup_idleadv_tps();
     // Run once to initialise internal state
@@ -315,10 +315,10 @@ static void test_correctionIdleAdvance_tps_lookup_nodelay(void) {
 
     setup_idleadv_tps();
 
-    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) + 100;
+    setRpm(currentStatus, (currentStatus.CLIdleTarget * 10U) + 100U);
     assert_correctionIdleAdvance(8, 25);
 
-    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) - 100;
+    setRpm(currentStatus, (currentStatus.CLIdleTarget * 10U) - 100U);
     assert_correctionIdleAdvance(-3, 15);
 }
 
@@ -327,10 +327,10 @@ static void test_correctionIdleAdvance_ctps_lookup_nodelay(void) {
 
     setup_idleadv_ctps();
 
-    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) + 100;
+    setRpm(currentStatus, (currentStatus.CLIdleTarget * 10) + 100);
     assert_correctionIdleAdvance(8, 25);
 
-    currentStatus.RPM = (currentStatus.CLIdleTarget * 10) - 100;
+    setRpm(currentStatus, (currentStatus.CLIdleTarget * 10) - 100);
     assert_correctionIdleAdvance(-3, 15);
 }
 
@@ -352,7 +352,7 @@ static void test_correctionIdleAdvance_noadvance_modeoff(void) {
 static void test_correctionIdleAdvance_noadvance_rpmtoohigh(void) {
     setup_correctionIdleAdvance();
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
-    currentStatus.RPM = (configPage2.idleAdvRPM * 100)+1;
+    setRpm(currentStatus, (configPage2.idleAdvRPM * 100)+1);
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
 }
 
@@ -422,7 +422,7 @@ static void setup_correctionSoftRevLimit(void) {
     configPage4.SoftLimRetard = 5;
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
-    currentStatus.RPMdiv100 = configPage4.SoftRevLim + 1;
+    setRpm(currentStatus, (configPage4.SoftRevLim + 1U)*100U);
     softLimitTime = 0;
 
     BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
@@ -464,7 +464,7 @@ static void test_correctionSoftRevLimit_inactive_rpmtoohigh(void) {
     setup_correctionSoftRevLimit();
     assert_correctionSoftRevLimit(8);
 
-    currentStatus.RPMdiv100 = configPage4.SoftRevLim-1;
+    setRpm(currentStatus, (configPage4.SoftRevLim - 1U)*100U);
     currentStatus.softLimitActive = true;
     TEST_ASSERT_EQUAL(8, correctionSoftRevLimit(8));
     TEST_ASSERT_FALSE(currentStatus.softLimitActive);
@@ -556,7 +556,7 @@ static void setup_correctionSoftLaunch(void) {
     
     currentStatus.clutchTrigger = 1;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 100;
-    currentStatus.RPM = ((configPage6.lnchSoftLim) * 100) + 100;
+    setRpm(currentStatus, ((configPage6.lnchSoftLim) * 100) + 100);
     currentStatus.TPS = configPage10.lnchCtrlTPS + 1;
     currentStatus.vss = 30;
 }
@@ -609,7 +609,7 @@ static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
 
 static void test_correctionSoftLaunch_off_rpmlimit(void) {
     setup_correctionSoftLaunch();
-    currentStatus.RPM = (configPage6.lnchSoftLim * 100) - 1;
+    setRpm(currentStatus, (configPage6.lnchSoftLim * 100) - 1);
     configPage6.lnchRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
@@ -655,7 +655,7 @@ static void setup_correctionSoftFlatShift(void) {
     
     currentStatus.clutchTrigger = 1;
     currentStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) + 500;
-    currentStatus.RPM = currentStatus.clutchEngagedRPM + 600;
+    setRpm(currentStatus, currentStatus.clutchEngagedRPM + 600);
 
     currentStatus.flatShiftSoftCut = false;
 }
@@ -705,7 +705,7 @@ static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
 static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
     setup_correctionSoftFlatShift();
     configPage6.flatSRetard = -3;
-    currentStatus.RPM = (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100;
+    setRpm(currentStatus, (currentStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100);
 
     currentStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));

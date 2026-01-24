@@ -50,7 +50,7 @@ static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, co
     current.advance1 = CAP_ADVANCE1;
     current.advance = current.advance1;
     current.MAP = tempYAxis[0];
-    current.RPM = tempXAxis[0];
+    setRpm(current, tempXAxis[0]);
     fill_table_values(lookupTable, CAP_LOAD_LOOKUP_RESULT);
     populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
     populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
@@ -79,7 +79,7 @@ static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10
     current.advance1 = SIMPLE_ADVANCE1;
     current.advance = current.advance1;
     current.MAP = tempYAxis[0];
-    current.RPM = tempXAxis[0];
+    setRpm(current, tempXAxis[0]);
     fill_table_values(lookupTable, SIMPLE_LOAD_LOOKUP_RESULT);
     populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
     populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
@@ -173,7 +173,7 @@ static void __attribute__((noinline)) setup_test_mode_cond_switch(config2 &page2
     page10.spark2SwitchVariable = cond;
     page10.spark2SwitchValue = trigger;
     current.MAP = 50; //Load source value
-    current.RPM = 3500;
+    setRpm(current, 3500U);
     current.TPS = 50;
     current.ethanolPct = 50;
 }

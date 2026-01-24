@@ -342,7 +342,7 @@ static void setup_ego_simple(void) {
   currentStatus.coolant = temperatureRemoveOffset(configPage6.egoTemp) + 1; 
 
   configPage6.egoRPM = 30U;
-  currentStatus.RPM = configPage6.egoRPM*100U + 1U;
+  setRpm(currentStatus, configPage6.egoRPM*100U + 1U);
 
   configPage6.egoTPSMax = 33;
   currentStatus.TPS = configPage6.egoTPSMax - 1U;
@@ -400,7 +400,7 @@ static void test_corrections_closedloop_off_invalidconditions_coolant(void) {
 static void test_corrections_closedloop_off_invalidconditions_rpm(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.RPM = (configPage6.egoRPM*100U) - 1U;
+  setRpm(currentStatus, (configPage6.egoRPM*100U) - 1U);
   TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
 }
 
@@ -760,7 +760,7 @@ static void setup_DFCO_on_taper_off_no_delay()
 
   //Sets all the required conditions to have the DFCO be active
   configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
-  currentStatus.RPM = 4000; //Set the current simulated RPM to a level above the DFCO rpm threshold
+  setRpm(currentStatus, 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
   currentStatus.TPS = 0; //Set the simulated TPS to 0 
   currentStatus.coolant = 80;
   configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
@@ -788,7 +788,7 @@ static void test_corrections_dfco_off_RPM()
   setup_DFCO_on_taper_off_no_delay();
 
   TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
-  currentStatus.RPM = 1000; //Set the current simulated RPM below the threshold + hyster
+  setRpm(currentStatus, 1000); //Set the current simulated RPM below the threshold + hyster
   TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
 }
 
@@ -999,7 +999,7 @@ extern uint16_t correctionAccel(void);
 
 static void disable_AE_taper(void) {
   //Disable the taper
-  currentStatus.RPM = 2000;
+  setRpm(currentStatus, 2000U);
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
 }
@@ -1072,7 +1072,7 @@ static void test_corrections_TAE_50pc_rpm_taper()
   setup_TAE();
 
   //RPM is 50% of the way through the taper range
-  currentStatus.RPM = 3000;
+  setRpm(currentStatus, 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1092,7 +1092,7 @@ static void test_corrections_TAE_110pc_rpm_taper()
   setup_TAE();
 
   //RPM is 110% of the way through the taper range, which should result in no additional AE
-  currentStatus.RPM = 5400;
+  setRpm(currentStatus, 5400U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1112,7 +1112,7 @@ static void test_corrections_TAE_under_threshold()
   setup_TAE();
 
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
-  currentStatus.RPM = 3000;
+  setRpm(currentStatus, 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1306,7 +1306,7 @@ static void test_corrections_MAE_50pc_rpm_taper()
   setup_MAE();
 
   //RPM is 50% of the way through the taper range
-  currentStatus.RPM = 3000;
+  setRpm(currentStatus, 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1326,7 +1326,7 @@ static void test_corrections_MAE_110pc_rpm_taper()
   setup_MAE();
 
   //RPM is 110% of the way through the taper range, which should result in no additional AE
-  currentStatus.RPM = 5400;
+  setRpm(currentStatus, 5400U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1346,7 +1346,7 @@ static void test_corrections_MAE_under_threshold()
   setup_MAE();
 
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
-  currentStatus.RPM = 3000;
+  setRpm(currentStatus, 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1462,7 +1462,7 @@ static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
   memset(&current, 0, sizeof(current));
   current.runSecs = page6.ego_sdelay + 2U;
   current.fuelLoad = 60;
-  current.RPM = 3100;
+  setRpm(current, 3100U);
   current.O2 = 75U;
 }
 
@@ -1582,7 +1582,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   populate_2dtable(&fuelTempTable, (uint8_t)100U, (uint8_t)100U);
 
   //Disable the taper
-  currentStatus.RPM = 2000;
+  setRpm(currentStatus, 2000U);
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
   configPage2.decelAmount = 33U;

@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include "bit_manip.h"
 #include "atomic.h"
+#include "maths.h"
 
 using byte = uint8_t;
 
@@ -303,4 +304,21 @@ static inline void resetEngineProtect(statuses &status) {
   status.engineProtectAfr = false;
   status.engineProtectClt = false;
   status.engineProtectIoError = false;
+}
+
+
+/**
+ * @brief Set the RPM field, keeping RPMDiv100 in sync.
+ * 
+ * @param status 
+ * @param smallRpm 
+ */
+static inline void setRpm(statuses &status, uint16_t rpm)
+{
+  ATOMIC()
+  {
+    status.RPM = rpm;
+    status.RPMdiv100 = div100(rpm);
+    status.longRPM = rpm;
+  }
 }
