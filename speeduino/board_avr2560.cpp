@@ -127,6 +127,10 @@ ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
   boostInterrupt();
 }
 
+ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  vvtInterrupt();
+}
 
 void initBoard(uint32_t baudRate)
 {

@@ -1133,11 +1133,7 @@ void boostInterrupt(void)
 }
 
 //The interrupt to control the VVT PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-  void vvtInterrupt(void) //Most ARM chips can simply call a function
-#endif
+void vvtInterrupt(void)
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
