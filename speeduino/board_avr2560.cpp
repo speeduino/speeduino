@@ -107,6 +107,10 @@ IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
 IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
 #endif
 
+ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  idleInterrupt();
+}
 
 void initBoard(uint32_t baudRate)
 {
