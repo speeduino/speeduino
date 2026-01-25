@@ -121,6 +121,13 @@ ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
   oneMSInterval();
 }
 
+//The interrupt to control the Boost PWM
+ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  boostInterrupt();
+}
+
+
 void initBoard(uint32_t baudRate)
 {
     /*

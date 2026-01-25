@@ -1107,11 +1107,7 @@ void boostDisable(void)
 }
 
 //The interrupt to control the Boost PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-  void boostInterrupt(void) //Most ARM chips can simply call a function
-#endif
+void boostInterrupt(void)
 {
   if (boost_pwm_state == true)
   {
