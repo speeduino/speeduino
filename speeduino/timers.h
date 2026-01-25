@@ -43,10 +43,8 @@ extern volatile unsigned int dwellLimit_uS;
 
 #if defined (CORE_TEENSY)
   extern IntervalTimer lowResTimer;
-  void oneMSInterval(void);
-#elif defined (ARDUINO_ARCH_STM32)
-  void oneMSInterval(void);
 #endif
+void oneMSInterval(void);
 void initialiseTimers(void);
 
 #endif // TIMERS_H
