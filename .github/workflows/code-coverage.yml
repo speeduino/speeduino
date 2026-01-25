@@ -49,14 +49,15 @@ jobs:
         print-summary: true
         excludes: |
           test/
+          lib/ArduinoFake/
           .pio/libdeps/
           speeduino/src/BackupSram/
           speeduino/src/FlashStorage/
           speeduino/src/FRAM/
           speeduino/src/SPIAsEEPROM/
           speeduino/src/STM32_CAN/
-          '(.+/)?unity_config\.c$'
-          '(.+/)?board_native\.(?:h|cpp)$'
+          (.+/)?unity_config\.c$
+          (.+/)?board_native\.(?:h|cpp)$
 
     # - name: Upload reports
     #   uses: actions/upload-artifact@v4

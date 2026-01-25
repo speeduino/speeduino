@@ -24,8 +24,8 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
     char msg[150];
     uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
-    auto counter = raw_counter_t();
-    auto compare = raw_compare_t();
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
     FuelSchedule schedule(counter, compare);
 
     schedule.Status = PENDING;
@@ -276,8 +276,8 @@ static void test_calc_inj_timeout_720()
 
 static void test_calculateInjectorTimeout(void)
 {
-  auto counter = raw_counter_t();
-  auto compare = raw_compare_t();
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
   FuelSchedule schedule(counter, compare);
   setEngineSpeed(4000, 360);
 

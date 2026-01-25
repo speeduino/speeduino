@@ -2,14 +2,15 @@
 
 #if defined(NATIVE_BOARD)
 #include <stdint.h>
+#include <array>
+#include "../lib/ArduinoFake/SoftwareTimer.h"
 
 /*
 ***********************************************************************************************************
 * General
 */
-#define COMPARE_TYPE uint16_t
+using COMPARE_TYPE = software_timer_t::counter_t;
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
-#define TIMER_RESOLUTION 4
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 #define IGN_CHANNELS 8
@@ -45,116 +46,57 @@ static constexpr uint8_t A15 = 0U;
 ***********************************************************************************************************
 * Schedules
 */
-#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
+#define MAX_TIMER_PERIOD (UINT32_MAX/1000UL) //The longest period of time (in uS) that the timer can permit
+#define uS_TO_TIMER_COMPARE(uS1) ((uS1) / 1000U) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
-namespace native_fake{
-    struct timer
-    {
-        bool enabled;
-        uint32_t counter;
-        uint32_t compare;
-    };
+#define DEFINE_TIMER_VARS(Prefix, index, array) \
+    static inline void Prefix##index##_TIMER_ENABLE(void) { array[index-1].enableTimer(); } \
+    static inline void Prefix##index##_TIMER_DISABLE(void) { array[index-1].disableTimer(); } \
+    static std::atomic<software_timer_t::counter_t>& Prefix##index##_COUNTER = array[index-1].counter; \
+    static std::atomic<software_timer_t::counter_t>& Prefix##index##_COMPARE = array[index-1].compare;
 
-    static inline void enableTimer(timer &s) { s.enabled = true; }
-    static inline void disableTimer(timer &s) { s.enabled = false; }
-}
+extern std::array<software_timer_t, INJ_CHANNELS> fuelTimers;
 
-extern native_fake::timer fuelTimers[8];
+DEFINE_TIMER_VARS(FUEL, 1, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 2, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 3, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 4, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 5, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 6, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 7, fuelTimers)
+DEFINE_TIMER_VARS(FUEL, 8, fuelTimers)
 
-static inline void FUEL1_TIMER_ENABLE(void) { enableTimer(fuelTimers[0]); }
-static inline void FUEL2_TIMER_ENABLE(void) { enableTimer(fuelTimers[1]); }
-static inline void FUEL3_TIMER_ENABLE(void) { enableTimer(fuelTimers[2]); }
-static inline void FUEL4_TIMER_ENABLE(void) { enableTimer(fuelTimers[3]); }
-static inline void FUEL5_TIMER_ENABLE(void) { enableTimer(fuelTimers[4]); }
-static inline void FUEL6_TIMER_ENABLE(void) { enableTimer(fuelTimers[5]); }
-static inline void FUEL7_TIMER_ENABLE(void) { enableTimer(fuelTimers[6]); }
-static inline void FUEL8_TIMER_ENABLE(void) { enableTimer(fuelTimers[7]); }
+extern std::array<software_timer_t, IGN_CHANNELS> ignitionTimers;
 
-static inline void FUEL1_TIMER_DISABLE(void) { disableTimer(fuelTimers[0]); }
-static inline void FUEL2_TIMER_DISABLE(void) { disableTimer(fuelTimers[1]); }
-static inline void FUEL3_TIMER_DISABLE(void) { disableTimer(fuelTimers[2]); }
-static inline void FUEL4_TIMER_DISABLE(void) { disableTimer(fuelTimers[3]); }
-static inline void FUEL5_TIMER_DISABLE(void) { disableTimer(fuelTimers[4]); }
-static inline void FUEL6_TIMER_DISABLE(void) { disableTimer(fuelTimers[5]); }
-static inline void FUEL7_TIMER_DISABLE(void) { disableTimer(fuelTimers[6]); }
-static inline void FUEL8_TIMER_DISABLE(void) { disableTimer(fuelTimers[7]); }
-
-#define FUEL1_COUNTER fuelTimers[0].counter
-#define FUEL2_COUNTER fuelTimers[1].counter
-#define FUEL3_COUNTER fuelTimers[2].counter
-#define FUEL4_COUNTER fuelTimers[3].counter
-#define FUEL5_COUNTER fuelTimers[4].counter
-#define FUEL6_COUNTER fuelTimers[5].counter
-#define FUEL7_COUNTER fuelTimers[6].counter
-#define FUEL8_COUNTER fuelTimers[7].counter
-
-#define FUEL1_COMPARE fuelTimers[0].compare
-#define FUEL2_COMPARE fuelTimers[1].compare
-#define FUEL3_COMPARE fuelTimers[2].compare
-#define FUEL4_COMPARE fuelTimers[3].compare
-#define FUEL5_COMPARE fuelTimers[4].compare
-#define FUEL6_COMPARE fuelTimers[5].compare
-#define FUEL7_COMPARE fuelTimers[6].compare
-#define FUEL8_COMPARE fuelTimers[7].compare
-
-extern native_fake::timer ignitionTimers[8];
-#define IGN1_COUNTER  ignitionTimers[0].counter
-#define IGN2_COUNTER  ignitionTimers[1].counter
-#define IGN3_COUNTER  ignitionTimers[2].counter
-#define IGN4_COUNTER  ignitionTimers[3].counter
-#define IGN5_COUNTER  ignitionTimers[4].counter
-#define IGN6_COUNTER  ignitionTimers[5].counter
-#define IGN7_COUNTER  ignitionTimers[6].counter
-#define IGN8_COUNTER  ignitionTimers[7].counter
-
-#define IGN1_COMPARE ignitionTimers[0].compare
-#define IGN2_COMPARE ignitionTimers[1].compare
-#define IGN3_COMPARE ignitionTimers[2].compare
-#define IGN4_COMPARE ignitionTimers[3].compare
-#define IGN5_COMPARE ignitionTimers[4].compare
-#define IGN6_COMPARE ignitionTimers[5].compare
-#define IGN7_COMPARE ignitionTimers[6].compare
-#define IGN8_COMPARE ignitionTimers[7].compare
-
-static inline void IGN1_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[0]); }
-static inline void IGN2_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[1]); }
-static inline void IGN3_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[2]); }
-static inline void IGN4_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[3]); }
-static inline void IGN5_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[4]); }
-static inline void IGN6_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[5]); }
-static inline void IGN7_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[6]); }
-static inline void IGN8_TIMER_ENABLE(void)  { enableTimer(ignitionTimers[7]); }
-
-static inline void IGN1_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[0]); }
-static inline void IGN2_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[1]); }
-static inline void IGN3_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[2]); }
-static inline void IGN4_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[3]); }
-static inline void IGN5_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[4]); }
-static inline void IGN6_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[5]); }
-static inline void IGN7_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[6]); }
-static inline void IGN8_TIMER_DISABLE(void)  { disableTimer(ignitionTimers[7]); }
+DEFINE_TIMER_VARS(IGN, 1, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 2, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 3, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 4, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 5, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 6, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 7, ignitionTimers)
+DEFINE_TIMER_VARS(IGN, 8, ignitionTimers)
 
 /*
 ***********************************************************************************************************
 * Auxiliaries
 */
 
-extern native_fake::timer boostTimer;
-#define ENABLE_BOOST_TIMER()  enableTimer(boostTimer)
-#define DISABLE_BOOST_TIMER() disableTimer(boostTimer)
+extern software_timer_t boostTimer;
+#define ENABLE_BOOST_TIMER()  boostTimer.enableTimer()
+#define DISABLE_BOOST_TIMER() boostTimer.disableTimer()
 #define BOOST_TIMER_COMPARE   boostTimer.compare
 #define BOOST_TIMER_COUNTER   boostTimer.counter
 
-extern native_fake::timer vvtTimer;
-#define ENABLE_VVT_TIMER()    enableTimer(vvtTimer)
-#define DISABLE_VVT_TIMER()   disableTimer(vvtTimer)
+extern software_timer_t vvtTimer;
+#define ENABLE_VVT_TIMER()    vvtTimer.enableTimer()
+#define DISABLE_VVT_TIMER()   vvtTimer.disableTimer()
 #define VVT_TIMER_COMPARE     vvtTimer.compare
 #define VVT_TIMER_COUNTER     vvtTimer.counter
 
-extern native_fake::timer fanTimer;
-#define ENABLE_FAN_TIMER()  enableTimer(fanTimer)
-#define DISABLE_FAN_TIMER() disableTimer(fanTimer)
+extern software_timer_t fanTimer;
+#define ENABLE_FAN_TIMER()  fanTimer.enableTimer()
+#define DISABLE_FAN_TIMER() fanTimer.disableTimer()
 #define FAN_TIMER_COMPARE     fanTimer.compare
 #define FAN_TIMER_COUNTER     fanTimer.counter
 
@@ -162,19 +104,31 @@ extern native_fake::timer fanTimer;
 ***********************************************************************************************************
 * Idle
 */
-extern native_fake::timer idleTimer;
-#define IDLE_TIMER_ENABLE()  enableTimer(idleTimer)
-#define IDLE_TIMER_DISABLE() disableTimer(idleTimer)
+extern software_timer_t idleTimer;
+#define IDLE_TIMER_ENABLE()  idleTimer.enableTimer()
+#define IDLE_TIMER_DISABLE() idleTimer.disableTimer()
 #define IDLE_COUNTER   idleTimer.counter
 #define IDLE_COMPARE   idleTimer.compare
 
 #define ATOMIC() // No atomic operations needed for this platform
 
 #if !defined(max)
-#define max(a,b) ((a)>(b)?(a):(b))
+template<typename _Tp>
+constexpr const _Tp& max(const _Tp& __a, const _Tp& __b) {
+    if (__b > __a) {
+        return __b;
+    }
+    return __a;
+}
 #endif
 #if !defined(min)
-#define min(a,b) ((a)<(b)?(a):(b))  
+template<typename _Tp>
+constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
+    if (__b < __a) {
+        return __b;
+    }
+    return __a;
+}
 #endif
 
 /*

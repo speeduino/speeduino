@@ -22,9 +22,13 @@ static void test_accuracy_timeout_inj(FuelSchedule &schedule)
     start_time = micros();
     setFuelSchedule(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
     while(schedule.Status != OFF) /*Wait*/ ;
     stopFuelSchedulers();
+#if defined(NATIVE_BOARD)
+    TEST_IGNORE_MESSAGE("Timing not accurate on native board");
+#else
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
+#endif    
 }
 
 static void test_accuracy_timeout_inj1(void)
@@ -75,9 +79,14 @@ static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
     start_time = micros();
     setIgnitionSchedule(schedule, TIMEOUT, DURATION);
     while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
     while(schedule.Status != OFF) /*Wait*/ ;
     stopIgnitionSchedulers();
+
+    #if defined(NATIVE_BOARD)
+    TEST_IGNORE_MESSAGE("Timing not accurate on native board");
+#else
+    TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
+#endif    
 }
 
 static void test_accuracy_timeout_ign1(void)

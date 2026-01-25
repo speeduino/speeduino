@@ -21,8 +21,8 @@ static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
 
 static void test_timeout_TooLarge(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
     TEST_ASSERT_EQUAL(0, schedule.duration);
@@ -32,8 +32,8 @@ static void test_timeout_TooLarge(void) {
 }
 
 static void test_timeout_TooSmall(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
     TEST_ASSERT_EQUAL(0, schedule.duration);
@@ -44,8 +44,8 @@ static void test_timeout_TooSmall(void) {
 
 static void test_duration_TooLarge(void) {
 #if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
     TEST_ASSERT_EQUAL(0, schedule.duration);
@@ -58,8 +58,8 @@ static void test_duration_TooLarge(void) {
 }
 
 static void test_duration_TooSmall(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
     TEST_ASSERT_EQUAL(0, schedule.duration);
@@ -69,8 +69,8 @@ static void test_duration_TooSmall(void) {
 }
 
 static void test_schedule_OFF_to_PENDING(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
     TEST_ASSERT_EQUAL(0, schedule.duration);
@@ -84,8 +84,8 @@ static void test_schedule_OFF_to_PENDING(void) {
 }
 
 static void test_schedule_PENDING_to_PENDING(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     setSchedule(schedule, TIMEOUT, DURATION, true);
     setSchedule(schedule, TIMEOUT+1000, DURATION+500, true);
@@ -99,8 +99,8 @@ static void test_schedule_RUNNING_to_RUNNINGWITHNEXT(void) {
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     setSchedule(schedule, TIMEOUT, DURATION, true);
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
@@ -121,8 +121,8 @@ static void test_schedule_RUNNINGWITHNEXT_to_RUNNINGWITHNEXT(void)
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     setSchedule(schedule, TIMEOUT, DURATION, true);
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
@@ -138,8 +138,8 @@ static void test_schedule_RUNNINGWITHNEXT_to_RUNNINGWITHNEXT(void)
 }
 
 static void test_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     Schedule schedule(COUNTER, COMPARE);
     setSchedule(schedule, TIMEOUT, DURATION, true);
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
@@ -157,8 +157,8 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     IgnitionSchedule schedule(COUNTER, COMPARE);
     setIgnitionSchedule(schedule, TIMEOUT, DURATION);
 
@@ -169,7 +169,7 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     // Calculate a revolution time that will result in 360° taking longer than MAX_TIMER_PERIOD
     auto revTime = MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_IGN);
     setAngleConverterRevolutionTime(revTime);
-    TEST_ASSERT_GREATER_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN));
+    TEST_ASSERT_GREATER_THAN_UINT32(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN));
     
     setIgnitionSchedule(schedule, TIMEOUT, DURATION);
     // Should not have changed
@@ -194,8 +194,8 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
-    remove_reference<Schedule::counter_t>::type COUNTER=INITIAL_COUNTER;
-    remove_reference<Schedule::compare_t>::type COMPARE=0;
+    remove_reference<Schedule::counter_t>::type COUNTER={INITIAL_COUNTER};
+    remove_reference<Schedule::compare_t>::type COMPARE={0};
     FuelSchedule schedule(COUNTER, COMPARE);
     setFuelSchedule(schedule, TIMEOUT, DURATION);
 
