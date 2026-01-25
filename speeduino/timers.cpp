@@ -20,10 +20,6 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "comms.h"
 #include "maths.h"
 
-#if defined(CORE_AVR)
-  #include <avr/wdt.h>
-#endif
-
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
 volatile byte loop20ms;
