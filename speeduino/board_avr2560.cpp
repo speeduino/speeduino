@@ -6,6 +6,7 @@
 #include "comms_secondary.h"
 #include "idle.h"
 #include "scheduler.h"
+#include "timers.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -107,6 +108,29 @@ IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
 IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
 #endif
 
+ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  idleInterrupt();
+}
+
+//Timer2 Overflow Interrupt Vector, called when the timer overflows.
+//Executes every ~1ms.
+//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
+ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
+{
+  oneMSInterval();
+}
+
+//The interrupt to control the Boost PWM
+ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  boostInterrupt();
+}
+
+ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  vvtInterrupt();
+}
 
 void initBoard(uint32_t baudRate)
 {
