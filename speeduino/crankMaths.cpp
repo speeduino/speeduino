@@ -54,7 +54,7 @@ void doCrankSpeedCalcs(void)
       //We use a 1st Deriv acceleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
-      if( (BIT_CHECK(decoderState, BIT_DECODER_2ND_DERIV)) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if( (getDecoderFeatures().supports2ndDeriv) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
         //if (deltaToothCount != toothCurrentCount)

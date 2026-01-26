@@ -1006,7 +1006,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Same as above, except for ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && currentStatus.engineIsCranking && (BIT_CHECK(decoderState, BIT_DECODER_HAS_FIXED_CRANKING)) )
+      if ( configPage4.ignCranklock && currentStatus.engineIsCranking && (getDecoderFeatures().hasFixedCrankingTiming) )
       {
         fixedCrankingOverride = currentStatus.dwell * 3;
         //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
