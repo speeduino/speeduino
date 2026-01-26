@@ -328,11 +328,7 @@ struct config2 {
 
   byte decelAmount;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 constexpr uint8_t IDLEADVANCE_MODE_OFF      = 0U;
 constexpr uint8_t IDLEADVANCE_MODE_ADDED    = 1U;
@@ -447,11 +443,7 @@ struct config4 {
   byte vvtMinClt;
   byte vvtDelay;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 /** Page 6 of the config - mostly variables that are required for AFR targets and closed loop.
 See the ini file for further reference.
@@ -549,11 +541,7 @@ struct config6 {
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 #define HARD_REV_FIXED    1
 #define HARD_REV_COOLANT  2
@@ -637,11 +625,7 @@ struct config9 {
   byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */
   byte afrProtectReactivationTPS; /* Disable engine protection cut once below this TPS percentage */
   
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 /** Page 10 - No specific purpose. Created initially for the cranking enrich curve.
 192 bytes long.
@@ -823,11 +807,8 @@ struct config10 {
   //Byte 191
   byte lnchCtrlVss;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(2))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
+
 /** Config for programmable I/O comparison operation (between 2 vars).
  * Operations are implemented in utilities.ino (@ref checkProgrammableIO()).
  */
@@ -884,11 +865,7 @@ struct config13 {
   byte hwTestIgnDuration;
   byte hwTestInjDuration;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 /**
 Page 15 - second page for VVT and boost control.
@@ -934,8 +911,4 @@ struct config15 {
   //Bytes 106-255
   byte Unused15_106_255[150];
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
