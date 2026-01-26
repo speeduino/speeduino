@@ -69,42 +69,29 @@ struct decoder_features_t {
 
 const decoder_features_t& getDecoderFeatures(void);
 
-extern volatile uint8_t decoderState;
-
-/**
- * @defgroup trigger_sync_status Functions to get & set trigger sync status
- *  
- * @{
- */
-
 /** \enum SyncStatus
  * @brief The decoder trigger status
  * */
 enum class SyncStatus : uint8_t {
   /** No trigger pulses are being received. Either loss of sync or engine has stopped */
-  None = 0x00, 
+  None, 
   /** Primary & secondary triggers are configured, but we are only receiving pulses from the primary.
    *  *Not a valid state if no secondary trigger is configured* 
    */
-  Partial = 0x40,
+  Partial,
   /** We are receiving pulses from both primary & secondary (where specified) triggers */
-  Full = 0xC0,
+  Full,
 }; 
 
-/**
- * @brief Get the current sync status
- * 
- * @param status Current system state
- * @return SyncStatus 
- */
-static inline SyncStatus getSyncStatus(void) {
-  ATOMIC() {
-    return (SyncStatus)(decoderState & (uint8_t)SyncStatus::Full);
-  }
-  return SyncStatus::None; // Just here to avoid compiler warning.
-}
+/** @brief Current decoder status */
+struct decoder_status_t {
+  bool validTrigger; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+  bool toothAngleIsCorrect; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
+  SyncStatus syncStatus; ///> Current sync status (none/partial/full)
+};
 
-///@}
+/** @brief Access the current decoder status */
+const decoder_status_t getDecoderStatus(void);
 
 /**
  * @brief Is the engine running?

@@ -10,7 +10,7 @@
 #include "../test_schedules/channel_test_helpers.h"
 #include "decoders.h"
 
-extern void setSyncStatus(SyncStatus syncStatus);
+extern decoder_status_t decoderStatus;
 void prepareForInitialiseAll(uint8_t boardId);
 
 static constexpr uint16_t reqFuel = 86; // ms * 10
@@ -1022,7 +1022,7 @@ static void test_partial_sync_1_cylinder(void)
   // Confirm initial state
   assert_1cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, false, false, false, false, false, false, false};
@@ -1030,7 +1030,7 @@ static void test_partial_sync_1_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_1cylinder_4stroke_seq_nostage();
 }
@@ -1042,7 +1042,7 @@ static void test_partial_sync_2_cylinder(void)
   // Confirm initial state
   assert_2cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, false, false, false, false, false, false};
@@ -1050,7 +1050,7 @@ static void test_partial_sync_2_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_2cylinder_4stroke_seq_nostage();
 }
@@ -1063,7 +1063,7 @@ static void test_partial_sync_3_cylinder(void)
   // Confirm initial state
   assert_3cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, true, false, false, false, false, false};
@@ -1071,7 +1071,7 @@ static void test_partial_sync_3_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_3cylinder_4stroke_seq_nostage();
 }
@@ -1083,7 +1083,7 @@ static void test_partial_sync_4_cylinder(void)
   // Confirm initial state
   assert_4cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, false, false, false, false, false, false};
@@ -1091,7 +1091,7 @@ static void test_partial_sync_4_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_seq_nostage();
 }
@@ -1104,7 +1104,7 @@ static void test_partial_sync_5_cylinder(void)
   // Confirm initial state
   assert_5cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, true, true, true, false, false, false};
@@ -1112,7 +1112,7 @@ static void test_partial_sync_5_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_5cylinder_4stroke_seq_nostage();
 #else
@@ -1128,7 +1128,7 @@ static void test_partial_sync_6_cylinder(void)
   // Confirm initial state
   assert_6cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, true, false, false, false, false, false};
@@ -1136,7 +1136,7 @@ static void test_partial_sync_6_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_6cylinder_4stroke_seq_nostage();
 #else
@@ -1152,7 +1152,7 @@ static void test_partial_sync_8_cylinder(void)
   // Confirm initial state
   assert_8cylinder_4stroke_seq_nostage();
 
-  setSyncStatus(SyncStatus::Partial);
+  decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, true, true, false, false, false, false};
@@ -1160,7 +1160,7 @@ static void test_partial_sync_8_cylinder(void)
     assert_fuel_schedules(360U, reqFuel * 50U, enabled, angle);
   }
 
-  setSyncStatus(SyncStatus::Full);;
+  decoderStatus.syncStatus = SyncStatus::Full;;
   changeHalfToFullSync(configPage2, configPage4, currentStatus);
   assert_8cylinder_4stroke_seq_nostage();
 #else
