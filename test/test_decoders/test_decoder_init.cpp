@@ -21,6 +21,7 @@ static void test_init(void)
     {
         TEST_ASSERT_EQUAL_MESSAGE(getDecoder().secondary.callback, defaultDecoder.secondary.callback, "secondary");
     }
+    TEST_ASSERT_EQUAL_MESSAGE(getDecoder().secondary.isValid(), getDecoder().getFeatures().hasSecondary, "hasSecondary");
     
     // Tertiary is optional
     if (getDecoder().tertiary.isValid())
@@ -39,7 +40,7 @@ static void test_init(void)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().getCrankAngle, defaultDecoder.getCrankAngle, "getCrankAngle");
 
     // Per tooth ignition is optional
-    if (getDecoderFeatures().supportsPerToothIgnition)
+    if (getDecoder().getFeatures().supportsPerToothIgnition)
     {
         TEST_ASSERT_TRUE(configPage2.perToothIgn);
         TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().setEndTeeth, defaultDecoder.setEndTeeth, "setEndTeeth");
@@ -55,6 +56,12 @@ static void test_init(void)
 
     // Mandatory
     TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().isEngineRunning, defaultDecoder.isEngineRunning, "isEngineRunning");
+
+    // Mandatory
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().getStatus, defaultDecoder.getStatus, "getStatus");
+
+    // Mandatory
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(getDecoder().getFeatures, defaultDecoder.getFeatures, "getFeatures");
 }
 
 static void test_init_all(void)

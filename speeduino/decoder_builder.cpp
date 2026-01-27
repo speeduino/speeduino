@@ -8,6 +8,7 @@ static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm
 static int16_t nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
 static decoder_status_t nullGetStatus(void) { return decoder_status_t{}; }
+static decoder_features_t nullGetFeatures(void) { return decoder_features_t(); }
 
 decoder_builder_t::decoder_builder_t(void)
 {
@@ -20,6 +21,7 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setReset(&nullTriggerHandler);
     (void)setIsEngineRunning(&nullEngineIsRunning);
     (void)setGetStatus(&nullGetStatus);
+    (void)setGetFeatures(&nullGetFeatures);
 }
 decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
 : _decoder(decoder)
@@ -102,5 +104,12 @@ decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_runni
 decoder_builder_t& decoder_builder_t::setGetStatus(decoder_t::status_fun_t getStatus)
 {
     _decoder.getStatus = getStatus==nullptr ? &nullGetStatus : getStatus;
+    return *this;
+}
+
+
+decoder_builder_t& decoder_builder_t::setGetFeatures(decoder_t::feature_fun_t getFeatures)
+{
+    _decoder.getFeatures = getFeatures==nullptr ? &nullGetFeatures : getFeatures;
     return *this;
 }
