@@ -334,7 +334,7 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
 }
 #endif
 
-const decoder_status_t getDecoderStatus(void)
+static decoder_status_t sharedGetStatus(void)
 {
   // NOTE: we are deliberately returning a copy of the struct to avoid read tearing since it's written to within interrupts
   ATOMIC() {
@@ -939,6 +939,7 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -1145,6 +1146,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -1359,6 +1361,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)
                 .setIsEngineRunning(sharedEngineIsRunning)
+                .setGetStatus(sharedGetStatus)
                 .build();
 }
 /** @} */
@@ -1501,6 +1504,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -1934,6 +1938,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 /** @} */
@@ -2061,6 +2066,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
                   .setGetCrankAngle(getCrankAngle_24X)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -2174,6 +2180,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
                   .setGetCrankAngle(getCrankAngle_Jeep2000)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 /** @} */
@@ -2299,6 +2306,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
                   .setGetCrankAngle(getCrankAngle_Audi135)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -2401,6 +2409,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
                   .setGetCrankAngle(getCrankAngle_HondaD17)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -2541,6 +2550,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
                   .setGetCrankAngle(getCrankAngle_HondaJ32)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -2824,6 +2834,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -2979,6 +2990,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -3048,6 +3060,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
                   .setGetCrankAngle(getCrankAngle_non360)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -3286,6 +3299,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -3568,6 +3582,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -3735,6 +3750,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
                   .setGetCrankAngle(getCrankAngle_Daihatsu)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -3867,6 +3883,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -4051,6 +4068,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -4178,6 +4196,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -4373,6 +4392,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 /** @} */
@@ -4640,6 +4660,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -4693,6 +4714,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -5041,6 +5063,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -5231,6 +5254,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -5402,6 +5426,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
                   .setSetEndTeeth(triggerSetEndTeeth_Renix)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -5775,6 +5800,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 /** @} */
@@ -6105,6 +6131,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 
@@ -6390,6 +6417,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
+                  .setGetStatus(sharedGetStatus)
                   .build();
 }
 /** @} */

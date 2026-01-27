@@ -22,30 +22,6 @@ struct decoder_features_t {
 
 const decoder_features_t& getDecoderFeatures(void);
 
-/** \enum SyncStatus
- * @brief The decoder trigger status
- * */
-enum class SyncStatus : uint8_t {
-  /** No trigger pulses are being received. Either loss of sync or engine has stopped */
-  None, 
-  /** Primary & secondary triggers are configured, but we are only receiving pulses from the primary.
-   *  *Not a valid state if no secondary trigger is configured* 
-   */
-  Partial,
-  /** We are receiving pulses from both primary & secondary (where specified) triggers */
-  Full,
-}; 
-
-/** @brief Current decoder status */
-struct decoder_status_t {
-  bool validTrigger; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-  bool toothAngleIsCorrect; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
-  SyncStatus syncStatus; ///> Current sync status (none/partial/full)
-};
-
-/** @brief Access the current decoder status */
-const decoder_status_t getDecoderStatus(void);
-
 // TODO: move these to logger.cpp
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);

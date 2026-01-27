@@ -27,6 +27,28 @@ struct interrupt_t
   }
 };
 
+
+/** \enum SyncStatus
+ * @brief The decoder trigger status
+ * */
+enum class SyncStatus : uint8_t {
+  /** No trigger pulses are being received. Either loss of sync or engine has stopped */
+  None, 
+  /** Primary & secondary triggers are configured, but we are only receiving pulses from the primary.
+   *  *Not a valid state if no secondary trigger is configured* 
+   */
+  Partial,
+  /** We are receiving pulses from both primary & secondary (where specified) triggers */
+  Full,
+}; 
+
+/** @brief Current decoder status */
+struct decoder_status_t {
+  bool validTrigger; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+  bool toothAngleIsCorrect; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
+  SyncStatus syncStatus; ///> Current sync status (none/partial/full)
+};
+
 /** @brief This structure represents a decoder configuration 
  * 
  * Create using decoder_builder_t
@@ -77,4 +99,10 @@ struct decoder_t
   using engine_running_t = bool(*)(uint32_t);
   engine_running_t isEngineRunning;
   /// @}
+
+  /// @{
+  /** @brief The function to get the current decoder status. */
+  using status_fun_t = decoder_status_t(*)(void);
+  status_fun_t getStatus;
+  /// @}  
 };

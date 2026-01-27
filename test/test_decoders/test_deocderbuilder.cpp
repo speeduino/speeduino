@@ -14,6 +14,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     TEST_ASSERT_NOT_NULL(decoder.getCrankAngle);
     TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
     TEST_ASSERT_NOT_NULL(decoder.reset);
+    TEST_ASSERT_NOT_NULL(decoder.getStatus);
 
     // Test these functions can be called without crashing
     decoder.primary.callback();
@@ -23,6 +24,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     decoder.getCrankAngle();
     decoder.setEndTeeth();
     decoder.reset();
+    decoder.getStatus();
 }
 
 static void test_ctor()
@@ -166,6 +168,23 @@ static void test_setIsEngineRunning(void)
     assert_decoder_builder( builder );
 }
 
+static decoder_status_t fakeGetStatus(void)
+{
+    return decoder_status_t{ .validTrigger = true, .toothAngleIsCorrect  = false, .syncStatus = SyncStatus::Full };
+}
+
+static void test_setGetStatus(void)
+{
+    auto builder = decoder_builder_t().setGetStatus( fakeGetStatus );
+
+    TEST_ASSERT_EQUAL( SyncStatus::Full, builder.build().getStatus().syncStatus );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetStatus( nullptr );
+    assert_decoder_builder( builder );
+}
+
 void testDecoderBuilder(void)
 {
   SET_UNITY_FILENAME() {
@@ -178,5 +197,6 @@ void testDecoderBuilder(void)
     RUN_TEST( test_setSetEndTeeth );
     RUN_TEST( test_setReset );
     RUN_TEST( test_setIsEngineRunning );
+    RUN_TEST( test_setGetStatus );
   }
 }

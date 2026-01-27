@@ -7,6 +7,7 @@ static void nullTriggerHandler (void){return;} //initialisation function for tri
 static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
 static int16_t nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
+static decoder_status_t nullGetStatus(void) { return decoder_status_t{}; }
 
 decoder_builder_t::decoder_builder_t(void)
 {
@@ -18,6 +19,7 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setSetEndTeeth(&nullTriggerHandler);
     (void)setReset(&nullTriggerHandler);
     (void)setIsEngineRunning(&nullEngineIsRunning);
+    (void)setGetStatus(&nullGetStatus);
 }
 decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
 : _decoder(decoder)
@@ -94,5 +96,11 @@ decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
 decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_running_t isRunning)
 {
     _decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setGetStatus(decoder_t::status_fun_t getStatus)
+{
+    _decoder.getStatus = getStatus==nullptr ? &nullGetStatus : getStatus;
     return *this;
 }
