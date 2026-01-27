@@ -4,7 +4,7 @@
 #include "units.h"
 #include "unit_testing.h"
 #include "preprocessor.h"
-#include "decoders.h"
+#include "decoder_init.h"
 #include "units.h"
 #include "preprocessor.h"
 
@@ -191,7 +191,7 @@ TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
 
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
-  if (getDecoderStatus().syncStatus==SyncStatus::None)
+  if (getDecoder().getStatus().syncStatus==SyncStatus::None)
   {
     return { 0x0, 0x0, 0x0 };
   }
