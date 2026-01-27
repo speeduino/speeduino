@@ -4,7 +4,7 @@
 #include "config_pages.h"
 #include "statuses.h"
 #include "globals.h"
-#include "decoders.h"
+#include "decoder_init.h"
 
 extern decoder_status_t decoderStatus;
 
@@ -21,6 +21,7 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
   setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
+  setDecoder(DECODER_MISSING_TOOTH);
   decoderStatus.syncStatus = SyncStatus::Full;
 }
 

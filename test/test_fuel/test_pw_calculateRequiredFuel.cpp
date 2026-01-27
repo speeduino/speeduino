@@ -2,7 +2,7 @@
 #include "../test_utils.h"
 #include "config_pages.h"
 #include "statuses.h"
-#include "decoders.h"
+#include "decoder_init.h"
 
 extern uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current);
 extern decoder_status_t decoderStatus;
@@ -33,6 +33,7 @@ static void test_calculateRequiredFuel_4stroke(void) {
 
   statuses current = {};
 
+  setDecoder(DECODER_MISSING_TOOTH);
   page2.injLayout = INJ_PAIRED;
   decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_EQUAL((page2.reqFuel*100U)/2U, calculateRequiredFuel(page2, current));
