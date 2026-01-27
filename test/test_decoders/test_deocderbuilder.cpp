@@ -15,6 +15,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
     TEST_ASSERT_NOT_NULL(decoder.reset);
     TEST_ASSERT_NOT_NULL(decoder.getStatus);
+    TEST_ASSERT_NOT_NULL(decoder.getFeatures);
 
     // Test these functions can be called without crashing
     decoder.primary.callback();
@@ -25,6 +26,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     decoder.setEndTeeth();
     decoder.reset();
     decoder.getStatus();
+    decoder.getFeatures();
 }
 
 static void test_ctor()
@@ -185,6 +187,26 @@ static void test_setGetStatus(void)
     assert_decoder_builder( builder );
 }
 
+static decoder_features_t fakeGetFeatures(void)
+{
+    static decoder_features_t features;
+    features.supports2ndDeriv = true;
+    features.supportsSequential = true;
+    return features;
+}
+
+static void test_setGetFeatures(void)
+{
+    auto builder = decoder_builder_t().setGetFeatures( fakeGetFeatures );
+
+    TEST_ASSERT_TRUE( builder.build().getFeatures().supports2ndDeriv );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetFeatures( nullptr );
+    assert_decoder_builder( builder );
+}
+
 void testDecoderBuilder(void)
 {
   SET_UNITY_FILENAME() {
@@ -198,5 +220,6 @@ void testDecoderBuilder(void)
     RUN_TEST( test_setReset );
     RUN_TEST( test_setIsEngineRunning );
     RUN_TEST( test_setGetStatus );
+    RUN_TEST( test_setGetFeatures );
   }
 }

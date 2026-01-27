@@ -72,5 +72,5 @@ void setDecoder(uint8_t decoderType)
   initDecoderPins(pinTrigger, pinTrigger2, pinTrigger3);
 
   // Turn off per tooth ignition if the decoder doesn't support it
-  configPage2.perToothIgn = configPage2.perToothIgn && getDecoderFeatures().supportsPerToothIgnition;
+  configPage2.perToothIgn = configPage2.perToothIgn && getDecoder().getFeatures().supportsPerToothIgnition;
 }

@@ -4,24 +4,6 @@
 #include <stdint.h>
 #include "decoder_t.h"
 
-struct decoder_features_t {
-  bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
-  bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
-  bool hasSecondary : 1; ///> Whether or not the pattern uses a secondary input
-  bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
-  bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
-
-  decoder_features_t(void)
-    : supports2ndDeriv(false)
-    , supportsSequential(false)
-    , hasSecondary(false)
-    , hasFixedCrankingTiming(false)
-    , supportsPerToothIgnition(false)
-  {}
-};
-
-const decoder_features_t& getDecoderFeatures(void);
-
 // TODO: move these to logger.cpp
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);

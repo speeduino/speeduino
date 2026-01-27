@@ -49,6 +49,23 @@ struct decoder_status_t {
   SyncStatus syncStatus; ///> Current sync status (none/partial/full)
 };
 
+
+struct decoder_features_t {
+  bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
+  bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
+  bool hasSecondary : 1; ///> Whether or not the pattern uses a secondary input
+  bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
+  bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
+
+  decoder_features_t(void)
+    : supports2ndDeriv(false)
+    , supportsSequential(false)
+    , hasSecondary(false)
+    , hasFixedCrankingTiming(false)
+    , supportsPerToothIgnition(false)
+  {}
+};
+
 /** @brief This structure represents a decoder configuration 
  * 
  * Create using decoder_builder_t
@@ -104,5 +121,11 @@ struct decoder_t
   /** @brief The function to get the current decoder status. */
   using status_fun_t = decoder_status_t(*)(void);
   status_fun_t getStatus;
+  /// @}  
+
+  /// @{
+  /** @brief The function to get the current decoder feature set. */
+  using feature_fun_t = decoder_features_t(*)(void);
+  feature_fun_t getFeatures;
   /// @}  
 };
