@@ -541,7 +541,7 @@ static inline void readMAP(void)
   // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
   mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
 
-  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoderStatus(), mapAlgorithmState);
+  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoder().getStatus(), mapAlgorithmState);
 
   // Process sensor readings according to user chosen sampling algorithm
   if(readingIsValid) 
