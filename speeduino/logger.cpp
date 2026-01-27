@@ -54,7 +54,7 @@ static byte buildStatus2(const statuses &current)
     false, // Unused
     false, // Unused
     current.idleOn,
-    getSyncStatus()==SyncStatus::Full,
+    getDecoderStatus().syncStatus==SyncStatus::Full,
   };
   return setStatusBits(0U, bits);
 }
@@ -66,7 +66,7 @@ static byte buildStatus3(const statuses &current)
     current.nitrousActive,
     current.secondFuelTableActive,
     current.vssUiRefresh,
-    getSyncStatus()==SyncStatus::Partial,
+    getDecoderStatus().syncStatus==SyncStatus::Partial,
   };
   byte status3 = setStatusBits(0U, bits);
   status3 |= (current.nSquirtsStatus << 5U); // Uses bits 5-7
