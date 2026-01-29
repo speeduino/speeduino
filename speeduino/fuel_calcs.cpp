@@ -482,7 +482,7 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
   return page2.injOpen * current.batCorrection; 
 }
 
-pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
   if (current.corrections!=0U) {
     uint16_t pwLimit = calculatePWLimit(page2, current);
     uint16_t injOpenTime = calculateOpenTime(page2, current);
@@ -490,7 +490,7 @@ pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const
                                                               page2,
                                                               page6,
                                                               page10, 
-                                                              getDecoderStatus(),
+                                                              decoderStatus,
                                                               current),
                                         pwLimit,
                                         page10,

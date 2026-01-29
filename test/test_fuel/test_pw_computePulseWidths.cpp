@@ -11,7 +11,7 @@
 
 // Convenience function
 static pulseWidths computePulseWidths(ComputePulseWidthsContext &context) {
-  return computePulseWidths(context.page2, context.page6, context.page10, context.current);
+  return computePulseWidths(context.page2, context.page6, context.page10, context.decoderStatus, context.current);
 }
 
 static ComputePulseWidthsContext getBasicFullContext(void) {
