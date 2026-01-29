@@ -74,7 +74,6 @@ void initBoard(uint32_t /*baudRate*/)
     * Timers
     */
     //Uses the PIT timer channel 4 on Teensy 4.1.
-    //lowResTimer.begin(oneMSInterval, 1000);
     PIT_TCTRL3 = 0;
     PIT_TCTRL3 |= PIT_TCTRL_TIE; // enable Timer 2 interrupts
     PIT_TCTRL3 |= PIT_TCTRL_TEN; // start Timer 2

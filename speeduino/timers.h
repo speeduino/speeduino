@@ -41,9 +41,6 @@ extern volatile uint16_t tachoSweepIncr;
 
 extern volatile unsigned int dwellLimit_uS;
 
-#if defined (CORE_TEENSY)
-  extern IntervalTimer lowResTimer;
-#endif
 void oneMSInterval(void);
 void initialiseTimers(void);
 
