@@ -38,10 +38,6 @@ volatile uint16_t tachoSweepAccum;
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
-#if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-#endif
-
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
