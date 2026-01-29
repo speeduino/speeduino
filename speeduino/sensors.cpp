@@ -712,7 +712,6 @@ static inline void readO2_1(void)
   
 }
 
-
 static inline void readO2_2(void)
 {
   // Read second O2 if configured.
@@ -762,38 +761,13 @@ static inline void readBat(void)
   currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
 }
 
-static void enableAnalogIsr(void)
+#if defined(ANALOG_ISR)
+static inline void enableAnalogIsr(void)
 {
-  #if defined(ANALOG_ISR)
-    //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
-    BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
-  #endif
+  //ADC in free running mode does 1 complete conversion of all 16 channels and then the interrupt is disabled. Every 200Hz we re-enable the interrupt to get another conversion cycle
+  BIT_SET(ADCSRA,ADIE); //Enable ADC interrupt
 }
-
-static void readSpeed(void);
-static void readGear(void);
-static void updateFuelPressure(void);
-static void updateOilPressure(void);
-
-void readPolledSensors(byte loopTimer)
-{
-  static constexpr polledAction_t polledSensors[] = {
-    {TPS_READ_TIMER_BIT, readTPS},
-    {CLT_READ_TIMER_BIT, readCLT},
-    {IAT_READ_TIMER_BIT, readIAT},
-    {O2_READ_TIMER_BIT, readO2},
-    {BAT_READ_TIMER_BIT, readBat},
-    {BARO_READ_TIMER_BIT, readBaro},
-    {MAP_READ_TIMER_BIT, readMAP},
-    {BIT_TIMER_200HZ, enableAnalogIsr},
-    {BIT_TIMER_10HZ, readSpeed},
-    {BIT_TIMER_10HZ, readGear},
-    {BIT_TIMER_4HZ, updateFuelPressure},
-    {BIT_TIMER_4HZ, updateOilPressure},
-  };
-  
-  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
-}
+#endif
 
 /**
  * @brief Returns the VSS pulse gap for a given history point
@@ -817,7 +791,7 @@ uint32_t vssGetPulseGap(uint8_t historyIndex)
   return tempGap;
 }
 
-static uint16_t getSpeed(void)
+static inline uint16_t getSpeed(void)
 {
   uint16_t tempSpeed = 0;
   // Get VSS from CAN, Serial or Analog by using Aux input channels.
@@ -861,12 +835,12 @@ static uint16_t getSpeed(void)
   return tempSpeed;
 }
 
-static void readSpeed(void)
+static inline void readSpeed(void)
 {
   currentStatus.vss = getSpeed();
 }
 
-static byte getGear(void)
+static inline byte getGear(void)
 {
   byte tempGear = 0U; //Unknown gear
   if(currentStatus.vss > 0U)
@@ -890,12 +864,12 @@ static byte getGear(void)
   return tempGear;
 }
 
-static void readGear(void)
+static inline void readGear(void)
 {
   currentStatus.gear = getGear();
 }
 
-static byte getFuelPressure(void)
+static inline byte getFuelPressure(void)
 {
   int16_t tempFuelPressure = 0;
 
@@ -910,12 +884,12 @@ static byte getFuelPressure(void)
   return (byte)tempFuelPressure;
 }
 
-static void updateFuelPressure(void)
+static inline void updateFuelPressure(void)
 {
   currentStatus.fuelPressure = getFuelPressure();
 }
 
-static byte getOilPressure(void)
+static inline byte getOilPressure(void)
 {
   int16_t tempOilPressure = 0;
 
@@ -932,9 +906,31 @@ static byte getOilPressure(void)
   return (byte)tempOilPressure;
 }
 
-static void updateOilPressure(void)
+static inline void updateOilPressure(void)
 {
   currentStatus.oilPressure = getOilPressure();
+}
+
+void readPolledSensors(byte loopTimer)
+{
+  static constexpr polledAction_t polledSensors[] = {
+    {TPS_READ_TIMER_BIT, readTPS},
+    {CLT_READ_TIMER_BIT, readCLT},
+    {IAT_READ_TIMER_BIT, readIAT},
+    {O2_READ_TIMER_BIT, readO2},
+    {BAT_READ_TIMER_BIT, readBat},
+    {BARO_READ_TIMER_BIT, readBaro},
+    {MAP_READ_TIMER_BIT, readMAP},
+#if defined(ANALOG_ISR)
+    {BIT_TIMER_200HZ, enableAnalogIsr},
+#endif
+    {BIT_TIMER_10HZ, readSpeed},
+    {BIT_TIMER_10HZ, readGear},
+    {BIT_TIMER_4HZ, updateFuelPressure},
+    {BIT_TIMER_4HZ, updateOilPressure},
+  };
+  
+  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
 }
 
 uint8_t getAnalogKnock(void)
