@@ -4,9 +4,9 @@
 #include "globals.h"
 #include "decoders.h"
 
-TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const decoder_status_t &decoderStatus) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
-  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (getDecoderStatus().syncStatus==SyncStatus::Partial)))
+  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (decoderStatus.syncStatus==SyncStatus::Partial)))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
     //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
@@ -131,8 +131,8 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
-  uint16_t REQ_FUEL = calculateRequiredFuel(page2, current);
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, /*const decoder_status_t &decoderStatus,*/ const statuses &current) {
+  uint16_t REQ_FUEL = calculateRequiredFuel(page2, getDecoderStatus());
 
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
