@@ -591,6 +591,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
                                     configPage2,
                                     configPage6,
                                     configPage10, 
+                                    getDecoderStatus(),
                                     currentStatus);
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
       applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);

@@ -4,15 +4,16 @@
 #include "test_pw_applyNitrous.h"
 #include "config_pages.h"
 #include "statuses.h"
+#include "decoders.h"
 
-extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current);
+extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current);
 
 static uint16_t calcPrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   context.current.VE = VE;
   context.current.MAP = MAP;
   context.current.corrections = corrections; 
   context.page2.reqFuel = REQ_FUEL/100U;
-  return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.current);
+  return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.decoderStatus, context.current);
 }
 
 static void test_calcPrimaryPulseWidth_basic(void) {
