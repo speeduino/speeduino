@@ -131,8 +131,8 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, /*const decoder_status_t &decoderStatus,*/ const statuses &current) {
-  uint16_t REQ_FUEL = calculateRequiredFuel(page2, getDecoderStatus());
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
+  uint16_t REQ_FUEL = calculateRequiredFuel(page2, decoderStatus);
 
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
@@ -490,6 +490,7 @@ pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const
                                                               page2,
                                                               page6,
                                                               page10, 
+                                                              getDecoderStatus(),
                                                               current),
                                         pwLimit,
                                         page10,

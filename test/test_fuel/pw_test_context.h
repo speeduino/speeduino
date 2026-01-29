@@ -2,6 +2,7 @@
 
 #include "config_pages.h"
 #include "statuses.h"
+#include "decoders.h"
 
 // Gather all inputs to the calculation into one place
 struct ComputePulseWidthsContext {
@@ -9,6 +10,7 @@ struct ComputePulseWidthsContext {
   config6 page6 = {};
   config10 page10 = {};
   statuses current = {};
+  decoder_status_t decoderStatus = {};
 };
 
 static inline ComputePulseWidthsContext getBasicPwContext(void) {
@@ -22,5 +24,6 @@ static inline ComputePulseWidthsContext getBasicPwContext(void) {
   context.page2.strokes = TWO_STROKE;
   context.current.revolutionTime = UINT16_MAX;
   context.current.nSquirts = 1;
+  context.decoderStatus.syncStatus = SyncStatus::Full;
   return context;
 }
