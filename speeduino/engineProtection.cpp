@@ -3,6 +3,7 @@
 #include "maths.h"
 #include "units.h"
 #include "unit_testing.h"
+#include "preprocessor.h"
 
 TESTABLE_STATIC uint8_t oilProtStartTime = 0;
 TESTABLE_STATIC table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
@@ -162,10 +163,11 @@ TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 
       && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
 }
 
-bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+BEGIN_LTO_ALWAYS_INLINE(bool) checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
   return checkEngineProtect(current, page4, page6, page9, page10, millis());
 }
+END_LTO_INLINE();
 
 uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
