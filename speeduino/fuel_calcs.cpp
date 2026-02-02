@@ -131,7 +131,7 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
+TESTABLE_INLINE_STATIC __attribute__((always_inline)) uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
   uint16_t REQ_FUEL = calculateRequiredFuel(page2, decoderStatus);
 
   //Standard float version of the calculation
