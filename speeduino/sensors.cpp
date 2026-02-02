@@ -911,7 +911,7 @@ static inline void updateOilPressure(void)
   currentStatus.oilPressure = getOilPressure();
 }
 
-void readPolledSensors(byte loopTimer)
+BEGIN_LTO_ALWAYS_INLINE(void) readPolledSensors(byte loopTimer)
 {
   static constexpr polledAction_t polledSensors[] = {
     {TPS_READ_TIMER_BIT, readTPS},
@@ -932,6 +932,7 @@ void readPolledSensors(byte loopTimer)
   
   static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
 }
+END_LTO_INLINE()
 
 uint8_t getAnalogKnock(void)
 {
