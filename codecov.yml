@@ -2,3 +2,5 @@ ignore:
   - "test"
   - "lib/ArduinoFake"
   - "speeduino/board*"
+  - "speeduino/src/BackupSram/"
+  - "speeduino/src/SPIAsEEPROM/"

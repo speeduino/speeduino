@@ -21,6 +21,7 @@
 //    work with STM32
 //    added option to use any SPI port
 //    added software version of SPI with configurable speed
+#if defined(FRAM_AS_EEPROM)
 
 #include "Fram.h"
 #ifdef SPI_HAS_TRANSACTION
@@ -346,3 +347,4 @@ uint16_t FramClass::spiSend16(uint16_t data)
 
 //FramClass Fram;
 
+#endif // #if defined(FRAM_AS_EEPROM)

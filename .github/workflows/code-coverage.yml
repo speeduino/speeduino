@@ -19,10 +19,7 @@ jobs:
           lib/ArduinoFake/
           .pio/libdeps/
           speeduino/src/BackupSram/
-          speeduino/src/FlashStorage/
-          speeduino/src/FRAM/
           speeduino/src/SPIAsEEPROM/
-          speeduino/src/STM32_CAN/
           (.+/)?unity_config\.c$
           (.+/)?board_native\.(?:h|cpp)$
 

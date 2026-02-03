@@ -80,11 +80,7 @@ cppcheck_parameters=( --inline-suppr
                       # of type mismatch violations.
                       -Dbyte=uint8_t
                       -i $source_folder/src/BackupSram
-                      -i $source_folder/src/FlashStorage
-                      -i $source_folder/src/FRAM
-                      -i $source_folder/src/PID_v1
                       -i $source_folder/src/SPIAsEEPROM
-                      -i $source_folder/src/STM32_CAN
                       "$source_folder"
                       "$source_folder/*.ino")
 
