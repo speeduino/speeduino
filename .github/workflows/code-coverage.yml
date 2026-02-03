@@ -18,7 +18,6 @@ jobs:
           test/
           lib/ArduinoFake/
           .pio/libdeps/
-          speeduino/src/BackupSram/
           speeduino/src/SPIAsEEPROM/
           (.+/)?unity_config\.c$
           (.+/)?board_native\.(?:h|cpp)$

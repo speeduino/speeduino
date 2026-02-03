@@ -79,7 +79,6 @@ cppcheck_parameters=( --inline-suppr
                       # It's used a lot and it's unsigned, which can trigger a lot
                       # of type mismatch violations.
                       -Dbyte=uint8_t
-                      -i $source_folder/src/BackupSram
                       -i $source_folder/src/SPIAsEEPROM
                       "$source_folder"
                       "$source_folder/*.ino")
