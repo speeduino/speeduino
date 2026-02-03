@@ -4,6 +4,7 @@
 #include "decoder_builder.h"
 #include "globals.h"
 #include "preprocessor.h"
+#include "unit_testing.h"
 
 static decoder_t globalDecoder = decoder_builder_t().build();
 static void setDecoder(const decoder_t &newDecoder)
@@ -15,7 +16,7 @@ const decoder_t& getDecoder(void)
   return globalDecoder;
 }
 
-static decoder_t buildDecoder(uint8_t decoder)
+TESTABLE_STATIC decoder_t buildDecoder(uint8_t decoderIndex)
 {
   // This array must be in the same order as the DECODER_ #defines (I.e. DECODER_MISSING_TOOTH etc.)
   // and therefore in the same order as the INI
@@ -52,9 +53,9 @@ static decoder_t buildDecoder(uint8_t decoder)
     triggerSetup_FordTFI,
   };
   static_assert(size_t(DECODER_MAX)==_countof(initialisers), "Decoder initializer array mismatch");
-  if (decoder<_countof(initialisers))
+  if (decoderIndex<_countof(initialisers))
   {
-    return ((decoder_init_func_t)pgm_read_ptr(&initialisers[decoder]))();
+    return ((decoder_init_func_t)pgm_read_ptr(&initialisers[decoderIndex]))();
   }
   return decoder_builder_t().build();
 }
@@ -62,7 +63,7 @@ static decoder_t buildDecoder(uint8_t decoder)
 /** Initialise the chosen trigger decoder. */
 void setDecoder(uint8_t decoderType)
 {
-  //Set the trigger function based on the decoder in the config
+  // Set the trigger function based on the decoder in the config
   setDecoder(buildDecoder(decoderType));
 
   getDecoder().primary.attach(pinTrigger);
