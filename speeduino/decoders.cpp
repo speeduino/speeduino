@@ -922,17 +922,17 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
   toothOneMinusOneTime = 0;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * (configPage4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
-  decoderFeatures.hasSecondary = (configPage4.TrigSpeed == CRANK_SPEED) 
-                                && ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-                                  || (configPage2.injLayout == INJ_SEQUENTIAL) 
-                                  || (configPage6.vvtEnabled > 0) );
+  bool hasSecondary =  (configPage4.TrigSpeed == CRANK_SPEED) 
+                    && ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
+                      || (configPage2.injLayout == INJ_SEQUENTIAL) 
+                      || (configPage6.vvtEnabled > 0) );
 #ifdef USE_LIBDIVIDE
   divTriggerToothAngle = libdivide::libdivide_s16_gen(triggerToothAngle);
 #endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_missingTooth, sharedGetDecoderFeatures().hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
+                  .setSecondaryTrigger(triggerSec_missingTooth, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
                   .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled > 0 ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
                   .setGetRPM(getRPM_missingTooth)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
@@ -1132,7 +1132,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
   triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 #ifdef USE_LIBDIVIDE
@@ -1889,7 +1888,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   decoderFeatures.supportsSequential = true;
   decoderFeatures.hasFixedCrankingTiming = true;
   decoderStatus.toothAngleIsCorrect = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
   if(currentStatus.initialisationComplete == false) { toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
@@ -2062,7 +2060,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
   if(currentStatus.initialisationComplete == false) { toothCurrentCount = 25; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the init check to prevent the fuel pump just staying on all the time
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true;
-  decoderFeatures.hasSecondary = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_24X, getConfigPriTriggerEdge(configPage4))
@@ -2177,7 +2174,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
   if(currentStatus.initialisationComplete == false) { toothCurrentCount = 13; toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
   decoderStatus.toothAngleIsCorrect = true;
-  decoderFeatures.hasSecondary = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
@@ -2304,8 +2300,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true;
-  decoderFeatures.hasSecondary = true;
-
+  
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Audi135, RISING)
@@ -2834,7 +2829,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   triggerSecFilterTime = 0; //Need to figure out something better for this
   decoderFeatures.hasFixedCrankingTiming = true;
   decoderStatus.toothAngleIsCorrect = true;
-  decoderFeatures.hasSecondary = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
@@ -2992,7 +2986,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   decoderFeatures.hasFixedCrankingTiming = true;
-  decoderFeatures.hasSecondary = true;
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
@@ -3062,7 +3055,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return decoder_builder_t()
@@ -3298,7 +3290,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
   secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 2;
@@ -3568,7 +3559,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = 0;
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 2;
@@ -4069,7 +4059,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
   triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = 30; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   triggerFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
@@ -4197,7 +4186,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
   triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
   triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
@@ -4379,7 +4367,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
   triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   triggerSecFilterTime = 0;
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   toothCurrentCount = 1;
   triggerToothAngle = 20; //Is only correct for the 4 short pulses before each TDC
@@ -4660,7 +4647,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   triggerSecFilterTime = MICROS_PER_MIN / MAX_RPM / 8U / 2U; //Cam pattern is 8-3, so 2 nearest teeth are 90 deg crank angle apart. Cam can be advanced by 60 deg, so going from fully retarded to fully advanced closes the gap to 30 deg. Zetec cam pulleys aren't keyed from factory, so I subtracted additional 10 deg to avoid filter to be too aggressive. And there you have it 720/20=36.
   
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   checkSyncToothCount = (36) >> 1; //50% of the total teeth.
   toothLastMinusOneToothTime = 0;
@@ -4723,7 +4709,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
   triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)); //Same as above, but fixed at 2 teeth on the secondary input
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;  
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
@@ -5026,7 +5011,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
   decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
   decoderFeatures.supportsSequential = true;
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
 
   //Primary trigger
@@ -5814,7 +5798,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   revolutionOne=0;
 
   MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle * 2U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
 
   return decoder_builder_t()
@@ -6428,7 +6411,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   lastSyncRevolution = 0;
   decoderFeatures.supportsSequential = true;
   decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  decoderFeatures.hasSecondary = true;
   decoderFeatures.supportsPerToothIgnition = true;
   if(configPage2.nCylinders <= 4U) { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
