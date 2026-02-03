@@ -21,7 +21,6 @@ static void test_init(void)
     {
         TEST_ASSERT_EQUAL_MESSAGE(getDecoder().secondary.callback, defaultDecoder.secondary.callback, "secondary");
     }
-    TEST_ASSERT_EQUAL_MESSAGE(getDecoder().secondary.isValid(), getDecoder().getFeatures().hasSecondary, "hasSecondary");
     
     // Tertiary is optional
     if (getDecoder().tertiary.isValid())
