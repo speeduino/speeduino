@@ -12,8 +12,19 @@ jobs:
 
     env:
       PIO_ENV: native_code_coverage
-      COBERTURA_FILE: speeduino.cobertura.xml
-      HTML_FILE_ROOT: speeduino_coverage
+      FILE_ROOT: speeduino_coverage
+      COBERTURA_FILE: speeduino_coverage.cobertura.xml
+      GCOV_IGNORES: |
+          test/
+          lib/ArduinoFake/
+          .pio/libdeps/
+          speeduino/src/BackupSram/
+          speeduino/src/FlashStorage/
+          speeduino/src/FRAM/
+          speeduino/src/SPIAsEEPROM/
+          speeduino/src/STM32_CAN/
+          (.+/)?unity_config\.c$
+          (.+/)?board_native\.(?:h|cpp)$
 
     steps:
     - uses: actions/checkout@v4
@@ -42,25 +53,23 @@ jobs:
       uses: threeal/gcovr-action@v1.2.0
       with:
         coveralls-send: true
-        # html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.HTML_FILE_ROOT }}.html
-        # html-details: true
-        # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.HTML_FILE_ROOT }}.coveralls
-        # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.HTML_FILE_ROOT }}.cobertura
         print-summary: true
-        excludes: |
-          test/
-          lib/ArduinoFake/
-          .pio/libdeps/
-          speeduino/src/BackupSram/
-          speeduino/src/FlashStorage/
-          speeduino/src/FRAM/
-          speeduino/src/SPIAsEEPROM/
-          speeduino/src/STM32_CAN/
-          (.+/)?unity_config\.c$
-          (.+/)?board_native\.(?:h|cpp)$
+        excludes: ${{ env.GCOV_IGNORES }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
+        # html-details: true
+        # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
+        # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.COBERTURA_FILE }}
+  
+    - name: Upload to CodeCov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        gcov_ignore: ${{ env.GCOV_IGNORES }}
+        verbose: true 
 
     # - name: Upload reports
     #   uses: actions/upload-artifact@v4
     #   with:
     #     path: |
-    #       .pio/build/${{ env.PIO_ENV }}/${{ env.HTML_FILE_ROOT }}.*
+    #       .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
