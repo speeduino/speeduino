@@ -40,6 +40,8 @@
 #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define TIMER_RESOLUTION 4
+constexpr uint16_t BLOCKING_FACTOR = 121;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 
 //Select one for EEPROM,the default is EEPROM emulation on internal flash.
 //#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */

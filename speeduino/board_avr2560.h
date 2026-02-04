@@ -41,7 +41,8 @@
 #else
   #define RTC_LIB_H <Time.h>
 #endif
-
+constexpr uint16_t BLOCKING_FACTOR = 121;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
 
 /*

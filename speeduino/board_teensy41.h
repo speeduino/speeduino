@@ -23,6 +23,8 @@ typedef int eeprom_address_t;
 #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
+constexpr uint16_t BLOCKING_FACTOR = 251;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
 
 //#define PWM_FAN_AVAILABLE
 #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) || pinIsSerial((pin)) ) //Forbidden pins like USB

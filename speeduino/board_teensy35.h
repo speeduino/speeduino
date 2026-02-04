@@ -27,6 +27,8 @@
 #define RTC_ENABLED
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
+constexpr uint16_t BLOCKING_FACTOR = 251;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
 
 #define PWM_FAN_AVAILABLE
 #define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbidden pins like USB
