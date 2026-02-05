@@ -108,7 +108,7 @@ void endCoil3and7Charge(void)   { endCoil3Charge(); endCoil7Charge(); }
 void beginCoil4and8Charge(void) { beginCoil4Charge(); beginCoil8Charge(); }
 void endCoil4and8Charge(void)   { endCoil4Charge();  endCoil8Charge(); }
 
-void tachoOutputOn(void) { if(configPage6.tachoMode) { TACHO_PULSE_LOW(); } else { tachoOutputFlag = READY; } }
-void tachoOutputOff(void) { if(configPage6.tachoMode) { TACHO_PULSE_HIGH(); } }
+void tachoOutputOn(void) { if(configPage6.tachoMode) { tachoPulseLow(); } else { tachoOutputFlag = READY; } }
+void tachoOutputOff(void) { if(configPage6.tachoMode) { tachoPulseHigh(); } }
 
 void nullCallback(void) { return; }

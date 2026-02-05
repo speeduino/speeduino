@@ -51,6 +51,25 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+  #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
+  #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
+#else
+  #define TACHO_PULSE_HIGH()        (*tach_pin_port |= (tach_pin_mask))
+  #define TACHO_PULSE_LOW()         (*tach_pin_port &= ~(tach_pin_mask))
+#endif
+
+void tachoPulseHigh(void)
+{
+  TACHO_PULSE_HIGH();
+}
+
+void tachoPulseLow(void)
+{
+  TACHO_PULSE_LOW();
+}
+
 static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   if ((isRunning(schedule)) && (schedule.startTime < targetOverdwellTime)) { 
