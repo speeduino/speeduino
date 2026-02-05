@@ -21,8 +21,6 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 
 #include "globals.h"
 
-#define SET_COMPARE(compare, value) compare = (COMPARE_TYPE)(value) // It is important that we cast this to the actual overflow limit of the timer. The compare variables type can be bigger than the timer overflow.
-
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
   #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
   #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
