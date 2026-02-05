@@ -21,6 +21,7 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 
 #include <stdint.h>
 
+void initTacho(uint8_t tachoPin);
 void tachoPulseHigh(void);
 void tachoPulseLow(void);
 

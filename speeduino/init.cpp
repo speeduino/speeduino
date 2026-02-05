@@ -2679,7 +2679,6 @@ void setPinMapping(byte boardID)
   
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
@@ -2778,8 +2777,7 @@ void setPinMapping(byte boardID)
 //   EEPROM.begin(USE_SPI_EEPROM);
 // #endif
 
-  tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
-  tach_pin_mask = digitalPinToBitMask(pinTachOut);
+  initTacho(pinTachOut);
 
   //And for inputs
   #if defined(CORE_STM32)

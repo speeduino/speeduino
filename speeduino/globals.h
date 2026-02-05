@@ -174,9 +174,6 @@ extern pin_mask_t ign7_pin_mask;
 extern port_register_t ign8_pin_port;
 extern pin_mask_t ign8_pin_mask;
 
-extern port_register_t tach_pin_port;
-extern pin_mask_t tach_pin_mask;
-
 extern byte triggerInterrupt;
 extern byte triggerInterrupt2;
 extern byte triggerInterrupt3;
