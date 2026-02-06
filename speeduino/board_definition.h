@@ -62,3 +62,7 @@ uint8_t getSystemTemp(void);
 /** @brief Board specific RTC system initialisation (optional) */
 void boardInitRTC(void);
 #endif
+
+// It is important that we cast this to the actual overflow limit of the timer. 
+// The compare variables type can be wider than the timer overflow.
+#define SET_COMPARE(compare, value) compare = (COMPARE_TYPE)(value)
