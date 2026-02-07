@@ -52,7 +52,7 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#if defined(CORE_TEENSY) || defined(CORE_STM32)
   #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
   #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
   static void initTachoPin(uint8_t pin) { UNUSED(pin); /* Do nothing*/}

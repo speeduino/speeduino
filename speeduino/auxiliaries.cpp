@@ -85,7 +85,8 @@ static void initAirConRequestPin(const config15 &page15, uint8_t pin)
 }
 #define READ_AIRCON_REQ_PIN()    ((*aircon_req_pin_port & aircon_req_pin_mask) ? true : false)
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#if defined(CORE_TEENSY) || defined(CORE_STM32)
+
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
 #define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
 static void initializeBoostPin(uint8_t pin)
@@ -115,6 +116,7 @@ static void initAirConFanPin(uint8_t pin)
 {
   pinMode(pin, OUTPUT);
 }
+
 #else
 
 static port_register_t boost_pin_port;
