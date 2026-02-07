@@ -108,7 +108,13 @@ extern STM32RTC& rtc;
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
+  static inline bool pinIsReserved(uint8_t pin) { 
+    return (pin == (uint8_t)PA11) 
+        || (pin == (uint8_t)PA12) 
+        || (pin == (uint8_t)PC14) 
+        || (pin == (uint8_t)PC15)
+      ;
+  }
 
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
@@ -124,9 +130,24 @@ extern STM32RTC& rtc;
   #endif
 #else
   #ifdef USE_SPI_EEPROM
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbidden pins like USB
+    static inline bool pinIsReserved(uint8_t pin) { 
+      return (pin == (uint8_t)PA11) 
+          || (pin == (uint8_t)PA12) 
+          || (pin == (uint8_t)PB3) 
+          || (pin == (uint8_t)PB4)
+          || (pin == (uint8_t)USE_SPI_EEPROM)
+        ;
+    }
   #else
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbidden pins like USB
+    static inline bool pinIsReserved(uint8_t pin) { 
+      return (pin == (uint8_t)PA11) 
+          || (pin == (uint8_t)PA12)
+          || (pin == (uint8_t)PB3) 
+          || (pin == (uint8_t)PB4)
+          || (pin == (uint8_t)PB5)
+          || (pin == (uint8_t)PB0)
+         ;
+    }
   #endif
 #endif
 

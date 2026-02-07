@@ -65,4 +65,4 @@ void boardInitRTC(void);
 
 // It is important that we cast this to the actual overflow limit of the timer. 
 // The compare variables type can be wider than the timer overflow.
-#define SET_COMPARE(compare, value) compare = (COMPARE_TYPE)(value)
+#define SET_COMPARE(compare, value) (compare) = (COMPARE_TYPE)(value)
