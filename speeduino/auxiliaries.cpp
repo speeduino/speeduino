@@ -37,12 +37,6 @@ static byte vvtCounter;
 
 static port_register_t n2o_arming_pin_port;
 static pin_mask_t n2o_arming_pin_mask;
-port_register_t aircon_comp_pin_port;
-pin_mask_t aircon_comp_pin_mask;
-port_register_t aircon_fan_pin_port;
-pin_mask_t aircon_fan_pin_mask;
-port_register_t aircon_req_pin_port;
-pin_mask_t aircon_req_pin_mask;
 
 static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
@@ -63,6 +57,33 @@ static void initialiseN2oArmPin(const config10 &page10)
     n2o_arming_pin_mask = digitalPinToBitMask(page10.n2o_arming_pin);
   }
 }
+
+static port_register_t aircon_req_pin_port;
+static pin_mask_t aircon_req_pin_mask;
+
+static uint8_t getAirConRequestPinMode(const config15 &page15)
+{
+  if(page15.airConReqPol)
+  {
+    // Inverted
+    // +5V is ON, Use external pull-down resistor for OFF
+    return INPUT;
+  }
+  else
+  {
+    //Normal
+    // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
+    return INPUT_PULLUP;
+  }
+}
+
+static void initAirConRequestPin(const config15 &page15, uint8_t pin)
+{
+  pinMode(pin, getAirConRequestPinMode(page15));
+  aircon_req_pin_port = portInputRegister(digitalPinToPort(pin));
+  aircon_req_pin_mask = digitalPinToBitMask(pin);
+}
+#define READ_AIRCON_REQ_PIN()    ((*aircon_req_pin_port & aircon_req_pin_mask) ? true : false)
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
@@ -86,6 +107,14 @@ static void initialiseN2oPins(const config10 &page10)
 #define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
 #define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
 
+static void initAirConCompressorPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
+static void initAirConFanPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
 #else
 
 static port_register_t boost_pin_port;
@@ -118,12 +147,30 @@ static void initialiseN2oPins(const config10 &page10)
   n2o_stage2_pin_mask = digitalPinToBitMask(page10.n2o_stage2_pin);
   initialiseN2oArmPin(page10);
 }
-//Note the below macros cannot use ATOMIC() as they are called from within ternary operators. The ATOMIC is instead placed around the ternary call below
+static port_register_t aircon_comp_pin_port;
+static pin_mask_t aircon_comp_pin_mask;
+static port_register_t aircon_fan_pin_port;
+static pin_mask_t aircon_fan_pin_mask;
+
+// Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
+// The ATOMIC is instead placed around the ternary call below
 #define AIRCON_PIN_LOW()        *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
 #define AIRCON_PIN_HIGH()       *aircon_comp_pin_port |= (aircon_comp_pin_mask)
 #define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
 #define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
 
+static void initAirConCompressorPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pin));
+  aircon_comp_pin_mask = digitalPinToBitMask(pin);
+}
+static void initAirConFanPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pin));
+  aircon_fan_pin_mask = digitalPinToBitMask(pin);
+}
 #endif
 
 #define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
@@ -179,9 +226,10 @@ Air Conditioning Control
 */
 void initialiseAirCon(void)
 {
-  if( (configPage15.airConEnable) == 1 &&
-      pinAirConRequest != 0 &&
-      pinAirConComp != 0 )
+  if( (configPage15.airConEnable) &&
+      !pinIsReserved(pinAirConRequest) &&
+      !pinIsReserved(pinAirConComp) &&
+      !pinIsOutput(pinAirConRequest))
   {
     // Hold the A/C off until a few seconds after cranking
     acAfterEngineStartDelay = 0;
@@ -198,17 +246,14 @@ void initialiseAirCon(void)
     currentStatus.airconTurningOn = false;
     currentStatus.airconCltLockout = false;
     currentStatus.airconFanOn = false;
-    aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
-    aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
-    aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
-    aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
-
+    initAirConRequestPin(configPage15, pinAirConRequest);
+    initAirConCompressorPin(pinAirConComp);
+  
     AIRCON_OFF();
 
-    if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
+    if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
     {
-      aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
-      aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
+      initAirConFanPin(pinAirConFan);
       AIRCON_FAN_OFF();
       acStandAloneFanIsEnabled = true;
     }
@@ -233,7 +278,7 @@ static bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  currentStatus.airconRequested = (*aircon_req_pin_port & aircon_req_pin_mask)==configPage15.airConReqPol;
+  currentStatus.airconRequested = READ_AIRCON_REQ_PIN()==configPage15.airConReqPol;
   return currentStatus.airconRequested;
 }
 

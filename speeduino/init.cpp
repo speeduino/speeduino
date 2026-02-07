@@ -2867,32 +2867,6 @@ void setPinMapping(byte boardID)
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
     }
   } 
-
-  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
-  {
-    pinMode(pinAirConComp, OUTPUT);
-  }
-
-  if((pinAirConRequest > 0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConRequest)))
-  {
-    if((configPage15.airConReqPol) == 1)
-    {
-      // Inverted
-      // +5V is ON, Use external pull-down resistor for OFF
-      pinMode(pinAirConRequest, INPUT);
-    }
-    else
-    {
-      //Normal
-      // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
-      pinMode(pinAirConRequest, INPUT_PULLUP);
-    }
-  }
-
-  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
-  {
-    pinMode(pinAirConFan, OUTPUT);
-  }  
 }
 
 /** Initialise the chosen trigger decoder.
