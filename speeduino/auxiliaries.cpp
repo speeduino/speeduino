@@ -35,18 +35,34 @@ static volatile char nextVVT;
 static byte boostCounter;
 static byte vvtCounter;
 
-port_register_t n2o_stage1_pin_port;
-pin_mask_t n2o_stage1_pin_mask;
-port_register_t n2o_stage2_pin_port;
-pin_mask_t n2o_stage2_pin_mask;
-port_register_t n2o_arming_pin_port;
-pin_mask_t n2o_arming_pin_mask;
+static port_register_t n2o_arming_pin_port;
+static pin_mask_t n2o_arming_pin_mask;
 port_register_t aircon_comp_pin_port;
 pin_mask_t aircon_comp_pin_mask;
 port_register_t aircon_fan_pin_port;
 pin_mask_t aircon_fan_pin_mask;
 port_register_t aircon_req_pin_port;
 pin_mask_t aircon_req_pin_mask;
+
+static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
+{
+  if(page10.n2o_pin_polarity == 1U) 
+  { 
+    return INPUT_PULLUP; 
+  }
+  return INPUT;
+}
+static void initialiseN2oArmPin(const config10 &page10)
+{
+  if(configPage10.n2o_enable!=0U && !pinIsReserved(page10.n2o_arming_pin))
+  {
+    // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
+    // with other inputs. 
+    pinMode(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
+    n2o_arming_pin_port = portInputRegister(digitalPinToPort(page10.n2o_arming_pin));
+    n2o_arming_pin_mask = digitalPinToBitMask(page10.n2o_arming_pin);
+  }
+}
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
@@ -59,6 +75,12 @@ static void initializeBoostPin(uint8_t pin)
 #define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
 #define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
 #define N2O_STAGE2_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage2_pin, HIGH))
+static void initialiseN2oPins(const config10 &page10)
+{
+  pinMode(page10.n2o_stage1_pin, OUTPUT);
+  pinMode(page10.n2o_stage2_pin, OUTPUT);
+  initialiseN2oArmPin(page10);
+}
 #define AIRCON_PIN_LOW()        (digitalWrite(pinAirConComp, LOW))
 #define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
 #define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
@@ -77,11 +99,25 @@ static void initializeBoostPin(uint8_t pin)
   boost_pin_mask = digitalPinToBitMask(pin);
 }
 
+static port_register_t n2o_stage1_pin_port;
+static pin_mask_t n2o_stage1_pin_mask;
+static port_register_t n2o_stage2_pin_port;
+static pin_mask_t n2o_stage2_pin_mask;
+
 #define N2O_STAGE1_PIN_LOW()    ATOMIC() { *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask);  }
 #define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
 #define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
 #define N2O_STAGE2_PIN_HIGH()   ATOMIC() { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
-
+static void initialiseN2oPins(const config10 &page10)
+{
+  pinMode(page10.n2o_stage1_pin, OUTPUT);
+  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage1_pin));
+  n2o_stage1_pin_mask = digitalPinToBitMask(page10.n2o_stage1_pin);
+  pinMode(page10.n2o_stage2_pin, OUTPUT);
+  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage2_pin));
+  n2o_stage2_pin_mask = digitalPinToBitMask(page10.n2o_stage2_pin);
+  initialiseN2oArmPin(page10);
+}
 //Note the below macros cannot use ATOMIC() as they are called from within ternary operators. The ATOMIC is instead placed around the ternary call below
 #define AIRCON_PIN_LOW()        *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
 #define AIRCON_PIN_HIGH()       *aircon_comp_pin_port |= (aircon_comp_pin_mask)
@@ -631,23 +667,11 @@ void initialiseAuxPWM(void)
 {
   initializeBoostPin(pinBoost);
   initialiseVvtPins(pinVVT_1, pinVVT_2);
-  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
-  n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);
-  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage2_pin));
-  n2o_stage2_pin_mask = digitalPinToBitMask(configPage10.n2o_stage2_pin);
-  n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
-  n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
+  initialiseN2oPins(configPage10);
 
   //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
   //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
-
-  if(configPage10.n2o_enable > 0)
-  {
-    //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
-    if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
-    else { pinMode(configPage10.n2o_arming_pin, INPUT); }
-  }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
@@ -714,7 +738,6 @@ void initialiseAuxPWM(void)
   vvtCounter = 0;
 
   currentStatus.nitrous_status = NITROUS_OFF;
-
 }
 
 static void boostByGear(void)
