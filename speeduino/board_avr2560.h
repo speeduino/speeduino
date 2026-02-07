@@ -43,7 +43,7 @@
 #endif
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
-#define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
+static inline bool pinIsReserved(uint8_t pin) { return pin==0U; } //Forbidden pins like USB on other boards
 
 /*
 ***********************************************************************************************************

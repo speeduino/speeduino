@@ -13,7 +13,10 @@
   #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
   typedef int eeprom_address_t;
   
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
+  // Forbidden pins like USB
+  static inline bool pinIsReserved(uint8_t pin) { 
+    return pin==0U; 
+  } 
 
 /*
 ***********************************************************************************************************

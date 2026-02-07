@@ -31,8 +31,13 @@ constexpr uint16_t BLOCKING_FACTOR = 251;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
 
 #define PWM_FAN_AVAILABLE
-#define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbidden pins like USB
-
+static inline bool pinIsReserved(uint8_t pin) { 
+  return (pin == 0U) 
+      || (pin == 1U) 
+      || (pin == 3U) 
+      || (pin == 4U) 
+  ;
+}
 #define INJ_CHANNELS 8
 #define IGN_CHANNELS 8
 
