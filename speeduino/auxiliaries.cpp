@@ -35,8 +35,6 @@ static volatile char nextVVT;
 static byte boostCounter;
 static byte vvtCounter;
 
-port_register_t boost_pin_port;
-pin_mask_t boost_pin_mask;
 port_register_t n2o_stage1_pin_port;
 pin_mask_t n2o_stage1_pin_mask;
 port_register_t n2o_stage2_pin_port;
@@ -53,6 +51,10 @@ pin_mask_t aircon_req_pin_mask;
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
 #define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
 #define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
+static void initializeBoostPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
 #define N2O_STAGE1_PIN_LOW()    (digitalWrite(configPage10.n2o_stage1_pin, LOW))
 #define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
 #define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
@@ -64,8 +66,17 @@ pin_mask_t aircon_req_pin_mask;
 
 #else
 
+static port_register_t boost_pin_port;
+static pin_mask_t boost_pin_mask;
 #define BOOST_PIN_LOW()         ATOMIC() { *boost_pin_port &= ~(boost_pin_mask); }
 #define BOOST_PIN_HIGH()        ATOMIC() { *boost_pin_port |= (boost_pin_mask);  }
+static void initializeBoostPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  boost_pin_port = portOutputRegister(digitalPinToPort(pin));
+  boost_pin_mask = digitalPinToBitMask(pin);
+}
+
 #define N2O_STAGE1_PIN_LOW()    ATOMIC() { *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask);  }
 #define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
 #define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
@@ -618,8 +629,7 @@ static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2)
 
 void initialiseAuxPWM(void)
 {
-  boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
-  boost_pin_mask = digitalPinToBitMask(pinBoost);
+  initializeBoostPin(pinBoost);
   initialiseVvtPins(pinVVT_1, pinVVT_2);
   n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
   n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);

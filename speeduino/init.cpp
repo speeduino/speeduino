@@ -2685,7 +2685,6 @@ void setPinMapping(byte boardID)
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
-  pinMode(pinBoost, OUTPUT);
   if(configPage4.ignBypassEnabled > 0) { pinMode(pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
