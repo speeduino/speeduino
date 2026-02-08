@@ -6,8 +6,6 @@
 #include "globals.h"
 #include "decoders.h"
 
-extern decoder_status_t decoderStatus;
-
 static void test_instantaneous(void) {
   extern bool instanteneousMAPReading(void);
 
@@ -211,9 +209,9 @@ static void test_cycleMinimumMAPReading(void) {
 }
 
 extern bool canUseEventAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
-extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
+extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
-static void enable_event_average(statuses &current, config2 &page2) {
+static void enable_event_average(statuses &current, config2 &page2, decoder_status_t &decoderStatus) {
   setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
@@ -225,7 +223,7 @@ static void test_canUseEventAverage(void) {
   statuses current;
   config2 page2;
   decoder_status_t decoderStatus;
-  enable_event_average(current, page2);
+  enable_event_average(current, page2, decoderStatus);
 
   decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
@@ -270,12 +268,13 @@ static void test_canUseEventAverage(void) {
 struct eventAverageMAPReading_test_data {
   statuses current;
   config2 page2;
+  decoder_status_t decoderStatus;
   map_event_average_t event_average;
   map_adc_readings_t sensorReadings;
 };
 
 static void setup_event_average(eventAverageMAPReading_test_data &test_data) {
-  enable_event_average(test_data.current, test_data.page2);
+  enable_event_average(test_data.current, test_data.page2, test_data.decoderStatus);
   test_data.event_average.eventStartIndex = 0;
   test_data.event_average.sampleCount = 0;
   test_data.event_average.mapAdcRunningTotal = 0;
@@ -286,16 +285,16 @@ static void test_eventAverageMAPReading_fallback_instantaneous(void) {
   eventAverageMAPReading_test_data test_data;
   setup_event_average(test_data);
 
-  decoderStatus.syncStatus = SyncStatus::None;
+  test_data.decoderStatus.syncStatus = SyncStatus::None;
   test_data.sensorReadings.mapADC = 0x1234;
   test_data.sensorReadings.emapADC = 0x1234;
 
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 
   // Repeat - should get same result.
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 }
@@ -309,23 +308,23 @@ static void test_eventAverageMAPReading(void) {
   test_data.sensorReadings.mapADC = 100;
   test_data.sensorReadings.emapADC = 200;
   // Accumulate a few samples
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 300;
   test_data.sensorReadings.emapADC = 500;
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(2, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(400, test_data.event_average.mapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 500;
   test_data.sensorReadings.emapADC = 700;
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(3, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(900, test_data.event_average.mapAdcRunningTotal);
 
   // Leave the current cycle
   ++ignitionCount;
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
 
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
@@ -345,7 +344,7 @@ static void test_eventAverageMAPReading_nosamples(void) {
   ++ignitionCount;
 
   TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 
