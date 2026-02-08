@@ -14,10 +14,10 @@ static void test_instantaneous(void) {
   TEST_ASSERT_TRUE(instanteneousMAPReading());
 }
 
-extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern  bool canUseCycleAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
+extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
+extern bool canUseCycleAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
 
-static void enable_cycle_average(statuses &current, config2 &page2) {
+static void enable_cycle_average(statuses &current, config2 &page2, decoder_status_t &decoderStatus) {
   setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
@@ -28,9 +28,8 @@ static void test_canUseCycleAverge(void) {
   statuses current;
   config2 page2;
   decoder_status_t decoderStatus;
-  enable_cycle_average(current, page2);
+  enable_cycle_average(current, page2, decoderStatus);
 
-  decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
 
   decoderStatus.syncStatus = SyncStatus::None;
@@ -52,12 +51,13 @@ static void test_canUseCycleAverge(void) {
 struct cycleAverageMAPReading_test_data {
   statuses current;
   config2 page2;
+  decoder_status_t decoderStatus;
   map_cycle_average_t cycle_average;
   map_adc_readings_t sensorReadings;
 };
 
 static void setup_cycle_average(cycleAverageMAPReading_test_data &test_data) {
-  enable_cycle_average(test_data.current, test_data.page2);
+  enable_cycle_average(test_data.current, test_data.page2, test_data.decoderStatus);
   test_data.cycle_average.cycleStartIndex = 0;
   test_data.cycle_average.sampleCount = 0;
   test_data.cycle_average.emapAdcRunningTotal = 0;
@@ -68,17 +68,17 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   cycleAverageMAPReading_test_data test_data;
   setup_cycle_average(test_data);
 
-  decoderStatus.syncStatus = SyncStatus::None;
+  test_data.decoderStatus.syncStatus = SyncStatus::None;
   test_data.sensorReadings.mapADC = 0x1234;
   test_data.sensorReadings.emapADC = 0x1234;
 
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
 
   // Repeat - should get same result.
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
@@ -92,27 +92,27 @@ static void test_cycleAverageMAPReading(void) {
   test_data.sensorReadings.mapADC = 100;
   test_data.sensorReadings.emapADC = 200;
   // Accumulate a few samples
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 300;
   test_data.sensorReadings.emapADC = 500;
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(2, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(400, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(700, test_data.cycle_average.emapAdcRunningTotal);
   ++test_data.current.startRevolutions;
   test_data.sensorReadings.mapADC = 500;
   test_data.sensorReadings.emapADC = 700;
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(3, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(900, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(1400, test_data.cycle_average.emapAdcRunningTotal);
 
   // Leave the current cycle
   ++test_data.current.startRevolutions;
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(1400/3, test_data.sensorReadings.emapADC);
 
@@ -135,7 +135,7 @@ static void test_cycleAverageMAPReading_nosamples(void) {
   ++test_data.current.startRevolutions;
 
   TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 

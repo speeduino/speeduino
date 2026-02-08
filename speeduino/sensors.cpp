@@ -326,8 +326,8 @@ TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const co
   return false; // Just here to avoid compiler warning.
 }
 
-TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
-  if ( canUseCycleAverage(current, page2, getDecoderStatus()) )
+TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus,  map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
+  if ( canUseCycleAverage(current, page2, decoderStatus) )
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if( isCycleCurrent(current, cycle_average) ) {
@@ -517,7 +517,7 @@ static inline void readMAP(void)
   switch(configPage2.mapSample)
   {
     case MAPSamplingCycleAverage:
-      readingIsValid = cycleAverageMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_average, mapAlgorithmState.sensorReadings);
+      readingIsValid = cycleAverageMAPReading(currentStatus, configPage2, getDecoderStatus(), mapAlgorithmState.cycle_average, mapAlgorithmState.sensorReadings);
       break;
 
     case MAPSamplingCycleMinimum:
