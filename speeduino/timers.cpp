@@ -318,7 +318,7 @@ void oneMSInterval(void)
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
-      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      int32_t tempX100 = (int32_t)rshift<10>((uint32_t)(4224UL * flexPulseWidth)) - 8125L; //Split up for MISRA compliance
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }

@@ -21,6 +21,8 @@
 #ifndef __FRAM_H__
 #define __FRAM_H__
 
+#if defined(FRAM_AS_EEPROM)
+
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -157,6 +159,7 @@ class FramClass
 };
 ////////////////////////////////////////////////////////////////////////////////
 
+#endif // #if defined(FRAM_AS_EEPROM)
 
 #endif   // __FRAM_H__
 

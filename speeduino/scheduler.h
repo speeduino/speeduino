@@ -41,7 +41,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <SimplyAtomic.h>
 #include "globals.h"
 #include "crankMaths.h"
 #include "scheduledIO.h"

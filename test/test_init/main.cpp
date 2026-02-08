@@ -1,4 +1,5 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
 #include "storage.h"
 #include "globals.h"
 
@@ -32,4 +33,4 @@ void runAllInitTests(void)
     testIgnitionScheduleInit();
 }
 
-DEVICE_TEST(runAllInitTests)
+TEST_HARNESS(runAllInitTests)

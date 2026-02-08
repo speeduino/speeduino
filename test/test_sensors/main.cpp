@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllSensorTests(void)
 {
@@ -9,4 +11,4 @@ void runAllSensorTests(void)
     test_map_sampling();
 }
 
-DEVICE_TEST(runAllSensorTests)
+TEST_HARNESS(runAllSensorTests)

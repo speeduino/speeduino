@@ -1,4 +1,5 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
 
 void runAllDecoderTests(void)
 {
@@ -23,4 +24,4 @@ void runAllDecoderTests(void)
     testDecoder_General();
 }
 
-DEVICE_TEST(runAllDecoderTests)
+TEST_HARNESS(runAllDecoderTests)

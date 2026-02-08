@@ -307,7 +307,7 @@ static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16
 
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule)
 {
-  if((delay>0U) && (delay < MAX_TIMER_PERIOD) && (duration > 0U))
+  if((delay>0U) && (delay < (uint32_t)MAX_TIMER_PERIOD) && (duration > 0U))
   {
     ATOMIC() 
     {

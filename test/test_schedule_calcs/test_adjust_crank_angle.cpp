@@ -9,8 +9,8 @@ using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>
 
 void test_adjust_crank_angle_pending_below_minrevolutions()
 {
-    auto counter = raw_counter_t();
-    auto compare = raw_compare_t();
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
     IgnitionSchedule schedule(counter, compare);
 
     schedule.Status = PENDING;
@@ -30,8 +30,8 @@ void test_adjust_crank_angle_pending_below_minrevolutions()
 
 void test_adjust_crank_angle_pending_above_minrevolutions()
 {
-    auto counter = raw_counter_t();
-    auto compare = raw_compare_t();
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
     IgnitionSchedule schedule(counter, compare);
     
     schedule.Status = PENDING;
@@ -54,8 +54,8 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
 
 void test_adjust_crank_angle_running()
 {
-    auto counter = raw_counter_t();
-    auto compare = raw_compare_t();
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
     IgnitionSchedule schedule(counter, compare);
     
     schedule.Status = RUNNING;

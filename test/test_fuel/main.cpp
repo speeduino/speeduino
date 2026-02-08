@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllFuelTests(void)
 {
@@ -21,4 +23,4 @@ void runAllFuelTests(void)
     testCalculateOpenTime();
 }
 
-DEVICE_TEST(runAllFuelTests)
+TEST_HARNESS(runAllFuelTests)

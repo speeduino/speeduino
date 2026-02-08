@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllSecondaryTests(void)
 {
@@ -9,4 +11,4 @@ void runAllSecondaryTests(void)
     test_calculateSecondarySpark();
 }
 
-DEVICE_TEST(runAllSecondaryTests)
+TEST_HARNESS(runAllSecondaryTests)

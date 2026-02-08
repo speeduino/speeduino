@@ -11,6 +11,12 @@
     (void)(x)
 #endif
 
+// Native GCC provides _countof(), but it doesn't work on an array *within*
+// a packed struct
+#if defined(NATIVE_BOARD)
+#undef _countof
+#endif 
+
 /** @brief Compile time calculation of an array size */
 #if !defined(_countof)
 #define _countof(x) \

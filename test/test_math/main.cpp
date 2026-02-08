@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllMathTests(void)
 {
@@ -17,4 +19,4 @@ void runAllMathTests(void)
     testUnitConversions();
 }
 
-DEVICE_TEST(runAllMathTests)
+TEST_HARNESS(runAllMathTests)

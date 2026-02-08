@@ -201,7 +201,9 @@ static inline uint32_t div360(uint32_t n) {
  */
 template <uint8_t b> 
 static inline uint32_t rshift_round(uint32_t a) { 
-    return rshift<b>(a+(1UL<<((uint32_t)b-1UL))); 
+    constexpr uint8_t CORRECTION_SHIFT = b-1U; // cppcheck-suppress misra-c2012-10.4
+    constexpr uint32_t CORRECTION = 1UL<<CORRECTION_SHIFT;
+    return rshift<b>((uint32_t)(a+CORRECTION));
 }
 
 /// @cond

@@ -39,7 +39,7 @@ void setup(void (*runAllTests)(void))
 #endif     
 }
 
-#define DEVICE_TEST(testRunner) \
+#define TEST_HARNESS(testRunner) \
 void setup() \
 { \
     setup(testRunner); \
@@ -53,6 +53,5 @@ void loop()
     digitalWrite(LED_BUILTIN, LOW);
     delay(250);
 }
-#else
-#define DEVICE_TEST(testRunner)
+
 #endif

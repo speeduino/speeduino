@@ -11,7 +11,7 @@
 * General
 */
 #define COMPARE_TYPE uint16_t
-#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+#define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
 #define BOARD_MAX_DIGITAL_PINS 57

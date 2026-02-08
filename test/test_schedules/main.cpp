@@ -1,4 +1,5 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
 #include "init.h"
 
 void runAllScheduleTests(void)
@@ -26,4 +27,4 @@ void runAllScheduleTests(void)
   testScheduleStateMachine();
 }
 
-DEVICE_TEST(runAllScheduleTests)
+TEST_HARNESS(runAllScheduleTests)

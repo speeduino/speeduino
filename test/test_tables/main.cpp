@@ -1,4 +1,6 @@
-#include "../device_test_harness.h"
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
+
 
 void runAllTableTests(void)
 {
@@ -12,4 +14,4 @@ void runAllTableTests(void)
     testTable2d();
 }
 
-DEVICE_TEST(runAllTableTests)
+TEST_HARNESS(runAllTableTests)

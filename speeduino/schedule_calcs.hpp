@@ -92,14 +92,14 @@ static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule
   return _calculateIgnitionTimeout(schedule, _adjustToIgnChannel(startAngle, channelIgnDegrees), _adjustToIgnChannel(crankAngle, channelIgnDegrees));
 }
 
-#define MIN_CYCLES_FOR_ENDCOMPARE 6
+#define MIN_CYCLES_FOR_ENDCOMPARE 6U
 
 static inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) 
 {
   if( isRunning(schedule) ) { 
     SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( (uint16_t)ignitionLimits( endAngle - crankAngle ) ) ) ); 
   }
-  else if(currentStatus.startRevolutions > UINT32_C(MIN_CYCLES_FOR_ENDCOMPARE)) { 
+  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { 
     schedule.endCompare = schedule._counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ); 
     schedule.endScheduleSetByDecoder = true; 
   } else {
