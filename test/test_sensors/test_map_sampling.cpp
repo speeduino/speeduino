@@ -210,7 +210,7 @@ static void test_cycleMinimumMAPReading(void) {
   TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
-extern bool canUseEventAverage(const statuses &current, const config2 &page2);
+extern bool canUseEventAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
 extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
 static void enable_event_average(statuses &current, config2 &page2) {
@@ -224,43 +224,45 @@ static void enable_event_average(statuses &current, config2 &page2) {
 static void test_canUseEventAverage(void) {
   statuses current;
   config2 page2;
+  decoder_status_t decoderStatus;
   enable_event_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  decoderStatus.syncStatus = SyncStatus::Full;
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
 
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   decoderStatus.syncStatus = SyncStatus::Full;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   current.startRevolutions = 55;
 
   setRpm(current, (page2.mapSwitchPoint-1U)*100U);
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   setRpm(current, (page2.mapSwitchPoint)*100U);
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   setRpm(current, (page2.mapSwitchPoint+1U)*100U);
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
 
   current.engineProtectRpm = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 
   current.engineProtectBoostCut = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 
   current.engineProtectOil = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 
   current.engineProtectAfr = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 
   current.engineProtectClt = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 }
 
