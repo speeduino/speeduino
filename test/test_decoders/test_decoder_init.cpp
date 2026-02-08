@@ -113,11 +113,18 @@ static void test_setDecoder_TurnsOffPerToothIgn(void)
     TEST_ASSERT_FALSE(configPage2.perToothIgn);
 }
 
+static void test_setDecoder_OutOfRange(void)
+{
+    setDecoder(DECODER_MAX+1U); // Check this doesn't crash.
+    getDecoder().getCrankAngle();
+}
+
 void testDecoderInit(void)
 {
   SET_UNITY_FILENAME() {
     test_buildDecoder_all();
     RUN_TEST(test_setDecoder_attachesInterrupts);
     RUN_TEST(test_setDecoder_TurnsOffPerToothIgn);
+    RUN_TEST(test_setDecoder_OutOfRange);
   }
 }
