@@ -15,7 +15,7 @@ static void test_instantaneous(void) {
 }
 
 extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern  bool canUseCycleAverage(const statuses &current, const config2 &page2);
+extern  bool canUseCycleAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
   setRpm(current, 4300U);
@@ -27,24 +27,26 @@ static void enable_cycle_average(statuses &current, config2 &page2) {
 static void test_canUseCycleAverge(void) {
   statuses current;
   config2 page2;
+  decoder_status_t decoderStatus;
   enable_cycle_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  decoderStatus.syncStatus = SyncStatus::Full;
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
 
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
   decoderStatus.syncStatus = SyncStatus::Full;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
   current.startRevolutions = 55;
 
   setRpm(current, (page2.mapSwitchPoint-1U)*100U);
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
   setRpm(current, (page2.mapSwitchPoint)*100U);
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
   setRpm(current, (page2.mapSwitchPoint+1U)*100U);
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
 }
 
 struct cycleAverageMAPReading_test_data {
