@@ -5,6 +5,7 @@
 #include "statuses.h"
 #include "globals.h"
 #include "decoders.h"
+#include "units.h"
 
 static void test_instantaneous(void) {
   extern bool instanteneousMAPReading(void);
@@ -38,11 +39,11 @@ static void test_canUseCycleAverge(void) {
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
   current.startRevolutions = 55;
 
-  setRpm(current, (page2.mapSwitchPoint-1U)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
-  setRpm(current, (page2.mapSwitchPoint)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint));
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
-  setRpm(current, (page2.mapSwitchPoint+1U)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
 }
 
@@ -159,26 +160,27 @@ static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
   test_data.cycle_min.mapMinimum = UINT16_MAX;
 }
 
-// static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
-//   cycleMinmumMAPReading_test_data test_data;
-//   setup_cycle_minimum(test_data);
+static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
+  cycleMinmumMAPReading_test_data test_data;
+  setup_cycle_minimum(test_data);
 
-//   test_data.current.RPMdiv100 = test_data.page2.mapSwitchPoint - 1U;
-//   test_data.sensorReadings.mapADC = 300;
-//   test_data.sensorReadings.emapADC = 500;  
+  setRpm(test_data.current, RPM_COARSE.toUser(test_data.page2.mapSwitchPoint - 1U));
+  test_data.sensorReadings.mapADC = 300;
+  test_data.sensorReadings.emapADC = 500;  
+  test_data.cycle_min.mapMinimum = UINT16_MAX;
 
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
 
-//   // Repeat - should get same result.
-//   TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
-//   TEST_ASSERT_EQUAL_UINT(UINT16_MAX, test_data.cycle_min.mapMinimum);
-// }
+  // Repeat - should get same result.
+  test_data.cycle_min.mapMinimum = UINT16_MAX;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
+}
 
 static void test_cycleMinimumMAPReading(void) {
   cycleMinmumMAPReading_test_data test_data;
   setup_cycle_minimum(test_data);
-
 
   test_data.cycle_min.cycleStartIndex = test_data.current.startRevolutions;
   test_data.sensorReadings.mapADC = 100;
@@ -236,11 +238,11 @@ static void test_canUseEventAverage(void) {
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   current.startRevolutions = 55;
 
-  setRpm(current, (page2.mapSwitchPoint-1U)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  setRpm(current, (page2.mapSwitchPoint)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint));
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  setRpm(current, (page2.mapSwitchPoint+1U)*100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
 
   current.engineProtectRpm = true;
@@ -263,7 +265,6 @@ static void test_canUseEventAverage(void) {
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
   resetEngineProtect(current);
 }
-
 
 struct eventAverageMAPReading_test_data {
   statuses current;
@@ -403,7 +404,7 @@ static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
   page2.mapSample = MAPSamplingCycleAverage;
   page2.mapSwitchPoint = 15;
   // Enable cycle averaging
-  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Force accumulate path
@@ -423,7 +424,7 @@ static void test_applyMapAlgorithm_cycleMinimum_endCycle_true(void) {
   page2.mapSample = MAPSamplingCycleMinimum;
   page2.mapSwitchPoint = 15;
   // Ensure RPM above switch point
-  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   // Force end-cycle by making stored cycleStartIndex different
   alg.cycle_min.cycleStartIndex = (uint8_t)(current.startRevolutions - 2U);
   alg.cycle_min.mapMinimum = 123;
@@ -440,7 +441,7 @@ static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   page2.mapSample = MAPSamplingIgnitionEventAverage;
   page2.mapSwitchPoint = 15;
   // Enable event average conditions
-  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Ensure engine protect flags cleared
@@ -518,7 +519,7 @@ void test_map_sampling(void) {
     RUN_TEST_P(test_cycleAverageMAPReading_fallback_instantaneous);
     RUN_TEST_P(test_cycleAverageMAPReading);
     RUN_TEST_P(test_cycleAverageMAPReading_nosamples);
-    // RUN_TEST_P(test_cycleMinimumMAPReading_fallback_instantaneous);
+    RUN_TEST_P(test_cycleMinimumMAPReading_fallback_instantaneous);
     RUN_TEST_P(test_cycleMinimumMAPReading);
     RUN_TEST_P(test_canUseEventAverage);
     RUN_TEST_P(test_eventAverageMAPReading_fallback_instantaneous);
