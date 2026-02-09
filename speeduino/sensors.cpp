@@ -319,15 +319,15 @@ static inline bool isCycleCurrent(const statuses &current, const map_cycle_avera
   return isCycleCurrent(current, cycle_avg.cycleStartIndex);
 }
 
-TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseCycleAverage(const statuses &current, const config2 &page2, const decoder_status_t&decoderStatus) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && getDecoderStatus().syncStatus!=SyncStatus::None && (current.startRevolutions > 1U);
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && decoderStatus.syncStatus!=SyncStatus::None && (current.startRevolutions > 1U);
   }
   return false; // Just here to avoid compiler warning.
 }
 
-TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
-  if ( canUseCycleAverage(current, page2) )
+TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus,  map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings) {
+  if ( canUseCycleAverage(current, page2, decoderStatus) )
   {
     //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
     if( isCycleCurrent(current, cycle_average) ) {
@@ -433,16 +433,16 @@ static inline bool isIgnitionEventCurrent(const map_event_average_t &eventAverag
 }
 
 
-TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2) {
+TESTABLE_INLINE_STATIC bool canUseEventAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus) {
   ATOMIC() {
-    return (current.RPMdiv100 > page2.mapSwitchPoint) && getDecoderStatus().syncStatus!=SyncStatus::None && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
+    return (current.RPMdiv100 > page2.mapSwitchPoint) && decoderStatus.syncStatus!=SyncStatus::None && (current.startRevolutions > 1U) && (!isEngineProtectActive(current));
   }
   return false; // Just here to avoid compiler warning.
 }
 
-TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
+TESTABLE_INLINE_STATIC bool eventAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings) {
   //Average of an ignition event
-  if ( canUseEventAverage(current, page2) ) //If the engine isn't running, fall back to instantaneous reads
+  if ( canUseEventAverage(current, page2, decoderStatus) ) //If the engine isn't running, fall back to instantaneous reads
   {
     if( isIgnitionEventCurrent(eventAverage) ) { //Watch for a change in the ignition counter to determine whether we're still on the same event
       return eventAverageAccumulate(eventAverage, sensorReadings);
@@ -479,10 +479,9 @@ static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previo
   };
 }
 
-static inline void storeLastMAPReadings(map_last_read_t &lastRead, uint16_t oldMAPValue) 
+TESTABLE_INLINE_STATIC void storeLastMAPReadings(uint32_t currTime, map_last_read_t &lastRead, uint16_t oldMAPValue) 
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
-  uint32_t currTime = micros();
   lastRead.lastMAPValue = oldMAPValue;
   // lastRead.lastReadingTime = lastRead.currentReadingTime;
   lastRead.timeDeltaReadings = currTime - lastRead.currentReadingTime;
@@ -495,7 +494,7 @@ static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapM
   return max((int16_t)0, mapped);  //Sanity check
 }
 
-static inline void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
+TESTABLE_INLINE_STATIC void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
 {
   current.MAP = mapADCToMAP(readings.mapADC, page2.mapMin, page2.mapMax); //Get the current MAP value
   //Repeat for EMAP if it's enabled
@@ -508,24 +507,24 @@ map_last_read_t& getMapLast(void){
 }
 #endif
 
-static inline void readMAP(void)
+TESTABLE_INLINE_STATIC bool applyMapAlgorithm(const config2 &page2, 
+                                              const statuses &current, 
+                                              const decoder_status_t &decoderStatus,
+                                              map_algorithm_t &algorithmState)
 {
-  // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
-  mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
-
   bool readingIsValid;
-  switch(configPage2.mapSample)
+  switch(page2.mapSample)
   {
     case MAPSamplingCycleAverage:
-      readingIsValid = cycleAverageMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_average, mapAlgorithmState.sensorReadings);
+      readingIsValid = cycleAverageMAPReading(current, page2, decoderStatus, algorithmState.cycle_average, algorithmState.sensorReadings);
       break;
 
     case MAPSamplingCycleMinimum:
-      readingIsValid = cycleMinimumMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_min, mapAlgorithmState.sensorReadings);
+      readingIsValid = cycleMinimumMAPReading(current, page2, algorithmState.cycle_min, algorithmState.sensorReadings);
       break;
 
     case MAPSamplingIgnitionEventAverage:
-      readingIsValid = eventAverageMAPReading(currentStatus, configPage2, mapAlgorithmState.event_average, mapAlgorithmState.sensorReadings);
+      readingIsValid = eventAverageMAPReading(current, page2, decoderStatus, algorithmState.event_average, algorithmState.sensorReadings);
       break; 
 
     case MAPSamplingInstantaneous:
@@ -533,12 +532,21 @@ static inline void readMAP(void)
       readingIsValid = instanteneousMAPReading();
       break;
   }
+  return readingIsValid;
+}
+
+static inline void readMAP(void)
+{
+  // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
+  mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
+
+  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoderStatus(), mapAlgorithmState);
 
   // Process sensor readings according to user chosen sampling algorithm
   if(readingIsValid) 
   {
     // Roll over the last reading
-    storeLastMAPReadings(mapAlgorithmState.lastReading, currentStatus.MAP);
+    storeLastMAPReadings(micros(), mapAlgorithmState.lastReading, currentStatus.MAP);
 
     // Convert from filtered sensor readings to kPa
     setMAPValuesFromReadings(mapAlgorithmState.sensorReadings, configPage2, configPage6.useEMAP, currentStatus);
