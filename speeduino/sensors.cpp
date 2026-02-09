@@ -479,10 +479,9 @@ static inline map_adc_readings_t readMapSensors(const map_adc_readings_t &previo
   };
 }
 
-static inline void storeLastMAPReadings(map_last_read_t &lastRead, uint16_t oldMAPValue) 
+TESTABLE_INLINE_STATIC void storeLastMAPReadings(uint32_t currTime, map_last_read_t &lastRead, uint16_t oldMAPValue) 
 {
   //Update the calculation times and last value. These are used by the MAP based Accel enrich
-  uint32_t currTime = micros();
   lastRead.lastMAPValue = oldMAPValue;
   // lastRead.lastReadingTime = lastRead.currentReadingTime;
   lastRead.timeDeltaReadings = currTime - lastRead.currentReadingTime;
@@ -508,24 +507,24 @@ map_last_read_t& getMapLast(void){
 }
 #endif
 
-static inline void readMAP(void)
+TESTABLE_INLINE_STATIC bool applyMapAlgorithm(const config2 &page2, 
+                                              const statuses &current, 
+                                              const decoder_status_t &decoderStatus,
+                                              map_algorithm_t &algorithmState)
 {
-  // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
-  mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
-
   bool readingIsValid;
-  switch(configPage2.mapSample)
+  switch(page2.mapSample)
   {
     case MAPSamplingCycleAverage:
-      readingIsValid = cycleAverageMAPReading(currentStatus, configPage2, getDecoderStatus(), mapAlgorithmState.cycle_average, mapAlgorithmState.sensorReadings);
+      readingIsValid = cycleAverageMAPReading(current, page2, decoderStatus, algorithmState.cycle_average, algorithmState.sensorReadings);
       break;
 
     case MAPSamplingCycleMinimum:
-      readingIsValid = cycleMinimumMAPReading(currentStatus, configPage2, mapAlgorithmState.cycle_min, mapAlgorithmState.sensorReadings);
+      readingIsValid = cycleMinimumMAPReading(current, page2, algorithmState.cycle_min, algorithmState.sensorReadings);
       break;
 
     case MAPSamplingIgnitionEventAverage:
-      readingIsValid = eventAverageMAPReading(currentStatus, configPage2, getDecoderStatus(), mapAlgorithmState.event_average, mapAlgorithmState.sensorReadings);
+      readingIsValid = eventAverageMAPReading(current, page2, decoderStatus, algorithmState.event_average, algorithmState.sensorReadings);
       break; 
 
     case MAPSamplingInstantaneous:
@@ -533,12 +532,21 @@ static inline void readMAP(void)
       readingIsValid = instanteneousMAPReading();
       break;
   }
+  return readingIsValid;
+}
+
+static inline void readMAP(void)
+{
+  // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
+  mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
+
+  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoderStatus(), mapAlgorithmState);
 
   // Process sensor readings according to user chosen sampling algorithm
   if(readingIsValid) 
   {
     // Roll over the last reading
-    storeLastMAPReadings(mapAlgorithmState.lastReading, currentStatus.MAP);
+    storeLastMAPReadings(micros(), mapAlgorithmState.lastReading, currentStatus.MAP);
 
     // Convert from filtered sensor readings to kPa
     setMAPValuesFromReadings(mapAlgorithmState.sensorReadings, configPage2, configPage6.useEMAP, currentStatus);

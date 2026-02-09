@@ -361,6 +361,115 @@ static void test_validateFilterMapSensorReading(void) {
   TEST_ASSERT_EQUAL_UINT(217, validateFilterMapSensorReading(333, 127, 100));
 }
 
+// Extern declaration for function under test (as used in sensors.cpp)
+extern bool applyMapAlgorithm(const config2 &page2,
+                              const statuses &current,
+                              const decoder_status_t &decoderStatus,
+                              map_algorithm_t &algorithmState);
+
+static void test_applyMapAlgorithm_instantaneous(void) {
+  config2 page2 = {};
+  statuses current = {};
+  decoder_status_t decoderStatus = {};
+  map_algorithm_t alg = {};
+  page2.mapSample = MAPSamplingInstantaneous;
+
+  TEST_ASSERT_TRUE(applyMapAlgorithm(page2, current, decoderStatus, alg));
+}
+
+static void test_applyMapAlgorithm_cycleAverage_fallback_instantaneous(void) {
+  config2 page2 = {};
+  statuses current = {};
+  decoder_status_t decoderStatus = {};
+  map_algorithm_t alg = {};
+  page2.mapSample = MAPSamplingCycleAverage;
+  page2.mapSwitchPoint = 15;
+  // Ensure canUseCycleAverage is false (low RPM and no sync)
+  setRpm(current, 0U);
+  decoderStatus.syncStatus = SyncStatus::None;
+  alg.cycle_average.sampleCount = 0;
+
+  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  TEST_ASSERT_TRUE(ok);
+  // reset() calls accumulate once -> sampleCount becomes 1
+  TEST_ASSERT_EQUAL_UINT(1U, alg.cycle_average.sampleCount);
+}
+
+static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
+  config2 page2 = {};
+  statuses current = {};
+  decoder_status_t decoderStatus = {};
+  map_algorithm_t alg = {};
+  page2.mapSample = MAPSamplingCycleAverage;
+  page2.mapSwitchPoint = 15;
+  // Enable cycle averaging
+  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  current.startRevolutions = 55;
+  // Force accumulate path
+  alg.cycle_average.cycleStartIndex = (uint8_t)current.startRevolutions;
+  alg.cycle_average.sampleCount = 0;
+
+  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  TEST_ASSERT_FALSE(ok);
+  TEST_ASSERT_EQUAL_UINT(1U, alg.cycle_average.sampleCount);
+}
+
+static void test_applyMapAlgorithm_cycleMinimum_endCycle_true(void) {
+  config2 page2 = {};
+  statuses current = {};
+  decoder_status_t decoderStatus = {};
+  map_algorithm_t alg = {};
+  page2.mapSample = MAPSamplingCycleMinimum;
+  page2.mapSwitchPoint = 15;
+  // Ensure RPM above switch point
+  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  // Force end-cycle by making stored cycleStartIndex different
+  alg.cycle_min.cycleStartIndex = (uint8_t)(current.startRevolutions - 2U);
+  alg.cycle_min.mapMinimum = 123;
+
+  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  TEST_ASSERT_TRUE(ok);
+}
+
+static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
+  config2 page2 = {};
+  statuses current = {};
+  decoder_status_t decoderStatus = {};
+  map_algorithm_t alg = {};
+  page2.mapSample = MAPSamplingIgnitionEventAverage;
+  page2.mapSwitchPoint = 15;
+  // Enable event average conditions
+  setRpm(current, (page2.mapSwitchPoint + 1U) * 100U);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  current.startRevolutions = 55;
+  // Ensure engine protect flags cleared
+  resetEngineProtect(current);
+  // Set ignitionCount and eventStartIndex equal to trigger accumulate
+  ignitionCount = 0;
+  alg.event_average.eventStartIndex = (uint8_t)ignitionCount;
+  alg.event_average.sampleCount = 0;
+
+  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  TEST_ASSERT_FALSE(ok);
+  TEST_ASSERT_EQUAL_UINT(1U, alg.event_average.sampleCount);
+}
+
+extern void storeLastMAPReadings(uint32_t currTime, map_last_read_t &lastRead, uint16_t oldMAPValue);
+
+static void test_storeLastMAPReadings_basic(void) {
+  map_last_read_t last = {};
+  last.currentReadingTime = 1000U;
+  last.timeDeltaReadings = 0U;
+  last.lastMAPValue = 0U;
+
+  storeLastMAPReadings(1500U, last, 42U);
+
+  TEST_ASSERT_EQUAL_UINT16(42U, last.lastMAPValue);
+  TEST_ASSERT_EQUAL_UINT32(500U, last.timeDeltaReadings);
+  TEST_ASSERT_EQUAL_UINT32(1500U, last.currentReadingTime);
+}
+
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_instantaneous);
@@ -375,5 +484,11 @@ void test_map_sampling(void) {
     RUN_TEST(test_eventAverageMAPReading);
     RUN_TEST(test_eventAverageMAPReading_nosamples);
     RUN_TEST(test_validateFilterMapSensorReading);
+    RUN_TEST_P(test_applyMapAlgorithm_instantaneous);
+    RUN_TEST_P(test_applyMapAlgorithm_cycleAverage_fallback_instantaneous);
+    RUN_TEST_P(test_applyMapAlgorithm_cycleAverage_accumulate);
+    RUN_TEST_P(test_applyMapAlgorithm_cycleMinimum_endCycle_true);
+    RUN_TEST_P(test_applyMapAlgorithm_eventAverage_accumulate);
+    RUN_TEST(test_storeLastMAPReadings_basic);
   }    
 }
