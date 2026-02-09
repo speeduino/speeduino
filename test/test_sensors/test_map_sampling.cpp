@@ -470,25 +470,68 @@ static void test_storeLastMAPReadings_basic(void) {
   TEST_ASSERT_EQUAL_UINT32(1500U, last.currentReadingTime);
 }
 
+extern void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current);
+
+static void test_setMAPValuesFromReadings_no_emap(void) {
+  map_adc_readings_t readings = {};
+  config2 page2 = {};
+  statuses current = {};
+
+  // map range 0..100, using mid-scale ADC -> expect ~50
+  page2.mapMin = 0;
+  page2.mapMax = 100;
+  readings.mapADC = 512;
+  current.MAP = 0;
+  current.EMAP = 123; // should remain unchanged when useEMAP=false
+
+  setMAPValuesFromReadings(readings, page2, false, current);
+
+  TEST_ASSERT_EQUAL_INT(50, current.MAP);
+  TEST_ASSERT_EQUAL_INT(123, current.EMAP);
+}
+
+static void test_setMAPValuesFromReadings_with_emap(void) {
+  map_adc_readings_t readings = {};
+  config2 page2 = {};
+  statuses current = {};
+
+  // MAP: 0..100 => 512 -> 50
+  page2.mapMin = 0;
+  page2.mapMax = 100;
+  // EMAP: 10..60 => 512 -> 35 (10 + ((512*50)>>10) = 10+25)
+  page2.EMAPMin = 10;
+  page2.EMAPMax = 60;
+
+  readings.mapADC = 512;
+  readings.emapADC = 512;
+
+  setMAPValuesFromReadings(readings, page2, true, current);
+
+  TEST_ASSERT_EQUAL_INT(50, current.MAP);
+  TEST_ASSERT_EQUAL_INT(35, current.EMAP);
+}
+
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_instantaneous);
-    RUN_TEST(test_canUseCycleAverge);
-    RUN_TEST(test_cycleAverageMAPReading_fallback_instantaneous);
-    RUN_TEST(test_cycleAverageMAPReading);
-    RUN_TEST(test_cycleAverageMAPReading_nosamples);
-    // RUN_TEST(test_cycleMinimumMAPReading_fallback_instantaneous);
-    RUN_TEST(test_cycleMinimumMAPReading);
-    RUN_TEST(test_canUseEventAverage);
-    RUN_TEST(test_eventAverageMAPReading_fallback_instantaneous);
-    RUN_TEST(test_eventAverageMAPReading);
-    RUN_TEST(test_eventAverageMAPReading_nosamples);
-    RUN_TEST(test_validateFilterMapSensorReading);
+    RUN_TEST_P(test_instantaneous);
+    RUN_TEST_P(test_canUseCycleAverge);
+    RUN_TEST_P(test_cycleAverageMAPReading_fallback_instantaneous);
+    RUN_TEST_P(test_cycleAverageMAPReading);
+    RUN_TEST_P(test_cycleAverageMAPReading_nosamples);
+    // RUN_TEST_P(test_cycleMinimumMAPReading_fallback_instantaneous);
+    RUN_TEST_P(test_cycleMinimumMAPReading);
+    RUN_TEST_P(test_canUseEventAverage);
+    RUN_TEST_P(test_eventAverageMAPReading_fallback_instantaneous);
+    RUN_TEST_P(test_eventAverageMAPReading);
+    RUN_TEST_P(test_eventAverageMAPReading_nosamples);
+    RUN_TEST_P(test_validateFilterMapSensorReading);
     RUN_TEST_P(test_applyMapAlgorithm_instantaneous);
     RUN_TEST_P(test_applyMapAlgorithm_cycleAverage_fallback_instantaneous);
     RUN_TEST_P(test_applyMapAlgorithm_cycleAverage_accumulate);
     RUN_TEST_P(test_applyMapAlgorithm_cycleMinimum_endCycle_true);
     RUN_TEST_P(test_applyMapAlgorithm_eventAverage_accumulate);
-    RUN_TEST(test_storeLastMAPReadings_basic);
+    RUN_TEST_P(test_storeLastMAPReadings_basic);
+    RUN_TEST_P(test_setMAPValuesFromReadings_no_emap);
+    RUN_TEST_P(test_setMAPValuesFromReadings_with_emap);
   }    
 }
