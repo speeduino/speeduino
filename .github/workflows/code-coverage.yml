@@ -41,11 +41,16 @@ jobs:
         pip install platformio
        
     - name: Run Code Coverage Tests
+      # We want the coverage to reflect the status of the
+      # unit tests: so even if the tests fail or outright
+      # crash, continue the rest of the workflow.
+      continue-on-error: true
       run: | 
         source PIO/bin/activate
         platformio test -v -e ${{ env.PIO_ENV }}
 
     - name: Upload to Coveralls
+      continue-on-error: true
       uses: threeal/gcovr-action@v1.2.0
       with:
         coveralls-send: true
@@ -64,8 +69,9 @@ jobs:
         gcov_ignore: ${{ env.GCOV_IGNORES }}
         verbose: true 
 
-    # - name: Upload reports
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     path: |
-    #       .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
+    - name: Upload reports
+      if: ${{ env.ACT }}
+      uses: actions/upload-artifact@v4
+      with:
+        path: |
+          .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
