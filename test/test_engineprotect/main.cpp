@@ -28,6 +28,8 @@ extern statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &curre
 
 extern statuses::scheduler_cut_t applyPendingIgnitionCuts(statuses::scheduler_cut_t cutState, const statuses &current);
 
+extern statuses::scheduler_cut_t applyRollingCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint16_t maxAllowedRPM);
+
 using randFunc = uint8_t (*)(void);
 extern randFunc rollingCutRandFunc;
 
@@ -1258,6 +1260,87 @@ static void test_applyPendingIgnitionCuts(void)
     TEST_ASSERT_EQUAL(cutStateInitial.status, testSubject.status);
 }
 
+static void test_applyRollingCut_no_revolutions_elapsed(void)
+{
+    engineProtection_test_context_t context;
+
+    // Ensure rollingCutLastRev is set to the current rev so no cut should be applied
+    resetInternalState();
+    rollingCutLastRev = 100U;
+    context.current.startRevolutions = 100U;
+    context.current.schedulerCutState.fuelChannels = 0xAA;
+    context.current.schedulerCutState.ignitionChannels = 0x55;
+    context.current.schedulerCutState.ignitionChannelsPending = 0x00;
+
+    auto result = applyRollingCut(context.current, context.page2, context.page4, context.page6, 5000U);
+
+    // Should be unchanged (applyPendingIgnitionCuts will leave as-is since not enough revs)
+    TEST_ASSERT_EQUAL_HEX8(context.current.schedulerCutState.fuelChannels, result.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(context.current.schedulerCutState.ignitionChannels, result.ignitionChannels);
+    TEST_ASSERT_EQUAL(context.current.schedulerCutState.status, result.status);
+}
+
+static void test_applyRollingCut_revolutions_elapsed_forced_cuts(void)
+{
+    engineProtection_test_context_t context;
+
+    // Configure outputs and scheduler state
+    context.current.maxInjOutputs = 4;
+    context.current.maxIgnOutputs = 4;
+    context.current.schedulerCutState.fuelChannels = 0xFF;
+    context.current.schedulerCutState.ignitionChannels = 0xFF;
+
+    // Make sure rollingCutLastRev is in the past so revolutions elapsed
+    resetInternalState();
+    uint8_t revsToCut = calcRollingCutRevolutions(context.page2, context.page4);
+    rollingCutLastRev = 10U;
+    context.current.startRevolutions = rollingCutLastRev + revsToCut;
+
+    // Ensure rpmDelta leads to 100% cut (set equal to maxAllowedRPM)
+    context.current.RPM = 5000;
+    uint16_t maxAllowedRPM = 5000;
+
+    // Force RNG to always cut
+    rollingCutRandFunc_override_t rngOverride(deterministic_rand_low);
+
+    auto result = applyRollingCut(context.current, context.page2, context.page4, context.page6, maxAllowedRPM);
+
+    // All lower bits should be cleared by the cut and status should be Rolling
+    TEST_ASSERT_EQUAL_HEX8(0x00, result.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, result.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, result.status);
+    TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
+}
+
+static void test_applyRollingCut_revolutions_elapsed_forced_no_cuts(void)
+{
+    engineProtection_test_context_t context;
+
+    context.current.maxInjOutputs = 3;
+    context.current.maxIgnOutputs = 2;
+    context.current.schedulerCutState.fuelChannels = 0xFF;
+    context.current.schedulerCutState.ignitionChannels = 0xFF;
+
+    resetInternalState();
+    uint8_t revsToCut = calcRollingCutRevolutions(context.page2, context.page4);
+    rollingCutLastRev = 20U;
+    context.current.startRevolutions = rollingCutLastRev + revsToCut;
+
+    context.current.RPM = 5000;
+    uint16_t maxAllowedRPM = 5000;
+
+    // Force RNG to never cut
+    rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
+
+    auto result = applyRollingCut(context.current, context.page2, context.page4, context.page6, maxAllowedRPM);
+
+    // All channels should be turned on (masked to configured counts)
+    TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxInjOutputs) - 1U, result.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxIgnOutputs) - 1U, result.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, result.status);
+    TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
+}
+
 // Force all channels to be cut via deterministic low RNG
 static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels_cut(void)
 {
@@ -1447,6 +1530,9 @@ void runAllTests(void)
     RUN_TEST_P(test_applyRollingCutPercentage_all_on);
     RUN_TEST_P(test_applyRollingCutPercentage_half_on);
     RUN_TEST_P(test_applyPendingIgnitionCuts);
+    RUN_TEST_P(test_applyRollingCut_no_revolutions_elapsed);
+    RUN_TEST_P(test_applyRollingCut_revolutions_elapsed_forced_cuts);
+    RUN_TEST_P(test_applyRollingCut_revolutions_elapsed_forced_no_cuts);
     }
 }
 

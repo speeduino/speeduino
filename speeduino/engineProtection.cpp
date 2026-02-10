@@ -409,7 +409,7 @@ TESTABLE_STATIC statuses::scheduler_cut_t applyPendingIgnitionCuts(statuses::sch
   return cutState;
 }
 
-static inline statuses::scheduler_cut_t applyRollingCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint16_t maxAllowedRPM)
+TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint16_t maxAllowedRPM)
 {
   if(rollingCutLastRev == 0U) { rollingCutLastRev = current.startRevolutions; } //First time check
 
