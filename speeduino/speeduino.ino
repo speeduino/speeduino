@@ -872,7 +872,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //   }
       // }
       
-      currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, configPage2, configPage4, configPage6, configPage9);
+      currentStatus.schedulerCutState = calculateFuelIgnitionChannelCut(currentStatus, getDecoderStatus(), configPage2, configPage4, configPage6, configPage9);
       if (currentStatus.schedulerCutState.status==SchedulerCutStatus::None)
       {
         currentStatus.engineProtect.reset();

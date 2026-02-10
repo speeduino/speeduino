@@ -430,9 +430,9 @@ static inline statuses::scheduler_cut_t applyRollingCut(const statuses &current,
   }
 }
 
-BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9)
+BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(const statuses &current, const decoder_status_t &decoderStatus, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9)
 {
-  if ((getDecoderStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
+  if ((decoderStatus.syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
   {
       return CUT_FULL_BOTH;
   }
