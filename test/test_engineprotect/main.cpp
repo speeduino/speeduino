@@ -820,6 +820,20 @@ static void test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only(void
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 }
 
+static void test_calculateFuelIgnitionChannelCut_hardcut_full_fuel_only(void)
+{
+    engineProtection_test_context_t context;
+    context.setHardCutFull();
+    context.setRpmActive(HARD_REV_FIXED);
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels); // fuel cut
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels); // ignition on
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
+}
+
 static void test_calculateFuelIgnitionChannelCut_hardcut_full_both(void)
 {
     engineProtection_test_context_t context;
@@ -1328,7 +1342,7 @@ static void test_calculateFuelIgnitionChannelCut_at_staging_boundary(void)
 {
     engineProtection_test_context_t context;
     context.setBeyondStaging();
-    setSyncStatus(SyncStatus::Full); // Ensure sync is OK
+    context.setSyncStatus(SyncStatus::Full); // Ensure sync is OK
 
     // Exactly at StgCycles should still cut
     context.current.startRevolutions = context.page4.StgCycles;
@@ -1434,6 +1448,7 @@ void runAllTests(void)
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_nosync);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_staging_complete_all_on);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_ignition_only);
+    RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_fuel_only);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_hardcut_full_both);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels_cut);
     RUN_TEST_P(test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_cut);
