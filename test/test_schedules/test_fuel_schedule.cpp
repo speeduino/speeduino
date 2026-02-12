@@ -16,7 +16,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
-    raw_counter_t counter = {3333U};
+    raw_counter_t counter = {INITIAL_COUNTER};
     raw_compare_t compare = {0};
     FuelSchedule schedule(counter, compare);
 
