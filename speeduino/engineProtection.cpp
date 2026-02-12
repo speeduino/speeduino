@@ -6,8 +6,8 @@
 #include "preprocessor.h"
 
 TESTABLE_STATIC uint8_t oilProtStartTime = 0;
-TESTABLE_STATIC table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
-TESTABLE_STATIC table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
+TESTABLE_CONSTEXPR table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
+TESTABLE_CONSTEXPR table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
 /* AFR protection state moved to file scope so unit tests can control/reset it */
 TESTABLE_STATIC bool checkAFRLimitActive = false;
