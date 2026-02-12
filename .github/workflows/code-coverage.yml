@@ -57,8 +57,8 @@ jobs:
         print-summary: true
         excludes: ${{ env.GCOV_IGNORES }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        # html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
-        # html-details: true
+        html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
+        html-details: true
         # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
         # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.COBERTURA_FILE }}
   

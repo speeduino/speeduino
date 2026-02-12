@@ -168,6 +168,8 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
  */
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule);
 
+/** @brief Disable the schedule */
+void disableSchedule(Schedule &schedule);
 
 /** Ignition schedule.
  */
