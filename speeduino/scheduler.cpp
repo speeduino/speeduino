@@ -450,7 +450,7 @@ void moveToNextState(IgnitionSchedule &schedule)
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
 
-static void disableSchedule(Schedule &schedule)
+void disableSchedule(Schedule &schedule)
 {
   ATOMIC() {
     if(schedule.Status == PENDING) { 
@@ -509,23 +509,13 @@ void disableIgnSchedule(uint8_t channel)
 
 void disableAllFuelSchedules(void)
 {
-  disableFuelSchedule(0);
-  disableFuelSchedule(1);
-  disableFuelSchedule(2);
-  disableFuelSchedule(3);
-  disableFuelSchedule(4);
-  disableFuelSchedule(5);
-  disableFuelSchedule(6);
-  disableFuelSchedule(7);
+  for (uint8_t index=0; index<INJ_CHANNELS; ++index) {
+    disableFuelSchedule(index);
+  }
 }
 void disableAllIgnSchedules(void)
 {
-  disableIgnSchedule(0);
-  disableIgnSchedule(1);
-  disableIgnSchedule(2);
-  disableIgnSchedule(3);
-  disableIgnSchedule(4);
-  disableIgnSchedule(5);
-  disableIgnSchedule(6);
-  disableIgnSchedule(7);
+  for (uint8_t index=0; index<IGN_CHANNELS; ++index) {
+    disableIgnSchedule(index);
+  }
 }

@@ -13,7 +13,10 @@ void runAllScheduleTests(void)
   extern void test_accuracy_duration(void);
   extern void test_setSchedule(void);
   extern void testScheduleStateMachine(void);
-  
+  extern void test_schedule(void);
+  extern void test_ignition_controller();
+  extern void test_fuel_controller(void);
+
   initialiseAll();
 
   test_status_initial_off();
@@ -25,6 +28,9 @@ void runAllScheduleTests(void)
   test_accuracy_duration();
   test_setSchedule();
   testScheduleStateMachine();
+  test_schedule();
+  test_ignition_controller();
+  test_fuel_controller();
 }
 
 TEST_HARNESS(runAllScheduleTests)
