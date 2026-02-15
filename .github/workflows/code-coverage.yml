@@ -13,7 +13,6 @@ jobs:
     env:
       PIO_ENV: native_code_coverage
       FILE_ROOT: speeduino_coverage
-      COBERTURA_FILE: speeduino_coverage.cobertura.xml
       GCOV_IGNORES: |
           test/
           lib/ArduinoFake/
@@ -49,25 +48,25 @@ jobs:
         source PIO/bin/activate
         platformio test -v -e ${{ env.PIO_ENV }}
 
-    - name: Upload to Coveralls
-      continue-on-error: true
-      uses: threeal/gcovr-action@v1.2.0
-      with:
-        coveralls-send: true
-        print-summary: true
-        excludes: ${{ env.GCOV_IGNORES }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
-        html-details: true
-        # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
-        # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.COBERTURA_FILE }}
-  
     - name: Upload to CodeCov
       uses: codecov/codecov-action@v5
+      if: ${{ !env.ACT }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         gcov_ignore: ${{ env.GCOV_IGNORES }}
-        verbose: true 
+        # verbose: true 
+
+    - name: Generate coverage report
+      if: ${{ env.ACT }}
+      uses: threeal/gcovr-action@v1.2.0
+      with:
+        coveralls-send: false
+        print-summary: true
+        excludes: ${{ env.GCOV_IGNORES }}
+        html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
+        html-details: true
+        # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
+        # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura.xml
 
     - name: Upload reports
       if: ${{ env.ACT }}
