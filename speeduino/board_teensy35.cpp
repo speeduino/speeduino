@@ -439,4 +439,20 @@ void boardInitPins(void)
   // Do nothing
 }
 
+uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20; //This needs tuning
+#else
+  uint16_t maxWrite = 64;
+#endif
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
 #endif

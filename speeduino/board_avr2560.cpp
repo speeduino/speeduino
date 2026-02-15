@@ -250,4 +250,33 @@ void boardInitPins(void)
   // Do nothing
 }
 
+uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20; //This needs tuning
+#else
+  uint16_t maxWrite = 18;
+  if(current.commCompat) { maxWrite = 8; } //If comms compatibility mode is on, slow the burn rate down even further
+
+  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+  //maximum write block size based on the RPM.
+  //This calculation is based on EEPROM writes taking approximately 4ms per byte
+  //(Actual value is 3.8ms, so 4ms has some safety margin) 
+  if(current.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
+  { 
+    maxWrite = (uint16_t)(15000U / current.RPM);
+    maxWrite = constrain(maxWrite, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
+  }
+#endif
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
 #endif //CORE_AVR

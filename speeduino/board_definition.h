@@ -38,6 +38,22 @@ void jumpToBootloader(void);
 /** @brief Get the board temp for display in TunerStudio (optional) */
 uint8_t getSystemTemp(void);
 
+struct statuses;
+
+/**
+ * @brief The maximum number of write operations that will be performed in one go.
+ * 
+ * If this number is too large, we will kill system responsiveness since EEPROM
+ * writes are slow. E.g. Each write takes ~3ms on the AVR
+ * 
+ * This is board specific, since EEPROM write speed is dependent on the
+ * EEPROM type and CPU speed. 
+ * 
+ * @param current So the function can scale the number of writes based on system state
+ * @return uint8_t The maximum number of writes.
+ */
+uint16_t getEepromWriteBlockSize(const statuses &current);
+
 // Include a specific header for a board.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #include "board_avr2560.h"

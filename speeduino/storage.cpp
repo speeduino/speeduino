@@ -143,42 +143,6 @@ static inline write_location writeTable(void *pTable, table_type_t key, write_lo
 void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
 uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
 
-//The maximum number of write operations that will be performed in one go.
-//If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
-//the rest of the system can hang)
-static uint16_t getWriteBlockSize(const statuses &current)
-{
-#if defined(USE_SPI_EEPROM)
-  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
-  uint16_t maxWrite = 20; //This needs tuning
-#elif defined(CORE_STM32) || defined(CORE_TEENSY)
-  uint16_t maxWrite = 64;
-#else
-  uint16_t maxWrite = 18;
-  if(current.commCompat) { maxWrite = 8; } //If comms compatibility mode is on, slow the burn rate down even further
-
-  #ifdef CORE_AVR
-    //In order to prevent missed pulses during EEPROM writes on AVR, scale the
-    //maximum write block size based on the RPM.
-    //This calculation is based on EEPROM writes taking approximately 4ms per byte
-    //(Actual value is 3.8ms, so 4ms has some safety margin) 
-    if(current.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
-    { 
-      maxWrite = (uint16_t)(15000U / current.RPM);
-      maxWrite = constrain(maxWrite, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
-    }
-  #endif
-
-#endif
-    // Write to EEPROM more aggressively if the engine is not running
-    if(current.RPM==0U)
-    { 
-      return maxWrite * 8U;
-    } 
-
-    return maxWrite;
-}
-
 //  ================================= End write support ===============================
 
 /** Write a table or map to EEPROM storage.
@@ -187,7 +151,7 @@ and writes them to EEPROM as per the layout defined in storage.h.
 */
 void writeConfig(uint8_t pageNum)
 {
-  write_location result = { 0, 0, getWriteBlockSize(currentStatus) };
+  write_location result = { 0, 0, getEepromWriteBlockSize(currentStatus) };
 
   switch(pageNum)
   {
