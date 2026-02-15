@@ -147,25 +147,19 @@ static inline write_location writeTable(void *pTable, table_type_t key, write_lo
 void EEPROMWriteRaw(uint16_t address, uint8_t data) { EEPROM.update(address, data); }
 uint8_t EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
 
-//  ================================= End write support ===============================
-
-/** Write a table or map to EEPROM storage.
-Takes the current configuration (config pages and maps)
-and writes them to EEPROM as per the layout defined in storage.h.
-*/
-void writeConfig(uint8_t pageNum)
-{
 //The maximum number of write operations that will be performed in one go.
 //If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
 //the rest of the system can hang)
+static uint16_t getWriteBlockSize(void)
+{
 #if defined(USE_SPI_EEPROM)
   //For use with common Winbond SPI EEPROMs Eg W25Q16JV
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 20; //This needs tuning
+  uint16_t maxWrite = 20; //This needs tuning
 #elif defined(CORE_STM32) || defined(CORE_TEENSY)
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
+  uint16_t maxWrite = 64;
 #else
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 18;
-  if(currentStatus.commCompat) { EEPROM_MAX_WRITE_BLOCK = 8; } //If comms compatibility mode is on, slow the burn rate down even further
+  uint16_t maxWrite = 18;
+  if(currentStatus.commCompat) { maxWrite = 8; } //If comms compatibility mode is on, slow the burn rate down even further
 
   #ifdef CORE_AVR
     //In order to prevent missed pulses during EEPROM writes on AVR, scale the
@@ -174,15 +168,24 @@ void writeConfig(uint8_t pageNum)
     //(Actual value is 3.8ms, so 4ms has some safety margin) 
     if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
     { 
-      EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
-      EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
-      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 15); //Any higher than this will cause comms timeouts on AVR
+      maxWrite = (uint8_t)(15000U / currentStatus.RPM);
+      maxWrite = constrain(maxWrite, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
     }
   #endif
 
 #endif
+    return maxWrite;
+}
 
-  write_location result = { 0, 0, EEPROM_MAX_WRITE_BLOCK };
+//  ================================= End write support ===============================
+
+/** Write a table or map to EEPROM storage.
+Takes the current configuration (config pages and maps)
+and writes them to EEPROM as per the layout defined in storage.h.
+*/
+void writeConfig(uint8_t pageNum)
+{
+  write_location result = { 0, 0, getWriteBlockSize() };
 
   switch(pageNum)
   {
