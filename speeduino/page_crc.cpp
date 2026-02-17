@@ -1,7 +1,6 @@
-#include "globals.h"
+#include <FastCRC.h>
 #include "page_crc.h"
 #include "pages.h"
-#include <FastCRC.h>
 
 // Abstract the FastCrC32 functions 
 // - they have have very slight differences in signatures, which causes the Arduino
