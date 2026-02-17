@@ -1,7 +1,6 @@
-#include "globals.h"
+#include <FastCRC.h>
 #include "page_crc.h"
 #include "pages.h"
-#include <FastCRC.h>
 
 // Abstract the FastCrC32 functions 
 // - they have have very slight differences in signatures, which causes the Arduino
@@ -17,7 +16,7 @@ using pCrcCalc = uint32_t (*)(FastCRC32 &, const uint8_t *, uint16_t);
 
 static inline uint32_t compute_raw_crc(const page_iterator_t &entity, pCrcCalc calcFunc, FastCRC32 &crcCalc)
 {
-    return calcFunc(crcCalc, (uint8_t*)entity.pData, entity.size);
+    return calcFunc(crcCalc, (uint8_t*)entity.pData, entity.address.size);
 }
 
 static inline uint32_t compute_row_crc(const table_row_iterator &row, pCrcCalc calcFunc, FastCRC32 &crcCalc)
@@ -83,7 +82,7 @@ static inline uint32_t compute_crc(const page_iterator_t &entity, pCrcCalc calcF
         break;
 
     case NoEntity:
-        return pad_crc(entity.size, 0U, crcCalc);
+        return pad_crc(entity.address.size, 0U, crcCalc);
         break;
 
     default:
@@ -105,5 +104,5 @@ uint32_t calculatePageCRC32(byte pageNum)
     crc = compute_crc(entity, &updateCrc /* Note that we are *updating* */, crcCalc);
     entity = advance(entity);
   }
-  return pad_crc(getPageSize(pageNum) - entity.size, crc, crcCalc);
+  return pad_crc(getPageSize(pageNum) - entity.address.size, crc, crcCalc);
 }

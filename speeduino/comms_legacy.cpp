@@ -897,7 +897,7 @@ namespace {
 
   void send_raw_entity(const page_iterator_t &entity)
   {
-    primarySerial.write((byte *)entity.pData, entity.size);
+    primarySerial.write((byte *)entity.pData, entity.address.size);
   }
 
   inline void send_table_values(table_value_iterator it)

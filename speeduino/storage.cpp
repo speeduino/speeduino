@@ -341,7 +341,7 @@ void resetConfigPages(void)
     {
       if (entity.type==Raw)
       {
-        memset(entity.pData, 0, entity.size);
+        memset(entity.pData, 0, entity.address.size);
       }
       entity = advance(entity);
     }
