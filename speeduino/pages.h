@@ -59,14 +59,73 @@ enum entity_type {
     End         // The offset was past any known entity for the page
 };
 
+/** @brief The *unique* location of an entity within all pages */
+struct entity_page_location_t {
+    uint8_t page;   // The index of the page the entity belongs to
+    uint8_t index;  // The sub-index of the item within the page
+
+    constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
+    : page(pageNum)
+    , index(pageSubIndex)
+    {        
+    }
+
+    bool operator==(const entity_page_location_t &other) const
+    {
+        return page==other.page
+            && index==other.index;
+    }
+    bool operator!=(const entity_page_location_t &other) const
+    {
+        return !operator==(other);
+    }
+};
+
+/** @brief  Position and size of an entity within a page */
+struct entity_page_address_t {
+    uint16_t start; // The start position of the entity, in bytes, from the start of the page
+    uint16_t size;  // Size of the entity in bytes
+
+    entity_page_address_t(uint16_t base, uint16_t length)
+    : start(base)
+    , size(length)
+    {        
+    }
+};
+
 // A entity on a logical page.
 struct page_iterator_t {
     void *pData;
-    table_type_t table_key;
-    uint8_t page;   // The page the entity belongs to
-    uint16_t start; // The start position of the entity, in bytes, from the start of the page
-    uint16_t size;  // Size of the entity in bytes
     entity_type type;
+    table_type_t table_key;
+    entity_page_location_t location;
+    entity_page_address_t address;
+
+    page_iterator_t(entity_type theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pData(nullptr)
+    , type(theType)
+    , table_key(table_type_None)
+    , location(entityLocation)    
+    , address(entityAddress)
+    {
+    }
+
+    page_iterator_t(void *pBuffer, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pData(pBuffer)
+    , type(Raw)
+    , table_key(table_type_None)
+    , location(entityLocation)    
+    , address(entityAddress)
+    {
+    }
+    page_iterator_t(void *pTable, table_type_t key, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pData(pTable)
+    , type(Table)
+    , table_key(key)
+    , location(entityLocation)    
+    , address(entityAddress)
+    {
+    }
 };
 
 /**

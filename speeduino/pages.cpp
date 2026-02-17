@@ -147,20 +147,20 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-inline byte& get_raw_location(page_iterator_t &entity, uint16_t offset)
+static inline byte& get_raw_location(const page_iterator_t &entity, uint16_t offset)
 {
-  return *((byte*)entity.pData + (offset-entity.start));
+  return *((byte*)entity.pData + (offset-entity.address.start));
 }
 
-inline byte get_table_value(page_iterator_t &entity, uint16_t offset)
+static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
 {
   #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
       return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
   #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start));  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start));  
 }
 
-inline byte get_value(page_iterator_t &entity, uint16_t offset)
+static inline byte get_value(const page_iterator_t &entity, uint16_t offset)
 {
   if (Raw==entity.type)
   {
@@ -173,15 +173,15 @@ inline byte get_value(page_iterator_t &entity, uint16_t offset)
   return 0U;
 }
 
-inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
+inline void set_table_value(const page_iterator_t &entity, uint16_t offset, byte new_value)
 {
   #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
       offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
   #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.start), new_value);  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start), new_value);  
 }
 
-inline void set_value(page_iterator_t &entity, byte value, uint16_t offset)
+inline void set_value(const page_iterator_t &entity, byte value, uint16_t offset)
 {    
   if (Raw==entity.type)
   {
@@ -224,16 +224,11 @@ static inline void check_size() {
 //
 // Instead we use this (and other) intermediate factory function(s) - it provides a barrier that
 // forces GCC to construct the page_iterator_t instance at runtime.
-inline const page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t start)
+static inline page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t start)
 {
-  return page_iterator_t {
-    .pData = nullptr,
-    .table_key = table_type_None,
-    .page = pageNum,
-    .start = start,
-    .size = start,
-    .type = End,
-  };
+  return page_iterator_t( End, 
+                          entity_page_location_t(pageNum, UINT8_MAX),
+                          entity_page_address_t(start, 0U));
 }
 
 // Signal the end of a page
@@ -243,16 +238,11 @@ inline const page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t start
 
 // ========================= Table processing  ===================
 
-inline const page_iterator_t create_table_iterator(void *pTable, table_type_t key, uint8_t pageNum, uint16_t start, uint16_t size)
+static inline page_iterator_t create_table_iterator(void *pTable, table_type_t key, uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
 {
-  return page_iterator_t {
-    .pData = pTable,
-    .table_key = key,
-    .page = pageNum,
-    .start = start,
-    .size = size,
-    .type = Table,
-  };
+  return page_iterator_t( pTable, key,
+                          entity_page_location_t(pageNum, index),
+                          entity_page_address_t(start, size));
 }
 
 // If the offset is in range, create a Table entity_t
@@ -260,30 +250,25 @@ inline const page_iterator_t create_table_iterator(void *pTable, table_type_t ke
   if (offset < ENTITY_START_VAR(entityNum)+get_table_axisy_end(pTable)) \
   { \
     return create_table_iterator(pTable, (pTable)->type_key, \
-                                  pageNum, \
-                                  ENTITY_START_VAR(entityNum), get_table_axisy_end(pTable)); \
+                                  (pageNum), (entityNum), \
+                                  ENTITY_START_VAR(entityNum), get_table_axisy_end((pTable))); \
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, get_table_axisy_end(pTable))
 
 // ========================= Raw memory block processing  ===================
 
-inline const page_iterator_t create_raw_iterator(void *pBuffer, uint8_t pageNum, uint16_t start, uint16_t size)
+static inline page_iterator_t create_raw_iterator(void *pBuffer, uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
 {
-  return page_iterator_t {
-    .pData = pBuffer,
-    .table_key = table_type_None,
-    .page = pageNum,
-    .start = start,
-    .size = size,
-    .type = Raw,
-  };
+  return page_iterator_t( pBuffer,
+                          entity_page_location_t(pageNum, index),    
+                          entity_page_address_t(start, size));
 }
 
 // If the offset is in range, create a Raw entity_t
 #define CHECK_RAW(pageNum, offset, pDataBlock, blockSize, entityNum) \
   if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
   { \
-    return create_raw_iterator(pDataBlock, pageNum, ENTITY_START_VAR(entityNum), blockSize);\
+    return create_raw_iterator((pDataBlock), (pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
 
@@ -448,7 +433,7 @@ page_iterator_t page_begin(byte pageNum)
 
 page_iterator_t advance(const page_iterator_t &it)
 {
-    return map_page_offset_to_entity(it.page, it.start+it.size);
+    return map_page_offset_to_entity(it.location.page, it.address.start+it.address.size);
 }
 
 /**
