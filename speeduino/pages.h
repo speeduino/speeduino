@@ -31,20 +31,17 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 
 // ============================== Per-byte page access ==========================
 
-/**
- * Gets a single value from a page, with data aligned as per the ini file
- */
+/** @brief Gets a single value from a page, with data aligned as per the ini file */
 byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
                     uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
                     );
 
-/**
- * Sets a single value from a page, with data aligned as per the ini file
- */
-void setPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
-                    uint16_t offset,    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+/** @brief Sets a single value from a page, with data aligned as per the ini file */
+void setPageValue(  byte pageNum,       /**< [in] The page number to update. */
+                    uint16_t offset,    /**< [in] The offset within the page.  */
                     byte value          /**< [in] The new value */
                     );
+
 
 // ============================== Page Iteration ==========================
 
@@ -127,6 +124,21 @@ struct page_iterator_t {
     {
     }
 };
+
+// ============================== Per-byte entity access ==========================
+
+/** @brief Gets a single value from an entity, with data aligned as per the ini file */
+byte getEntityValue(const page_iterator_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset                /**< [in] The offset within the entity */
+                    );
+
+/**
+ * @brief Sets a single value from a page, with data aligned as per the ini file
+ */
+void setEntityValue(const page_iterator_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset,                /**< [in] The offset within the entity */
+                    byte value                      /**< [in] The new value */
+                    );
 
 /**
  * Initiates iteration over a pages entities.

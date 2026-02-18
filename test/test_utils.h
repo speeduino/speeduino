@@ -88,6 +88,15 @@ static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
   invalidate_cache(&table.get_value_cache);
 }
 
+static inline void populate_table_axis(table_axis_iterator it, 
+                                       table3d_axis_t value) {
+  while (!it.at_end())
+  {
+    *it = value;
+    ++it;
+  }
+}
+
 static inline void populate_table_axis_P(table_axis_iterator it, 
                                          const table3d_axis_t *pXValues) {   // PROGMEM if available
   while (!it.at_end())

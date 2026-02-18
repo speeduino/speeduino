@@ -149,7 +149,7 @@ private:
 
 static inline byte& get_raw_location(const page_iterator_t &entity, uint16_t offset)
 {
-  return *((byte*)entity.pData + (offset-entity.address.start));
+  return *((byte*)entity.pData + offset);
 }
 
 static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
@@ -157,18 +157,21 @@ static inline byte get_table_value(const page_iterator_t &entity, uint16_t offse
   #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
       return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
   #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start));  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
 }
 
-static inline byte get_value(const page_iterator_t &entity, uint16_t offset)
+byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
 {
-  if (Raw==entity.type)
+  if (offset<entity.address.size)
   {
-    return get_raw_location(entity, offset);
-  }
-  if (Table==entity.type)
-  {
-    return get_table_value(entity, offset);
+    if (Raw==entity.type)
+    {
+      return get_raw_location(entity, offset);
+    }
+    if (Table==entity.type)
+    {
+      return get_table_value(entity, offset);
+    }
   }
   return 0U;
 }
@@ -178,10 +181,10 @@ inline void set_table_value(const page_iterator_t &entity, uint16_t offset, byte
   #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
       offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
   #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start), new_value);  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
 }
 
-inline void set_value(const page_iterator_t &entity, byte value, uint16_t offset)
+void setEntityValue(const page_iterator_t &entity, uint16_t offset, byte value)
 {    
   if (Raw==entity.type)
   {
@@ -410,18 +413,23 @@ uint16_t getPageSize(byte pageNum)
   return pgm_read_word(&(ini_page_sizes[pageNum]));
 }
 
+static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
+{
+  return pageOffset-entity.address.start;
+}
+
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  set_value(entity, value, offset);
+  setEntityValue(entity, value, pageOffsetToEntityOffset(entity, offset));
 }
 
 byte getPageValue(byte pageNum, uint16_t offset)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  return get_value(entity, offset);
+  return getEntityValue(entity, pageOffsetToEntityOffset(entity, offset));
 }
 
 // Support iteration over a pages entities.
