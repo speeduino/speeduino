@@ -10,13 +10,6 @@ static void setPageValues_Incremental(uint8_t pageNum, char seedValue)
         setPageValue(boostvvtPage2, offset, seedValue+(uint8_t)offset);
     }
 }
-static void setPageValues_Same(uint8_t pageNum, char seedValue)
-{
-    for (uint16_t offset=0; offset<getPageSize(pageNum); ++offset)
-    {
-        setPageValue(boostvvtPage2, offset, seedValue);
-    }
-}
 
 static void test_calculatePageCRC32(void)
 {
