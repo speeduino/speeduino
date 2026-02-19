@@ -476,8 +476,10 @@ byte getPageValue(byte pageNum, uint16_t offset)
   return getEntityValue(entity, pageOffsetToEntityOffset(entity, offset));
 }
 
+// LCOV_EXCL_START
+// No need to have coverage on simple wrappers
+
 // Support iteration over a pages entities.
-// Check for entity.type==End
 page_iterator_t page_begin(byte pageNum)
 {
   return map_page_offset_to_entity(pageNum, 0U);
@@ -519,3 +521,5 @@ table_axis_iterator y_begin(const page_iterator_t &it)
 {
   return y_begin(it.pData, it.table_key);
 }
+
+// LCOV_EXCL_STOP
