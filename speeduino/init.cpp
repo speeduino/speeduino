@@ -42,6 +42,7 @@
 ///
 /// See https://github.com/noisymime/speeduino/pull/657
 ///
+#if !defined(UNIT_TEST)
 static void processResetStorageRequest(void) {
 #if defined(EEPROM_RESET_PIN)
 
@@ -75,6 +76,7 @@ static void processResetStorageRequest(void) {
   }
 #endif
 }
+#endif
 
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:

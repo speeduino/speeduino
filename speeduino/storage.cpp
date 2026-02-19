@@ -11,6 +11,9 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "pages.h"
 #include "sensors.h"
+#include "utilities.h"
+#include "preprocessor.h"
+#include "unit_testing.h"
 #include EEPROM_LIB_H //This is defined in the board .h files
 
 // Should be defined in a CPP file elsewhere. Usually the board CPP file.
@@ -35,6 +38,63 @@ static constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_
 static constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
 static constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
 
+#if defined(UNIT_TEST)
+eeprom_address_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
+uint16_t STORAGE_SIZE = STORAGE_END;
+#endif
+
+// Maps an entity to it's storage start address on the EEPROM.
+//
+// This is *THE* single source of truth for mapping the tune
+// (I.e page entities) to EEPROM locations.
+TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
+  struct entity_storage_map_t {
+      void *pEntity;
+      uint16_t eepromStartAddress;
+  };
+  // Store a map of entity to EEPROM address in FLASH memory.
+  static const entity_storage_map_t entityMap[] PROGMEM = {
+    { &fuelTable, EEPROM_CONFIG1_MAP },
+    { &configPage2, EEPROM_CONFIG2_START },
+    { &ignitionTable, EEPROM_CONFIG3_MAP },
+    { &configPage4, EEPROM_CONFIG4_START },
+    { &afrTable, EEPROM_CONFIG5_MAP },
+    { &configPage6, EEPROM_CONFIG6_START },
+    { &boostTable, EEPROM_CONFIG7_MAP1 }, 
+    { &vvtTable, EEPROM_CONFIG7_MAP2 }, 
+    { &stagingTable, EEPROM_CONFIG7_MAP3 },
+    { &trim1Table, EEPROM_CONFIG8_MAP1 },
+    { &trim2Table, EEPROM_CONFIG8_MAP2 },
+    { &trim3Table, EEPROM_CONFIG8_MAP3 },
+    { &trim4Table, EEPROM_CONFIG8_MAP4 },
+    { &trim5Table, EEPROM_CONFIG8_MAP5 },
+    { &trim6Table, EEPROM_CONFIG8_MAP6 },
+    { &trim7Table, EEPROM_CONFIG8_MAP7 },
+    { &trim8Table, EEPROM_CONFIG8_MAP8 },
+    { &configPage9, EEPROM_CONFIG9_START },
+    { &configPage10, EEPROM_CONFIG10_START },
+    { &fuelTable2, EEPROM_CONFIG11_MAP },
+    { &wmiTable, EEPROM_CONFIG12_MAP },
+    { &vvt2Table, EEPROM_CONFIG12_MAP2 },
+    { &dwellTable, EEPROM_CONFIG12_MAP3 },
+    { &configPage13, EEPROM_CONFIG13_START },
+    { &ignitionTable2, EEPROM_CONFIG14_MAP },
+    { &boostTableLookupDuty, EEPROM_CONFIG15_MAP },
+    { &configPage15, EEPROM_CONFIG15_START },
+  };
+  static const constexpr entity_storage_map_t* entityMapEnd = entityMap + _countof(entityMap);
+
+  // Linear search of the address map.
+  const entity_storage_map_t *pMapEntry = entityMap;
+  while ((pMapEntry!=entityMapEnd) && (entity.pData!=pgm_read_ptr(&pMapEntry->pEntity))) {
+    ++pMapEntry;
+  }
+  eeprom_address_t address = 0U;
+  if (pMapEntry!=entityMapEnd) {
+    address = pgm_read_word(&(pMapEntry->eepromStartAddress));
+  }
+  return address;
+}
 
 bool isEepromWritePending(void)
 {
@@ -471,7 +531,7 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
   }
 }
 
-static inline eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
+TESTABLE_INLINE_STATIC eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
   constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_CRC = 3674;
   constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_CRC = 3678;
   constexpr eeprom_address_t EEPROM_CALIBRATION_O2_CRC = 3682;
