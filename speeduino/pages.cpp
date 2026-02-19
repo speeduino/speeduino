@@ -40,8 +40,9 @@ static inline constexpr uint16_t get_table_axisx_end(void)
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-static inline constexpr uint16_t get_table_axisy_end(const table_t *)
+static inline constexpr uint16_t get_table_axisy_end(const table_t *table)
 {
+  UNUSED(table);
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
 }
 
@@ -65,8 +66,8 @@ public:
   // are specialised per table type, which allows the compiler more optimisation
   // opportunities. See get_table_value().
 
-  offset_to_table(table_t *pTable, uint16_t table_offset)
-  : _pTable(pTable),
+  offset_to_table(const table_t *pTable, uint16_t table_offset)
+  : _pTable(const_cast<table_t *>(pTable)), // cppcheck-suppress misra-c2012-10.4
     _table_offset(min(table_offset, get_table_axisy_end(pTable)))
   {    
   }
@@ -102,6 +103,7 @@ public:
       case table_location_yaxis:
       default:
         get_yaxis_value() = new_value;
+        break; 
     }
     invalidate_cache(&_pTable->get_value_cache);
     return *this;
@@ -153,9 +155,14 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte& get_raw_location(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offset)
 {
-  return *((byte*)entity.pData + offset);
+  return *((const byte*)entity.pData + offset);
+}
+
+static inline void set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
+{
+  *((byte*)entity.pData + offset) = value;
 }
 
 static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
@@ -163,7 +170,7 @@ static inline byte get_table_value(const page_iterator_t &entity, uint16_t offse
   // LCOV_EXCL_BR_START
   // Can't figure out the missing branches, so exclude for the moment
   #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
-      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
+      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
   #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
   CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
   // LCOV_EXCL_BR_STOP
@@ -185,28 +192,32 @@ byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
   return 0U;
 }
 
-inline void set_table_value(const page_iterator_t &entity, uint16_t offset, byte new_value)
+static inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
 {
   // LCOV_EXCL_BR_START
   // Can't figure out the missing branches, so exclude for the moment
   #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
-      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
+      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
   #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
   CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
   // LCOV_EXCL_BR_STOP
 }
 
-void setEntityValue(const page_iterator_t &entity, uint16_t offset, byte value)
+void setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 {    
   if (offset<entity.address.size)
-{    
-  if (Raw==entity.type)
-  {
-    get_raw_location(entity, offset) = value;
-  }
-  else if (Table==entity.type)
-  {
-    set_table_value(entity, offset, value);
+  {    
+    if (Raw==entity.type)
+    {
+      set_raw_location(entity, offset, value);
+    }
+    else if (Table==entity.type)
+    {
+      set_table_value(entity, offset, value);
+    }
+    else
+    {
+      // Unsettable entity type 
     }
   }
 }
@@ -215,7 +226,7 @@ void setEntityValue(const page_iterator_t &entity, uint16_t offset, byte value)
 
 // This will fail AND print the page number and required size
 template <uint8_t pageNum, uint16_t min>
-static inline void check_size() {
+static inline void check_size(void) {
   static_assert(ini_page_sizes[pageNum] >= min, "Size is off!");
 }
 
@@ -251,8 +262,8 @@ static inline page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t star
 
 // Signal the end of a page
 #define END_OF_PAGE(pageNum, entityNum) \
-  check_size<pageNum, ENTITY_START_VAR(entityNum)>(); \
-  return create_end_iterator(pageNum, ENTITY_START_VAR(entityNum)); \
+  check_size<(pageNum), ENTITY_START_VAR(entityNum)>(); \
+  return create_end_iterator((pageNum), ENTITY_START_VAR(entityNum)); \
 
 // ========================= Table processing  ===================
 

@@ -136,9 +136,9 @@ byte getEntityValue(const page_iterator_t &entity,  /**< [in] The entity to upda
 /**
  * @brief Sets a single value from a page, with data aligned as per the ini file
  */
-void setEntityValue(const page_iterator_t &entity,  /**< [in] The entity to update */ 
-                    uint16_t offset,                /**< [in] The offset within the entity */
-                    byte value                      /**< [in] The new value */
+void setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset,          /**< [in] The offset within the entity */
+                    byte value                /**< [in] The new value */
                     );
 
 /**
