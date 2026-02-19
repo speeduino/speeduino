@@ -112,7 +112,7 @@ void initialiseAll(void)
     // Unit tests should be independent of any stored configuration on the board!
 #if !defined(UNIT_TEST)
     processResetStorageRequest();
-    loadConfig();
+    loadAllPages();
     doUpdates(); //Check if any data items need updating (Occurs with firmware updates)
 #endif
 
@@ -132,7 +132,7 @@ void initialiseAll(void)
     currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
     
     //Setup the calibration tables
-    loadCalibrationTables();
+    loadAllCalibrationTables();
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM

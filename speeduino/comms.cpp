@@ -419,8 +419,8 @@ static void loadO2CalibrationChunk(uint16_t offset, uint16_t chunkSize)
   if( offset >= 1023U ) 
   {
     //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
-    writeCalibrationCrc(SensorCalibrationTable::O2Sensor, calibrationCRC);
-    writeCalibrationTable(SensorCalibrationTable::O2Sensor);
+    saveCalibrationCrc(SensorCalibrationTable::O2Sensor, calibrationCRC);
+    saveCalibrationTable(SensorCalibrationTable::O2Sensor);
   }
 }
 
@@ -455,8 +455,8 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
       values[x] = toTemperature(serialPayload[(2U * x) + 7U], serialPayload[(2U * x) + 8U]);
       bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
-    writeCalibrationCrc(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
-    writeCalibrationTable(calibrationPage);
+    saveCalibrationCrc(calibrationPage, CRC32_serial.crc32(&serialPayload[7], 64));
+    saveCalibrationTable(calibrationPage);
     sendReturnCodeMsg(SERIAL_RC_OK);
   }
   else 
@@ -587,6 +587,15 @@ void serialTransmit(void)
   }
 }
 
+static void burnSinglePage(uint8_t page)
+{
+  if( storageWriteTimeoutExpired()) { 
+    savePage(page); 
+  } else { 
+    setEepromWritePending(true); 
+  }
+}
+
 void processSerialCommand(void)
 {
   switch (serialPayload[0])
@@ -597,18 +606,14 @@ void processSerialCommand(void)
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { setEepromWritePending(true); }
-      
+      burnSinglePage(serialPayload[2]);     
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       currentStatus.commCompat = true; //Force the compat mode
       setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4U)); //Add 25% more to the EEPROM defer time
-      if( storageWriteTimeoutExpired()) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { setEepromWritePending(true); }
-      
+      burnSinglePage(serialPayload[2]);      
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
@@ -675,7 +680,7 @@ void processSerialCommand(void)
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = reverse_bytes(readCalibrationCrc((SensorCalibrationTable)serialPayload[2])); //Get the CRC for the requested page
+      uint32_t CRC32_val = reverse_bytes(loadCalibrationCrc((SensorCalibrationTable)serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
       (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));

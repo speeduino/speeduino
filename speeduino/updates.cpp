@@ -24,7 +24,7 @@ void doUpdates(void)
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
-  if(readEEPROMVersion() == 2)
+  if(loadEEPROMVersion() == 2)
   {
     auto table_it = ignitionTable.values.begin();
     //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
@@ -38,11 +38,11 @@ void doUpdates(void)
       }      
       ++table_it;
     }
-    writeAllConfig();
-    storeEEPROMVersion(3);
+    saveAllPages();
+    saveEEPROMVersion(3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
-  if(readEEPROMVersion() == 3)
+  if(loadEEPROMVersion() == 3)
   {
     configPage9.speeduino_tsCanId = 0;
     configPage9.true_address = 256;
@@ -51,11 +51,11 @@ void doUpdates(void)
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
     if(configPage4.sparkDur == UINT8_MAX) { configPage4.sparkDur = 10; }
 
-    writeAllConfig();
-    storeEEPROMVersion(4);
+    saveAllPages();
+    saveEEPROMVersion(4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
-  if(readEEPROMVersion() == 4)
+  if(loadEEPROMVersion() == 4)
   {
     //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
     configPage10.crankingEnrichBins[0] = 0;
@@ -68,11 +68,11 @@ void doUpdates(void)
     configPage10.crankingEnrichValues[2] = 100 + configPage2.crankingPct;
     configPage10.crankingEnrichValues[3] = 100 + configPage2.crankingPct;
 
-    writeAllConfig();
-    storeEEPROMVersion(5);
+    saveAllPages();
+    saveEEPROMVersion(5);
   }
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
-  if(readEEPROMVersion() == 5)
+  if(loadEEPROMVersion() == 5)
   {
     //Data after page 4 has to move back 128 bytes
     for(int x=0; x < 1152; x++)
@@ -91,11 +91,11 @@ void doUpdates(void)
       EEPROMWriteRaw(endMem, currentVal);
     }
 
-    storeEEPROMVersion(6);
-    loadConfig(); //Reload the config after changing everything in EEPROM
+    saveEEPROMVersion(6);
+    loadAllPages(); //Reload the config after changing everything in EEPROM
   }
   //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
-  if(readEEPROMVersion() == 6)
+  if(loadEEPROMVersion() == 6)
   {
     //Data after page 8 has to move back 82 bytes
     for(int x=0; x < 529; x++)
@@ -106,11 +106,11 @@ void doUpdates(void)
       EEPROMWriteRaw(endMem, currentVal);
     }
 
-    storeEEPROMVersion(7);
-    loadConfig(); //Reload the config after changing everything in EEPROM
+    saveEEPROMVersion(7);
+    loadAllPages(); //Reload the config after changing everything in EEPROM
   }
 
-  if (readEEPROMVersion() == 7) {
+  if (loadEEPROMVersion() == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
@@ -139,11 +139,11 @@ void doUpdates(void)
       configPage10.flexAdvAdj[x] = advanceAdder;
     }
 
-    writeAllConfig();
-    storeEEPROMVersion(8);
+    saveAllPages();
+    saveEEPROMVersion(8);
   }
 
-  if (readEEPROMVersion() == 8)
+  if (loadEEPROMVersion() == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
     configPage2.fuelAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
@@ -152,11 +152,11 @@ void doUpdates(void)
     //Add option back in for open or closed loop boost. For all current configs to use closed
     configPage4.boostType = 1;
 
-    writeAllConfig();
-    storeEEPROMVersion(9);
+    saveAllPages();
+    saveEEPROMVersion(9);
   }
 
-  if(readEEPROMVersion() == 9)
+  if(loadEEPROMVersion() == 9)
   {
     //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
@@ -174,11 +174,11 @@ void doUpdates(void)
     configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
     configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
 
-    writeAllConfig();
-    storeEEPROMVersion(10);
+    saveAllPages();
+    saveEEPROMVersion(10);
   }
 
-  if(readEEPROMVersion() == 10)
+  if(loadEEPROMVersion() == 10)
   {
     //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
     //This sets all the values in the 2D table to be the same as the previous single value
@@ -244,11 +244,11 @@ void doUpdates(void)
     configPage10.fuel2Mode = 0;
 
 
-    writeAllConfig();
-    storeEEPROMVersion(11);
+    saveAllPages();
+    saveEEPROMVersion(11);
   }
 
-  if(readEEPROMVersion() == 11)
+  if(loadEEPROMVersion() == 11)
   {
     //Sep 2019
     //A battery calibration offset value was introduced. Set default value to 0
@@ -262,11 +262,11 @@ void doUpdates(void)
     configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
     configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
 
-    writeAllConfig();
-    storeEEPROMVersion(12);
+    saveAllPages();
+    saveEEPROMVersion(12);
   }
 
-  if(readEEPROMVersion() == 12)
+  if(loadEEPROMVersion() == 12)
   {
     //Nov 2019
 
@@ -306,11 +306,11 @@ void doUpdates(void)
     configPage4.idleAdvValues[4] = 15;
     configPage4.idleAdvValues[5] = 15;
 
-    writeAllConfig();
-    storeEEPROMVersion(13);
+    saveAllPages();
+    saveEEPROMVersion(13);
   }
 
-  if(readEEPROMVersion() == 13)
+  if(loadEEPROMVersion() == 13)
   {
     //202005
     //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
@@ -373,12 +373,12 @@ void doUpdates(void)
     //VSS was added for testing, disable it by default
     configPage2.vssMode = VSS_MODE_OFF;
 
-    writeAllConfig();
-    storeEEPROMVersion(14);
+    saveAllPages();
+    saveEEPROMVersion(14);
 
   }
 
-  if(readEEPROMVersion() == 14)
+  if(loadEEPROMVersion() == 14)
   {
     //202008
 
@@ -404,7 +404,7 @@ void doUpdates(void)
       o2CalibrationTable.values[x] = EEPROMReadRaw(y);
       o2CalibrationTable.axis[x] = (x * 32);
     }
-    writeCalibrationTables();
+    saveAllCalibrationTables();
 
     //Oil and fuel pressure inputs were introduced. Disable them both by default
     configPage10.oilPressureProtEnbl = false;
@@ -444,22 +444,22 @@ void doUpdates(void)
     //ASE taper time added
     configPage2.aseTaperTime = 10; //1 second taper
 
-    writeAllConfig();
-    storeEEPROMVersion(15);
+    saveAllPages();
+    saveEEPROMVersion(15);
   }
 
-  if(readEEPROMVersion() == 15)
+  if(loadEEPROMVersion() == 15)
   {
     //202012
     configPage10.spark2Mode = 0; //Disable 2nd spark table
 
-    writeAllConfig();
-    storeEEPROMVersion(16);
+    saveAllPages();
+    saveEEPROMVersion(16);
   }
 
   //Move this #endif to only do latest updates to safe ROM space on small devices.
   #endif
-  if(readEEPROMVersion() == 16)
+  if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
     for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
@@ -470,11 +470,11 @@ void doUpdates(void)
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
-    writeAllConfig();
-    storeEEPROMVersion(17);
+    saveAllPages();
+    saveEEPROMVersion(17);
   }
 
-  if(readEEPROMVersion() == 17)
+  if(loadEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
     auto table_it = vvtTable.values.begin();
@@ -523,11 +523,11 @@ void doUpdates(void)
     configPage13.outputTimeLimit[6] = 0;
     configPage13.outputTimeLimit[7] = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(18);
+    saveAllPages();
+    saveEEPROMVersion(18);
   }
 
-  if(readEEPROMVersion() == 18)
+  if(loadEEPROMVersion() == 18)
   {
     //202202
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
@@ -610,11 +610,11 @@ void doUpdates(void)
     configPage13.onboard_log_tr4_thr_off = 0;
     configPage13.onboard_log_tr5_Epin_pin = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(19);
+    saveAllPages();
+    saveEEPROMVersion(19);
   }
   
-  if(readEEPROMVersion() == 19)
+  if(loadEEPROMVersion() == 19)
   {
     //202207
 
@@ -676,11 +676,11 @@ void doUpdates(void)
     configPage9.afrProtectMinTPS = 160; //80% TPS min
     configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
     
-    writeAllConfig();
-    storeEEPROMVersion(20);
+    saveAllPages();
+    saveEEPROMVersion(20);
   }
 
-  if(readEEPROMVersion() == 20)
+  if(loadEEPROMVersion() == 20)
   {
     //202305
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
@@ -706,11 +706,11 @@ void doUpdates(void)
     //Option to power stepper motor constantly was added. Default to previous behaviour
     configPage9.iacStepperPower = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(21);
+    saveAllPages();
+    saveEEPROMVersion(21);
   }
 
-  if(readEEPROMVersion() == 21)
+  if(loadEEPROMVersion() == 21)
   {
     //202310
 
@@ -727,11 +727,11 @@ void doUpdates(void)
     //DFCO Hyster was multiplied by 2 to allow a range of 0-500. Existing values must be halved
     configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
 
-    writeAllConfig();
-    storeEEPROMVersion(22);
+    saveAllPages();
+    saveEEPROMVersion(22);
   }
 
-  if(readEEPROMVersion() == 22)
+  if(loadEEPROMVersion() == 22)
   {
     //202402
     
@@ -754,11 +754,11 @@ void doUpdates(void)
     //rusEFI CAN Wideband
     configPage2.canWBO = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(23);
+    saveAllPages();
+    saveEEPROMVersion(23);
   }
 
-  if(readEEPROMVersion() == 23)
+  if(loadEEPROMVersion() == 23)
   {
     //202501
     configPage10.knock_mode = KNOCK_MODE_OFF;
@@ -789,22 +789,22 @@ void doUpdates(void)
     }
     ((uint8_t *)&configPage10)[74] = origlnchCtrlTPS;
 
-    writeAllConfig();
-    storeEEPROMVersion(24);
+    saveAllPages();
+    saveEEPROMVersion(24);
   }
   
-  if(readEEPROMVersion() == 24)
+  if(loadEEPROMVersion() == 24)
   {
     //202504
 
 
-    writeAllConfig();
-    storeEEPROMVersion(25);
+    saveAllPages();
+    saveEEPROMVersion(25);
   }
   
   
   //Final check is always for 255 and 0 (Brand new arduino)
-  if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
+  if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )
   {
     configPage9.true_address = 0x200;
     
@@ -820,11 +820,11 @@ void doUpdates(void)
 
     configPage4.FILTER_FLEX = FILTER_FLEX_DEFAULT;
 
-    storeEEPROMVersion(CURRENT_DATA_VERSION);
+    saveEEPROMVersion(CURRENT_DATA_VERSION);
   }
 
   //Check to see if someone has downgraded versions:
-  if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
+  if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
 void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
