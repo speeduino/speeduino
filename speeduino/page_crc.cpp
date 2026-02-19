@@ -104,5 +104,5 @@ uint32_t calculatePageCRC32(byte pageNum)
     crc = compute_crc(entity, &updateCrc /* Note that we are *updating* */, crcCalc);
     entity = advance(entity);
   }
-  return pad_crc(getPageSize(pageNum) - entity.address.size, crc, crcCalc);
+  return pad_crc(getPageSize(pageNum) - (entity.address.start+entity.address.size), crc, crcCalc);
 }
