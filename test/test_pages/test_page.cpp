@@ -205,12 +205,18 @@ static void test_get_set_PageValueN(void)
 static void test_get_setPageValue(void)
 {
     for (uint8_t page = 0; page<MAX_PAGE_NUM+1 /*This is deliberately max number of pages + 1*/; ++page)
-    {
+    {     
         char szName[128];
         snprintf(szName, sizeof(szName), "test_get_set_PageValue_%" PRIu8, page);
         testPageNum = page;
         UnityDefaultTestRun(test_get_set_PageValueN, szName, __LINE__);
     }
+}
+
+static void test_getPageSize(void)
+{
+    TEST_ASSERT_EQUAL(0, getPageSize(0U));
+    TEST_ASSERT_EQUAL(0, getPageSize(MAX_PAGE_NUM+1U));
 }
 
 void testPage(void) {
@@ -222,5 +228,6 @@ void testPage(void) {
         RUN_TEST(test_setEntityValue_none);
         RUN_TEST(test_setEntityValue_table);
         RUN_TEST(test_get_setPageValue);
+        RUN_TEST(test_getPageSize);
     }
 }
