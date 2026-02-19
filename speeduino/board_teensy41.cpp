@@ -8,6 +8,7 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include EEPROM_LIB_H
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -414,6 +415,11 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   } 
 
   return maxWrite;
+}
+
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
 }
 
 #endif
