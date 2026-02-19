@@ -67,7 +67,7 @@ public:
 
   offset_to_table(table_t *pTable, uint16_t table_offset)
   : _pTable(pTable),
-    _table_offset(table_offset)
+    _table_offset(min(table_offset, get_table_axisy_end(pTable)))
   {    
   }
 
@@ -186,6 +186,8 @@ inline void set_table_value(const page_iterator_t &entity, uint16_t offset, byte
 
 void setEntityValue(const page_iterator_t &entity, uint16_t offset, byte value)
 {    
+  if (offset<entity.address.size)
+{    
   if (Raw==entity.type)
   {
     get_raw_location(entity, offset) = value;
@@ -193,6 +195,7 @@ void setEntityValue(const page_iterator_t &entity, uint16_t offset, byte value)
   else if (Table==entity.type)
   {
     set_table_value(entity, offset, value);
+    }
   }
 }
 
