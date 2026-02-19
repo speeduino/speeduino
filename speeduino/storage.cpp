@@ -116,7 +116,7 @@ TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
 
   // Linear search of the address map.
   const entity_storage_map_t *pMapEntry = entityMap;
-  while ((pMapEntry!=entityMapEnd) && (entity.pData!=pgm_read_ptr(&pMapEntry->pEntity))) {
+  while ((pMapEntry!=entityMapEnd) && (entity.pRaw!=pgm_read_ptr(&pMapEntry->pEntity))) {
     ++pMapEntry;
   }
   eeprom_address_t address = 0U;
