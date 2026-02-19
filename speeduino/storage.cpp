@@ -14,10 +14,10 @@ A full copy of the license may be found in the projects root directory
 #include "utilities.h"
 #include "preprocessor.h"
 #include "unit_testing.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include EEPROM_LIB_H //This is defined in the board .h files
-
-// Should be defined in a CPP file elsewhere. Usually the board CPP file.
-extern EEPROM_t EEPROM;
+#pragma GCC diagnostic pop
 
 #define EEPROM_DATA_VERSION   0
 
@@ -161,9 +161,9 @@ struct write_location {
   */
   void update(uint8_t value)
   {
-    if (EEPROM.read(address)!=value)
+    if (getEEPROM().read(address)!=value)
     {
-      EEPROM.write(address, value);
+      getEEPROM().write(address, value);
       ++writeCounter;
     }
   }
@@ -401,7 +401,7 @@ static inline eeprom_address_t load_range(eeprom_address_t address, byte *pFirst
 #else
   for (; pFirst != pLast; ++address, (void)++pFirst)
   {
-    *pFirst = EEPROM.read(address);
+    *pFirst = getEEPROM().read(address);
   }
   return address;
 #endif
@@ -426,7 +426,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 {
   while (!it.at_end())
   {
-    *it = EEPROM.read(address);
+    *it = getEEPROM().read(address);
     ++address;
     ++it;
   }
@@ -518,14 +518,14 @@ void loadAllCalibrationTables(void)
   // If you modify this function be sure to also modify saveAllCalibrationTables();
   // it should be a mirror image of this function.
 
-  EEPROM.get(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
-  EEPROM.get(EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+  getEEPROM().get(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
+  getEEPROM().get(EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
 
-  EEPROM.get(EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
-  EEPROM.get(EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
+  getEEPROM().get(EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
+  getEEPROM().get(EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
 
-  EEPROM.get(EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
-  EEPROM.get(EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
+  getEEPROM().get(EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
+  getEEPROM().get(EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -546,18 +546,18 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == SensorCalibrationTable::O2Sensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
-    EEPROM.put(EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+    getEEPROM().put(EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
+    getEEPROM().put(EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
   }
   else if(sensor == SensorCalibrationTable::IntakeAirTempSensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
-    EEPROM.put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
+    getEEPROM().put(EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
+    getEEPROM().put(EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
   }
   else if(sensor == SensorCalibrationTable::CoolantSensor)
   {
-    EEPROM.put(EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
-    EEPROM.put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
+    getEEPROM().put(EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
+    getEEPROM().put(EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
   }
 }
 
@@ -581,40 +581,40 @@ TESTABLE_INLINE_STATIC eeprom_address_t getSensorCalibrationCrcAddress(SensorCal
 
 void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
-  EEPROM.put(getSensorCalibrationCrcAddress(sensor), calibrationCRC);
+  getEEPROM().put(getSensorCalibrationCrcAddress(sensor), calibrationCRC);
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
 uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
-  EEPROM.get(getSensorCalibrationCrcAddress(sensor), crc32_val);
+  getEEPROM().get(getSensorCalibrationCrcAddress(sensor), crc32_val);
   return crc32_val;
 }
 
 uint16_t getEEPROMSize(void)
 {
-  return EEPROM.length();
+  return getEEPROM().length();
 }
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
-void EEPROMWriteRaw(uint16_t address, byte data) { EEPROM.update(address, data); }
-byte EEPROMReadRaw(uint16_t address) { return EEPROM.read(address); }
+void EEPROMWriteRaw(uint16_t address, byte data) { getEEPROM().update(address, data); }
+byte EEPROMReadRaw(uint16_t address) { return (byte)getEEPROM().read(address); }
 
-uint8_t loadLastBaro(void) { return EEPROM.read(EEPROM_LAST_BARO); }
-void saveLastBaro(uint8_t newValue) { EEPROM.update(EEPROM_LAST_BARO, newValue); }
+uint8_t loadLastBaro(void) { return getEEPROM().read(EEPROM_LAST_BARO); }
+void saveLastBaro(uint8_t newValue) { getEEPROM().update(EEPROM_LAST_BARO, newValue); }
 
-uint8_t loadEEPROMVersion(void) { return EEPROM.read(EEPROM_DATA_VERSION); }
-void saveEEPROMVersion(uint8_t newVersion) { EEPROM.update(EEPROM_DATA_VERSION, newVersion); }
+uint8_t loadEEPROMVersion(void) { return getEEPROM().read(EEPROM_DATA_VERSION); }
+void saveEEPROMVersion(uint8_t newVersion) { getEEPROM().update(EEPROM_DATA_VERSION, newVersion); }
 
 void clearStorage(void) {
   #if defined(FLASH_AS_EEPROM_h)
-    EEPROM.read(0); //needed for SPI eeprom emulation.
-    EEPROM.clear(); 
+    getEEPROM().read(0); //needed for SPI eeprom emulation.
+    getEEPROM().clear(); 
   #else 
-    for (uint16_t i = 0 ; i < EEPROM.length() ; i++) { EEPROM.write((eeprom_address_t)i, UINT8_MAX);}
+    for (uint16_t i = 0 ; i < getEEPROM().length() ; i++) { getEEPROM().write((eeprom_address_t)i, UINT8_MAX);}
   #endif  
 }
 

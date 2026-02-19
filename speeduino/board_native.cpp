@@ -98,4 +98,9 @@ uint16_t getEepromWriteBlockSize(const statuses &)
     return 64U;
 }
 
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
+}
+
 #endif
