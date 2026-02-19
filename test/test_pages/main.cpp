@@ -4,8 +4,10 @@
 void runAllPageTests(void)
 {
     extern void testPage(void);
+    extern void testPageCrc(void);
 
     testPage();
+    testPageCrc();
 }
 
 TEST_HARNESS(runAllPageTests)

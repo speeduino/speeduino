@@ -81,12 +81,9 @@ static inline uint32_t compute_crc(const page_iterator_t &entity, pCrcCalc calcF
         return compute_table_crc(entity, calcFunc, crcCalc);
         break;
 
+    default:
     case NoEntity:
         return pad_crc(entity.address.size, 0U, crcCalc);
-        break;
-
-    default:
-        abort();
         break;
     }
 }
