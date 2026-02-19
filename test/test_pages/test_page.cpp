@@ -1,4 +1,3 @@
-#include <FastCRC.h>
 #include <unity.h>
 #include "pages.h"
 #include "../test_utils.h"

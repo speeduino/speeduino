@@ -225,9 +225,9 @@ void setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 // ========================= Static page size computation & checking ===================
 
 // This will fail AND print the page number and required size
-template <uint8_t pageNum, uint16_t min>
+template <uint8_t pageNum, uint16_t pageSize>
 static inline void check_size(void) {
-  static_assert(ini_page_sizes[pageNum] >= min, "Size is off!");
+  static_assert(ini_page_sizes[pageNum] == pageSize, "Size is off!");
 }
 
 // Since pages are a logical contiguous block, we can automatically compute the 
@@ -298,6 +298,23 @@ static inline page_iterator_t create_raw_iterator(void *pBuffer, uint8_t pageNum
   if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
   { \
     return create_raw_iterator((pDataBlock), (pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
+  } \
+  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
+
+// ========================= Empty entity processing  ===================
+
+static inline page_iterator_t create_empty_iterator(uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
+{
+  return page_iterator_t( NoEntity,
+                          entity_page_location_t(pageNum, index),    
+                          entity_page_address_t(start, size));
+}
+
+// If the offset is in range, create a "no entity"
+#define CHECK_NOENTITY(pageNum, offset, blockSize, entityNum) \
+  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
+  { \
+    return create_empty_iterator((pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
   } \
   DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
 
@@ -385,7 +402,8 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
       // LCOV_EXCL_BR_STOP
       CHECK_TABLE(wmiMapPage, offset, &vvt2Table, 1)
       CHECK_TABLE(wmiMapPage, offset, &dwellTable, 2)
-      END_OF_PAGE(wmiMapPage, 3)
+      CHECK_NOENTITY(wmiMapPage, offset, 8U, 3)
+      END_OF_PAGE(wmiMapPage, 4)
     }
     
     case ignMap2Page:
