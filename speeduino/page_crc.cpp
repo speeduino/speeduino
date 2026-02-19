@@ -2,7 +2,7 @@
 #include "page_crc.h"
 #include "pages.h"
 
-uint32_t calculatePageCRC32(byte pageNum)
+uint32_t __attribute__((optimize("Os"))) calculatePageCRC32(byte pageNum)
 {
     FastCRC32 crcCalc;
     
