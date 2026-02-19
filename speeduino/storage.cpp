@@ -41,10 +41,16 @@ bool isEepromWritePending(void)
   return currentStatus.burnPending;
 }
 
+void setEepromWritePending(bool isPending) {
+  currentStatus.burnPending = isPending;
+}
+
 /** Write all config pages to EEPROM.
  */
 void writeAllConfig(void)
 {
+  setEepromWritePending(false);
+
   uint8_t page = MIN_PAGE_NUM;
   writeConfig(page);
   ++page;
@@ -296,7 +302,7 @@ void writeConfig(uint8_t pageNum)
       break;
   }
 
-  currentStatus.burnPending = !result.can_write();
+  setEepromWritePending(!result.can_write());
 }
 
 //  ================================= Internal read support ===============================

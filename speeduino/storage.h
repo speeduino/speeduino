@@ -163,7 +163,20 @@ uint16_t getEEPROMSize(void);
 /** @brief Clears all of the permanent store */
 void clearStorage(void);
 
+/**
+ * @brief Do we have data that needs to be written to permanent storage.
+ * 
+ * @return true Data needs to be written
+ * @return false Nothing needs to be written
+ */
 bool isEepromWritePending(void);
+
+/**
+ * @brief Set or clear the Write Pending flag
+ * 
+ * @param isPending True if data needs to be written, false otherwise.
+ */
+void setEepromWritePending(bool isPending);
 
 
 #define EEPROM_CONFIG1_MAP    3
