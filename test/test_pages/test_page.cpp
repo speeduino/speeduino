@@ -173,6 +173,46 @@ static void test_setEntityValue_table(void)
     test_setEntityValue_tableT<table3d16RpmLoad>();
 }
 
+static void assert_get_set_PageValueN(page_iterator_t entity)
+{
+    if (entity.type!=NoEntity)
+    {
+        for (uint16_t offset = entity.address.start; offset<entity.address.start+entity.address.size; ++offset)
+        {
+            constexpr char MARKER = 'X';
+            setPageValue(entity.location.page, offset, MARKER);
+            char szMsg[32];
+            sprintf(szMsg, "Offset %" PRIu16, offset);
+            TEST_ASSERT_EQUAL_MESSAGE(MARKER, getPageValue(entity.location.page, offset), szMsg);
+        }
+    }
+}
+
+static uint8_t testPageNum;
+static void test_get_set_PageValueN(void)
+{
+    page_iterator_t entity = page_begin(testPageNum);
+    while (entity.type!=End)
+    {
+        assert_get_set_PageValueN(entity);
+        entity = advance(entity);
+    }
+
+    setPageValue(testPageNum, getPageSize(testPageNum)+1U, 'X');
+    TEST_ASSERT_EQUAL(0U, getPageValue(testPageNum, getPageSize(testPageNum)+1U));
+}
+
+static void test_get_setPageValue(void)
+{
+    for (uint8_t page = 0; page<MAX_PAGE_NUM+1 /*This is deliberately max number of pages + 1*/; ++page)
+    {
+        char szName[128];
+        snprintf(szName, sizeof(szName), "test_get_set_PageValue_%" PRIu8, page);
+        testPageNum = page;
+        UnityDefaultTestRun(test_get_set_PageValueN, szName, __LINE__);
+    }
+}
+
 void testPage(void) {
     SET_UNITY_FILENAME() {
         RUN_TEST(test_getEntityValue_raw);
@@ -181,5 +221,6 @@ void testPage(void) {
         RUN_TEST(test_setEntityValue_raw);
         RUN_TEST(test_setEntityValue_none);
         RUN_TEST(test_setEntityValue_table);
+        RUN_TEST(test_get_setPageValue);
     }
 }

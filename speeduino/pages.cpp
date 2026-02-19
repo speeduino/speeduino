@@ -289,8 +289,9 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
   switch (pageNumber)
   {
+    default:
     case 0:
-      END_OF_PAGE(0, 0)
+      return create_end_iterator(pageNumber, 0);
 
     case veMapPage:
     {
@@ -393,10 +394,6 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
       CHECK_RAW(boostvvtPage2, offset, &configPage15, sizeof(configPage15), 1)
       END_OF_PAGE(boostvvtPage2, 2)
     }
-
-    default:
-      abort(); // Unknown page number. Not a lot we can do.
-      break;
   }
 }
 
@@ -410,7 +407,7 @@ uint8_t getPageCount(void)
 
 uint16_t getPageSize(byte pageNum)
 {
-  return pgm_read_word(&(ini_page_sizes[pageNum]));
+  return pageNum<_countof(ini_page_sizes) ? pgm_read_word(&(ini_page_sizes[pageNum])) : 0U;
 }
 
 static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
@@ -422,7 +419,7 @@ void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  setEntityValue(entity, value, pageOffsetToEntityOffset(entity, offset));
+  setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
 }
 
 byte getPageValue(byte pageNum, uint16_t offset)
