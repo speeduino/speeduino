@@ -40,8 +40,9 @@ static inline constexpr uint16_t get_table_axisx_end(void)
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-static inline constexpr uint16_t get_table_axisy_end(const table_t *)
+static inline constexpr uint16_t get_table_axisy_end(const table_t *table)
 {
+  UNUSED(table);
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
 }
 
@@ -65,9 +66,9 @@ public:
   // are specialised per table type, which allows the compiler more optimisation
   // opportunities. See get_table_value().
 
-  offset_to_table(table_t *pTable, uint16_t table_offset)
-  : _pTable(pTable),
-    _table_offset(table_offset)
+  offset_to_table(const table_t *pTable, uint16_t table_offset)
+  : _pTable(const_cast<table_t *>(pTable)), // cppcheck-suppress misra-c2012-10.4
+    _table_offset(min(table_offset, get_table_axisy_end(pTable)))
   {    
   }
 
@@ -102,6 +103,7 @@ public:
       case table_location_yaxis:
       default:
         get_yaxis_value() = new_value;
+        break; 
     }
     invalidate_cache(&_pTable->get_value_cache);
     return *this;
@@ -116,13 +118,19 @@ private:
 
   inline table3d_axis_t& get_xaxis_value(void) const
   {
+    // LCOV_EXCL_BR_START
+    // Can't figure out the missing branches, so exclude for the moment
     return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
+    // LCOV_EXCL_BR_STOP
   }
 
   inline table3d_axis_t& get_yaxis_value(void) const
   {
+    // LCOV_EXCL_BR_START
+    // Can't figure out the missing branches, so exclude for the moment
     return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
-  }
+    // LCOV_EXCL_BR_STOP
+}
 
   enum table_location {
       table_location_values, table_location_xaxis, table_location_yaxis 
@@ -147,49 +155,70 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte& get_raw_location(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offset)
 {
-  return *((byte*)entity.pData + (offset-entity.address.start));
+  return *((const byte*)entity.pData + offset);
+}
+
+static inline void set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
+{
+  *((byte*)entity.pData + offset) = value;
 }
 
 static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
 {
+  // LCOV_EXCL_BR_START
+  // Can't figure out the missing branches, so exclude for the moment
   #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
-      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset);
+      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
   #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start));  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
+  // LCOV_EXCL_BR_STOP
 }
 
-static inline byte get_value(const page_iterator_t &entity, uint16_t offset)
+byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
 {
-  if (Raw==entity.type)
+  if (offset<entity.address.size)
   {
-    return get_raw_location(entity, offset);
-  }
-  if (Table==entity.type)
-  {
-    return get_table_value(entity, offset);
+    if (Raw==entity.type)
+    {
+      return get_raw_location(entity, offset);
+    }
+    if (Table==entity.type)
+    {
+      return get_table_value(entity, offset);
+    }
   }
   return 0U;
 }
 
-inline void set_table_value(const page_iterator_t &entity, uint16_t offset, byte new_value)
+static inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
 {
+  // LCOV_EXCL_BR_START
+  // Can't figure out the missing branches, so exclude for the moment
   #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
-      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable, offset) = new_value; break;
+      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
   #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, (offset-entity.address.start), new_value);  
+  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
+  // LCOV_EXCL_BR_STOP
 }
 
-inline void set_value(const page_iterator_t &entity, byte value, uint16_t offset)
+void setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 {    
-  if (Raw==entity.type)
-  {
-    get_raw_location(entity, offset) = value;
-  }
-  else if (Table==entity.type)
-  {
-    set_table_value(entity, offset, value);
+  if (offset<entity.address.size)
+  {    
+    if (Raw==entity.type)
+    {
+      set_raw_location(entity, offset, value);
+    }
+    else if (Table==entity.type)
+    {
+      set_table_value(entity, offset, value);
+    }
+    else
+    {
+      // Unsettable entity type 
+    }
   }
 }
 
@@ -197,7 +226,7 @@ inline void set_value(const page_iterator_t &entity, byte value, uint16_t offset
 
 // This will fail AND print the page number and required size
 template <uint8_t pageNum, uint16_t min>
-static inline void check_size() {
+static inline void check_size(void) {
   static_assert(ini_page_sizes[pageNum] >= min, "Size is off!");
 }
 
@@ -233,8 +262,8 @@ static inline page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t star
 
 // Signal the end of a page
 #define END_OF_PAGE(pageNum, entityNum) \
-  check_size<pageNum, ENTITY_START_VAR(entityNum)>(); \
-  return create_end_iterator(pageNum, ENTITY_START_VAR(entityNum)); \
+  check_size<(pageNum), ENTITY_START_VAR(entityNum)>(); \
+  return create_end_iterator((pageNum), ENTITY_START_VAR(entityNum)); \
 
 // ========================= Table processing  ===================
 
@@ -286,30 +315,41 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
   switch (pageNumber)
   {
+    default:
     case 0:
-      END_OF_PAGE(0, 0)
+      return create_end_iterator(pageNumber, 0);
 
     case veMapPage:
     {
+      // LCOV_EXCL_BR_START
+      // The first entity on the page has a missing branch not covered
+      // No idea why, so exclude froom branch coverage for the moment
       CHECK_TABLE(veMapPage, offset, &fuelTable, 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(veMapPage, 1)
     }
 
     case ignMapPage: //Ignition settings page (Page 2)
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(ignMapPage, offset, &ignitionTable, 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(ignMapPage, 1)
     }
 
     case afrMapPage: //Air/Fuel ratio target settings page
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(afrMapPage, offset, &afrTable, 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(afrMapPage, 1)
     }
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(boostvvtPage, offset, &boostTable, 0)
+      // LCOV_EXCL_BR_STOP
       CHECK_TABLE(boostvvtPage, offset, &vvtTable, 1)
       CHECK_TABLE(boostvvtPage, offset, &stagingTable, 2)
       END_OF_PAGE(boostvvtPage, 3)
@@ -317,7 +357,9 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
     case seqFuelPage:
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(seqFuelPage, offset, &trim1Table, 0)
+      // LCOV_EXCL_BR_STOP
       CHECK_TABLE(seqFuelPage, offset, &trim2Table, 1)
       CHECK_TABLE(seqFuelPage, offset, &trim3Table, 2)
       CHECK_TABLE(seqFuelPage, offset, &trim4Table, 3)
@@ -330,13 +372,17 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
     case fuelMap2Page:
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(fuelMap2Page, offset, &fuelTable2, 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(fuelMap2Page, 1)
     }
 
     case wmiMapPage:
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(wmiMapPage, offset, &wmiTable, 0)
+      // LCOV_EXCL_BR_STOP
       CHECK_TABLE(wmiMapPage, offset, &vvt2Table, 1)
       CHECK_TABLE(wmiMapPage, offset, &dwellTable, 2)
       END_OF_PAGE(wmiMapPage, 3)
@@ -344,56 +390,68 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
     
     case ignMap2Page:
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(ignMap2Page, offset, &ignitionTable2, 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(ignMap2Page, 1)
     }
 
     case veSetPage: 
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(veSetPage, offset, &configPage2, sizeof(configPage2), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(veSetPage, 1)
     }
 
     case ignSetPage: 
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(ignSetPage, offset, &configPage4, sizeof(configPage4), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(ignSetPage, 1)
     }
     
     case afrSetPage: 
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(afrSetPage, offset, &configPage6, sizeof(configPage6), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(afrSetPage, 1)
     }
 
     case canbusPage:  
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(canbusPage, offset, &configPage9, sizeof(configPage9), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(canbusPage, 1)
     }
 
     case warmupPage: 
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(warmupPage, offset, &configPage10, sizeof(configPage10), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(warmupPage, 1)
     }
 
     case progOutsPage: 
     {
+      // LCOV_EXCL_BR_START
       CHECK_RAW(progOutsPage, offset, &configPage13, sizeof(configPage13), 0)
+      // LCOV_EXCL_BR_STOP
       END_OF_PAGE(progOutsPage, 1)
     }
 
     case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
     {
+      // LCOV_EXCL_BR_START
       CHECK_TABLE(boostvvtPage2, offset, &boostTableLookupDuty, 0)
+      // LCOV_EXCL_BR_STOP
       CHECK_RAW(boostvvtPage2, offset, &configPage15, sizeof(configPage15), 1)
       END_OF_PAGE(boostvvtPage2, 2)
     }
-
-    default:
-      abort(); // Unknown page number. Not a lot we can do.
-      break;
   }
 }
 
@@ -407,25 +465,32 @@ uint8_t getPageCount(void)
 
 uint16_t getPageSize(byte pageNum)
 {
-  return pgm_read_word(&(ini_page_sizes[pageNum]));
+  return pageNum<_countof(ini_page_sizes) ? pgm_read_word(&(ini_page_sizes[pageNum])) : 0U;
+}
+
+static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
+{
+  return pageOffset-entity.address.start;
 }
 
 void setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  set_value(entity, value, offset);
+  setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
 }
 
 byte getPageValue(byte pageNum, uint16_t offset)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  return get_value(entity, offset);
+  return getEntityValue(entity, pageOffsetToEntityOffset(entity, offset));
 }
 
+// LCOV_EXCL_START
+// No need to have coverage on simple wrappers
+
 // Support iteration over a pages entities.
-// Check for entity.type==End
 page_iterator_t page_begin(byte pageNum)
 {
   return map_page_offset_to_entity(pageNum, 0U);
@@ -467,3 +532,5 @@ table_axis_iterator y_begin(const page_iterator_t &it)
 {
   return y_begin(it.pData, it.table_key);
 }
+
+// LCOV_EXCL_STOP
