@@ -74,21 +74,20 @@ void doUpdates(void)
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
   if(loadEEPROMVersion() == 5)
   {
+    constexpr uint16_t EEPROM_CONFIG10_END_V6 = 2094; 
     //Data after page 4 has to move back 128 bytes
-    for(int x=0; x < 1152; x++)
+    for(uint16_t x=0U; x < 1152U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 128; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - x;
+      uint16_t startMem = endMem - 128U; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
     //The remaining data only has to move back 64 bytes
-    for(int x=0; x < 352; x++)
+    for(uint16_t x=0; x < 352U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - 1152 - x;
-      int startMem = endMem - 64; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - 1152U - x;
+      uint16_t startMem = endMem - 64U; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
 
     saveEEPROMVersion(6);
@@ -98,12 +97,13 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 6)
   {
     //Data after page 8 has to move back 82 bytes
-    for(int x=0; x < 529; x++)
+    constexpr uint16_t EEPROM_CONFIG10_END_V7 = 2094;
+
+    for(uint16_t x=0U; x < 529U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 82; //
-      byte currentVal = EEPROMReadRaw(startMem);
-      EEPROMWriteRaw(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V7 - x;
+      uint16_t startMem = endMem - 82U; //
+      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
     }
 
     saveEEPROMVersion(7);
@@ -375,7 +375,6 @@ void doUpdates(void)
 
     saveAllPages();
     saveEEPROMVersion(14);
-
   }
 
   if(loadEEPROMVersion() == 14)
@@ -385,24 +384,23 @@ void doUpdates(void)
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
     
     //These were the values used previously when all calibration tables were 512 long. They need to be retained so the update process (202005 -> 202008) can work
-    constexpr eeprom_address_t EEPROM_CALIBRATION_O2_OLD = 2559;
-    constexpr eeprom_address_t EEPROM_CALIBRATION_IAT_OLD = 3071;
-    constexpr eeprom_address_t EEPROM_CALIBRATION_CLT_OLD = 3583;
+    constexpr uint16_t EEPROM_CALIBRATION_O2_OLD = 2559U;
+    constexpr uint16_t EEPROM_CALIBRATION_IAT_OLD = 3071U;
+    constexpr uint16_t EEPROM_CALIBRATION_CLT_OLD = 3583U;
 
-    int y;
-    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    for(uint16_t x=0U; x<((uint16_t)CALIBRATION_TABLE_SIZE/16U); ++x) //Each calibration table is 512 bytes long
     {
-      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
+      uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
       cltCalibrationTable.values[x] = EEPROMReadRaw(y);
-      cltCalibrationTable.axis[x] = (x * 32);
+      cltCalibrationTable.axis[x] = (x * 32U);
 
-      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16U);
       iatCalibrationTable.values[x] = EEPROMReadRaw(y);
-      iatCalibrationTable.axis[x] = (x * 32);
+      iatCalibrationTable.axis[x] = (x * 32U);
 
-      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
+      y = EEPROM_CALIBRATION_O2_OLD + (x * 16U);
       o2CalibrationTable.values[x] = EEPROMReadRaw(y);
-      o2CalibrationTable.axis[x] = (x * 32);
+      o2CalibrationTable.axis[x] = (x * 32U);
     }
     saveAllCalibrationTables();
 
@@ -462,9 +460,12 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
-    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    constexpr uint16_t EEPROM_CONFIG14_END_V16 = 2998U;
+    constexpr uint16_t EEPROM_CONFIG13_START_V16 = 2580U;
+    constexpr uint16_t SHIFT_DISTANCE = 112U;
+    for(uint16_t x=EEPROM_CONFIG14_END_V16; x>=EEPROM_CONFIG13_START_V16; x--)
     {
-      EEPROMWriteRaw(x, EEPROMReadRaw(x-112));
+      EEPROMWriteRaw(x, EEPROMReadRaw(x-SHIFT_DISTANCE));
     }
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.

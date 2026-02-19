@@ -29,14 +29,44 @@ extern EEPROM_t EEPROM;
 
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
-static constexpr uint16_t STORAGE_END = 0xFFF;
-static constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(uint16_t)sizeof(decltype(cltCalibrationTable)::values);
-static constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(decltype(cltCalibrationTable)::axis);
-static constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(uint16_t)sizeof(decltype(iatCalibrationTable)::values);
-static constexpr uint16_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(decltype(iatCalibrationTable)::axis);
-static constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(decltype(o2CalibrationTable)::values);
-static constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
-static constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
+constexpr uint16_t STORAGE_END = 0xFFF;
+constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(uint16_t)sizeof(decltype(cltCalibrationTable)::values);
+constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(decltype(cltCalibrationTable)::axis);
+constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(uint16_t)sizeof(decltype(iatCalibrationTable)::values);
+constexpr uint16_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(decltype(iatCalibrationTable)::axis);
+constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(decltype(o2CalibrationTable)::values);
+constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
+
+constexpr eeprom_address_t EEPROM_CONFIG1_MAP    = 3;
+constexpr eeprom_address_t EEPROM_CONFIG2_START  = 291;
+constexpr eeprom_address_t EEPROM_CONFIG3_MAP    = 421;
+constexpr eeprom_address_t EEPROM_CONFIG4_START  = 709;
+constexpr eeprom_address_t EEPROM_CONFIG5_MAP    = 839;
+constexpr eeprom_address_t EEPROM_CONFIG6_START  = 1127;
+constexpr eeprom_address_t EEPROM_CONFIG7_MAP1   = 1257;
+constexpr eeprom_address_t EEPROM_CONFIG7_MAP2   = 1339;
+constexpr eeprom_address_t EEPROM_CONFIG7_MAP3   = 1421;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP1   = 1503;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP2   = 1553;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP3   = 1603;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP4   = 1653;
+constexpr eeprom_address_t EEPROM_CONFIG9_START  = 1710;
+constexpr eeprom_address_t EEPROM_CONFIG10_START = 1902;
+constexpr eeprom_address_t EEPROM_CONFIG11_MAP   = 2096;
+constexpr eeprom_address_t EEPROM_CONFIG12_MAP   = 2387;
+constexpr eeprom_address_t EEPROM_CONFIG12_MAP2  = 2469;
+constexpr eeprom_address_t EEPROM_CONFIG12_MAP3  = 2551;
+constexpr eeprom_address_t EEPROM_CONFIG13_START = 2580;
+constexpr eeprom_address_t EEPROM_CONFIG14_MAP   = 2710;
+//This is OUT OF ORDER as Page 8 was expanded to add fuel trim tables 5-8. The EEPROM for them is simply added here so as not to impact existing tunes
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP5   = 3001;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP6   = 3051;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP7   = 3101;
+constexpr eeprom_address_t EEPROM_CONFIG8_MAP8   = 3151;
+//Page 15 added after OUT OF ORDER page 8
+constexpr eeprom_address_t EEPROM_CONFIG15_MAP   = 3199;
+constexpr eeprom_address_t EEPROM_CONFIG15_START = 3281;
 
 #if defined(UNIT_TEST)
 eeprom_address_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
