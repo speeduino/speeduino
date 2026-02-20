@@ -40,6 +40,11 @@ void setStorageAPI(const storage_api_t &api) {
   externalApi = api;
 }
 
+/** @brief Provide global access to the raw storage API */
+const storage_api_t& getStorageAPI(void) {
+  return externalApi;
+}
+
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 constexpr uint16_t EEPROM_DATA_VERSION = 0;
 constexpr uint16_t STORAGE_END = 0xFFF;
@@ -175,7 +180,7 @@ static inline uint16_t write_range(const byte *pStart, const byte *pEnd, uint16_
 
 static inline write_location write(const table_row_iterator &row, const write_location &location)
 {
-  return { (uint16_t)(location.address+row.size()), updateBlockLimitWriteOps(externalApi, location.address, &*row, row.end(), location.writesRemaining) };
+  return { (uint16_t)(location.address+row.size()), updateBlockLimitWriteOps(getStorageAPI(), location.address, &*row, row.end(), location.writesRemaining) };
 }
 
 static inline write_location write(table_value_iterator it, write_location location)
@@ -192,7 +197,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 {
   while (location.writesRemaining>0U && !it.at_end())
   {
-    if (update(externalApi, location.address, it.operator*())) {
+    if (update(getStorageAPI(), location.address, it.operator*())) {
       --location.writesRemaining;
     }
     ++location.address;
@@ -369,7 +374,7 @@ void savePage(uint8_t pageNum)
  */
 static inline uint16_t load_range(uint16_t address, byte *pFirst, const byte *pLast)
 {
-  return loadBlock(externalApi, address, pFirst, pLast);
+  return loadBlock(getStorageAPI(), address, pFirst, pLast);
 }
 
 static inline uint16_t load(table_row_iterator row, uint16_t address)
@@ -391,7 +396,7 @@ static inline uint16_t load(table_axis_iterator it, uint16_t address)
 {
   while (!it.at_end())
   {
-    *it = externalApi.read(address);
+    *it = getStorageAPI().read(address);
     ++address;
     ++it;
   }
@@ -481,15 +486,16 @@ void loadAllPages(void)
 void loadAllCalibrationTables(void)
 {
   // If you modify this function be sure to also modify saveAllCalibrationTables();
-  // it should be a mirror image of this function. 
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+  // it should be a mirror image of this function.
 
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+  
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
 
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
-  (void)loadObject(externalApi, EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -510,18 +516,20 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == SensorCalibrationTable::O2Sensor)
   {
-    updateObject(externalApi, o2CalibrationTable.axis, EEPROM_CALIBRATION_O2_BINS);
-    updateObject(externalApi, o2CalibrationTable.values, EEPROM_CALIBRATION_O2_VALUES);
+    updateObject(getStorageAPI(), o2CalibrationTable.axis, EEPROM_CALIBRATION_O2_BINS);
+    updateObject(getStorageAPI(), o2CalibrationTable.values, EEPROM_CALIBRATION_O2_VALUES);
   }
   else if(sensor == SensorCalibrationTable::IntakeAirTempSensor)
   {
-    updateObject(externalApi, iatCalibrationTable.axis, EEPROM_CALIBRATION_IAT_BINS);
-    updateObject(externalApi, iatCalibrationTable.values, EEPROM_CALIBRATION_IAT_VALUES);
+    updateObject(getStorageAPI(), iatCalibrationTable.axis, EEPROM_CALIBRATION_IAT_BINS);
+    updateObject(getStorageAPI(), iatCalibrationTable.values, EEPROM_CALIBRATION_IAT_VALUES);
   }
   else if(sensor == SensorCalibrationTable::CoolantSensor)
   {
-    updateObject(externalApi, cltCalibrationTable.axis, EEPROM_CALIBRATION_CLT_BINS);
-    updateObject(externalApi, cltCalibrationTable.values, EEPROM_CALIBRATION_CLT_VALUES);
+    updateObject(getStorageAPI(), cltCalibrationTable.axis, EEPROM_CALIBRATION_CLT_BINS);
+    updateObject(getStorageAPI(), cltCalibrationTable.values, EEPROM_CALIBRATION_CLT_VALUES);
+  } else {
+    // Unknown sensor identifier - do nothing but keep MISRA checker happy
   }
 }
 
@@ -545,40 +553,27 @@ TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationCrcAddress(SensorCalibration
 
 void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
-  updateObject(externalApi, getSensorCalibrationCrcAddress(sensor), calibrationCRC);
+  updateObject(getStorageAPI(), calibrationCRC, getSensorCalibrationCrcAddress(sensor));
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
 uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
-  return loadObject(externalApi, getSensorCalibrationCrcAddress(sensor), crc32_val);
-}
-
-uint16_t getEEPROMSize(void)
-{
-  return externalApi.length();
+  return loadObject(getStorageAPI(), getSensorCalibrationCrcAddress(sensor), crc32_val);
 }
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
-void EEPROMWriteRaw(uint16_t address, byte data) { (void)update(externalApi, address, data); }
-byte EEPROMReadRaw(uint16_t address) { return externalApi.read(address); }
+uint8_t loadLastBaro(void) { return getStorageAPI().read(EEPROM_LAST_BARO); }
+void saveLastBaro(uint8_t newValue) { (void)update(getStorageAPI(), EEPROM_LAST_BARO, newValue); }
 
-uint8_t loadLastBaro(void) { return externalApi.read(EEPROM_LAST_BARO); }
-void saveLastBaro(uint8_t newValue) { (void)update(externalApi, EEPROM_LAST_BARO, newValue); }
-
-uint8_t loadEEPROMVersion(void) { return externalApi.read(EEPROM_DATA_VERSION); }
-void saveEEPROMVersion(uint8_t newVersion) { (void)update(externalApi, EEPROM_DATA_VERSION, newVersion); }
+uint8_t loadEEPROMVersion(void) { return getStorageAPI().read(EEPROM_DATA_VERSION); }
+void saveEEPROMVersion(uint8_t newVersion) { (void)update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); }
 
 void clearStorage(void) {
-  #if defined(FLASH_AS_EEPROM_h)
-    getEEPROM().read(0); //needed for SPI eeprom emulation.
-    getEEPROM().clear(); 
-  #else 
-    for (uint16_t i = 0 ; i < externalApi.length() ; i++) { externalApi.write((uint16_t)i, UINT8_MAX);}
-  #endif  
+  for (uint16_t i = 0 ; i < getStorageAPI().length() ; i++) { (void)update(getStorageAPI(), (uint16_t)i, UINT8_MAX);} 
 }
 
 #if defined(CORE_AVR)
