@@ -274,6 +274,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if (secondarySerial.available() > 0)  { secondserial_Command(); }
         #else
           if (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) { secondserial_Command(); } //Special case for AVR units. This prevents potential overflow of the receive buffer
+        
+          if ((configPage9.secondarySerialProtocol == SECONDARY_SERIAL_REALDASHCAN) && (BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ)))
+          {
+            RealdashCAN();
+          }                 
         #endif
       }
       #if defined (NATIVE_CAN_AVAILABLE)
