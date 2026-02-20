@@ -403,5 +403,17 @@ void boardInitPins(void)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
+uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+  uint16_t maxWrite = 64;
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
 
 #endif

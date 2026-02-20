@@ -59,8 +59,8 @@ void writeAllConfig(void)
 //  ================================= Internal write support ===============================
 struct write_location {
   eeprom_address_t address; // EEPROM address to write next
-  uint16_t counter; // Number of bytes written
-  uint8_t write_block_size; // Maximum number of bytes to write
+  uint16_t writeCounter; // Number of bytes written
+  uint16_t write_block_size; // Maximum number of bytes to write
 
   /** Update byte to EEPROM by first comparing content and the need to write it.
   We only ever write to the EEPROM where the new value is different from the currently stored byte
@@ -71,7 +71,7 @@ struct write_location {
     if (EEPROM.read(address)!=value)
     {
       EEPROM.write(address, value);
-      ++counter;
+      ++writeCounter;
     }
   }
 
@@ -79,7 +79,7 @@ struct write_location {
    * Allows chaining of instances.
    */
   write_location changeWriteAddress(eeprom_address_t newAddress) const {
-    return { newAddress, counter, write_block_size };
+    return { newAddress, writeCounter, write_block_size };
   }
 
   write_location& operator++()
@@ -90,11 +90,7 @@ struct write_location {
 
   bool can_write() const
   {
-    bool canWrite = false;
-    if(currentStatus.RPM > 0) { canWrite = (counter <= write_block_size); }
-    else { canWrite = (counter <= (write_block_size * 8)); } //Write to EEPROM more aggressively if the engine is not running
-
-    return canWrite;
+    return writeCounter <= write_block_size;
   }
 };
 
@@ -155,34 +151,7 @@ and writes them to EEPROM as per the layout defined in storage.h.
 */
 void writeConfig(uint8_t pageNum)
 {
-//The maximum number of write operations that will be performed in one go.
-//If we try to write to the EEPROM too fast (Eg Each write takes ~3ms on the AVR) then 
-//the rest of the system can hang)
-#if defined(USE_SPI_EEPROM)
-  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 20; //This needs tuning
-#elif defined(CORE_STM32) || defined(CORE_TEENSY)
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 64;
-#else
-  uint8_t EEPROM_MAX_WRITE_BLOCK = 18;
-  if(currentStatus.commCompat) { EEPROM_MAX_WRITE_BLOCK = 8; } //If comms compatibility mode is on, slow the burn rate down even further
-
-  #ifdef CORE_AVR
-    //In order to prevent missed pulses during EEPROM writes on AVR, scale the
-    //maximum write block size based on the RPM.
-    //This calculation is based on EEPROM writes taking approximately 4ms per byte
-    //(Actual value is 3.8ms, so 4ms has some safety margin) 
-    if(currentStatus.RPM > 65) //Min RPM of 65 prevents overflow of uint8_t
-    { 
-      EEPROM_MAX_WRITE_BLOCK = (uint8_t)(15000U / currentStatus.RPM);
-      EEPROM_MAX_WRITE_BLOCK = max(EEPROM_MAX_WRITE_BLOCK, 1);
-      EEPROM_MAX_WRITE_BLOCK = min(EEPROM_MAX_WRITE_BLOCK, 15); //Any higher than this will cause comms timeouts on AVR
-    }
-  #endif
-
-#endif
-
-  write_location result = { 0, 0, EEPROM_MAX_WRITE_BLOCK };
+  write_location result = { 0, 0, getEepromWriteBlockSize(currentStatus) };
 
   switch(pageNum)
   {

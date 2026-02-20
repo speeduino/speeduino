@@ -93,4 +93,9 @@ void boardInitPins(void)
   // Do nothing
 }
 
+uint16_t getEepromWriteBlockSize(const statuses &)
+{
+    return 64U;
+}
+
 #endif
