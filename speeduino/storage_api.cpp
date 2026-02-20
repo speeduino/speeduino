@@ -5,20 +5,27 @@
 #include EEPROM_LIB_H //This is defined in the board .h files
 #pragma GCC diagnostic pop
 
+// LCOV_EXCL_START
+// Exclude simple wrappers from code coverage
 namespace EEPROMApi {
 
-  static inline byte read(uint16_t address) {
+  static inline byte read(uint16_t address)
+  {
     return getEEPROM().read(address);
   }
-  static inline void write(uint16_t address, byte val) {
+  static inline void write(uint16_t address, byte val)
+  {
     getEEPROM().write(address, val);
   }
-  static inline uint16_t length(void) {
+  static inline uint16_t length(void)
+  {
     return getEEPROM().length();
   }
-  
 }
+// LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
+// Exclude simple wrappers from code coverage
 storage_api_t getEEPROMStorageApi(void)
 {
   return storage_api_t {
@@ -27,6 +34,7 @@ storage_api_t getEEPROMStorageApi(void)
     .length = EEPROMApi::length,
   };  
 }
+// LCOV_EXCL_STOP
 
 bool update(const storage_api_t &api, uint16_t address, byte value) {
   if (api.read(address)!=value) {
