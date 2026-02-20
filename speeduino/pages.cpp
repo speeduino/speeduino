@@ -157,68 +157,82 @@ private:
 
 static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offset)
 {
-  return *((const byte*)entity.pData + offset);
-}
-
-static inline void set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
-{
-  *((byte*)entity.pData + offset) = value;
-}
-
-static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
-{
-  // LCOV_EXCL_BR_START
-  // Can't figure out the missing branches, so exclude for the moment
-  #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
-      return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
-  #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
-  // LCOV_EXCL_BR_STOP
-}
-
-byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
-{
   if (offset<entity.address.size)
   {
-    if (Raw==entity.type)
-    {
-      return get_raw_location(entity, offset);
-    }
-    if (Table==entity.type)
-    {
-      return get_table_value(entity, offset);
-    }
+    return *((const byte*)entity.pData + offset);
   }
   return 0U;
 }
 
-static inline void set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
+static inline bool set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
 {
-  // LCOV_EXCL_BR_START
-  // Can't figure out the missing branches, so exclude for the moment
-  #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
-      offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
-  #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-  CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
-  // LCOV_EXCL_BR_STOP
+  if (offset<entity.address.size)
+  {
+    *((byte*)entity.pData + offset) = value;
+    return true;
+  }
+  return false;
 }
 
-void setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
-{    
+static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
+{
   if (offset<entity.address.size)
-  {    
-    if (Raw==entity.type)
-    {
-      set_raw_location(entity, offset, value);
-    }
-    else if (Table==entity.type)
-    {
-      set_table_value(entity, offset, value);
-    }
-    else
-    {
-      // Unsettable entity type 
-    }
+  {
+    // LCOV_EXCL_BR_START
+    // Can't figure out the missing branches, so exclude for the moment
+    #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
+        return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
+    #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
+    CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
+    // LCOV_EXCL_BR_STOP
+  }
+  return 0U;
+}
+
+byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
+{
+  if (Raw==entity.type)
+  {
+    return get_raw_location(entity, offset);
+  }
+  if (Table==entity.type)
+  {
+    return get_table_value(entity, offset);
+  }
+  // Entity has no data
+  return 0U;
+}
+
+static inline bool set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
+{
+  if (offset<entity.address.size)
+  {
+    // LCOV_EXCL_BR_START
+    // Can't figure out the missing branches, so exclude for the moment
+    #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
+        offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
+    #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
+    CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
+    // LCOV_EXCL_BR_STOP
+    return true;
+  }
+  return false;
+}
+
+bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
+{    
+  if (Raw==entity.type)
+  {
+    return set_raw_location(entity, offset, value);
+  }
+  else if (Table==entity.type)
+  {
+    return set_table_value(entity, offset, value);
+  }
+  else
+  {
+    // Unsettable entity type 
+    return false;
   }
 }
 
@@ -491,11 +505,11 @@ static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, u
   return pageOffset-entity.address.start;
 }
 
-void setPageValue(byte pageNum, uint16_t offset, byte value)
+bool setPageValue(byte pageNum, uint16_t offset, byte value)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
-  setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
+  return setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
 }
 
 byte getPageValue(byte pageNum, uint16_t offset)

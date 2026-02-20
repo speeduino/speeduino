@@ -172,43 +172,43 @@ static void test_setEntityValue_table(void)
     test_setEntityValue_tableT<table3d16RpmLoad>();
 }
 
-static void assert_get_set_PageValueN(page_iterator_t entity)
+static void assert_getPageValue(uint8_t page, uint16_t offset)
 {
-    if (entity.type!=NoEntity)
+    constexpr char MARKER = 'X';
+    if (setPageValue(page, offset, MARKER))
     {
-        for (uint16_t offset = entity.address.start; offset<entity.address.start+entity.address.size; ++offset)
-        {
-            constexpr char MARKER = 'X';
-            setPageValue(entity.location.page, offset, MARKER);
-            char szMsg[32];
-            sprintf(szMsg, "Offset %" PRIu16, offset);
-            TEST_ASSERT_EQUAL_MESSAGE(MARKER, getPageValue(entity.location.page, offset), szMsg);
-        }
+        char szMsg[32];
+        sprintf(szMsg, "Offset %" PRIu16, offset);
+        TEST_ASSERT_EQUAL_MESSAGE(MARKER, getPageValue(page, offset), szMsg);
     }
 }
 
 static uint8_t testPageNum;
+
 static void test_get_set_PageValueN(void)
 {
-    page_iterator_t entity = page_begin(testPageNum);
-    while (entity.type!=End)
+    for (uint16_t offset=0; offset<getPageSize(testPageNum); ++offset)
     {
-        assert_get_set_PageValueN(entity);
-        entity = advance(entity);
+        assert_getPageValue(testPageNum, offset);
     }
-
-    setPageValue(testPageNum, getPageSize(testPageNum)+1U, 'X');
-    TEST_ASSERT_EQUAL(0U, getPageValue(testPageNum, getPageSize(testPageNum)+1U));
 }
 
-static void test_get_setPageValue(void)
+static void test_get_set_PageValue_InvalidOffset_N(void)
 {
-    for (uint8_t page = 0; page<MAX_PAGE_NUM+1 /*This is deliberately max number of pages + 1*/; ++page)
-    {     
-        char szName[128];
-        snprintf(szName, sizeof(szName), "test_get_set_PageValue_%" PRIu8, page);
-        testPageNum = page;
-        UnityDefaultTestRun(test_get_set_PageValueN, szName, __LINE__);
+    uint16_t invalidOffset = getPageSize(testPageNum)*2U;
+    TEST_ASSERT_FALSE(setPageValue(testPageNum, invalidOffset, 'X'));
+    TEST_ASSERT_EQUAL(0U, getPageValue(testPageNum, invalidOffset));
+}
+
+static void testGetSetPageValues(void)
+{
+    char szTestName[64];
+    for (testPageNum = 0U; testPageNum<MAX_PAGE_NUM+1U; ++testPageNum)
+    {
+        snprintf(szTestName, sizeof(szTestName)-1U, "test_get_set_PageValue_%" PRIu8, testPageNum);
+        UnityDefaultTestRun(test_get_set_PageValueN, szTestName, __LINE__);
+        snprintf(szTestName, sizeof(szTestName)-1U, "test_get_set_PageValue_InvalidOffset_%" PRIu8, testPageNum);
+        UnityDefaultTestRun(test_get_set_PageValue_InvalidOffset_N, szTestName, __LINE__);
     }
 }
 
@@ -226,7 +226,9 @@ void testPage(void) {
         RUN_TEST(test_setEntityValue_raw);
         RUN_TEST(test_setEntityValue_none);
         RUN_TEST(test_setEntityValue_table);
-        RUN_TEST(test_get_setPageValue);
         RUN_TEST(test_getPageSize);
+        // Not a unit test, as it runs multiple tests in a loop
+        // DO NOT PLACE INSIDE a RUN_TEST().
+        testGetSetPageValues(); 
     }
 }

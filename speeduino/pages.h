@@ -28,7 +28,7 @@ uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
 #define progOutsPage  13
 #define ignMap2Page   14
 #define boostvvtPage2 15
-#define MAX_PAGE_NUM  boostvvtPage2
+#define MAX_PAGE_NUM  (boostvvtPage2+1U)
 
 // ============================== Per-byte page access ==========================
 
@@ -37,8 +37,12 @@ byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve da
                     uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
                     );
 
-/** @brief Sets a single value from a page, with data aligned as per the ini file */
-void setPageValue(  byte pageNum,       /**< [in] The page number to update. */
+/** 
+ * @brief Sets a single value from a page, with data aligned as per the ini file 
+ * 
+ * @returns true if value set, false otherwise
+ */
+bool setPageValue(  byte pageNum,       /**< [in] The page number to update. */
                     uint16_t offset,    /**< [in] The offset within the page.  */
                     byte value          /**< [in] The new value */
                     );
@@ -135,8 +139,9 @@ byte getEntityValue(const page_iterator_t &entity,  /**< [in] The entity to upda
 
 /**
  * @brief Sets a single value from a page, with data aligned as per the ini file
+ * @returns true if value set, false otherwise
  */
-void setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */ 
+bool setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */ 
                     uint16_t offset,          /**< [in] The offset within the entity */
                     byte value                /**< [in] The new value */
                     );
