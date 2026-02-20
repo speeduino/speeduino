@@ -10,22 +10,24 @@ static byte countingReadMock(uint16_t) {
     return readValue;
 }
 
-uint16_t writeCounter;
-byte lastWriteValue;
+static uint16_t writeCounter;
+static byte lastWriteValue;
 static void countingWriteMock(uint16_t, byte value) {
     lastWriteValue = value;
     ++writeCounter;
 }
 
+static uint16_t mockLength = UINT16_MAX;
 static uint16_t lengthMock(void) {
-    return UINT16_MAX;
+    return mockLength;
 }
 
 static void test_update_nowrite_ifnochange(void) {
     readCounter = writeCounter = 0U;
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
     readValue = 33;
+    mockLength = UINT16_MAX;
     TEST_ASSERT_FALSE(update(api, 99, readValue));
     TEST_ASSERT_EQUAL(1, readCounter);
     TEST_ASSERT_EQUAL(0, writeCounter);
@@ -33,10 +35,11 @@ static void test_update_nowrite_ifnochange(void) {
 
 static void test_update_write_ifchange(void) {
     readCounter = writeCounter = 0U;
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
     readValue = 33;
     lastWriteValue = UINT8_MAX;
+    mockLength = UINT16_MAX;
     TEST_ASSERT_TRUE(update(api, 99, 77));
     TEST_ASSERT_EQUAL(1, readCounter);
     TEST_ASSERT_EQUAL(1, writeCounter);
@@ -44,11 +47,12 @@ static void test_update_write_ifchange(void) {
 }
 
 static void test_updateBlock_reads_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
     byte block[16];
     memset(block, 77, sizeof(block));
 
+    mockLength = UINT16_MAX;
     readCounter = writeCounter = 0U;
     readValue = block[0];
     updateBlock(api, 99, block, block+sizeof(block));
@@ -57,8 +61,9 @@ static void test_updateBlock_reads_all_addresses(void) {
 }
 
 static void test_updateBlock_writes_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
+    mockLength = UINT16_MAX;
     readValue = 3;
     byte block[] = {
         readValue, (byte)(readValue*2), readValue, (byte)(readValue*3),
@@ -77,11 +82,12 @@ static void test_updateBlock_writes_all_addresses(void) {
 }
 
 static void test_updateBlockLimitWriteOps_reads_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
     byte block[16];
     memset(block, 77, sizeof(block));
 
+    mockLength = UINT16_MAX;
     readCounter = writeCounter = 0U;
     readValue = block[0];
     TEST_ASSERT_EQUAL(1, updateBlockLimitWriteOps(api, 99, block, block+sizeof(block), 1));
@@ -90,8 +96,9 @@ static void test_updateBlockLimitWriteOps_reads_all_addresses(void) {
 }
 
 static void test_updateBlockLimitWriteOps_writes_all_addresses(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
+    mockLength = UINT16_MAX;
     readValue = 3;
     byte block[] = {
         readValue, (byte)(readValue*2), readValue, (byte)(readValue*3),
@@ -111,8 +118,9 @@ static void test_updateBlockLimitWriteOps_writes_all_addresses(void) {
 
 
 static void test_updateBlockLimitWriteOps_limited_writes(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
+    mockLength = UINT16_MAX;
     readValue = 3;
     byte block[] = {
         readValue, (byte)(readValue*2), readValue, (byte)(readValue*3),
@@ -131,10 +139,11 @@ static void test_updateBlockLimitWriteOps_limited_writes(void) {
 }
 
 static void test_loadBlock(void) {
-    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock };
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
 
     byte block[16];
 
+    mockLength = UINT16_MAX;
     readCounter = writeCounter = 0U;
     readValue = 33;
     TEST_ASSERT_EQUAL(99+sizeof(block), loadBlock(api, 99, block, block+sizeof(block)));
@@ -144,6 +153,51 @@ static void test_loadBlock(void) {
     memset(expected, readValue, sizeof(expected));
     TEST_ASSERT_EQUAL_INT8_ARRAY(expected, block, sizeof(block));
 }
+
+static void test_fillBlock_nochange_nowrite(void) {
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+
+    mockLength = UINT16_MAX;
+    readCounter = writeCounter = 0U;
+    readValue = INT8_MAX;
+    fillBlock(api, 0, 99, INT8_MAX);
+
+    TEST_ASSERT_EQUAL(99, readCounter);
+    TEST_ASSERT_EQUAL(0, writeCounter);
+}
+
+static void test_fillBlock_write_if_different(void) {
+    storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, };
+
+    mockLength = UINT16_MAX;
+    readCounter = writeCounter = 0U;
+    readValue = 33;
+    lastWriteValue = UINT8_MAX;
+    fillBlock(api, 0, 99, INT8_MAX);
+
+    TEST_ASSERT_EQUAL(99, readCounter);
+    TEST_ASSERT_EQUAL(99, writeCounter);
+    TEST_ASSERT_EQUAL(99, writeCounter);
+    TEST_ASSERT_EQUAL(INT8_MAX, lastWriteValue);
+}
+
+// static uint8_t clearMockCounter;
+// static void countingClearMock(void) {
+//     ++clearMockCounter;
+// }
+
+// static void test_clearStorage_custom(void) {
+//     storage_api_t api = { .read = countingReadMock, .write = countingWriteMock, .length = lengthMock, .clear = countingClearMock, };
+
+//     mockLength = 256;
+//     readCounter = writeCounter = clearMockCounter = 0U;
+//     readValue = 128U;
+
+//     clearStorage(api);
+//     TEST_ASSERT_EQUAL(0, readCounter);
+//     TEST_ASSERT_EQUAL(0, writeCounter);
+//     TEST_ASSERT_EQUAL(1, clearMockCounter);
+// }
 
 void testStorageApi(void) {
     Unity.TestFile = __FILE__;    
@@ -156,4 +210,7 @@ void testStorageApi(void) {
     RUN_TEST_P(test_updateBlockLimitWriteOps_writes_all_addresses);
     RUN_TEST_P(test_updateBlockLimitWriteOps_limited_writes);
     RUN_TEST_P(test_loadBlock);
+    RUN_TEST_P(test_fillBlock_nochange_nowrite);
+    RUN_TEST_P(test_fillBlock_write_if_different);
 }
+ 

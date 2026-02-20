@@ -130,3 +130,13 @@ static inline T &loadObject(const storage_api_t &api, uint16_t address, T &t ){
   (void)loadBlock(api, address, pFirst, pLast);
   return t;
 }
+
+/**
+ * @brief Fills the given block with a constant
+ * 
+ * @param api Raw storage API
+ * @param address the location to begin writing to (zero based)
+ * @param length number of *bytes* to write
+ * @param value fill value
+ */
+void fillBlock(const storage_api_t &api, uint16_t address, uint16_t length, byte value);

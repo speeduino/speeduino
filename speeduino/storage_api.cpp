@@ -61,3 +61,9 @@ __attribute__((noinline)) uint16_t loadBlock(const storage_api_t &api, int16_t a
   }
   return address;
 }
+
+__attribute__((noinline)) void fillBlock(const storage_api_t &api, uint16_t address, uint16_t length, byte value) {
+  for (uint16_t end=address+length; address<end; ++address) {
+    (void)update(api, address, value);
+  }
+}

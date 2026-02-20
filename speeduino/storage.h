@@ -126,9 +126,6 @@ uint8_t loadEEPROMVersion(void);
 /** @copydoc loadEEPROMVersion */
 void saveEEPROMVersion(uint8_t newVersion);
 
-/** @brief Clears all of the durable store */
-void clearStorage(void);
-
 ///@}
 
 #endif // STORAGE_H
