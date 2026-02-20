@@ -1,6 +1,7 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "storage.h"
+#include "pages.h"
 
 struct infinite_eeprom_t
 {
@@ -54,8 +55,38 @@ static void test_saveAllPages(void)
     TEST_ASSERT_TRUE(isEepromWritePending());
 }
 
+static void assert_entity(page_iterator_t entity, char expectedContent)
+{
+    for (uint16_t offset=0; offset<entity.address.size; ++offset)
+    {
+        char szMsg[64];
+        sprintf(szMsg, "Page %" PRIu8 ", Offset %" PRIu16, entity.location.page, offset);
+        TEST_ASSERT_EQUAL_MESSAGE(expectedContent, getPageValue(entity.location.page, offset), szMsg);
+    }
+}
+static void assert_page(uint8_t pageNum, char expectedContent)
+{
+    page_iterator_t pageIter = page_begin(pageNum);
+    while (pageIter.type!=End)
+    {
+        assert_entity(pageIter, expectedContent);
+        pageIter = advance(pageIter);
+    }
+}
+
+static void test_loadAllPages(void)
+{
+    setupInfniteStorageApi(8192, 8192, BUFFER_MARKER);
+    loadAllPages();
+    uint8_t pageCount = getPageCount();
+    for (uint8_t page = 0U; page<pageCount; ++page) {
+        assert_page(page, BUFFER_MARKER);
+    }
+}
+
 void test_storage(void) {
     SET_UNITY_FILENAME() {     
         RUN_TEST_P(test_saveAllPages);
+        RUN_TEST_P(test_loadAllPages);
     }
 }
