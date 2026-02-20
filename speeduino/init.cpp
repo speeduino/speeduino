@@ -67,7 +67,7 @@ static void processResetStorageRequest(void) {
 
         //if user let go of key within 1 second erase eeprom
         if(digitalRead(EEPROM_RESET_PIN) != LOW){
-          clearStorage();
+          fillBlock(getStorageAPI(), 0, getStorageAPI().length(), UINT8_MAX);
           //if erase done exit while loop.
           exit_erase_loop = true;
         }
