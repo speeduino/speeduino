@@ -560,6 +560,8 @@ TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationCrcAddress(SensorCalibration
   return EEPROM_CALIBRATION_CLT_CRC;
 }
 
+// LCOV_EXCL_START
+// Exclude simple wrappers from code coverage
 void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
   updateObject(getStorageAPI(), calibrationCRC, getSensorCalibrationCrcAddress(sensor));
@@ -571,6 +573,7 @@ uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
   uint32_t crc32_val;
   return loadObject(getStorageAPI(), getSensorCalibrationCrcAddress(sensor), crc32_val);
 }
+// LCOV_EXCL_STOP
 
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
