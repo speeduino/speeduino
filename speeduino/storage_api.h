@@ -140,3 +140,16 @@ static inline T &loadObject(const storage_api_t &api, uint16_t address, T &t ){
  * @param value fill value
  */
 void fillBlock(const storage_api_t &api, uint16_t address, uint16_t length, byte value);
+
+/**
+ * @brief Move a block of bytes.
+ * 
+ * This will handle overlapping blocks. 
+ * I.e. if [dest, size) overlaps [source, size)
+ * 
+ * @param api Raw storage API
+ * @param dest Address to copy *to*
+ * @param source Address to copy *from*
+ * @param size number of bytes to copy 
+ */
+void moveBlock(const storage_api_t &api, uint16_t dest, uint16_t source, uint16_t size);
