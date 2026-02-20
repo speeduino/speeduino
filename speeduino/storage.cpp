@@ -21,29 +21,33 @@ A full copy of the license may be found in the projects root directory
 #pragma GCC optimize ("Os") 
 #endif
 
-static byte default_read(uint16_t) {
-  return 0U;
-}
-static void default_write(uint16_t, byte) {
-  ;
-}
-static uint16_t default_length(void) {
-  return 0U;
-}
+// LCOV_EXCL_START
+// Exclude from coverage: these are only here for completeness
+// and will be replaced during normal firmware startup
+static byte default_read(uint16_t address) { UNUSED(address); return 0U; }
+static void default_write(uint16_t address, byte value) { UNUSED(address); UNUSED(value); }
+static uint16_t default_length(void) { return 0U; }
+// LCOV_EXCL_STOP
+
 static storage_api_t externalApi = {
     .read = default_read,
     .write = default_write,
     .length = default_length,
   };
 
-void setStorageAPI(const storage_api_t &api) {
+// LCOV_EXCL_START
+// Exclude simple getter/setter from code coverage
+void setStorageAPI(const storage_api_t &api) 
+{
   externalApi = api;
 }
 
 /** @brief Provide global access to the raw storage API */
-const storage_api_t& getStorageAPI(void) {
+const storage_api_t& getStorageAPI(void)
+{
   return externalApi;
 }
+// LCOV_EXCL_STOP
 
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 constexpr uint16_t EEPROM_DATA_VERSION = 0;
@@ -145,14 +149,17 @@ TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
 
 #endif
 
+// LCOV_EXCL_START
+// Exclude simple getter/setter from code coverage
 bool isEepromWritePending(void)
 {
   return currentStatus.burnPending;
 }
-
-void setEepromWritePending(bool isPending) {
+void setEepromWritePending(bool isPending)
+{
   currentStatus.burnPending = isPending;
 }
+// LCOV_EXCL_STOP
 
 void saveAllPages(void)
 {
@@ -566,11 +573,29 @@ uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 // Utility functions.
 // By having these in this file, it prevents other files from calling EEPROM functions directly. This is useful due to differences in the EEPROM libraries on different devces
 
-uint8_t loadLastBaro(void) { return getStorageAPI().read(EEPROM_LAST_BARO); }
-void saveLastBaro(uint8_t newValue) { (void)update(getStorageAPI(), EEPROM_LAST_BARO, newValue); }
+// LCOV_EXCL_START
+// Exclude simple getter/setter from code coverage
+uint8_t loadLastBaro(void)
+{ 
+  return getStorageAPI().read(EEPROM_LAST_BARO); 
+}
+void saveLastBaro(uint8_t newValue)
+{ 
+  (void)update(getStorageAPI(), EEPROM_LAST_BARO, newValue); 
+}
+// LCOV_EXCL_STOP
 
-uint8_t loadEEPROMVersion(void) { return getStorageAPI().read(EEPROM_DATA_VERSION); }
-void saveEEPROMVersion(uint8_t newVersion) { (void)update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); }
+// LCOV_EXCL_START
+// Exclude simple getter/setter from code coverage
+uint8_t loadEEPROMVersion(void)
+{ 
+  return getStorageAPI().read(EEPROM_DATA_VERSION); 
+}
+void saveEEPROMVersion(uint8_t newVersion)
+{ 
+  (void)update(getStorageAPI(), EEPROM_DATA_VERSION, newVersion); 
+}
+// LCOV_EXCL_STOP
 
 #if defined(CORE_AVR)
 #pragma GCC pop_options
