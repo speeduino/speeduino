@@ -32,6 +32,7 @@ storage_api_t getEEPROMStorageApi(void)
     .read = EEPROMApi::read,
     .write = EEPROMApi::write,
     .length = EEPROMApi::length,
+    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
   };  
 }
 // LCOV_EXCL_STOP
