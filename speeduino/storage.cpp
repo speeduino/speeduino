@@ -27,12 +27,14 @@ A full copy of the license may be found in the projects root directory
 static byte default_read(uint16_t address) { UNUSED(address); return 0U; }
 static void default_write(uint16_t address, byte value) { UNUSED(address); UNUSED(value); }
 static uint16_t default_length(void) { return 0U; }
+static uint16_t default_write_size(const statuses &current) { UNUSED(current); return 8U; }
 // LCOV_EXCL_STOP
 
 static storage_api_t externalApi = {
     .read = default_read,
     .write = default_write,
     .length = default_length,
+    .getMaxWriteBlockSize = default_write_size,
   };
 
 // LCOV_EXCL_START
@@ -224,7 +226,7 @@ static inline uint16_t writeTable(void *pTable, table_type_t key, uint16_t addre
 
 void savePage(uint8_t pageNum)
 {
-  uint16_t writesRemaining = getEepromWriteBlockSize(currentStatus);
+  uint16_t writesRemaining = getStorageAPI().getMaxWriteBlockSize(currentStatus);
 
   switch(pageNum)
   {

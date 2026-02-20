@@ -5,6 +5,8 @@
  */
 
 #include <stdint.h>
+#include "statuses.h"
+
 using byte = uint8_t;
 
 /** @brief The external storage API. This must be supported by any storage system. E.g. EEPROM, SPI 
@@ -26,6 +28,9 @@ struct storage_api_t {
      * for use. 
      */
     uint16_t (*length)(void);
+
+    /** @brief The maximum number of write operations that will be performed in one go. */
+    uint16_t (*getMaxWriteBlockSize)(const statuses &current);
 };
 
 /** 
