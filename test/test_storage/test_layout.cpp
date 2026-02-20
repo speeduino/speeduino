@@ -7,8 +7,8 @@
 #include "globals.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
-extern const eeprom_address_t MAX_PAGE_ADDRESS;
-extern eeprom_address_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
+extern const uint16_t MAX_PAGE_ADDRESS;
+extern uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor);
 extern const uint16_t STORAGE_SIZE;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
