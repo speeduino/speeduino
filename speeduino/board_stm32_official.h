@@ -164,22 +164,18 @@ extern STM32RTC& rtc;
 */
 #if defined(SRAM_AS_EEPROM)
   #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-  using eeprom_address_t = uint16_t;
   class BackupSramAsEEPROM;
   using EEPROM_t = BackupSramAsEEPROM;    
 #elif defined(USE_SPI_EEPROM)
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  using eeprom_address_t = uint16_t;
   class SPI_EEPROM_Class;
   using EEPROM_t = SPI_EEPROM_Class;    
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
   #define EEPROM_LIB_H "src/FRAM/Fram.h"
-  using eeprom_address_t = uint16_t;
   class FramClass;
   using EEPROM_t = FramClass;    
 #else //default case, internal flash as EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  using eeprom_address_t = uint16_t;
   class InternalSTM32F4_EEPROM_Class;
   using EEPROM_t = InternalSTM32F4_EEPROM_Class;    
   #if defined(STM32F401xC)

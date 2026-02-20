@@ -18,7 +18,6 @@ bool pinIsSerial(uint8_t);
 #define BOARD_MAX_IO_PINS 54
 #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
 #define EEPROM_LIB_H <EEPROM.h>
-using eeprom_address_t = int;
 class EEPROMClass;
 using EEPROM_t = EEPROMClass;
 #define RTC_ENABLED
