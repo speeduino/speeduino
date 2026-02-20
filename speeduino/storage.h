@@ -24,6 +24,9 @@
  */
 void setStorageAPI(const storage_api_t &api);
 
+/** @brief Provide global access to the raw storage API */
+const storage_api_t& getStorageAPI(void);
+
 /**
  * @defgroup storage-pages Page save & load
  * 
@@ -125,27 +128,6 @@ void saveEEPROMVersion(uint8_t newVersion);
 
 /** @brief Clears all of the durable store */
 void clearStorage(void);
-
-///@}
-
-/**
- * @defgroup storage-raw Raw access to the EEPROM
- * 
- * @brief Wrappers to prevent other files from having to use EEPROM.h directly
- * @{
- */
-
-/** @brief Write a single byte to durable storage. 
- * 
- * @warning Use carefully - this could do a lot of damage to the stored tune & tables.
- */
-void EEPROMWriteRaw(uint16_t address, byte data);
-
-/** @brief Read a single byte from durable storage */
-byte EEPROMReadRaw(uint16_t address);
-
-/** @brief Total number of bytes in durable storage */
-uint16_t getEEPROMSize(void);
 
 ///@}
 

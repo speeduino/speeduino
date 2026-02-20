@@ -80,14 +80,14 @@ void doUpdates(void)
     {
       uint16_t endMem = EEPROM_CONFIG10_END_V6 - x;
       uint16_t startMem = endMem - 128U; //
-      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
     //The remaining data only has to move back 64 bytes
     for(uint16_t x=0; x < 352U; x++)
     {
       uint16_t endMem = EEPROM_CONFIG10_END_V6 - 1152U - x;
       uint16_t startMem = endMem - 64U; //
-      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
 
     saveEEPROMVersion(6);
@@ -103,7 +103,7 @@ void doUpdates(void)
     {
       uint16_t endMem = EEPROM_CONFIG10_END_V7 - x;
       uint16_t startMem = endMem - 82U; //
-      EEPROMWriteRaw(endMem, EEPROMReadRaw(startMem));
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
 
     saveEEPROMVersion(7);
@@ -391,15 +391,15 @@ void doUpdates(void)
     for(uint16_t x=0U; x<((uint16_t)CALIBRATION_TABLE_SIZE/16U); ++x) //Each calibration table is 512 bytes long
     {
       uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
-      cltCalibrationTable.values[x] = EEPROMReadRaw(y);
+      cltCalibrationTable.values[x] = getStorageAPI().read(y);
       cltCalibrationTable.axis[x] = (x * 32U);
 
       y = EEPROM_CALIBRATION_IAT_OLD + (x * 16U);
-      iatCalibrationTable.values[x] = EEPROMReadRaw(y);
+      iatCalibrationTable.values[x] = getStorageAPI().read(y);
       iatCalibrationTable.axis[x] = (x * 32U);
 
       y = EEPROM_CALIBRATION_O2_OLD + (x * 16U);
-      o2CalibrationTable.values[x] = EEPROMReadRaw(y);
+      o2CalibrationTable.values[x] = getStorageAPI().read(y);
       o2CalibrationTable.axis[x] = (x * 32U);
     }
     saveAllCalibrationTables();
@@ -465,7 +465,7 @@ void doUpdates(void)
     constexpr uint16_t SHIFT_DISTANCE = 112U;
     for(uint16_t x=EEPROM_CONFIG14_END_V16; x>=EEPROM_CONFIG13_START_V16; x--)
     {
-      EEPROMWriteRaw(x, EEPROMReadRaw(x-SHIFT_DISTANCE));
+      (void)update(getStorageAPI(), x, getStorageAPI().read(x-SHIFT_DISTANCE));
     }
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
