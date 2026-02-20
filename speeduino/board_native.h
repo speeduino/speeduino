@@ -139,7 +139,6 @@ constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
 
 #define RTC_LIB_H <time.h>
 #define EEPROM_LIB_H <EEPROM.h>
-using eeprom_address_t = uint16_t;
 class EEPROMClass;
 using EEPROM_t = EEPROMClass;
 

@@ -11,7 +11,6 @@
   #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
   #define EEPROM_LIB_H <EEPROM.h>
-  using eeprom_address_t = int;
   class EEPROMClass;
   using EEPROM_t = EEPROMClass;
   // Forbidden pins like USB
