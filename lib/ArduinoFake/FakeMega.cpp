@@ -9,6 +9,8 @@ using namespace fakeit;
 static std::array<unsigned char, 4096> eepromBuffer;
 static std::stringstream serialBuffer;
 
+static constexpr uint8_t _BV(uint8_t shift) { return 1U << shift; }
+
 static void fakeMegaWiring(fakeit::Mock<FunctionFake> &mock)
 {
     static constexpr uint8_t PA = 1;
@@ -98,7 +100,6 @@ static void fakeMegaWiring(fakeit::Mock<FunctionFake> &mock)
         PK	, // PK 7 ** 69 ** A15	
     };
 
-    #define _BV(bit) (1 << (bit))
     static constexpr uint8_t digital_pin_to_bit_mask[] = {
         // PIN IN PORT		
         // -------------------------------------------		
