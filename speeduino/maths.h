@@ -13,7 +13,7 @@
 #endif
 #include "unit_testing.h"
 
-uint8_t random1to100(void);
+uint8_t random1to100(void) noexcept;
 
 /**
  * @defgroup group-rounded-div Rounding integer division
