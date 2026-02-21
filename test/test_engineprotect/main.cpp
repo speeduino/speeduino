@@ -1166,6 +1166,17 @@ static uint8_t deterministic_rand_flipper(void)
     return onOff ? deterministic_rand_low() : deterministic_rand_high();
 }
 
+static void assert_applyRollingCutPercentage(engineProtection_test_context_t context, uint8_t expectedFuel, uint8_t expectedIgnition, SchedulerCutStatus expectedStatus)
+{
+    context.current.schedulerCutState.fuelChannels = 0xFF;
+    context.current.schedulerCutState.ignitionChannels = 0xFF;
+    context.current.schedulerCutState.status = SchedulerCutStatus::None;
+    auto onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
+    TEST_ASSERT_EQUAL_HEX8(expectedFuel, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(expectedIgnition, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(expectedStatus, onOff.status);
+}
+
 static void test_applyRollingCutPercentage_all_cut(void)
 {
     engineProtection_test_context_t context;
@@ -1175,14 +1186,15 @@ static void test_applyRollingCutPercentage_all_cut(void)
 
     context.current.maxInjOutputs = 5;
     context.current.maxIgnOutputs = 4;
-    context.current.schedulerCutState.fuelChannels = 0xFF;
-    context.current.schedulerCutState.ignitionChannels = 0xFF;
-    context.current.schedulerCutState.status = SchedulerCutStatus::None;    
-    auto onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
 
-    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
-    TEST_ASSERT_EQUAL(onOff.status, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    assert_applyRollingCutPercentage(context, 0b00000000, 0b00000000, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    assert_applyRollingCutPercentage(context, 0b00011111, 0b00000000, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    assert_applyRollingCutPercentage(context, 0b00000000, 0b00001111, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyRollingCutPercentage_all_on(void)
@@ -1192,29 +1204,33 @@ static void test_applyRollingCutPercentage_all_on(void)
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
 
-    context.current.schedulerCutState.fuelChannels = 0xFF;
-    context.current.schedulerCutState.ignitionChannels = 0xFF;
-    context.current.schedulerCutState.status = SchedulerCutStatus::None;    
     context.current.maxInjOutputs = 3;
     context.current.maxIgnOutputs = 2;
-    auto onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
-    TEST_ASSERT_EQUAL_HEX8(0x07, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0x03, onOff.ignitionChannels);
-    TEST_ASSERT_EQUAL(onOff.status, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
 
     context.current.maxInjOutputs = 4;
     context.current.maxIgnOutputs = 5;
-    onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
-    TEST_ASSERT_EQUAL_HEX8(0x0F, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0x1F, onOff.ignitionChannels);
-    TEST_ASSERT_EQUAL(onOff.status, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
 
     context.current.maxInjOutputs = 2;
     context.current.maxIgnOutputs = 1;
-    onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
-    TEST_ASSERT_EQUAL_HEX8(0x03, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0x01, onOff.ignitionChannels);
-    TEST_ASSERT_EQUAL(onOff.status, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyRollingCutPercentage_half_on(void)
@@ -1224,15 +1240,17 @@ static void test_applyRollingCutPercentage_half_on(void)
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_flipper);
 
-    context.current.schedulerCutState.fuelChannels = 0xFF;
-    context.current.schedulerCutState.ignitionChannels = 0xFF;
-    context.current.schedulerCutState.status = SchedulerCutStatus::None;
     context.current.maxInjOutputs = 5;
     context.current.maxIgnOutputs = 3;
-    auto onOff = applyRollingCutPercentage(context.current, context.page6, 50U, false);
-    TEST_ASSERT_EQUAL_HEX8(0x0A, onOff.fuelChannels);
-    TEST_ASSERT_EQUAL_HEX8(0x02, onOff.ignitionChannels);
-    TEST_ASSERT_EQUAL(onOff.status, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    assert_applyRollingCutPercentage(context, 0b00001010, 0b00000010, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    assert_applyRollingCutPercentage(context, 0b00010101, 0b00000111, SchedulerCutStatus::Rolling);
+
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    assert_applyRollingCutPercentage(context, 0b00011111, 0b00000010, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyPendingIgnitionCuts(void)
