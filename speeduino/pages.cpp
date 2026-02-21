@@ -28,9 +28,6 @@
 //  1. Page # + Offset to entity
 //  2. Offset to intra-entity byte
 
-// Page sizes as defined in the .ini file
-constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256 };
-
 // ========================= Table size calculations =========================
 // Note that these should be computed at compile time, assuming the correct
 // calling context.
@@ -244,21 +241,13 @@ bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 
 // ========================= Static page size computation & checking ===================
 
-// This will fail AND print the page number and required size
-template <uint8_t pageNum, uint16_t pageSize>
-static inline void check_size(void) {
-  static_assert(ini_page_sizes[pageNum] == pageSize, "Size is off!");
-}
-
 // Since pages are a logical contiguous block, we can automatically compute the 
 // logical start address of every item: the first one starts at zero, following
 // items must start at the end of the previous.
-#define _ENTITY_START(entityNum) entity ## entityNum ## Start
-#define ENTITY_START_VAR(entityNum) _ENTITY_START(entityNum)
+#define ENTITY_START_VAR entityStartAddress
 // Compute the start address of the next entity. We need this to be a constexpr
 // so we can static assert on it later. So we cannot increment an exiting var.
-#define DECLARE_NEXT_ENTITY_START(entityIndex, entitySize) \
-  constexpr uint16_t ENTITY_START_VAR( PP_INC(entityIndex) ) = ENTITY_START_VAR(entityIndex)+entitySize;
+#define UPDATE_ENTITY_START(entitySize) ENTITY_START_VAR = ENTITY_START_VAR + (entitySize);
 
 // ========================= Logical page end processing ===================
 
@@ -281,9 +270,7 @@ static inline page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t star
 }
 
 // Signal the end of a page
-#define END_OF_PAGE(pageNum, entityNum) \
-  check_size<(pageNum), ENTITY_START_VAR(entityNum)>(); \
-  return create_end_iterator((pageNum), ENTITY_START_VAR(entityNum)); \
+#define END_OF_PAGE(pageNum, index) return create_end_iterator((pageNum), ENTITY_START_VAR);
 
 // ========================= Table processing  ===================
 
@@ -296,13 +283,13 @@ static inline page_iterator_t create_table_iterator(void *pTable, table_type_t k
 
 // If the offset is in range, create a Table entity_t
 #define CHECK_TABLE(pageNum, offset, pTable, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+get_table_axisy_end(pTable)) \
+  if (offset < ENTITY_START_VAR+get_table_axisy_end(pTable)) \
   { \
     return create_table_iterator(pTable, (pTable)->type_key, \
                                   (pageNum), (entityNum), \
-                                  ENTITY_START_VAR(entityNum), get_table_axisy_end((pTable))); \
+                                  ENTITY_START_VAR, get_table_axisy_end((pTable))); \
   } \
-  DECLARE_NEXT_ENTITY_START(entityNum, get_table_axisy_end(pTable))
+  UPDATE_ENTITY_START(get_table_axisy_end(pTable))
 
 // ========================= Raw memory block processing  ===================
 
@@ -315,11 +302,11 @@ static inline page_iterator_t create_raw_iterator(void *pBuffer, uint8_t pageNum
 
 // If the offset is in range, create a Raw entity_t
 #define CHECK_RAW(pageNum, offset, pDataBlock, blockSize, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
+  if (offset < ENTITY_START_VAR+blockSize) \
   { \
-    return create_raw_iterator((pDataBlock), (pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
+    return create_raw_iterator((pDataBlock), (pageNum), (entityNum), ENTITY_START_VAR, (blockSize));\
   } \
-  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
+  UPDATE_ENTITY_START(blockSize)
 
 // ========================= Empty entity processing  ===================
 
@@ -332,11 +319,11 @@ static inline page_iterator_t create_empty_iterator(uint8_t pageNum, uint8_t ind
 
 // If the offset is in range, create a "no entity"
 #define CHECK_NOENTITY(pageNum, offset, blockSize, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
+  if (offset < ENTITY_START_VAR+blockSize) \
   { \
-    return create_empty_iterator((pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
+    return create_empty_iterator((pageNum), (entityNum), ENTITY_START_VAR, (blockSize));\
   } \
-  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
+  UPDATE_ENTITY_START(blockSize)
 
 // ===============================================================================
 
@@ -347,7 +334,7 @@ static inline page_iterator_t create_empty_iterator(uint8_t pageNum, uint8_t ind
 static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 {
   // The start address of the 1st entity in any page.
-  static constexpr uint16_t ENTITY_START_VAR(0) = 0U;
+  uint16_t ENTITY_START_VAR = 0U;
 
   switch (pageNumber)
   {
@@ -497,12 +484,13 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
 
 uint8_t getPageCount(void)
 {
-  return _countof(ini_page_sizes);
+  return 16U;
 }
 
 uint16_t getPageSize(byte pageNum)
 {
-  return pageNum<_countof(ini_page_sizes) ? pgm_read_word(&(ini_page_sizes[pageNum])) : 0U;
+  page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
+  return entity.address.start + entity.address.size;;
 }
 
 static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
