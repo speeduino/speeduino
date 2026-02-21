@@ -16,7 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "idle.h"
 #include "corrections.h"
 #include "pages.h"
-#include "decoders.h"
+#include "decoder_init.h"
 #include "auxiliaries.h"
 #include "utilities.h"
 #include "unit_testing.h"
@@ -27,6 +27,7 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "static_for.hpp"
 #include "polling.hpp"
+#include "decoders.h"
 
 uint8_t statusSensors = 0;
 
@@ -540,7 +541,7 @@ static inline void readMAP(void)
   // Read sensor(s). Saves filtered ADC readings. Does not set calibrated MAP and EMAP values.
   mapAlgorithmState.sensorReadings = readMapSensors(mapAlgorithmState.sensorReadings, configPage4, configPage6.useEMAP);
 
-  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoderStatus(), mapAlgorithmState);
+  bool readingIsValid = applyMapAlgorithm(configPage2, currentStatus, getDecoder().getStatus(), mapAlgorithmState);
 
   // Process sensor readings according to user chosen sampling algorithm
   if(readingIsValid) 
@@ -666,7 +667,7 @@ static inline void readBaro(void)
     // readings
     setBaroFromSensorReading(LOW_PASS_FILTER(readMAPSensor(pinBaro), configPage4.ADCFILTER_BARO, currentStatus.baroADC)); //Very weak filter
   // If no dedicated baro sensor is available, attempt to get a reading from the MAP sensor. This can only be done if the engine is not running. 
-  } else if ((currentStatus.RPM == 0U) && !engineIsRunning(micros()-MICROS_PER_SEC)) {
+  } else if ((currentStatus.RPM == 0U) && !getDecoder().isEngineRunning(micros()-MICROS_PER_SEC)) {
     setBaroFromMAP();
   } else {
     // Do nothing - baro remains at last read value & MISRA checker is kept happy.

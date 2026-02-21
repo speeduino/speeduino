@@ -69,13 +69,6 @@ pin_mask_t pump_pin_mask;
 port_register_t flex_pin_port;
 pin_mask_t flex_pin_mask;
 
-port_register_t triggerPri_pin_port;
-pin_mask_t triggerPri_pin_mask;
-port_register_t triggerSec_pin_port;
-pin_mask_t triggerSec_pin_mask;
-port_register_t triggerThird_pin_port;
-pin_mask_t triggerThird_pin_mask;
-
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
@@ -90,15 +83,6 @@ volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-#if defined(CORE_SAMD21)
-  PinStatus primaryTriggerEdge;
-  PinStatus secondaryTriggerEdge;
-  PinStatus tertiaryTriggerEdge;
-#else
-  byte primaryTriggerEdge;
-  byte secondaryTriggerEdge;
-  byte tertiaryTriggerEdge;
-#endif
 int CRANK_ANGLE_MAX_IGN = 360;
 int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
 volatile uint32_t runSecsX10;
