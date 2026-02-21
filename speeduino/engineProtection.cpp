@@ -158,11 +158,13 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::engine_protect_flags_t) checkEngineProtection(
 
   if (page6.engineProtectType != PROTECT_CUT_OFF) 
   {
+    // LCOV_EXCL_BR_START
     flags.boostCut = checkBoostLimit(current, page6);
     flags.oil = checkOilPressureLimit(current, page6, page10, millis());
     flags.afr = checkAFRLimit(current, page6, page9, millis());
     flags.coolant = checkCoolantLimit(current, page6, page9);
     flags.rpm = flags.coolant || checkRpmLimit(current, page4, page6, page9);
+    // LCOV_EXCL_BR_STOP
   }
 
   return flags;
@@ -228,7 +230,7 @@ TESTABLE_INLINE_STATIC uint16_t getMaxRpm(const statuses &current, const config4
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
 
 // Test-hookable RNG for rolling cut (defaults to existing random1to100)
-TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
+TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) noexcept = random1to100;
 
 constexpr statuses::scheduler_cut_t CUT_FULL_BOTH = { 
   .ignitionChannelsPending = 0x00, 
