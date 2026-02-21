@@ -218,6 +218,37 @@ static void test_getPageSize(void)
     TEST_ASSERT_EQUAL(0, getPageSize(MAX_PAGE_NUM+1U));
 }
 
+static void print_entity_layout(const page_iterator_t &entity)
+{
+    char szMsg[64];
+    sprintf(szMsg, "%" PRIu8 ", %" PRIu8 ", %s, %" PRIu16 ", %" PRIu16, 
+        entity.location.page, 
+        entity.location.index, 
+        entity.type==Raw ? "Raw" : (entity.type==Table ? "Table" : (entity.type==NoEntity ? "NoEntity" : "End")),
+        entity.address.start, 
+        entity.address.size);
+    UnityPrint(szMsg); UNITY_PRINT_EOL();
+}
+
+static void print_page_layout(uint8_t pageNum)
+{
+    page_iterator_t entity = page_begin(pageNum);
+    while (End!=entity.type)
+    {
+        print_entity_layout(entity);
+        entity = advance(entity);
+    }
+}
+
+static void print_all_page_layout(void)
+{
+    UnityPrint("Page, Index, Type, Start, Size"); UNITY_PRINT_EOL();
+    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    {
+        print_page_layout(pageNum);
+    }
+}
+
 void testPage(void) {
     SET_UNITY_FILENAME() {
         RUN_TEST(test_getEntityValue_raw);
@@ -230,5 +261,6 @@ void testPage(void) {
         // Not a unit test, as it runs multiple tests in a loop
         // DO NOT PLACE INSIDE a RUN_TEST().
         testGetSetPageValues(); 
+        RUN_TEST(print_all_page_layout);
     }
 }
