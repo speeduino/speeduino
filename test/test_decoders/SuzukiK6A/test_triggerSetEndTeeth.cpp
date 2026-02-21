@@ -13,6 +13,8 @@ static void test_setup_SuzukiK6A()
     triggerSetup_SuzukiK6A();
 }
 
+extern uint16_t ignition1EndTooth; //The end tooth for the first ignition channel
+extern uint16_t ignition2EndTooth; //The end tooth for the second ignition channel
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 static void test_k6A_newIgn_trig0_1()
@@ -22,7 +24,7 @@ static void test_k6A_newIgn_trig0_1()
     //triggerAngle=0
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -37,7 +39,7 @@ static void test_k6A_newIgn_trig90_1()
     //triggerAngle=90
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 90; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -51,7 +53,7 @@ static void test_k6A_newIgn_trig180_1()
     //triggerAngle=180
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 180; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -65,7 +67,7 @@ static void test_k6A_newIgn_trig270_1()
     //triggerAngle=270
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 270; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -79,7 +81,7 @@ static void test_k6A_newIgn_trig360_1()
     //triggerAngle=360
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 360; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -93,7 +95,7 @@ static void test_k6A_newIgn_trigNeg90_1()
     //triggerAngle=-90
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -90; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -107,7 +109,7 @@ static void test_k6A_newIgn_trigNeg180_1()
     //triggerAngle=-180
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -180; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -121,7 +123,7 @@ static void test_k6A_newIgn_trigNeg270_1()
     //triggerAngle=-270
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -270; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -135,7 +137,7 @@ static void test_k6A_newIgn_trigNeg360_1()
     //triggerAngle=-360
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -360; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -150,7 +152,7 @@ static void test_k6A_newIgn_trig0_2()
     //triggerAngle=0
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -164,7 +166,7 @@ static void test_k6A_newIgn_trig90_2()
     //triggerAngle=90
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 90; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -178,7 +180,7 @@ static void test_k6A_newIgn_trig180_2()
     //triggerAngle=180
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 180; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -192,7 +194,7 @@ static void test_k6A_newIgn_trig270_2()
     //triggerAngle=270
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 270; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -206,7 +208,7 @@ void test_K6A_newIgn_trig366()
     //triggerAngle=360
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 360; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -220,7 +222,7 @@ static void test_k6A_newIgn_trigNeg90_2()
     //triggerAngle=-90
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -90; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -234,7 +236,7 @@ static void test_k6A_newIgn_trigNeg180_2()
     //triggerAngle=-180
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -180; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -248,7 +250,7 @@ static void test_k6A_newIgn_trigNeg270_2()
     //triggerAngle=-270
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -270; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();
@@ -262,7 +264,7 @@ void test_K6A_newIgn_trigNeg366()
     //triggerAngle=-360
     test_setup_SuzukiK6A();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = -360; //No trigger offset
     
     triggerSetEndTeeth_SuzukiK6A();

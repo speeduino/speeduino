@@ -7,19 +7,20 @@
 #include "../test_utils.h"
 #include "storage.h"
 #include "../test_schedules/channel_test_helpers.h"
+#include "decoders.h"
 
-void prepareForInitialiseAll(uint8_t boardId);
+extern void prepareForInitialiseAll(uint8_t boardId);
 
-static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
+static void assert_ignition_channel(uint16_t angle, uint8_t channel, const IgnitionSchedule &schedule)
 {
   char msg[32];
 
-  sprintf_P(msg, PSTR("channe%" PRIu8 "1InjDegrees"), channel+1);
-  TEST_ASSERT_EQUAL_MESSAGE(angle, channelInjDegrees, msg);
+  sprintf_P(msg, PSTR("channe%" PRIu8 "Degrees"), channel+1);
+  TEST_ASSERT_EQUAL_MESSAGE(angle, schedule.channelDegrees, msg);
   sprintf_P(msg, PSTR("ign%" PRIu8 "StartFunction"), channel+1);
-  TEST_ASSERT_TRUE_MESSAGE(channel>=currentStatus.maxIgnOutputs || (startFunction!=nullCallback), msg);
+  TEST_ASSERT_TRUE_MESSAGE(channel>=currentStatus.maxIgnOutputs || (schedule.pStartCallback!=nullCallback), msg);
   sprintf_P(msg, PSTR("ign%" PRIu8 "EndFunction"), channel+1);
-  TEST_ASSERT_TRUE_MESSAGE(channel>=currentStatus.maxIgnOutputs || (endFunction!=nullCallback), msg);
+  TEST_ASSERT_TRUE_MESSAGE(channel>=currentStatus.maxIgnOutputs || (schedule.pEndCallback!=nullCallback), msg);
 }
 
 static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutputs, const uint16_t (&angle)[8])
@@ -31,14 +32,14 @@ static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutp
   strcpy_P(msg, PSTR("maxIgnOutputs"));
   TEST_ASSERT_EQUAL_UINT16_MESSAGE(expectedOutputs, currentStatus.maxIgnOutputs, msg);
 
-  RUNIF_IGNCHANNEL1(assert_ignition_channel(angle[0], 0, channel1IgnDegrees, ignitionSchedule1.pStartCallback, ignitionSchedule1.pEndCallback), {});
-  RUNIF_IGNCHANNEL2(assert_ignition_channel(angle[1], 1, channel2IgnDegrees, ignitionSchedule2.pStartCallback, ignitionSchedule2.pEndCallback), {});
-  RUNIF_IGNCHANNEL3(assert_ignition_channel(angle[2], 2, channel3IgnDegrees, ignitionSchedule3.pStartCallback, ignitionSchedule3.pEndCallback), {});
-  RUNIF_IGNCHANNEL4(assert_ignition_channel(angle[3], 3, channel4IgnDegrees, ignitionSchedule4.pStartCallback, ignitionSchedule4.pEndCallback), {});
-  RUNIF_IGNCHANNEL5(assert_ignition_channel(angle[4], 4, channel5IgnDegrees, ignitionSchedule5.pStartCallback, ignitionSchedule5.pEndCallback), {});
-  RUNIF_IGNCHANNEL6(assert_ignition_channel(angle[5], 5, channel6IgnDegrees, ignitionSchedule6.pStartCallback, ignitionSchedule6.pEndCallback), {});
-  RUNIF_IGNCHANNEL7(assert_ignition_channel(angle[6], 6, channel7IgnDegrees, ignitionSchedule7.pStartCallback, ignitionSchedule7.pEndCallback), {});
-  RUNIF_IGNCHANNEL8(assert_ignition_channel(angle[7], 7, channel8IgnDegrees, ignitionSchedule8.pStartCallback, ignitionSchedule8.pEndCallback), {});
+  RUNIF_IGNCHANNEL1(assert_ignition_channel(angle[0], 0, ignitionSchedule1), {});
+  RUNIF_IGNCHANNEL2(assert_ignition_channel(angle[1], 1, ignitionSchedule2), {});
+  RUNIF_IGNCHANNEL3(assert_ignition_channel(angle[2], 2, ignitionSchedule3), {});
+  RUNIF_IGNCHANNEL4(assert_ignition_channel(angle[3], 3, ignitionSchedule4), {});
+  RUNIF_IGNCHANNEL5(assert_ignition_channel(angle[4], 4, ignitionSchedule5), {});
+  RUNIF_IGNCHANNEL6(assert_ignition_channel(angle[5], 5, ignitionSchedule6), {});
+  RUNIF_IGNCHANNEL7(assert_ignition_channel(angle[6], 6, ignitionSchedule7), {});
+  RUNIF_IGNCHANNEL8(assert_ignition_channel(angle[7], 7, ignitionSchedule8), {});
 }
 
 static void assert_cylinder1_stroke4_seq_even(void)
@@ -333,6 +334,14 @@ static void run_8_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder8_stroke4_wasted_even);
 }
 
+static void assert_4cylinder_half_sync(void)
+{
+  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
+  assert_ignition_schedules(360U, 2U, angle);
+}
+
+extern void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, const decoder_status_t &decoderStatus, statuses &current);
+
 static void setupPartialSyncTest(uint8_t cylinders)
 {
   prepareForInitialiseAll(3U);
@@ -345,106 +354,116 @@ static void setupPartialSyncTest(uint8_t cylinders)
 
 static void test_partial_sync_1_cylinder(void)
 {
+  decoder_status_t decoderStatus;
   setupPartialSyncTest(1);
 
   // Initial state
   assert_cylinder1_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-    const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-    assert_ignition_schedules(360U, 1U, angle);
-  }
+  // No change for 1 cylinder
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_cylinder1_stroke4_seq_even();
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder1_stroke4_seq_even();
 }
 
 static void test_partial_sync_2_cylinder(void)
 {
   setupPartialSyncTest(2);
+  decoder_status_t decoderStatus;
 
   // Initial state
   assert_cylinder2_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-    const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-    assert_ignition_schedules(360U, 2U, angle);
-  }
+  // No change for 2 cylinder
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_cylinder2_stroke4_seq_even();
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder2_stroke4_seq_even();
 }
 
 static void test_partial_sync_3_cylinder(void)
 {
+  decoder_status_t decoderStatus;
   setupPartialSyncTest(3);
 
   // Initial state
   assert_cylinder3_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-    // TODO: This must be wrong!
-    const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-    assert_ignition_schedules(360U, 3U, angle);
-  }
+  // No change for 3 cylinder
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_cylinder3_stroke4_seq_even();
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder3_stroke4_seq_even();
 }
 
 static void test_partial_sync_4_cylinder(void)
 {
   setupPartialSyncTest(4);
+  decoder_status_t decoderStatus;
 
   // Initial state
   assert_cylinder4_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  { 
-    const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-    assert_ignition_schedules(360U, 2U, angle);
-  }
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_4cylinder_half_sync();
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_cylinder4_stroke4_seq_even();
+
+  // No sync => no change
+  decoderStatus.syncStatus = SyncStatus::None;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder4_stroke4_seq_even();
 }
 
 static void test_partial_sync_5_cylinder(void)
 {
+  decoder_status_t decoderStatus;
   setupPartialSyncTest(5);
 
   // Initial state
   assert_cylinder5_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-    // TODO: This must be wrong!
-    const uint16_t angle[] = {0,144,288,432,576,0,0,0};
-    assert_ignition_schedules(360U, 5U, angle);
-  }
+  // No change for 5 cylinder
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
+  assert_cylinder5_stroke4_seq_even();
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder5_stroke4_seq_even();
 }
 
 static void test_partial_sync_6_cylinder(void)
 {
 #if IGN_CHANNELS>=6
+  decoder_status_t decoderStatus;
   setupPartialSyncTest(6);
 
   // Initial state
   assert_cylinder6_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   {
     const uint16_t angle[] = {0,120,240,360,480,600,0,0};
     assert_ignition_schedules(360U, 3U, angle);
   }
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder6_stroke4_seq_even();
 #else
   TEST_IGNORE_MESSAGE("Skipping 6 cylinder partial sync test - not enough injectors");
@@ -455,18 +474,21 @@ static void test_partial_sync_6_cylinder(void)
 static void test_partial_sync_8_cylinder(void)
 {
 #if IGN_CHANNELS>=8
+  decoder_status_t decoderStatus;
   setupPartialSyncTest(8);
 
   // Initial state
   assert_cylinder8_stroke4_seq_even();
 
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   {
     const uint16_t angle[] = {0,90,180,270,360,450,540,630};
     assert_ignition_schedules(360U, 4U, angle);
   }
 
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  matchIgnitionSchedulersToSyncState(configPage2, configPage4, decoderStatus, currentStatus);
   assert_cylinder8_stroke4_seq_even();
 #else
   TEST_IGNORE_MESSAGE("Skipping 8 cylinder partial sync test - not enough injectors");
