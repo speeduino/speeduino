@@ -2,6 +2,12 @@
 #include "globals.h"
 #include "preprocessor.h"
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
 // For TunerStudio:
@@ -565,3 +571,7 @@ table_axis_iterator y_begin(const page_iterator_t &it)
 }
 
 // LCOV_EXCL_STOP
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
