@@ -5,6 +5,13 @@
 #include EEPROM_LIB_H //This is defined in the board .h files
 #pragma GCC diagnostic pop
 
+
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 // LCOV_EXCL_START
 // Exclude simple wrappers from code coverage
 namespace EEPROMApi {
@@ -101,3 +108,7 @@ __attribute__((noinline)) void fillBlock(const storage_api_t &api, uint16_t addr
     }
   }
 }
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif
