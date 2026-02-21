@@ -3497,6 +3497,21 @@ void initialiseTriggers(void)
       attachInterrupt(triggerInterrupt2, triggerSecondaryHandler, secondaryTriggerEdge);
       break;
 
+    case DECODER_SUBARU_7_C_ONLY:
+      // Subaru 7 teeth crank ONLY
+      triggerSetup_Subaru7crankOnly();
+      triggerHandler = triggerPri_Subaru7crankOnly;
+      triggerSecondaryHandler = triggerSec_Subaru7crankOnly;
+      getRPM = getRPM_Subaru7crankOnly;
+      getCrankAngle = getCrankAngle_Subaru7crankOnly;
+      triggerSetEndTeeth = triggerSetEndTeeth_Subaru7crankOnly;
+
+      if(configPage4.TrigEdge == 0) { primaryTriggerEdge = RISING; } // Attach the crank trigger wheel interrupt (Hall sensor drags to ground when triggering)
+      else { primaryTriggerEdge = FALLING; }
+      secondaryTriggerEdge = FALLING;
+
+      attachInterrupt(triggerInterrupt, triggerHandler, primaryTriggerEdge);
+      break;
 
     default:
       triggerHandler = triggerPri_missingTooth;
