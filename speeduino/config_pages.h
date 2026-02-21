@@ -575,7 +575,8 @@ struct config9 {
   uint8_t canoutput_param_start_byte[8];
   byte canoutput_param_num_bytes[8];
 
-  byte unused10_110;
+  byte internal_can_baud_rate:2;            //CAN baud rate selection (0=500k, 1=250k, 2=125k, 3=50k)
+  //byte unused10_110;
   byte unused10_111;
   byte egoMAPMax; //needs to be multiplied by 2 to get the proper value
   byte egoMAPMin; //needs to be multiplied by 2 to get the proper value
