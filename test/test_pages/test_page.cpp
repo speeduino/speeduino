@@ -218,6 +218,26 @@ static void test_getPageSize(void)
     TEST_ASSERT_EQUAL(0, getPageSize(MAX_PAGE_NUM+1U));
 }
 
+static uint16_t sumEntitySizes(uint8_t pageNum)
+{
+    uint16_t sum = 0;
+    page_iterator_t it = page_begin(pageNum);
+    while (End!=it.type)
+    {
+        sum += it.address.size;
+        it = advance(it);
+    }
+    return sum;
+}
+
+static void test_sumEntity_matches_pageSize(void)
+{
+    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    {
+        TEST_ASSERT_EQUAL(getPageSize(pageNum), sumEntitySizes(pageNum));
+    }
+}
+
 static void print_entity_layout(const page_iterator_t &entity)
 {
     char szMsg[64];
@@ -274,5 +294,6 @@ void testPage(void) {
         testGetSetPageValues(); 
         RUN_TEST(print_all_page_entity_layout);
         RUN_TEST(print_page_layout);
+        RUN_TEST(test_sumEntity_matches_pageSize);
     }
 }
