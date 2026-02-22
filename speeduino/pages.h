@@ -5,7 +5,7 @@
 /**
  * Page size in bytes
  */
-uint16_t getPageSize(byte pageNum /**< [in] The page number */ );
+uint16_t getPageSize(uint8_t pageNum /**< [in] The page number */ );
 
 // These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
 constexpr uint8_t veMapPage     = 2;
@@ -29,7 +29,7 @@ constexpr uint8_t MAX_PAGE_NUM  = (boostvvtPage2+1U);
 // ============================== Per-byte page access ==========================
 
 /** @brief Gets a single value from a page, with data aligned as per the ini file */
-byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve data from. */
+byte getPageValue(  uint8_t pageNum,       /**< [in] The page number to retrieve data from. */
                     uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
                     );
 
@@ -38,7 +38,7 @@ byte getPageValue(  byte pageNum,       /**< [in] The page number to retrieve da
  * 
  * @returns true if value set, false otherwise
  */
-bool setPageValue(  byte pageNum,       /**< [in] The page number to update. */
+bool setPageValue(  uint8_t pageNum,       /**< [in] The page number to update. */
                     uint16_t offset,    /**< [in] The offset within the page.  */
                     byte value          /**< [in] The new value */
                     );
@@ -165,7 +165,7 @@ bool setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */
  * Initiates iteration over a pages entities.
  * Test `entity.type==End` to determine the end of the page.
  */
-page_iterator_t page_begin(byte pageNum /**< [in] The page number to iterate over. */);
+page_iterator_t page_begin(uint8_t pageNum /**< [in] The page number to iterate over. */);
 
 /**
  * Moves the iterator to the next sub-entity on the page

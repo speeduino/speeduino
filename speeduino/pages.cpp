@@ -395,7 +395,7 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
 
 // ====================================== External functions  ====================================
 
-uint16_t getPageSize(byte pageNum)
+uint16_t getPageSize(uint8_t pageNum)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
   return entity.address.start + entity.address.size;
@@ -406,14 +406,14 @@ static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, u
   return pageOffset-entity.address.start;
 }
 
-bool setPageValue(byte pageNum, uint16_t offset, byte value)
+bool setPageValue(uint8_t pageNum, uint16_t offset, byte value)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
   return setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
 }
 
-byte getPageValue(byte pageNum, uint16_t offset)
+byte getPageValue(uint8_t pageNum, uint16_t offset)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
 
@@ -424,7 +424,7 @@ byte getPageValue(byte pageNum, uint16_t offset)
 // No need to have coverage on simple wrappers
 
 // Support iteration over a pages entities.
-page_iterator_t page_begin(byte pageNum)
+page_iterator_t page_begin(uint8_t pageNum)
 {
   return map_page_offset_to_entity(pageNum, 0U);
 }
