@@ -2,6 +2,12 @@
 #include "globals.h"
 #include "preprocessor.h"
 
+#if defined(CORE_AVR)
+#pragma GCC push_options
+// This minimizes RAM usage at no performance cost
+#pragma GCC optimize ("Os") 
+#endif
+
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
 // For TunerStudio:
@@ -21,9 +27,6 @@
 // So there is a 2 stage mapping:
 //  1. Page # + Offset to entity
 //  2. Offset to intra-entity byte
-
-// Page sizes as defined in the .ini file
-constexpr const uint16_t PROGMEM ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256 };
 
 // ========================= Table size calculations =========================
 // Note that these should be computed at compile time, assuming the correct
@@ -236,101 +239,56 @@ bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
   }
 }
 
-// ========================= Static page size computation & checking ===================
+// ========================= Offset to entity support  ===================
 
-// This will fail AND print the page number and required size
-template <uint8_t pageNum, uint16_t pageSize>
-static inline void check_size(void) {
-  static_assert(ini_page_sizes[pageNum] == pageSize, "Size is off!");
-}
-
-// Since pages are a logical contiguous block, we can automatically compute the 
-// logical start address of every item: the first one starts at zero, following
-// items must start at the end of the previous.
-#define _ENTITY_START(entityNum) entity ## entityNum ## Start
-#define ENTITY_START_VAR(entityNum) _ENTITY_START(entityNum)
-// Compute the start address of the next entity. We need this to be a constexpr
-// so we can static assert on it later. So we cannot increment an exiting var.
-#define DECLARE_NEXT_ENTITY_START(entityIndex, entitySize) \
-  constexpr uint16_t ENTITY_START_VAR( PP_INC(entityIndex) ) = ENTITY_START_VAR(entityIndex)+entitySize;
-
-// ========================= Logical page end processing ===================
-
-// The members of all page_iterator_t instances are compile time constants and
-// thus all page_iterator_t instances *could* be compile time constants. 
-//
-// If we declare them inline as part of return statements, gcc recognises they 
-// are constants (even without constexpr). Constants need to be stored somewhere:
-// gcc places them in the .data section, which is placed in SRAM :-(. 
-//
-// So we would end up using several hundred bytes of SRAM. 
-//
-// Instead we use this (and other) intermediate factory function(s) - it provides a barrier that
-// forces GCC to construct the page_iterator_t instance at runtime.
-static inline page_iterator_t create_end_iterator(uint8_t pageNum, uint16_t start)
+void nextEntity(page_iterator_t &entity, uint16_t nextBlockSize)
 {
-  return page_iterator_t( End, 
-                          entity_page_location_t(pageNum, UINT8_MAX),
-                          entity_page_address_t(start, 0U));
+  ++entity.location.index;
+  entity.address = entity.address.next(nextBlockSize);
 }
-
-// Signal the end of a page
-#define END_OF_PAGE(pageNum, entityNum) \
-  check_size<(pageNum), ENTITY_START_VAR(entityNum)>(); \
-  return create_end_iterator((pageNum), ENTITY_START_VAR(entityNum)); \
 
 // ========================= Table processing  ===================
 
-static inline page_iterator_t create_table_iterator(void *pTable, table_type_t key, uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
+template <class table_t>
+static void checkIsInTable(page_iterator_t &result, table_t *pTable, uint16_t offset)
 {
-  return page_iterator_t( pTable, key,
-                          entity_page_location_t(pageNum, index),
-                          entity_page_address_t(start, size));
+  if (result.type==End)
+  {
+    nextEntity(result, get_table_axisy_end(pTable));
+    if (result.address.isOffsetInEntity(offset)) 
+    { 
+      result.setTable(pTable, pTable->type_key);
+    }
+  }
 }
-
-// If the offset is in range, create a Table entity_t
-#define CHECK_TABLE(pageNum, offset, pTable, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+get_table_axisy_end(pTable)) \
-  { \
-    return create_table_iterator(pTable, (pTable)->type_key, \
-                                  (pageNum), (entityNum), \
-                                  ENTITY_START_VAR(entityNum), get_table_axisy_end((pTable))); \
-  } \
-  DECLARE_NEXT_ENTITY_START(entityNum, get_table_axisy_end(pTable))
 
 // ========================= Raw memory block processing  ===================
 
-static inline page_iterator_t create_raw_iterator(void *pBuffer, uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
+static void checkIsInRaw(page_iterator_t &result, void *pEntity, uint16_t entitySize, uint16_t offset)
 {
-  return page_iterator_t( pBuffer,
-                          entity_page_location_t(pageNum, index),    
-                          entity_page_address_t(start, size));
+  if (result.type==End)
+  {
+    nextEntity(result, entitySize);
+    if (result.address.isOffsetInEntity(offset)) 
+    { 
+      result.setRaw(pEntity);
+    }
+  }
 }
-
-// If the offset is in range, create a Raw entity_t
-#define CHECK_RAW(pageNum, offset, pDataBlock, blockSize, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
-  { \
-    return create_raw_iterator((pDataBlock), (pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
-  } \
-  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
 
 // ========================= Empty entity processing  ===================
 
-static inline page_iterator_t create_empty_iterator(uint8_t pageNum, uint8_t index, uint16_t start, uint16_t size)
+static void checkIsInEmpty(page_iterator_t &result, uint16_t entitySize, uint16_t offset)
 {
-  return page_iterator_t( NoEntity,
-                          entity_page_location_t(pageNum, index),    
-                          entity_page_address_t(start, size));
+  if (result.type==End)
+  {
+    nextEntity(result, entitySize);
+    if (result.address.isOffsetInEntity(offset)) 
+    { 
+      result.setNoEntity();
+    }
+  }
 }
-
-// If the offset is in range, create a "no entity"
-#define CHECK_NOENTITY(pageNum, offset, blockSize, entityNum) \
-  if (offset < ENTITY_START_VAR(entityNum)+blockSize) \
-  { \
-    return create_empty_iterator((pageNum), (entityNum), ENTITY_START_VAR(entityNum), (blockSize));\
-  } \
-  DECLARE_NEXT_ENTITY_START(entityNum, blockSize)
 
 // ===============================================================================
 
@@ -338,153 +296,100 @@ static inline page_iterator_t create_empty_iterator(uint8_t pageNum, uint8_t ind
 //
 // Alternative implementation would be to encode the mapping into data structures
 // That uses flash memory, which is scarce. And it was too slow.
-static inline __attribute__((always_inline)) // <-- this is critical for performance
-page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
+static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 {
-  // The start address of the 1st entity in any page.
-  static constexpr uint16_t ENTITY_START_VAR(0) = 0U;
+  // This is mutated by the checkIsIn* functions to return the entity that matches the offset
+  page_iterator_t result( End, // Signal that no entity has been found yet
+                          entity_page_location_t(pageNumber, (uint8_t)-1 /* Deliberate, so we can increment index AND address as one operation */), 
+                          entity_page_address_t(0U, 0U));
 
   switch (pageNumber)
   {
-    default:
-    case 0:
-      return create_end_iterator(pageNumber, 0);
-
     case veMapPage:
-    {
-      // LCOV_EXCL_BR_START
-      // The first entity on the page has a missing branch not covered
-      // No idea why, so exclude froom branch coverage for the moment
-      CHECK_TABLE(veMapPage, offset, &fuelTable, 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(veMapPage, 1)
-    }
+      checkIsInTable(result, &fuelTable, offset);
+      break;
 
     case ignMapPage: //Ignition settings page (Page 2)
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(ignMapPage, offset, &ignitionTable, 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(ignMapPage, 1)
-    }
+      checkIsInTable(result, &ignitionTable, offset);
+      break;
 
     case afrMapPage: //Air/Fuel ratio target settings page
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(afrMapPage, offset, &afrTable, 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(afrMapPage, 1)
-    }
+      checkIsInTable(result, &afrTable, offset);
+      break;
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(boostvvtPage, offset, &boostTable, 0)
-      // LCOV_EXCL_BR_STOP
-      CHECK_TABLE(boostvvtPage, offset, &vvtTable, 1)
-      CHECK_TABLE(boostvvtPage, offset, &stagingTable, 2)
-      END_OF_PAGE(boostvvtPage, 3)
-    }
+      checkIsInTable(result, &boostTable, offset);
+      checkIsInTable(result, &vvtTable, offset);
+      checkIsInTable(result, &stagingTable, offset);
+      break;
 
     case seqFuelPage:
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(seqFuelPage, offset, &trim1Table, 0)
-      // LCOV_EXCL_BR_STOP
-      CHECK_TABLE(seqFuelPage, offset, &trim2Table, 1)
-      CHECK_TABLE(seqFuelPage, offset, &trim3Table, 2)
-      CHECK_TABLE(seqFuelPage, offset, &trim4Table, 3)
-      CHECK_TABLE(seqFuelPage, offset, &trim5Table, 4)
-      CHECK_TABLE(seqFuelPage, offset, &trim6Table, 5)
-      CHECK_TABLE(seqFuelPage, offset, &trim7Table, 6)
-      CHECK_TABLE(seqFuelPage, offset, &trim8Table, 7)
-      END_OF_PAGE(seqFuelPage, 8)
-    }
+      checkIsInTable(result, &trim1Table, offset);
+      checkIsInTable(result, &trim2Table, offset);
+      checkIsInTable(result, &trim3Table, offset);
+      checkIsInTable(result, &trim4Table, offset);
+      checkIsInTable(result, &trim5Table, offset);
+      checkIsInTable(result, &trim6Table, offset);
+      checkIsInTable(result, &trim7Table, offset);
+      checkIsInTable(result, &trim8Table, offset);
+      break;
 
     case fuelMap2Page:
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(fuelMap2Page, offset, &fuelTable2, 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(fuelMap2Page, 1)
-    }
+      checkIsInTable(result, &fuelTable2, offset);
+      break;
 
     case wmiMapPage:
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(wmiMapPage, offset, &wmiTable, 0)
-      // LCOV_EXCL_BR_STOP
-      CHECK_TABLE(wmiMapPage, offset, &vvt2Table, 1)
-      CHECK_TABLE(wmiMapPage, offset, &dwellTable, 2)
-      CHECK_NOENTITY(wmiMapPage, offset, 8U, 3)
-      END_OF_PAGE(wmiMapPage, 4)
-    }
+      checkIsInTable(result, &wmiTable, offset);
+      checkIsInTable(result, &vvt2Table, offset);
+      checkIsInTable(result, &dwellTable, offset);
+      checkIsInEmpty(result, 8U, offset);
+      break;
     
     case ignMap2Page:
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(ignMap2Page, offset, &ignitionTable2, 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(ignMap2Page, 1)
-    }
+      checkIsInTable(result, &ignitionTable2, offset);
+      break;
 
     case veSetPage: 
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(veSetPage, offset, &configPage2, sizeof(configPage2), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(veSetPage, 1)
-    }
+      checkIsInRaw(result, &configPage2, sizeof(configPage2), offset);
+      break;
 
     case ignSetPage: 
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(ignSetPage, offset, &configPage4, sizeof(configPage4), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(ignSetPage, 1)
-    }
+      checkIsInRaw(result, &configPage4, sizeof(configPage4), offset);
+      break;
     
     case afrSetPage: 
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(afrSetPage, offset, &configPage6, sizeof(configPage6), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(afrSetPage, 1)
-    }
+      checkIsInRaw(result, &configPage6, sizeof(configPage6), offset);
+      break;
 
     case canbusPage:  
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(canbusPage, offset, &configPage9, sizeof(configPage9), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(canbusPage, 1)
-    }
+      checkIsInRaw(result, &configPage9, sizeof(configPage9), offset);
+      break;
 
     case warmupPage: 
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(warmupPage, offset, &configPage10, sizeof(configPage10), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(warmupPage, 1)
-    }
+      checkIsInRaw(result, &configPage10, sizeof(configPage10), offset);
+      break;
 
     case progOutsPage: 
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_RAW(progOutsPage, offset, &configPage13, sizeof(configPage13), 0)
-      // LCOV_EXCL_BR_STOP
-      END_OF_PAGE(progOutsPage, 1)
-    }
-
+      checkIsInRaw(result, &configPage13, sizeof(configPage13), offset);
+      break;
+    
     case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
-    {
-      // LCOV_EXCL_BR_START
-      CHECK_TABLE(boostvvtPage2, offset, &boostTableLookupDuty, 0)
-      // LCOV_EXCL_BR_STOP
-      CHECK_RAW(boostvvtPage2, offset, &configPage15, sizeof(configPage15), 1)
-      END_OF_PAGE(boostvvtPage2, 2)
-    }
+      checkIsInTable(result, &boostTableLookupDuty, offset);
+      checkIsInRaw(result, &configPage15, sizeof(configPage15), offset);
+      break;
+
+    default:
+      // Nothing to do
+      break;
   }
+
+  // Nothing matched, so we are at the end of the known entities for the page.
+  if (result.type==End)
+  {
+    nextEntity(result, 0U);
+  }
+
+  return result;
 }
 
 
@@ -492,12 +397,13 @@ page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 
 uint8_t getPageCount(void)
 {
-  return _countof(ini_page_sizes);
+  return 16U;
 }
 
 uint16_t getPageSize(byte pageNum)
 {
-  return pageNum<_countof(ini_page_sizes) ? pgm_read_word(&(ini_page_sizes[pageNum])) : 0U;
+  page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
+  return entity.address.start + entity.address.size;
 }
 
 static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
@@ -566,3 +472,7 @@ table_axis_iterator y_begin(const page_iterator_t &it)
 }
 
 // LCOV_EXCL_STOP
+
+#if defined(CORE_AVR)
+#pragma GCC pop_options
+#endif

@@ -16,9 +16,10 @@ static void test_getEntityValue_raw(void)
     char entity[48];
     memset(&entity, MARKER, sizeof(entity));
 
-   page_iterator_t entityIter(  entity, 
-                                entity_page_location_t(10, 0),
-                                entity_page_address_t(0, sizeof(entity)));
+    page_iterator_t entityIter( Table, 
+                            entity_page_location_t(10, 0),
+                            entity_page_address_t(0, sizeof(entity)));
+    entityIter.setRaw(&entity);
 
     assert_entity(entityIter, MARKER);
 }
@@ -53,10 +54,11 @@ static page_iterator_t setupTableIterator(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    return page_iterator_t( &entity,
-                            entity.type_key, 
+    page_iterator_t result( Table, 
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, size));
+    result.setTable(&entity, entity.type_key);
+    return result;
 }
 
 template <typename TTable>
@@ -114,9 +116,10 @@ static void test_setEntityValue_raw(void)
     char entity[48];
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( entity, 
+    page_iterator_t entityIter( End, 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
+    entityIter.setRaw(&entity);
 
     constexpr char POST_MARKER = 'Y';
     set_entity_values(entityIter, 0, entityIter.address.size, POST_MARKER);
@@ -218,6 +221,68 @@ static void test_getPageSize(void)
     TEST_ASSERT_EQUAL(0, getPageSize(MAX_PAGE_NUM+1U));
 }
 
+static uint16_t sumEntitySizes(uint8_t pageNum)
+{
+    uint16_t sum = 0;
+    page_iterator_t it = page_begin(pageNum);
+    while (End!=it.type)
+    {
+        sum += it.address.size;
+        it = advance(it);
+    }
+    return sum;
+}
+
+static void test_sumEntity_matches_pageSize(void)
+{
+    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    {
+        TEST_ASSERT_EQUAL(getPageSize(pageNum), sumEntitySizes(pageNum));
+    }
+}
+
+static void print_entity_layout(const page_iterator_t &entity)
+{
+    char szMsg[64];
+    sprintf(szMsg, "%" PRIu8 ", %" PRIu8 ", %s, %" PRIu16 ", %" PRIu16, 
+        entity.location.page, 
+        entity.location.index, 
+        entity.type==Raw ? "Raw" : (entity.type==Table ? "Table" : (entity.type==NoEntity ? "NoEntity" : "End")),
+        entity.address.start, 
+        entity.address.size);
+    UnityPrint(szMsg); UNITY_PRINT_EOL();
+}
+
+static void print_page_entity_layout(uint8_t pageNum)
+{
+    page_iterator_t entity = page_begin(pageNum);
+    while (End!=entity.type)
+    {
+        print_entity_layout(entity);
+        entity = advance(entity);
+    }
+}
+
+static void print_all_page_entity_layout(void)
+{
+    UnityPrint("Page, Index, Type, Start, Size"); UNITY_PRINT_EOL();
+    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    {
+        print_page_entity_layout(pageNum);
+    }
+}
+
+static void print_page_layout(void)
+{
+    UnityPrint("Page, Size"); UNITY_PRINT_EOL();
+    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    {
+        char szMsg[32];
+        sprintf(szMsg, "%" PRIu8 ", %" PRIu16, pageNum, getPageSize(pageNum));
+        UnityPrint(szMsg); UNITY_PRINT_EOL();
+    }
+}
+
 void testPage(void) {
     SET_UNITY_FILENAME() {
         RUN_TEST(test_getEntityValue_raw);
@@ -230,5 +295,8 @@ void testPage(void) {
         // Not a unit test, as it runs multiple tests in a loop
         // DO NOT PLACE INSIDE a RUN_TEST().
         testGetSetPageValues(); 
+        RUN_TEST(print_all_page_entity_layout);
+        RUN_TEST(print_page_layout);
+        RUN_TEST(test_sumEntity_matches_pageSize);
     }
 }
