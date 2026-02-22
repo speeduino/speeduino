@@ -306,37 +306,25 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
   switch (pageNumber)
   {
     case veMapPage:
-      // LCOV_EXCL_BR_START
-      // The first entity on the page has a missing branch not covered
-      // No idea why, so exclude from branch coverage for the moment
       checkIsInTable(result, &fuelTable, offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case ignMapPage: //Ignition settings page (Page 2)
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &ignitionTable, offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case afrMapPage: //Air/Fuel ratio target settings page
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &afrTable, offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &boostTable, offset);
-      // LCOV_EXCL_BR_STOP
       checkIsInTable(result, &vvtTable, offset);
       checkIsInTable(result, &stagingTable, offset);
       break;
 
     case seqFuelPage:
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &trim1Table, offset);
-      // LCOV_EXCL_BR_STOP
       checkIsInTable(result, &trim2Table, offset);
       checkIsInTable(result, &trim3Table, offset);
       checkIsInTable(result, &trim4Table, offset);
@@ -347,66 +335,46 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
       break;
 
     case fuelMap2Page:
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &fuelTable2, offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case wmiMapPage:
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &wmiTable, offset);
-      // LCOV_EXCL_BR_STOP
       checkIsInTable(result, &vvt2Table, offset);
       checkIsInTable(result, &dwellTable, offset);
       checkIsInEmpty(result, 8U, offset);
       break;
     
     case ignMap2Page:
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &ignitionTable2, offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case veSetPage: 
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage2, sizeof(configPage2), offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case ignSetPage: 
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage4, sizeof(configPage4), offset);
-      // LCOV_EXCL_BR_STOP
       break;
     
     case afrSetPage: 
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage6, sizeof(configPage6), offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case canbusPage:  
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage9, sizeof(configPage9), offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case warmupPage: 
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage10, sizeof(configPage10), offset);
-      // LCOV_EXCL_BR_STOP
       break;
 
     case progOutsPage: 
-      // LCOV_EXCL_BR_START
       checkIsInRaw(result, &configPage13, sizeof(configPage13), offset);
-      // LCOV_EXCL_BR_STOP
       break;
     
     case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
-      // LCOV_EXCL_BR_START
       checkIsInTable(result, &boostTableLookupDuty, offset);
-      // LCOV_EXCL_BR_STOP
       checkIsInRaw(result, &configPage15, sizeof(configPage15), offset);
       break;
 
