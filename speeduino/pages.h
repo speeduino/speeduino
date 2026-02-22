@@ -73,15 +73,16 @@ struct entity_page_location_t {
     {        
     }
 
-    bool operator==(const entity_page_location_t &other) const
+    friend bool operator==(const entity_page_location_t &lhs, const entity_page_location_t &rhs)
     {
-        return page==other.page
-            && index==other.index;
+        return lhs.page==rhs.page
+            && lhs.index==rhs.index;
     }
-    bool operator!=(const entity_page_location_t &other) const
+
+    friend bool operator!=(const entity_page_location_t &lhs, const entity_page_location_t &rhs)
     {
-        return !operator==(other);
-    }
+        return !(lhs==rhs);
+    }    
 };
 
 /** @brief  Position and size of an entity within a page */
