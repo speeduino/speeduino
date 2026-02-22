@@ -3,11 +3,6 @@
 #include "table3d.h"
 
 /**
- * Page count, as defined in the INI file
- */
-uint8_t getPageCount(void); 
-
-/**
  * Page size in bytes
  */
 uint16_t getPageSize(byte pageNum /**< [in] The page number */ );

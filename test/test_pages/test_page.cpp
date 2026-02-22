@@ -235,7 +235,7 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 
 static void test_sumEntity_matches_pageSize(void)
 {
-    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {
         TEST_ASSERT_EQUAL(getPageSize(pageNum), sumEntitySizes(pageNum));
     }
@@ -266,7 +266,7 @@ static void print_page_entity_layout(uint8_t pageNum)
 static void print_all_page_entity_layout(void)
 {
     UnityPrint("Page, Index, Type, Start, Size"); UNITY_PRINT_EOL();
-    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {
         print_page_entity_layout(pageNum);
     }
@@ -275,7 +275,7 @@ static void print_all_page_entity_layout(void)
 static void print_page_layout(void)
 {
     UnityPrint("Page, Size"); UNITY_PRINT_EOL();
-    for (byte pageNum=0; pageNum<getPageCount(); ++pageNum)
+    for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {
         char szMsg[32];
         sprintf(szMsg, "%" PRIu8 ", %" PRIu16, pageNum, getPageSize(pageNum));

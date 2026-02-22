@@ -395,11 +395,6 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
 
 // ====================================== External functions  ====================================
 
-uint8_t getPageCount(void)
-{
-  return 16U;
-}
-
 uint16_t getPageSize(byte pageNum)
 {
   page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);

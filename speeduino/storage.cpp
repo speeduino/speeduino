@@ -44,14 +44,13 @@ bool isEepromWritePending(void)
  */
 void writeAllConfig(void)
 {
-  uint8_t pageCount = getPageCount();
-  uint8_t page = 1U;
+  uint8_t page = MIN_PAGE_NUM;
   writeConfig(page);
-  page = page + 1;
-  while (page<pageCount && !isEepromWritePending())
+  ++page;
+  while (page<MAX_PAGE_NUM && !isEepromWritePending())
   {
     writeConfig(page);
-    page = page + 1;
+    ++page;
   }
 }
 
@@ -303,7 +302,7 @@ void writeConfig(uint8_t pageNum)
  */
 void resetConfigPages(void)
 {
-  for (uint8_t page=1; page<getPageCount(); ++page)
+  for (uint8_t page=MIN_PAGE_NUM; page<MAX_PAGE_NUM; ++page)
   {
     page_iterator_t entity = page_begin(page);
     while (entity.type!=EntityType::End)
@@ -501,7 +500,7 @@ void writeCalibrationPage(uint8_t pageNum)
 
 static eeprom_address_t compute_crc_address(uint8_t pageNum)
 {
-  return EEPROM_LAST_BARO-((getPageCount() - pageNum)*sizeof(uint32_t));
+  return EEPROM_LAST_BARO-((MAX_PAGE_NUM - pageNum)*sizeof(uint32_t));
 }
 
 /** Write CRC32 checksum to EEPROM.
