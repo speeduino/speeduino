@@ -897,7 +897,7 @@ namespace {
 
   void send_raw_entity(const page_iterator_t &entity)
   {
-    primarySerial.write((byte *)entity.pData, entity.address.size);
+    primarySerial.write((byte *)entity.pRaw, entity.address.size);
   }
 
   inline void send_table_values(table_value_iterator it)
@@ -1030,7 +1030,7 @@ namespace {
     primarySerial.println();
   }
 
-  void print_x_axis(void *pTable, table_type_t key)
+  void print_x_axis(table3d_t *pTable, table_type_t key)
   {
     primarySerial.print(F("    "));
 
@@ -1043,7 +1043,7 @@ namespace {
     }
   }
 
-  void serial_print_3dtable(void *pTable, table_type_t key)
+  void serial_print_3dtable(table3d_t *pTable, table_type_t key)
   {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);

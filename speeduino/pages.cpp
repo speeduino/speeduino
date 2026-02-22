@@ -162,7 +162,7 @@ static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offs
 {
   if (offset<entity.address.size)
   {
-    return *((const byte*)entity.pData + offset);
+    return *((const byte*)entity.pRaw + offset);
   }
   return 0U;
 }
@@ -171,7 +171,7 @@ static inline bool set_raw_location(page_iterator_t &entity, uint16_t offset, by
 {
   if (offset<entity.address.size)
   {
-    *((byte*)entity.pData + offset) = value;
+    *((byte*)entity.pRaw + offset) = value;
     return true;
   }
   return false;
@@ -186,7 +186,7 @@ static inline byte get_table_value(const page_iterator_t &entity, uint16_t offse
     #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
         return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
     #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-    CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pData, offset);  
+    CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pTable, offset);  
     // LCOV_EXCL_BR_STOP
   }
   return 0U;
@@ -215,7 +215,7 @@ static inline bool set_table_value(page_iterator_t &entity, uint16_t offset, byt
     #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
         offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
     #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-    CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pData, offset, new_value);  
+    CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pTable, offset, new_value);  
     // LCOV_EXCL_BR_STOP
     return true;
   }
@@ -439,7 +439,7 @@ page_iterator_t advance(const page_iterator_t &it)
  */
 table_value_iterator rows_begin(const page_iterator_t &it)
 {
-  return rows_begin(it.pData, it.table_key);
+  return rows_begin(it.pTable, it.table_key);
 }
 
 /**
@@ -447,7 +447,7 @@ table_value_iterator rows_begin(const page_iterator_t &it)
  */
 table_axis_iterator x_begin(const page_iterator_t &it)
 {
-  return x_begin(it.pData, it.table_key);
+  return x_begin(it.pTable, it.table_key);
 }
 
 /**
@@ -455,7 +455,7 @@ table_axis_iterator x_begin(const page_iterator_t &it)
  */
 table_axis_iterator x_rbegin(const page_iterator_t &it)
 {
-  return x_rbegin(it.pData, it.table_key);
+  return x_rbegin(it.pTable, it.table_key);
 }
 
 /**
@@ -463,7 +463,7 @@ table_axis_iterator x_rbegin(const page_iterator_t &it)
  */
 table_axis_iterator y_begin(const page_iterator_t &it)
 {
-  return y_begin(it.pData, it.table_key);
+  return y_begin(it.pTable, it.table_key);
 }
 
 // LCOV_EXCL_STOP

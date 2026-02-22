@@ -72,10 +72,15 @@ enum table_type_t {
     TABLE3D_GENERATOR(TABLE3D_GEN_TYPEKEY)
 };
 
+// A marker type for 3d tables.
+struct table3d_t
+{
+};
+
 // Generate the 3D table types
 #define TABLE3D_GEN_TYPE(size, xDom, yDom) \
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) \
+    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) : public table3d_t \
     { \
         typedef TABLE3D_TYPENAME_AXIS(size) xaxis_t; \
         typedef TABLE3D_TYPENAME_AXIS(size) yaxis_t; \
@@ -119,13 +124,13 @@ TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
 
 // =============================== Table function calls =========================
 
-table_value_iterator rows_begin(void *pTable, table_type_t key);
+table_value_iterator rows_begin(table3d_t *pTable, table_type_t key);
 
-table_axis_iterator x_begin(void *pTable, table_type_t key);
+table_axis_iterator x_begin(table3d_t *pTable, table_type_t key);
 
-table_axis_iterator x_rbegin(void *pTable, table_type_t key);
+table_axis_iterator x_rbegin(table3d_t *pTable, table_type_t key);
 
-table_axis_iterator y_begin(void *pTable, table_type_t key);
+table_axis_iterator y_begin(table3d_t *pTable, table_type_t key);
 
-table_axis_iterator y_rbegin(void *pTable, table_type_t key);
+table_axis_iterator y_rbegin(table3d_t *pTable, table_type_t key);
 /** @} */

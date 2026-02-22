@@ -131,7 +131,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
 }
 
 
-static inline write_location writeTable(void *pTable, table_type_t key, write_location location)
+static inline write_location writeTable(table3d_t *pTable, table_type_t key, write_location location)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
@@ -309,7 +309,7 @@ void resetConfigPages(void)
     {
       if (entity.type==EntityType::Raw)
       {
-        memset(entity.pData, 0, entity.address.size);
+        memset(entity.pRaw, 0, entity.address.size);
       }
       entity = advance(entity);
     }
@@ -366,7 +366,7 @@ static inline eeprom_address_t load(table_axis_iterator it, eeprom_address_t add
 }
 
 
-static inline eeprom_address_t loadTable(void *pTable, table_type_t key, eeprom_address_t address)
+static inline eeprom_address_t loadTable(table3d_t *pTable, table_type_t key, eeprom_address_t address)
 {
   return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 
