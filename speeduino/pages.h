@@ -55,7 +55,7 @@ bool setPageValue(  byte pageNum,       /**< [in] The page number to update. */
 // over those entities.
 
 // Type of entity
-enum entity_type { 
+enum class EntityType : uint8_t { 
     Raw,        // A block of memory
     Table,      // A 3D table
     NoEntity,   // No entity, but a valid offset
@@ -115,12 +115,12 @@ struct entity_page_address_t {
 // A entity on a logical page.
 struct page_iterator_t {
     void *pData = nullptr;
-    entity_type type;
+    EntityType type;
     table_type_t table_key = table_type_None;
     entity_page_location_t location;
     entity_page_address_t address;
 
-    page_iterator_t(entity_type theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
     : type(theType)
     , location(entityLocation)    
     , address(entityAddress)
@@ -130,21 +130,21 @@ struct page_iterator_t {
     void setNoEntity(void)
     {
         pData = nullptr;
-        type = NoEntity;
+        type = EntityType::NoEntity;
         table_key = table_type_None;
     }
 
     void setTable(void *pTable, table_type_t key)
     {
         pData = pTable;
-        type = Table;
+        type = EntityType::Table;
         table_key = key;
     }
 
     void setRaw(void *pBuffer)
     {
         pData = pBuffer;
-        type = Raw;
+        type = EntityType::Raw;
         table_key = table_type_None;
     }
 };

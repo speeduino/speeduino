@@ -16,7 +16,7 @@ static void test_getEntityValue_raw(void)
     char entity[48];
     memset(&entity, MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( Table, 
+    page_iterator_t entityIter( EntityType::Table, 
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, sizeof(entity)));
     entityIter.setRaw(&entity);
@@ -30,7 +30,7 @@ static void test_getEntityValue_none(void)
     char entity[48];
     memset(&entity, MARKER, sizeof(entity));
 
-   page_iterator_t entityIter(  NoEntity, 
+   page_iterator_t entityIter(  EntityType::NoEntity, 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -54,7 +54,7 @@ static page_iterator_t setupTableIterator(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    page_iterator_t result( Table, 
+    page_iterator_t result( EntityType::Table, 
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, size));
     result.setTable(&entity, entity.type_key);
@@ -116,7 +116,7 @@ static void test_setEntityValue_raw(void)
     char entity[48];
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( End, 
+    page_iterator_t entityIter( EntityType::End, 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
     entityIter.setRaw(&entity);
@@ -132,7 +132,7 @@ static void test_setEntityValue_none(void)
     char entity[48];
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( NoEntity, 
+    page_iterator_t entityIter( EntityType::NoEntity, 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -225,7 +225,7 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 {
     uint16_t sum = 0;
     page_iterator_t it = page_begin(pageNum);
-    while (End!=it.type)
+    while (EntityType::End!=it.type)
     {
         sum += it.address.size;
         it = advance(it);
@@ -247,7 +247,7 @@ static void print_entity_layout(const page_iterator_t &entity)
     sprintf(szMsg, "%" PRIu8 ", %" PRIu8 ", %s, %" PRIu16 ", %" PRIu16, 
         entity.location.page, 
         entity.location.index, 
-        entity.type==Raw ? "Raw" : (entity.type==Table ? "Table" : (entity.type==NoEntity ? "NoEntity" : "End")),
+        entity.type==EntityType::Raw ? "Raw" : (entity.type==EntityType::Table ? "Table" : (entity.type==EntityType::NoEntity ? "NoEntity" : "End")),
         entity.address.start, 
         entity.address.size);
     UnityPrint(szMsg); UNITY_PRINT_EOL();
@@ -256,7 +256,7 @@ static void print_entity_layout(const page_iterator_t &entity)
 static void print_page_entity_layout(uint8_t pageNum)
 {
     page_iterator_t entity = page_begin(pageNum);
-    while (End!=entity.type)
+    while (EntityType::End!=entity.type)
     {
         print_entity_layout(entity);
         entity = advance(entity);

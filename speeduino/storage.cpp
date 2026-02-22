@@ -306,9 +306,9 @@ void resetConfigPages(void)
   for (uint8_t page=1; page<getPageCount(); ++page)
   {
     page_iterator_t entity = page_begin(page);
-    while (entity.type!=End)
+    while (entity.type!=EntityType::End)
     {
-      if (entity.type==Raw)
+      if (entity.type==EntityType::Raw)
       {
         memset(entity.pData, 0, entity.address.size);
       }

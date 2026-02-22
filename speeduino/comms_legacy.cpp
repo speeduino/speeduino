@@ -930,15 +930,15 @@ namespace {
   {
     switch (entity.type)
     {
-    case Raw:
+    case EntityType::Raw:
       return send_raw_entity(entity);
       break;
 
-    case Table:
+    case EntityType::Table:
       return send_table_entity(entity);
       break;
     
-    case NoEntity:
+    case EntityType::NoEntity:
       // No-op
       break;
 
@@ -960,7 +960,7 @@ void sendPage(void)
 {
   page_iterator_t entity = page_begin(currentPage);
 
-  while (entity.type!=End)
+  while (entity.type!=EntityType::End)
   {
     send_entity(entity);
     entity = advance(entity);
