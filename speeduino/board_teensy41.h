@@ -18,7 +18,8 @@ bool pinIsSerial(uint8_t);
 #define BOARD_MAX_IO_PINS 54
 #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
 #define EEPROM_LIB_H <EEPROM.h>
-typedef int eeprom_address_t;
+class EEPROMClass;
+using EEPROM_t = EEPROMClass;
 #define RTC_ENABLED
 #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
 #define RTC_LIB_H "TimeLib.h"

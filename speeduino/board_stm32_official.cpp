@@ -7,6 +7,7 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include EEPROM_LIB_H
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -428,13 +429,18 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   uint16_t maxWrite = 64;
 #endif
 
-    // Write to EEPROM more aggressively if the engine is not running
-    if(current.RPM==0U)
-    { 
-      return maxWrite * 8U;
-    } 
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
 
-    return maxWrite;
+  return maxWrite;
+}
+
+EEPROM_t& getEEPROM(void) 
+{
+  return EEPROM;
 }
 
 #endif

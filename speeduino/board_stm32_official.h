@@ -163,37 +163,21 @@ extern STM32RTC& rtc;
 * EEPROM emulation
 */
 #if defined(SRAM_AS_EEPROM)
-    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern BackupSramAsEEPROM EEPROM;
-
+  #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
+  class BackupSramAsEEPROM;
+  using EEPROM_t = BackupSramAsEEPROM;    
 #elif defined(USE_SPI_EEPROM)
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
- 
-    //windbond W25Q16 SPI flash EEPROM emulation
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-    extern Flash_SPI_Config SPIconfig;
-    extern SPI_EEPROM_Class EEPROM;
-
+  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  class SPI_EEPROM_Class;
+  using EEPROM_t = SPI_EEPROM_Class;    
 #elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H "src/FRAM/Fram.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    #if defined(STM32F407xx)
-      extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-    #else
-      extern FramClass EEPROM; //Blue/Black Pills
-    #endif
-
+  #define EEPROM_LIB_H "src/FRAM/Fram.h"
+  class FramClass;
+  using EEPROM_t = FramClass;    
 #else //default case, internal flash as EEPROM
   #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
-  #include EEPROM_LIB_H
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
+  class InternalSTM32F4_EEPROM_Class;
+  using EEPROM_t = InternalSTM32F4_EEPROM_Class;    
   #if defined(STM32F401xC)
     #define SMALL_FLASH_MODE
   #endif
