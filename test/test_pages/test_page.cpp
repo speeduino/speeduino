@@ -10,13 +10,17 @@ static void assert_entity(const page_iterator_t &entity, byte expected)
     }
 }
 
+struct fake_config_page_t : public config_page_t {
+    byte data[48];
+};
+
 static void test_getEntityValue_raw(void)
 {
     constexpr char MARKER = 'X';
-    char entity[48];
+    fake_config_page_t entity;
     memset(&entity, MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( EntityType::Table, 
+    page_iterator_t entityIter( EntityType::Raw, 
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, sizeof(entity)));
     entityIter.setRaw(&entity);
@@ -113,7 +117,7 @@ static void set_entity_values(page_iterator_t &entity, uint16_t from, uint16_t t
 static void test_setEntityValue_raw(void)
 {
     constexpr char PRE_MARKER = 'X';
-    char entity[48];
+    fake_config_page_t entity;
     memset(&entity, PRE_MARKER, sizeof(entity));
 
     page_iterator_t entityIter( EntityType::End, 
@@ -123,7 +127,7 @@ static void test_setEntityValue_raw(void)
 
     constexpr char POST_MARKER = 'Y';
     set_entity_values(entityIter, 0, entityIter.address.size, POST_MARKER);
-    TEST_ASSERT_EACH_EQUAL_CHAR(POST_MARKER, entity, sizeof(entity));
+    TEST_ASSERT_EACH_EQUAL_CHAR(POST_MARKER, &entity, sizeof(entity));
 }
 
 static void test_setEntityValue_none(void)

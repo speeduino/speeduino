@@ -264,7 +264,7 @@ static void checkIsInTable(page_iterator_t &result, table_t *pTable, uint16_t of
 
 // ========================= Raw memory block processing  ===================
 
-static void checkIsInRaw(page_iterator_t &result, void *pEntity, uint16_t entitySize, uint16_t offset)
+static void checkIsInRaw(page_iterator_t &result, config_page_t *pEntity, uint16_t entitySize, uint16_t offset)
 {
   if (result.type==EntityType::End)
   {

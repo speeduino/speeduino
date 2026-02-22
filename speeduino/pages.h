@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "table3d.h"
+#include "config_pages.h"
 
 /**
  * Page size in bytes
@@ -112,8 +113,8 @@ struct entity_page_address_t {
 struct page_iterator_t {
     union 
     {
-        table3d_t *pTable; // If the entity is a table, this points to the table
-        void *pRaw;        // If the entity is a raw block, this points to it
+        table3d_t *pTable;      // If the entity is a table, this points to the table
+        config_page_t *pRaw;    // If the entity is a raw block, this points to it
     };
     EntityType type;
     table_type_t table_key = table_type_None;
@@ -134,14 +135,14 @@ struct page_iterator_t {
         table_key = table_type_None;
     }
 
-    void setTable(table3d_t *pTable, table_type_t key)
+    void setTable(table3d_t *table, table_type_t key)
     {
-        this->pTable = pTable;
+        pTable = table;
         type = EntityType::Table;
         table_key = key;
     }
 
-    void setRaw(void *pBuffer)
+    void setRaw(config_page_t *pBuffer)
     {
         pRaw = pBuffer;
         type = EntityType::Raw;
