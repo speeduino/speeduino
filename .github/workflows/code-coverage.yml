@@ -56,8 +56,7 @@ jobs:
         gcov_ignore: ${{ env.GCOV_IGNORES }}
         # verbose: true 
 
-    - name: Generate coverage report
-      if: ${{ env.ACT }}
+    - name: Generate coverage reports
       uses: threeal/gcovr-action@v1.2.0
       with:
         coveralls-send: false
@@ -65,12 +64,24 @@ jobs:
         excludes: ${{ env.GCOV_IGNORES }}
         html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
         html-details: true
+        sonarqube-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.sonarqube.xml
         # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
         # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura.xml
 
-    - name: Upload reports
+    - name: Upload local coverage reports
       if: ${{ env.ACT }}
       uses: actions/upload-artifact@v4
       with:
         path: |
           .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
+    
+    - name: Upload coverage report to SonarQube
+      # if: ${{ !env.ACT }}
+      uses: SonarSource/sonarqube-scan-action@v6
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with: 
+        args: > 
+          --define sonar.projectKey=speeduino_speeduino
+          --define sonar.organization=speeduino
+          --define sonar.coverageReportPaths=".pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.sonarqube.xml"
