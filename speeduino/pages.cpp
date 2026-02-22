@@ -33,17 +33,17 @@
 // calling context.
 
 template <class table_t>
-static inline constexpr uint16_t get_table_value_end(void)
+static constexpr uint16_t get_table_value_end(void)
 {
   return table_t::xaxis_t::length*table_t::yaxis_t::length;
 }
 template <class table_t>
-static inline constexpr uint16_t get_table_axisx_end(void)
+static constexpr uint16_t get_table_axisx_end(void)
 {
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-static inline constexpr uint16_t get_table_axisy_end(const table_t *table)
+static constexpr uint16_t get_table_axisy_end(const table_t *table)
 {
   UNUSED(table);
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
