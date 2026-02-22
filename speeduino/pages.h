@@ -93,40 +93,58 @@ struct entity_page_address_t {
     , size(length)
     {        
     }
+
+    /**
+     * @brief Check if the offset is within the entity address range
+     * 
+     * @param offset Address offset from the start of the page
+     * @return if the offset is within the entity address range, false otherwise
+     */
+    bool isOffsetInEntity(uint16_t offset) const
+    {
+        return offset >= start && offset < start+size;
+    }
+
+    entity_page_address_t next(uint16_t nextBlockSize) const
+    {
+        return entity_page_address_t(start+size, nextBlockSize);
+    }
 };
 
 // A entity on a logical page.
 struct page_iterator_t {
-    void *pData;
+    void *pData = nullptr;
     entity_type type;
-    table_type_t table_key;
+    table_type_t table_key = table_type_None;
     entity_page_location_t location;
     entity_page_address_t address;
 
     page_iterator_t(entity_type theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pData(nullptr)
-    , type(theType)
-    , table_key(table_type_None)
+    : type(theType)
     , location(entityLocation)    
     , address(entityAddress)
     {
     }
 
-    page_iterator_t(void *pBuffer, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pData(pBuffer)
-    , type(Raw)
-    , table_key(table_type_None)
-    , location(entityLocation)    
-    , address(entityAddress)
+    void setNoEntity(void)
     {
+        pData = nullptr;
+        type = NoEntity;
+        table_key = table_type_None;
     }
-    page_iterator_t(void *pTable, table_type_t key, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pData(pTable)
-    , type(Table)
-    , table_key(key)
-    , location(entityLocation)    
-    , address(entityAddress)
+
+    void setTable(void *pTable, table_type_t key)
     {
+        pData = pTable;
+        type = Table;
+        table_key = key;
+    }
+
+    void setRaw(void *pBuffer)
+    {
+        pData = pBuffer;
+        type = Raw;
+        table_key = table_type_None;
     }
 };
 
