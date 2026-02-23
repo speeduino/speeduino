@@ -7,7 +7,7 @@ static void setPageValues_Incremental(uint8_t pageNum, char seedValue)
 {
     for (uint16_t offset=0; offset<getPageSize(pageNum); ++offset)
     {
-        setPageValue(boostvvtPage2, offset, seedValue+(uint8_t)offset);
+        setPageValue(pageNum, offset, seedValue+(uint8_t)offset);
     }
 }
 
@@ -19,7 +19,7 @@ static void test_calculatePageCRC32(void)
     TEST_ASSERT_EQUAL_UINT32(0x3C15D3B7, calculatePageCRC32(boostvvtPage2));
 
     setPageValues_Incremental(wmiMapPage, 'X');
-    TEST_ASSERT_EQUAL_UINT32(0x2ED1D425, calculatePageCRC32(wmiMapPage));
+    TEST_ASSERT_EQUAL_UINT32(0xD2F67FBE, calculatePageCRC32(wmiMapPage));
 }
 
 void testPageCrc(void) {
