@@ -60,6 +60,7 @@ public:
         return _pStart == _pEnd;
     }
 
+    // LCOV_EXCL_START
     /** @brief Dereference the iterator */
     table3d_axis_t& operator*(void)
     {
@@ -70,6 +71,7 @@ public:
     {
         return *_pStart;
     }    
+    // LCOV_EXCL_STOP
     
 private:
 
@@ -105,9 +107,11 @@ private:
     };
 
 // This generates the axis types for the following sizes & domains:
+// LCOV_EXCL_START
 TABLE3D_GEN_AXIS(4)
 TABLE3D_GEN_AXIS(6)
 TABLE3D_GEN_AXIS(8)
 TABLE3D_GEN_AXIS(16)
+// LCOV_EXCL_STOP
 
 /** @} */

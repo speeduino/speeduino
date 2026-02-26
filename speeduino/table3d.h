@@ -95,7 +95,9 @@ struct table3d_t
         xaxis_t axisX; \
         yaxis_t axisY; \
     };
+// LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
+// LCOV_EXCL_START
 
 // Generate get3DTableValue() functions
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
@@ -110,7 +112,9 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
                               pTable->axisY.axis, \
                               { x, y }); \
     } 
+// LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
+// LCOV_EXCL_STOP
 
 // =============================== Table function calls =========================
 
