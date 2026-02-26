@@ -87,6 +87,8 @@ struct table3d_t
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \
+        static constexpr axis_domain XDomain = axis_domain_ ## xDom; \
+        static constexpr axis_domain YDomain = axis_domain_ ## yDom; \
         \
         mutable table3DGetValueCache get_value_cache; \
         value_t values; \
