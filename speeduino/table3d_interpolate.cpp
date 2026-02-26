@@ -249,7 +249,7 @@ TESTABLE_INLINE_STATIC table3d_value_t bilinear_interpolation( const table3d_val
  * @param yMultiplier The y-axis multiplier
  * @return table3d_value_t 
  */
-table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
+table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues, 
                     const xy_coord2d &upperBinIndices,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
