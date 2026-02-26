@@ -68,8 +68,8 @@ namespace internal
     }
   };
 }
-
  
+
 template <typename T>
 const char* GetTypeName(void)
 {
@@ -205,7 +205,31 @@ static void test_withinBin(axis_t (&pAxisBin)[sizeT], value_t (&)[sizeT])
 }
 
 static void test_withinBin(void) {
-    APPLY_TEST_TO_ALL_TYPES(test_withinBin);
+    APPLY_TEST_TO_ALL_TYPES(test_withinBin, "");
+}
+
+template <typename axis_t, uint8_t sizeT>
+static void assert_findBin(axis_t (&pAxisBin)[sizeT], axis_t lookUp, uint8_t expectedUpperIndex)
+{
+    _table2d_detail::Bin<axis_t> result = _table2d_detail::findBin<axis_t, sizeT>(pAxisBin, lookUp);
+    TEST_ASSERT_EQUAL(expectedUpperIndex, result.upperIndex);
+    TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex-1], result.lowerValue());
+    TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex], result.upperValue());
+}
+
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static void test_findBin(axis_t (&pAxisBin)[sizeT], value_t (&)[sizeT])
+{
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[0]-1, 1U);
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[0], 1U);
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[0]+1, 1U);
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[sizeT-1]-1, sizeT-1U);
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[sizeT-1], sizeT-1U);
+    assert_findBin<axis_t, sizeT>(pAxisBin, pAxisBin[sizeT-1]+1, sizeT-1U);
+}
+
+static void test_findBin(void) {
+    APPLY_TEST_TO_ALL_TYPES(test_findBin, "");
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
@@ -262,6 +286,7 @@ void testTable2d()
     test_getValue_bin_66();
     test_getValue_bin_edges();
     test_withinBin();
+    test_findBin();
     RUN_TEST(test_lookup_perf);
   }
 }
