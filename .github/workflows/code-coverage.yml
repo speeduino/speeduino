@@ -46,7 +46,7 @@ jobs:
       continue-on-error: true
       run: | 
         source PIO/bin/activate
-        platformio test -v -e ${{ env.PIO_ENV }}
+        platformio test -e ${{ env.PIO_ENV }} ${{ vars.PIO_CMD_PARAMS }}
 
     - name: Upload to CodeCov
       uses: codecov/codecov-action@v5
