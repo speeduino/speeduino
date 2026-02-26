@@ -65,8 +65,13 @@ jobs:
         excludes: ${{ env.GCOV_IGNORES }}
         html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
         html-details: true
-        # coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
-        # cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura.xml
+        coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
+        cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura
+        xml-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.xml
+        jacoco-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.jacoco
+        json-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.json
+        lcov-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.lcov
+        sonarqube-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.sonarqube
 
     - name: Upload reports
       if: ${{ env.ACT }}
