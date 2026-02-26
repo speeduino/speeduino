@@ -43,12 +43,6 @@ static uint8_t table2d_axis_u8_9[9] = { U8_X9_AXIS };
 static uint8_t table2d_axis_u8_10[10] = { U8_X10_AXIS };
 #define I8_X4_AXIS -125, -101, -59, -5
 static int8_t table2d_axis_i8_4[4] = { I8_X4_AXIS };
-// #define U8_X32_AXIS \
-//     37, 44, 51, 58, 65, 72, 79, 86, \
-//     93, 100, 107, 114, 121, 128, 135, 142, \
-//     149, 156, 163, 170, 177, 184, 191, 198, \
-//     205, 212, 219, 226, 233, 240, 247, 254, 
-// static uint8_t table2d_axis_u8_32[32] = { U8_X32_AXIS };
 #define U16_X32_AXIS \
     2140, 4185,  6230,  8275,  10320, 12365, 14410, 16455,  \
     18500, 20545, 22590, 24635, 26680, 28725, 30770, 32815, \
@@ -74,7 +68,7 @@ namespace internal
     }
   };
 }
- 
+
  
 template <typename T>
 const char* GetTypeName(void)
@@ -89,20 +83,20 @@ const char* GetTypeName(void)
         }; \
         UnityDefaultTestRun(testFunc, #op tag, __LINE__); \
     }
-#define APPLY_TEST_TO_ALL_TYPES(op, ...) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_i8_4, table2d_data_u8_4, "_i8_u8_4", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_4, table2d_data_u8_4, "_u8_u8_4", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_6, table2d_data_u8_6, "_u8_u8_6", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_8, table2d_data_u8_8, "_u8_u8_8", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_9, table2d_data_u8_9, "_u8_u8_9", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_10, table2d_data_u8_10, "_u8_u8_10", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u16_32, table2d_data_u8_32, "_u16_u8_32", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u16_32, table2d_data_u16_32, "_u16_u16_32", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_4, table2d_data_u16_4, "_u8_u16_4", ##__VA_ARGS__) \
-    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_6, table2d_data_s16_6, "_u8_s16_6", ##__VA_ARGS__);
+#define APPLY_TEST_TO_ALL_TYPES(op, tag, ...) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_i8_4, table2d_data_u8_4, tag "_i8_u8_4", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_4, table2d_data_u8_4, tag "_u8_u8_4", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_6, table2d_data_u8_6, tag "_u8_u8_6", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_8, table2d_data_u8_8, tag "_u8_u8_8", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_9, table2d_data_u8_9, tag "_u8_u8_9", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_10, table2d_data_u8_10, tag "_u8_u8_10", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u16_32, table2d_data_u8_32, tag "_u16_u8_32", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u16_32, table2d_data_u16_32, tag "_u16_u16_32", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_4, table2d_data_u16_4, tag "_u8_u16_4", ##__VA_ARGS__) \
+    RUN_PARAMETRIZED_TEST(op, table2d_axis_u8_6, table2d_data_s16_6, tag "_u8_s16_6", ##__VA_ARGS__);
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static void test_table2dLookup(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT], uint8_t binFrac)
+static void test_getValue_withinBins(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT], uint8_t binFrac)
 {
     table2D<axis_t, value_t, sizeT> testSubject(&pAxisBin, &pCurve);
 
@@ -120,31 +114,27 @@ static void test_table2dLookup(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[size
     }
 }
 
-static void test_table2dLookup_bin_frac(uint8_t binFrac)
+static void test_getValue_bin_midpoints(void)
 {
     // Need a *STATIC* local copy of the binFrac to pass to the lambda, as the lambda can't capture the parameter
-    static uint8_t binFracLocal = 0; 
-    binFracLocal = binFrac;
-    APPLY_TEST_TO_ALL_TYPES(test_table2dLookup, binFracLocal);
+    static uint8_t binFracLocal = 50; 
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_withinBins, "_midpoint", binFracLocal);
 }
 
-static void test_table2dLookup_bin_midpoints(void)
+static void test_getValue_bin_33(void)
 {
-    test_table2dLookup_bin_frac(50U);
+    static uint8_t binFracLocal = 33; 
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_withinBins, "_one_third", binFracLocal);
 }
 
-static void test_table2dLookup_bin_33(void)
+static void test_getValue_bin_66(void)
 {
-    test_table2dLookup_bin_frac(33U);
-}
-
-static void test_table2dLookup_bin_66(void)
-{
-    test_table2dLookup_bin_frac(66U);
+    static uint8_t binFracLocal = 66; 
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_withinBins, "_two_thirds", binFracLocal);
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static void test_table2dLookup_bin_edges(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
+static void test_getValue_bin_edges(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
 {
     table2D<axis_t, value_t, sizeT> testSubject(&pAxisBin, &pCurve);
 
@@ -158,13 +148,13 @@ static void test_table2dLookup_bin_edges(axis_t (&pAxisBin)[sizeT], value_t (&pC
     }
 }
 
-static void test_table2dLookup_bin_edges(void)
+static void test_getValue_bin_edges(void)
 {
-    APPLY_TEST_TO_ALL_TYPES(test_table2dLookup_bin_edges);
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_bin_edges, "");
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static void test_table2dLookup_overMax(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
+static void test_getValue_overMax(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
 {
     table2D<axis_t, value_t, sizeT> testSubject(&pAxisBin, &pCurve);
 
@@ -177,13 +167,13 @@ static void test_table2dLookup_overMax(axis_t (&pAxisBin)[sizeT], value_t (&pCur
     TEST_ASSERT_EQUAL_MESSAGE(testSubject.values[sizeT-1], result, szMsg);
 }
 
-static void test_table2dLookup_overMax(void)
+static void test_getValue_overMax(void)
 {
-    APPLY_TEST_TO_ALL_TYPES(test_table2dLookup_overMax);
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_overMax, "");
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static void test_table2dLookup_underMin(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
+static void test_getValue_underMin(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[sizeT])
 {
     table2D<axis_t, value_t, sizeT> testSubject(&pAxisBin, &pCurve);
 
@@ -192,9 +182,9 @@ static void test_table2dLookup_underMin(axis_t (&pAxisBin)[sizeT], value_t (&pCu
     TEST_ASSERT_EQUAL(1, testSubject.cache.lastBinUpperIndex);
 }
 
-static void test_table2dLookup_underMin(void)
+static void test_getValue_underMin(void)
 {
-    APPLY_TEST_TO_ALL_TYPES(test_table2dLookup_underMin);
+    APPLY_TEST_TO_ALL_TYPES(test_getValue_underMin, "");
 }
 
 template <typename TIntegral>
@@ -233,7 +223,7 @@ static void test_table2d_all_decrementing(axis_t (&pAxisBin)[sizeT], value_t (&p
 }
 
 static void test_table2d_all_decrementing(void) {
-    APPLY_TEST_TO_ALL_TYPES(test_table2d_all_decrementing);
+    APPLY_TEST_TO_ALL_TYPES(test_table2d_all_decrementing, "");
 }
 
 #include "../timer.hpp"
@@ -264,13 +254,13 @@ static void test_lookup_perf(void) {
 void testTable2d()
 {
   SET_UNITY_FILENAME() {
-    test_table2dLookup_overMax();
-    test_table2dLookup_underMin();
+    test_getValue_overMax();
+    test_getValue_underMin();
     test_table2d_all_decrementing(); 
-    test_table2dLookup_bin_midpoints();
-    test_table2dLookup_bin_33();
-    test_table2dLookup_bin_66();
-    test_table2dLookup_bin_edges();
+    test_getValue_bin_midpoints();
+    test_getValue_bin_33();
+    test_getValue_bin_66();
+    test_getValue_bin_edges();
     test_withinBin();
     RUN_TEST(test_lookup_perf);
   }
