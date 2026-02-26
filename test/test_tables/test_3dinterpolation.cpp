@@ -219,6 +219,27 @@ static void test_bilinear_interpolation(void) {
   TEST_ASSERT_EQUAL(22U, bilinear_interpolation(10U, 20U, 30U, 40U, QU1X8_QTR*3U, QU1X8_QTR*3U));
 }
 
+static void test_tableLookup_NoInterp(void)
+{TEST_DATA_P table3d_value_t values[] = {
+  //0     1      2    3 
+    11,		11,		11,		11, // 0
+    11,		11,		11,		11, // 1
+    11,		11,		11,		11, // 2
+    11,		11,		11,		11, // 3
+  };
+  constexpr table3d_axis_t XAXIS_FACTOR = 100U;
+  TEST_DATA_P table3d_axis_t tempXAxis[] = { 900U/XAXIS_FACTOR, 1600U/XAXIS_FACTOR, 2500U/XAXIS_FACTOR, 3500U/XAXIS_FACTOR, };
+
+  constexpr table3d_axis_t YAXIS_FACTOR = 2U;
+  TEST_DATA_P table3d_axis_t tempYAxis[] = { 16U/YAXIS_FACTOR, 30U/YAXIS_FACTOR, 40U/YAXIS_FACTOR, 50U/YAXIS_FACTOR, };
+
+  table3d4RpmLoad testSubject;
+  populate_table_P(testSubject, tempXAxis, tempYAxis, values);
+
+  uint16_t tempVE = get3DTableValue(&testSubject, 53, 2250); //Perform lookup into fuel map for RPM vs MAP value
+  TEST_ASSERT_EQUAL(11U, tempVE);
+}
+
 void testTables()
 {
   SET_UNITY_FILENAME() {
@@ -236,5 +257,6 @@ void testTables()
   RUN_TEST(test_compute_bin_position);
   RUN_TEST(test_bilinear_interpolation);
   RUN_TEST(test_all_incrementing);
+  RUN_TEST(test_tableLookup_NoInterp);
   }  
 }

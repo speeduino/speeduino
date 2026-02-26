@@ -128,17 +128,20 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
                     const table3d_axis_t *pYAxis,
                     const xy_pair_t &lookupValues) {
   
-
+#if !defined(UNIT_TEST) // No caching during unit testing
   // Check if the lookup values are the same as the last time we looked up a value
   // If they are, we can return the cached value
   if( lookupValues == pValueCache->last_lookup)
   {
     return pValueCache->lastOutput;
   }
+#endif
 
   // Figure out where on the axes the incoming coord are
+  // LCOV_EXCL_BR_START
   pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16<xFactor>(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
   pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16<yFactor>(lookupValues.y), pYAxis, axisSize, pValueCache->lastBinMax.y);
+  // LCOV_EXCL_BR_STOP
   // Interpolate based on the bin positions
   pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
   // Store the last lookup values so we can check them next time
