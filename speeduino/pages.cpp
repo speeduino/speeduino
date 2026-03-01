@@ -1,6 +1,7 @@
 #include "pages.h"
 #include "globals.h"
 #include "preprocessor.h"
+#include "table3d_visitor.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -177,17 +178,30 @@ static inline bool set_raw_location(page_iterator_t &entity, uint16_t offset, by
   return false;
 }
 
+struct get_table_value_visitor {
+  uint16_t _offset;
+  
+  explicit get_table_value_visitor(uint16_t offset) 
+    : _offset(offset) 
+  {
+  }
+
+  template <typename TTable>
+  byte visit(TTable &table) {
+      return *offset_to_table<TTable>(&table, _offset);
+  }
+
+  byte visit(void) {
+      return 0U;
+  }
+};
+
 static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
 {
   if (offset<entity.address.size)
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    #define CTA_GET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset) \
-        return *offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((const TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset));
-    #define CTA_GET_TABLE_VALUE_DEFAULT ({ return 0U; })
-    CONCRETE_TABLE_ACTION(entity.table_key, CTA_GET_TABLE_VALUE, CTA_GET_TABLE_VALUE_DEFAULT, entity.pTable, offset);  
-    // LCOV_EXCL_BR_STOP
+    get_table_value_visitor visitor(offset);
+    return visitTable3d<get_table_value_visitor, byte>(*entity.pTable, entity.table_key, visitor);
   }
   return 0U;
 }
@@ -206,17 +220,32 @@ byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
   return 0U;
 }
 
+struct set_table_value_visitor {
+  uint16_t _offset;
+  byte _newValue;
+
+  explicit set_table_value_visitor(uint16_t offset, byte newValue) 
+    : _offset(offset) 
+    , _newValue(newValue)
+  {
+  }
+
+  template <typename TTable>
+  void visit(TTable &table) {
+      offset_to_table<TTable>(&table, _offset) = _newValue;
+  }
+
+  void visit(void) {
+      // Nothing to set
+  }
+};
+
 static inline bool set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
 {
   if (offset<entity.address.size)
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    #define CTA_SET_TABLE_VALUE(size, xDomain, yDomain, pTable, offset, new_value) \
-        offset_to_table<TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)>((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)(pTable), (offset)) = (new_value); break;
-    #define CTA_SET_TABLE_VALUE_DEFAULT ({ })
-    CONCRETE_TABLE_ACTION(entity.table_key, CTA_SET_TABLE_VALUE, CTA_SET_TABLE_VALUE_DEFAULT, entity.pTable, offset, new_value);  
-    // LCOV_EXCL_BR_STOP
+    set_table_value_visitor visitor(offset, new_value);
+    visitTable3d<set_table_value_visitor, void>(*entity.pTable, entity.table_key, visitor);
     return true;
   }
   return false;

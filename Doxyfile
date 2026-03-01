@@ -1079,8 +1079,7 @@ EXCLUDE_SYMBOLS        = TO_TYPE_KEY \
                          CTA_* \
                          TABLE3D_GENERATOR \
                          TABLE3D_GEN_* \
-                         TABLE3D_TYPENAME_* \
-                         CONCRETE_TABLE_ACTION_INNER
+                         TABLE3D_TYPENAME_*
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include

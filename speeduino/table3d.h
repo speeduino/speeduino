@@ -64,7 +64,7 @@
  * Since we have a compile time fixed set of table types, we can map a unique
  * identifier to the type via a cast - this enum is that unique identifier.
  * 
- * Typically used in conjunction with the '#CONCRETE_TABLE_ACTION' macro
+ * Typically used in conjunction with visitTable3d()
  */
 enum table_type_t {
     table_type_None,
@@ -118,18 +118,6 @@ TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
 
 // =============================== Table function calls =========================
 
-// With no templates or inheritance we need some way to call functions
-// for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
-// to a caller defined function overloaded by the type of the table. 
-#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
-  case TO_TYPE_KEY(size, xDomain, yDomain): action(size, xDomain, yDomain, ##__VA_ARGS__);
-#define CONCRETE_TABLE_ACTION(testKey, action, defaultAction, ...) \
-  switch ((table_type_t)testKey) { \
-  TABLE3D_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
-  default: defaultAction; }
-
-// =============================== Table function calls =========================
-
 table_value_iterator rows_begin(table3d_t *pTable, table_type_t key);
 
 table_axis_iterator x_begin(table3d_t *pTable, table_type_t key);
@@ -139,4 +127,5 @@ table_axis_iterator x_rbegin(table3d_t *pTable, table_type_t key);
 table_axis_iterator y_begin(table3d_t *pTable, table_type_t key);
 
 table_axis_iterator y_rbegin(table3d_t *pTable, table_type_t key);
+
 /** @} */
