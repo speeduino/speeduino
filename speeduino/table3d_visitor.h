@@ -21,13 +21,13 @@
  * @return TReturn Return value from the visitor, if any
  */
 template <typename TConcreteVisitor, typename TReturn = void>
-static inline TReturn visitTable3d(table3d_t &table, table_type_t key, TConcreteVisitor &visitor)
+static inline TReturn visitTable3d(table3d_t &table, TableType key, TConcreteVisitor &visitor)
 {
     switch (key)
     {
 /// @cond
         #define VISIT_CASE(size, xDom, yDom) \
-            case table_type_t:: TO_TYPE_KEY(size, xDom, yDom): \
+            case TableType::TO_TYPE_KEY(size, xDom, yDom): \
                 return visitor.visit(static_cast<TABLE3D_TYPENAME_BASE(size, xDom, yDom) &>(table)); 
 /// @endcond
 

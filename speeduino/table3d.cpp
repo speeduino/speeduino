@@ -15,7 +15,7 @@ struct row_begin_visitor {
     }
 };
 
-table_value_iterator rows_begin(table3d_t *pTable, table_type_t key)
+table_value_iterator rows_begin(table3d_t *pTable, TableType key)
 {
   row_begin_visitor visitor;
   // LCOV_EXCL_BR_START
@@ -34,7 +34,7 @@ struct x_begin_visitor {
     }
 };
 
-table_axis_iterator x_begin(table3d_t *pTable, table_type_t key)
+table_axis_iterator x_begin(table3d_t *pTable, TableType key)
 {
   x_begin_visitor visitor;
   // LCOV_EXCL_BR_START
@@ -54,7 +54,7 @@ struct x_rbegin_visitor {
     }
 };
 
-table_axis_iterator x_rbegin(table3d_t *pTable, table_type_t key)
+table_axis_iterator x_rbegin(table3d_t *pTable, TableType key)
 {
   x_rbegin_visitor visitor;
   // LCOV_EXCL_BR_START
@@ -73,7 +73,7 @@ struct y_begin_visitor {
     }
 };
 
-table_axis_iterator y_begin(table3d_t *pTable, table_type_t key)
+table_axis_iterator y_begin(table3d_t *pTable, TableType key)
 {
   y_begin_visitor visitor;
   // LCOV_EXCL_BR_START
@@ -93,7 +93,7 @@ struct y_rbegin_visitor {
     }
 };
 
-table_axis_iterator y_rbegin(table3d_t *pTable, table_type_t key)
+table_axis_iterator y_rbegin(table3d_t *pTable, TableType key)
 {
   y_rbegin_visitor visitor;
   // LCOV_EXCL_BR_START

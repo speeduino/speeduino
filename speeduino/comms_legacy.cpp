@@ -1030,7 +1030,7 @@ namespace {
     primarySerial.println();
   }
 
-  void print_x_axis(table3d_t *pTable, table_type_t key)
+  void print_x_axis(table3d_t *pTable, TableType key)
   {
     primarySerial.print(F("    "));
 
@@ -1043,7 +1043,7 @@ namespace {
     }
   }
 
-  void serial_print_3dtable(table3d_t *pTable, table_type_t key)
+  void serial_print_3dtable(table3d_t *pTable, TableType key)
   {
     auto y_it = y_begin(pTable, key);
     auto row_it = rows_begin(pTable, key);

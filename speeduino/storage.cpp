@@ -214,7 +214,7 @@ static inline write_location write(table_axis_iterator it, write_location locati
   return location;
 }
 
-static inline uint16_t writeTable(table3d_t *pTable, table_type_t key, uint16_t address, uint16_t writesRemaining)
+static inline uint16_t writeTable(table3d_t *pTable, TableType key, uint16_t address, uint16_t writesRemaining)
 {
   return write(y_rbegin(pTable, key), 
                 write(x_begin(pTable, key), 
@@ -412,7 +412,7 @@ static inline uint16_t load(table_axis_iterator it, uint16_t address)
 }
 
 
-static inline uint16_t loadTable(table3d_t *pTable, table_type_t key, uint16_t address)
+static inline uint16_t loadTable(table3d_t *pTable, TableType key, uint16_t address)
 {
   return load(y_rbegin(pTable, key),
                 load(x_begin(pTable, key), 
