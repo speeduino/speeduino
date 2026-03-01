@@ -27,13 +27,16 @@ static inline TReturn visitTable3d(table3d_t &table, table_type_t key, TConcrete
     {
 /// @cond
         #define VISIT_CASE(size, xDom, yDom) \
-            case TO_TYPE_KEY(size, xDom, yDom): \
+            case table_type_t:: TO_TYPE_KEY(size, xDom, yDom): \
                 return visitor.visit(static_cast<TABLE3D_TYPENAME_BASE(size, xDom, yDom) &>(table)); 
 /// @endcond
 
         TABLE3D_GENERATOR(VISIT_CASE)
+
+        // LCOV_EXCL_START
         default:
             return visitor.visit();
             break;
+        // LCOV_EXCL_STOP
     }
 }

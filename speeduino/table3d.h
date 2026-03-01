@@ -66,10 +66,12 @@
  * 
  * Typically used in conjunction with visitTable3d()
  */
-enum table_type_t {
+enum class table_type_t : uint8_t {
     table_type_None,
+/// @cond
     #define TABLE3D_GEN_TYPEKEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
     TABLE3D_GENERATOR(TABLE3D_GEN_TYPEKEY)
+/// @endcond
 };
 
 // A marker type for 3d tables.
@@ -86,7 +88,7 @@ struct table3d_t
         typedef TABLE3D_TYPENAME_AXIS(size) yaxis_t; \
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
-        static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \
+        static constexpr table_type_t type_key = table_type_t::TO_TYPE_KEY(size, xDom, yDom); \
         static constexpr axis_domain XDomain = axis_domain_ ## xDom; \
         static constexpr axis_domain YDomain = axis_domain_ ## yDom; \
         \

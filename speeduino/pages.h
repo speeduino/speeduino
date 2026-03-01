@@ -120,7 +120,7 @@ struct page_iterator_t {
         config_page_t *pRaw;    // If the entity is a raw block, this points to it
     };
     EntityType type;
-    table_type_t table_key = table_type_None;
+    table_type_t table_key = table_type_t::table_type_None;
     entity_page_location_t location;
     entity_page_address_t address;
 
@@ -135,7 +135,7 @@ struct page_iterator_t {
     {
         pRaw = nullptr;
         type = EntityType::NoEntity;
-        table_key = table_type_None;
+        table_key = table_type_t::table_type_None;
     }
 
     void setTable(table3d_t *table, table_type_t key)
@@ -149,7 +149,7 @@ struct page_iterator_t {
     {
         pRaw = pBuffer;
         type = EntityType::Raw;
-        table_key = table_type_None;
+        table_key = table_type_t::table_type_None;
     }
 };
 
