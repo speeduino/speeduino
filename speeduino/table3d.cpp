@@ -9,10 +9,6 @@ struct row_begin_visitor {
     table_value_iterator visit(TTable &table) {
         return table.values.begin();
     }
-
-    table_value_iterator visit(void) {
-        return table_value_iterator(nullptr, 0U);
-    }
 };
 
 table_value_iterator rows_begin(table3d_t *pTable, TableType key)
@@ -27,10 +23,6 @@ struct x_begin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
         return table.axisX.begin();
-    }
-
-    table_axis_iterator visit(void) {
-        return table_axis_iterator(nullptr, 0U);
     }
 };
 
@@ -48,10 +40,6 @@ struct x_rbegin_visitor {
     table_axis_iterator visit(TTable &table) {
         return table.axisX.rbegin();
     }
-
-    table_axis_iterator visit(void) {
-        return table_axis_iterator(nullptr, 0U);
-    }
 };
 
 table_axis_iterator x_rbegin(table3d_t *pTable, TableType key)
@@ -66,10 +54,6 @@ struct y_begin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
         return table.axisY.begin();
-    }
-
-    table_axis_iterator visit(void) {
-        return table_axis_iterator(nullptr, 0U);
     }
 };
 
@@ -86,10 +70,6 @@ struct y_rbegin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
         return table.axisY.rbegin();
-    }
-
-    table_axis_iterator visit(void) {
-        return table_axis_iterator(nullptr, 0U);
     }
 };
 

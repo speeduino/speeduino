@@ -190,10 +190,6 @@ struct get_table_value_visitor {
   byte visit(TTable &table) {
       return *offset_to_table<TTable>(&table, _offset);
   }
-
-  byte visit(void) {
-      return 0U;
-  }
 };
 
 static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
@@ -233,10 +229,6 @@ struct set_table_value_visitor {
   template <typename TTable>
   void visit(TTable &table) {
       offset_to_table<TTable>(&table, _offset) = _newValue;
-  }
-
-  void visit(void) {
-      // Nothing to set
   }
 };
 

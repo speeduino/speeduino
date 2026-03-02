@@ -25,6 +25,10 @@ static inline TReturn visitTable3d(table3d_t &table, TableType key, TConcreteVis
 {
     switch (key)
     {
+        // LCOV_EXCL_START
+        default:
+        case TableType::table_type_None:
+        // LCOV_EXCL_STOP
 /// @cond
         #define VISIT_CASE(size, xDom, yDom) \
             case TableType::TO_TYPE_KEY(size, xDom, yDom): \
@@ -32,11 +36,5 @@ static inline TReturn visitTable3d(table3d_t &table, TableType key, TConcreteVis
 /// @endcond
 
         TABLE3D_GENERATOR(VISIT_CASE)
-
-        // LCOV_EXCL_START
-        default:
-            return visitor.visit();
-            break;
-        // LCOV_EXCL_STOP
     }
 }
