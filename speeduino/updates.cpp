@@ -828,7 +828,7 @@ void doUpdates(void)
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
-void multiplyTableLoad(table3d_t *pTable, table_type_t key, uint8_t multiplier)
+void multiplyTableLoad(table3d_t *pTable, TableType key, uint8_t multiplier)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())
@@ -838,7 +838,7 @@ void multiplyTableLoad(table3d_t *pTable, table_type_t key, uint8_t multiplier)
   }
 }
 
-void divideTableLoad(table3d_t *pTable, table_type_t key, uint8_t divisor)
+void divideTableLoad(table3d_t *pTable, TableType key, uint8_t divisor)
 {
   auto y_it = y_begin(pTable, key);
   while(!y_it.at_end())

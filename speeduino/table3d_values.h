@@ -10,6 +10,7 @@
 #pragma once
 
 #include "table3d_typedefs.h"
+#include "preprocessor.h"
 
 // ========================= INTRA-ROW ITERATION ========================= 
 
@@ -125,7 +126,7 @@ public:
     }
 
     /** @brief Dereference the iterator to access a row of data */
-    const table_row_iterator operator*(void) const
+    table_row_iterator operator*(void) const
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }

@@ -11,19 +11,19 @@
 
 #include "table3d_typedefs.h"
 
-/**\enum axis_domain
+/**\enum AxisDomain
  * @brief Encodes the real world measurement that a table axis captures
  * */
-enum axis_domain {
+enum class AxisDomain : uint8_t {
     /** RPM (engine speed) */
-    axis_domain_Rpm,
+    Rpm,
     /** Load */
-    axis_domain_Load,
+    Load,
 };
 
-static inline constexpr uint16_t axis_domain_to_factor(axis_domain domain)
+static constexpr uint16_t getConversionFactor(AxisDomain domain)
 {
-    return domain==axis_domain_Rpm ? 100U : 2U;
+    return domain==AxisDomain::Rpm ? 100U : 2U;
 }
 
 /** @brief Iterate over table axis elements */
