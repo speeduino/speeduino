@@ -262,53 +262,58 @@ bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 
 // ========================= Offset to entity support  ===================
 
-void nextEntity(page_iterator_t &entity, uint16_t nextBlockSize)
+page_iterator_t nextEntity(const page_iterator_t &entity, uint16_t nextBlockSize)
 {
-  ++entity.location.index;
-  entity.address = entity.address.next(nextBlockSize);
+  return page_iterator_t(EntityType::End, entity.location.next(), entity.address.next(nextBlockSize));
 }
 
 // ========================= Table processing  ===================
 
 template <class table_t>
-static void checkIsInTable(page_iterator_t &result, table_t *pTable, uint16_t offset)
+static page_iterator_t checkIsInTable(const page_iterator_t &previous, table_t *pTable, uint16_t offset)
 {
-  if (result.type==EntityType::End)
+  if (previous.type==EntityType::End)
   {
-    nextEntity(result, get_table_axisy_end(pTable));
+    page_iterator_t result(nextEntity(previous, get_table_axisy_end(pTable)));
     if (result.address.isOffsetInEntity(offset)) 
     { 
       result.setTable(pTable, pTable->type_key);
     }
+    return result;
   }
+  return previous;
 }
 
 // ========================= Raw memory block processing  ===================
 
-static void checkIsInRaw(page_iterator_t &result, config_page_t *pEntity, uint16_t entitySize, uint16_t offset)
+static page_iterator_t checkIsInRaw(const page_iterator_t &previous, config_page_t *pEntity, uint16_t entitySize, uint16_t offset)
 {
-  if (result.type==EntityType::End)
+  if (previous.type==EntityType::End)
   {
-    nextEntity(result, entitySize);
+    page_iterator_t result(nextEntity(previous, entitySize));
     if (result.address.isOffsetInEntity(offset)) 
     { 
       result.setRaw(pEntity);
     }
+    return result;
   }
+  return previous;
 }
 
 // ========================= Empty entity processing  ===================
 
-static void checkIsInEmpty(page_iterator_t &result, uint16_t entitySize, uint16_t offset)
+static page_iterator_t checkIsInEmpty(const page_iterator_t &previous, uint16_t entitySize, uint16_t offset)
 {
-  if (result.type==EntityType::End)
+  if (previous.type==EntityType::End)
   {
-    nextEntity(result, entitySize);
+    page_iterator_t result(nextEntity(previous, entitySize));
     if (result.address.isOffsetInEntity(offset)) 
     { 
       result.setNoEntity();
     }
+    return result;
   }
+  return previous;
 }
 
 // ===============================================================================
@@ -327,76 +332,76 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
   switch (pageNumber)
   {
     case veMapPage:
-      checkIsInTable(result, &fuelTable, offset);
+      result = checkIsInTable(result, &fuelTable, offset);
       break;
 
     case ignMapPage: //Ignition settings page (Page 2)
-      checkIsInTable(result, &ignitionTable, offset);
+      result = checkIsInTable(result, &ignitionTable, offset);
       break;
 
     case afrMapPage: //Air/Fuel ratio target settings page
-      checkIsInTable(result, &afrTable, offset);
+      result = checkIsInTable(result, &afrTable, offset);
       break;
 
     case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-      checkIsInTable(result, &boostTable, offset);
-      checkIsInTable(result, &vvtTable, offset);
-      checkIsInTable(result, &stagingTable, offset);
+      result = checkIsInTable(result, &boostTable, offset);
+      result = checkIsInTable(result, &vvtTable, offset);
+      result = checkIsInTable(result, &stagingTable, offset);
       break;
 
     case seqFuelPage:
-      checkIsInTable(result, &trim1Table, offset);
-      checkIsInTable(result, &trim2Table, offset);
-      checkIsInTable(result, &trim3Table, offset);
-      checkIsInTable(result, &trim4Table, offset);
-      checkIsInTable(result, &trim5Table, offset);
-      checkIsInTable(result, &trim6Table, offset);
-      checkIsInTable(result, &trim7Table, offset);
-      checkIsInTable(result, &trim8Table, offset);
+      result = checkIsInTable(result, &trim1Table, offset);
+      result = checkIsInTable(result, &trim2Table, offset);
+      result = checkIsInTable(result, &trim3Table, offset);
+      result = checkIsInTable(result, &trim4Table, offset);
+      result = checkIsInTable(result, &trim5Table, offset);
+      result = checkIsInTable(result, &trim6Table, offset);
+      result = checkIsInTable(result, &trim7Table, offset);
+      result = checkIsInTable(result, &trim8Table, offset);
       break;
 
     case fuelMap2Page:
-      checkIsInTable(result, &fuelTable2, offset);
+      result = checkIsInTable(result, &fuelTable2, offset);
       break;
 
     case wmiMapPage:
-      checkIsInTable(result, &wmiTable, offset);
-      checkIsInTable(result, &vvt2Table, offset);
-      checkIsInTable(result, &dwellTable, offset);
-      checkIsInEmpty(result, 8U, offset);
+      result = checkIsInTable(result, &wmiTable, offset);
+      result = checkIsInTable(result, &vvt2Table, offset);
+      result = checkIsInTable(result, &dwellTable, offset);
+      result = checkIsInEmpty(result, 8U, offset);
       break;
     
     case ignMap2Page:
-      checkIsInTable(result, &ignitionTable2, offset);
+      result = checkIsInTable(result, &ignitionTable2, offset);
       break;
 
     case veSetPage: 
-      checkIsInRaw(result, &configPage2, sizeof(configPage2), offset);
+      result = checkIsInRaw(result, &configPage2, sizeof(configPage2), offset);
       break;
 
     case ignSetPage: 
-      checkIsInRaw(result, &configPage4, sizeof(configPage4), offset);
+      result = checkIsInRaw(result, &configPage4, sizeof(configPage4), offset);
       break;
     
     case afrSetPage: 
-      checkIsInRaw(result, &configPage6, sizeof(configPage6), offset);
+      result = checkIsInRaw(result, &configPage6, sizeof(configPage6), offset);
       break;
 
     case canbusPage:  
-      checkIsInRaw(result, &configPage9, sizeof(configPage9), offset);
+      result = checkIsInRaw(result, &configPage9, sizeof(configPage9), offset);
       break;
 
     case warmupPage: 
-      checkIsInRaw(result, &configPage10, sizeof(configPage10), offset);
+      result = checkIsInRaw(result, &configPage10, sizeof(configPage10), offset);
       break;
 
     case progOutsPage: 
-      checkIsInRaw(result, &configPage13, sizeof(configPage13), offset);
+      result = checkIsInRaw(result, &configPage13, sizeof(configPage13), offset);
       break;
     
     case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
-      checkIsInTable(result, &boostTableLookupDuty, offset);
-      checkIsInRaw(result, &configPage15, sizeof(configPage15), offset);
+      result = checkIsInTable(result, &boostTableLookupDuty, offset);
+      result = checkIsInRaw(result, &configPage15, sizeof(configPage15), offset);
       break;
 
     default:
@@ -407,7 +412,7 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
   // Nothing matched, so we are at the end of the known entities for the page.
   if (result.type==EntityType::End)
   {
-    nextEntity(result, 0U);
+    result = nextEntity(result, 0U);
   }
 
   return result;
