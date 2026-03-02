@@ -77,6 +77,11 @@ struct entity_page_location_t {
     {        
     }
 
+    entity_page_location_t next(void) const
+    {
+        return entity_page_location_t(page, index+1);
+    }
+
     friend bool operator==(const entity_page_location_t &lhs, const entity_page_location_t &rhs)
     {
         return lhs.page==rhs.page
