@@ -89,8 +89,8 @@ struct table3d_t
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr TableType type_key = TableType::TO_TYPE_KEY(size, xDom, yDom); \
-        static constexpr axis_domain XDomain = axis_domain_ ## xDom; \
-        static constexpr axis_domain YDomain = axis_domain_ ## yDom; \
+        static constexpr AxisDomain XDomain = AxisDomain::xDom; \
+        static constexpr AxisDomain YDomain = AxisDomain::yDom; \
         \
         mutable table3DGetValueCache get_value_cache; \
         value_t values; \
@@ -105,8 +105,8 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
     static inline table3d_value_t get3DTableValue(const TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, const uint16_t y, const uint16_t x) \
     { \
-      constexpr uint16_t xFactor = axis_domain_to_factor(axis_domain_ ## xDom); \
-      constexpr uint16_t yFactor = axis_domain_to_factor(axis_domain_ ## yDom); \
+      constexpr uint16_t xFactor = getConversionFactor(AxisDomain::xDom); \
+      constexpr uint16_t yFactor = getConversionFactor(AxisDomain::yDom); \
       return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
                               pTable->values.values, \
