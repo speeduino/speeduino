@@ -99,7 +99,7 @@ struct table3d_t
     };
 // LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
-// LCOV_EXCL_START
+// LCOV_EXCL_STOP
 
 // Generate get3DTableValue() functions
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
