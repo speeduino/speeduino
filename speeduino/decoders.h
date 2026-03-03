@@ -42,6 +42,7 @@
 #define DECODER_SUZUKI_K6A        26
 #define DECODER_HONDA_J32         27
 #define DECODER_FORD_TFI          28
+#define DECODER_SUBARU_7_C_ONLY   29
 
 #define BIT_DECODER_VALID_TRIGGER       4 //Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
 #define BIT_DECODER_TOOTH_ANG_CORRECT   5 //Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.
@@ -311,6 +312,13 @@ void triggerSec_FordTFI(void);
 uint16_t getRPM_FordTFI(void);
 int getCrankAngle_FordTFI(void);
 void triggerSetEndTeeth_FordTFI(void);
+
+void triggerSetup_Subaru7crankOnly(void);
+void triggerPri_Subaru7crankOnly(void);
+void triggerSec_Subaru7crankOnly(void);
+uint16_t getRPM_Subaru7crankOnly(void);
+int getCrankAngle_Subaru7crankOnly(void);
+void triggerSetEndTeeth_Subaru7crankOnly(void);
 
 /**
  * @brief This function is called when the engine is stopped, or when the engine is started. It resets the decoder state and the tooth tracking variables
