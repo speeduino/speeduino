@@ -9,8 +9,8 @@
 uint16_t getPageSize(uint8_t pageNum /**< [in] The page number */ );
 
 // These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-constexpr uint8_t veMapPage     = 2;
 constexpr uint8_t veSetPage     = 1; //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
+constexpr uint8_t veMapPage     = 2;
 constexpr uint8_t ignMapPage    = 3;
 constexpr uint8_t ignSetPage    = 4;
 constexpr uint8_t afrMapPage    = 5;
@@ -77,7 +77,7 @@ struct entity_page_location_t {
     {        
     }
 
-    entity_page_location_t next(void) const
+    constexpr entity_page_location_t next(void) const
     {
         return entity_page_location_t(page, index+1);
     }
@@ -102,12 +102,12 @@ struct entity_page_address_t {
     constexpr entity_page_address_t(void)
     : start(0U)
     , size(0U)
-    {        
+    {
     }
     constexpr entity_page_address_t(uint16_t base, uint16_t length)
     : start(base)
     , size(length)
-    {        
+    {
     }
 
     /**
@@ -121,7 +121,7 @@ struct entity_page_address_t {
         return offset >= start && offset < start+size;
     }
 
-    entity_page_address_t next(uint16_t nextBlockSize) const
+    constexpr entity_page_address_t next(uint16_t nextBlockSize) const
     {
         return entity_page_address_t(start+size, nextBlockSize);
     }
@@ -144,33 +144,27 @@ struct page_iterator_t {
     , type(EntityType::End)
     {     
     }
-
-    page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : type(theType)
+    constexpr page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pTable(nullptr)
+    , type(theType)
     , location(entityLocation)    
     , address(entityAddress)
     {
     }
-
-    void setNoEntity(void)
+    constexpr page_iterator_t(table3d_t *table, TableType key, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pTable(table)
+    , type(EntityType::Table)
+    , table_key(key)
+    , location(entityLocation)    
+    , address(entityAddress)
     {
-        pRaw = nullptr;
-        type = EntityType::NoEntity;
-        table_key = TableType::table_type_None;
     }
-
-    void setTable(table3d_t *table, TableType key)
+    constexpr page_iterator_t(config_page_t *entity, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : pRaw(entity)
+    , type(EntityType::Raw)
+    , location(entityLocation)    
+    , address(entityAddress)
     {
-        pTable = table;
-        type = EntityType::Table;
-        table_key = key;
-    }
-
-    void setRaw(config_page_t *pBuffer)
-    {
-        pRaw = pBuffer;
-        type = EntityType::Raw;
-        table_key = TableType::table_type_None;
     }
 };
 

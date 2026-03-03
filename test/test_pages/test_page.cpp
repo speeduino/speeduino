@@ -20,10 +20,9 @@ static void test_getEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( EntityType::Raw, 
+    page_iterator_t entityIter(&entity,
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, sizeof(entity)));
-    entityIter.setRaw(&entity);
 
     assert_entity(entityIter, MARKER);
 }
@@ -58,11 +57,9 @@ static page_iterator_t setupTableIterator(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    page_iterator_t result( EntityType::Table, 
+    return page_iterator_t( &entity, entity.type_key,
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, size));
-    result.setTable(&entity, entity.type_key);
-    return result;
 }
 
 template <typename TTable>
@@ -120,10 +117,9 @@ static void test_setEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( EntityType::End, 
+    page_iterator_t entityIter( &entity,
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
-    entityIter.setRaw(&entity);
 
     constexpr char POST_MARKER = 'Y';
     set_entity_values(entityIter, 0, entityIter.address.size, POST_MARKER);
