@@ -239,9 +239,15 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 
 static void test_sumEntity_matches_pageSize(void)
 {
+    // Page sizes as defined in the .ini file
+    constexpr uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256 };
+
     for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {
-        TEST_ASSERT_EQUAL(getPageSize(pageNum), sumEntitySizes(pageNum));
+        char szMsg[32];
+        sprintf(szMsg, "Page %" PRIu8, pageNum);
+        TEST_ASSERT_EQUAL_MESSAGE(getPageSize(pageNum), sumEntitySizes(pageNum), szMsg);
+        TEST_ASSERT_EQUAL_MESSAGE(ini_page_sizes[pageNum], getPageSize(pageNum), szMsg);
     }
 }
 
