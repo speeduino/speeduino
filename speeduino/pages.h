@@ -66,6 +66,11 @@ struct entity_page_location_t {
     uint8_t page;   // The index of the page the entity belongs to
     uint8_t index;  // The sub-index of the item within the page
 
+    constexpr entity_page_location_t(void)
+    : page(0U)
+    , index(0U)
+    {        
+    }
     constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
     : page(pageNum)
     , index(pageSubIndex)
@@ -89,7 +94,12 @@ struct entity_page_address_t {
     uint16_t start; // The start position of the entity, in bytes, from the start of the page
     uint16_t size;  // Size of the entity in bytes
 
-    entity_page_address_t(uint16_t base, uint16_t length)
+    constexpr entity_page_address_t(void)
+    : start(0U)
+    , size(0U)
+    {        
+    }
+    constexpr entity_page_address_t(uint16_t base, uint16_t length)
     : start(base)
     , size(length)
     {        
@@ -123,6 +133,12 @@ struct page_iterator_t {
     TableType table_key = TableType::table_type_None;
     entity_page_location_t location;
     entity_page_address_t address;
+
+    constexpr page_iterator_t()
+    : pTable(nullptr)
+    , type(EntityType::End)
+    {     
+    }
 
     page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
     : type(theType)

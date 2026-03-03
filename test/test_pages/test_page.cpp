@@ -239,9 +239,15 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 
 static void test_sumEntity_matches_pageSize(void)
 {
+    // Page sizes as defined in the .ini file
+    constexpr uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256 };
+
     for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {
-        TEST_ASSERT_EQUAL(getPageSize(pageNum), sumEntitySizes(pageNum));
+        char szMsg[32];
+        sprintf(szMsg, "Page %" PRIu8, pageNum);
+        TEST_ASSERT_EQUAL_MESSAGE(getPageSize(pageNum), sumEntitySizes(pageNum), szMsg);
+        TEST_ASSERT_EQUAL_MESSAGE(ini_page_sizes[pageNum], getPageSize(pageNum), szMsg);
     }
 }
 
@@ -287,6 +293,54 @@ static void print_page_layout(void)
     }
 }
 
+static uint16_t assert_unique(page_iterator_t testSubject, page_iterator_t* previousEntities, uint16_t nextSlot)
+{
+    for (uint16_t index=0; index<nextSlot; ++index)
+    {
+        // Every page iterator points to a different object
+        TEST_ASSERT_FALSE(previousEntities[index].pTable==testSubject.pTable);
+        TEST_ASSERT_FALSE(previousEntities[index].pRaw==testSubject.pRaw);
+        // Page iterator locations are unique
+        TEST_ASSERT_FALSE(previousEntities[index].location==testSubject.location);
+    }
+    previousEntities[nextSlot] = testSubject;
+    return nextSlot+1U;
+}
+
+static uint16_t test_unique_entities(uint8_t pageNum, page_iterator_t* previousEntities, uint16_t nextSlot)
+{
+    uint8_t lastPageIndex = -1;
+    page_iterator_t entity = page_begin(pageNum);
+    while (EntityType::End!=entity.type)
+    {
+        TEST_ASSERT_EQUAL(pageNum, entity.location.page);
+        // Indexes should be monotonic
+        TEST_ASSERT_EQUAL(++lastPageIndex, entity.location.index);
+        // Entities should be next to each other with zero overlap
+        if (entity.location.index!=0U)
+        {
+            TEST_ASSERT_EQUAL(previousEntities[nextSlot-1U].address.start+previousEntities[nextSlot-1U].address.size, entity.address.start);
+        }
+        if (EntityType::NoEntity!=entity.type)
+        {
+            nextSlot = assert_unique(entity, previousEntities, nextSlot);
+        }
+        entity = advance(entity);
+    }
+    return nextSlot;
+}
+
+static void test_unique_entities(void)
+{
+    page_iterator_t globalEntityIterators[256];
+    uint16_t index = 0;
+
+    for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
+    {
+        index = test_unique_entities(pageNum, globalEntityIterators, index);
+    }
+}
+
 void testPage(void) {
     SET_UNITY_FILENAME() {
         RUN_TEST(test_getEntityValue_raw);
@@ -302,5 +356,6 @@ void testPage(void) {
         RUN_TEST(print_all_page_entity_layout);
         RUN_TEST(print_page_layout);
         RUN_TEST(test_sumEntity_matches_pageSize);
+        RUN_TEST(test_unique_entities);
     }
 }
