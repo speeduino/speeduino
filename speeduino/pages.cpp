@@ -2,6 +2,7 @@
 #include "globals.h"
 #include "preprocessor.h"
 #include "table3d_visitor.h"
+#include "prog_mem_support.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -267,19 +268,6 @@ bool setEntityValue(page_iterator_t &iter, uint16_t offset, byte value)
 
 // ========================= Offset to entity support  ===================
 
-template <typename T>
-static T& loadObject_P(const T *pAddress, T &t)
-{
-  (void)memcpy_P(&t, pAddress, sizeof(T));
-  return t;
-}
-
-template <typename T>
-static T loadObject_P(const T *pAddress)
-{
-  T t = {};
-  return loadObject_P(pAddress, t);
-}
 
 // ========================= Table processing  ===================
 
@@ -432,7 +420,7 @@ static page_map_t getPageMap(uint8_t pageNumber)
   {
     pageNumber = 0U;
   }
-  return loadObject_P(&pageMaps[pageNumber]);
+  return copyObject_P(&pageMaps[pageNumber]);
 }
 
 static page_iterator_t mapOffsetToEntity_P(page_map_t pageMap, uint16_t offset)
@@ -440,7 +428,7 @@ static page_iterator_t mapOffsetToEntity_P(page_map_t pageMap, uint16_t offset)
   page_iterator_t entityIter;
   for (uint8_t index=0; index<pageMap.mapSize; ++index)
   {
-    if (loadObject_P(&pageMap.searchMap[index], entityIter).address.isOffsetInEntity(offset))
+    if (copyObject_P(&pageMap.searchMap[index], entityIter).address.isOffsetInEntity(offset))
     {
       return entityIter;
     }
@@ -522,7 +510,7 @@ uint16_t getPageSize(byte pageNum)
 {
   auto pageMap = getPageMap(pageNum);
   page_iterator_t lastEntityOnPage;
-  (void)loadObject_P(&pageMap.searchMap[pageMap.mapSize-1U], lastEntityOnPage);
+  (void)copyObject_P(&pageMap.searchMap[pageMap.mapSize-1U], lastEntityOnPage);
   return lastEntityOnPage.address.start + lastEntityOnPage.address.size;
 }
 
