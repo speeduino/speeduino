@@ -4,11 +4,8 @@
 #include "table3d_visitor.h"
 #include "prog_mem_support.h"
 
-#if defined(CORE_AVR)
-#pragma GCC push_options
 // This minimizes RAM usage at no performance cost
 #pragma GCC optimize ("Os") 
-#endif
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -45,12 +42,6 @@ static constexpr uint16_t get_table_axisx_end(void)
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-static constexpr uint16_t get_table_axisy_end(const table_t *table)
-{
-  UNUSED(table);
-  return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
-}
-template <class table_t>
 static constexpr uint16_t getTableSize(void)
 {
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
@@ -78,7 +69,7 @@ public:
 
   offset_to_table(const table_t *pTable, uint16_t table_offset)
   : _pTable(const_cast<table_t *>(pTable)), // cppcheck-suppress misra-c2012-10.4
-    _table_offset(min(table_offset, get_table_axisy_end(pTable)))
+    _table_offset(min(table_offset, getTableSize<table_t>()))
   {    
   }
 
@@ -577,7 +568,3 @@ table_axis_iterator y_begin(const page_iterator_t &iter)
 }
 
 // LCOV_EXCL_STOP
-
-#if defined(CORE_AVR)
-#pragma GCC pop_options
-#endif
