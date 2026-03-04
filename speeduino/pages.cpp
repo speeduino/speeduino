@@ -156,58 +156,58 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte get_raw_location(const page_iterator_t &iter, uint16_t offset)
+static inline byte get_raw_location(const page_iterator_t &iter, uint16_t entityOffset)
 {
-  if (offset<iter.address.size)
+  if (entityOffset<iter.address.size)
   {
-    return *((const byte*)iter.entity.pRaw + offset);
+    return *((const byte*)iter.entity.pRaw + entityOffset);
   }
   return 0U;
 }
 
-static inline bool set_raw_location(page_iterator_t &iter, uint16_t offset, byte value)
+static inline bool set_raw_location(page_iterator_t &iter, uint16_t entityOffset, byte value)
 {
-  if (offset<iter.address.size)
+  if (entityOffset<iter.address.size)
   {
-    *((byte*)iter.entity.pRaw + offset) = value;
+    *((byte*)iter.entity.pRaw + entityOffset) = value;
     return true;
   }
   return false;
 }
 
 struct get_table_value_visitor {
-  uint16_t _offset;
+  uint16_t _tableOffset;
   
-  explicit get_table_value_visitor(uint16_t offset) 
-    : _offset(offset) 
+  explicit get_table_value_visitor(uint16_t tableOffset) 
+    : _tableOffset(tableOffset) 
   {
   }
 
   template <typename TTable>
   byte visit(TTable &table) {
-      return *offset_to_table<TTable>(&table, _offset);
+      return *offset_to_table<TTable>(&table, _tableOffset);
   }
 };
 
-static inline byte get_table_value(const page_iterator_t &iter, uint16_t offset)
+static inline byte get_table_value(const page_iterator_t &iter, uint16_t entityOffset)
 {
-  if (offset<iter.address.size)
+  if (entityOffset<iter.address.size)
   {
-    get_table_value_visitor visitor(offset);
+    get_table_value_visitor visitor(entityOffset);
     return visitTable3d<get_table_value_visitor, byte>(*iter.entity.pTable, iter.entity.table_key, visitor);
   }
   return 0U;
 }
 
-byte getEntityValue(const page_iterator_t &iter, uint16_t offset)
+byte getEntityValue(const page_iterator_t &iter, uint16_t entityOffset)
 {
   if (EntityType::Raw==iter.entity.type)
   {
-    return get_raw_location(iter, offset);
+    return get_raw_location(iter, entityOffset);
   }
   if (EntityType::Table==iter.entity.type)
   {
-    return get_table_value(iter, offset);
+    return get_table_value(iter, entityOffset);
   }
   // Entity has no data
   return 0U;
@@ -229,26 +229,26 @@ struct set_table_value_visitor {
   }
 };
 
-static inline bool set_table_value(page_iterator_t &iter, uint16_t offset, byte new_value)
+static inline bool set_table_value(page_iterator_t &iter, uint16_t entityOffset, byte new_value)
 {
-  if (offset<iter.address.size)
+  if (entityOffset<iter.address.size)
   {
-    set_table_value_visitor visitor(offset, new_value);
+    set_table_value_visitor visitor(entityOffset, new_value);
     visitTable3d<set_table_value_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);
     return true;
   }
   return false;
 }
 
-bool setEntityValue(page_iterator_t &iter, uint16_t offset, byte value)
+bool setEntityValue(page_iterator_t &iter, uint16_t entityOffset, byte value)
 {    
   if (EntityType::Raw==iter.entity.type)
   {
-    return set_raw_location(iter, offset, value);
+    return set_raw_location(iter, entityOffset, value);
   }
   else if (EntityType::Table==iter.entity.type)
   {
-    return set_table_value(iter, offset, value);
+    return set_table_value(iter, entityOffset, value);
   }
   else
   {
@@ -507,18 +507,18 @@ static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &iter, uin
   return pageOffset-iter.address.start;
 }
 
-bool setPageValue(uint8_t pageNum, uint16_t offset, byte value)
+bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
 {
-  page_iterator_t iter = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return setEntityValue(iter, pageOffsetToEntityOffset(iter, offset), value);
+  return setEntityValue(iter, pageOffsetToEntityOffset(iter, pageOffset), value);
 }
 
-byte getPageValue(uint8_t pageNum, uint16_t offset)
+byte getPageValue(uint8_t pageNum, uint16_t pageOffset)
 {
-  page_iterator_t iter = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return getEntityValue(iter, pageOffsetToEntityOffset(iter, offset));
+  return getEntityValue(iter, pageOffsetToEntityOffset(iter, pageOffset));
 }
 
 // LCOV_EXCL_START
