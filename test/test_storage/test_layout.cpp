@@ -13,7 +13,7 @@ extern const uint16_t STORAGE_SIZE;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
     config10 localPage10;
-    page_iterator_t iter(page_entity_t(&localPage10), entity_page_location_t(2, 1), entity_page_address_t(0, sizeof(localPage10)));
+    page_iterator_t iter(entity_t(&localPage10), entity_page_location_t(2, 1), entity_page_address_t(0, sizeof(localPage10)));
     TEST_ASSERT_EQUAL(0, getEntityStartAddress(iter));
 }
 
