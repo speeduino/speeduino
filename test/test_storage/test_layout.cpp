@@ -13,7 +13,7 @@ extern const uint16_t STORAGE_SIZE;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
     config10 localPage10;
-    page_iterator_t iter(entity_t(&localPage10), entity_page_location_t(2, 1), entity_page_address_t(0, sizeof(localPage10)));
+    page_iterator_t iter(page_entity_t(entity_t(&localPage10, sizeof(localPage10)), 0U), entity_page_location_t(2, 1));
     TEST_ASSERT_EQUAL(0, getEntityStartAddress(iter));
 }
 
@@ -60,7 +60,7 @@ static uint8_t test_no_overlap_page(uint8_t pageNum, block blocks[], size_t leng
     if (iter.entity.type!=EntityType::NoEntity) {
         TEST_ASSERT_LESS_THAN(length, idxCurrBlock);
 
-        block newBlock = { getEntityStartAddress(iter), iter.address.size };
+        block newBlock = { getEntityStartAddress(iter), iter.entity.size };
         TEST_ASSERT_GREATER_THAN(0, newBlock.start);
         TEST_ASSERT_LESS_THAN(MAX_PAGE_ADDRESS, newBlock.start+newBlock.length);
         assert_nocalibration_overlap(newBlock, idxCurrBlock);
@@ -155,7 +155,7 @@ const char *getEntityName(const page_iterator_t &it) {
 static void print_entity(const page_iterator_t &iter)
 {
     char msg[128];
-    sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, iter.location.page, iter.location.index, getEntityName(iter), getEntityTypeName(iter), getEntityStartAddress(iter), iter.address.size);
+    sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, iter.location.page, iter.location.index, getEntityName(iter), getEntityTypeName(iter), getEntityStartAddress(iter), iter.entity.size);
     UnityPrint(msg); UNITY_PRINT_EOL();
 }
 

@@ -94,49 +94,16 @@ struct entity_page_location_t {
     }    
 };
 
-/** @brief  Position and size of an entity within a page */
-struct entity_page_address_t {
-    uint16_t start; // The start position of the entity, in bytes, from the start of the page
-    uint16_t size;  // Size of the entity in bytes
-
-    constexpr entity_page_address_t(void)
-    : start(0U)
-    , size(0U)
-    {
-    }
-    explicit constexpr entity_page_address_t(uint16_t base, uint16_t length)
-    : start(base)
-    , size(length)
-    {
-    }
-
-    /**
-     * @brief Check if the offset is within the entity address range
-     * 
-     * @param offset Address offset from the start of the page
-     * @return if the offset is within the entity address range, false otherwise
-     */
-    bool isOffsetInEntity(uint16_t offset) const
-    {
-        return offset >= start && offset < start+size;
-    }
-
-    constexpr entity_page_address_t next(uint16_t nextBlockSize) const
-    {
-        return entity_page_address_t(start+size, nextBlockSize);
-    }
-};
-
 struct entity_t
 {
-    EntityType type;
+    EntityType type; ///< The entity type
     union 
     {
-        table3d_t *pTable;      // If the entity is a table, this points to the table
-        config_page_t *pRaw;    // If the entity is a raw block, this points to it
+        table3d_t *pTable;      ///< If the entity is a table, this points to the table
+        config_page_t *pRaw;    ///< If the entity is a raw block, this points to it
     };
-    TableType table_key = TableType::table_type_None;
-    uint16_t size = 0U;  // Size of the entity in bytes
+    TableType table_key = TableType::table_type_None; ///< If the entity is a table, this can be used to get the table type
+    uint16_t size = 0U;  ///< Size of the entity in bytes *on the page*
 
     constexpr entity_t(void)
     : type(EntityType::NoEntity)
@@ -162,21 +129,49 @@ struct entity_t
     , size(theSize)
     {
     }
+
+    inline bool isEntityAddressWithin(uint16_t entityAddress) const
+    {
+        return entityAddress<size;
+    }
+};
+
+// An entity within a page - needs to include the entity start position
+struct page_entity_t : entity_t
+{
+    uint16_t start; // The start position of the entity, in bytes, from the start of the page
+
+    constexpr page_entity_t(void)
+    : start(0U)
+    {
+    }
+    explicit constexpr page_entity_t(const entity_t &entity, uint16_t base)
+    : entity_t(entity)
+    , start(base)
+    {
+    }
+
+    /**
+     * @brief Check if the offset is within the entity address range
+     * 
+     * @param pageOffset Address offset from the start of the page
+     * @return if the offset is within the entity address range, false otherwise
+     */
+    inline bool isPageAddressWithin(uint16_t pageAddress) const
+    {
+        return pageAddress >= start && pageAddress < start+size;
+    }
 };
 
 // A entity on a logical page.
 struct page_iterator_t {
-    entity_t entity;
+    page_entity_t entity;
     entity_page_location_t location;
-    entity_page_address_t address;
 
-    constexpr page_iterator_t(void) 
-    {
-    }
-    constexpr page_iterator_t(const entity_t &theEntity, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    constexpr page_iterator_t(void) = default;
+    constexpr page_iterator_t(const page_entity_t &theEntity, const entity_page_location_t &entityLocation)
     : entity(theEntity)
     , location(entityLocation)    
-    , address(entityAddress)
     {
     }
 };
