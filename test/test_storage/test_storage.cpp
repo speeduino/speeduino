@@ -21,7 +21,7 @@ static void test_saveAllPages(void)
 
 static void assert_entity(page_iterator_t iter, char expectedContent)
 {
-    for (uint16_t offset=0; offset<iter.address.size; ++offset)
+    for (uint16_t offset=0; offset<iter.entity.size; ++offset)
     {
         char szMsg[64];
         sprintf(szMsg, "Page %" PRIu8 ", Offset %" PRIu16, iter.location.page, offset);

@@ -156,20 +156,20 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte get_raw_location(const page_iterator_t &iter, uint16_t entityOffset)
+static inline byte get_raw_location(const entity_t &entity, uint16_t entityOffset)
 {
-  if (entityOffset<iter.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    return *((const byte*)iter.entity.pRaw + entityOffset);
+    return *((const byte*)entity.pRaw + entityOffset);
   }
   return 0U;
 }
 
-static inline bool set_raw_location(page_iterator_t &iter, uint16_t entityOffset, byte value)
+static inline bool set_raw_location(entity_t &entity, uint16_t entityOffset, byte value)
 {
-  if (entityOffset<iter.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    *((byte*)iter.entity.pRaw + entityOffset) = value;
+    *((byte*)entity.pRaw + entityOffset) = value;
     return true;
   }
   return false;
@@ -189,12 +189,12 @@ struct get_table_value_visitor {
   }
 };
 
-static inline byte get_table_value(const page_iterator_t &iter, uint16_t entityOffset)
+static inline byte get_table_value(const entity_t &entity, uint16_t entityOffset)
 {
-  if (entityOffset<iter.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
     get_table_value_visitor visitor(entityOffset);
-    return visitTable3d<get_table_value_visitor, byte>(*iter.entity.pTable, iter.entity.table_key, visitor);
+    return visitTable3d<get_table_value_visitor, byte>(*entity.pTable, entity.table_key, visitor);
   }
   return 0U;
 }
@@ -203,11 +203,11 @@ byte getEntityValue(const page_iterator_t &iter, uint16_t entityOffset)
 {
   if (EntityType::Raw==iter.entity.type)
   {
-    return get_raw_location(iter, entityOffset);
+    return get_raw_location(iter.entity, entityOffset);
   }
   if (EntityType::Table==iter.entity.type)
   {
-    return get_table_value(iter, entityOffset);
+    return get_table_value(iter.entity, entityOffset);
   }
   // Entity has no data
   return 0U;
@@ -229,12 +229,12 @@ struct set_table_value_visitor {
   }
 };
 
-static inline bool set_table_value(page_iterator_t &iter, uint16_t entityOffset, byte new_value)
+static inline bool set_table_value(entity_t &entity, uint16_t entityOffset, byte new_value)
 {
-  if (entityOffset<iter.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
     set_table_value_visitor visitor(entityOffset, new_value);
-    visitTable3d<set_table_value_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);
+    visitTable3d<set_table_value_visitor, void>(*entity.pTable, entity.table_key, visitor);
     return true;
   }
   return false;
@@ -244,11 +244,11 @@ bool setEntityValue(page_iterator_t &iter, uint16_t entityOffset, byte value)
 {    
   if (EntityType::Raw==iter.entity.type)
   {
-    return set_raw_location(iter, entityOffset, value);
+    return set_raw_location(iter.entity, entityOffset, value);
   }
   else if (EntityType::Table==iter.entity.type)
   {
-    return set_table_value(iter, entityOffset, value);
+    return set_table_value(iter.entity, entityOffset, value);
   }
   else
   {
@@ -382,22 +382,22 @@ static page_map_t getPageMap(uint8_t pageNumber)
  * @brief Search for the page_iterator_t that spans pageOffset */
 static page_iterator_t mapOffsetToEntity_P(const entity_t *pEntityMap, uint8_t mapLength, uint8_t pageNumber, uint16_t pageOffset)
 {
-  entity_page_address_t pageAddress(0U, 0U);
-  entity_page_location_t pageLocation(pageNumber, -1 /* This is deliberate: we simplify the loop body */);
+  entity_page_location_t pageLocation(pageNumber, 0U);
+  uint16_t entityOffset = 0U;
 
   for (uint8_t index=0; index<mapLength; ++index)
   {
-    entity_t mappedEntity;
-    (void)copyObject_P(&pEntityMap[index], mappedEntity);
-    pageAddress = pageAddress.next(mappedEntity.size);
-    pageLocation = pageLocation.next();
-
-    if (pageAddress.isOffsetInEntity(pageOffset))
+    page_entity_t mappedEntity(copyObject_P(&pEntityMap[index]), entityOffset);
+    if (mappedEntity.isPageAddressWithin(pageOffset))
     {
-      return page_iterator_t(mappedEntity, pageLocation, pageAddress);
+      return page_iterator_t(mappedEntity, pageLocation);
     }
+    entityOffset = entityOffset + mappedEntity.size;
+    pageLocation = pageLocation.next();
   }
-  return page_iterator_t(entity_t(EntityType::End, 0U), pageLocation.next(), pageAddress.next(0));
+
+  constexpr entity_t END_ENTITY = entity_t(EntityType::End, 0U);
+  return page_iterator_t(page_entity_t(END_ENTITY, entityOffset), pageLocation);
 }
 
 // ===============================================================================
@@ -446,7 +446,7 @@ static void setEntityToEmpty(page_iterator_t iter) {
   switch (iter.entity.type)
     {
     case EntityType::Raw:
-        (void)memset(iter.entity.pRaw, 0, iter.address.size);
+        (void)memset(iter.entity.pRaw, 0, iter.entity.size);
         break;
 
     case EntityType::Table:
@@ -473,13 +473,13 @@ void __attribute__((noinline)) setTuneToEmpty(void) {
 
 uint16_t getPageSize(byte pageNum)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
-  return entity.address.start + entity.address.size;
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, UINT16_MAX);
+  return iter.entity.start;
 }
 
 static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &iter, uint16_t pageOffset)
 {
-  return pageOffset-iter.address.start;
+  return pageOffset-iter.entity.start;
 }
 
 bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
@@ -507,7 +507,7 @@ page_iterator_t page_begin(uint8_t pageNum)
 
 page_iterator_t advance(const page_iterator_t &iter)
 {
-    return map_page_offset_to_entity(iter.location.page, iter.address.start+iter.address.size);
+    return map_page_offset_to_entity(iter.location.page, iter.entity.start+iter.entity.size);
 }
 
 /**
