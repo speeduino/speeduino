@@ -34,7 +34,7 @@ void setTuneToEmpty(void);
 
 /** @brief Gets a single value from a page, with data aligned as per the ini file */
 byte getPageValue(  uint8_t pageNum,       /**< [in] The page number to retrieve data from. */
-                    uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+                    uint16_t pageOffset    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
                     );
 
 /** 
@@ -42,9 +42,9 @@ byte getPageValue(  uint8_t pageNum,       /**< [in] The page number to retrieve
  * 
  * @returns true if value set, false otherwise
  */
-bool setPageValue(  uint8_t pageNum,       /**< [in] The page number to update. */
-                    uint16_t offset,    /**< [in] The offset within the page.  */
-                    byte value          /**< [in] The new value */
+bool setPageValue(  uint8_t pageNum,        /**< [in] The page number to update. */
+                    uint16_t pageOffset,    /**< [in] The offset within the page.  */
+                    byte value              /**< [in] The new value */
                     );
 
 
