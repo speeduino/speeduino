@@ -100,7 +100,7 @@ uint16_t STORAGE_SIZE = STORAGE_END;
 //
 // This is *THE* single source of truth for mapping the tune
 // (I.e page entities) to EEPROM locations.
-TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
+TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t iter) {
   struct entity_storage_map_t {
       void *pEntity;
       uint16_t eepromStartAddress;
@@ -139,7 +139,7 @@ TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t entity) {
 
   // Linear search of the address map.
   const entity_storage_map_t *pMapEntry = entityMap;
-  while ((pMapEntry!=entityMapEnd) && (entity.pRaw!=pgm_read_ptr(&pMapEntry->pEntity))) {
+  while ((pMapEntry!=entityMapEnd) && (iter.entity.pRaw!=pgm_read_ptr(&pMapEntry->pEntity))) {
     ++pMapEntry;
   }
   uint16_t address = 0U;

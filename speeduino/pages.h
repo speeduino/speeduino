@@ -71,7 +71,7 @@ struct entity_page_location_t {
     , index(0U)
     {        
     }
-    constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
+    explicit constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
     : page(pageNum)
     , index(pageSubIndex)
     {        
@@ -104,7 +104,7 @@ struct entity_page_address_t {
     , size(0U)
     {
     }
-    constexpr entity_page_address_t(uint16_t base, uint16_t length)
+    explicit constexpr entity_page_address_t(uint16_t base, uint16_t length)
     : start(base)
     , size(length)
     {
@@ -127,41 +127,50 @@ struct entity_page_address_t {
     }
 };
 
-// A entity on a logical page.
-struct page_iterator_t {
+struct page_entity_t
+{
+    EntityType type;
     union 
     {
         table3d_t *pTable;      // If the entity is a table, this points to the table
         config_page_t *pRaw;    // If the entity is a raw block, this points to it
     };
-    EntityType type;
     TableType table_key = TableType::table_type_None;
+
+    constexpr page_entity_t(void)
+    : type(EntityType::NoEntity)
+    , pRaw(nullptr)
+    {
+    }
+    explicit constexpr page_entity_t(EntityType theType)
+    : type(theType)
+    , pRaw(nullptr)
+    {
+    }
+   explicit constexpr page_entity_t(table3d_t *table, TableType key)
+    : type(EntityType::Table)
+    , pTable(table)
+    , table_key(key)
+    {
+    }
+    explicit constexpr page_entity_t(config_page_t *entity)
+    : type(EntityType::Raw)
+    , pRaw(entity)
+    {
+    }
+};
+
+// A entity on a logical page.
+struct page_iterator_t {
+    page_entity_t entity;
     entity_page_location_t location;
     entity_page_address_t address;
 
-    constexpr page_iterator_t()
-    : pTable(nullptr)
-    , type(EntityType::End)
-    {     
-    }
-    constexpr page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pTable(nullptr)
-    , type(theType)
-    , location(entityLocation)    
-    , address(entityAddress)
+    constexpr page_iterator_t(void) 
     {
     }
-    constexpr page_iterator_t(table3d_t *table, TableType key, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pTable(table)
-    , type(EntityType::Table)
-    , table_key(key)
-    , location(entityLocation)    
-    , address(entityAddress)
-    {
-    }
-    constexpr page_iterator_t(config_page_t *entity, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : pRaw(entity)
-    , type(EntityType::Raw)
+    constexpr page_iterator_t(const page_entity_t &theEntity, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
+    : entity(theEntity)
     , location(entityLocation)    
     , address(entityAddress)
     {

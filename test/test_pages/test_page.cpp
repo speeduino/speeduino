@@ -2,11 +2,11 @@
 #include "pages.h"
 #include "../test_utils.h"
 
-static void assert_entity(const page_iterator_t &entity, byte expected)
+static void assert_entity(const page_iterator_t &iter, byte expected)
 {
-    for (uint16_t offset=0; offset<entity.address.size; ++offset)
+    for (uint16_t offset=0; offset<iter.address.size; ++offset)
     {
-        TEST_ASSERT_EQUAL(expected, getEntityValue(entity, offset));
+        TEST_ASSERT_EQUAL(expected, getEntityValue(iter, offset));
     }
 }
 
@@ -20,7 +20,7 @@ static void test_getEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, MARKER, sizeof(entity));
 
-    page_iterator_t entityIter(&entity,
+    page_iterator_t entityIter(page_entity_t(&entity),
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, sizeof(entity)));
 
@@ -33,7 +33,7 @@ static void test_getEntityValue_none(void)
     char entity[48];
     memset(&entity, MARKER, sizeof(entity));
 
-   page_iterator_t entityIter(  EntityType::NoEntity, 
+   page_iterator_t entityIter(  page_entity_t(), 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -57,7 +57,7 @@ static page_iterator_t setupTableIterator(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    return page_iterator_t( &entity, entity.type_key,
+    return page_iterator_t( page_entity_t(&entity, entity.type_key),
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, size));
 }
@@ -117,7 +117,7 @@ static void test_setEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( &entity,
+    page_iterator_t entityIter( page_entity_t(&entity),
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -132,7 +132,7 @@ static void test_setEntityValue_none(void)
     char entity[48];
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( EntityType::NoEntity, 
+    page_iterator_t entityIter( page_entity_t(), 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -143,19 +143,19 @@ static void test_setEntityValue_none(void)
 }
 
 template <typename TTable>
-static void assert_set_3d_table(page_iterator_t entity, const TTable &table, byte valuePre, byte xAxisPre, byte yAxisPre)
+static void assert_set_3d_table(page_iterator_t iter, const TTable &table, byte valuePre, byte xAxisPre, byte yAxisPre)
 {
     const uint16_t valueSize = table.values.num_rows*table.values.row_size; 
     const char valuePost = valuePre+1;
-    set_entity_values(entity, 0, valueSize, valuePost);
+    set_entity_values(iter, 0, valueSize, valuePost);
     TEST_ASSERT_EACH_EQUAL_CHAR(valuePost, table.values.values, valueSize);
 
     const char xAxisPost = xAxisPre+1;
-    set_entity_values(entity, valueSize, valueSize+table.axisX.length, xAxisPost);
+    set_entity_values(iter, valueSize, valueSize+table.axisX.length, xAxisPost);
     TEST_ASSERT_EACH_EQUAL_CHAR(xAxisPost, table.axisX.axis, table.axisX.length);
 
     const char yAxisPost = yAxisPre+1;
-    set_entity_values(entity, valueSize+table.axisX.length, valueSize+table.axisX.length+table.axisY.length, yAxisPost);
+    set_entity_values(iter, valueSize+table.axisX.length, valueSize+table.axisX.length+table.axisY.length, yAxisPost);
     TEST_ASSERT_EACH_EQUAL_CHAR(yAxisPost, table.axisY.axis, table.axisY.length);
 }
 
@@ -225,7 +225,7 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 {
     uint16_t sum = 0;
     page_iterator_t it = page_begin(pageNum);
-    while (EntityType::End!=it.type)
+    while (EntityType::End!=it.entity.type)
     {
         sum += it.address.size;
         it = advance(it);
@@ -253,7 +253,7 @@ static void print_entity_layout(const page_iterator_t &entity)
     sprintf(szMsg, "%" PRIu8 ", %" PRIu8 ", %s, %" PRIu16 ", %" PRIu16, 
         entity.location.page, 
         entity.location.index, 
-        entity.type==EntityType::Raw ? "Raw" : (entity.type==EntityType::Table ? "Table" : (entity.type==EntityType::NoEntity ? "NoEntity" : "End")),
+        entity.entity.type==EntityType::Raw ? "Raw" : (entity.entity.type==EntityType::Table ? "Table" : (entity.entity.type==EntityType::NoEntity ? "NoEntity" : "End")),
         entity.address.start, 
         entity.address.size);
     UnityPrint(szMsg); UNITY_PRINT_EOL();
@@ -261,11 +261,11 @@ static void print_entity_layout(const page_iterator_t &entity)
 
 static void print_page_entity_layout(uint8_t pageNum)
 {
-    page_iterator_t entity = page_begin(pageNum);
-    while (EntityType::End!=entity.type)
+    page_iterator_t iter = page_begin(pageNum);
+    while (EntityType::End!=iter.entity.type)
     {
-        print_entity_layout(entity);
-        entity = advance(entity);
+        print_entity_layout(iter);
+        iter = advance(iter);
     }
 }
 
@@ -294,8 +294,8 @@ static uint16_t assert_unique(page_iterator_t testSubject, page_iterator_t* prev
     for (uint16_t index=0; index<nextSlot; ++index)
     {
         // Every page iterator points to a different object
-        TEST_ASSERT_FALSE(previousEntities[index].pTable==testSubject.pTable);
-        TEST_ASSERT_FALSE(previousEntities[index].pRaw==testSubject.pRaw);
+        TEST_ASSERT_FALSE(previousEntities[index].entity.pTable==testSubject.entity.pTable);
+        TEST_ASSERT_FALSE(previousEntities[index].entity.pRaw==testSubject.entity.pRaw);
         // Page iterator locations are unique
         TEST_ASSERT_FALSE(previousEntities[index].location==testSubject.location);
     }
@@ -306,22 +306,22 @@ static uint16_t assert_unique(page_iterator_t testSubject, page_iterator_t* prev
 static uint16_t test_unique_entities(uint8_t pageNum, page_iterator_t* previousEntities, uint16_t nextSlot)
 {
     uint8_t lastPageIndex = -1;
-    page_iterator_t entity = page_begin(pageNum);
-    while (EntityType::End!=entity.type)
+    page_iterator_t iter = page_begin(pageNum);
+    while (EntityType::End!=iter.entity.type)
     {
-        TEST_ASSERT_EQUAL(pageNum, entity.location.page);
+        TEST_ASSERT_EQUAL(pageNum, iter.location.page);
         // Indexes should be monotonic
-        TEST_ASSERT_EQUAL(++lastPageIndex, entity.location.index);
+        TEST_ASSERT_EQUAL(++lastPageIndex, iter.location.index);
         // Entities should be next to each other with zero overlap
-        if (entity.location.index!=0U)
+        if (iter.location.index!=0U)
         {
-            TEST_ASSERT_EQUAL(previousEntities[nextSlot-1U].address.start+previousEntities[nextSlot-1U].address.size, entity.address.start);
+            TEST_ASSERT_EQUAL(previousEntities[nextSlot-1U].address.start+previousEntities[nextSlot-1U].address.size, iter.address.start);
         }
-        if (EntityType::NoEntity!=entity.type)
+        if (EntityType::NoEntity!=iter.entity.type)
         {
-            nextSlot = assert_unique(entity, previousEntities, nextSlot);
+            nextSlot = assert_unique(iter, previousEntities, nextSlot);
         }
-        entity = advance(entity);
+        iter = advance(iter);
     }
     return nextSlot;
 }
