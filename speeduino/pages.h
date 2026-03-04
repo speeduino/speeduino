@@ -179,17 +179,17 @@ struct page_iterator_t {
 // ============================== Per-byte entity access ==========================
 
 /** @brief Gets a single value from an entity, with data aligned as per the ini file */
-byte getEntityValue(const page_iterator_t &entity,  /**< [in] The entity to update */ 
-                    uint16_t offset                /**< [in] The offset within the entity */
+byte getEntityValue(const entity_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset          /**< [in] The offset within the entity */
                     );
 
 /**
  * @brief Sets a single value from a page, with data aligned as per the ini file
  * @returns true if value set, false otherwise
  */
-bool setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */ 
-                    uint16_t offset,          /**< [in] The offset within the entity */
-                    byte value                /**< [in] The new value */
+bool setEntityValue(entity_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset,   /**< [in] The offset within the entity */
+                    byte value         /**< [in] The new value */
                     );
 
 /**

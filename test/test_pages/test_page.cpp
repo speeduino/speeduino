@@ -2,11 +2,11 @@
 #include "pages.h"
 #include "../test_utils.h"
 
-static void assert_entity(const page_iterator_t &iter, byte expected)
+static void assert_entity(const entity_t &entity, byte expected)
 {
-    for (uint16_t offset=0; offset<iter.entity.size; ++offset)
+    for (uint16_t offset=0; offset<entity.size; ++offset)
     {
-        TEST_ASSERT_EQUAL(expected, getEntityValue(iter, offset));
+        TEST_ASSERT_EQUAL(expected, getEntityValue(entity, offset));
     }
 }
 
@@ -19,19 +19,12 @@ static void test_getEntityValue_raw(void)
     constexpr char MARKER = 'X';
     fake_config_page_t entity;
     memset(&entity, MARKER, sizeof(entity));
-
-    page_iterator_t entityIter( page_entity_t(entity_t(&entity, sizeof(entity)), 0),
-                                entity_page_location_t(10, 0));
-
-    assert_entity(entityIter, MARKER);
+    assert_entity(entity_t(&entity, sizeof(entity)), MARKER);
 }
 
 static void test_getEntityValue_none(void)
 {
-    page_iterator_t entityIter( page_entity_t(entity_t(EntityType::NoEntity, 32U), 0U), 
-                                entity_page_location_t(10, 0));
-
-    assert_entity(entityIter, 0U);
+    assert_entity(entity_t(EntityType::NoEntity, 32U), 0U);
 }
 
 template <typename TTable>
@@ -47,16 +40,15 @@ static TTable setup3dTable(byte valueMarker, byte xMarker, byte yMarker)
 }
 
 template <typename TTable>
-static page_iterator_t setupTableIterator(TTable &entity)
+static entity_t setupTableEntity(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    return page_iterator_t( page_entity_t(entity_t(&entity, entity.type_key, size), 0U),
-                            entity_page_location_t(10, 0));
+    return entity_t(&entity, entity.type_key, size);
 }
 
 template <typename TTable>
-static void assert_3d_table(const page_iterator_t &entity, const TTable &table, byte valueMarker, byte xMarker, byte yMarker)
+static void assert_3d_table(const entity_t &entity, const TTable &table, byte valueMarker, byte xMarker, byte yMarker)
 {
     char szMsg[64];
     uint16_t offset=0; 
@@ -77,15 +69,14 @@ static void assert_3d_table(const page_iterator_t &entity, const TTable &table, 
         TEST_ASSERT_EQUAL_MESSAGE(yMarker, getEntityValue(entity, offset), szMsg);
     }
     // Offset is too large
-    TEST_ASSERT_EQUAL(0, getEntityValue(entity, entity.entity.size+1));
+    TEST_ASSERT_EQUAL(0, getEntityValue(entity, entity.size+1));
 }
 
 template <typename TTable>
 static void test_getEntityValue_tableT(void)
 {
-    auto entity = setup3dTable<TTable>('X', 'Y', 'Z');
-    page_iterator_t entityIter = setupTableIterator(entity);
-    assert_3d_table(entityIter, entity, 'X', 'Y', 'Z');
+    auto table = setup3dTable<TTable>('X', 'Y', 'Z');
+    assert_3d_table(setupTableEntity(table), table, 'X', 'Y', 'Z');
 }
 
 static void test_getEntityValue_table(void)
@@ -96,7 +87,7 @@ static void test_getEntityValue_table(void)
     test_getEntityValue_tableT<table3d16RpmLoad>();
 }
 
-static void set_entity_values(page_iterator_t &entity, uint16_t from, uint16_t to, char value)
+static void set_entity_values(entity_t &entity, uint16_t from, uint16_t to, char value)
 {
     for (uint16_t offset=from; offset<to; ++offset)
     {
@@ -107,47 +98,44 @@ static void set_entity_values(page_iterator_t &entity, uint16_t from, uint16_t t
 static void test_setEntityValue_raw(void)
 {
     constexpr char PRE_MARKER = 'X';
-    fake_config_page_t entity;
-    memset(&entity, PRE_MARKER, sizeof(entity));
+    fake_config_page_t rawEntity;
+    memset(&rawEntity, PRE_MARKER, sizeof(rawEntity));
 
-    page_iterator_t entityIter( page_entity_t(entity_t(&entity, sizeof(entity)), 0U),
-                                entity_page_location_t(10, 0));
-
+    entity_t entity(&rawEntity, sizeof(rawEntity));
     constexpr char POST_MARKER = 'Y';
-    set_entity_values(entityIter, 0, entityIter.entity.size, POST_MARKER);
-    TEST_ASSERT_EACH_EQUAL_CHAR(POST_MARKER, &entity, sizeof(entity));
+    set_entity_values(entity, 0, entity.size, POST_MARKER);
+    TEST_ASSERT_EACH_EQUAL_CHAR(POST_MARKER, &rawEntity, sizeof(rawEntity));
 }
 
 static void test_setEntityValue_none(void)
 {
     constexpr char PRE_MARKER = 'X';
-    fake_config_page_t entity;
-    memset(&entity, PRE_MARKER, sizeof(entity));
+    fake_config_page_t rawEntity;
+    memset(&rawEntity, PRE_MARKER, sizeof(rawEntity));
 
-    page_iterator_t entityIter( page_entity_t(entity_t(&entity, sizeof(entity)), 0U), 
-                                entity_page_location_t(10, 0));
-    entityIter.entity.type = EntityType::NoEntity;
+    entity_t entity(&rawEntity, sizeof(rawEntity));
+    entity.type = EntityType::NoEntity;
 
     constexpr char POST_MARKER = 'Y';
-    set_entity_values(entityIter, 0, entityIter.entity.size, POST_MARKER);
+    set_entity_values(entity, 0, entity.size, POST_MARKER);
     // setEntityValue should have no effect
-    TEST_ASSERT_EACH_EQUAL_CHAR(PRE_MARKER, &entity, sizeof(entity));
+    TEST_ASSERT_EACH_EQUAL_CHAR(PRE_MARKER, &rawEntity, sizeof(rawEntity));
 }
 
 template <typename TTable>
-static void assert_set_3d_table(page_iterator_t iter, const TTable &table, byte valuePre, byte xAxisPre, byte yAxisPre)
+static void assert_set_3d_table(entity_t entity, const TTable &table, byte valuePre, byte xAxisPre, byte yAxisPre)
 {
     const uint16_t valueSize = table.values.num_rows*table.values.row_size; 
     const char valuePost = valuePre+1;
-    set_entity_values(iter, 0, valueSize, valuePost);
+    set_entity_values(entity, 0, valueSize, valuePost);
     TEST_ASSERT_EACH_EQUAL_CHAR(valuePost, table.values.values, valueSize);
 
     const char xAxisPost = xAxisPre+1;
-    set_entity_values(iter, valueSize, valueSize+table.axisX.length, xAxisPost);
+    set_entity_values(entity, valueSize, valueSize+table.axisX.length, xAxisPost);
     TEST_ASSERT_EACH_EQUAL_CHAR(xAxisPost, table.axisX.axis, table.axisX.length);
 
     const char yAxisPost = yAxisPre+1;
-    set_entity_values(iter, valueSize+table.axisX.length, valueSize+table.axisX.length+table.axisY.length, yAxisPost);
+    set_entity_values(entity, valueSize+table.axisX.length, valueSize+table.axisX.length+table.axisY.length, yAxisPost);
     TEST_ASSERT_EACH_EQUAL_CHAR(yAxisPost, table.axisY.axis, table.axisY.length);
 }
 
@@ -156,7 +144,7 @@ template <typename TTable>
 static void test_setEntityValue_tableT(void)
 {
     auto entity = setup3dTable<TTable>('X', 'Y', 'Z');
-    assert_set_3d_table(setupTableIterator(entity), entity, 'X', 'Y', 'Z');
+    assert_set_3d_table(setupTableEntity(entity), entity, 'X', 'Y', 'Z');
 }
 
 static void test_setEntityValue_table(void)
