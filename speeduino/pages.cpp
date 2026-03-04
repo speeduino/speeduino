@@ -267,18 +267,18 @@ bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
 
 // ========================= Offset to entity support  ===================
 
-
-static constexpr page_iterator_t nextEntity(const page_iterator_t &entity, uint16_t nextBlockSize)
+template <typename T>
+static T& loadObject_P(const T *pAddress, T &t)
 {
-  return page_iterator_t(EntityType::End, entity.location.next(), entity.address.next(nextBlockSize));
+  (void)memcpy_P(&t, pAddress, sizeof(T));
+  return t;
 }
 
 template <typename T>
 static T loadObject_P(const T *pAddress)
 {
   T t = {};
-  (void)memcpy_P(&t, pAddress, sizeof(T));
-  return t;
+  return loadObject_P(pAddress, t);
 }
 
 // ========================= Table processing  ===================
@@ -442,13 +442,12 @@ static page_iterator_t mapOffsetToEntity_P(page_map_t pageMap, uint16_t offset)
   page_iterator_t entityIter;
   for (uint8_t index=0; index<pageMap.mapSize; ++index)
   {
-    entityIter = loadObject_P(&pageMap.searchMap[index]);
-    if (entityIter.address.isOffsetInEntity(offset))
+    if (loadObject_P(&pageMap.searchMap[index], entityIter).address.isOffsetInEntity(offset))
     {
       return entityIter;
     }
   }
-  return nextEntity(entityIter, 0U);
+  return page_iterator_t(EntityType::End, entityIter.location.next(), entityIter.address.next(0));
 }
 
 // ===============================================================================
@@ -509,7 +508,6 @@ static void setEntityToEmpty(page_iterator_t entity) {
     }
 }
 
-
 // ====================================== External functions  ====================================
 
 void __attribute__((noinline)) setTuneToEmpty(void) {
@@ -524,8 +522,10 @@ void __attribute__((noinline)) setTuneToEmpty(void) {
 
 uint16_t getPageSize(byte pageNum)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
-  return entity.address.start + entity.address.size;
+  auto pageMap = getPageMap(pageNum);
+  page_iterator_t lastEntityOnPage;
+  (void)loadObject_P(&pageMap.searchMap[pageMap.mapSize-1U], lastEntityOnPage);
+  return lastEntityOnPage.address.start + lastEntityOnPage.address.size;
 }
 
 static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
