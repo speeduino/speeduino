@@ -108,8 +108,8 @@ static void test_loadAllCalibrationTables(void)
     constexpr uint8_t U8_MARKER = BUFFER_MARKER;
 
     assert_2dtable(o2CalibrationTable, U16_MARKER, U8_MARKER);
-    assert_2dtable(iatCalibrationTable, U16_MARKER, U16_MARKER);
-    assert_2dtable(cltCalibrationTable, U16_MARKER, U16_MARKER);
+    assert_2dtable(iatCalibrationTable, U16_MARKER, U8_MARKER);
+    assert_2dtable(cltCalibrationTable, U16_MARKER, U8_MARKER);
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
@@ -128,8 +128,8 @@ static void test_saveAllCalibrationTables(void)
     constexpr uint8_t U8_MARKER = WRITE_MARKER;
 
     load_2dtable(o2CalibrationTable, U16_MARKER, U8_MARKER);
-    load_2dtable(iatCalibrationTable, U16_MARKER, U16_MARKER);
-    load_2dtable(cltCalibrationTable, U16_MARKER, U16_MARKER);
+    load_2dtable(iatCalibrationTable, U16_MARKER, U8_MARKER);
+    load_2dtable(cltCalibrationTable, U16_MARKER, U8_MARKER);
 
     setupInfniteStorageApi(8192, 8192, BUFFER_MARKER);
     saveAllCalibrationTables();

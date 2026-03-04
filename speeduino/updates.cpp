@@ -17,9 +17,53 @@
 #include "units.h"
 #include "preprocessor.h"
 
+static void updateTable(table2D_u16_u8_32 &targetTable, uint16_t oldEEpromBinAddress)
+{
+    uint16_t oldValues[32];
+    static_assert(targetTable.size()==32U, "Calibration size change - fix this!");
+
+    // Re-read the table axis from the old location
+    (void)loadObject(getStorageAPI(), oldEEpromBinAddress, targetTable.axis);
+
+    // Read old values and update table
+    (void)loadObject(getStorageAPI(), oldEEpromBinAddress+sizeof(oldValues), oldValues);
+    for (uint8_t i = 0; i < targetTable.size(); i++)
+    {
+      targetTable.values[i] = (uint8_t)oldValues[i];
+    }
+}
+
+// V26 changed coolant and IAT calibration table **values** from uint16_t to uint8_t
+static void upgradeV25toV26(void) {
+  if(loadEEPROMVersion() == 25U)
+  {
+    // Old EEPROM locations
+    constexpr uint16_t OLD_VALUE_SIZE = sizeof(table2D_u16_u16_32::values);
+    constexpr uint16_t STORAGE_END = 0xFFF;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-OLD_VALUE_SIZE;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_CLT_BINS =  V25_EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_IAT_VALUES = V25_EEPROM_CALIBRATION_CLT_BINS-OLD_VALUE_SIZE;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_IAT_BINS = V25_EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_O2_VALUES = V25_EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(decltype(o2CalibrationTable)::values);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_O2_BINS =   V25_EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_LAST_BARO = (V25_EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
+
+    updateTable(cltCalibrationTable, V25_EEPROM_CALIBRATION_CLT_BINS);
+    updateTable(iatCalibrationTable, V25_EEPROM_CALIBRATION_IAT_BINS);
+    // Read O2 data from old location directly into table
+    (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
+    (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+    
+    saveLastBaro(getStorageAPI().read(V25_EEPROM_LAST_BARO));
+    saveAllCalibrationTables();
+
+    saveEEPROMVersion(26);
+  }
+}
+
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    25
+  #define CURRENT_DATA_VERSION    26
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -797,13 +841,10 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 24)
   {
     //202504
-
-
-    saveAllPages();
     saveEEPROMVersion(25);
   }
-  
-  
+  upgradeV25toV26();
+
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )
   {
