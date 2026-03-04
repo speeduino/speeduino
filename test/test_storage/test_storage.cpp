@@ -61,19 +61,19 @@ static void test_saveAllPages(void)
     TEST_ASSERT_TRUE(isEepromWritePending());
 }
 
-static void assert_entity(page_iterator_t entity, char expectedContent)
+static void assert_entity(page_iterator_t iter, char expectedContent)
 {
-    for (uint16_t offset=0; offset<entity.address.size; ++offset)
+    for (uint16_t offset=0; offset<iter.entity.size; ++offset)
     {
         char szMsg[64];
-        sprintf(szMsg, "Page %" PRIu8 ", Offset %" PRIu16, entity.location.page, offset);
-        TEST_ASSERT_EQUAL_MESSAGE(expectedContent, getPageValue(entity.location.page, offset), szMsg);
+        sprintf(szMsg, "Page %" PRIu8 ", Offset %" PRIu16, iter.location.page, offset);
+        TEST_ASSERT_EQUAL_MESSAGE(expectedContent, getPageValue(iter.location.page, offset), szMsg);
     }
 }
 static void assert_page(uint8_t pageNum, char expectedContent)
 {
     page_iterator_t pageIter = page_begin(pageNum);
-    while (pageIter.type!=EntityType::End)
+    while (pageIter.entity.type!=EntityType::End)
     {
         assert_entity(pageIter, expectedContent);
         pageIter = advance(pageIter);

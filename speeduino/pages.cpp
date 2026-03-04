@@ -2,12 +2,10 @@
 #include "globals.h"
 #include "preprocessor.h"
 #include "table3d_visitor.h"
+#include "prog_mem_support.h"
 
-#if defined(CORE_AVR)
-#pragma GCC push_options
 // This minimizes RAM usage at no performance cost
 #pragma GCC optimize ("Os") 
-#endif
 
 // Maps from virtual page "addresses" to addresses/bytes of real in memory entities
 //
@@ -44,9 +42,8 @@ static constexpr uint16_t get_table_axisx_end(void)
   return get_table_value_end<table_t>()+table_t::xaxis_t::length;
 }
 template <class table_t>
-static constexpr uint16_t get_table_axisy_end(const table_t *table)
+static constexpr uint16_t getTableSize(void)
 {
-  UNUSED(table);
   return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
 }
 
@@ -72,7 +69,7 @@ public:
 
   offset_to_table(const table_t *pTable, uint16_t table_offset)
   : _pTable(const_cast<table_t *>(pTable)), // cppcheck-suppress misra-c2012-10.4
-    _table_offset(min(table_offset, get_table_axisy_end(pTable)))
+    _table_offset(min(table_offset, getTableSize<table_t>()))
   {    
   }
 
@@ -159,58 +156,58 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_raw_location(const entity_t &entity, uint16_t entityOffset)
 {
-  if (offset<entity.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    return *((const byte*)entity.pRaw + offset);
+    return *((const byte*)entity.pRaw + entityOffset);
   }
   return 0U;
 }
 
-static inline bool set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
+static inline bool set_raw_location(entity_t &entity, uint16_t entityOffset, byte value)
 {
-  if (offset<entity.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    *((byte*)entity.pRaw + offset) = value;
+    *((byte*)entity.pRaw + entityOffset) = value;
     return true;
   }
   return false;
 }
 
 struct get_table_value_visitor {
-  uint16_t _offset;
+  uint16_t _tableOffset;
   
-  explicit get_table_value_visitor(uint16_t offset) 
-    : _offset(offset) 
+  explicit get_table_value_visitor(uint16_t tableOffset) 
+    : _tableOffset(tableOffset) 
   {
   }
 
   template <typename TTable>
   byte visit(TTable &table) {
-      return *offset_to_table<TTable>(&table, _offset);
+      return *offset_to_table<TTable>(&table, _tableOffset);
   }
 };
 
-static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_table_value(const entity_t &entity, uint16_t entityOffset)
 {
-  if (offset<entity.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    get_table_value_visitor visitor(offset);
+    get_table_value_visitor visitor(entityOffset);
     return visitTable3d<get_table_value_visitor, byte>(*entity.pTable, entity.table_key, visitor);
   }
   return 0U;
 }
 
-byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
+byte getEntityValue(const entity_t &entity, uint16_t entityOffset)
 {
   if (EntityType::Raw==entity.type)
   {
-    return get_raw_location(entity, offset);
+    return get_raw_location(entity, entityOffset);
   }
   if (EntityType::Table==entity.type)
   {
-    return get_table_value(entity, offset);
+    return get_table_value(entity, entityOffset);
   }
   // Entity has no data
   return 0U;
@@ -232,26 +229,26 @@ struct set_table_value_visitor {
   }
 };
 
-static inline bool set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
+static inline bool set_table_value(entity_t &entity, uint16_t entityOffset, byte new_value)
 {
-  if (offset<entity.address.size)
+  if (entity.isEntityAddressWithin(entityOffset))
   {
-    set_table_value_visitor visitor(offset, new_value);
+    set_table_value_visitor visitor(entityOffset, new_value);
     visitTable3d<set_table_value_visitor, void>(*entity.pTable, entity.table_key, visitor);
     return true;
   }
   return false;
 }
 
-bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
+bool setEntityValue(entity_t &entity, uint16_t entityOffset, byte value)
 {    
   if (EntityType::Raw==entity.type)
   {
-    return set_raw_location(entity, offset, value);
+    return set_raw_location(entity, entityOffset, value);
   }
   else if (EntityType::Table==entity.type)
   {
-    return set_table_value(entity, offset, value);
+    return set_table_value(entity, entityOffset, value);
   }
   else
   {
@@ -260,157 +257,156 @@ bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
   }
 }
 
-// ========================= Offset to entity support  ===================
-
-void nextEntity(page_iterator_t &entity, uint16_t nextBlockSize)
-{
-  ++entity.location.index;
-  entity.address = entity.address.next(nextBlockSize);
-}
 
 // ========================= Table processing  ===================
 
-template <class table_t>
-static void checkIsInTable(page_iterator_t &result, table_t *pTable, uint16_t offset)
+template <typename table_t>
+static constexpr entity_t makeEntity(table_t *pTable)
 {
-  if (result.type==EntityType::End)
-  {
-    nextEntity(result, get_table_axisy_end(pTable));
-    if (result.address.isOffsetInEntity(offset)) 
-    { 
-      result.setTable(pTable, pTable->type_key);
-    }
-  }
+  return entity_t((table3d_t*)pTable, table_t::type_key, getTableSize<table_t>());
 }
 
 // ========================= Raw memory block processing  ===================
 
-static void checkIsInRaw(page_iterator_t &result, config_page_t *pEntity, uint16_t entitySize, uint16_t offset)
+static constexpr entity_t makeEntity(config_page_t *pEntity, uint16_t entitySize)
 {
-  if (result.type==EntityType::End)
-  {
-    nextEntity(result, entitySize);
-    if (result.address.isOffsetInEntity(offset)) 
-    { 
-      result.setRaw(pEntity);
-    }
-  }
+  return entity_t(pEntity, entitySize);
 }
 
 // ========================= Empty entity processing  ===================
 
-static void checkIsInEmpty(page_iterator_t &result, uint16_t entitySize, uint16_t offset)
+static constexpr entity_t makeEntity(uint16_t entitySize)
 {
-  if (result.type==EntityType::End)
+  return entity_t(EntityType::NoEntity, entitySize);
+}
+
+// =========================== Page Mapping ===============================
+
+struct page_map_t
+{
+  const entity_t *searchMap = nullptr;
+  uint8_t mapSize = 0U;
+};
+
+static page_map_t getPageMap(uint8_t pageNumber)
+{
+  static constexpr entity_t pageZeroMap[] PROGMEM = {
+    makeEntity(0U),
+  };
+  static constexpr entity_t vePageMap[] PROGMEM = {
+    makeEntity(&fuelTable),
+  };
+  static constexpr entity_t ignPageMap[] PROGMEM = {
+    makeEntity(&ignitionTable),
+  };
+  static constexpr entity_t afrPageMap[] PROGMEM = {
+    makeEntity(&afrTable),
+  };
+  static constexpr entity_t boostVvtPageMap[] PROGMEM = {
+    makeEntity(&boostTable), 
+    makeEntity(&vvtTable), 
+    makeEntity(&stagingTable),
+  };
+  static constexpr entity_t sequentialPageMap[] PROGMEM = {
+    makeEntity(&trim1Table), 
+    makeEntity(&trim2Table), 
+    makeEntity(&trim3Table),
+    makeEntity(&trim4Table),
+    makeEntity(&trim5Table),
+    makeEntity(&trim6Table),
+    makeEntity(&trim7Table),
+    makeEntity(&trim8Table),
+  };
+  static constexpr entity_t fuel2PageMap[] PROGMEM = {
+    makeEntity(&fuelTable2)
+  };
+  static constexpr entity_t wmiPageMap[] PROGMEM = {
+    makeEntity(&wmiTable),
+    makeEntity(&vvt2Table),
+    makeEntity(&dwellTable),
+    makeEntity(8U),
+  };
+  static constexpr entity_t ign2PageMap[] PROGMEM = {
+    makeEntity(&ignitionTable2),
+  };
+  static constexpr entity_t veSetPageMap[] PROGMEM = {
+    makeEntity(&configPage2, sizeof(configPage2)),
+  };
+  static constexpr entity_t ignSetPageMap[] PROGMEM = {
+    makeEntity(&configPage4, sizeof(configPage4)),
+  };
+  static constexpr entity_t afrSetPageMap[] PROGMEM = {
+    makeEntity(&configPage6, sizeof(configPage6)),
+  };
+  static constexpr entity_t canBusPageMap[] PROGMEM = {
+    makeEntity(&configPage9, sizeof(configPage9)),
+  };
+  static constexpr entity_t warmUpPageMap[] PROGMEM = {
+    makeEntity(&configPage10, sizeof(configPage10)),
+  };
+  static constexpr entity_t progOutsPageMap[] PROGMEM = {
+    makeEntity(&configPage13, sizeof(configPage13)),
+  };
+  static constexpr entity_t boostVvt2PageMap[] PROGMEM = {
+    makeEntity(&boostTableLookupDuty),
+    makeEntity(&configPage15, sizeof(configPage15)),
+  };
+
+  static constexpr page_map_t pageMaps[MAX_PAGE_NUM] PROGMEM = {
+    { pageZeroMap, _countof(pageZeroMap) },
+    { veSetPageMap, _countof(veSetPageMap) },
+    { vePageMap, _countof(vePageMap) },
+    { ignPageMap, _countof(ignPageMap) },
+    { ignSetPageMap, _countof(ignSetPageMap) },    
+    { afrPageMap, _countof(afrPageMap) },
+    { afrSetPageMap, _countof(afrSetPageMap) },
+    { boostVvtPageMap, _countof(boostVvtPageMap) },
+    { sequentialPageMap, _countof(sequentialPageMap) },
+    { canBusPageMap, _countof(canBusPageMap) },
+    { warmUpPageMap, _countof(warmUpPageMap) },
+    { fuel2PageMap, _countof(fuel2PageMap) },
+    { wmiPageMap, _countof(wmiPageMap) },
+    { progOutsPageMap, _countof(progOutsPageMap) },    
+    { ign2PageMap, _countof(ign2PageMap) },
+    { boostVvt2PageMap, _countof(boostVvt2PageMap) },
+  };
+
+  if (pageNumber>=MAX_PAGE_NUM)
   {
-    nextEntity(result, entitySize);
-    if (result.address.isOffsetInEntity(offset)) 
-    { 
-      result.setNoEntity();
-    }
+    pageNumber = 0U;
   }
+  return copyObject_P(&pageMaps[pageNumber]);
+}
+
+/**
+ * @brief Search for the page_iterator_t that spans pageOffset */
+static page_iterator_t mapOffsetToEntity_P(const entity_t *pEntityMap, uint8_t mapLength, uint8_t pageNumber, uint16_t pageOffset)
+{
+  entity_page_location_t pageLocation(pageNumber, 0U);
+  uint16_t entityOffset = 0U;
+
+  for (uint8_t index=0; index<mapLength; ++index)
+  {
+    page_entity_t mappedEntity(copyObject_P(&pEntityMap[index]), entityOffset);
+    if (mappedEntity.isPageAddressWithin(pageOffset))
+    {
+      return page_iterator_t(mappedEntity, pageLocation);
+    }
+    entityOffset = entityOffset + mappedEntity.size;
+    pageLocation = pageLocation.next();
+  }
+
+  constexpr entity_t END_ENTITY = entity_t(EntityType::End, 0U);
+  return page_iterator_t(page_entity_t(END_ENTITY, entityOffset), pageLocation);
 }
 
 // ===============================================================================
 
 // Does the heavy lifting of mapping page+offset to an entity
-//
-// Alternative implementation would be to encode the mapping into data structures
-// That uses flash memory, which is scarce. And it was too slow.
 static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t offset)
 {
-  // This is mutated by the checkIsIn* functions to return the entity that matches the offset
-  page_iterator_t result( EntityType::End, // Signal that no entity has been found yet
-                          entity_page_location_t(pageNumber, (uint8_t)-1 /* Deliberate, so we can increment index AND address as one operation */), 
-                          entity_page_address_t(0U, 0U));
-
-  switch (pageNumber)
-  {
-    case veMapPage:
-      checkIsInTable(result, &fuelTable, offset);
-      break;
-
-    case ignMapPage: //Ignition settings page (Page 2)
-      checkIsInTable(result, &ignitionTable, offset);
-      break;
-
-    case afrMapPage: //Air/Fuel ratio target settings page
-      checkIsInTable(result, &afrTable, offset);
-      break;
-
-    case boostvvtPage: //Boost, VVT and staging maps (all 8x8)
-      checkIsInTable(result, &boostTable, offset);
-      checkIsInTable(result, &vvtTable, offset);
-      checkIsInTable(result, &stagingTable, offset);
-      break;
-
-    case seqFuelPage:
-      checkIsInTable(result, &trim1Table, offset);
-      checkIsInTable(result, &trim2Table, offset);
-      checkIsInTable(result, &trim3Table, offset);
-      checkIsInTable(result, &trim4Table, offset);
-      checkIsInTable(result, &trim5Table, offset);
-      checkIsInTable(result, &trim6Table, offset);
-      checkIsInTable(result, &trim7Table, offset);
-      checkIsInTable(result, &trim8Table, offset);
-      break;
-
-    case fuelMap2Page:
-      checkIsInTable(result, &fuelTable2, offset);
-      break;
-
-    case wmiMapPage:
-      checkIsInTable(result, &wmiTable, offset);
-      checkIsInTable(result, &vvt2Table, offset);
-      checkIsInTable(result, &dwellTable, offset);
-      checkIsInEmpty(result, 8U, offset);
-      break;
-    
-    case ignMap2Page:
-      checkIsInTable(result, &ignitionTable2, offset);
-      break;
-
-    case veSetPage: 
-      checkIsInRaw(result, &configPage2, sizeof(configPage2), offset);
-      break;
-
-    case ignSetPage: 
-      checkIsInRaw(result, &configPage4, sizeof(configPage4), offset);
-      break;
-    
-    case afrSetPage: 
-      checkIsInRaw(result, &configPage6, sizeof(configPage6), offset);
-      break;
-
-    case canbusPage:  
-      checkIsInRaw(result, &configPage9, sizeof(configPage9), offset);
-      break;
-
-    case warmupPage: 
-      checkIsInRaw(result, &configPage10, sizeof(configPage10), offset);
-      break;
-
-    case progOutsPage: 
-      checkIsInRaw(result, &configPage13, sizeof(configPage13), offset);
-      break;
-    
-    case boostvvtPage2: //Boost, VVT and staging maps (all 8x8)
-      checkIsInTable(result, &boostTableLookupDuty, offset);
-      checkIsInRaw(result, &configPage15, sizeof(configPage15), offset);
-      break;
-
-    default:
-      // Nothing to do
-      break;
-  }
-
-  // Nothing matched, so we are at the end of the known entities for the page.
-  if (result.type==EntityType::End)
-  {
-    nextEntity(result, 0U);
-  }
-
-  return result;
+  auto pageMap = getPageMap(pageNumber);
+  return mapOffsetToEntity_P(pageMap.searchMap, pageMap.mapSize, pageNumber, offset);
 }
 
 // ========================= Set tune to empty support  ===================
@@ -438,23 +434,23 @@ static void setTableAxisToEmpty(table_axis_iterator it)
   }
 }
 
-static void setTableToEmpty(const page_iterator_t &entity)
+static void setTableToEmpty(const page_iterator_t &iter)
 {
-  setTableAxisToEmpty(y_begin(entity));
-  setTableAxisToEmpty(x_begin(entity));
-  setTableValuesToEmpty(rows_begin(entity));
+  setTableAxisToEmpty(y_begin(iter));
+  setTableAxisToEmpty(x_begin(iter));
+  setTableValuesToEmpty(rows_begin(iter));
 }
 
 
-static void setEntityToEmpty(page_iterator_t entity) {
-  switch (entity.type)
+static void setEntityToEmpty(page_iterator_t iter) {
+  switch (iter.entity.type)
     {
     case EntityType::Raw:
-        (void)memset(entity.pRaw, 0, entity.address.size);
+        (void)memset(iter.entity.pRaw, 0, iter.entity.size);
         break;
 
     case EntityType::Table:
-        setTableToEmpty(entity);
+        setTableToEmpty(iter);
         break;
 
     default:
@@ -463,42 +459,41 @@ static void setEntityToEmpty(page_iterator_t entity) {
     }
 }
 
-
 // ====================================== External functions  ====================================
 
 void __attribute__((noinline)) setTuneToEmpty(void) {
   for (uint8_t page=MIN_PAGE_NUM; page<MAX_PAGE_NUM; ++page) {
-    page_iterator_t entity = page_begin(page);
-    while (entity.type!=EntityType::End) {
-      setEntityToEmpty(entity);
-      entity = advance(entity);
+    page_iterator_t iter = page_begin(page);
+    while (iter.entity.type!=EntityType::End) {
+      setEntityToEmpty(iter);
+      iter = advance(iter);
     }
   }
 }
 
 uint16_t getPageSize(byte pageNum)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, UINT16_MAX);
-  return entity.address.start + entity.address.size;
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, UINT16_MAX);
+  return iter.entity.start;
 }
 
-static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
+static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &iter, uint16_t pageOffset)
 {
-  return pageOffset-entity.address.start;
+  return pageOffset-iter.entity.start;
 }
 
-bool setPageValue(uint8_t pageNum, uint16_t offset, byte value)
+bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
+  return setEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset), value);
 }
 
-byte getPageValue(uint8_t pageNum, uint16_t offset)
+byte getPageValue(uint8_t pageNum, uint16_t pageOffset)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return getEntityValue(entity, pageOffsetToEntityOffset(entity, offset));
+  return getEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset));
 }
 
 // LCOV_EXCL_START
@@ -510,45 +505,41 @@ page_iterator_t page_begin(uint8_t pageNum)
   return map_page_offset_to_entity(pageNum, 0U);
 }
 
-page_iterator_t advance(const page_iterator_t &it)
+page_iterator_t advance(const page_iterator_t &iter)
 {
-    return map_page_offset_to_entity(it.location.page, it.address.start+it.address.size);
+    return map_page_offset_to_entity(iter.location.page, iter.entity.start+iter.entity.size);
 }
 
 /**
  * Convert page iterator to table value iterator.
  */
-table_value_iterator rows_begin(const page_iterator_t &it)
+table_value_iterator rows_begin(const page_iterator_t &iter)
 {
-  return rows_begin(it.pTable, it.table_key);
+  return rows_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator x_begin(const page_iterator_t &it)
+table_axis_iterator x_begin(const page_iterator_t &iter)
 {
-  return x_begin(it.pTable, it.table_key);
+  return x_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator x_rbegin(const page_iterator_t &it)
+table_axis_iterator x_rbegin(const page_iterator_t &iter)
 {
-  return x_rbegin(it.pTable, it.table_key);
+  return x_rbegin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table y axis iterator.
  */
-table_axis_iterator y_begin(const page_iterator_t &it)
+table_axis_iterator y_begin(const page_iterator_t &iter)
 {
-  return y_begin(it.pTable, it.table_key);
+  return y_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 // LCOV_EXCL_STOP
-
-#if defined(CORE_AVR)
-#pragma GCC pop_options
-#endif
