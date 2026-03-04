@@ -199,15 +199,15 @@ static inline byte get_table_value(const entity_t &entity, uint16_t entityOffset
   return 0U;
 }
 
-byte getEntityValue(const page_iterator_t &iter, uint16_t entityOffset)
+byte getEntityValue(const entity_t &entity, uint16_t entityOffset)
 {
-  if (EntityType::Raw==iter.entity.type)
+  if (EntityType::Raw==entity.type)
   {
-    return get_raw_location(iter.entity, entityOffset);
+    return get_raw_location(entity, entityOffset);
   }
-  if (EntityType::Table==iter.entity.type)
+  if (EntityType::Table==entity.type)
   {
-    return get_table_value(iter.entity, entityOffset);
+    return get_table_value(entity, entityOffset);
   }
   // Entity has no data
   return 0U;
@@ -240,15 +240,15 @@ static inline bool set_table_value(entity_t &entity, uint16_t entityOffset, byte
   return false;
 }
 
-bool setEntityValue(page_iterator_t &iter, uint16_t entityOffset, byte value)
+bool setEntityValue(entity_t &entity, uint16_t entityOffset, byte value)
 {    
-  if (EntityType::Raw==iter.entity.type)
+  if (EntityType::Raw==entity.type)
   {
-    return set_raw_location(iter.entity, entityOffset, value);
+    return set_raw_location(entity, entityOffset, value);
   }
-  else if (EntityType::Table==iter.entity.type)
+  else if (EntityType::Table==entity.type)
   {
-    return set_table_value(iter.entity, entityOffset, value);
+    return set_table_value(entity, entityOffset, value);
   }
   else
   {
@@ -261,21 +261,21 @@ bool setEntityValue(page_iterator_t &iter, uint16_t entityOffset, byte value)
 // ========================= Table processing  ===================
 
 template <typename table_t>
-static constexpr entity_t makeStorageIterator(table_t *pTable)
+static constexpr entity_t makeEntity(table_t *pTable)
 {
   return entity_t((table3d_t*)pTable, table_t::type_key, getTableSize<table_t>());
 }
 
 // ========================= Raw memory block processing  ===================
 
-static constexpr entity_t makeStorageIterator(config_page_t *pEntity, uint16_t entitySize)
+static constexpr entity_t makeEntity(config_page_t *pEntity, uint16_t entitySize)
 {
   return entity_t(pEntity, entitySize);
 }
 
 // ========================= Empty entity processing  ===================
 
-static constexpr entity_t makeStorageIterator(uint16_t entitySize)
+static constexpr entity_t makeEntity(uint16_t entitySize)
 {
   return entity_t(EntityType::NoEntity, entitySize);
 }
@@ -291,65 +291,65 @@ struct page_map_t
 static page_map_t getPageMap(uint8_t pageNumber)
 {
   static constexpr entity_t pageZeroMap[] PROGMEM = {
-    entity_t(EntityType::End, 0U),
+    makeEntity(0U),
   };
   static constexpr entity_t vePageMap[] PROGMEM = {
-    makeStorageIterator(&fuelTable),
+    makeEntity(&fuelTable),
   };
   static constexpr entity_t ignPageMap[] PROGMEM = {
-    makeStorageIterator(&ignitionTable),
+    makeEntity(&ignitionTable),
   };
   static constexpr entity_t afrPageMap[] PROGMEM = {
-    makeStorageIterator(&afrTable),
+    makeEntity(&afrTable),
   };
   static constexpr entity_t boostVvtPageMap[] PROGMEM = {
-    makeStorageIterator(&boostTable), 
-    makeStorageIterator(&vvtTable), 
-    makeStorageIterator(&stagingTable),
+    makeEntity(&boostTable), 
+    makeEntity(&vvtTable), 
+    makeEntity(&stagingTable),
   };
   static constexpr entity_t sequentialPageMap[] PROGMEM = {
-    makeStorageIterator(&trim1Table), 
-    makeStorageIterator(&trim2Table), 
-    makeStorageIterator(&trim3Table),
-    makeStorageIterator(&trim4Table),
-    makeStorageIterator(&trim5Table),
-    makeStorageIterator(&trim6Table),
-    makeStorageIterator(&trim7Table),
-    makeStorageIterator(&trim8Table),
+    makeEntity(&trim1Table), 
+    makeEntity(&trim2Table), 
+    makeEntity(&trim3Table),
+    makeEntity(&trim4Table),
+    makeEntity(&trim5Table),
+    makeEntity(&trim6Table),
+    makeEntity(&trim7Table),
+    makeEntity(&trim8Table),
   };
   static constexpr entity_t fuel2PageMap[] PROGMEM = {
-    makeStorageIterator(&fuelTable2)
+    makeEntity(&fuelTable2)
   };
   static constexpr entity_t wmiPageMap[] PROGMEM = {
-    makeStorageIterator(&wmiTable),
-    makeStorageIterator(&vvt2Table),
-    makeStorageIterator(&dwellTable),
-    makeStorageIterator(8U),
+    makeEntity(&wmiTable),
+    makeEntity(&vvt2Table),
+    makeEntity(&dwellTable),
+    makeEntity(8U),
   };
   static constexpr entity_t ign2PageMap[] PROGMEM = {
-    makeStorageIterator(&ignitionTable2),
+    makeEntity(&ignitionTable2),
   };
   static constexpr entity_t veSetPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage2, sizeof(configPage2)),
+    makeEntity(&configPage2, sizeof(configPage2)),
   };
   static constexpr entity_t ignSetPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage4, sizeof(configPage4)),
+    makeEntity(&configPage4, sizeof(configPage4)),
   };
   static constexpr entity_t afrSetPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage6, sizeof(configPage6)),
+    makeEntity(&configPage6, sizeof(configPage6)),
   };
   static constexpr entity_t canBusPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage9, sizeof(configPage9)),
+    makeEntity(&configPage9, sizeof(configPage9)),
   };
   static constexpr entity_t warmUpPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage10, sizeof(configPage10)),
+    makeEntity(&configPage10, sizeof(configPage10)),
   };
   static constexpr entity_t progOutsPageMap[] PROGMEM = {
-    makeStorageIterator(&configPage13, sizeof(configPage13)),
+    makeEntity(&configPage13, sizeof(configPage13)),
   };
   static constexpr entity_t boostVvt2PageMap[] PROGMEM = {
-    makeStorageIterator(&boostTableLookupDuty),
-    makeStorageIterator(&configPage15, sizeof(configPage15)),
+    makeEntity(&boostTableLookupDuty),
+    makeEntity(&configPage15, sizeof(configPage15)),
   };
 
   static constexpr page_map_t pageMaps[MAX_PAGE_NUM] PROGMEM = {
@@ -486,14 +486,14 @@ bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
 {
   page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return setEntityValue(iter, pageOffsetToEntityOffset(iter, pageOffset), value);
+  return setEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset), value);
 }
 
 byte getPageValue(uint8_t pageNum, uint16_t pageOffset)
 {
   page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
-  return getEntityValue(iter, pageOffsetToEntityOffset(iter, pageOffset));
+  return getEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset));
 }
 
 // LCOV_EXCL_START
