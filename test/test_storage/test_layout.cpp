@@ -13,9 +13,8 @@ extern const uint16_t STORAGE_SIZE;
 
 static void test_getEntityStartAddress_invalid_entity(void) {
     config10 localPage10;
-    page_iterator_t entity(EntityType::NoEntity, entity_page_location_t(2, 1), entity_page_address_t(0, sizeof(localPage10)));
-    entity.setRaw(&localPage10);
-    TEST_ASSERT_EQUAL(0, getEntityStartAddress(entity));
+    page_iterator_t iter(page_entity_t(&localPage10), entity_page_location_t(2, 1), entity_page_address_t(0, sizeof(localPage10)));
+    TEST_ASSERT_EQUAL(0, getEntityStartAddress(iter));
 }
 
 static bool inline isInRangeExclusive(uint16_t rangeStart, uint16_t rangeEnd, uint16_t testValue) {
@@ -56,12 +55,12 @@ static uint8_t find_overlap(const block blocks[], uint8_t idxCurrBlock, const bl
 }
 
 static uint8_t test_no_overlap_page(uint8_t pageNum, block blocks[], size_t length, uint8_t idxCurrBlock) {
-  page_iterator_t entity = page_begin(pageNum);
-  while (entity.type!=EntityType::End) {
-    if (entity.type!=EntityType::NoEntity) {
+  page_iterator_t iter = page_begin(pageNum);
+  while (iter.entity.type!=EntityType::End) {
+    if (iter.entity.type!=EntityType::NoEntity) {
         TEST_ASSERT_LESS_THAN(length, idxCurrBlock);
 
-        block newBlock = { getEntityStartAddress(entity), entity.address.size };
+        block newBlock = { getEntityStartAddress(iter), iter.address.size };
         TEST_ASSERT_GREATER_THAN(0, newBlock.start);
         TEST_ASSERT_LESS_THAN(MAX_PAGE_ADDRESS, newBlock.start+newBlock.length);
         assert_nocalibration_overlap(newBlock, idxCurrBlock);
@@ -76,7 +75,7 @@ static uint8_t test_no_overlap_page(uint8_t pageNum, block blocks[], size_t leng
 
         ++idxCurrBlock;
     }
-    entity = advance(entity);
+    iter = advance(iter);
   }
 
   return idxCurrBlock;
@@ -91,8 +90,8 @@ static void test_no_entity_overlap(void) {
     }
 }
 
-const char* getEntityType(const page_iterator_t &entity) {
-    switch (entity.type) {
+const char* getEntityTypeName(const page_iterator_t &iter) {
+    switch (iter.entity.type) {
         case EntityType::Raw: return "Raw";
         case EntityType::Table: return "Table";
         case EntityType::NoEntity: return "NoEntity";
@@ -143,7 +142,7 @@ const char *getEntityName(const page_iterator_t &it) {
 
   // Linear search of the name map.
   const entity_name_map_t *pMapEntry = entityMap;
-  while ((pMapEntry!=entityMapEnd) && (it.pRaw!=pMapEntry->pEntity)) {
+  while ((pMapEntry!=entityMapEnd) && (it.entity.pRaw!=pMapEntry->pEntity)) {
     ++pMapEntry;
   }
   if (pMapEntry!=entityMapEnd) {
@@ -153,22 +152,22 @@ const char *getEntityName(const page_iterator_t &it) {
   return unknown;
 }
 
-static void print_entity(const page_iterator_t &entity)
+static void print_entity(const page_iterator_t &iter)
 {
-    if (EntityType::NoEntity!=entity.type)
+    if (EntityType::NoEntity!=iter.entity.type)
     {
         char msg[128];
-        sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, entity.location.page, entity.location.index, getEntityName(entity), getEntityType(entity), getEntityStartAddress(entity), entity.address.size);
+        sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, iter.location.page, iter.location.index, getEntityName(iter), getEntityTypeName(iter), getEntityStartAddress(iter), iter.address.size);
         UnityPrint(msg); UNITY_PRINT_EOL();
     }
 }
 
 static void print_page_layout(uint8_t pageNum)
 {
-    page_iterator_t entity = page_begin(pageNum);
-    while (entity.type!=EntityType::End) {
-        print_entity(entity);
-        entity = advance(entity);
+    page_iterator_t iter = page_begin(pageNum);
+    while (iter.entity.type!=EntityType::End) {
+        print_entity(iter);
+        iter = advance(iter);
     }
 }
 

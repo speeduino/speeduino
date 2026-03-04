@@ -164,20 +164,20 @@ private:
 
 // ========================= Offset to entity byte mapping =========================
 
-static inline byte get_raw_location(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_raw_location(const page_iterator_t &iter, uint16_t offset)
 {
-  if (offset<entity.address.size)
+  if (offset<iter.address.size)
   {
-    return *((const byte*)entity.pRaw + offset);
+    return *((const byte*)iter.entity.pRaw + offset);
   }
   return 0U;
 }
 
-static inline bool set_raw_location(page_iterator_t &entity, uint16_t offset, byte value)
+static inline bool set_raw_location(page_iterator_t &iter, uint16_t offset, byte value)
 {
-  if (offset<entity.address.size)
+  if (offset<iter.address.size)
   {
-    *((byte*)entity.pRaw + offset) = value;
+    *((byte*)iter.entity.pRaw + offset) = value;
     return true;
   }
   return false;
@@ -197,25 +197,25 @@ struct get_table_value_visitor {
   }
 };
 
-static inline byte get_table_value(const page_iterator_t &entity, uint16_t offset)
+static inline byte get_table_value(const page_iterator_t &iter, uint16_t offset)
 {
-  if (offset<entity.address.size)
+  if (offset<iter.address.size)
   {
     get_table_value_visitor visitor(offset);
-    return visitTable3d<get_table_value_visitor, byte>(*entity.pTable, entity.table_key, visitor);
+    return visitTable3d<get_table_value_visitor, byte>(*iter.entity.pTable, iter.entity.table_key, visitor);
   }
   return 0U;
 }
 
-byte getEntityValue(const page_iterator_t &entity, uint16_t offset)
+byte getEntityValue(const page_iterator_t &iter, uint16_t offset)
 {
-  if (EntityType::Raw==entity.type)
+  if (EntityType::Raw==iter.entity.type)
   {
-    return get_raw_location(entity, offset);
+    return get_raw_location(iter, offset);
   }
-  if (EntityType::Table==entity.type)
+  if (EntityType::Table==iter.entity.type)
   {
-    return get_table_value(entity, offset);
+    return get_table_value(iter, offset);
   }
   // Entity has no data
   return 0U;
@@ -237,26 +237,26 @@ struct set_table_value_visitor {
   }
 };
 
-static inline bool set_table_value(page_iterator_t &entity, uint16_t offset, byte new_value)
+static inline bool set_table_value(page_iterator_t &iter, uint16_t offset, byte new_value)
 {
-  if (offset<entity.address.size)
+  if (offset<iter.address.size)
   {
     set_table_value_visitor visitor(offset, new_value);
-    visitTable3d<set_table_value_visitor, void>(*entity.pTable, entity.table_key, visitor);
+    visitTable3d<set_table_value_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);
     return true;
   }
   return false;
 }
 
-bool setEntityValue(page_iterator_t &entity, uint16_t offset, byte value)
+bool setEntityValue(page_iterator_t &iter, uint16_t offset, byte value)
 {    
-  if (EntityType::Raw==entity.type)
+  if (EntityType::Raw==iter.entity.type)
   {
-    return set_raw_location(entity, offset, value);
+    return set_raw_location(iter, offset, value);
   }
-  else if (EntityType::Table==entity.type)
+  else if (EntityType::Table==iter.entity.type)
   {
-    return set_table_value(entity, offset, value);
+    return set_table_value(iter, offset, value);
   }
   else
   {
@@ -286,8 +286,7 @@ static T loadObject_P(const T *pAddress)
 template <typename table_t>
 static constexpr page_iterator_t makeTableIterator(table_t *pTable, uint8_t pageNum)
 {
-  return page_iterator_t(pTable, 
-                        table_t::type_key,
+  return page_iterator_t(page_entity_t((table3d_t*)pTable, table_t::type_key), 
                         entity_page_location_t(pageNum, 0U),
                         entity_page_address_t(0U, getTableSize<table_t>()));
 }
@@ -295,8 +294,7 @@ static constexpr page_iterator_t makeTableIterator(table_t *pTable, uint8_t page
 template <typename table_t>
 static constexpr page_iterator_t makeTableIterator(table_t *pTable, const page_iterator_t &previous)
 {
-  return page_iterator_t(pTable, 
-                        table_t::type_key,
+  return page_iterator_t(page_entity_t((table3d_t*)pTable, table_t::type_key), 
                         previous.location.next(), previous.address.next(getTableSize<table_t>()));
 }
 
@@ -304,21 +302,21 @@ static constexpr page_iterator_t makeTableIterator(table_t *pTable, const page_i
 
 static constexpr page_iterator_t makeRawIterator(config_page_t *pEntity, uint16_t entitySize, uint8_t pageNum)
 {
-  return page_iterator_t( pEntity, 
+  return page_iterator_t(page_entity_t(pEntity), 
                         entity_page_location_t(pageNum, 0U),
                         entity_page_address_t(0U, entitySize));
 }
 
 static constexpr page_iterator_t makeRawIterator(config_page_t *pEntity, uint16_t entitySize, const page_iterator_t &previous)
 {
-  return page_iterator_t(pEntity, previous.location.next(), previous.address.next(entitySize));
+  return page_iterator_t(page_entity_t(pEntity), previous.location.next(), previous.address.next(entitySize));
 }
 
 // ========================= Empty entity processing  ===================
 
 static constexpr page_iterator_t makeEmptyIterator(const page_iterator_t &previous, uint16_t entitySize)
 {
-  return page_iterator_t(EntityType::NoEntity, previous.location.next(), previous.address.next(entitySize));
+  return page_iterator_t(page_entity_t(), previous.location.next(), previous.address.next(entitySize));
 }
 
 // ========================= Page map ===============================
@@ -409,7 +407,7 @@ static constexpr page_iterator_t boostVvt2PageMap[] PROGMEM = {
 static page_map_t getPageMap(uint8_t pageNumber)
 {
   static constexpr page_iterator_t pageZeroMap[] PROGMEM = {
-    page_iterator_t(EntityType::End, entity_page_location_t(), entity_page_address_t()),
+    page_iterator_t(page_entity_t(EntityType::End), entity_page_location_t(), entity_page_address_t()),
   };
   static constexpr page_map_t pageMaps[MAX_PAGE_NUM] PROGMEM = {
     { pageZeroMap, _countof(pageZeroMap) },
@@ -447,7 +445,7 @@ static page_iterator_t mapOffsetToEntity_P(page_map_t pageMap, uint16_t offset)
       return entityIter;
     }
   }
-  return page_iterator_t(EntityType::End, entityIter.location.next(), entityIter.address.next(0));
+  return page_iterator_t(page_entity_t(EntityType::End), entityIter.location.next(), entityIter.address.next(0));
 }
 
 // ===============================================================================
@@ -483,23 +481,23 @@ static void setTableAxisToEmpty(table_axis_iterator it)
   }
 }
 
-static void setTableToEmpty(const page_iterator_t &entity)
+static void setTableToEmpty(const page_iterator_t &iter)
 {
-  setTableAxisToEmpty(y_begin(entity));
-  setTableAxisToEmpty(x_begin(entity));
-  setTableValuesToEmpty(rows_begin(entity));
+  setTableAxisToEmpty(y_begin(iter));
+  setTableAxisToEmpty(x_begin(iter));
+  setTableValuesToEmpty(rows_begin(iter));
 }
 
 
-static void setEntityToEmpty(page_iterator_t entity) {
-  switch (entity.type)
+static void setEntityToEmpty(page_iterator_t iter) {
+  switch (iter.entity.type)
     {
     case EntityType::Raw:
-        (void)memset(entity.pRaw, 0, entity.address.size);
+        (void)memset(iter.entity.pRaw, 0, iter.address.size);
         break;
 
     case EntityType::Table:
-        setTableToEmpty(entity);
+        setTableToEmpty(iter);
         break;
 
     default:
@@ -512,10 +510,10 @@ static void setEntityToEmpty(page_iterator_t entity) {
 
 void __attribute__((noinline)) setTuneToEmpty(void) {
   for (uint8_t page=MIN_PAGE_NUM; page<MAX_PAGE_NUM; ++page) {
-    page_iterator_t entity = page_begin(page);
-    while (entity.type!=EntityType::End) {
-      setEntityToEmpty(entity);
-      entity = advance(entity);
+    page_iterator_t iter = page_begin(page);
+    while (iter.entity.type!=EntityType::End) {
+      setEntityToEmpty(iter);
+      iter = advance(iter);
     }
   }
 }
@@ -528,23 +526,23 @@ uint16_t getPageSize(byte pageNum)
   return lastEntityOnPage.address.start + lastEntityOnPage.address.size;
 }
 
-static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &entity, uint16_t pageOffset)
+static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &iter, uint16_t pageOffset)
 {
-  return pageOffset-entity.address.start;
+  return pageOffset-iter.address.start;
 }
 
 bool setPageValue(uint8_t pageNum, uint16_t offset, byte value)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, offset);
 
-  return setEntityValue(entity, pageOffsetToEntityOffset(entity, offset), value);
+  return setEntityValue(iter, pageOffsetToEntityOffset(iter, offset), value);
 }
 
 byte getPageValue(uint8_t pageNum, uint16_t offset)
 {
-  page_iterator_t entity = map_page_offset_to_entity(pageNum, offset);
+  page_iterator_t iter = map_page_offset_to_entity(pageNum, offset);
 
-  return getEntityValue(entity, pageOffsetToEntityOffset(entity, offset));
+  return getEntityValue(iter, pageOffsetToEntityOffset(iter, offset));
 }
 
 // LCOV_EXCL_START
@@ -556,41 +554,41 @@ page_iterator_t page_begin(uint8_t pageNum)
   return map_page_offset_to_entity(pageNum, 0U);
 }
 
-page_iterator_t advance(const page_iterator_t &it)
+page_iterator_t advance(const page_iterator_t &iter)
 {
-    return map_page_offset_to_entity(it.location.page, it.address.start+it.address.size);
+    return map_page_offset_to_entity(iter.location.page, iter.address.start+iter.address.size);
 }
 
 /**
  * Convert page iterator to table value iterator.
  */
-table_value_iterator rows_begin(const page_iterator_t &it)
+table_value_iterator rows_begin(const page_iterator_t &iter)
 {
-  return rows_begin(it.pTable, it.table_key);
+  return rows_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator x_begin(const page_iterator_t &it)
+table_axis_iterator x_begin(const page_iterator_t &iter)
 {
-  return x_begin(it.pTable, it.table_key);
+  return x_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table x axis iterator.
  */
-table_axis_iterator x_rbegin(const page_iterator_t &it)
+table_axis_iterator x_rbegin(const page_iterator_t &iter)
 {
-  return x_rbegin(it.pTable, it.table_key);
+  return x_rbegin(iter.entity.pTable, iter.entity.table_key);
 }
 
 /**
  * Convert page iterator to table y axis iterator.
  */
-table_axis_iterator y_begin(const page_iterator_t &it)
+table_axis_iterator y_begin(const page_iterator_t &iter)
 {
-  return y_begin(it.pTable, it.table_key);
+  return y_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 // LCOV_EXCL_STOP
