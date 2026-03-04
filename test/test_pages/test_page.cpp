@@ -20,7 +20,7 @@ static void test_getEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, MARKER, sizeof(entity));
 
-    page_iterator_t entityIter(page_entity_t(&entity),
+    page_iterator_t entityIter(entity_t(&entity, sizeof(entity)),
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, sizeof(entity)));
 
@@ -33,7 +33,7 @@ static void test_getEntityValue_none(void)
     char entity[48];
     memset(&entity, MARKER, sizeof(entity));
 
-   page_iterator_t entityIter(  page_entity_t(), 
+   page_iterator_t entityIter(  entity_t(), 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -57,7 +57,7 @@ static page_iterator_t setupTableIterator(TTable &entity)
 {
     constexpr uint16_t countTableValue = decltype(entity.axisX)::length*decltype(entity.axisY)::length;
     constexpr uint16_t size = countTableValue+decltype(entity.axisX)::length+decltype(entity.axisY)::length;
-    return page_iterator_t( page_entity_t(&entity, entity.type_key),
+    return page_iterator_t( entity_t(&entity, entity.type_key, size),
                             entity_page_location_t(10, 0),
                             entity_page_address_t(0, size));
 }
@@ -117,7 +117,7 @@ static void test_setEntityValue_raw(void)
     fake_config_page_t entity;
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( page_entity_t(&entity),
+    page_iterator_t entityIter( entity_t(&entity, sizeof(entity)),
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
@@ -132,7 +132,7 @@ static void test_setEntityValue_none(void)
     char entity[48];
     memset(&entity, PRE_MARKER, sizeof(entity));
 
-    page_iterator_t entityIter( page_entity_t(), 
+    page_iterator_t entityIter( entity_t(), 
                                 entity_page_location_t(10, 0),
                                 entity_page_address_t(0, sizeof(entity)));
 
