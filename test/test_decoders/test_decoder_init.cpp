@@ -77,12 +77,11 @@ static void test_buildDecoder_all(void)
         char szName[128];
         snprintf(szName, sizeof(szName), "test_buildDecoder_%d", decoder);
         decoderIdentifier = decoder;
-        // setDecoder(decoder);
         UnityDefaultTestRun(test_buildDecoder, szName, __LINE__);
     }
 }
 
-static void test_setDecoder_attachesInterrupts(void)
+static void test_buildDecoder_attachesInterrupts(void)
 {
     pinTrigger = 11;
     pinTrigger2 = 12;
@@ -92,39 +91,39 @@ static void test_setDecoder_attachesInterrupts(void)
     configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
     configPage10.vvt2Enabled = true;
 
-    setDecoder(DECODER_MISSING_TOOTH);
-    assert_decoder(getDecoder());
+    auto decoder = buildDecoder(DECODER_MISSING_TOOTH);
+    assert_decoder(decoder);
     
-    TEST_ASSERT_TRUE(getDecoder().primary.isValid());
-    TEST_ASSERT_TRUE(getDecoder().secondary.isValid());
-    TEST_ASSERT_TRUE(getDecoder().tertiary.isValid());
+    TEST_ASSERT_TRUE(decoder.primary.isValid());
+    TEST_ASSERT_TRUE(decoder.secondary.isValid());
+    TEST_ASSERT_TRUE(decoder.tertiary.isValid());
 }
 
-static void test_setDecoder_TurnsOffPerToothIgn(void)
+static void test_buildDecoder_TurnsOffPerToothIgn(void)
 {
     configPage2.perToothIgn = true;
-    setDecoder(DECODER_MISSING_TOOTH);
-    assert_decoder(getDecoder());
+    auto decoder = buildDecoder(DECODER_MISSING_TOOTH);
+    assert_decoder(decoder);
     TEST_ASSERT_TRUE(configPage2.perToothIgn);
 
     configPage2.perToothIgn = true;
-    setDecoder(DECODER_HONDA_J32);
-    assert_decoder(getDecoder());
+    decoder = buildDecoder(DECODER_HONDA_J32);
+    assert_decoder(decoder);
     TEST_ASSERT_FALSE(configPage2.perToothIgn);
 }
 
-static void test_setDecoder_OutOfRange(void)
+static void test_buildDecoder_OutOfRange(void)
 {
-    setDecoder(DECODER_MAX+1U); // Check this doesn't crash.
-    getDecoder().getCrankAngle();
+    auto decoder = buildDecoder(DECODER_MAX+1U); // Check this doesn't crash.
+    decoder.getCrankAngle();
 }
 
 void testDecoderInit(void)
 {
   SET_UNITY_FILENAME() {
     test_buildDecoder_all();
-    RUN_TEST(test_setDecoder_attachesInterrupts);
-    RUN_TEST(test_setDecoder_TurnsOffPerToothIgn);
-    RUN_TEST(test_setDecoder_OutOfRange);
+    RUN_TEST(test_buildDecoder_attachesInterrupts);
+    RUN_TEST(test_buildDecoder_TurnsOffPerToothIgn);
+    RUN_TEST(test_buildDecoder_OutOfRange);
   }
 }

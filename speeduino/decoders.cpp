@@ -392,6 +392,7 @@ static void sharedDecoderReset(void) {
   secondaryToothCount = 0;
   decoderStatus.syncStatus = SyncStatus::None;
   triggerFilterTime = 0;
+  decoderStatus.validTrigger = false;
 }
 
 TESTABLE_STATIC __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)

@@ -65,39 +65,41 @@ static void configureDecoderForStartStop(uint8_t decoder)
     }
 }
 
-static void assertPrimaryTrigger(uint8_t decoder, uint8_t edge)
+static void assertPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge)
 {
     char szMsg[64];
-    snprintf(szMsg, sizeof(szMsg), "Decoder %d, edge %d", decoder, edge);
+    snprintf(szMsg, sizeof(szMsg), "Decoder %d, edge %d", decoderNum, edge);
 
-    getDecoder().reset();
-    configureDecoderForStartStop(decoder);
-    decoderStatus.validTrigger = false;
+    currentStatus.decoder = decoder;
+    decoder.reset();
+    configureDecoderForStartStop(decoderNum);
     delayMicroseconds(triggerFilterTime + 1);
     fireInterrupt(pinTrigger, edge);
 #if defined(NATIVE_BOARD)
     TEST_MESSAGE("No interrupts on native board :-(");
 #else
-    TEST_ASSERT_TRUE_MESSAGE(decoderStatus.validTrigger, szMsg);
+    TEST_ASSERT_TRUE_MESSAGE(decoder.getStatus().validTrigger, szMsg);
 #endif
 }
 
-static void assertStartStopPrimaryTrigger(uint8_t decoder, uint8_t edge)
+static void assertStartStopPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge)
 {
+    currentStatus.decoder = decoder;
+
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, edge);
+    assertPrimaryTrigger(decoder, decoderNum, edge);
 
     // Attach logger
     startToothLogger();
 
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, edge);
+    assertPrimaryTrigger(decoder, decoderNum, edge);
 
     // Detach logger
     stopToothLogger();
 
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, edge);
+    assertPrimaryTrigger(decoder, decoderNum, edge);
 }
 
 // Used as pseudo parameter to support dynamic test naming.
@@ -112,9 +114,9 @@ static void test_start_stop_rising(void)
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 0;
     currentStatus.initialisationComplete = false;
-    setDecoder(decoderToTest);
+    auto decoder = buildDecoder(decoderToTest);
 
-    assertStartStopPrimaryTrigger(decoderToTest, getDecoder().primary.edge);
+    assertStartStopPrimaryTrigger(decoder, decoderToTest, decoder.primary.edge);
 }
 
 static void test_start_stop_falling(void)
@@ -125,9 +127,9 @@ static void test_start_stop_falling(void)
 
     pinTrigger = 19; // Example pin number
     configPage4.TrigEdge = 1;
-    setDecoder(decoderToTest);
+    auto decoder = buildDecoder(decoderToTest);
 
-    assertStartStopPrimaryTrigger(decoderToTest, getDecoder().primary.edge);
+    assertStartStopPrimaryTrigger(decoder, decoderToTest, decoder.primary.edge);
 }
 
 static void test_start_stop_all(void)
@@ -155,26 +157,26 @@ static void test_start_stop_ngc(void)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
 #endif
   pinTrigger = 19; // Example pin number
-  setDecoder(DECODER_NGC);
+  auto decoder = buildDecoder(DECODER_NGC);
 
   // The NGC decoder triggers on change, but only sets 
   // BIT_DECODER_VALID_TRIGGER on falling interrupts.
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoder().primary.edge);
+  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
   
   // Attach logger
   startToothLogger();
 
   // Test primary trigger function
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoder().primary.edge);
+  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
 
   // Detach logger
   stopToothLogger();
 
   // Test primary trigger function
   fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(DECODER_NGC, getDecoder().primary.edge);
+  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
 }
 
 void testToothLoggers(void)

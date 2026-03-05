@@ -79,7 +79,6 @@ static void populateRollingCutTable(void)
     populate_2dtable_P(&rollingCutTable, values, bins);
 }
 
-extern void setDecoder(const decoder_t &newDecoder);
 struct engineProtection_test_context_t
 {
     statuses current = {};
@@ -88,12 +87,10 @@ struct engineProtection_test_context_t
     config6 page6 = {};
     config9 page9 = {};
     config10 page10 = {};
-    decoder_t decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
 
     engineProtection_test_context_t(void)
     {
-        // Cheat and set the global decoder for the moment
-        setDecoder(decoder);
+        current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
     }
 
     void setSyncStatus(SyncStatus syncStatus)

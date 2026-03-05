@@ -51,5 +51,5 @@ constexpr uint8_t DECODER_MAX = (DECODER_FORD_TFI+1U);
 /** @brief Get the current decoder configuration */
 const decoder_t& getDecoder(void);
 
-/** @brief Set the current decoder configuration */
-void setDecoder(uint8_t decoderType);
+/** @brief Create a decoder from a configuration */
+decoder_t buildDecoder(uint8_t decoderIndex);
