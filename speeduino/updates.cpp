@@ -15,21 +15,21 @@
 #include "pages.h"
 #include "comms_CAN.h"
 #include "units.h"
-#include "preprocessor.h"
+#include "unit_testing.h"
 
 // Minimize flash usage of the non-performance critical code in this file.
 #pragma GCC optimize ("Os") 
 
-static void updateTable(table2D_u16_u8_32 &targetTable, uint16_t oldEEpromBinAddress)
+TESTABLE_STATIC void updateTableU16toU8(table2D_u16_u8_32 &targetTable, uint16_t u16EEpromBinAddress)
 {
     uint16_t oldValues[32];
     static_assert(targetTable.size()==32U, "Calibration size change - fix this!");
 
     // Re-read the table axis from the old location
-    (void)loadObject(getStorageAPI(), oldEEpromBinAddress, targetTable.axis);
+    (void)loadObject(getStorageAPI(), u16EEpromBinAddress, targetTable.axis);
 
     // Read old values and update table
-    (void)loadObject(getStorageAPI(), oldEEpromBinAddress+sizeof(oldValues), oldValues);
+    (void)loadObject(getStorageAPI(), u16EEpromBinAddress+sizeof(oldValues), oldValues);
     for (uint8_t i = 0; i < targetTable.size(); i++)
     {
       targetTable.values[i] = (uint8_t)oldValues[i];
@@ -37,7 +37,7 @@ static void updateTable(table2D_u16_u8_32 &targetTable, uint16_t oldEEpromBinAdd
 }
 
 // V26 changed coolant and IAT calibration table **values** from uint16_t to uint8_t
-static void upgradeV25toV26(void) {
+TESTABLE_STATIC void upgradeV25toV26(void) {
   if(loadEEPROMVersion() == 25U)
   {
     // Old EEPROM locations
@@ -51,8 +51,8 @@ static void upgradeV25toV26(void) {
     constexpr uint16_t V25_EEPROM_CALIBRATION_O2_BINS =   V25_EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
     constexpr uint16_t V25_EEPROM_LAST_BARO = (V25_EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
 
-    updateTable(cltCalibrationTable, V25_EEPROM_CALIBRATION_CLT_BINS);
-    updateTable(iatCalibrationTable, V25_EEPROM_CALIBRATION_IAT_BINS);
+    updateTableU16toU8(cltCalibrationTable, V25_EEPROM_CALIBRATION_CLT_BINS);
+    updateTableU16toU8(iatCalibrationTable, V25_EEPROM_CALIBRATION_IAT_BINS);
     // Read O2 data from old location directly into table
     (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
     (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
