@@ -256,7 +256,7 @@ void initialiseAll(void)
     toothHistoryIndex = 0;
     
     noInterrupts();
-    setDecoder(configPage4.TrigPattern);
+    currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
     boardInitPins();
     // The schedulers are all configured & pins are mapped - so start the schedulers
     startIgnitionSchedulers();

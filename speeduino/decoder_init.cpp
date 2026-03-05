@@ -6,22 +6,22 @@
 #include "preprocessor.h"
 #include "unit_testing.h"
 
-static decoder_t globalDecoder = decoder_builder_t().build();
-TESTABLE_STATIC void setDecoder(const decoder_t &newDecoder)
-{
-  globalDecoder = newDecoder;
-}
 const decoder_t& getDecoder(void)
 {
-  return globalDecoder;
+  return currentStatus.decoder;
 }
 
-TESTABLE_STATIC decoder_t buildDecoder(uint8_t decoderIndex)
+static decoder_t defaultInitFunc(void)
+{
+  return decoder_builder_t().build();
+}
+
+using decoder_init_func_t = decoder_t (*)(void);
+static decoder_init_func_t getDecoderInitFunc(uint8_t decoderIndex)
 {
   // This array must be in the same order as the DECODER_ #defines (I.e. DECODER_MISSING_TOOTH etc.)
   // and therefore in the same order as the INI
-  using decoder_init_func_t = decoder_t (*)(void);
-  static constexpr decoder_init_func_t initialisers[] PROGMEM = {
+  static constexpr decoder_init_func_t initialisers[DECODER_MAX] PROGMEM = {
     triggerSetup_missingTooth,
     triggerSetup_BasicDistributor,
     triggerSetup_DualWheel,
@@ -52,26 +52,26 @@ TESTABLE_STATIC decoder_t buildDecoder(uint8_t decoderIndex)
     triggerSetup_HondaJ32,
     triggerSetup_FordTFI,
   };
-  static_assert(size_t(DECODER_MAX)==_countof(initialisers), "Decoder initializer array mismatch");
-  if (decoderIndex<_countof(initialisers))
+  if (decoderIndex<DECODER_MAX)
   {
-    return ((decoder_init_func_t)pgm_read_ptr(&initialisers[decoderIndex]))();
+    return ((decoder_init_func_t)pgm_read_ptr(&initialisers[decoderIndex]));
   }
-  return decoder_builder_t().build();
+  return &defaultInitFunc;
 }
 
 /** Initialise the chosen trigger decoder. */
-void setDecoder(uint8_t decoderType)
+decoder_t buildDecoder(uint8_t decoderIndex)
 {
-  // Set the trigger function based on the decoder in the config
-  setDecoder(buildDecoder(decoderType));
+  decoder_t decoder = getDecoderInitFunc(decoderIndex)();
 
-  getDecoder().primary.attach(pinTrigger);
-  getDecoder().secondary.attach(pinTrigger2);
-  getDecoder().tertiary.attach(pinTrigger3);
+  decoder.primary.attach(pinTrigger);
+  decoder.secondary.attach(pinTrigger2);
+  decoder.tertiary.attach(pinTrigger3);
   
   initDecoderPins(pinTrigger, pinTrigger2, pinTrigger3);
 
   // Turn off per tooth ignition if the decoder doesn't support it
-  configPage2.perToothIgn = configPage2.perToothIgn && getDecoder().getFeatures().supportsPerToothIgnition;
+  configPage2.perToothIgn = configPage2.perToothIgn && decoder.getFeatures().supportsPerToothIgnition;
+
+  return decoder;
 }
