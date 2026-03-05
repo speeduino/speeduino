@@ -241,9 +241,9 @@ void loggerPrimaryISR(void)
   2) If the primary trigger is FALLING, then check whether the primary is currently LOW
   If either of these are true, the primary decoder function is called
   */
-  if( ( (getDecoder().primary.edge == RISING) && (READ_PRI_TRIGGER() == HIGH) ) || ( (getDecoder().primary.edge == FALLING) && (READ_PRI_TRIGGER() == LOW) ) || (getDecoder().primary.edge == CHANGE) )
+  if( ( (currentStatus.decoder.primary.edge == RISING) && (READ_PRI_TRIGGER() == HIGH) ) || ( (currentStatus.decoder.primary.edge == FALLING) && (READ_PRI_TRIGGER() == LOW) ) || (currentStatus.decoder.primary.edge == CHANGE) )
   {
-    getDecoder().primary.callback();
+    currentStatus.decoder.primary.callback();
     validEdge = true;
   }
   if( (currentStatus.toothLogEnabled == true) && (decoderStatus.validTrigger) )
@@ -273,9 +273,9 @@ void loggerSecondaryISR(void)
   3) The secondary trigger is CHANGING
   If any of these are true, the primary decoder function is called
   */
-  if( ( (getDecoder().secondary.edge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (getDecoder().secondary.edge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (getDecoder().secondary.edge == CHANGE) )
+  if( ( (currentStatus.decoder.secondary.edge == RISING) && (READ_SEC_TRIGGER() == HIGH) ) || ( (currentStatus.decoder.secondary.edge == FALLING) && (READ_SEC_TRIGGER() == LOW) ) || (currentStatus.decoder.secondary.edge == CHANGE) )
   {
-    getDecoder().secondary.callback();
+    currentStatus.decoder.secondary.callback();
   }
   //No tooth logger for the secondary input
   if( (currentStatus.compositeTriggerUsed > 0) && (decoderStatus.validTrigger) )
@@ -300,9 +300,9 @@ void loggerTertiaryISR(void)
   */
 
 
-  if( ( (getDecoder().tertiary.edge == RISING) && ( READ_THIRD_TRIGGER() == HIGH) ) || ( (getDecoder().tertiary.edge == FALLING) && (READ_THIRD_TRIGGER() == LOW) ) || (getDecoder().tertiary.edge == CHANGE) )
+  if( ( (currentStatus.decoder.tertiary.edge == RISING) && ( READ_THIRD_TRIGGER() == HIGH) ) || ( (currentStatus.decoder.tertiary.edge == FALLING) && (READ_THIRD_TRIGGER() == LOW) ) || (currentStatus.decoder.tertiary.edge == CHANGE) )
   {
-    getDecoder().tertiary.callback();
+    currentStatus.decoder.tertiary.callback();
   }
   //No tooth logger for the secondary input
   if( (currentStatus.compositeTriggerUsed > 0) && (decoderStatus.validTrigger) )
@@ -760,7 +760,7 @@ static inline void triggerRecordVVT1Angle (void)
   if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
   {
     int16_t curAngle;
-    curAngle = getDecoder().getCrankAngle();
+    curAngle = currentStatus.decoder.getCrankAngle();
     while(curAngle > 360) { curAngle -= 360; }
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
@@ -789,7 +789,7 @@ static void triggerThird_missingTooth(void)
   {
     triggerThirdFilterTime = curGap3 >> 2; //Next third filter is 25% the current gap
     
-    curAngle = getDecoder().getCrankAngle();
+    curAngle = currentStatus.decoder.getCrankAngle();
     while(curAngle > 360) { curAngle -= 360; }
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
@@ -4551,7 +4551,7 @@ static void triggerSec_FordST170(void)
     if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) && (secondaryToothCount == 1) )
     {
       int16_t curAngle;
-      curAngle = getDecoder().getCrankAngle();
+      curAngle = currentStatus.decoder.getCrankAngle();
       while(curAngle > 360) { curAngle -= 360; }
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
@@ -5642,7 +5642,7 @@ static void triggerSec_RoverMEMS(void)
           (configPage4.trigPatternSec == SEC_TRIGGER_5_3_2 && secondaryToothCount == 6 ) ) )
     {
       int16_t curAngle;
-      curAngle = getDecoder().getCrankAngle();
+      curAngle = currentStatus.decoder.getCrankAngle();
       while(curAngle > 360) { curAngle -= 360; }
       curAngle -= configPage4.triggerAngle; //Value at TDC
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }

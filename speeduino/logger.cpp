@@ -55,7 +55,7 @@ static byte buildStatus2(const statuses &current)
     false, // Unused
     false, // Unused
     current.idleOn,
-    getDecoder().getStatus().syncStatus==SyncStatus::Full,
+    current.decoder.getStatus().syncStatus==SyncStatus::Full,
   };
   return setStatusBits(0U, bits);
 }
@@ -67,7 +67,7 @@ static byte buildStatus3(const statuses &current)
     current.nitrousActive,
     current.secondFuelTableActive,
     current.vssUiRefresh,
-    getDecoder().getStatus().syncStatus==SyncStatus::Partial,
+    current.decoder.getStatus().syncStatus==SyncStatus::Partial,
   };
   byte status3 = setStatusBits(0U, bits);
   status3 |= (current.nSquirtsStatus << 5U); // Uses bits 5-7
@@ -716,11 +716,11 @@ void stopToothLogger(void)
   currentStatus.toothLogEnabled = false;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary );
+  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
 
   if(VSS_USES_RPM2() != true)
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary );
+    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
   }
 }
 
@@ -745,11 +745,11 @@ void stopCompositeLogger(void)
   currentStatus.compositeTriggerUsed = 0U;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary );
+  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
 
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary );
+    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
   }
 }
 
@@ -770,8 +770,8 @@ void stopCompositeLoggerTertiary(void)
   currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, getDecoder().primary );
-  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary );
+  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
+  detachLoggerInterrupt( pinTrigger3, currentStatus.decoder.tertiary );
 }
 
 
@@ -798,8 +798,8 @@ void stopCompositeLoggerCams(void)
   //Disconnect the logger interrupts and attach the normal ones
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, getDecoder().secondary );
+    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
   }
 
-  detachLoggerInterrupt( pinTrigger3, getDecoder().tertiary );
+  detachLoggerInterrupt( pinTrigger3, currentStatus.decoder.tertiary );
 }

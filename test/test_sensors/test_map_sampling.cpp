@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "decoders.h"
 #include "units.h"
+#include "decoder_builder.h"
 
 static void test_instantaneous(void) {
   extern bool instanteneousMAPReading(void);
@@ -13,10 +14,17 @@ static void test_instantaneous(void) {
   TEST_ASSERT_TRUE(instanteneousMAPReading());
 }
 
-extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
-extern bool canUseCycleAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
+extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2, map_cycle_average_t &cycle_average, map_adc_readings_t &sensorReadings);
+extern bool canUseCycleAverage(const statuses &current, const config2 &page2);
 
-static void enable_cycle_average(statuses &current, config2 &page2, decoder_status_t &decoderStatus) {
+static decoder_status_t decoderStatus;
+static decoder_status_t getDecoderStatus(void)
+{
+    return decoderStatus;
+}
+
+static void enable_cycle_average(statuses &current, config2 &page2) {
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   setRpm(current, 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
@@ -26,37 +34,40 @@ static void enable_cycle_average(statuses &current, config2 &page2, decoder_stat
 static void test_canUseCycleAverge(void) {
   statuses current;
   config2 page2;
-  decoder_status_t decoderStatus;
-  enable_cycle_average(current, page2, decoderStatus);
+  enable_cycle_average(current, page2);
 
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
 
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   decoderStatus.syncStatus = SyncStatus::Full;
 
   current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   current.startRevolutions = 55;
 
   setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint));
-  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
-  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2, decoderStatus));
+  TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
 }
 
 struct cycleAverageMAPReading_test_data {
-  statuses current;
-  config2 page2;
-  decoder_status_t decoderStatus;
-  map_cycle_average_t cycle_average;
-  map_adc_readings_t sensorReadings;
+  statuses current = {};
+  config2 page2 = {};
+  map_cycle_average_t cycle_average = {};
+  map_adc_readings_t sensorReadings = {};
+
+  cycleAverageMAPReading_test_data(void)
+  {
+    current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+  }
 };
 
 static void setup_cycle_average(cycleAverageMAPReading_test_data &test_data) {
-  enable_cycle_average(test_data.current, test_data.page2, test_data.decoderStatus);
+  enable_cycle_average(test_data.current, test_data.page2);
   test_data.cycle_average.cycleStartIndex = 0;
   test_data.cycle_average.sampleCount = 0;
   test_data.cycle_average.emapAdcRunningTotal = 0;
@@ -67,17 +78,17 @@ static void test_cycleAverageMAPReading_fallback_instantaneous(void) {
   cycleAverageMAPReading_test_data test_data;
   setup_cycle_average(test_data);
 
-  test_data.decoderStatus.syncStatus = SyncStatus::None;
+  decoderStatus.syncStatus = SyncStatus::None;
   test_data.sensorReadings.mapADC = 0x1234;
   test_data.sensorReadings.emapADC = 0x1234;
 
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
 
   // Repeat - should get same result.
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
@@ -91,27 +102,27 @@ static void test_cycleAverageMAPReading(void) {
   test_data.sensorReadings.mapADC = 100;
   test_data.sensorReadings.emapADC = 200;
   // Accumulate a few samples
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.emapADC, test_data.cycle_average.emapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 300;
   test_data.sensorReadings.emapADC = 500;
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(2, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(400, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(700, test_data.cycle_average.emapAdcRunningTotal);
   ++test_data.current.startRevolutions;
   test_data.sensorReadings.mapADC = 500;
   test_data.sensorReadings.emapADC = 700;
-  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(3, test_data.cycle_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(900, test_data.cycle_average.mapAdcRunningTotal);
   TEST_ASSERT_EQUAL_UINT(1400, test_data.cycle_average.emapAdcRunningTotal);
 
   // Leave the current cycle
   ++test_data.current.startRevolutions;
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(1400/3, test_data.sensorReadings.emapADC);
 
@@ -134,7 +145,7 @@ static void test_cycleAverageMAPReading_nosamples(void) {
   ++test_data.current.startRevolutions;
 
   TEST_ASSERT_EQUAL_UINT(0, test_data.cycle_average.sampleCount);
-  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.cycle_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(cycleAverageMAPReading(test_data.current, test_data.page2, test_data.cycle_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 
@@ -146,10 +157,15 @@ static void test_cycleAverageMAPReading_nosamples(void) {
 extern bool cycleMinimumMAPReading(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings);
 
 struct cycleMinmumMAPReading_test_data {
-  statuses current;
-  config2 page2;
-  map_cycle_min_t cycle_min;
-  map_adc_readings_t sensorReadings;
+  statuses current = {};
+  config2 page2 = {};
+  map_cycle_min_t cycle_min = {};
+  map_adc_readings_t sensorReadings = {};
+
+  cycleMinmumMAPReading_test_data(void)
+  {
+    current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+  }  
 };
 
 static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
@@ -210,122 +226,122 @@ static void test_cycleMinimumMAPReading(void) {
   TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
-extern bool canUseEventAverage(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus);
-extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, const decoder_status_t &decoderStatus, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
+extern bool canUseEventAverage(const statuses &current, const config2 &page2);
+extern bool eventAverageMAPReading(const statuses &current, const config2 &page2, map_event_average_t &eventAverage, map_adc_readings_t &sensorReadings);
 
-static void enable_event_average(statuses &current, config2 &page2, decoder_status_t &decoderStatus) {
-  setRpm(current, 4300U);
-  page2.mapSwitchPoint = 15; 
-  current.startRevolutions = 55;
+struct eventAverageMAPReading_test_data {
+  statuses current = {};
+  config2 page2 = {};
+  map_event_average_t event_average = {};
+  map_adc_readings_t sensorReadings = {};
+
+  eventAverageMAPReading_test_data(void)
+  {
+    current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+  }
+};
+
+static eventAverageMAPReading_test_data setup_event_average(void) {
+  eventAverageMAPReading_test_data context;
+
+  setRpm(context.current, 4300U);
+  context.page2.mapSwitchPoint = 15; 
+  context.current.startRevolutions = 55;
   decoderStatus.syncStatus = SyncStatus::Full;
-  resetEngineProtect(current);
+  resetEngineProtect(context.current);
+
+  context.event_average.eventStartIndex = 0;
+  context.event_average.sampleCount = 0;
+  context.event_average.mapAdcRunningTotal = 0;
+  ignitionCount = 0;
+
+  return context;
 }
 
 static void test_canUseEventAverage(void) {
-  statuses current;
-  config2 page2;
-  decoder_status_t decoderStatus;
-  enable_event_average(current, page2, decoderStatus);
+  auto context = setup_event_average();
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
+  TEST_ASSERT_TRUE(canUseEventAverage(context.current, context.page2));
 
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
   decoderStatus.syncStatus = SyncStatus::Full;
 
-  current.startRevolutions = 1;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  current.startRevolutions = 55;
+  context.current.startRevolutions = 1;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  context.current.startRevolutions = 55;
 
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint));
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
-  TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
+  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint-1U));
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint));
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint+1U));
+  TEST_ASSERT_TRUE(canUseEventAverage(context.current, context.page2));
 
-  current.engineProtectRpm = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  context.current.engineProtectRpm = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  resetEngineProtect(context.current);
 
-  current.engineProtectBoostCut = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  context.current.engineProtectBoostCut = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  resetEngineProtect(context.current);
 
-  current.engineProtectOil = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  context.current.engineProtectOil = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  resetEngineProtect(context.current);
 
-  current.engineProtectAfr = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  context.current.engineProtectAfr = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  resetEngineProtect(context.current);
 
-  current.engineProtectClt = true;
-  TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
-}
-
-struct eventAverageMAPReading_test_data {
-  statuses current;
-  config2 page2;
-  decoder_status_t decoderStatus;
-  map_event_average_t event_average;
-  map_adc_readings_t sensorReadings;
-};
-
-static void setup_event_average(eventAverageMAPReading_test_data &test_data) {
-  enable_event_average(test_data.current, test_data.page2, test_data.decoderStatus);
-  test_data.event_average.eventStartIndex = 0;
-  test_data.event_average.sampleCount = 0;
-  test_data.event_average.mapAdcRunningTotal = 0;
-  ignitionCount = 0;
+  context.current.engineProtectClt = true;
+  TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
+  resetEngineProtect(context.current);
 }
 
 static void test_eventAverageMAPReading_fallback_instantaneous(void) {
-  eventAverageMAPReading_test_data test_data;
-  setup_event_average(test_data);
+  auto test_data = setup_event_average();
 
-  test_data.decoderStatus.syncStatus = SyncStatus::None;
+  decoderStatus.syncStatus = SyncStatus::None;
   test_data.sensorReadings.mapADC = 0x1234;
   test_data.sensorReadings.emapADC = 0x1234;
 
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 
   // Repeat - should get same result.
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
 }
 
 
 static void test_eventAverageMAPReading(void) {
-  eventAverageMAPReading_test_data test_data;
-  setup_event_average(test_data);
+  auto test_data = setup_event_average();
 
   test_data.event_average.eventStartIndex = (uint8_t)ignitionCount;
   test_data.sensorReadings.mapADC = 100;
   test_data.sensorReadings.emapADC = 200;
   // Accumulate a few samples
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.event_average.mapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 300;
   test_data.sensorReadings.emapADC = 500;
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(2, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(400, test_data.event_average.mapAdcRunningTotal);
   test_data.sensorReadings.mapADC = 500;
   test_data.sensorReadings.emapADC = 700;
-  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_FALSE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(3, test_data.event_average.sampleCount);
   TEST_ASSERT_EQUAL_UINT(900, test_data.event_average.mapAdcRunningTotal);
 
   // Leave the current cycle
   ++ignitionCount;
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(900/3, test_data.sensorReadings.mapADC);
 
   TEST_ASSERT_EQUAL_UINT(1, test_data.event_average.sampleCount);
@@ -334,8 +350,7 @@ static void test_eventAverageMAPReading(void) {
 }
 
 static void test_eventAverageMAPReading_nosamples(void) {
-  eventAverageMAPReading_test_data test_data;
-  setup_event_average(test_data);
+  auto test_data = setup_event_average();
 
   test_data.event_average.eventStartIndex = (uint8_t)ignitionCount;
   test_data.sensorReadings.mapADC = 100;
@@ -345,7 +360,7 @@ static void test_eventAverageMAPReading_nosamples(void) {
   ++ignitionCount;
 
   TEST_ASSERT_EQUAL_UINT(0, test_data.event_average.sampleCount);
-  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.decoderStatus, test_data.event_average, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(eventAverageMAPReading(test_data.current, test_data.page2, test_data.event_average, test_data.sensorReadings));
   TEST_ASSERT_EQUAL_UINT(100, test_data.sensorReadings.mapADC);
   TEST_ASSERT_EQUAL_UINT(200, test_data.sensorReadings.emapADC);
 
@@ -365,23 +380,22 @@ static void test_validateFilterMapSensorReading(void) {
 // Extern declaration for function under test (as used in sensors.cpp)
 extern bool applyMapAlgorithm(const config2 &page2,
                               const statuses &current,
-                              const decoder_status_t &decoderStatus,
                               map_algorithm_t &algorithmState);
 
 static void test_applyMapAlgorithm_instantaneous(void) {
   config2 page2 = {};
   statuses current = {};
-  decoder_status_t decoderStatus = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   map_algorithm_t alg = {};
   page2.mapSample = MAPSamplingInstantaneous;
 
-  TEST_ASSERT_TRUE(applyMapAlgorithm(page2, current, decoderStatus, alg));
+  TEST_ASSERT_TRUE(applyMapAlgorithm(page2, current, alg));
 }
 
 static void test_applyMapAlgorithm_cycleAverage_fallback_instantaneous(void) {
   config2 page2 = {};
   statuses current = {};
-  decoder_status_t decoderStatus = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   map_algorithm_t alg = {};
   page2.mapSample = MAPSamplingCycleAverage;
   page2.mapSwitchPoint = 15;
@@ -390,7 +404,7 @@ static void test_applyMapAlgorithm_cycleAverage_fallback_instantaneous(void) {
   decoderStatus.syncStatus = SyncStatus::None;
   alg.cycle_average.sampleCount = 0;
 
-  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  bool ok = applyMapAlgorithm(page2, current, alg);
   TEST_ASSERT_TRUE(ok);
   // reset() calls accumulate once -> sampleCount becomes 1
   TEST_ASSERT_EQUAL_UINT(1U, alg.cycle_average.sampleCount);
@@ -399,7 +413,7 @@ static void test_applyMapAlgorithm_cycleAverage_fallback_instantaneous(void) {
 static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
   config2 page2 = {};
   statuses current = {};
-  decoder_status_t decoderStatus = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   map_algorithm_t alg = {};
   page2.mapSample = MAPSamplingCycleAverage;
   page2.mapSwitchPoint = 15;
@@ -411,7 +425,7 @@ static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
   alg.cycle_average.cycleStartIndex = (uint8_t)current.startRevolutions;
   alg.cycle_average.sampleCount = 0;
 
-  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  bool ok = applyMapAlgorithm(page2, current, alg);
   TEST_ASSERT_FALSE(ok);
   TEST_ASSERT_EQUAL_UINT(1U, alg.cycle_average.sampleCount);
 }
@@ -419,7 +433,7 @@ static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
 static void test_applyMapAlgorithm_cycleMinimum_endCycle_true(void) {
   config2 page2 = {};
   statuses current = {};
-  decoder_status_t decoderStatus = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   map_algorithm_t alg = {};
   page2.mapSample = MAPSamplingCycleMinimum;
   page2.mapSwitchPoint = 15;
@@ -429,14 +443,14 @@ static void test_applyMapAlgorithm_cycleMinimum_endCycle_true(void) {
   alg.cycle_min.cycleStartIndex = (uint8_t)(current.startRevolutions - 2U);
   alg.cycle_min.mapMinimum = 123;
 
-  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  bool ok = applyMapAlgorithm(page2, current, alg);
   TEST_ASSERT_TRUE(ok);
 }
 
 static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   config2 page2 = {};
   statuses current = {};
-  decoder_status_t decoderStatus = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
   map_algorithm_t alg = {};
   page2.mapSample = MAPSamplingIgnitionEventAverage;
   page2.mapSwitchPoint = 15;
@@ -451,7 +465,7 @@ static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   alg.event_average.eventStartIndex = (uint8_t)ignitionCount;
   alg.event_average.sampleCount = 0;
 
-  bool ok = applyMapAlgorithm(page2, current, decoderStatus, alg);
+  bool ok = applyMapAlgorithm(page2, current, alg);
   TEST_ASSERT_FALSE(ok);
   TEST_ASSERT_EQUAL_UINT(1U, alg.event_average.sampleCount);
 }
@@ -477,6 +491,7 @@ static void test_setMAPValuesFromReadings_no_emap(void) {
   map_adc_readings_t readings = {};
   config2 page2 = {};
   statuses current = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
 
   // map range 0..100, using mid-scale ADC -> expect ~50
   page2.mapMin = 0;
@@ -495,6 +510,7 @@ static void test_setMAPValuesFromReadings_with_emap(void) {
   map_adc_readings_t readings = {};
   config2 page2 = {};
   statuses current = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
 
   // MAP: 0..100 => 512 -> 50
   page2.mapMin = 0;
