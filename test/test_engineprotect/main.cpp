@@ -2,13 +2,14 @@
 #include "../test_harness_native.h"
 #include "engineProtection.h"
 #include "../test_utils.h"
-#include "decoders.h"
+#include "decoder_builder.h"
+#include "decoder_init.h"
 #include "units.h"
 
-static void setSyncStatus(SyncStatus syncStatus)
+static decoder_status_t decoderStatus;
+static decoder_status_t getDecoderStatus(void)
 {
-    extern decoder_status_t decoderStatus;
-    decoderStatus.syncStatus = syncStatus;
+    return decoderStatus;
 }
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
@@ -78,6 +79,7 @@ static void populateRollingCutTable(void)
     populate_2dtable_P(&rollingCutTable, values, bins);
 }
 
+extern void setDecoder(const decoder_t &newDecoder);
 struct engineProtection_test_context_t
 {
     statuses current = {};
@@ -86,6 +88,18 @@ struct engineProtection_test_context_t
     config6 page6 = {};
     config9 page9 = {};
     config10 page10 = {};
+    decoder_t decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+
+    engineProtection_test_context_t(void)
+    {
+        // Cheat and set the global decoder for the moment
+        setDecoder(decoder);
+    }
+
+    void setSyncStatus(SyncStatus syncStatus)
+    {
+        decoderStatus.syncStatus = syncStatus;
+    }
 
     void setOilPressureActive(void)
     {
@@ -502,7 +516,7 @@ static void test_calculateFuelIgnitionChannelCut_nosync(void)
 {
     engineProtection_test_context_t context;
     resetInternalState();
-    setSyncStatus(SyncStatus::None);
+    context.setSyncStatus(SyncStatus::None);
 
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9, context.page10);
     TEST_ASSERT_EQUAL(0, onOff.fuelChannels);

@@ -7,7 +7,7 @@
 #include "unit_testing.h"
 
 static decoder_t globalDecoder = decoder_builder_t().build();
-static void setDecoder(const decoder_t &newDecoder)
+TESTABLE_STATIC void setDecoder(const decoder_t &newDecoder)
 {
   globalDecoder = newDecoder;
 }
