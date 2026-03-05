@@ -6,11 +6,6 @@
 #include "preprocessor.h"
 #include "unit_testing.h"
 
-const decoder_t& getDecoder(void)
-{
-  return currentStatus.decoder;
-}
-
 static decoder_t defaultInitFunc(void)
 {
   return decoder_builder_t().build();
