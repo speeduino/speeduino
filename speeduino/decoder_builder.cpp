@@ -24,9 +24,17 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setGetFeatures(&nullGetFeatures);
 }
 decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
-: _decoder(decoder)
 {
-    // TODO: validate _decoder.
+    (void)setPrimaryTrigger(decoder.primary);
+    (void)setSecondaryTrigger(decoder.secondary);
+    (void)setTertiaryTrigger(decoder.tertiary);
+    (void)setGetRPM(decoder.getRPM);
+    (void)setGetCrankAngle(decoder.getCrankAngle);
+    (void)setSetEndTeeth(decoder.setEndTeeth);
+    (void)setReset(decoder.reset);
+    (void)setIsEngineRunning(decoder.isEngineRunning);
+    (void)setGetStatus(decoder.getStatus);
+    (void)setGetFeatures(decoder.getFeatures);
 }
 
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
