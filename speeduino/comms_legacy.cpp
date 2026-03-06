@@ -48,6 +48,16 @@ static bool isMap(void) {
 #pragma GCC optimize ("Os") 
 #endif
 
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static void print2dTable(Stream &serial, axis_t (&axis)[sizeT], value_t (&values)[sizeT]) {
+  for (uint8_t x = 0U; x < sizeT; ++x)
+  {
+    serial.print(axis[x]);
+    serial.print(", ");
+    serial.println(values[x]);
+  }
+}
+
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 - cmdPending = If a command has started but is waiting on further data to complete
@@ -454,33 +464,13 @@ void legacySerialCommand(void)
     case 'Z': //Totally non-standard testing function. Will be removed once calibration testing is completed. This function takes 1.5kb of program space! :S
     #ifndef SMALL_FLASH_MODE
       primarySerial.println(F("Coolant"));
-      for (int x = 0; x < 32; x++)
-      {
-        primarySerial.print(cltCalibrationTable.axis[x]);
-        primarySerial.print(", ");
-        primarySerial.println(cltCalibrationTable.values[x]);
-      }
+      print2dTable(primarySerial, cltCalibrationTable.axis, cltCalibrationTable.values);
       primarySerial.println(F("Inlet temp"));
-      for (int x = 0; x < 32; x++)
-      {
-        primarySerial.print(iatCalibrationTable.axis[x]);
-        primarySerial.print(", ");
-        primarySerial.println(iatCalibrationTable.values[x]);
-      }
+      print2dTable(primarySerial, iatCalibrationTable.axis, iatCalibrationTable.values);
       primarySerial.println(F("O2"));
-      for (int x = 0; x < 32; x++)
-      {
-        primarySerial.print(o2CalibrationTable.axis[x]);
-        primarySerial.print(", ");
-        primarySerial.println(o2CalibrationTable.values[x]);
-      }
+      print2dTable(primarySerial, o2CalibrationTable.axis, o2CalibrationTable.values);
       primarySerial.println(F("WUE"));
-      for (int x = 0; x < 10; x++)
-      {
-        primarySerial.print(configPage4.wueBins[x]);
-        primarySerial.print(F(", "));
-        primarySerial.println(configPage2.wueValues[x]);
-      }
+      print2dTable(primarySerial, configPage4.wueBins, configPage2.wueValues);
       primarySerial.flush();
     #endif
       break;

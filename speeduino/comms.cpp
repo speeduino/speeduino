@@ -445,7 +445,7 @@ static uint8_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, SensorCalibrationTable calibrationPage, uint16_t *values, uint16_t *bins)
+static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength, SensorCalibrationTable calibrationPage, uint8_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)

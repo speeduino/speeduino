@@ -155,9 +155,12 @@ const char *getEntityName(const page_iterator_t &it) {
 
 static void print_entity(const page_iterator_t &entity)
 {
-    char msg[128];
-    sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, entity.location.page, entity.location.index, getEntityName(entity), getEntityType(entity), getEntityStartAddress(entity), entity.address.size);
-    UnityPrint(msg); UNITY_PRINT_EOL();
+    if (EntityType::NoEntity!=entity.type)
+    {
+        char msg[128];
+        sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, entity.location.page, entity.location.index, getEntityName(entity), getEntityType(entity), getEntityStartAddress(entity), entity.address.size);
+        UnityPrint(msg); UNITY_PRINT_EOL();
+    }
 }
 
 static void print_page_layout(uint8_t pageNum)
@@ -179,11 +182,11 @@ static void print_eeprom_layout(void) {
 
     #define GET_VARIABLE_NAME(Variable) (#Variable)
     char msg[128];
-    sprintf(msg, "Calib. CRC, %d, %s, CRC, %" PRIu16 ", %zu", (int)SensorCalibrationTable::CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::CoolantSensor), sizeof(uint32_t));
+    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::CoolantSensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
-    sprintf(msg, "Calib. CRC, %d, %s, CRC, %" PRIu16 ", %zu", (int)SensorCalibrationTable::IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::IntakeAirTempSensor), sizeof(uint32_t));
+    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::IntakeAirTempSensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
-    sprintf(msg, "Calib. CRC, %d, %s, CRC, %" PRIu16 ", %zu", (int)SensorCalibrationTable::O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::O2Sensor), sizeof(uint32_t));
+    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::O2Sensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
     sprintf(msg, "Calibrations, 0, Calib, Calib, %" PRIu16 ", %" PRIu16, MAX_PAGE_ADDRESS, (uint16_t)(STORAGE_SIZE-MAX_PAGE_ADDRESS));
     UnityPrint(msg); UNITY_PRINT_EOL();

@@ -40,11 +40,11 @@ volatile uint32_t flexPulseWidth = 0U;
 static map_algorithm_t mapAlgorithmState;
 
 static uint16_t cltCalibration_bins[32];
-static uint16_t cltCalibration_values[32];
-table2D_u16_u16_32 cltCalibrationTable(&cltCalibration_bins, &cltCalibration_values);
+static uint8_t cltCalibration_values[32];
+table2D_u16_u8_32 cltCalibrationTable(&cltCalibration_bins, &cltCalibration_values);
 static uint16_t iatCalibration_bins[32];
-static uint16_t iatCalibration_values[32];
-table2D_u16_u16_32 iatCalibrationTable(&iatCalibration_bins, &iatCalibration_values);
+static uint8_t iatCalibration_values[32];
+table2D_u16_u8_32 iatCalibrationTable(&iatCalibration_bins, &iatCalibration_values);
 static uint16_t o2Calibration_bins[32];
 static uint8_t o2Calibration_values[32];
 table2D_u16_u8_32 o2CalibrationTable(&o2Calibration_bins, &o2Calibration_values); 
