@@ -24,6 +24,11 @@ public:
     void enableTimer(void) { enabled = true; }
     void disableTimer(void) { enabled = false; }
 
+    static counter_t microsToTicks(unsigned long micros)
+    {
+        return micros/1000U;
+    }
+
 private:
     // Atomic flag to signal the thread to stop
     std::atomic<bool> enabled = {false}; 

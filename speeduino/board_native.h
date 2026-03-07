@@ -46,8 +46,8 @@ static constexpr uint8_t A15 = 0U;
 ***********************************************************************************************************
 * Schedules
 */
-#define MAX_TIMER_PERIOD (UINT32_MAX/1000UL) //The longest period of time (in uS) that the timer can permit
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) / 1000U) //Converts a given number of uS into the required number of timer ticks until that time has passed
+#define MAX_TIMER_PERIOD (UINT32_MAX) //The longest period of time (in uS) that the timer can permit
+#define uS_TO_TIMER_COMPARE(uS1) software_timer_t::microsToTicks((uS1)) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 #define DEFINE_TIMER_VARS(Prefix, index, array) \
     static inline void Prefix##index##_TIMER_ENABLE(void) { array[index-1].enableTimer(); } \
