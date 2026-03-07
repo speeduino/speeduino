@@ -30,7 +30,7 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const
       //Check if this is the first time we've been below the limit
       if(oilProtEndTime == 0U) { oilProtEndTime = currMillis + TIME_TEN_MILLIS.toUser(page10.oilPressureProtTime); }
       /* Check if countdown has reached its target, if so then instruct to cut */
-      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtectOil);
+      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtect.oil);
     }
     else 
     { 
@@ -44,8 +44,8 @@ TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const
 TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const config6 &page6)
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF)
-      && (page6.boostCutEnabled > 0) 
-      && (current.MAP > ((long)page6.boostLimit * 2L));
+      && (page6.boostCutEnabled) 
+      && (current.MAP > (long)MAP.toUser(page6.boostLimit));
 }
 
 static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
@@ -69,7 +69,7 @@ static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &pag
 
 static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-    return (current.MAP >= (long)(page9.afrProtectMinMAP * UINT16_C(2)))
+    return (current.MAP >= (long)MAP.toUser(page9.afrProtectMinMAP))
           && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
           && (current.TPS >= page9.afrProtectMinTPS) 
           && (current.O2 >= getAfrO2Limit(current, page9)); 
@@ -108,7 +108,7 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
       // All conditions fulfilled - start counter for 'protection delay'
       if(afrProtectedActivateTime==0U) 
       {
-        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * UINT16_C(100));
+        afrProtectedActivateTime = currMillis + TIME_TEN_MILLIS.toUser(page9.afrProtectCutTime);
       }
 
       // Check if countdown has reached its target, if so then instruct to cut
@@ -137,192 +137,327 @@ TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6
   return checkAFRLimitActive;
 }
 
-
-TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis)
+TESTABLE_INLINE_STATIC bool checkRpmLimit(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
 {
-  current.engineProtectBoostCut = checkBoostLimit(current, page6);
-  current.engineProtectOil = checkOilPressureLimit(current, page6, page10, currMillis);
-  current.engineProtectAfr = checkAFRLimit(current, page6, page9, currMillis);
-
-  return (current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
-      && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.hardRevMode == HARD_REV_FIXED)
+      && ((current.RPMdiv100 >= page4.HardRevLim) 
+        || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim)));
 }
 
-BEGIN_LTO_ALWAYS_INLINE(bool) checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+TESTABLE_INLINE_STATIC bool checkCoolantLimit(const statuses &current, const config6 &page6, const config9 &page9)
 {
-  return checkEngineProtect(current, page4, page6, page9, page10, millis());
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.hardRevMode == HARD_REV_COOLANT)
+      && (current.RPMdiv100 > table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant)));
 }
-END_LTO_INLINE();
 
-uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+BEGIN_LTO_ALWAYS_INLINE(statuses::engine_protect_flags_t) checkEngineProtection(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
 {
-  //Hardcut RPM limit
-  uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  current.engineProtectRpm = false;
-  current.engineProtectClt = false;
+  statuses::engine_protect_flags_t flags = { false, false, false, false, false };
 
   if (page6.engineProtectType != PROTECT_CUT_OFF) 
   {
-    if(page9.hardRevMode == HARD_REV_FIXED)
-    {
-      currentLimitRPM = page4.HardRevLim;
-      current.engineProtectRpm = (current.RPMdiv100 >= page4.HardRevLim) 
-                              || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim));
-    }
-    else if(page9.hardRevMode == HARD_REV_COOLANT )
-    {
-      currentLimitRPM = table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
-      if(current.RPMdiv100 > currentLimitRPM)
-      {
-        current.engineProtectClt = true;
-        current.engineProtectRpm = true;
-      } 
-    }
+    flags.boostCut = checkBoostLimit(current, page6);
+    flags.oil = checkOilPressureLimit(current, page6, page10, millis());
+    flags.afr = checkAFRLimit(current, page6, page9, millis());
+    flags.coolant = checkCoolantLimit(current, page6, page9);
+    flags.rpm = flags.coolant || checkRpmLimit(current, page4, page6, page9);
   }
 
-  return currentLimitRPM;
+  return flags;
+};
+END_LTO_INLINE()
+
+TESTABLE_INLINE_STATIC uint8_t getHardRevLimit(const statuses &current, const config4 &page4, const config9 &page9)
+{
+  if (page9.hardRevMode == HARD_REV_FIXED)
+  {
+    return page4.HardRevLim;
+  }
+  if (page9.hardRevMode == HARD_REV_COOLANT)
+  {
+    return table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
+  }
+  return UINT8_MAX;
+}
+
+TESTABLE_INLINE_STATIC uint8_t applyEngineProtectionRevLimit(uint8_t curLimit, const statuses &current, const config4 &page4)
+{
+  if ((current.engineProtect.boostCut) || (current.engineProtect.oil) || (current.engineProtect.afr))
+  {
+    return min(curLimit, page4.engineProtectMaxRPM);
+  }
+
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const statuses &current, const config6 &page6)
+{
+  if (current.launchingHard)
+  {
+    return min(curLimit, page6.lnchHardLim);
+  }
+
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint16_t applyFlatShiftRevLimit(uint16_t curLimit, const statuses &current)
+{
+  if ( current.flatShiftingHard ) 
+  {
+    return min(curLimit, (uint16_t)current.clutchEngagedRPM);
+  }
+  return curLimit;
+}
+
+TESTABLE_INLINE_STATIC uint16_t getMaxRpm(const statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+{
+  // The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc).
+  // Divided by 100.
+  return applyFlatShiftRevLimit(
+          RPM_COARSE.toUser(applyHardLaunchRevLimit(
+                              applyEngineProtectionRevLimit(
+                                getHardRevLimit(current, page4, page9), 
+                                current, page4),
+                              current, page6)),
+            current);
+  
 }
 
 TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
-TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
 // Test-hookable RNG for rolling cut (defaults to existing random1to100)
 TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
 
-BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+constexpr statuses::scheduler_cut_t CUT_FULL_BOTH = { 
+  .ignitionChannelsPending = 0x00, 
+  .ignitionChannels = 0x00, 
+  .fuelChannels = 0x00, 
+  .status = SchedulerCutStatus::Full 
+};
+constexpr statuses::scheduler_cut_t CUT_FULL_FUEL = { 
+  .ignitionChannelsPending = 0x00, 
+  .ignitionChannels = 0xFF, 
+  .fuelChannels = 0x00, 
+  .status = SchedulerCutStatus::Full 
+};
+constexpr statuses::scheduler_cut_t CUT_FULL_IGN = { 
+  .ignitionChannelsPending = 0x00, 
+  .ignitionChannels = 0x00, 
+  .fuelChannels = 0xFF, 
+  .status = SchedulerCutStatus::Full 
+};
+constexpr statuses::scheduler_cut_t CUT_NONE = { 
+  .ignitionChannelsPending = 0x00, 
+  .ignitionChannels = 0xFF, 
+  .fuelChannels = 0xFF, 
+  .status = SchedulerCutStatus::None 
+};
+
+static inline statuses::scheduler_cut_t applyFullCut(const config6 &page6)
 {
-  if (getDecoderStatus().syncStatus==SyncStatus::None)
+  //Full hard cut turns outputs off completely. 
+  switch(page6.engineProtectType)
   {
-    return { 0x0, 0x0, 0x0 };
+    case PROTECT_CUT_IGN:
+      return CUT_FULL_IGN;
+      break;
+    case PROTECT_CUT_FUEL:
+      return CUT_FULL_FUEL;
+      break;
+    case PROTECT_CUT_BOTH:
+    default:
+      return CUT_FULL_BOTH;
+      break;
   }
+}
 
-  statuses::scheduler_cut_t cutState = current.schedulerCutState;
+/**
+ * @brief Immediately below max RPM, there is a range within which we can apply a rolling cut.
+ * 
+ * The rolling cut table defines a series of relative *negative* RPM offsets that
+ * define the window and percent cut for each offset. I.e.
+ *  RPM 0------------------------|++++++++++++++++++++|<- max RPM
+ *                               | rolling cut window |
+ */
+TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
 
-  //Check for any of the engine protections or rev limiters being turned on
-  uint16_t maxAllowedRPM = checkRevLimit(current, page4, page6, page9); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
-  //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
-  if( checkEngineProtect(current, page4, page6, page9, page10) && (page4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = page4.engineProtectMaxRPM; }
-  if ( (current.launchingHard == true) && (page6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = page6.lnchHardLim; }
-  maxAllowedRPM = maxAllowedRPM * 100U; //All of the above limits are divided by 100, convert back to RPM
-  if ( (current.flatShiftingHard == true) && (current.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = current.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
+TESTABLE_INLINE_STATIC bool useRollingCut(const statuses &current, const config2 &page2, uint16_t maxAllowedRPM)
+{
+  //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+  return (page2.hardCutType == HARD_CUT_ROLLING) 
+      && (current.RPM < maxAllowedRPM)
+      && (current.RPM > (maxAllowedRPM - RPM_MEDIUM.toUser(rollingCutTable.axis[0]*-1)));
+}
 
-  if(current.RPM >= maxAllowedRPM)
-  {
-    current.hardLimitActive = true;
-  }
-  else if(current.hardLimitActive)
-  {
-    current.hardLimitActive = false;
-  }
+static inline bool isNonSequential(const config2 &page2, const config4 &page4)
+{
+  return (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL);
+}
 
-  if( (page2.hardCutType == HARD_CUT_FULL) && current.hardLimitActive)
-  {
-    //Full hard cut turns outputs off completely. 
-    switch(page6.engineProtectType)
-    {
-      case PROTECT_CUT_OFF:
-        //Make sure all channels are turned on
-        cutState.ignitionChannels = 0xFF;
-        cutState.fuelChannels = 0xFF;
-        resetEngineProtect(current);
-        break;
-      case PROTECT_CUT_IGN:
-        cutState.ignitionChannels = 0;
-        break;
-      case PROTECT_CUT_FUEL:
-        cutState.fuelChannels = 0;
-        break;
-      case PROTECT_CUT_BOTH:
-        cutState.ignitionChannels = 0;
-        cutState.fuelChannels = 0;
-        break;
-      default:
-        cutState.ignitionChannels = 0;
-        cutState.fuelChannels = 0;
-        break;
-    }
-  } //Hard cut check
-  else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+static inline uint8_t calcBaseCutRevolutions(const config2 &page2)
+{
+  return (page2.strokes == FOUR_STROKE) ? 2U : 1U;
+}
+
+TESTABLE_INLINE_STATIC uint8_t calcRollingCutRevolutions(const config2 &page2, const config4 &page4)
+{
+  // 4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+  if ( isNonSequential(page2, page4) ) 
   { 
-    uint8_t revolutionsToCut = 1;
-    if(page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
-    if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+    return calcBaseCutRevolutions(page2) * 2U; 
+  } 
+  return calcBaseCutRevolutions(page2);
+}
 
-    if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
-    if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (current.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
-    { 
-      uint8_t cutPercent = 0;
-      int16_t rpmDelta = current.RPM - maxAllowedRPM;
-      if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
-      else { cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); } //
-      
-
-      for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
-      {  
-        if( (cutPercent == 100) || (rollingCutRandFunc() < cutPercent) )
-        {
-          switch(page6.engineProtectType)
-          {
-            case PROTECT_CUT_OFF:
-              //Make sure all channels are turned on
-              cutState.ignitionChannels = 0xFF;
-              cutState.fuelChannels = 0xFF;
-              break;
-            case PROTECT_CUT_IGN:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              break;
-            case PROTECT_CUT_FUEL:
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-            case PROTECT_CUT_BOTH:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-            default:
-              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
-              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
-              break;
-          }
-        }
-        else
-        {
-          //Turn fuel and ignition channels on
-
-          //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
-          if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
-              (BIT_CHECK(cutState.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
-              (page6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
-            )
-          { BIT_SET(cutState.ignitionChannelsPending, x); } //Set this ignition channel as pending
-          else { BIT_SET(cutState.ignitionChannels, x); } //Turn on this ignition channel
-            
-          
-          BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
-        }
-      }
-      rollingCutLastRev = current.startRevolutions;
-    }
-
-    //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
-    //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
-    if( (cutState.ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
-    {
-      cutState.ignitionChannels = cutState.fuelChannels;
-      cutState.ignitionChannelsPending = 0;
-    }
-  } //Rolling cut check
-  else
-  {
-    resetEngineProtect(current);
-    //No engine protection active, so turn all the channels on
-    if(current.startRevolutions >= page4.StgCycles)
-    { 
-      //Enable the fuel and ignition, assuming staging revolutions are complete 
-      cutState.ignitionChannels = 0xff; 
-      cutState.fuelChannels = 0xff; 
-    } 
+TESTABLE_INLINE_STATIC uint8_t calcRollingCutPercentage(const statuses &current, uint16_t maxAllowedRPM)
+{
+  int16_t rpmDelta = current.RPM - maxAllowedRPM;
+  //If the current RPM is over the max allowed RPM then cut is full (100%)
+  if (rpmDelta >= 0) { 
+    // 101 is used to make the comparison below simpler
+    return 101U; 
   }
+  // Avoid underflow
+  if (rpmDelta<SIGNED_RPM_MEDIUM.toUser(INT8_MIN)) {
+    return rollingCutTable.values[0];
+  }
+  
+  return table2D_getValue(&rollingCutTable, SIGNED_RPM_MEDIUM.toRaw(rpmDelta) ); 
+}
+
+static inline statuses::scheduler_cut_t channelOff(statuses::scheduler_cut_t cutState, const config6 &page6, uint8_t channel)
+{
+  switch(page6.engineProtectType)
+  {
+    case PROTECT_CUT_IGN:
+      BIT_CLEAR(cutState.ignitionChannels, channel); //Turn off this ignition channel
+      break;
+    case PROTECT_CUT_FUEL:
+      BIT_CLEAR(cutState.fuelChannels, channel); //Turn off this fuel channel
+      break;
+    case PROTECT_CUT_BOTH:
+    default:
+      BIT_CLEAR(cutState.ignitionChannels, channel); //Turn off this ignition channel
+      BIT_CLEAR(cutState.fuelChannels, channel); //Turn off this fuel channel
+      break;
+  }
+  return cutState;
+}
+
+TESTABLE_INLINE_STATIC statuses::scheduler_cut_t channelOn(statuses::scheduler_cut_t cutState, bool supportPendingIgnitionCut, uint8_t channel)
+{
+  // Special case for non-sequential, 4-stroke where both fuel and ignition are cut.
+  // The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+  if( supportPendingIgnitionCut &&
+      //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+      (BIT_CHECK(cutState.fuelChannels, channel) == false))
+  { 
+    BIT_SET(cutState.ignitionChannelsPending, channel); //Set this ignition channel as pending
+  }
+  else 
+  { 
+    BIT_SET(cutState.ignitionChannels, channel); //Turn on this ignition channel
+  }
+          
+  BIT_SET(cutState.fuelChannels, channel); //Turn on this fuel channel
 
   return cutState;
+}
+
+TESTABLE_STATIC bool supportPendingIgnitionCut(const config2 &page2, const config4 &page4, const config6 &page6)
+{
+  return (page2.strokes == FOUR_STROKE) 
+      && isNonSequential(page2, page4)
+      && (page6.engineProtectType == PROTECT_CUT_BOTH);
+}
+
+TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, bool supportPendingIgnitionCut)
+{
+  statuses::scheduler_cut_t cutState = current.schedulerCutState;
+  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, current.maxInjOutputs); ++channel)
+  {  
+    if( rollingCutRandFunc() < cutPercent )
+    {
+      cutState = channelOff(cutState, page6, channel);
+    }
+    else
+    {
+      cutState = channelOn(cutState, supportPendingIgnitionCut, channel);
+    }
+  }
+  byte ignMask = 1U << current.maxIgnOutputs; 
+  cutState.ignitionChannels = cutState.ignitionChannels & (ignMask - 1U); //Mask off unused ignition channels
+  byte injMask = 1U << current.maxInjOutputs;
+  cutState.fuelChannels = cutState.fuelChannels & (injMask - 1U); //Mask off unused fuel channels
+
+  cutState.status = SchedulerCutStatus::Rolling;
+  return cutState;
+}
+
+//Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+//Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+TESTABLE_STATIC statuses::scheduler_cut_t applyPendingIgnitionCuts(statuses::scheduler_cut_t cutState, const statuses &current)
+{
+  if( (cutState.ignitionChannelsPending!=0U) && (current.startRevolutions >= (rollingCutLastRev + 2U)) )
+  {
+    cutState.ignitionChannels = cutState.fuelChannels;
+    cutState.ignitionChannelsPending = 0U;
+    cutState.status = SchedulerCutStatus::Rolling; 
+  }
+  return cutState;
+}
+
+TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, uint16_t maxAllowedRPM)
+{
+  if(rollingCutLastRev == 0U) { rollingCutLastRev = current.startRevolutions; } //First time check
+
+  uint8_t revolutionsToCut = calcRollingCutRevolutions(page2, page4);
+  if ( current.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) //Check if the required number of revolutions have passed since the last cut
+  { 
+    rollingCutLastRev = current.startRevolutions;
+    return applyPendingIgnitionCuts(
+              applyRollingCutPercentage(current, 
+                                        page6, 
+                                        calcRollingCutPercentage(current, maxAllowedRPM), 
+                                        supportPendingIgnitionCut(page2, page4, page6)),
+              current);
+  } 
+  else
+  {
+    return applyPendingIgnitionCuts(current.schedulerCutState, current);
+  }
+}
+
+BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(const statuses &current, const decoder_status_t &decoderStatus, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9)
+{
+  if ((decoderStatus.syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
+  {
+      return CUT_FULL_BOTH;
+  }
+  if (page6.engineProtectType==PROTECT_CUT_OFF)
+  {
+    //Make sure all channels are turned on
+    return CUT_NONE;
+  }
+
+  // Determine the absolute max RPM
+  uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
+
+  // Full cut is always applied if RPM exceeds max allowed
+  // regardless of page2.hardCutType
+  if (current.RPM >= maxAllowedRPM)
+  {
+    return applyFullCut(page6);
+  }
+  else if (useRollingCut(current, page2, maxAllowedRPM))
+  { 
+    return applyRollingCut(current, page2, page4, page6, maxAllowedRPM);
+  }
+  else
+  {
+    return CUT_NONE;
+  }
 }
 END_LTO_INLINE()

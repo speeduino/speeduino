@@ -218,7 +218,7 @@ static void enable_event_average(statuses &current, config2 &page2, decoder_stat
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   decoderStatus.syncStatus = SyncStatus::Full;
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 }
 
 static void test_canUseEventAverage(void) {
@@ -245,25 +245,25 @@ static void test_canUseEventAverage(void) {
   setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseEventAverage(current, page2, decoderStatus));
 
-  current.engineProtectRpm = true;
+  current.engineProtect.rpm = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 
-  current.engineProtectBoostCut = true;
+  current.engineProtect.boostCut = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 
-  current.engineProtectOil = true;
+  current.engineProtect.oil = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 
-  current.engineProtectAfr = true;
+  current.engineProtect.afr = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 
-  current.engineProtectClt = true;
+  current.engineProtect.coolant = true;
   TEST_ASSERT_FALSE(canUseEventAverage(current, page2, decoderStatus));
-  resetEngineProtect(current);
+  current.engineProtect.reset();
 }
 
 struct eventAverageMAPReading_test_data {
@@ -445,7 +445,7 @@ static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Ensure engine protect flags cleared
-  resetEngineProtect(current);
+  current.engineProtect.reset();
   // Set ignitionCount and eventStartIndex equal to trigger accumulate
   ignitionCount = 0;
   alg.event_average.eventStartIndex = (uint8_t)ignitionCount;
