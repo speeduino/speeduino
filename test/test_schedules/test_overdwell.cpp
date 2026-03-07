@@ -1,43 +1,67 @@
-// #include <Arduino.h>
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
+#include "type_traits.h"
+
+using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
 
 extern bool isOverDwellActive(const config4 &page4, const statuses &current);
 
+static statuses rpmBelowLimit(void)
+{
+  statuses current = {};
+  setRpm(current, 400);
+  current.crankRPM = 420;
+  return current;
+}
+
 static void test_isOverDwellActive_rpmBelowLimit(void) {
   config4 page4 = {};
-  statuses current = {};
+
   page4.useDwellLim = true; // Enable dwell limiter
   page4.ignCranklock = true;
-  current.RPM = 400;
-  current.crankRPM = 420; // Set RPM to 400
-  TEST_ASSERT_FALSE(isOverDwellActive(page4, current)); 
+  TEST_ASSERT_FALSE(isOverDwellActive(page4, rpmBelowLimit())); 
+
+  page4.useDwellLim = true;
+  page4.ignCranklock = false;
+  TEST_ASSERT_TRUE(isOverDwellActive(page4, rpmBelowLimit())); 
+
+  page4.useDwellLim = false;
+  page4.ignCranklock = true;
+  TEST_ASSERT_FALSE(isOverDwellActive(page4, rpmBelowLimit())); 
+
+  page4.useDwellLim = false;
+  page4.ignCranklock = false;
+  TEST_ASSERT_FALSE(isOverDwellActive(page4, rpmBelowLimit())); 
+}
+
+static statuses rpmAboveLimit(void)
+{
+  statuses current = {};
+  setRpm(current, 420);
+  current.crankRPM = 400;
+  return current;
 }
 
 static void test_isOverDwellActive_rpmAboveLimit(void) {
   config4 page4 = {};
-  statuses current = {};
-  page4.useDwellLim = true; // Enable dwell limiter
+
+  page4.useDwellLim = true;
   page4.ignCranklock = true;
-  current.RPM = 420;
-  current.crankRPM = 400; // Set RPM to 400
-  TEST_ASSERT_TRUE(isOverDwellActive(page4, current)); 
-}
+  TEST_ASSERT_TRUE(isOverDwellActive(page4, rpmAboveLimit())); 
 
-static void test_isOverDwellActive_NoCrankLock(void) {
-  config4 page4 = {};
-  statuses current = {};
+  page4.useDwellLim = true;
   page4.ignCranklock = false;
-  page4.useDwellLim = true; // Enable dwell limiter
+  TEST_ASSERT_TRUE(isOverDwellActive(page4, rpmAboveLimit())); 
 
-  current.RPM = 420;
-  current.crankRPM = 400; // Set RPM to 400
-  TEST_ASSERT_TRUE(isOverDwellActive(page4, current)); 
+  page4.useDwellLim = false;
+  page4.ignCranklock = true;
+  TEST_ASSERT_FALSE(isOverDwellActive(page4, rpmAboveLimit())); 
 
-  current.RPM = 400;
-  current.crankRPM = 420; // Set RPM to 400
-  TEST_ASSERT_TRUE(isOverDwellActive(page4, current)); 
+  page4.useDwellLim = false;
+  page4.ignCranklock = false;
+  TEST_ASSERT_FALSE(isOverDwellActive(page4, rpmAboveLimit())); 
 }
 
 extern void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t targetOverdwellTime);
@@ -48,7 +72,10 @@ static void counter_callback(void) {
 }
 
 static void test_applyChannelOverDwellProtection_notRunning(void) {
-  IgnitionSchedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+  raw_counter_t counterReg = {101};
+  raw_compare_t compareReg = {100};
+  IgnitionSchedule schedule(counterReg, compareReg);
+
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
 
@@ -59,7 +86,10 @@ static void test_applyChannelOverDwellProtection_notRunning(void) {
 }
 
 static void test_applyChannelOverDwellProtection_running_notimeout(void) {
-  IgnitionSchedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+  raw_counter_t counterReg = {101};
+  raw_compare_t compareReg = {100};
+  IgnitionSchedule schedule(counterReg, compareReg);
+
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
   
@@ -70,7 +100,10 @@ static void test_applyChannelOverDwellProtection_running_notimeout(void) {
 }
 
 static void test_applyChannelOverDwellProtection_running_timeout(void) {
-  IgnitionSchedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+  raw_counter_t counterReg = {101};
+  raw_compare_t compareReg = {100};
+  IgnitionSchedule schedule(counterReg, compareReg);
+
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
 
@@ -85,7 +118,6 @@ void test_overdwell(void)
   SET_UNITY_FILENAME() {
     RUN_TEST(test_isOverDwellActive_rpmAboveLimit);
     RUN_TEST(test_isOverDwellActive_rpmBelowLimit);
-    RUN_TEST(test_isOverDwellActive_NoCrankLock);
     RUN_TEST(test_applyChannelOverDwellProtection_notRunning);
     RUN_TEST(test_applyChannelOverDwellProtection_running_notimeout);
     RUN_TEST(test_applyChannelOverDwellProtection_running_timeout);
