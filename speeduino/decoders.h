@@ -358,15 +358,6 @@ extern unsigned long elapsedTime;
 extern unsigned long lastCrankAngleCalc;
 extern unsigned long lastVVTtime; //The time between the vvt reference pulse and the last crank pulse
 
-extern uint16_t ignition1EndTooth;
-extern uint16_t ignition2EndTooth;
-extern uint16_t ignition3EndTooth;
-extern uint16_t ignition4EndTooth;
-extern uint16_t ignition5EndTooth;
-extern uint16_t ignition6EndTooth;
-extern uint16_t ignition7EndTooth;
-extern uint16_t ignition8EndTooth;
-
 extern int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 #define CRANK_SPEED 0U
