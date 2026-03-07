@@ -11,6 +11,7 @@
 #include "../fake_decoder_status.h"
 
 extern void prepareForInitialiseAll(uint8_t boardId);
+extern void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, const IgnitionSchedule &schedule, const statuses &current)
 {

@@ -51,25 +51,26 @@ static inline bool isFullSequentialIgnition(const config4 &page4, const decoder_
       && decoderStatus.syncStatus==SyncStatus::Full;
 }
 
-static inline void changeIgnitionToHalfSync(const config2 &page2, statuses &current)
+TESTABLE_STATIC void changeIgnitionToHalfSync(const config2 &page2, statuses &current)
 {
   ATOMIC()
   {
-    if (!isAnyIgnScheduleRunning()) {
+    if (!isAnyIgnScheduleRunning() && isSwitchableCylinderCount(page2)) {
       CRANK_ANGLE_MAX_IGN = 360;
+      current.maxIgnOutputs = page2.nCylinders/2U;
+      // LCOV_EXCL_BR_START (default case is untestable)
       switch (page2.nCylinders)
+      // LCOV_EXCL_BR_STOP
       {
         case 4:
           setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-          current.maxIgnOutputs = 2U;
           break;
               
         case 6:
           setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-          current.maxIgnOutputs = 3U;
           break;
 
         case 8:
@@ -77,24 +78,27 @@ static inline void changeIgnitionToHalfSync(const config2 &page2, statuses &curr
           setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
           setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-          current.maxIgnOutputs = 4U;
           break;
-          
+
+        // LCOV_EXCL_START (default case is untestable)
         default:
           break; //No actions required for other cylinder counts 
+        // LCOV_EXCL_STOP
       }
     }
   }
 }
 
-static inline void changeIgnitionToFullSequential(const config2 &page2, statuses &current)
+TESTABLE_STATIC void changeIgnitionToFullSequential(const config2 &page2, statuses &current)
 {
   ATOMIC()
   {
-    if (!isAnyIgnScheduleRunning()) {
+    if (!isAnyIgnScheduleRunning() && isSwitchableCylinderCount(page2)) {
       CRANK_ANGLE_MAX_IGN = 720;
       current.maxIgnOutputs = min((uint8_t)IGN_CHANNELS, page2.nCylinders);
-      switch (current.maxIgnOutputs)
+      // LCOV_EXCL_BR_START (default case is untestable)
+      switch (page2.nCylinders)
+      // LCOV_EXCL_BR_STOP
       {
       case 4:
         setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
@@ -113,15 +117,17 @@ static inline void changeIgnitionToFullSequential(const config2 &page2, statuses
         setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
         setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
         break;
-
+      
+      // LCOV_EXCL_START (default case is untestable)
       default:
         break; //No actions required for other cylinder counts 
+      // LCOV_EXCL_STOP
       }
     }
   }
 }
 
-void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current)
+TESTABLE_INLINE_STATIC void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current)
 {
   if (isFullSequentialIgnition(page4, current.decoder.getStatus()) && ( CRANK_ANGLE_MAX_IGN != 720 )) {
     changeIgnitionToFullSequential(page2, current);
