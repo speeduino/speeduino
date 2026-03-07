@@ -4,6 +4,8 @@
 #include "channel_test_helpers.h"
 
 extern void SetRevolutionTime(uint32_t revTime);
+extern void changeIgnitionToFullSequential(const config2 &page2, statuses &current);
+extern void changeIgnitionToHalfSync(const config2 &page2, statuses &current);
 
 struct ignition_test_context_t
 {
@@ -146,6 +148,110 @@ static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
     }
 }
 
+static void test_changeIgnitionToFullSequential_isapplied(uint8_t numCylinders)
+{
+    statuses current = {};
+    current.maxIgnOutputs = 1;
+    config2 page2 = {};
+    page2.nCylinders = numCylinders;
+    CRANK_ANGLE_MAX_IGN = 360;
+
+    changeIgnitionToFullSequential(page2, current);
+    TEST_ASSERT_EQUAL(720, CRANK_ANGLE_MAX_IGN);
+    TEST_ASSERT_EQUAL(min((uint8_t)IGN_CHANNELS, page2.nCylinders), current.maxIgnOutputs);
+}
+
+static void test_changeIgnitionToFullSequential_notapplied(uint8_t numCylinders)
+{
+    statuses current = {};
+    current.maxIgnOutputs = 0;
+    config2 page2 = {};
+    page2.nCylinders = numCylinders;
+    CRANK_ANGLE_MAX_IGN = 360;
+
+    changeIgnitionToFullSequential(page2, current);
+    TEST_ASSERT_EQUAL(360, CRANK_ANGLE_MAX_IGN);
+    TEST_ASSERT_EQUAL(0U, current.maxIgnOutputs);
+}
+
+static void test_changeIgnitionToFullSequential(void)
+{
+    initialiseIgnitionSchedulers();
+    test_changeIgnitionToFullSequential_notapplied(1U);
+    test_changeIgnitionToFullSequential_notapplied(2U);
+    test_changeIgnitionToFullSequential_notapplied(3U);
+    test_changeIgnitionToFullSequential_isapplied(4U);
+    test_changeIgnitionToFullSequential_notapplied(5U);
+    test_changeIgnitionToFullSequential_isapplied(6U);
+    test_changeIgnitionToFullSequential_isapplied(8U);
+}
+
+static void test_changeIgnitionToFullSequential_running_schedule(void)
+{
+    initialiseIgnitionSchedulers();
+    ignitionSchedule1.Status = ScheduleStatus::RUNNING;
+    test_changeIgnitionToFullSequential_notapplied(1U);
+    test_changeIgnitionToFullSequential_notapplied(2U);
+    test_changeIgnitionToFullSequential_notapplied(3U);
+    test_changeIgnitionToFullSequential_notapplied(4U);
+    test_changeIgnitionToFullSequential_notapplied(5U);
+    test_changeIgnitionToFullSequential_notapplied(6U);
+    test_changeIgnitionToFullSequential_notapplied(8U);
+}
+
+static void test_changeIgnitionToHalfSync_isapplied(uint8_t numCylinders)
+{
+    statuses current = {};
+    current.maxIgnOutputs = 0;
+    config2 page2 = {};
+    page2.nCylinders = numCylinders;
+    CRANK_ANGLE_MAX_IGN = 720;
+    changeIgnitionToHalfSync(page2, current);
+
+    TEST_ASSERT_EQUAL(360, CRANK_ANGLE_MAX_IGN);
+    TEST_ASSERT_EQUAL(page2.nCylinders/2U, current.maxIgnOutputs);
+}
+
+static void test_changeIgnitionToHalfSync_notapplied(uint8_t numCylinders)
+{
+    statuses current = {};
+    current.maxIgnOutputs = 0;
+    config2 page2 = {};
+    page2.nCylinders = numCylinders;
+    CRANK_ANGLE_MAX_IGN = 720;
+    changeIgnitionToHalfSync(page2, current);
+    // Expect no change
+    TEST_ASSERT_EQUAL(720, CRANK_ANGLE_MAX_IGN);
+    TEST_ASSERT_EQUAL(0U, current.maxIgnOutputs);
+}
+
+static void test_changeIgnitionToHalfSync(void)
+{
+    initialiseIgnitionSchedulers();
+    test_changeIgnitionToHalfSync_notapplied(1U);
+    test_changeIgnitionToHalfSync_notapplied(2U);
+    test_changeIgnitionToHalfSync_notapplied(3U);
+    test_changeIgnitionToHalfSync_isapplied(4U);
+    test_changeIgnitionToHalfSync_notapplied(5U);
+    test_changeIgnitionToHalfSync_isapplied(6U);
+    test_changeIgnitionToHalfSync_notapplied(7U);
+    test_changeIgnitionToHalfSync_isapplied(8U);
+}
+
+static void test_changeIgnitionToHalfSync_runningschedule(void)
+{
+    initialiseIgnitionSchedulers();
+    ignitionSchedule1.Status = ScheduleStatus::RUNNING;
+    test_changeIgnitionToHalfSync_notapplied(1U);
+    test_changeIgnitionToHalfSync_notapplied(2U);
+    test_changeIgnitionToHalfSync_notapplied(3U);
+    test_changeIgnitionToHalfSync_notapplied(4U);
+    test_changeIgnitionToHalfSync_notapplied(5U);
+    test_changeIgnitionToHalfSync_notapplied(6U);
+    test_changeIgnitionToHalfSync_notapplied(7U);
+    test_changeIgnitionToHalfSync_notapplied(8U);
+}
+
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -154,5 +260,9 @@ void test_ignition_schedule_controller(void)
     RUN_TEST(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
     RUN_TEST(test_calculateIgnitionAngles_sync_state_transitions);
     RUN_TEST(test_setIgnitionChannels_mask_enables_and_disables_channels);
+    RUN_TEST(test_changeIgnitionToFullSequential);
+    RUN_TEST(test_changeIgnitionToFullSequential_running_schedule);
+    RUN_TEST(test_changeIgnitionToHalfSync);
+    RUN_TEST(test_changeIgnitionToHalfSync_runningschedule);
   }
 }
