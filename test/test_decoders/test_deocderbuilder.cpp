@@ -1,0 +1,225 @@
+#include <unity.h>
+#include "decoder_builder.h"
+#include "../test_utils.h"
+
+static void assert_decoder_builder(const decoder_builder_t& builder)
+{
+    decoder_t decoder = builder.build();
+
+    TEST_ASSERT_NOT_NULL(decoder.primary.callback);
+    TEST_ASSERT_NOT_NULL(decoder.secondary.callback);
+    TEST_ASSERT_NOT_NULL(decoder.tertiary.callback);
+
+    TEST_ASSERT_NOT_NULL(decoder.getRPM);
+    TEST_ASSERT_NOT_NULL(decoder.getCrankAngle);
+    TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
+    TEST_ASSERT_NOT_NULL(decoder.reset);
+    TEST_ASSERT_NOT_NULL(decoder.getStatus);
+    TEST_ASSERT_NOT_NULL(decoder.getFeatures);
+
+    // Test these functions can be called without crashing
+    decoder.primary.callback();
+    decoder.secondary.callback();
+    decoder.tertiary.callback();
+    decoder.getRPM();
+    decoder.getCrankAngle();
+    decoder.setEndTeeth();
+    decoder.reset();
+    decoder.getStatus();
+    decoder.getFeatures();
+}
+
+static void test_ctor()
+{
+    assert_decoder_builder( decoder_builder_t() );
+}
+
+static uint8_t counter = 0;
+static void triggerHandlerIncrement(void)
+{
+    counter++;
+}
+
+static void test_setPrimaryTrigger(void)
+{
+    auto builder = decoder_builder_t().setPrimaryTrigger( triggerHandlerIncrement, RISING );
+
+    counter = 0;
+    builder.build().primary.callback();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setPrimaryTrigger( nullptr, RISING );
+    assert_decoder_builder( builder );
+}
+
+static void test_setSecondaryTrigger(void)
+{
+    auto builder = decoder_builder_t().setSecondaryTrigger( triggerHandlerIncrement, RISING );
+
+    counter = 0;
+    builder.build().secondary.callback();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setSecondaryTrigger( nullptr, RISING );
+    assert_decoder_builder( builder );
+}
+
+static void test_setTertiaryTrigger(void)
+{
+    auto builder = decoder_builder_t().setTertiaryTrigger( triggerHandlerIncrement, RISING );
+
+    counter = 0;
+    builder.build().tertiary.callback();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setTertiaryTrigger( nullptr, RISING );
+    assert_decoder_builder( builder );
+}
+
+static uint16_t incrementGetRPM(void)
+{
+    counter++;
+    return 0;
+}
+
+static void test_setGetRPM(void)
+{
+    auto builder = decoder_builder_t().setGetRPM( incrementGetRPM );
+
+    counter = 0;
+    builder.build().getRPM();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetRPM( nullptr);
+    assert_decoder_builder( builder );
+}
+
+static int16_t incrementGetCrankAngle(void)
+{
+    counter++;
+    return 0;
+}
+
+static void test_setGetCrankAngle(void)
+{
+    auto builder = decoder_builder_t().setGetCrankAngle( incrementGetCrankAngle );
+
+    counter = 0;
+    builder.build().getCrankAngle();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetRPM( nullptr);
+    assert_decoder_builder( builder );
+}
+
+static void test_setSetEndTeeth(void)
+{
+    auto builder = decoder_builder_t().setSetEndTeeth( triggerHandlerIncrement );
+
+    counter = 0;
+    builder.build().setEndTeeth();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setSetEndTeeth( nullptr );
+    assert_decoder_builder( builder );
+}
+
+static void test_setReset(void)
+{
+    auto builder = decoder_builder_t().setReset( triggerHandlerIncrement );
+
+    counter = 0;
+    builder.build().reset();
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setReset( nullptr );
+    assert_decoder_builder( builder );
+}
+
+static bool engineRunningIncrement(uint32_t)
+{
+    counter++;
+    return false;
+}
+
+static void test_setIsEngineRunning(void)
+{
+    auto builder = decoder_builder_t().setIsEngineRunning( engineRunningIncrement );
+
+    counter = 0;
+    builder.build().isEngineRunning(999UL);
+    TEST_ASSERT_EQUAL_UINT8( 1, counter );
+
+    assert_decoder_builder( builder );
+
+    builder.setIsEngineRunning( nullptr );
+    assert_decoder_builder( builder );
+}
+
+static decoder_status_t fakeGetStatus(void)
+{
+    return decoder_status_t{ .validTrigger = true, .toothAngleIsCorrect  = false, .syncStatus = SyncStatus::Full };
+}
+
+static void test_setGetStatus(void)
+{
+    auto builder = decoder_builder_t().setGetStatus( fakeGetStatus );
+
+    TEST_ASSERT_EQUAL( SyncStatus::Full, builder.build().getStatus().syncStatus );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetStatus( nullptr );
+    assert_decoder_builder( builder );
+}
+
+static decoder_features_t fakeGetFeatures(void)
+{
+    static decoder_features_t features;
+    features.supports2ndDeriv = true;
+    features.supportsSequential = true;
+    return features;
+}
+
+static void test_setGetFeatures(void)
+{
+    auto builder = decoder_builder_t().setGetFeatures( fakeGetFeatures );
+
+    TEST_ASSERT_TRUE( builder.build().getFeatures().supports2ndDeriv );
+
+    assert_decoder_builder( builder );
+
+    builder.setGetFeatures( nullptr );
+    assert_decoder_builder( builder );
+}
+
+void testDecoderBuilder(void)
+{
+  SET_UNITY_FILENAME() {
+    RUN_TEST( test_ctor );
+    RUN_TEST( test_setPrimaryTrigger );
+    RUN_TEST( test_setSecondaryTrigger );
+    RUN_TEST( test_setTertiaryTrigger );
+    RUN_TEST( test_setGetRPM );
+    RUN_TEST( test_setGetCrankAngle );
+    RUN_TEST( test_setSetEndTeeth );
+    RUN_TEST( test_setReset );
+    RUN_TEST( test_setIsEngineRunning );
+    RUN_TEST( test_setGetStatus );
+    RUN_TEST( test_setGetFeatures );
+  }
+}

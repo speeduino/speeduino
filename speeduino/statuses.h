@@ -11,6 +11,7 @@
 #include "bit_manip.h"
 #include "atomic.h"
 #include "maths.h"
+#include "decoder_builder.h"
 
 using byte = uint8_t;
 
@@ -297,6 +298,8 @@ struct statuses {
     byte fuelChannels; ///< Which fuel channels are on (1) or off (0)
   };
   scheduler_cut_t schedulerCutState;
+
+  decoder_t decoder = decoder_builder_t().build(); ///< The current decoder
 };
 
 static inline bool isEngineProtectActive(const statuses &status) {

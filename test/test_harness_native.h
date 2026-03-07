@@ -10,7 +10,9 @@ void setUp(void)
 {
     fakeMega();
 }
+#if !defined(CUSTOM_TEARDOWN)
 void tearDown(void) {}
+#endif
 
 // Below is to ensure setUp is called before main()
 // If not, static varaiables in the firmware tests may use ArduinoFake before it 
