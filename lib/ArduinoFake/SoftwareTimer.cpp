@@ -129,15 +129,20 @@ private:
 };
 
 /// @brief  Our global tick event source
-static TickEventSource theTicker;
+static TickEventSource& getTicker(void) {
+    static TickEventSource theTicker;
+    return theTicker;
+}
 
 software_timer_t::software_timer_t()
-: counter(theTicker.currentTick())
+: counter(getTicker().currentTick())
 {
+    TickEventSource::callback_t thisCallback(std::bind(&software_timer_t::onNextTick, this, std::placeholders::_1));
+    tickCallbackId = getTicker().registerCallback(thisCallback);
 }
 software_timer_t::~software_timer_t()
 {
-    disableTimer();
+    getTicker().unregisterCallback(tickCallbackId);
 }
 
 void software_timer_t::setCallback(const callback_t &cb)
@@ -147,19 +152,18 @@ void software_timer_t::setCallback(const callback_t &cb)
 
 void software_timer_t::enableTimer(void) 
 {
-    TickEventSource::callback_t thisCallback(std::bind(&software_timer_t::onNextTick, this, std::placeholders::_1));
-    tickCallbackId = theTicker.registerCallback(thisCallback);
+    enabled = true;
 }
 void software_timer_t::disableTimer(void) 
 {
-    theTicker.unregisterCallback(tickCallbackId);
+    enabled = false;
 }
 
 void software_timer_t::onNextTick(counter_t nextTick)
 {
     counter = nextTick; 
 
-    if ((callback != nullptr) && (counter.load()>=compare.load())) {
+    if (enabled.load() && (callback != nullptr) && (counter.load()>=compare.load())) {
         callback();
     }
 }

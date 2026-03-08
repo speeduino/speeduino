@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <atomic>
 #include <functional>
+#include <limits>
 
 class software_timer_t {
 public:
@@ -13,7 +14,7 @@ public:
     using callback_t = std::function<void()>;
 
     std::atomic<counter_t> counter = {0U};
-    std::atomic<counter_t> compare = {UINT32_MAX};
+    std::atomic<counter_t> compare = {std::numeric_limits<counter_t>::max()};
     
     software_timer_t();
     ~software_timer_t();
@@ -28,6 +29,7 @@ public:
 private:
     callback_t callback = {nullptr};
     uint16_t tickCallbackId;
+    std::atomic<bool> enabled = {false};
 
     void onNextTick(counter_t nextTick);
 };
