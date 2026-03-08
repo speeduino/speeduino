@@ -110,7 +110,10 @@ extern software_timer_t idleTimer;
 #define IDLE_COUNTER   idleTimer.counter
 #define IDLE_COMPARE   idleTimer.compare
 
-#define ATOMIC() // No atomic operations needed for this platform
+#define ATOMIC() \
+    for ( \
+        struct { TickEventGuard guard; uint8_t done = 1; } loopGuard; \
+        loopGuard.done; loopGuard.done = 0U )
 
 #if !defined(max)
 template<typename _Tp>

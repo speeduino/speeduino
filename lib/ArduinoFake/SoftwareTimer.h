@@ -34,4 +34,14 @@ private:
     void onNextTick(counter_t nextTick);
 };
 
+/** @brief An RAII class to start/stop tick event generation */
+class TickEventGuard
+{
+public:
+    /** @brief Halt tick event generation */
+    TickEventGuard(void);
+    /** @brief Resume tick event generation */
+    ~TickEventGuard();
+};
+
 #endif

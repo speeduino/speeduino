@@ -168,4 +168,13 @@ void software_timer_t::onNextTick(counter_t nextTick)
     }
 }
 
+TickEventGuard::TickEventGuard(void)
+{
+    getTicker().stop();
+}
+TickEventGuard::~TickEventGuard()
+{
+    getTicker().start();
+}
+
 #endif
