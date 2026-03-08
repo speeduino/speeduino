@@ -13,6 +13,9 @@ static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
 
 static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
+#if MAX_TIMER_PERIOD >= UINT16_MAX
+    TEST_IGNORE_MESSAGE("Not applicable with large timer periodicity");
+#else
   static constexpr uint32_t DURATION_OFFSET = 33;
   static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
@@ -48,6 +51,7 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
   TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
   TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule.duration);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule.nextStartCompare);
+#endif
 }
 
 void test_ignition_schedule(void)

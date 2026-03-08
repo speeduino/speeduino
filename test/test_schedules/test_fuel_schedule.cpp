@@ -13,6 +13,9 @@ static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
 
 static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
+#if MAX_TIMER_PERIOD >= UINT16_MAX
+    TEST_IGNORE_MESSAGE("Not applicable with large timer periodicity");
+#else
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
@@ -27,7 +30,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
 
     // Negative test
     // Calculate a revolution time that will result in 360° taking longer than MAX_TIMER_PERIOD
-    auto revTime = MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
+    uint32_t revTime = (uint32_t)MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
     setAngleConverterRevolutionTime(revTime);
     TEST_ASSERT_GREATER_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ));
     setFuelSchedule(schedule, TIMEOUT, DURATION);
@@ -47,6 +50,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
     TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule.duration);
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule.nextStartCompare);
+#endif
 }
 
 
