@@ -4,7 +4,6 @@
 
 #include <cstdint>
 #include <atomic>
-#include <thread>
 #include <functional>
 
 class software_timer_t {
@@ -14,29 +13,23 @@ public:
     using callback_t = std::function<void()>;
 
     std::atomic<counter_t> counter = {0U};
-    std::atomic<counter_t> compare = {0U};
+    std::atomic<counter_t> compare = {UINT32_MAX};
     
     software_timer_t();
     ~software_timer_t();
 
     void setCallback(const callback_t &callback);
 
-    void enableTimer(void) { enabled = true; }
-    void disableTimer(void) { enabled = false; }
+    void enableTimer(void);
+    void disableTimer(void);
 
-    static counter_t microsToTicks(unsigned long micros)
-    {
-        return micros/1000U;
-    }
+    static counter_t microsToTicks(unsigned long micros);
 
 private:
-    // Atomic flag to signal the thread to stop
-    std::atomic<bool> enabled = {false}; 
-    std::atomic<bool> halt = {false};
     callback_t callback = {nullptr};
-    std::thread timerThread;
+    uint16_t tickCallbackId;
 
-    void backgroundTimerTask(void);
+    void onNextTick(counter_t nextTick);
 };
 
 #endif
