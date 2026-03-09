@@ -143,7 +143,7 @@ static constexpr conversionFactor<int16_t, uint8_t> TEMPERATURE = { .scale=1U, .
  * 
  * @param temp Working temperature (-40, 215)
  */
-static inline constexpr uint8_t temperatureAddOffset(int16_t temp) {
+static constexpr uint8_t temperatureAddOffset(int16_t temp) {
     // TODO: remove this function, replace with TEMPERATURE.toRaw()
     return TEMPERATURE.toRaw(temp);
 }
@@ -155,7 +155,7 @@ static inline constexpr uint8_t temperatureAddOffset(int16_t temp) {
  * 
  * @param temp Storage temperature (0, 255)
  */
-static inline constexpr int16_t temperatureRemoveOffset(uint8_t temp) {
+static constexpr int16_t temperatureRemoveOffset(uint8_t temp) {
     // TODO: remove this function, replace with TEMPERATURE.toUser()
     return TEMPERATURE.toUser(temp);
 }

@@ -60,19 +60,22 @@ static void test_timeout_TooSmall(void) {
 }
 
 static void test_duration_TooLarge(void) {
-#if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
-  raw_counter_t counter = { INITIAL_COUNTER };
-  raw_compare_t compare = {0};
-  Schedule schedule(counter, compare);
+  if (MAX_TIMER_PERIOD < (uint32_t)UINT16_MAX)
+  {
+    raw_counter_t counter = { INITIAL_COUNTER };
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
 
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
-  setSchedule(schedule, TIMEOUT, MAX_TIMER_PERIOD+1UL, true);
-  TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(MAX_TIMER_PERIOD - 1U), schedule.duration);
-#else
-  TEST_IGNORE_MESSAGE("Not applicable to this board");
-#endif
+    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    TEST_ASSERT_EQUAL(0, schedule.duration);
+    setSchedule(schedule, TIMEOUT, (uint16_t)MAX_TIMER_PERIOD+1U, true);
+    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
+    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(MAX_TIMER_PERIOD - 1U), schedule.duration);
+  }
+  else
+  {
+    TEST_IGNORE_MESSAGE("Not applicable to this board");
+  }
 }
 
 static void test_duration_TooSmall(void) {

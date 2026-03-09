@@ -13,6 +13,10 @@ static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
 
 static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
+    if (MAX_TIMER_PERIOD >=(uint32_t)UINT16_MAX)
+    {
+        TEST_IGNORE_MESSAGE("Not applicable with large timer periodicity");
+    }
   static constexpr uint32_t DURATION_OFFSET = 33;
   static constexpr uint32_t TIMEOUT_OFFSET = 77;
 

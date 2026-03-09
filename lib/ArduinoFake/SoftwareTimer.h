@@ -4,8 +4,8 @@
 
 #include <cstdint>
 #include <atomic>
-#include <thread>
 #include <functional>
+#include <limits>
 
 class software_timer_t {
 public:
@@ -14,24 +14,45 @@ public:
     using callback_t = std::function<void()>;
 
     std::atomic<counter_t> counter = {0U};
-    std::atomic<counter_t> compare = {0U};
+    std::atomic<counter_t> compare = {std::numeric_limits<counter_t>::max()};
     
     software_timer_t();
     ~software_timer_t();
 
     void setCallback(const callback_t &callback);
 
-    void enableTimer(void) { enabled = true; }
-    void disableTimer(void) { enabled = false; }
+    void enableTimer(void);
+    void disableTimer(void);
+
+    /** @brief Microseconds per tick */
+    static constexpr uint32_t TIMER_RESOLUTION = 100UL;
+
+    static constexpr counter_t microsToTicks(unsigned long micros)
+    {
+        return (counter_t)(micros/TIMER_RESOLUTION);
+    }
+
+    static constexpr uint32_t ticksToMicros(counter_t ticks)
+    {
+    return ticks * TIMER_RESOLUTION;
+    }
 
 private:
-    // Atomic flag to signal the thread to stop
-    std::atomic<bool> enabled = {false}; 
-    std::atomic<bool> halt = {false};
     callback_t callback = {nullptr};
-    std::thread timerThread;
+    uint16_t tickCallbackId;
+    std::atomic<bool> enabled = {false};
 
-    void backgroundTimerTask(void);
+    void onNextTick(counter_t nextTick);
+};
+
+/** @brief An RAII class to start/stop tick event generation */
+class TickEventGuard
+{
+public:
+    /** @brief Halt tick event generation */
+    TickEventGuard(void);
+    /** @brief Resume tick event generation */
+    ~TickEventGuard();
 };
 
 #endif

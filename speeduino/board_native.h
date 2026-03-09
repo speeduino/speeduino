@@ -3,13 +3,26 @@
 #if defined(NATIVE_BOARD)
 #include <stdint.h>
 #include <array>
+#include <limits>
 #include "../lib/ArduinoFake/SoftwareTimer.h"
 
 /*
 ***********************************************************************************************************
 * General
 */
+
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
 using COMPARE_TYPE = software_timer_t::counter_t;
+
+/** @brief Convert µS to timer ticks */
+constexpr auto uS_TO_TIMER_COMPARE = software_timer_t::microsToTicks;
+
+/** @brief Convert timer ticks to µS */
+constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
+
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
@@ -46,9 +59,6 @@ static constexpr uint8_t A15 = 0U;
 ***********************************************************************************************************
 * Schedules
 */
-#define MAX_TIMER_PERIOD (UINT32_MAX/1000UL) //The longest period of time (in uS) that the timer can permit
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) / 1000U) //Converts a given number of uS into the required number of timer ticks until that time has passed
-
 #define DEFINE_TIMER_VARS(Prefix, index, array) \
     static inline void Prefix##index##_TIMER_ENABLE(void) { array[index-1].enableTimer(); } \
     static inline void Prefix##index##_TIMER_DISABLE(void) { array[index-1].disableTimer(); } \
@@ -110,7 +120,10 @@ extern software_timer_t idleTimer;
 #define IDLE_COUNTER   idleTimer.counter
 #define IDLE_COMPARE   idleTimer.compare
 
-#define ATOMIC() // No atomic operations needed for this platform
+#define ATOMIC() \
+    for ( \
+        struct { TickEventGuard guard; uint8_t done = 1; } loopGuard; \
+        loopGuard.done; loopGuard.done = 0U )
 
 #if !defined(max)
 template<typename _Tp>

@@ -6,6 +6,7 @@
 #include "type_traits.h"
 
 using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
 
 static int16_t startCount = 0;
 static void startCallback(void) { ++startCount; }
@@ -16,32 +17,34 @@ static void endCallback(void) { ++endCount; }
 static constexpr COMPARE_TYPE TIMER_VARIANCE = 5;
 
 static void test_defaultPendingToRunning(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = PENDING;
     startCount = 0;
     endCount = 0;
-    ATOMIC() {
-        IGN1_TIMER_DISABLE();
-        schedule.duration = uS_TO_TIMER_COMPARE(2048); 
-#if defined(CORE_AVR)        
-        raw_counter_t counterPreAction = schedule._counter;
-#endif
-       
-        defaultPendingToRunning(&schedule);
 
-        TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
+    schedule.duration = uS_TO_TIMER_COMPARE(2048); 
 #if defined(CORE_AVR)        
-        TEST_ASSERT_UINT32_WITHIN(TIMER_VARIANCE, counterPreAction+schedule.duration, schedule._compare);
+    raw_counter_t counterPreAction = schedule._counter;
 #endif
-        TEST_ASSERT_EQUAL(1, startCount);
-        TEST_ASSERT_EQUAL(0, endCount);
-    }
+    
+    defaultPendingToRunning(&schedule);
+
+    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
+#if defined(CORE_AVR)        
+    TEST_ASSERT_UINT32_WITHIN(TIMER_VARIANCE, counterPreAction+schedule.duration, schedule._compare);
+#endif
+    TEST_ASSERT_EQUAL(1, startCount);
+    TEST_ASSERT_EQUAL(0, endCount);
 }
 
 static void test_defaultRunningToOff(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = RUNNING;
@@ -66,26 +69,24 @@ static void test_defaultRunningToOff(void) {
 }
 
 static void test_defaultRunningToPending(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = RUNNING;
     startCount = 0;
     endCount = 0;
-   
-    ATOMIC() {
-        IGN1_TIMER_DISABLE();
-        schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(2048); 
+    schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(2048); 
 
-        defaultRunningToPending(&schedule);
+    defaultRunningToPending(&schedule);
 
-        TEST_ASSERT_EQUAL(PENDING, schedule.Status);
+    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
 #if defined(CORE_AVR)        
-        TEST_ASSERT_UINT32_WITHIN(TIMER_VARIANCE, schedule.nextStartCompare, schedule._compare);
+    TEST_ASSERT_UINT32_WITHIN(TIMER_VARIANCE, schedule.nextStartCompare, schedule._compare);
 #endif
-        TEST_ASSERT_EQUAL(0, startCount);
-        TEST_ASSERT_EQUAL(1, endCount);
-    }
+    TEST_ASSERT_EQUAL(0, startCount);
+    TEST_ASSERT_EQUAL(1, endCount);
 }
 
 static uint8_t pendingToRunningCount;
@@ -110,7 +111,9 @@ static void runningToPending(Schedule *pSchedule) {
 }
 
 static void test_movetoNextState_pendingToRunning(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = PENDING;
@@ -132,7 +135,9 @@ static void test_movetoNextState_pendingToRunning(void) {
 }
 
 static void test_movetoNextState_runningToOff(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = RUNNING;
@@ -154,7 +159,9 @@ static void test_movetoNextState_runningToOff(void) {
 }
 
 static void test_movetoNextState_runningToPending(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = RUNNING_WITHNEXT;
@@ -176,7 +183,9 @@ static void test_movetoNextState_runningToPending(void) {
 }
 
 static void test_movetoNextState_off(void) {
-    Schedule schedule(IGN1_COUNTER, IGN1_COMPARE);
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    Schedule schedule(counter, compare);
     setCallbacks(schedule, startCallback, endCallback);
 
     schedule.Status = OFF;

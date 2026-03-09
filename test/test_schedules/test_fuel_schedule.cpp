@@ -13,6 +13,11 @@ static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
 
 static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
+    if (MAX_TIMER_PERIOD >=(uint32_t)UINT16_MAX)
+    {
+        TEST_IGNORE_MESSAGE("Not applicable with large timer periodicity");
+    }
+
     static constexpr uint32_t DURATION_OFFSET = 33;
     static constexpr uint32_t TIMEOUT_OFFSET = 77;
 
@@ -27,7 +32,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
 
     // Negative test
     // Calculate a revolution time that will result in 360° taking longer than MAX_TIMER_PERIOD
-    auto revTime = MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
+    uint32_t revTime = (uint32_t)MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
     setAngleConverterRevolutionTime(revTime);
     TEST_ASSERT_GREATER_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ));
     setFuelSchedule(schedule, TIMEOUT, DURATION);

@@ -276,15 +276,11 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
 
 // Event duration cannot be longer than the maximum timer period
 static inline uint16_t clipDuration(uint16_t duration) {
-#ifndef MAX_TIMER_PERIOD
-  #error MAX_TIMER_PERIOD must be defined
-#else
-#if MAX_TIMER_PERIOD < UINT16_MAX //cppcheck-suppress misra-c2012-20.9
-  return min((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
-#else
+  if (MAX_TIMER_PERIOD < (uint32_t)UINT16_MAX)
+  {
+    return min((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
+  }
   return duration;
-#endif
-#endif
 }
 
 static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration)
@@ -307,7 +303,7 @@ static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16
 
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule)
 {
-  if((delay>0U) && (delay < (uint32_t)MAX_TIMER_PERIOD) && (duration > 0U))
+  if((delay>0U) && (delay < MAX_TIMER_PERIOD) && (duration > 0U))
   {
     ATOMIC() 
     {

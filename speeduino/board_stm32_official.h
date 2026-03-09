@@ -36,10 +36,32 @@
 ***********************************************************************************************************
 * General
 */
-#define COMPARE_TYPE uint16_t
+
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+/** @brief The timer tick length in µS */
+constexpr uint32_t TIMER_RESOLUTION = 4U;
+
+/** @brief Converts a given number of uS into the required number of timer ticks until that time has passed */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  // Faster than micros/TIMER_RESOLUTION
+  constexpr uint32_t SHIFT = TIMER_RESOLUTION/2U;
+  return (COMPARE_TYPE)(micros >> SHIFT); 
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  return ticks * TIMER_RESOLUTION;
+}
+
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
-#define TIMER_RESOLUTION 4
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 
@@ -202,9 +224,6 @@ extern STM32RTC& rtc;
 * 3 - VVT   |3 - IGN3  |3 - INJ3  |3 - IGN7  |3 - INJ7  |
 * 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
-#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) (COMPARE_TYPE)((uS1) >> 2U) //Converts a given number of uS into the required number of timer ticks until that time has passed
-
 #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8

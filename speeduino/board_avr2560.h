@@ -26,7 +26,31 @@
   #define IGN_CHANNELS 5
 #endif
 
-#define COMPARE_TYPE uint16_t
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+namespace {
+  /** @brief The timer tick length in µS */
+  constexpr uint32_t TICK_RESOLUTION = 4U;
+}
+
+/** @brief Convert µS to timer ticks */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  // Faster than micros/TICK_RESOLUTION
+  constexpr uint32_t SHIFT = TICK_RESOLUTION/2U;
+  return (COMPARE_TYPE)(micros >> SHIFT); 
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  return ticks * TICK_RESOLUTION;
+}
+
 #define TS_SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
 #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
 #ifdef USE_SPI_EEPROM
@@ -125,9 +149,6 @@ static inline void IGN5_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4C); } //Turn
 static inline void IGN6_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4B); } //Replaces injector 4
 static inline void IGN7_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } //Replaces injector 3
 static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
-
-#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) (COMPARE_TYPE)((uS1) >> 2U) //Converts a given number of uS into the required number of timer ticks until that time has passed
 
 /*
 ***********************************************************************************************************
