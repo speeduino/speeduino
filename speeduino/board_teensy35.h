@@ -10,7 +10,38 @@
 ***********************************************************************************************************
 * General
 */
-#define COMPARE_TYPE uint16_t
+
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+namespace {
+  /** @brief Tick resolution in µS */
+  constexpr auto TICK_RESOLUTION = 2.13333333333333;
+
+  /** @brief µS<->tick conversion precision in decimal places for fixed point math */
+  constexpr uint32_t TICK_CONVERTER_PRECISION = 8UL;
+}
+
+/** @brief Convert µS to timer ticks */
+static inline constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)/TICK_RESOLUTION);
+  return (COMPARE_TYPE)((micros * MULTIPLIER) >> TICK_CONVERTER_PRECISION);
+}
+
+/** @brief Convert timer ticks to µS */
+static inline constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)*TICK_RESOLUTION);
+  return (ticks * MULTIPLIER) >> TICK_CONVERTER_PRECISION;
+}
+
+/** @brief The longest period of time (in uS) that the timer can permit */
+constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros(UINT16_MAX);
+
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
@@ -119,9 +150,6 @@ static inline void IGN5_TIMER_DISABLE(void)  {FTM3_C4SC &= ~FTM_CSC_CHIE;}
 static inline void IGN6_TIMER_DISABLE(void)  {FTM3_C5SC &= ~FTM_CSC_CHIE;}
 static inline void IGN7_TIMER_DISABLE(void)  {FTM3_C6SC &= ~FTM_CSC_CHIE;}
 static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
-
-#define MAX_TIMER_PERIOD 139808UL // 2.13333333uS * 65535
-#define uS_TO_TIMER_COMPARE(uS) (COMPARE_TYPE)(((uS) * 15U) >> 5U) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*
 ***********************************************************************************************************

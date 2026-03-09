@@ -24,7 +24,18 @@ public:
     void enableTimer(void);
     void disableTimer(void);
 
-    static counter_t microsToTicks(unsigned long micros);
+    /** @brief Microseconds per tick */
+    static constexpr uint32_t TIMER_RESOLUTION = 100UL;
+
+    static constexpr counter_t microsToTicks(unsigned long micros)
+    {
+        return (counter_t)(micros/TIMER_RESOLUTION);
+    }
+
+    static constexpr uint32_t ticksToMicros(counter_t ticks)
+    {
+    return ticks * TIMER_RESOLUTION;
+    }
 
 private:
     callback_t callback = {nullptr};

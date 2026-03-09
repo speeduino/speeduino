@@ -5,14 +5,6 @@
 #include <map>
 #include "SoftwareTimer.h"
 
-// Microseconds per tick.
-constexpr uint32_t TIMER_RESOLUTION = 100UL;
-
-/*static*/ software_timer_t::counter_t software_timer_t::microsToTicks(unsigned long micros)
-{
-    return micros/TIMER_RESOLUTION;
-}
-
 namespace
 {
 static inline std::chrono::microseconds getCurMicros(void)
@@ -31,7 +23,7 @@ static inline std::chrono::microseconds getCurMicros(void)
 
 static std::chrono::microseconds ticksToMicros(software_timer_t::counter_t ticks)
 {
-    return std::chrono::microseconds(ticks * TIMER_RESOLUTION);
+    return std::chrono::microseconds(ticks * software_timer_t::TIMER_RESOLUTION);
 }
 
 }
