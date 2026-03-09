@@ -5,23 +5,15 @@
 #include <map>
 #include "SoftwareTimer.h"
 
-namespace
+namespace {
+
+inline std::chrono::microseconds getCurMicros(void)
 {
-static inline std::chrono::microseconds getCurMicros(void)
-{
-    // static std::atomic<std::chrono::steady_clock::time_point> startTime(std::chrono::steady_clock::now());
-    // auto nowTime = std::chrono::steady_clock::now();
-    // // Handle timer overflow by reseting start time
-    // if (nowTime<startTime.load())
-    // {
-    //     startTime = std::chrono::steady_clock::time_point();
-    // }
-    // // Microseconds since program startup
-    // return std::chrono::duration_cast<std::chrono::microseconds>(nowTime - startTime.load());
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
 }
 
 }
+
 
 /** @brief A monotonic ticker event source. */
 class TickEventSource
@@ -30,7 +22,7 @@ public:
     /** @brief Callback type */
     using callback_t = std::function<void(software_timer_t::counter_t)>;
 
-    TickEventSource() : tickCounter(1U)
+    TickEventSource(void)
     {
         start();
     }
@@ -50,14 +42,15 @@ public:
      * @return uint16_t Callback id that can be passed to unregisterCallback
      */
     uint16_t registerCallback(callback_t cb) {
-        uint16_t id = nextId_++;
+        uint16_t id = nextId_;
         callbacks_[id] = std::move(cb);
+        ++nextId_;
         return id;
     }
 
     /** @brief Remove a previously registered callback */
     void unregisterCallback(uint16_t id) {
-        callbacks_.erase(id);
+        (void)callbacks_.erase(id);
     }    
 
     /** @brief Begin event notification */
@@ -80,7 +73,7 @@ public:
 private:
 
     void notifyNextTickEvent(void) {
-        for (auto& cb : callbacks_) {
+        for (const auto &cb : callbacks_) {
             if (cb.second) {
                 cb.second(currentTick());
             }
@@ -111,7 +104,7 @@ private:
     std::map<uint16_t, callback_t> callbacks_;
     uint16_t nextId_ = 0;
     std::thread tickThread;
-    software_timer_t::counter_t tickCounter;
+    software_timer_t::counter_t tickCounter = 1U;
     std::atomic<bool> halt = {false};
 };
 

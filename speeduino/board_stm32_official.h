@@ -47,7 +47,7 @@ using COMPARE_TYPE = uint16_t;
 constexpr uint32_t TIMER_RESOLUTION = 4U;
 
 /** @brief Converts a given number of uS into the required number of timer ticks until that time has passed */
-static constexpr inline COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
 {
   // Faster than micros/TIMER_RESOLUTION
   constexpr uint32_t SHIFT = TIMER_RESOLUTION/2U;
@@ -55,7 +55,7 @@ static constexpr inline COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
 }
 
 /** @brief Convert timer ticks to µS */
-static inline constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 {
   return ticks * TIMER_RESOLUTION;
 }

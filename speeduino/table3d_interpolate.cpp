@@ -106,10 +106,10 @@ typedef uint16_t QU1X8_t;
 /** @brief Integer shift to convert to/from QU1X8_t. */
 constexpr QU1X8_t QU1X8_INTEGER_SHIFT = 8;
 
-static inline constexpr QU1X8_t toQU1X8(uint16_t base) {
+static constexpr QU1X8_t toQU1X8(uint16_t base) {
   return base << QU1X8_INTEGER_SHIFT;
 }
-static inline constexpr uint16_t fromQU1X8(QU1X8_t base) {
+static constexpr uint16_t fromQU1X8(QU1X8_t base) {
   return base >> QU1X8_INTEGER_SHIFT;
 }
 

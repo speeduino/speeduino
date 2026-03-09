@@ -50,14 +50,14 @@ namespace
 }
 
 /** @brief Convert µS to timer ticks */
-static inline constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
 {
   constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)/TICK_RESOLUTION);
   return (COMPARE_TYPE)((micros * MULTIPLIER) >> TICK_CONVERTER_PRECISION);
 }
 
 /** @brief Convert timer ticks to µS */
-static inline constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 {
   constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)*TICK_RESOLUTION);
   return (ticks * MULTIPLIER) >> TICK_CONVERTER_PRECISION;
