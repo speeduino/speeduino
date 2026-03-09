@@ -6,9 +6,9 @@
 #include "scheduledIO.h"
 #include "channel_test_helpers.h"
 
-#define TIMEOUT 1000
-#define DURATION 1000
-#define DELTA 24
+constexpr uint32_t TIMEOUT = 1000U;
+constexpr uint16_t DURATION = 1000U;
+constexpr uint32_t DELTA = ticksToMicros(6U);
 
 static uint32_t start_time, end_time;
 static void startCallback(void) { end_time = micros(); }
@@ -24,11 +24,7 @@ static void test_accuracy_timeout_inj(FuelSchedule &schedule)
     while(schedule.Status == PENDING) /*Wait*/ ;
     while(schedule.Status != OFF) /*Wait*/ ;
     stopFuelSchedulers();
-#if defined(NATIVE_BOARD)
-    TEST_IGNORE_MESSAGE("Timing not accurate on native board");
-#else
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
-#endif    
 }
 
 static void test_accuracy_timeout_inj1(void)
@@ -82,11 +78,7 @@ static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
     while(schedule.Status != OFF) /*Wait*/ ;
     stopIgnitionSchedulers();
 
-    #if defined(NATIVE_BOARD)
-    TEST_IGNORE_MESSAGE("Timing not accurate on native board");
-#else
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
-#endif    
 }
 
 static void test_accuracy_timeout_ign1(void)
