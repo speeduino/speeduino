@@ -51,9 +51,6 @@ static inline constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
   return ticks * TICK_RESOLUTION;
 }
 
-/** @brief The longest period of time (in uS) that the timer can permit */
-constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros(UINT16_MAX);
-
 #define TS_SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
 #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
 #ifdef USE_SPI_EEPROM

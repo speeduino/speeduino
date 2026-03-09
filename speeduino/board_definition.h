@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <Arduino.h>
+#include "type_traits.h"
 
 /**
  * @brief Initialise the board, including USB comms
@@ -85,3 +86,6 @@ void boardInitRTC(void);
 
 /** @brief Access the EEPROM singleton */
 EEPROM_t& getEEPROM(void);
+
+/** @brief The longest period of time (in uS) that the timer can permit */
+constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros((numeric_limits<COMPARE_TYPE>::max)());

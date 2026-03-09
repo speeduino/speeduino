@@ -60,9 +60,6 @@ static inline constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
   return ticks * TIMER_RESOLUTION;
 }
 
-/** @brief The longest period of time (in uS) that the timer can permit */
-constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros(UINT16_MAX);
-
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;

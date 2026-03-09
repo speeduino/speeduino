@@ -23,9 +23,6 @@ constexpr auto uS_TO_TIMER_COMPARE = software_timer_t::microsToTicks;
 /** @brief Convert timer ticks to µS */
 constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
 
-/** @brief The longest period of time (in uS) that the timer can permit */
-constexpr uint32_t MAX_TIMER_PERIOD = std::numeric_limits<COMPARE_TYPE>::max();
-
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
