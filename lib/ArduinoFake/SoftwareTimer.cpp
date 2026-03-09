@@ -21,11 +21,6 @@ static inline std::chrono::microseconds getCurMicros(void)
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
 }
 
-static std::chrono::microseconds ticksToMicros(software_timer_t::counter_t ticks)
-{
-    return std::chrono::microseconds(ticks * software_timer_t::TIMER_RESOLUTION);
-}
-
 }
 
 /** @brief A monotonic ticker event source. */
@@ -94,7 +89,7 @@ private:
 
     // This could definitely be made more efficient, but for testing purposes this will do
     void waitForNextTick(void) {
-        auto nextTime = getCurMicros()+ticksToMicros(1);
+        auto nextTime = getCurMicros()+std::chrono::microseconds(software_timer_t::ticksToMicros(1));
         
         while (getCurMicros()<nextTime && !halt) {
             // Busy-wait loop
