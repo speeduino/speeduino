@@ -4,12 +4,15 @@
 
 #include <unity.h>
 #include <fakeit.hpp>
+#include <sstream>
 #include "../lib/ArduinoFake/FakeMega.h"
+
+static std::stringstream serialBuffer;
 
 // Unity required functions
 void setUp(void) 
 {
-    fakeMega();
+    fakeMega(serialBuffer, serialBuffer);
 }
 void tearDown(void) {}
 

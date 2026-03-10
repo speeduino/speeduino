@@ -7,7 +7,6 @@ using namespace fakeit;
 
 // Backing storage for the fakes
 static std::array<unsigned char, 4096> eepromBuffer;
-static std::stringstream serialBuffer;
 
 static constexpr uint8_t _BV(uint8_t shift) { return 1U << shift; }
 
@@ -179,14 +178,14 @@ static void fakeMegaWiring(fakeit::Mock<FunctionFake> &mock)
     When(Method(mock, digitalPinToBitMask)).AlwaysDo([](uint8_t pin) -> uint8_t { return digital_pin_to_bit_mask[pin]; });
 }
 
-void fakeMega(void) 
+void fakeMega(std::ostream &oStream, std::istream &iStream)
 {
     ArduinoFakeReset();
     setupNativeFake(ArduinoFake(Function));
     setupNativeFake(ArduinoFake(EEPROM), eepromBuffer.begin(), eepromBuffer.end());
-    setupNativeFake(ArduinoFake(Print), serialBuffer);
-    setupNativeFake(ArduinoFake(Stream), serialBuffer);
-    setupNativeFake(ArduinoFake(Serial), serialBuffer);
+    setupNativeFake(ArduinoFake(Print), oStream);
+    setupNativeFake(ArduinoFake(Stream), iStream);
+    setupNativeFake(ArduinoFake(Serial), oStream, iStream);
     fakeMegaWiring(ArduinoFake(Function));
 }
 
