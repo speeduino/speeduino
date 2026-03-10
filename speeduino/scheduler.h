@@ -52,10 +52,7 @@ void initialiseIgnitionSchedulers(void);
 
 void startIgnitionSchedulers(void);
 void stopIgnitionSchedulers(void);
-void disableIgnSchedule(uint8_t channel);
-
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
-void disableAllIgnSchedules(void);
 
 void initialiseFuelSchedulers(void);
 
@@ -63,9 +60,6 @@ void startFuelSchedulers(void);
 void stopFuelSchedulers(void);
 
 void beginInjectorPriming(void);
-
-void disableFuelSchedule(uint8_t channel);
-void disableAllFuelSchedules(void);
 
 /** \enum ScheduleStatus
  * @brief The current state of a schedule
@@ -167,9 +161,6 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
  * @param allowQueuedSchedule true to allow a schedule to be queued up if one is currently running; false otherwise
  */
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule);
-
-/** @brief Disable the schedule */
-void disableSchedule(Schedule &schedule);
 
 /** Ignition schedule.
  */
