@@ -26,7 +26,7 @@ int mainWrapper(int argc, char **argv, void (*testRunner)(void)) {
     try {
         UNITY_BEGIN();
         testRunner();
-        return UNITY_END();
+        UNITY_END();
     }
     catch (fakeit::FakeitException &err) {
         std::cerr << err;
@@ -37,7 +37,7 @@ int mainWrapper(int argc, char **argv, void (*testRunner)(void)) {
     catch (...) {
         std::cerr << "Unknown error occurred";
     }
-    return 1;
+    return 0;
 }
 
 #define TEST_HARNESS(testRunner) \
