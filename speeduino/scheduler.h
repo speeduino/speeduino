@@ -52,8 +52,6 @@ void initialiseIgnitionSchedulers(void);
 
 void startIgnitionSchedulers(void);
 void stopIgnitionSchedulers(void);
-void disableIgnSchedule(uint8_t channel);
-
 void refreshIgnitionSchedule1(unsigned long timeToEnd);
 
 void initialiseFuelSchedulers(void);

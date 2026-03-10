@@ -481,27 +481,6 @@ void disableFuelSchedule(uint8_t channel)
 #endif
   }
 }
-void disableIgnSchedule(uint8_t channel)
-{
-  switch(channel)
-  {
-    default:
-    case 0: disableSchedule(ignitionSchedule1); break;
-    case 1: disableSchedule(ignitionSchedule2); break;
-    case 2: disableSchedule(ignitionSchedule3); break;
-    case 3: disableSchedule(ignitionSchedule4); break;
-    case 4: disableSchedule(ignitionSchedule5); break;
-#if IGN_CHANNELS >= 6      
-    case 5: disableSchedule(ignitionSchedule6); break;
-#endif
-#if IGN_CHANNELS >= 7      
-    case 6: disableSchedule(ignitionSchedule7); break;
-#endif
-#if IGN_CHANNELS >= 8      
-    case 7: disableSchedule(ignitionSchedule8); break;
-#endif
-  }
-}
 
 void disableAllFuelSchedules(void)
 {
