@@ -76,21 +76,46 @@ void test_maths_halfpercent_U16(void)
   test_halfPercentage(125, percentOf); 
 }
 
-static void test_percentApprox(uint8_t percent, uint16_t value) {
-  uint8_t delta = ((uint32_t)percent*value)/100; // 1% allowable delta
-  assert_rounded_div((uint32_t)percent*value, (uint32_t)100U, percentageApprox(percent, value), delta);
+static void test_percentApprox_u16(uint16_t percent, uint32_t value, uint32_t delta) {
+  uint32_t expected = ((uint32_t)percent*value)/100;
+  uint32_t actual = percentageApprox(percent, value);
+  char msg[64];
+  sprintf(msg, "pct:%" PRIu16 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
+  TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
+}
+
+static void test_percentApprox_u8(uint8_t percent, uint32_t value, uint32_t delta) {
+  uint32_t expected = ((uint32_t)percent*value)/100;
+  uint32_t actual = percentageApprox(percent, value);
+  char msg[64];
+  sprintf(msg, "pct:%" PRIu8 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
+  TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 
 static void test_maths_percentApprox(void)
 {
   uint16_t percentOf = 33333;
-  test_percentApprox(0, percentOf);
-  test_percentApprox(33, percentOf);
-  test_percentApprox(50, percentOf);
-  test_percentApprox(66, percentOf);
-  test_percentApprox(75, percentOf);
-  test_percentApprox(100, percentOf);
-  test_percentApprox(125, percentOf);
+  test_percentApprox_u16(0, percentOf, 1);
+  test_percentApprox_u16(33, percentOf, 5);
+  test_percentApprox_u16(50, percentOf, 1);
+  test_percentApprox_u16(66, percentOf, 6);
+  test_percentApprox_u16(75, percentOf, 1);
+  test_percentApprox_u16(100, percentOf, 1);
+  test_percentApprox_u16(125, percentOf, 1);
+  test_percentApprox_u16(255, percentOf, 55);
+  test_percentApprox_u16(511, percentOf, 25);
+  test_percentApprox_u16(1023, percentOf, 150);
+  test_percentApprox_u16(2046, percentOf, 300);
+
+  test_percentApprox_u8(0, percentOf, 1);
+  test_percentApprox_u8(33, percentOf, 5);
+  test_percentApprox_u8(50, percentOf, 1);
+  test_percentApprox_u8(66, percentOf, 6);
+  test_percentApprox_u8(75, percentOf, 1);
+  test_percentApprox_u8(100, percentOf, 1);
+  test_percentApprox_u8(125, percentOf, 1);
+  test_percentApprox_u8(INT8_MAX, percentOf, 15);
+  test_percentApprox_u8(UINT8_MAX, percentOf, 26);
 }
 
 // These are shared by all percentage perf tests for consistency

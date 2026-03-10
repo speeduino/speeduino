@@ -10,6 +10,7 @@ void runAllMathTests(void)
     extern void test_LOW_PASS_FILTER(void);
     extern void test_fast_map(void);
     extern void testUnitConversions(void);
+    extern void testOther(void);
 
     testCrankMaths();
     testPercent();
@@ -17,6 +18,7 @@ void runAllMathTests(void)
     test_LOW_PASS_FILTER();
     test_fast_map();
     testUnitConversions();
+    testOther();
 }
 
 TEST_HARNESS(runAllMathTests)

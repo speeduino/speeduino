@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unity.h>
 #include "test_fp_support.h"
+#include <inttypes.h>
 
 #if defined(ARDUINO_ARCH_AVR)
 #include <fp64lib.h>
@@ -45,26 +46,26 @@ static inline T getExpectedUnsigned(T a, T b) {
 }
 
 void assert_rounded_div(int32_t a, int32_t b, int32_t actual, uint8_t delta) {
-  // char msg[64];
-  // sprintf(msg, "a: %" PRIi32 ", b:  %" PRIi32 " fExpected: %s", a, b, fp64_to_string(fExpected, 17, 15));
-  // TEST_ASSERT_EQUAL_MESSAGE(expected, actual, msg);
-  TEST_ASSERT_INT32_WITHIN(delta, getExpectedSigned<int32_t>(a, b), actual);
+  int32_t expected = getExpectedSigned<int32_t>(a, b);
+  char msg[64];
+  sprintf(msg, "a:%" PRIi32 ", b:%" PRIi32 " Expected:%" PRIi32, a, b, expected);
+  TEST_ASSERT_INT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 void assert_rounded_div(int16_t a, int16_t b, int16_t actual, uint8_t delta) {
-  // char msg[64];
-  // sprintf(msg, "a: %" PRIi32 ", b:  %" PRIi32 " fExpected: %s", a, b, fp64_to_string(fExpected, 17, 15));
-  // TEST_ASSERT_EQUAL_MESSAGE(expected, actual, msg);
-  TEST_ASSERT_INT32_WITHIN(delta, getExpectedSigned<int16_t>(a, b), actual);
+  int16_t expected = getExpectedSigned<int16_t>(a, b);
+  char msg[64];
+  sprintf(msg, "a:%" PRIi16 ", b:%" PRIi16 " Expected:%" PRIi16, a, b, expected);
+  TEST_ASSERT_INT16_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 void assert_rounded_div(uint32_t a, uint32_t b, uint32_t actual, uint8_t delta) {
-  // char msg[64];
-  // sprintf(msg, "a: %" PRIi32 ", b:  %" PRIi32 " fExpected: %s", a, b, fp64_to_string(fExpected, 17, 15));
-  // TEST_ASSERT_EQUAL_MESSAGE(expected, actual, msg);
-  TEST_ASSERT_UINT32_WITHIN(delta, getExpectedUnsigned<uint32_t>(a, b), actual);
+  uint32_t expected = getExpectedUnsigned<uint32_t>(a, b);
+  char msg[64];
+  sprintf(msg, "a:%" PRIu32 ", b:%" PRIu32 ", Expected:%" PRIu32, a, b, expected);
+  TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 void assert_rounded_div(uint16_t a, uint16_t b, uint16_t actual, uint8_t delta) {
-  // char msg[64];
-  // sprintf(msg, "a: %" PRIi32 ", b:  %" PRIi32 " fExpected: %s", a, b, fp64_to_string(fExpected, 17, 15));
-  // TEST_ASSERT_EQUAL_MESSAGE(expected, actual, msg);
-  TEST_ASSERT_UINT32_WITHIN(delta, getExpectedUnsigned<uint16_t>(a, b), actual);
+  uint16_t expected = getExpectedUnsigned<uint16_t>(a, b);
+  char msg[64];
+  sprintf(msg, "a:%" PRIu16 ", b:%" PRIu16 ", Expected:%" PRIu16, a, b, expected);
+  TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
