@@ -64,9 +64,9 @@ void test_maths_div100_S16(void)
 void test_maths_div100_S32(void)
 {
   //Check both the signed and unsigned results
-  test_div100_Seed<int32_t>(100U);
-  test_div100_Seed<int32_t>(10000U);
-  test_div100_Seed<int32_t>(100000000UL);
+  test_div100_Seed<int32_t>(100);
+  test_div100_Seed<int32_t>(10000);
+  test_div100_Seed<int32_t>(100000000);
 
   test_div100_Seed<int32_t>(-100);
   test_div100_Seed<int32_t>(-10000);
@@ -170,6 +170,20 @@ void test_maths_div100_s32_perf(void)
 #endif
 }
 
+template<uint16_t divisor>
+void assert_div_round_closest_u16(uint32_t dividend) {
+    assert_rounded_div(dividend, (uint32_t)divisor, (uint32_t)div_round_closest_u16<divisor>(dividend));
+}
+
+static void test_div_round_closest_u16(void)
+{
+  assert_div_round_closest_u16<1U>(1U);
+  assert_div_round_closest_u16<2U>(127U);
+  assert_div_round_closest_u16<100U>(1200U);
+  assert_div_round_closest_u16<128U>(255U);
+  assert_div_round_closest_u16<255U>(61000);
+}
+
 void testDivision(void) {
   SET_UNITY_FILENAME() {
 
@@ -182,5 +196,6 @@ void testDivision(void) {
   RUN_TEST(test_maths_div100_s16_perf);
   RUN_TEST(test_maths_div10_s16_perf);
   RUN_TEST(test_maths_div100_s32_perf);
+  RUN_TEST(test_div_round_closest_u16);
   }
 }

@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <avr-fast-shift.h>
 #include <avr-fast-div.h>
-
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
 // Using predefined constants saves flash and RAM (.bss) versus calling the 
@@ -12,6 +11,7 @@
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
 #include <libdivide.h>
 #endif
+#include "unit_testing.h"
 
 uint8_t random1to100(void);
 
@@ -99,7 +99,7 @@ uint8_t random1to100(void);
  * @return uint16_t 
  */
 template <uint16_t divisor>
-static constexpr uint16_t div_round_closest_u16(uint16_t n) {
+TESTABLE_STATIC_CONSTEXPR uint16_t div_round_closest_u16(uint16_t n) {
     // This is a compile time version of UDIV_ROUND_CLOSEST
     //
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
@@ -126,7 +126,9 @@ static inline uint16_t div100(uint16_t n) {
     // see https://godbolt.org/z/c5bs5noT1)
 #ifdef USE_LIBDIVIDE
     constexpr libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = 18351, .more = 70 };
+    // LCOV_EXCL_BR_START
     return libdivide::libdivide_u16_do_raw(n + DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_u16_100.magic, libdiv_u16_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return UDIV_ROUND_CLOSEST(n, UINT16_C(100), uint16_t);
 #endif
@@ -141,7 +143,9 @@ static inline int16_t div100(int16_t n) {
     // Negative values here, so adjust pre-division to get same
     // behavior as roundf(float)
     constexpr libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = 20972, .more = 5 };
+    // LCOV_EXCL_BR_START
     return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_s16_100.magic, libdiv_s16_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return DIV_ROUND_CLOSEST(n, UINT16_C(100), int16_t);
 #endif
@@ -153,7 +157,9 @@ static inline uint32_t div100(uint32_t n) {
         return div100((uint16_t)n);
     }
     constexpr libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
+    // LCOV_EXCL_BR_START
     return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), libdiv_u32_100.magic, libdiv_u32_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return UDIV_ROUND_CLOSEST(n, UINT32_C(100), uint32_t);
 #endif
@@ -165,7 +171,9 @@ static inline int32_t div100(int32_t n) {
         return div100((int16_t)n);            
     }
     constexpr libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
+    // LCOV_EXCL_BR_START
     return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), libdiv_s32_100.magic, libdiv_s32_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
@@ -181,7 +189,9 @@ static inline int32_t div100(int32_t n) {
 static inline uint32_t div360(uint32_t n) {
 #ifdef USE_LIBDIVIDE
     constexpr libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
+    // LCOV_EXCL_BR_START
     return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), libdiv_u32_360.magic, libdiv_u32_360.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return (uint32_t)UDIV_ROUND_CLOSEST(n, UINT32_C(360), uint32_t);
 #endif
@@ -302,7 +312,9 @@ static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
     uint32_t x200 = (uint32_t)percent * (uint32_t)value;
 #ifdef USE_LIBDIVIDE    
     constexpr libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
+    // LCOV_EXCL_BR_START
     return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), libdiv_u32_200.magic, libdiv_u32_200.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return (uint16_t)UDIV_ROUND_CLOSEST(x200, UINT16_C(200), uint32_t);
 #endif
@@ -331,7 +343,7 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
  * Minor performance drop compared to non-rounding version.
  **/
 template <typename TDividend, typename TDivisor>
-static constexpr TDividend fast_div_closest(TDividend dividend, TDivisor divisor) {
+TESTABLE_STATIC_CONSTEXPR TDividend fast_div_closest(TDividend dividend, TDivisor divisor) {
     return fast_div(dividend + DIV_ROUND_CORRECT(divisor, TDivisor), divisor);
 }
 
@@ -346,10 +358,12 @@ static constexpr TDividend fast_div_closest(TDividend dividend, TDivisor divisor
  * @param hi The maximum threshold
  * @return if v compares less than lo, returns lo; otherwise if hi compares less than v, returns hi; otherwise returns v.
  */
+// LCOV_EXCL_START
 template<class T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi){
+TESTABLE_STATIC_CONSTEXPR const T& clamp(const T& v, const T& lo, const T& hi){
     return v<lo ? lo : hi<v ? hi : v;
 }
+// LCOV_EXCL_STOP
 
 /// @cond
 
