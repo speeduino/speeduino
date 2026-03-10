@@ -458,26 +458,3 @@ void disableSchedule(Schedule &schedule)
     }
   }
 }
-void disableFuelSchedule(uint8_t channel)
-{
-  switch(channel)
-  {
-    default:
-    case 0: disableSchedule(fuelSchedule1); break;
-    case 1: disableSchedule(fuelSchedule2); break;
-    case 2: disableSchedule(fuelSchedule3); break;
-    case 3: disableSchedule(fuelSchedule4); break;
-#if (INJ_CHANNELS >= 5)
-    case 4: disableSchedule(fuelSchedule5); break;
-#endif
-#if (INJ_CHANNELS >= 6)
-    case 5: disableSchedule(fuelSchedule6); break;
-#endif
-#if (INJ_CHANNELS >= 7)
-    case 6: disableSchedule(fuelSchedule7); break;
-#endif
-#if (INJ_CHANNELS >= 8)
-    case 7: disableSchedule(fuelSchedule8); break;
-#endif
-  }
-}
