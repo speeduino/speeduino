@@ -62,7 +62,6 @@ void stopFuelSchedulers(void);
 void beginInjectorPriming(void);
 
 void disableFuelSchedule(uint8_t channel);
-void disableAllFuelSchedules(void);
 
 /** \enum ScheduleStatus
  * @brief The current state of a schedule

@@ -481,10 +481,3 @@ void disableFuelSchedule(uint8_t channel)
 #endif
   }
 }
-
-void disableAllFuelSchedules(void)
-{
-  for (uint8_t index=0; index<INJ_CHANNELS; ++index) {
-    disableFuelSchedule(index);
-  }
-}
