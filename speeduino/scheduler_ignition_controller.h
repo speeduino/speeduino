@@ -4,6 +4,17 @@
 #include "statuses.h"
 
 /**
+ * @brief Check that no ignition channel has been charging the coil for too long
+ * 
+ * The over dwell protection system runs independently of the standard ignition 
+ * schedules and monitors the time that each ignition output has been active. If the 
+ * active time exceeds the tune defined amount, the output will be ended to prevent damage to coils.
+ * 
+ * @note Must be called once per millisecond by an **external** timer.
+ */
+void applyOverDwellProtection(const config4 &page4, const statuses &current);
+
+/**
  * @brief Calculate the charge & discharge angles for all ignition channels
  * 
  * @param page2 The tune
