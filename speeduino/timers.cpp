@@ -15,7 +15,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "sensors.h"
 #include "scheduler.h"
 #include "scheduledIO.h"
-#include "scheduler.h"
+#include "scheduler_ignition_controller.h"
 #include "auxiliaries.h"
 #include "comms.h"
 #include "maths.h"
@@ -62,7 +62,7 @@ void oneMSInterval(void)
   loop250ms++;
   loopSec++;
 
-  applyOverDwellProtection();
+  applyOverDwellProtection(configPage4, currentStatus);
 
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 

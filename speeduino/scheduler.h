@@ -219,17 +219,6 @@ static inline void _setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint
 /// @endcond
 
 /**
- * @brief Check that no ignition channel has been charging the coil for too long
- * 
- * The over dwell protection system runs independently of the standard ignition 
- * schedules and monitors the time that each ignition output has been active. If the 
- * active time exceeds this amount, the output will be ended to prevent damage to coils.
- * 
- * @note Must be called once per millisecond by an **external** timer.
- */
-void applyOverDwellProtection(void);
-
-/**
  * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
  * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
  * 
