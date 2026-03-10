@@ -509,9 +509,3 @@ void disableAllFuelSchedules(void)
     disableFuelSchedule(index);
   }
 }
-void disableAllIgnSchedules(void)
-{
-  for (uint8_t index=0; index<IGN_CHANNELS; ++index) {
-    disableIgnSchedule(index);
-  }
-}
