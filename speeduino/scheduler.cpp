@@ -445,16 +445,3 @@ void moveToNextState(IgnitionSchedule &schedule)
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
-
-void disableSchedule(Schedule &schedule)
-{
-  ATOMIC() {
-    if(schedule.Status == PENDING) { 
-      schedule.Status = OFF; 
-    } else if(schedule.Status == RUNNING_WITHNEXT) { 
-      schedule.Status = RUNNING; 
-    } else {
-      // Must be off already :-)
-    }
-  }
-}
