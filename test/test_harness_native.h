@@ -3,6 +3,7 @@
 #if defined(NATIVE_BOARD)
 
 #include <unity.h>
+#include <fakeit.hpp>
 #include "../lib/ArduinoFake/FakeMega.h"
 
 // Unity required functions
@@ -13,7 +14,7 @@ void setUp(void)
 void tearDown(void) {}
 
 // Below is to ensure setUp is called before main()
-// If not, static varaiables in the firmware tests may use ArduinoFake before it 
+// If not, static variables in the firmware tests may use ArduinoFake before it 
 // is configured: this will cause a segfault.
 struct setup_static_initializer {
     setup_static_initializer() {
@@ -21,12 +22,28 @@ struct setup_static_initializer {
     }
 } setup_static_initializer_instance __attribute__ ((init_priority (65534)));
 
+int mainWrapper(int argc, char **argv, void (*testRunner)(void)) {
+    try {
+        UNITY_BEGIN();
+        testRunner();
+        return UNITY_END();
+    }
+    catch (fakeit::FakeitException &err) {
+        std::cerr << err;
+    }
+    catch (std::exception &err) {
+        std::cerr << err.what();
+    }
+    catch (...) {
+        std::cerr << "Unknown error occurred";
+    }
+    return 1;
+}
+
 #define TEST_HARNESS(testRunner) \
 int main(int argc, char **argv) \
 { \
-    UNITY_BEGIN(); \
-    testRunner(); \
-    return UNITY_END(); \
+    return mainWrapper(argc, argv, testRunner); \
 }
 
 #endif
