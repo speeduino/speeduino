@@ -8,13 +8,18 @@
 #define TIMEOUT 1000
 #define DURATION 1000
 
+static void test_status_running_to_off(Schedule &schedule)
+{
+    setSchedule(schedule, TIMEOUT, DURATION, true);
+    while( (schedule.Status == PENDING) || (schedule.Status == RUNNING) ) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+}
+
 static void test_status_running_to_off_inj(FuelSchedule &schedule)
 {
     initialiseFuelSchedulers();
     startFuelSchedulers();
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
-    while( (schedule.Status == PENDING) || (schedule.Status == RUNNING) ) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    test_status_running_to_off(schedule);
     stopFuelSchedulers();
 }
 
@@ -63,9 +68,7 @@ static void test_status_running_to_off_ign(IgnitionSchedule &schedule)
 {
     initialiseIgnitionSchedulers();
     startIgnitionSchedulers();
-    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
-    while( (schedule.Status == PENDING) || (schedule.Status == RUNNING) ) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    test_status_running_to_off(schedule);
     stopIgnitionSchedulers();
 }
 

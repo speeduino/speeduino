@@ -133,11 +133,3 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
     }
   }
 }
-
-static inline  __attribute__((always_inline))void setIgnitionSchedule(IgnitionSchedule &schedule, int16_t crankAngle, uint32_t dwellDuration) {
-  uint32_t delay = _calculateIgnitionTimeout(schedule, crankAngle);
-
-  if (delay > 0U) {
-    _setIgnitionScheduleDuration(schedule, delay, dwellDuration);
-  }
-}

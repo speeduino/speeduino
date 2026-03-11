@@ -8,6 +8,8 @@
 using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
 using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
 
+extern void setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration);
+
 static constexpr uint32_t TIMEOUT = 5000U;
 static constexpr uint32_t DURATION = 2000U;
 static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
@@ -24,7 +26,7 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
   raw_compare_t compare = {0};
   IgnitionSchedule schedule(counter, compare);
 
-  _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
+  setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
 
   schedule.Status = RUNNING;
   CRANK_ANGLE_MAX_IGN = 360;
@@ -35,7 +37,7 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
   setAngleConverterRevolutionTime(revTime);
   TEST_ASSERT_GREATER_THAN_UINT32(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN));
   
-  _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
+  setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
   // Should not have changed
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
   TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
@@ -45,7 +47,7 @@ static void test_ignition_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
   // Positive test
   setAngleConverterRevolutionTime(revTime/2U);
   TEST_ASSERT_LESS_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint32_t)CRANK_ANGLE_MAX_INJ));    
-  _setIgnitionScheduleDuration(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET);
+  setIgnitionScheduleDuration(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET);
   // Should not have changed
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
   // These should have changed
