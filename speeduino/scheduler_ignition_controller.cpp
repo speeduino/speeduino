@@ -226,70 +226,48 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
 }
 END_LTO_INLINE()
 
-static inline __attribute__((always_inline)) void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellTime, byte channelMask, uint8_t channelIdx)
+TESTABLE_INLINE_STATIC void setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
+{
+  // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
+  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
+}
+
+static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)
 {
   if (BIT_CHECK(channelMask, (channelIdx)-1U)) {
-    setIgnitionSchedule(schedule, crankAngle, dwellTime);
+    setIgnitionScheduleDuration(schedule, _calculateIgnitionTimeout(schedule, crankAngle), dwellDuration);
   }
 }
 
-void setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime) {
+BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime) {
   #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
 
-  switch (current.maxIgnOutputs)
-  {
-  case 8:
-#if IGN_CHANNELS >= 8
-    SET_IGNITION_CHANNEL(8)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 7:
-#if IGN_CHANNELS >= 7
-    SET_IGNITION_CHANNEL(7)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 6:
-#if IGN_CHANNELS >= 6
-    SET_IGNITION_CHANNEL(6)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 5:
-#if IGN_CHANNELS >= 5
-    SET_IGNITION_CHANNEL(5)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 4:
-#if IGN_CHANNELS >= 4
-    SET_IGNITION_CHANNEL(4)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 3:
-#if IGN_CHANNELS >= 3
-    SET_IGNITION_CHANNEL(3)
-#endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 2:
+  SET_IGNITION_CHANNEL(1)
 #if IGN_CHANNELS >= 2
-    SET_IGNITION_CHANNEL(2)
+  SET_IGNITION_CHANNEL(2)
 #endif
-  [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 1:
-    SET_IGNITION_CHANNEL(1)
-    break;
-  default:
-    break;
-  }
+#if IGN_CHANNELS >= 3
+  SET_IGNITION_CHANNEL(3)
+#endif
+#if IGN_CHANNELS >= 4
+  SET_IGNITION_CHANNEL(4)
+#endif
+#if IGN_CHANNELS >= 5
+  SET_IGNITION_CHANNEL(5)
+#endif
+#if IGN_CHANNELS >= 6
+  SET_IGNITION_CHANNEL(6)
+#endif
+#if IGN_CHANNELS >= 7
+  SET_IGNITION_CHANNEL(7)
+#endif
+#if IGN_CHANNELS >= 8
+  SET_IGNITION_CHANNEL(8)
+#endif
 
 #undef SET_IGNITION_CHANNEL
 }
-
+END_LTO_INLINE()
 
 TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is

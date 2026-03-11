@@ -215,11 +215,7 @@ struct IgnitionSchedule : public Schedule {
  * @param delay Delay until the coil begins charging (µS)
  * @param duration Dwell time (µS)
  */
-static inline void _setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
-{
-  // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
-  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
-}
+
 /// @endcond
 
 /**

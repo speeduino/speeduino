@@ -13,15 +13,20 @@ static uint32_t start_time, end_time;
 static void startCallback(void) { start_time = micros(); }
 static void endCallback(void) { end_time = micros(); }
 
+static void test_accuracy_duration(Schedule &schedule)
+{
+    setCallbacks(schedule, startCallback, endCallback);
+    setSchedule(schedule, TIMEOUT, DURATION, true);
+    while(schedule.Status != OFF) /*Wait*/ ;
+    TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
+}
+
 static void test_accuracy_duration_inj(FuelSchedule &schedule)
 {
     initialiseFuelSchedulers();
     startFuelSchedulers();
-    setCallbacks(schedule, startCallback, endCallback);
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_accuracy_duration(schedule);
     stopFuelSchedulers();
-    TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
 
 static void test_accuracy_duration_inj1(void)
@@ -68,11 +73,8 @@ static void test_accuracy_duration_ign(IgnitionSchedule &schedule)
 {
     initialiseIgnitionSchedulers();
     startIgnitionSchedulers();
-    setCallbacks(schedule, startCallback, endCallback);
-    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_accuracy_duration(schedule);
     stopIgnitionSchedulers();
-    TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
 
 static void test_accuracy_duration_ign1(void)

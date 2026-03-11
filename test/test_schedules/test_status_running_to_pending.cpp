@@ -8,17 +8,22 @@
 #define TIMEOUT 1000
 #define DURATION 1000
 
-static void test_status_running_to_pending_inj(FuelSchedule &schedule)
+static void test_status_running_to_pending(Schedule &schedule)
 {
-    initialiseFuelSchedulers();
-    startFuelSchedulers();
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
+    setSchedule(schedule, TIMEOUT, DURATION, true);
     while(schedule.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule(schedule, 2*TIMEOUT, DURATION);
+    setSchedule(schedule, 2*TIMEOUT, DURATION, true);
     TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
     while(isRunning(schedule)) /*Wait*/ ;
     TEST_ASSERT_EQUAL(PENDING, schedule.Status);
     while(schedule.Status != OFF) /*Wait*/ ;
+}
+
+static void test_status_running_to_pending_inj(FuelSchedule &schedule)
+{
+    initialiseFuelSchedulers();
+    startFuelSchedulers();
+    test_status_running_to_pending(schedule);
     stopFuelSchedulers();
 }
 
@@ -66,13 +71,7 @@ static void test_status_running_to_pending_ign(IgnitionSchedule &schedule)
 {
     initialiseIgnitionSchedulers();
     startIgnitionSchedulers();
-    _setIgnitionScheduleDuration(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    _setIgnitionScheduleDuration(schedule, 2*TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
-    while(isRunning(schedule)) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_status_running_to_pending(schedule);
     stopIgnitionSchedulers();
 }
 
