@@ -13,14 +13,15 @@ jobs:
     env:
       PIO_ENV: native_code_coverage
       FILE_ROOT: speeduino_coverage
-      GCOV_IGNORES: |
-          test/
-          lib/ArduinoFake/
-          .pio/libdeps/
-          speeduino/src/SPIAsEEPROM/
-          (.+/)?unity_config\.c$
-          (.+/)?board_native\.(?:h|cpp)$
-
+      GCOVR_EXCLUDES: >-
+        --exclude test/
+        --exclude lib/ArduinoFake/
+        --exclude .pio/libdeps/
+        --exclude speeduino/src/SPIAsEEPROM/
+        --exclude '(.+/)?unity_config\.c$'
+        --exclude '(.+/)?board_native\.(?:h|cpp)$'
+        --exclude-throw-branches
+      
     steps:
     - uses: actions/checkout@v4
 
@@ -48,34 +49,52 @@ jobs:
         source PIO/bin/activate
         platformio test -e ${{ env.PIO_ENV }} ${{ vars.PIO_CMD_PARAMS }}
 
+    - name: Install gcovr
+      run: | 
+        source PIO/bin/activate
+        pip install gcovr
+
+    - name: Generate machine readable coverage reports using gcovr CLI
+      env:
+        PATH_ROOT: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}
+      run: |
+        source PIO/bin/activate
+        gcovr \
+          ${{ env.GCOVR_EXCLUDES }} \
+          --coveralls ${{ env.PATH_ROOT }}.coveralls \
+          --cobertura ${{ env.PATH_ROOT }}.cobertura \
+          --xml ${{ env.PATH_ROOT }}.xml \
+          --jacoco ${{ env.PATH_ROOT }}.jacoco \
+          --json ${{ env.PATH_ROOT }}.json \
+          --lcov ${{ env.PATH_ROOT }}.lcov \
+          --sonarqube ${{ env.PATH_ROOT }}.sonarqube || true
+       
     - name: Upload to CodeCov
       uses: codecov/codecov-action@v5
-      if: ${{ !env.ACT }}
+      env:
+        PATH_ROOT: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}
+      # if: ${{ !env.ACT }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        gcov_ignore: ${{ env.GCOV_IGNORES }}
-        # verbose: true 
+        disable_search: true
+        files: ${{ env.PATH_ROOT }}.*
+        verbose: true 
 
-    - name: Generate coverage report
+    # This messes up CodeCov upload if done earlier
+    - name: Generate human readable coverage reports using gcovr CLI
       if: ${{ env.ACT }}
-      uses: threeal/gcovr-action@v1.2.0
-      with:
-        coveralls-send: false
-        print-summary: true
-        excludes: ${{ env.GCOV_IGNORES }}
-        html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
-        html-details: true
-        coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
-        cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura
-        xml-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.xml
-        jacoco-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.jacoco
-        json-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.json
-        lcov-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.lcov
-        sonarqube-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.sonarqube
+      env:
+        PATH_ROOT: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}
+      run: |
+        source PIO/bin/activate
+        gcovr \
+          ${{ env.GCOVR_EXCLUDES }} \
+          --html-details ${{ env.PATH_ROOT }}.html \
 
     - name: Upload reports
+      env:
+        PATH_ROOT: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}
       if: ${{ env.ACT }}
       uses: actions/upload-artifact@v4
       with:
-        path: |
-          .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
+        path: ${{ env.PATH_ROOT }}.*
