@@ -236,7 +236,7 @@ void stopFuelSchedulers(void)
 #endif  
 }
 
-void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback)
+void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept
 {
   schedule.pStartCallback = pStartCallback;
   schedule.pEndCallback = pEndCallback;
@@ -251,7 +251,7 @@ static inline uint16_t clipDuration(uint16_t duration) {
   return duration;
 }
 
-static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration)
+static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration) noexcept
 {
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
@@ -260,7 +260,7 @@ static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t 
   schedule.Status = RUNNING_WITHNEXT;
 }
 
-static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration)
+static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration) noexcept
 {
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
@@ -338,7 +338,7 @@ void beginInjectorPriming(void)
  * @{
  */
 
-void moveToNextState(FuelSchedule &schedule)
+void moveToNextState(FuelSchedule &schedule) noexcept
 {
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
@@ -398,7 +398,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToPending(Schedule *pSchedul
 }
 END_LTO_INLINE()
 
-void moveToNextState(IgnitionSchedule &schedule)
+void moveToNextState(IgnitionSchedule &schedule)  noexcept
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }

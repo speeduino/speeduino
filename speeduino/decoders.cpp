@@ -308,7 +308,7 @@ uint32_t angleToTimeIntervalTooth(uint16_t angle) {
 }
 #endif
 
-static decoder_status_t sharedGetStatus(void)
+static decoder_status_t sharedGetStatus(void) noexcept
 {
   // NOTE: we are deliberately returning a copy of the struct to avoid read tearing since it's written to within interrupts
   ATOMIC() {

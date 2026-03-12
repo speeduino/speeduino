@@ -2,11 +2,12 @@
 #include "scheduledIO_ign.h"
 #include "schedule_calcs.hpp"
 #include "scheduledIO_ign.h"
-// #include "globals.h"
+#include "globals.h"
+#include "unit_testing.h"
 
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
-static inline bool isAnyIgnScheduleRunning(void) {
+TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
   return isRunning(ignitionSchedule1)      
 #if IGN_CHANNELS >= 2 
       || isRunning(ignitionSchedule2)
