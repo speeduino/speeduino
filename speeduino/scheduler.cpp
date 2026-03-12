@@ -67,42 +67,37 @@ IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppr
 IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
-static void reset(Schedule &schedule)
+void Schedule::reset(void)
 {
-    schedule.Status = OFF;
-    setCallbacks(schedule, nullCallback, nullCallback);
+    Status = OFF;
+    setCallbacks(*this, nullCallback, nullCallback);
 }
 
-static inline void reset(FuelSchedule &schedule) 
+void IgnitionSchedule::reset(void) 
 {
-    reset((Schedule&)schedule);
-}
-
-static inline void reset(IgnitionSchedule &schedule) 
-{
-    reset((Schedule&)schedule);
-    schedule.chargeAngle = 0;
-    schedule.dischargeAngle = 0;
-    schedule.channelDegrees = 0;
+    ((Schedule*)this)->reset();
+    chargeAngle = 0;
+    dischargeAngle = 0;
+    channelDegrees = 0;
 }
 
 void initialiseFuelSchedulers(void)
 {
-    reset(fuelSchedule1);
-    reset(fuelSchedule2);
-    reset(fuelSchedule3);
-    reset(fuelSchedule4);
+    fuelSchedule1.reset();
+    fuelSchedule2.reset();
+    fuelSchedule3.reset();
+    fuelSchedule4.reset();
 #if INJ_CHANNELS >= 5
-    reset(fuelSchedule5);
+    fuelSchedule5.reset();
 #endif
 #if INJ_CHANNELS >= 6
-    reset(fuelSchedule6);
+    fuelSchedule6.reset();
 #endif
 #if INJ_CHANNELS >= 7
-    reset(fuelSchedule7);
+    fuelSchedule7.reset();
 #endif
 #if INJ_CHANNELS >= 8
-    reset(fuelSchedule8);
+    fuelSchedule8.reset();
 #endif
 
 	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
@@ -125,21 +120,21 @@ void initialiseFuelSchedulers(void)
 
 void initialiseIgnitionSchedulers(void)
 {
-    reset(ignitionSchedule1);
-    reset(ignitionSchedule2);
-    reset(ignitionSchedule3);
-    reset(ignitionSchedule4);
+    ignitionSchedule1.reset();
+    ignitionSchedule2.reset();
+    ignitionSchedule3.reset();
+    ignitionSchedule4.reset();
 #if (IGN_CHANNELS >= 5)
-    reset(ignitionSchedule5);
+    ignitionSchedule5.reset();
 #endif
 #if IGN_CHANNELS >= 6
-    reset(ignitionSchedule6);
+    ignitionSchedule6.reset();
 #endif
 #if IGN_CHANNELS >= 7
-    reset(ignitionSchedule7);
+    ignitionSchedule7.reset();
 #endif
 #if IGN_CHANNELS >= 8
-    reset(ignitionSchedule8);
+    ignitionSchedule8.reset();
 #endif
 }
 

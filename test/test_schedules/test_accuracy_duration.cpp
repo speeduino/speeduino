@@ -71,7 +71,7 @@ static void test_accuracy_duration_inj8(void)
 
 static void test_accuracy_duration_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
     test_accuracy_duration(schedule);
     stopIgnitionSchedulers();

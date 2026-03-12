@@ -74,7 +74,7 @@ static void test_accuracy_timeout_inj8(void)
 
 static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
     test_accuracy_timeout(schedule);
     stopIgnitionSchedulers();
