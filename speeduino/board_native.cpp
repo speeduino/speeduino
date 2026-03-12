@@ -4,6 +4,7 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
+#include "scheduler_ignition_controller.h"
 
 #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
 #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)

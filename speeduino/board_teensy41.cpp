@@ -9,6 +9,7 @@
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include EEPROM_LIB_H
+#include "scheduler_ignition_controller.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);

@@ -4,6 +4,7 @@
 #include "scheduler.h"
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
+#include "scheduler_ignition_controller.h"
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 

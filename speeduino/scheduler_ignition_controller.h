@@ -3,6 +3,21 @@
 #include "config_pages.h"
 #include "statuses.h"
 
+extern IgnitionSchedule ignitionSchedule1;
+extern IgnitionSchedule ignitionSchedule2;
+extern IgnitionSchedule ignitionSchedule3;
+extern IgnitionSchedule ignitionSchedule4;
+extern IgnitionSchedule ignitionSchedule5;
+#if IGN_CHANNELS >= 6
+extern IgnitionSchedule ignitionSchedule6;
+#endif
+#if IGN_CHANNELS >= 7
+extern IgnitionSchedule ignitionSchedule7;
+#endif
+#if IGN_CHANNELS >= 8
+extern IgnitionSchedule ignitionSchedule8;
+#endif
+
 /**
  * @brief Check that no ignition channel has been charging the coil for too long
  * 

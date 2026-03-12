@@ -44,6 +44,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "decoder_init.h"
 #include "decoder_builder.h"
+#include "scheduler_ignition_controller.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
