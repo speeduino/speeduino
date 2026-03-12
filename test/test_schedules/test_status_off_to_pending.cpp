@@ -4,6 +4,7 @@
 #include "../test_utils.h"
 #include "scheduler.h"
 #include "channel_test_helpers.h"
+#include "scheduler_ignition_controller.h"
 
 #define TIMEOUT 1000
 #define DURATION 1000

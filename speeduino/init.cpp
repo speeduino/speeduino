@@ -28,6 +28,7 @@
 #endif
 #include "fuel_calcs.h"
 #include "decoder_init.h"
+#include "scheduler_ignition_controller.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options

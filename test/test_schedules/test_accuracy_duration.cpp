@@ -4,6 +4,7 @@
 #include "../test_utils.h"
 #include "scheduler.h"
 #include "channel_test_helpers.h"
+#include "scheduler_ignition_controller.h"
 
 constexpr uint32_t TIMEOUT = 1000U;
 constexpr uint16_t DURATION = 1000U;

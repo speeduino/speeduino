@@ -2,6 +2,7 @@
 #include "schedule_calcs.hpp"
 #include "globals.h"
 #include "unit_testing.h"
+
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
 TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
@@ -315,3 +316,75 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
   }
 }
 // LCOV_EXCL_STOP
+
+void initialiseIgnitionSchedulers(void)
+{
+    ignitionSchedule1.reset();
+    ignitionSchedule2.reset();
+    ignitionSchedule3.reset();
+    ignitionSchedule4.reset();
+#if (IGN_CHANNELS >= 5)
+    ignitionSchedule5.reset();
+#endif
+#if IGN_CHANNELS >= 6
+    ignitionSchedule6.reset();
+#endif
+#if IGN_CHANNELS >= 7
+    ignitionSchedule7.reset();
+#endif
+#if IGN_CHANNELS >= 8
+    ignitionSchedule8.reset();
+#endif
+}
+
+void startIgnitionSchedulers(void)
+{
+  IGN1_TIMER_ENABLE();
+#if IGN_CHANNELS >= 2
+  IGN2_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 3
+  IGN3_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 4
+  IGN4_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 5
+  IGN5_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 6
+  IGN6_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 7
+  IGN7_TIMER_ENABLE();
+#endif
+#if IGN_CHANNELS >= 8
+  IGN8_TIMER_ENABLE();
+#endif  
+}
+
+void stopIgnitionSchedulers(void)
+{
+  IGN1_TIMER_DISABLE();
+#if IGN_CHANNELS >= 2
+  IGN2_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 3
+  IGN3_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 4
+  IGN4_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 5
+  IGN5_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 6
+  IGN6_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 7
+  IGN7_TIMER_DISABLE();
+#endif
+#if IGN_CHANNELS >= 8
+  IGN8_TIMER_DISABLE();
+#endif  
+}

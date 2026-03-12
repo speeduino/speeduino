@@ -49,15 +49,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
 /** @brief Initialize all schedulers to the OFF state */
-void initialiseIgnitionSchedulers(void);
-
-/** @brief Start the timers that drive schedulers  */
-void startIgnitionSchedulers(void);
-
-/** @brief Stop the timers that drive schedulers  */
-void stopIgnitionSchedulers(void);
-
-/** @brief Initialize all schedulers to the OFF state */
 void initialiseFuelSchedulers(void);
 
 /** @brief Start the timers that drive schedulers  */
