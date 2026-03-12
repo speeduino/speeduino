@@ -77,7 +77,7 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         disable_search: true
-        files: ${{ env.PATH_ROOT }}.*
+        files: ${{ env.PATH_ROOT }}.lcov
         verbose: true 
 
     # This messes up CodeCov upload if done earlier
