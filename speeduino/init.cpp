@@ -33,6 +33,7 @@
 #include "scheduledIO_direct_inj.h"
 #include "src/pins/pinMapping.h"
 #include "resetControl.h"
+#include "scheduler_ignition_controller.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
