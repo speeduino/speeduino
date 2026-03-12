@@ -7,6 +7,7 @@
 extern void SetRevolutionTime(uint32_t revTime);
 extern void changeIgnitionToFullSequential(const config2 &page2, statuses &current);
 extern void changeIgnitionToHalfSync(const config2 &page2, statuses &current);
+extern bool isAnyIgnScheduleRunning(void);
 
 struct ignition_test_context_t
 {
@@ -254,6 +255,28 @@ static void test_changeIgnitionToHalfSync_runningschedule(void)
     test_changeIgnitionToHalfSync_notapplied(8U);
 }
 
+static void assert_isAnyIgnScheduleRunning(IgnitionSchedule & schedule)
+{
+    TEST_ASSERT_FALSE(isAnyIgnScheduleRunning());
+    schedule.Status = RUNNING;
+    TEST_ASSERT_TRUE(isAnyIgnScheduleRunning());
+    schedule.Status = OFF;
+}
+
+static void test_isAnyIgnScheduleRunning(void)
+{
+    stopIgnitionSchedulers();
+    initialiseIgnitionSchedulers();
+    RUNIF_IGNCHANNEL1( { assert_isAnyIgnScheduleRunning(ignitionSchedule1); }, {});
+    RUNIF_IGNCHANNEL2( { assert_isAnyIgnScheduleRunning(ignitionSchedule2); }, {});
+    RUNIF_IGNCHANNEL3( { assert_isAnyIgnScheduleRunning(ignitionSchedule3); }, {});
+    RUNIF_IGNCHANNEL4( { assert_isAnyIgnScheduleRunning(ignitionSchedule4); }, {});
+    RUNIF_IGNCHANNEL5( { assert_isAnyIgnScheduleRunning(ignitionSchedule5); }, {});
+    RUNIF_IGNCHANNEL6( { assert_isAnyIgnScheduleRunning(ignitionSchedule6); }, {});
+    RUNIF_IGNCHANNEL7( { assert_isAnyIgnScheduleRunning(ignitionSchedule7); }, {});
+    RUNIF_IGNCHANNEL8( { assert_isAnyIgnScheduleRunning(ignitionSchedule8); }, {});
+}
+
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -266,5 +289,6 @@ void test_ignition_schedule_controller(void)
     RUN_TEST(test_changeIgnitionToFullSequential_running_schedule);
     RUN_TEST(test_changeIgnitionToHalfSync);
     RUN_TEST(test_changeIgnitionToHalfSync_runningschedule);
+    RUN_TEST(test_isAnyIgnScheduleRunning);
   }
 }

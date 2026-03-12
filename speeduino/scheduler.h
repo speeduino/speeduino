@@ -162,7 +162,7 @@ static inline bool isRunning(const Schedule &schedule) {
  * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
  * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
  */
-void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback) noexcept;
 
 /**
  * @brief Set the schedule action to run for a certain duration in the future
@@ -220,7 +220,7 @@ struct IgnitionSchedule : public Schedule {
  * 
  * @param schedule The ignition schedule to move to the next state
  */
-void moveToNextState(IgnitionSchedule &schedule);
+void moveToNextState(IgnitionSchedule &schedule) noexcept;
 
 extern IgnitionSchedule ignitionSchedule1;
 extern IgnitionSchedule ignitionSchedule2;
@@ -267,7 +267,7 @@ static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint1
  * 
  * @param schedule The fuel schedule to move to the next state
  */
-void moveToNextState(FuelSchedule &schedule);
+void moveToNextState(FuelSchedule &schedule) noexcept;
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
