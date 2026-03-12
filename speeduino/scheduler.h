@@ -201,19 +201,6 @@ struct IgnitionSchedule : public Schedule {
   void reset(void) override;
 };
 
-/// @cond 
-// Private functions - not for use external to the scheduler code
-
-/**
- * @brief Set the ignition schedule action (charge & fire a coil) to run for a certain duration in the future
- * 
- * @param schedule Schedule to modify
- * @param delay Delay until the coil begins charging (µS)
- * @param duration Dwell time (µS)
- */
-
-/// @endcond
-
 /**
  * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
  * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
@@ -221,22 +208,6 @@ struct IgnitionSchedule : public Schedule {
  * @param schedule The ignition schedule to move to the next state
  */
 void moveToNextState(IgnitionSchedule &schedule) noexcept;
-
-extern IgnitionSchedule ignitionSchedule1;
-extern IgnitionSchedule ignitionSchedule2;
-extern IgnitionSchedule ignitionSchedule3;
-extern IgnitionSchedule ignitionSchedule4;
-extern IgnitionSchedule ignitionSchedule5;
-#if IGN_CHANNELS >= 6
-extern IgnitionSchedule ignitionSchedule6;
-#endif
-#if IGN_CHANNELS >= 7
-extern IgnitionSchedule ignitionSchedule7;
-#endif
-#if IGN_CHANNELS >= 8
-extern IgnitionSchedule ignitionSchedule8;
-#endif
-
 
 /** Fuel injection schedule.
 * Fuel schedules don't use the callback pointers, or the _startTime/endScheduleSetByDecoder variables.

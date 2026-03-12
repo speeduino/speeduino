@@ -7,6 +7,7 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "scheduler_ignition_controller.h"
 
 #if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
   #include "src/BackupSram/BackupSramAsEEPROM.h"

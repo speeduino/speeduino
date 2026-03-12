@@ -3,7 +3,7 @@
 #include <unity.h>
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
-
+#include "scheduler_ignition_controller.h"
 
 static decoder_t test_setup_dualwheel_12_1()
 {

@@ -46,6 +46,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO_ign.h"
 #include "src/pins/fastInputPin.h"
 #include "src/pins/inputPin.h"
+#include "scheduler_ignition_controller.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
