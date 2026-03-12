@@ -52,7 +52,7 @@ static void test_status_initial_off_inj8(void)
 
 static void test_status_initial_off_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     TEST_ASSERT_EQUAL(OFF, schedule.Status);
 }
 

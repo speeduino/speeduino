@@ -65,7 +65,7 @@ void test_status_off_to_pending_inj8(void)
 
 void test_status_off_to_pending_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
     test_status_off_to_pending(schedule);
     stopIgnitionSchedulers();

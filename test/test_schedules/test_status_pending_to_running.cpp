@@ -66,7 +66,7 @@ static void test_status_pending_to_running_inj8(void)
 
 static void test_status_pending_to_running_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
     test_status_pending_to_running(schedule);
     stopIgnitionSchedulers();

@@ -129,7 +129,7 @@ struct Schedule {
   }
 
   using callback = void(*)(void);
-
+ 
   /**
    * @brief Scheduled duration (timer ticks) 
    *
@@ -145,6 +145,9 @@ struct Schedule {
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
+
+protected:
+  virtual void reset(void);
 };
 
 /**
@@ -203,6 +206,8 @@ struct IgnitionSchedule : public Schedule {
   int16_t chargeAngle;        ///< Angle the coil should begin charging.
   int16_t dischargeAngle;     ///< Angle the coil should discharge at. I.e. spark.
   int16_t channelDegrees;     ///< The number of crank degrees until cylinder is at TDC  
+
+  void reset(void) override;
 };
 
 /// @cond 
@@ -250,6 +255,7 @@ struct FuelSchedule : public Schedule {
 
   using Schedule::Schedule;
 
+  void reset(void) override;
 };
 
 /**
