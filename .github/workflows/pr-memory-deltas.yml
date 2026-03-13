@@ -123,4 +123,6 @@ jobs:
             pattern: ${{ env.SKETCHES_REPORTS_FILE_PREFIX}}*
             path: ${{ env.SKETCHES_REPORTS_PATH }}
         - name: Report size deltas
-          uses: 2bndy5/arduino-report-size-deltas@v1.0.4          
+          uses: 2bndy5/arduino-report-size-deltas@v1.0.4
+          with:
+              token: ${{ secrets.REPORT_SIZE_DELTA }}
