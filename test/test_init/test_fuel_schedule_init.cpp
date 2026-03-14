@@ -1010,8 +1010,8 @@ static void test_partial_sync_1_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_1cylinder_4stroke_seq_nostage();
 }
 
@@ -1030,8 +1030,8 @@ static void test_partial_sync_2_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_2cylinder_4stroke_seq_nostage();
 }
 
@@ -1051,8 +1051,8 @@ static void test_partial_sync_3_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_3cylinder_4stroke_seq_nostage();
 }
 
@@ -1071,8 +1071,8 @@ static void test_partial_sync_4_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_4cylinder_4stroke_seq_nostage();
 }
 
@@ -1092,8 +1092,8 @@ static void test_partial_sync_5_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_5cylinder_4stroke_seq_nostage();
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
@@ -1116,8 +1116,8 @@ static void test_partial_sync_6_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_6cylinder_4stroke_seq_nostage();
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
@@ -1140,8 +1140,8 @@ static void test_partial_sync_8_cylinder(void)
     assert_fuel_schedules(360U, enabled, angle);
   }
 
-  decoderStatus.syncStatus = SyncStatus::Full;;
-  changeHalfToFullSync(configPage2, configPage4, currentStatus);
+  decoderStatus.syncStatus = SyncStatus::Full;
+  changeHalfToFullSync(configPage2, currentStatus);
   assert_8cylinder_4stroke_seq_nostage();
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");

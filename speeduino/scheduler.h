@@ -48,17 +48,16 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
 
-void initialiseIgnitionSchedulers(void);
-
-void startIgnitionSchedulers(void);
-void stopIgnitionSchedulers(void);
-void refreshIgnitionSchedule1(unsigned long timeToEnd);
-
+/** @brief Initialize all schedulers to the OFF state */
 void initialiseFuelSchedulers(void);
 
+/** @brief Start the timers that drive schedulers  */
 void startFuelSchedulers(void);
+
+/** @brief Stop the timers that drive schedulers  */
 void stopFuelSchedulers(void);
 
+/** @brief Start fuel system priming the fuel */
 void beginInjectorPriming(void);
 
 /** \enum ScheduleStatus
@@ -77,7 +76,6 @@ enum ScheduleStatus {
   RUNNING_WITHNEXT = 0b00000100U,
 }; 
 
-
 /**
  * @brief A schedule for a single output channel. 
  * 
@@ -95,7 +93,8 @@ enum ScheduleStatus {
  * \endcode
  * 
  * @par Timers are modelled as registers
- * Once set, Schedule instances are usually driven externally by a timer ISR
+ * Once set, Schedule instances are usually driven externally by a timer
+ * ISR calling moveToNextState() periodically to update the schedule states.
  */
 struct Schedule {
   // Deduce the real types of the counter and compare registers.
@@ -118,6 +117,8 @@ struct Schedule {
   {
   }  
 
+  void reset(void);
+  
   /**
    * @brief Scheduled duration (timer ticks) 
    *
@@ -135,7 +136,10 @@ struct Schedule {
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
 };
 
-/** @brief Is the schedule action currently running? */
+/**
+ * @brief Is the schedule running?
+ * I.e. the action has started, but not finished. E.g. injector is open
+ */
 static inline bool isRunning(const Schedule &schedule) {
   // Using flags and bitwise AND (&) to check multiple states is much quicker
   // than a logical or (||) (one less branch & 30% less instructions)
@@ -144,13 +148,14 @@ static inline bool isRunning(const Schedule &schedule) {
 }
 
 /**
- * @brief Set the schedule action start & end callbacks
+ * @brief Set the schedule callbacks. I.e the functions called when the action
+ * needs to start & stop
  * 
  * @param schedule Schedule to modify
- * @param pStartCallback Start callback
- * @param pEndCallback End callback
+ * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
+ * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
  */
-void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback) noexcept;
 
 /**
  * @brief Set the schedule action to run for a certain duration in the future
@@ -162,29 +167,34 @@ void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidC
  */
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule);
 
-/** Ignition schedule.
+/** @brief An ignition schedule.
+ *
+ * Goal is to fire the spark as close to the requested angle as possible.
+ * 
+ * \code 
+ *   <--------------- Delay ---------------><---- Charge Coil ---->
+ *                                                                ^
+ *                                                              Spark
+ * \endcode
+ * 
+ * Terminology: dwell is the period when the ignition system applies an electric
+ * current to the ignition coil's primary winding in order to charge up the coil
+ * so it can generate a spark. 
+ * 
+ * Note that dwell times use uint16_t & therefore maximum dwell is 65.535ms. 
+ * This limit is imposed elsewhere in Speeduino also.
  */
 struct IgnitionSchedule : public Schedule {
 
   using Schedule::Schedule;
 
-  volatile COMPARE_TYPE endCompare;   ///< The counter value of the timer when this will end
-  volatile unsigned long startTime; /**< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino */
-  volatile bool endScheduleSetByDecoder = false;
-};
+  volatile uint32_t _startTime;///< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino
+  int16_t chargeAngle;        ///< Angle the coil should begin charging.
+  int16_t dischargeAngle;     ///< Angle the coil should discharge at. I.e. spark.
+  int16_t channelDegrees;     ///< The number of crank degrees until cylinder is at TDC  
 
-/**
- * @brief Set the ignition schedule action (charge & fire a coil) to run for a certain duration in the future
- * 
- * @param schedule Schedule to modify
- * @param delay Delay until the coil begins charging (µS)
- * @param duration Dwell time (µS)
- */
-static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
-{
-  // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
-  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
-}
+  void reset(void);
+};
 
 /**
  * @brief Shared ignition schedule timer ISR *implementation*. Should be called by the actual ignition timer ISRs
@@ -192,25 +202,10 @@ static inline void setIgnitionSchedule(IgnitionSchedule &schedule, uint32_t dela
  * 
  * @param schedule The ignition schedule to move to the next state
  */
-void moveToNextState(IgnitionSchedule &schedule);
-
-extern IgnitionSchedule ignitionSchedule1;
-extern IgnitionSchedule ignitionSchedule2;
-extern IgnitionSchedule ignitionSchedule3;
-extern IgnitionSchedule ignitionSchedule4;
-extern IgnitionSchedule ignitionSchedule5;
-#if IGN_CHANNELS >= 6
-extern IgnitionSchedule ignitionSchedule6;
-#endif
-#if IGN_CHANNELS >= 7
-extern IgnitionSchedule ignitionSchedule7;
-#endif
-#if IGN_CHANNELS >= 8
-extern IgnitionSchedule ignitionSchedule8;
-#endif
+void moveToNextState(IgnitionSchedule &schedule) noexcept;
 
 /** Fuel injection schedule.
-* Fuel schedules don't use the callback pointers, or the startTime/endScheduleSetByDecoder variables.
+* Fuel schedules don't use the callback pointers, or the _startTime/endScheduleSetByDecoder variables.
 * They are removed in this struct to save RAM.
 */
 struct FuelSchedule : public Schedule {
@@ -238,7 +233,7 @@ static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint1
  * 
  * @param schedule The fuel schedule to move to the next state
  */
-void moveToNextState(FuelSchedule &schedule);
+void moveToNextState(FuelSchedule &schedule) noexcept;
 
 extern FuelSchedule fuelSchedule1;
 extern FuelSchedule fuelSchedule2;
@@ -256,5 +251,8 @@ extern FuelSchedule fuelSchedule7;
 #if INJ_CHANNELS >= 8
 extern FuelSchedule fuelSchedule8;
 #endif
+
+void changeHalfToFullSync(const config2 &page2, statuses &current);
+void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current);
 
 #endif // SCHEDULER_H

@@ -4,21 +4,27 @@
 #include "../test_utils.h"
 #include "scheduler.h"
 #include "channel_test_helpers.h"
+#include "scheduler_ignition_controller.h"
 
 #define TIMEOUT 1000
 #define DURATION 1000
+
+static void test_status_running_to_pending(Schedule &schedule)
+{
+    setSchedule(schedule, TIMEOUT, DURATION, true);
+    while(schedule.Status == PENDING) /*Wait*/ ;
+    setSchedule(schedule, 2*TIMEOUT, DURATION, true);
+    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
+    while(isRunning(schedule)) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
+    while(schedule.Status != OFF) /*Wait*/ ;
+}
 
 static void test_status_running_to_pending_inj(FuelSchedule &schedule)
 {
     initialiseFuelSchedulers();
     startFuelSchedulers();
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    setFuelSchedule(schedule, 2*TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
-    while(isRunning(schedule)) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_status_running_to_pending(schedule);
     stopFuelSchedulers();
 }
 
@@ -64,15 +70,9 @@ static void test_status_running_to_pending_inj8(void)
 
 static void test_status_running_to_pending_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    setIgnitionSchedule(schedule, 2*TIMEOUT, DURATION);
-    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
-    while(isRunning(schedule)) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_status_running_to_pending(schedule);
     stopIgnitionSchedulers();
 }
 
