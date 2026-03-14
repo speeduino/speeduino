@@ -198,7 +198,7 @@ void initialiseAll(void)
     initialiseAirCon();
     initialiseAuxPWM();
     initialiseCorrections();
-    currentStatus.engineProtectIoError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
+    currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseMAPBaro();
     initialiseProgrammableIO();
@@ -247,8 +247,8 @@ void initialiseAll(void)
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
-    resetEngineProtect(currentStatus);
-     dwellLimit_uS = (1000 * configPage4.dwellLimit);
+    currentStatus.engineProtect.reset();
+    dwellLimit_uS = (1000 * configPage4.dwellLimit);
     fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
