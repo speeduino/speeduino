@@ -622,7 +622,8 @@ TESTABLE_INLINE_STATIC bool correctionDFCO(void)
     {
       if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) 
         && (currentStatus.coolant >= temperatureRemoveOffset(configPage2.dfcoMinCLT)) 
-        && (currentStatus.RPM > (RPM_MEDIUM.toUser(configPage4.dfcoRPM) + RPM_FINE.toUser(configPage4.dfcoHyster))))
+        && (currentStatus.RPM > (RPM_MEDIUM.toUser(configPage4.dfcoRPM) + RPM_FINE.toUser(configPage4.dfcoHyster)))
+        && (currentStatus.aseIsActive == false) )
       {
         if( dfcoDelay < configPage2.dfcoDelay )
         {
