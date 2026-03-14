@@ -3,11 +3,10 @@ name: Calculate memory deltas
 on:
   - push
   - pull_request
-  - workflow_dispatch
 
 env:
+  # It's convenient to set variables for values used multiple times in the workflow.
   SKETCHES_REPORTS_PATH: sketches-reports
-  SKETCHES_REPORTS_FILE_PREFIX: sketches-reports-
   # Libraries shared by all builds
   COMMON_LIB_DEPS: | 
     - name: SimplyAtomic
@@ -108,19 +107,5 @@ jobs:
       - name: Upload sketches report to workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.SKETCHES_REPORTS_FILE_PREFIX}}${{ matrix.board.artifact-name-suffix }}
+          name: sketches-report-${{ matrix.board.artifact-name-suffix }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
-
-  report-delta-size:
-      needs: [compile]
-      runs-on: ubuntu-latest
-      permissions:
-        # permission needed to create comments on a Pull Request
-        pull-requests: write
-      steps:
-        - uses: actions/download-artifact@v4
-          with:
-            pattern: ${{ env.SKETCHES_REPORTS_FILE_PREFIX}}*
-            path: ${{ env.SKETCHES_REPORTS_PATH }}
-        - name: Report size deltas
-          uses: 2bndy5/arduino-report-size-deltas@v1.0.4          
