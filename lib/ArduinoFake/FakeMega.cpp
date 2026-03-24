@@ -1,6 +1,6 @@
 #if defined(NATIVE_BOARD)
 
-#include <ArduinoFake.h>
+#include <SimpleArduinoFake.h>
 #include <fakeNative.h>
 
 using namespace fakeit;
@@ -10,7 +10,7 @@ static std::array<unsigned char, 4096> eepromBuffer;
 
 static constexpr uint8_t _BV(uint8_t shift) { return 1U << shift; }
 
-static void fakeMegaWiring(fakeit::Mock<FunctionFake> &mock)
+static void fakeMegaWiring(fakeit::Mock<SimpleArduinoFake::details::FunctionFake> &mock)
 {
     static constexpr uint8_t PA = 1;
     static constexpr uint8_t PB = 2;
@@ -180,13 +180,13 @@ static void fakeMegaWiring(fakeit::Mock<FunctionFake> &mock)
 
 void fakeMega(std::ostream &oStream, std::istream &iStream)
 {
-    ArduinoFakeReset();
-    setupNativeFake(ArduinoFake(Function));
-    setupNativeFake(ArduinoFake(EEPROM), eepromBuffer.begin(), eepromBuffer.end());
-    setupNativeFake(ArduinoFake(Print), oStream);
-    setupNativeFake(ArduinoFake(Stream), iStream);
-    setupNativeFake(ArduinoFake(Serial), oStream, iStream);
-    fakeMegaWiring(ArduinoFake(Function));
+    SimpleArduinoFake::getContext().Reset();
+    ArduinoNativeFake::setupNativeFake(SimpleArduinoFake::getContext()._Function);
+    ArduinoNativeFake::setupNativeFake(SimpleArduinoFake::getContext()._EEPROM, eepromBuffer.begin(), eepromBuffer.end());
+    ArduinoNativeFake::setupPrintFake(SimpleArduinoFake::getContext()._Print, oStream);
+    ArduinoNativeFake::setupStreamFake(SimpleArduinoFake::getContext()._Stream, oStream, iStream);
+    ArduinoNativeFake::setupSerialFake(SimpleArduinoFake::getContext()._Serial, oStream, iStream);
+    fakeMegaWiring(SimpleArduinoFake::getContext()._Function);
 }
 
 #endif // defined(NATIVE_BOARD)

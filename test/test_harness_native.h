@@ -3,7 +3,7 @@
 #if defined(NATIVE_BOARD)
 
 #include <unity.h>
-#include <fakeit.hpp>
+#include <single_header/standalone/fakeit.hpp>
 #include <sstream>
 #include "../lib/ArduinoFake/FakeMega.h"
 
