@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <array>
 #include <limits>
+#include <EEPROM.h>
+#include <USBAPI.h>
 #include "../lib/ArduinoFake/SoftwareTimer.h"
 
 /*
