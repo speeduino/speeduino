@@ -8,6 +8,7 @@ static void assert_entity(const entity_t &entity, byte expected)
     {
         TEST_ASSERT_EQUAL(expected, getEntityValue(entity, offset));
     }
+    TEST_ASSERT_EQUAL(0U, getEntityValue(entity, entity.size+1U));
 }
 
 struct fake_config_page_t : public config_page_t {
@@ -91,7 +92,15 @@ static void set_entity_values(entity_t &entity, uint16_t from, uint16_t to, char
 {
     for (uint16_t offset=from; offset<to; ++offset)
     {
-        setEntityValue(entity, offset, value);
+        bool result = setEntityValue(entity, offset, value);
+        if (entity.type!=EntityType::NoEntity)
+        {
+            TEST_ASSERT_TRUE(result);
+        }
+        else
+        {
+            TEST_ASSERT_FALSE(result);
+        }
     }
 }
 
@@ -105,6 +114,8 @@ static void test_setEntityValue_raw(void)
     constexpr char POST_MARKER = 'Y';
     set_entity_values(entity, 0, entity.size, POST_MARKER);
     TEST_ASSERT_EACH_EQUAL_CHAR(POST_MARKER, &rawEntity, sizeof(rawEntity));
+
+    TEST_ASSERT_FALSE(setEntityValue(entity, entity.size+1U, POST_MARKER));
 }
 
 static void test_setEntityValue_none(void)
@@ -120,6 +131,8 @@ static void test_setEntityValue_none(void)
     set_entity_values(entity, 0, entity.size, POST_MARKER);
     // setEntityValue should have no effect
     TEST_ASSERT_EACH_EQUAL_CHAR(PRE_MARKER, &rawEntity, sizeof(rawEntity));
+
+    TEST_ASSERT_FALSE(setEntityValue(entity, entity.size+1U, POST_MARKER));
 }
 
 template <typename TTable>
@@ -137,6 +150,8 @@ static void assert_set_3d_table(entity_t entity, const TTable &table, byte value
     const char yAxisPost = yAxisPre+1;
     set_entity_values(entity, valueSize+table.axisX.length, valueSize+table.axisX.length+table.axisY.length, yAxisPost);
     TEST_ASSERT_EACH_EQUAL_CHAR(yAxisPost, table.axisY.axis, table.axisY.length);
+
+    TEST_ASSERT_FALSE(setEntityValue(entity, entity.size+1U, valuePost));
 }
 
 
