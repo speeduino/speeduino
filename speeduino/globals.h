@@ -174,10 +174,6 @@ extern pin_mask_t ign7_pin_mask;
 extern port_register_t ign8_pin_port;
 extern pin_mask_t ign8_pin_mask;
 
-extern byte triggerInterrupt;
-extern byte triggerInterrupt2;
-extern byte triggerInterrupt3;
-
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
