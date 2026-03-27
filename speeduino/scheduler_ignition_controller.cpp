@@ -240,6 +240,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
   {
     calculateNonRotaryIgnitionAngles(dwellAngle, current);
   }
+  
+  //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
+  if (page2.perToothIgn == true) { current.decoder.setEndTeeth(); }
 }
 END_LTO_INLINE()
 
