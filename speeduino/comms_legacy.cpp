@@ -885,9 +885,9 @@ void sendValuesLegacy(void)
 
 namespace {
 
-  void send_raw_entity(const page_iterator_t &entity)
+  void send_raw_entity(const page_iterator_t &iter)
   {
-    primarySerial.write((byte *)entity.pRaw, entity.address.size);
+    primarySerial.write((byte *)iter.entity.pRaw, iter.entity.size);
   }
 
   inline void send_table_values(table_value_iterator it)
@@ -909,23 +909,23 @@ namespace {
     }
   }
 
-  void send_table_entity(const page_iterator_t &entity)
+  void send_table_entity(const page_iterator_t &iter)
   {
-    send_table_values(rows_begin(entity));
-    send_table_axis(x_begin(entity));
-    send_table_axis(y_begin(entity));
+    send_table_values(rows_begin(iter));
+    send_table_axis(x_begin(iter));
+    send_table_axis(y_begin(iter));
   }
 
-  void send_entity(const page_iterator_t &entity)
+  void send_entity(const page_iterator_t &iter)
   {
-    switch (entity.type)
+    switch (iter.entity.type)
     {
     case EntityType::Raw:
-      return send_raw_entity(entity);
+      return send_raw_entity(iter);
       break;
 
     case EntityType::Table:
-      return send_table_entity(entity);
+      return send_table_entity(iter);
       break;
     
     case EntityType::NoEntity:
@@ -948,12 +948,12 @@ namespace {
  */
 void sendPage(void)
 {
-  page_iterator_t entity = page_begin(currentPage);
+  page_iterator_t iter = page_begin(currentPage);
 
-  while (entity.type!=EntityType::End)
+  while (iter.entity.type!=EntityType::End)
   {
-    send_entity(entity);
-    entity = advance(entity);
+    send_entity(iter);
+    iter = advance(iter);
   }
 }
 

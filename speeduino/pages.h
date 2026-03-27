@@ -9,8 +9,8 @@
 uint16_t getPageSize(uint8_t pageNum /**< [in] The page number */ );
 
 // These are the page numbers that the Tuner Studio serial protocol uses to transverse the different map and config pages.
-constexpr uint8_t veMapPage     = 2;
 constexpr uint8_t veSetPage     = 1; //Note that this and the veMapPage were swapped in Feb 2019 as the 'algorithm' field must be declared in the ini before it's used in the fuel table
+constexpr uint8_t veMapPage     = 2;
 constexpr uint8_t ignMapPage    = 3;
 constexpr uint8_t ignSetPage    = 4;
 constexpr uint8_t afrMapPage    = 5;
@@ -34,7 +34,7 @@ void setTuneToEmpty(void);
 
 /** @brief Gets a single value from a page, with data aligned as per the ini file */
 byte getPageValue(  uint8_t pageNum,       /**< [in] The page number to retrieve data from. */
-                    uint16_t offset     /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
+                    uint16_t pageOffset    /**< [in] The address in the page that should be returned. This is as per the page definition in the ini. */
                     );
 
 /** 
@@ -42,9 +42,9 @@ byte getPageValue(  uint8_t pageNum,       /**< [in] The page number to retrieve
  * 
  * @returns true if value set, false otherwise
  */
-bool setPageValue(  uint8_t pageNum,       /**< [in] The page number to update. */
-                    uint16_t offset,    /**< [in] The offset within the page.  */
-                    byte value          /**< [in] The new value */
+bool setPageValue(  uint8_t pageNum,        /**< [in] The page number to update. */
+                    uint16_t pageOffset,    /**< [in] The offset within the page.  */
+                    byte value              /**< [in] The new value */
                     );
 
 
@@ -71,10 +71,15 @@ struct entity_page_location_t {
     , index(0U)
     {        
     }
-    constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
+    explicit constexpr entity_page_location_t(uint8_t pageNum, uint8_t pageSubIndex)
     : page(pageNum)
     , index(pageSubIndex)
     {        
+    }
+
+    constexpr entity_page_location_t next(void) const
+    {
+        return entity_page_location_t(page, index+1);
     }
 
     friend bool operator==(const entity_page_location_t &lhs, const entity_page_location_t &rhs)
@@ -89,100 +94,102 @@ struct entity_page_location_t {
     }    
 };
 
-/** @brief  Position and size of an entity within a page */
-struct entity_page_address_t {
-    uint16_t start; // The start position of the entity, in bytes, from the start of the page
-    uint16_t size;  // Size of the entity in bytes
+struct entity_t
+{
+    EntityType type; ///< The entity type
+    union 
+    {
+        table3d_t *pTable;      ///< If the entity is a table, this points to the table
+        config_page_t *pRaw;    ///< If the entity is a raw block, this points to it
+    };
+    TableType table_key = TableType::table_type_None; ///< If the entity is a table, this can be used to get the table type
+    uint16_t size = 0U;  ///< Size of the entity in bytes *on the page*
 
-    constexpr entity_page_address_t(void)
-    : start(0U)
-    , size(0U)
-    {        
+    constexpr entity_t(void)
+    : type(EntityType::NoEntity)
+    , pRaw(nullptr)
+    {
     }
-    constexpr entity_page_address_t(uint16_t base, uint16_t length)
-    : start(base)
-    , size(length)
-    {        
+    explicit constexpr entity_t(EntityType theType, uint16_t theSize)
+    : type(theType)
+    , pRaw(nullptr)
+    , size(theSize)
+    {
+    }
+   explicit constexpr entity_t(table3d_t *table, TableType key, uint16_t theSize)
+    : type(EntityType::Table)
+    , pTable(table)
+    , table_key(key)
+    , size(theSize)
+    {
+    }
+    explicit constexpr entity_t(config_page_t *entity, uint16_t theSize)
+    : type(EntityType::Raw)
+    , pRaw(entity)
+    , size(theSize)
+    {
+    }
+
+    inline bool isEntityAddressWithin(uint16_t entityAddress) const
+    {
+        return entityAddress<size;
+    }
+};
+
+// An entity within a page - needs to include the entity start position
+struct page_entity_t : entity_t
+{
+    uint16_t start; // The start position of the entity, in bytes, from the start of the page
+
+    constexpr page_entity_t(void)
+    : start(0U)
+    {
+    }
+    explicit constexpr page_entity_t(const entity_t &entity, uint16_t base)
+    : entity_t(entity)
+    , start(base)
+    {
     }
 
     /**
      * @brief Check if the offset is within the entity address range
      * 
-     * @param offset Address offset from the start of the page
-     * @return if the offset is within the entity address range, false otherwise
+     * @param pageAddress Address offset from the start of the page
+     * @return true if the offset is within the entity address range, false otherwise
      */
-    bool isOffsetInEntity(uint16_t offset) const
+    inline bool isPageAddressWithin(uint16_t pageAddress) const
     {
-        return offset >= start && offset < start+size;
-    }
-
-    entity_page_address_t next(uint16_t nextBlockSize) const
-    {
-        return entity_page_address_t(start+size, nextBlockSize);
+        return pageAddress >= start && pageAddress < start+size;
     }
 };
 
 // A entity on a logical page.
 struct page_iterator_t {
-    union 
-    {
-        table3d_t *pTable;      // If the entity is a table, this points to the table
-        config_page_t *pRaw;    // If the entity is a raw block, this points to it
-    };
-    EntityType type;
-    TableType table_key = TableType::table_type_None;
+    page_entity_t entity;
     entity_page_location_t location;
-    entity_page_address_t address;
 
-    constexpr page_iterator_t()
-    : pTable(nullptr)
-    , type(EntityType::End)
-    {     
-    }
-
-    page_iterator_t(EntityType theType, const entity_page_location_t &entityLocation, const entity_page_address_t &entityAddress)
-    : type(theType)
+    constexpr page_iterator_t(void) = default;
+    constexpr page_iterator_t(const page_entity_t &theEntity, const entity_page_location_t &entityLocation)
+    : entity(theEntity)
     , location(entityLocation)    
-    , address(entityAddress)
     {
-    }
-
-    void setNoEntity(void)
-    {
-        pRaw = nullptr;
-        type = EntityType::NoEntity;
-        table_key = TableType::table_type_None;
-    }
-
-    void setTable(table3d_t *table, TableType key)
-    {
-        pTable = table;
-        type = EntityType::Table;
-        table_key = key;
-    }
-
-    void setRaw(config_page_t *pBuffer)
-    {
-        pRaw = pBuffer;
-        type = EntityType::Raw;
-        table_key = TableType::table_type_None;
     }
 };
 
 // ============================== Per-byte entity access ==========================
 
 /** @brief Gets a single value from an entity, with data aligned as per the ini file */
-byte getEntityValue(const page_iterator_t &entity,  /**< [in] The entity to update */ 
-                    uint16_t offset                /**< [in] The offset within the entity */
+byte getEntityValue(const entity_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset          /**< [in] The offset within the entity */
                     );
 
 /**
  * @brief Sets a single value from a page, with data aligned as per the ini file
  * @returns true if value set, false otherwise
  */
-bool setEntityValue(page_iterator_t &entity,  /**< [in] The entity to update */ 
-                    uint16_t offset,          /**< [in] The offset within the entity */
-                    byte value                /**< [in] The new value */
+bool setEntityValue(entity_t &entity,  /**< [in] The entity to update */ 
+                    uint16_t offset,   /**< [in] The offset within the entity */
+                    byte value         /**< [in] The new value */
                     );
 
 /**
