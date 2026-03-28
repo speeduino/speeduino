@@ -110,25 +110,6 @@ void endCoil4and8Charge(void);
 void tachoOutputOn(void);
 void tachoOutputOff(void);
 
-//Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
-//The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file
-#define openInjector1_DIRECT()  { *inj1_pin_port |= (inj1_pin_mask); currentStatus.isInj1Open = true; }
-#define closeInjector1_DIRECT() { *inj1_pin_port &= ~(inj1_pin_mask);  currentStatus.isInj1Open = false; }
-#define openInjector2_DIRECT()  { *inj2_pin_port |= (inj2_pin_mask); currentStatus.isInj2Open = true; }
-#define closeInjector2_DIRECT() { *inj2_pin_port &= ~(inj2_pin_mask);  currentStatus.isInj2Open = false; }
-#define openInjector3_DIRECT()  { *inj3_pin_port |= (inj3_pin_mask); currentStatus.isInj3Open = true; }
-#define closeInjector3_DIRECT() { *inj3_pin_port &= ~(inj3_pin_mask);  currentStatus.isInj3Open = false; }
-#define openInjector4_DIRECT()  { *inj4_pin_port |= (inj4_pin_mask); currentStatus.isInj4Open = true; }
-#define closeInjector4_DIRECT() { *inj4_pin_port &= ~(inj4_pin_mask);  currentStatus.isInj4Open = false; }
-#define openInjector5_DIRECT()  { *inj5_pin_port |= (inj5_pin_mask); }
-#define closeInjector5_DIRECT() { *inj5_pin_port &= ~(inj5_pin_mask); }
-#define openInjector6_DIRECT()  { *inj6_pin_port |= (inj6_pin_mask); }
-#define closeInjector6_DIRECT() { *inj6_pin_port &= ~(inj6_pin_mask); }
-#define openInjector7_DIRECT()  { *inj7_pin_port |= (inj7_pin_mask); }
-#define closeInjector7_DIRECT() { *inj7_pin_port &= ~(inj7_pin_mask); }
-#define openInjector8_DIRECT()  { *inj8_pin_port |= (inj8_pin_mask); }
-#define closeInjector8_DIRECT() { *inj8_pin_port &= ~(inj8_pin_mask); }
-
 #define coil1Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil1Low_MC33810();  } else { coil1High_MC33810(); }
 #define coil1StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil1High_MC33810(); } else { coil1Low_MC33810();  }
 #define coil2Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil2Low_MC33810();  } else { coil2High_MC33810(); }

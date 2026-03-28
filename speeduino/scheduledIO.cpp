@@ -4,6 +4,7 @@
 #include "timers.h"
 #include "acc_mc33810.h"
 #include "scheduledIO_direct_ign.h"
+#include "scheduledIO_direct_inj.h"
 
 /** @file
  * Injector and Coil (toggle/open/close) control (under various situations, eg with particular cylinder count, rotary engine type or wasted spark ign, etc.).
