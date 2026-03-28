@@ -108,6 +108,4 @@ void endCoil4and8Charge(void);
 void tachoOutputOn(void);
 void tachoOutputOff(void);
 
-void nullCallback(void);
-
 #endif

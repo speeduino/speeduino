@@ -933,9 +933,6 @@ void initialiseAll(void)
           //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
           setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-
-          setCallbacks(ignitionSchedule3, nullCallback, nullCallback);
-          setCallbacks(ignitionSchedule4, nullCallback, nullCallback);
         }
         else if( configPage2.nCylinders == 6 )
         {
@@ -943,12 +940,6 @@ void initialiseAll(void)
           setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-
-          setCallbacks(ignitionSchedule4, nullCallback, nullCallback);
-          setCallbacks(ignitionSchedule5, nullCallback, nullCallback);
-#if IGN_CHANNELS >= 6
-          setCallbacks(ignitionSchedule6, nullCallback, nullCallback);
-#endif
         }
         else if( configPage2.nCylinders == 8 )
         {
@@ -957,17 +948,6 @@ void initialiseAll(void)
           setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
           setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-
-          setCallbacks(ignitionSchedule5, nullCallback, nullCallback);
-#if IGN_CHANNELS >= 6
-          setCallbacks(ignitionSchedule6, nullCallback, nullCallback);
-#endif
-#if IGN_CHANNELS >= 7
-          setCallbacks(ignitionSchedule7, nullCallback, nullCallback);
-#endif
-#if IGN_CHANNELS >= 8
-          setCallbacks(ignitionSchedule8, nullCallback, nullCallback);
-#endif
         }
         else
         {

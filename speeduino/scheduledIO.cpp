@@ -113,5 +113,3 @@ void endCoil4and8Charge(void)   { endCoil4Charge();  endCoil8Charge(); }
 
 void tachoOutputOn(void) { if(configPage6.tachoMode) { tachoPulseLow(); } else { tachoOutputFlag = READY; } }
 void tachoOutputOff(void) { if(configPage6.tachoMode) { tachoPulseHigh(); } }
-
-void nullCallback(void) { return; }

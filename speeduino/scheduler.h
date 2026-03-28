@@ -77,6 +77,8 @@ enum ScheduleStatus {
   RUNNING_WITHNEXT = 0b00000100U,
 }; 
 
+/** @brief A scheduler callback that does nothing */
+static inline void nullCallback(void) { return; }
 
 /**
  * @brief A schedule for a single output channel. 
