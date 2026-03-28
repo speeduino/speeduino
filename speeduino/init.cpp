@@ -29,6 +29,7 @@
 #include "decoder_init.h"
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
+#include "scheduledIO_direct_ign.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -2673,39 +2674,25 @@ void setPinMapping(byte boardID)
 
   if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
   {
-    pinMode(pinCoil1, OUTPUT);
-    pinMode(pinCoil2, OUTPUT);
-    pinMode(pinCoil3, OUTPUT);
-    pinMode(pinCoil4, OUTPUT);
-    #if (IGN_CHANNELS >= 5)
-    pinMode(pinCoil5, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 6)
-    pinMode(pinCoil6, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 7)
-    pinMode(pinCoil7, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 8)
-    pinMode(pinCoil8, OUTPUT);
-    #endif
-
-    ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
-    ign1_pin_mask = digitalPinToBitMask(pinCoil1);
-    ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
-    ign2_pin_mask = digitalPinToBitMask(pinCoil2);
-    ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
-    ign3_pin_mask = digitalPinToBitMask(pinCoil3);
-    ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
-    ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-    ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
-    ign5_pin_mask = digitalPinToBitMask(pinCoil5);
-    ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
-    ign6_pin_mask = digitalPinToBitMask(pinCoil6);
-    ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
-    ign7_pin_mask = digitalPinToBitMask(pinCoil7);
-    ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
-    ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+    uint8_t ignPins[IGN_CHANNELS] = {
+      pinCoil1,
+      pinCoil2,
+      pinCoil3,
+      pinCoil4,
+      #if (IGN_CHANNELS >= 5)
+      pinCoil5,
+      #endif
+      #if (IGN_CHANNELS >= 6)
+      pinCoil6,
+      #endif
+      #if (IGN_CHANNELS >= 7)
+      pinCoil7,
+      #endif
+      #if (IGN_CHANNELS >= 8)
+      pinCoil8,
+      #endif
+    };
+    initDirectIgn(ignPins);
   } 
 
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)

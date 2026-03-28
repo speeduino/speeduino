@@ -44,23 +44,6 @@ pin_mask_t inj7_pin_mask;
 port_register_t inj8_pin_port;
 pin_mask_t inj8_pin_mask;
 
-port_register_t ign1_pin_port;
-pin_mask_t ign1_pin_mask;
-port_register_t ign2_pin_port;
-pin_mask_t ign2_pin_mask;
-port_register_t ign3_pin_port;
-pin_mask_t ign3_pin_mask;
-port_register_t ign4_pin_port;
-pin_mask_t ign4_pin_mask;
-port_register_t ign5_pin_port;
-pin_mask_t ign5_pin_mask;
-port_register_t ign6_pin_port;
-pin_mask_t ign6_pin_mask;
-port_register_t ign7_pin_port;
-pin_mask_t ign7_pin_mask;
-port_register_t ign8_pin_port;
-pin_mask_t ign8_pin_mask;
-
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
