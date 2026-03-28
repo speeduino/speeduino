@@ -1,5 +1,8 @@
 #include "globals.h"
 
+// LCOV_EXCL_START
+ // Exclude from code coverage, since this is all board output control
+ 
 void coil1Low_DIRECT(void)  {       (*ign1_pin_port &= ~(ign1_pin_mask)); }
 void coil1High_DIRECT(void)  {      (*ign1_pin_port |= (ign1_pin_mask)); }
 void coil2Low_DIRECT(void)  {       (*ign2_pin_port &= ~(ign2_pin_mask)); }
@@ -16,3 +19,5 @@ void coil7Low_DIRECT(void)  {       (*ign7_pin_port &= ~(ign7_pin_mask)); }
 void coil7High_DIRECT(void)  {      (*ign7_pin_port |= (ign7_pin_mask)); }
 void coil8Low_DIRECT(void)  {       (*ign8_pin_port &= ~(ign8_pin_mask)); }
 void coil8High_DIRECT(void)  {      (*ign8_pin_port |= (ign8_pin_mask)); }
+
+// LCOV_EXCL_STOP

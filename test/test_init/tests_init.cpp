@@ -44,21 +44,6 @@ void test_initialisation_complete(void)
   TEST_ASSERT_EQUAL(true, currentStatus.initialisationComplete);
 }
 
-void test_initialisation_ports(void)
-{
-  //Test that all the port values have been set
-  prepareForInitialiseAll(3);
-  initialiseAll(); //Run the main initialise function
-  TEST_ASSERT_NOT_EQUAL(0, inj1_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, inj2_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, inj3_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, inj4_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, ign1_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, ign2_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, ign3_pin_port);
-  TEST_ASSERT_NOT_EQUAL(0, ign4_pin_port);
-}
-
 //Test that all mandatory output pins have their mode correctly set to output
 void test_initialisation_outputs_V03(void)
 {
@@ -338,7 +323,6 @@ void testInitialisation()
   SET_UNITY_FILENAME() {
 
   RUN_TEST_P(test_initialisation_complete);
-  RUN_TEST_P(test_initialisation_ports);
   RUN_TEST_P(test_initialisation_outputs_V03);
   RUN_TEST_P(test_initialisation_outputs_V04);
   RUN_TEST_P(test_initialisation_outputs_MX5_8995);

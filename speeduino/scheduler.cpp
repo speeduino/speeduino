@@ -26,7 +26,6 @@ A full copy of the license may be found in the projects root directory
  */
 #include "globals.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
 #include "timers.h"
 #include "schedule_calcs.h"
 #include "preprocessor.h"

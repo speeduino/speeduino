@@ -43,7 +43,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 
 #include "globals.h"
 #include "crankMaths.h"
-#include "scheduledIO.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare

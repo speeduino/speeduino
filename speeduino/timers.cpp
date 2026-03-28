@@ -14,12 +14,12 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "globals.h"
 #include "sensors.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
-#include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
 #include "maths.h"
 #include "preprocessor.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;

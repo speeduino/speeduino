@@ -38,7 +38,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include "utilities.h"
 #include "engineProtection.h"
-#include "scheduledIO.h"
 #include "secondaryTables.h"
 #include "comms_CAN.h"
 #include "SD_logger.h"

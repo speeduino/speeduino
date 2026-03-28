@@ -10,7 +10,6 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "utilities.h"
-#include "scheduledIO.h"
 #include "scheduler.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
@@ -28,6 +27,8 @@
 #endif
 #include "fuel_calcs.h"
 #include "decoder_init.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
