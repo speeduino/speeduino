@@ -1,6 +1,6 @@
 #pragma once
 
-void initDirectInj(const uint8_t (&pins)[INJ_CHANNELS]);
+void initInjDirectIO(const uint8_t (&pins)[INJ_CHANNELS]);
 
 //Macros are used to define how each injector control system functions. These are then called by the master openInjectx() function.
 //The DIRECT macros (ie individual pins) are defined below. Others should be defined in their relevant acc_x.h file

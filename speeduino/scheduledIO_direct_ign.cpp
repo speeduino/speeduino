@@ -26,7 +26,7 @@ static void channel_Low(void)
     }
 }
 
-void initDirectIgn(const uint8_t (&pins)[IGN_CHANNELS])
+void initIgnDirectIO(const uint8_t (&pins)[IGN_CHANNELS])
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {

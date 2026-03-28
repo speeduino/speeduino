@@ -1,6 +1,6 @@
 #pragma once
 
-void initDirectIgn(const uint8_t (&pins)[IGN_CHANNELS]);
+void initIgnDirectIO(const uint8_t (&pins)[IGN_CHANNELS]);
 
 void coil1Low_DIRECT(void);
 void coil1High_DIRECT(void);

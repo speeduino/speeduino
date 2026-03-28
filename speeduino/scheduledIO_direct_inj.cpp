@@ -27,7 +27,7 @@ static void channel_Low(void)
     }
 }
 
-void initDirectInj(const uint8_t (&pins)[INJ_CHANNELS])
+void initInjDirectIO(const uint8_t (&pins)[INJ_CHANNELS])
 {
     for (uint8_t i = 0; i < _countof(pin_ports); i++)
     {

@@ -2677,9 +2677,15 @@ void setPinMapping(byte boardID)
   {
     uint8_t ignPins[IGN_CHANNELS] = {
       pinCoil1,
+      #if (IGN_CHANNELS >= 2)
       pinCoil2,
+      #endif
+      #if (IGN_CHANNELS >= 3)
       pinCoil3,
+      #endif
+      #if (IGN_CHANNELS >= 4)
       pinCoil4,
+      #endif
       #if (IGN_CHANNELS >= 5)
       pinCoil5,
       #endif
@@ -2693,16 +2699,22 @@ void setPinMapping(byte boardID)
       pinCoil8,
       #endif
     };
-    initDirectIgn(ignPins);
+    initIgnDirectIO(ignPins);
   } 
 
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
   {
     uint8_t injPins[INJ_CHANNELS] = {
       pinInjector1,
+      #if (INJ_CHANNELS >= 2)
       pinInjector2,
+      #endif
+      #if (INJ_CHANNELS >= 3)
       pinInjector3,
+      #endif
+      #if (INJ_CHANNELS >= 4)
       pinInjector4,
+      #endif
       #if (INJ_CHANNELS >= 5)
       pinInjector5,
       #endif
@@ -2716,7 +2728,7 @@ void setPinMapping(byte boardID)
       pinInjector8,
       #endif
     };
-    initDirectInj(injPins);
+    initInjDirectIO(injPins);
   }
   
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
