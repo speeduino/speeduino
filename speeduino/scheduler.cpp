@@ -268,7 +268,7 @@ void stopFuelSchedulers(void)
 #endif  
 }
 
-void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback)
+void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback)
 {
   schedule.pStartCallback = pStartCallback;
   schedule.pEndCallback = pEndCallback;
