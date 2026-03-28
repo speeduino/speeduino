@@ -129,41 +129,6 @@ void tachoOutputOff(void);
 #define openInjector8_DIRECT()  { *inj8_pin_port |= (inj8_pin_mask); }
 #define closeInjector8_DIRECT() { *inj8_pin_port &= ~(inj8_pin_mask); }
 
-#define coil1Low_DIRECT()       (*ign1_pin_port &= ~(ign1_pin_mask))
-#define coil1High_DIRECT()      (*ign1_pin_port |= (ign1_pin_mask))
-#define coil2Low_DIRECT()       (*ign2_pin_port &= ~(ign2_pin_mask))
-#define coil2High_DIRECT()      (*ign2_pin_port |= (ign2_pin_mask))
-#define coil3Low_DIRECT()       (*ign3_pin_port &= ~(ign3_pin_mask))
-#define coil3High_DIRECT()      (*ign3_pin_port |= (ign3_pin_mask))
-#define coil4Low_DIRECT()       (*ign4_pin_port &= ~(ign4_pin_mask))
-#define coil4High_DIRECT()      (*ign4_pin_port |= (ign4_pin_mask))
-#define coil5Low_DIRECT()       (*ign5_pin_port &= ~(ign5_pin_mask))
-#define coil5High_DIRECT()      (*ign5_pin_port |= (ign5_pin_mask))
-#define coil6Low_DIRECT()       (*ign6_pin_port &= ~(ign6_pin_mask))
-#define coil6High_DIRECT()      (*ign6_pin_port |= (ign6_pin_mask))
-#define coil7Low_DIRECT()       (*ign7_pin_port &= ~(ign7_pin_mask))
-#define coil7High_DIRECT()      (*ign7_pin_port |= (ign7_pin_mask))
-#define coil8Low_DIRECT()       (*ign8_pin_port &= ~(ign8_pin_mask))
-#define coil8High_DIRECT()      (*ign8_pin_port |= (ign8_pin_mask))
-
-//Set the value of the coil pins to the coilHIGH or coilLOW state
-#define coil1Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil1Low_DIRECT() : coil1High_DIRECT())
-#define coil1StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil1High_DIRECT() : coil1Low_DIRECT())
-#define coil2Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil2Low_DIRECT() : coil2High_DIRECT())
-#define coil2StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil2High_DIRECT() : coil2Low_DIRECT())
-#define coil3Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil3Low_DIRECT() : coil3High_DIRECT())
-#define coil3StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil3High_DIRECT() : coil3Low_DIRECT())
-#define coil4Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil4Low_DIRECT() : coil4High_DIRECT())
-#define coil4StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil4High_DIRECT() : coil4Low_DIRECT())
-#define coil5Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil5Low_DIRECT() : coil5High_DIRECT())
-#define coil5StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil5High_DIRECT() : coil5Low_DIRECT())
-#define coil6Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil6Low_DIRECT() : coil6High_DIRECT())
-#define coil6StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil6High_DIRECT() : coil6Low_DIRECT())
-#define coil7Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil7Low_DIRECT() : coil7High_DIRECT())
-#define coil7StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil7High_DIRECT() : coil7Low_DIRECT())
-#define coil8Charging_DIRECT()      (configPage4.IgInv == GOING_HIGH ? coil8Low_DIRECT() : coil8High_DIRECT())
-#define coil8StopCharging_DIRECT()  (configPage4.IgInv == GOING_HIGH ? coil8High_DIRECT() : coil8Low_DIRECT())
-
 #define coil1Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil1Low_MC33810();  } else { coil1High_MC33810(); }
 #define coil1StopCharging_MC33810()  if(configPage4.IgInv == GOING_HIGH) { coil1High_MC33810(); } else { coil1Low_MC33810();  }
 #define coil2Charging_MC33810()      if(configPage4.IgInv == GOING_HIGH) { coil2Low_MC33810();  } else { coil2High_MC33810(); }

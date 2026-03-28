@@ -3,6 +3,8 @@
 #include "globals.h"
 #include "timers.h"
 #include "acc_mc33810.h"
+#include "scheduledIO_direct_ign.h"
+
 /** @file
  * Injector and Coil (toggle/open/close) control (under various situations, eg with particular cylinder count, rotary engine type or wasted spark ign, etc.).
  * Also accounts for presence of MC33810 injector/ignition (dwell, etc.) control circuit.
