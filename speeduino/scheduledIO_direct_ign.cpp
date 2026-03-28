@@ -13,7 +13,7 @@ static void channel_High(void)
 {
     if (channel<=_countof(pin_ports))
     {
-        *pin_ports[(channel-1U)] |=  pin_masks[(channel-1U)];
+        *pin_ports[channel-1U] |=  pin_masks[channel-1U];
     }
 }
 
@@ -22,11 +22,11 @@ static void channel_Low(void)
 {
     if (channel<=_countof(pin_ports))
     {
-        *pin_ports[(channel-1U)] &= ~pin_masks[(channel-1U)];
+        *pin_ports[channel-1U] &= ~pin_masks[channel-1U];
     }
 }
 
-void initDirectIgn(uint8_t (&pins)[IGN_CHANNELS])
+void initDirectIgn(const uint8_t (&pins)[IGN_CHANNELS])
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {

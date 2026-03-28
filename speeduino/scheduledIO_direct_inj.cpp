@@ -14,7 +14,7 @@ static void channel_High(void)
 {
     if (channel<=_countof(pin_ports))
     {
-        *pin_ports[(channel-1U)] |=  pin_masks[(channel-1U)];
+        *pin_ports[channel-1U] |=  pin_masks[channel-1U];
     }
 }
 
@@ -23,11 +23,11 @@ static void channel_Low(void)
 {
     if (channel<=_countof(pin_ports))
     {
-        *pin_ports[(channel-1U)] &= ~pin_masks[(channel-1U)];
+        *pin_ports[channel-1U] &= ~pin_masks[channel-1U];
     }
 }
 
-void initDirectInj(uint8_t (&pins)[INJ_CHANNELS])
+void initDirectInj(const uint8_t (&pins)[INJ_CHANNELS])
 {
     for (uint8_t i = 0; i < _countof(pin_ports); i++)
     {
