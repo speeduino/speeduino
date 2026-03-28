@@ -25,25 +25,6 @@ trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 
-
-/// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
-port_register_t inj1_pin_port;
-pin_mask_t inj1_pin_mask;
-port_register_t inj2_pin_port;
-pin_mask_t inj2_pin_mask;
-port_register_t inj3_pin_port;
-pin_mask_t inj3_pin_mask;
-port_register_t inj4_pin_port;
-pin_mask_t inj4_pin_mask;
-port_register_t inj5_pin_port;
-pin_mask_t inj5_pin_mask;
-port_register_t inj6_pin_port;
-pin_mask_t inj6_pin_mask;
-port_register_t inj7_pin_port;
-pin_mask_t inj7_pin_mask;
-port_register_t inj8_pin_port;
-pin_mask_t inj8_pin_mask;
-
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
