@@ -3,7 +3,6 @@
 #include "globals.h"
 #include "init.h"
 #include "schedule_calcs.h"
-#include "scheduledIO.h"
 #include "utilities.h"
 #include "../test_utils.h"
 #include "storage.h"
@@ -13,7 +12,7 @@
 extern decoder_status_t decoderStatus;
 void prepareForInitialiseAll(uint8_t boardId);
 
-static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
+static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, int channelInjDegrees, Schedule::callback startFunction, Schedule::callback endFunction)
 {
   char msg[64];
 

@@ -139,54 +139,6 @@ extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 
-//These are for the direct port manipulation of the injectors, coils and aux outputs
-extern port_register_t inj1_pin_port;
-extern pin_mask_t inj1_pin_mask;
-extern port_register_t inj2_pin_port;
-extern pin_mask_t inj2_pin_mask;
-extern port_register_t inj3_pin_port;
-extern pin_mask_t inj3_pin_mask;
-extern port_register_t inj4_pin_port;
-extern pin_mask_t inj4_pin_mask;
-extern port_register_t inj5_pin_port;
-extern pin_mask_t inj5_pin_mask;
-extern port_register_t inj6_pin_port;
-extern pin_mask_t inj6_pin_mask;
-extern port_register_t inj7_pin_port;
-extern pin_mask_t inj7_pin_mask;
-extern port_register_t inj8_pin_port;
-extern pin_mask_t inj8_pin_mask;
-
-extern port_register_t ign1_pin_port;
-extern pin_mask_t ign1_pin_mask;
-extern port_register_t ign2_pin_port;
-extern pin_mask_t ign2_pin_mask;
-extern port_register_t ign3_pin_port;
-extern pin_mask_t ign3_pin_mask;
-extern port_register_t ign4_pin_port;
-extern pin_mask_t ign4_pin_mask;
-extern port_register_t ign5_pin_port;
-extern pin_mask_t ign5_pin_mask;
-extern port_register_t ign6_pin_port;
-extern pin_mask_t ign6_pin_mask;
-extern port_register_t ign7_pin_port;
-extern pin_mask_t ign7_pin_mask;
-extern port_register_t ign8_pin_port;
-extern pin_mask_t ign8_pin_mask;
-
-extern port_register_t tach_pin_port;
-extern pin_mask_t tach_pin_mask;
-extern port_register_t pump_pin_port;
-extern pin_mask_t pump_pin_mask;
-
-extern port_register_t flex_pin_port;
-extern pin_mask_t flex_pin_mask;
-
-extern byte triggerInterrupt;
-extern byte triggerInterrupt2;
-extern byte triggerInterrupt3;
-
-
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;

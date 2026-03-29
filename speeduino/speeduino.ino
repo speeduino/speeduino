@@ -38,7 +38,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "init.h"
 #include "utilities.h"
 #include "engineProtection.h"
-#include "scheduledIO.h"
 #include "secondaryTables.h"
 #include "comms_CAN.h"
 #include "SD_logger.h"
@@ -296,7 +295,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       setRpm(currentStatus, currentStatus.decoder.getRPM());
       if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
       {
-        FUEL_PUMP_ON();
+        fuelPumpOn();
       }
     }
     else
@@ -313,7 +312,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.rpmDOT = 0;
       initialiseCorrections();
       ignitionCount = 0;
-      if (currentStatus.fpPrimed == true) { FUEL_PUMP_OFF(); } //Turn off the fuel pump, but only if the priming is complete
+      if (currentStatus.fpPrimed == true) { fuelPumpOff(); } //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       currentStatus.engineIsCranking = false; //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       currentStatus.wueIsActive = false; //Same as above except for WUE
@@ -328,8 +327,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
       }
 
-      VVT1_PIN_LOW();
-      VVT2_PIN_LOW();
+      vvt1Off();
+      vvt2Off();
       DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
@@ -568,7 +567,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
 
             //Check whether the user has selected to disable to the fan during cranking
-            if(configPage2.fanWhenCranking == 0) { FAN_OFF(); }
+            if(configPage2.fanWhenCranking == 0) { fanOff(); }
           }
         }
       //END SETTING ENGINE STATUSES

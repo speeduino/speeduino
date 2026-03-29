@@ -26,7 +26,6 @@ A full copy of the license may be found in the projects root directory
  */
 #include "globals.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
 #include "timers.h"
 #include "schedule_calcs.h"
 #include "preprocessor.h"
@@ -268,7 +267,7 @@ void stopFuelSchedulers(void)
 #endif  
 }
 
-void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback)
+void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback)
 {
   schedule.pStartCallback = pStartCallback;
   schedule.pEndCallback = pEndCallback;

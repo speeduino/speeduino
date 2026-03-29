@@ -3,7 +3,6 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
 #include "channel_test_helpers.h"
 
 constexpr uint32_t TIMEOUT = 1000U;

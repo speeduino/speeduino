@@ -7,11 +7,12 @@
 #include "globals.h"
 #include "TS_CommandButtonHandler.h"
 #include "utilities.h"
-#include "scheduledIO.h"
 #include "sensors.h"
 #include "storage.h"
 #include "SD_logger.h"
 #include "pages.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif

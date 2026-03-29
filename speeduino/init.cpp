@@ -10,7 +10,6 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "utilities.h"
-#include "scheduledIO.h"
 #include "scheduler.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
@@ -28,6 +27,10 @@
 #endif
 #include "fuel_calcs.h"
 #include "decoder_init.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
+#include "scheduledIO_direct_ign.h"
+#include "scheduledIO_direct_inj.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -194,7 +197,7 @@ void initialiseAll(void)
     initialiseIgnitionSchedulers();
     //initialiseDisplay();
     initialiseIdle(true);
-    initialiseFan();
+    initialiseFan(pinFan);
     initialiseAirCon();
     initialiseAuxPWM();
     initialiseCorrections();
@@ -202,13 +205,8 @@ void initialiseAll(void)
     initialiseADC();
     initialiseMAPBaro();
     initialiseProgrammableIO();
+    initialiseFlexSensor(configPage2, currentStatus, pinFlex);
 
-    //Check whether the flex sensor is enabled and if so, attach an interrupt for it
-    if(configPage2.flexEnabled > 0)
-    {
-      if(!pinIsReserved(pinFlex)) { attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); }
-      currentStatus.ethanolPct = 0;
-    }
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
@@ -938,9 +936,6 @@ void initialiseAll(void)
           //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
           setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-
-          setCallbacks(ignitionSchedule3, nullCallback, nullCallback);
-          setCallbacks(ignitionSchedule4, nullCallback, nullCallback);
         }
         else if( configPage2.nCylinders == 6 )
         {
@@ -948,12 +943,6 @@ void initialiseAll(void)
           setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
           setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-
-          setCallbacks(ignitionSchedule4, nullCallback, nullCallback);
-          setCallbacks(ignitionSchedule5, nullCallback, nullCallback);
-#if IGN_CHANNELS >= 6
-          setCallbacks(ignitionSchedule6, nullCallback, nullCallback);
-#endif
         }
         else if( configPage2.nCylinders == 8 )
         {
@@ -962,17 +951,6 @@ void initialiseAll(void)
           setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
           setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
           setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-
-          setCallbacks(ignitionSchedule5, nullCallback, nullCallback);
-#if IGN_CHANNELS >= 6
-          setCallbacks(ignitionSchedule6, nullCallback, nullCallback);
-#endif
-#if IGN_CHANNELS >= 7
-          setCallbacks(ignitionSchedule7, nullCallback, nullCallback);
-#endif
-#if IGN_CHANNELS >= 8
-          setCallbacks(ignitionSchedule8, nullCallback, nullCallback);
-#endif
         }
         else
         {
@@ -1052,13 +1030,7 @@ void initialiseAll(void)
         break;
     }
 
-    //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-    //First check that the priming time is not 0
-    if(configPage2.fpPrime > 0)
-    {
-      FUEL_PUMP_ON();
-    }
-    else { currentStatus.fpPrimed = true; } //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+    currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 
     interrupts();
     initialiseCLT();
@@ -2690,18 +2662,12 @@ void setPinMapping(byte boardID)
   
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinTachOut, OUTPUT);
   pinMode(pinIdle1, OUTPUT);
   pinMode(pinIdle2, OUTPUT);
   pinMode(pinIdleUpOutput, OUTPUT);
-  pinMode(pinFuelPump, OUTPUT);
-  pinMode(pinFan, OUTPUT);
   pinMode(pinStepperDir, OUTPUT);
   pinMode(pinStepperStep, OUTPUT);
   pinMode(pinStepperEnable, OUTPUT);
-  pinMode(pinBoost, OUTPUT);
-  pinMode(pinVVT_1, OUTPUT);
-  pinMode(pinVVT_2, OUTPUT);
   if(configPage4.ignBypassEnabled > 0) { pinMode(pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
@@ -2709,76 +2675,60 @@ void setPinMapping(byte boardID)
 
   if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
   {
-    pinMode(pinCoil1, OUTPUT);
-    pinMode(pinCoil2, OUTPUT);
-    pinMode(pinCoil3, OUTPUT);
-    pinMode(pinCoil4, OUTPUT);
-    #if (IGN_CHANNELS >= 5)
-    pinMode(pinCoil5, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 6)
-    pinMode(pinCoil6, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 7)
-    pinMode(pinCoil7, OUTPUT);
-    #endif
-    #if (IGN_CHANNELS >= 8)
-    pinMode(pinCoil8, OUTPUT);
-    #endif
-
-    ign1_pin_port = portOutputRegister(digitalPinToPort(pinCoil1));
-    ign1_pin_mask = digitalPinToBitMask(pinCoil1);
-    ign2_pin_port = portOutputRegister(digitalPinToPort(pinCoil2));
-    ign2_pin_mask = digitalPinToBitMask(pinCoil2);
-    ign3_pin_port = portOutputRegister(digitalPinToPort(pinCoil3));
-    ign3_pin_mask = digitalPinToBitMask(pinCoil3);
-    ign4_pin_port = portOutputRegister(digitalPinToPort(pinCoil4));
-    ign4_pin_mask = digitalPinToBitMask(pinCoil4);
-    ign5_pin_port = portOutputRegister(digitalPinToPort(pinCoil5));
-    ign5_pin_mask = digitalPinToBitMask(pinCoil5);
-    ign6_pin_port = portOutputRegister(digitalPinToPort(pinCoil6));
-    ign6_pin_mask = digitalPinToBitMask(pinCoil6);
-    ign7_pin_port = portOutputRegister(digitalPinToPort(pinCoil7));
-    ign7_pin_mask = digitalPinToBitMask(pinCoil7);
-    ign8_pin_port = portOutputRegister(digitalPinToPort(pinCoil8));
-    ign8_pin_mask = digitalPinToBitMask(pinCoil8);
+    uint8_t ignPins[IGN_CHANNELS] = {
+      pinCoil1,
+      #if (IGN_CHANNELS >= 2)
+      pinCoil2,
+      #endif
+      #if (IGN_CHANNELS >= 3)
+      pinCoil3,
+      #endif
+      #if (IGN_CHANNELS >= 4)
+      pinCoil4,
+      #endif
+      #if (IGN_CHANNELS >= 5)
+      pinCoil5,
+      #endif
+      #if (IGN_CHANNELS >= 6)
+      pinCoil6,
+      #endif
+      #if (IGN_CHANNELS >= 7)
+      pinCoil7,
+      #endif
+      #if (IGN_CHANNELS >= 8)
+      pinCoil8,
+      #endif
+    };
+    initIgnDirectIO(ignPins);
   } 
 
   if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
   {
-    pinMode(pinInjector1, OUTPUT);
-    pinMode(pinInjector2, OUTPUT);
-    pinMode(pinInjector3, OUTPUT);
-    pinMode(pinInjector4, OUTPUT);
-    #if (INJ_CHANNELS >= 5)
-    pinMode(pinInjector5, OUTPUT);
-    #endif
-    #if (INJ_CHANNELS >= 6)
-    pinMode(pinInjector6, OUTPUT);
-    #endif
-    #if (INJ_CHANNELS >= 7)
-    pinMode(pinInjector7, OUTPUT);
-    #endif
-    #if (INJ_CHANNELS >= 8)
-    pinMode(pinInjector8, OUTPUT);
-    #endif
-
-    inj1_pin_port = portOutputRegister(digitalPinToPort(pinInjector1));
-    inj1_pin_mask = digitalPinToBitMask(pinInjector1);
-    inj2_pin_port = portOutputRegister(digitalPinToPort(pinInjector2));
-    inj2_pin_mask = digitalPinToBitMask(pinInjector2);
-    inj3_pin_port = portOutputRegister(digitalPinToPort(pinInjector3));
-    inj3_pin_mask = digitalPinToBitMask(pinInjector3);
-    inj4_pin_port = portOutputRegister(digitalPinToPort(pinInjector4));
-    inj4_pin_mask = digitalPinToBitMask(pinInjector4);
-    inj5_pin_port = portOutputRegister(digitalPinToPort(pinInjector5));
-    inj5_pin_mask = digitalPinToBitMask(pinInjector5);
-    inj6_pin_port = portOutputRegister(digitalPinToPort(pinInjector6));
-    inj6_pin_mask = digitalPinToBitMask(pinInjector6);
-    inj7_pin_port = portOutputRegister(digitalPinToPort(pinInjector7));
-    inj7_pin_mask = digitalPinToBitMask(pinInjector7);
-    inj8_pin_port = portOutputRegister(digitalPinToPort(pinInjector8));
-    inj8_pin_mask = digitalPinToBitMask(pinInjector8);
+    uint8_t injPins[INJ_CHANNELS] = {
+      pinInjector1,
+      #if (INJ_CHANNELS >= 2)
+      pinInjector2,
+      #endif
+      #if (INJ_CHANNELS >= 3)
+      pinInjector3,
+      #endif
+      #if (INJ_CHANNELS >= 4)
+      pinInjector4,
+      #endif
+      #if (INJ_CHANNELS >= 5)
+      pinInjector5,
+      #endif
+      #if (INJ_CHANNELS >= 6)
+      pinInjector6,
+      #endif
+      #if (INJ_CHANNELS >= 7)
+      pinInjector7,
+      #endif
+      #if (INJ_CHANNELS >= 8)
+      pinInjector8,
+      #endif
+    };
+    initInjDirectIO(injPins);
   }
   
   if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
@@ -2793,10 +2743,7 @@ void setPinMapping(byte boardID)
 //   EEPROM.begin(USE_SPI_EEPROM);
 // #endif
 
-  tach_pin_port = portOutputRegister(digitalPinToPort(pinTachOut));
-  tach_pin_mask = digitalPinToBitMask(pinTachOut);
-  pump_pin_port = portOutputRegister(digitalPinToPort(pinFuelPump));
-  pump_pin_mask = digitalPinToBitMask(pinFuelPump);
+  initTacho(pinTachOut);
 
   //And for inputs
   #if defined(CORE_STM32)
@@ -2832,10 +2779,6 @@ void setPinMapping(byte boardID)
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
-  if( (configPage2.flexEnabled > 0) && (!pinIsOutput(pinFlex)) )
-  {
-    pinMode(pinFlex, INPUT); //Standard GM / Continental flex sensor requires pullup, but this should be onboard. The internal pullup will not work (Requires ~3.3k)!
-  }
   if( isExternalVssMode(configPage2) && (!pinIsOutput(pinVSS)) ) //Pin mode 1 for VSS is CAN
   {
     pinMode(pinVSS, INPUT);
@@ -2891,37 +2834,8 @@ void setPinMapping(byte boardID)
       else { pinMode(pinWMIEmpty, INPUT); } //inverted setting
     }
   } 
-
-  if((pinAirConComp>0) && ((configPage15.airConEnable) == 1))
-  {
-    pinMode(pinAirConComp, OUTPUT);
-  }
-
-  if((pinAirConRequest > 0) && ((configPage15.airConEnable) == 1) && (!pinIsOutput(pinAirConRequest)))
-  {
-    if((configPage15.airConReqPol) == 1)
-    {
-      // Inverted
-      // +5V is ON, Use external pull-down resistor for OFF
-      pinMode(pinAirConRequest, INPUT);
-    }
-    else
-    {
-      //Normal
-      // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
-      pinMode(pinAirConRequest, INPUT_PULLUP);
-    }
-  }
-
-  if((pinAirConFan > 0) && ((configPage15.airConEnable) == 1) && ((configPage15.airConFanEnabled) == 1))
-  {
-    pinMode(pinAirConFan, OUTPUT);
-  }  
-
-  flex_pin_port = portInputRegister(digitalPinToPort(pinFlex));
-  flex_pin_mask = digitalPinToBitMask(pinFlex);
-
 }
+
 /** Initialise the chosen trigger decoder.
  * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
  * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.

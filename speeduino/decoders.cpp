@@ -35,7 +35,6 @@ A full copy of the license may be found in the projects root directory
 #include <limits.h>
 #include "globals.h"
 #include "decoders.h"
-#include "scheduledIO.h"
 #include "scheduler.h"
 #include "crankMaths.h"
 #include "timers.h"
@@ -44,6 +43,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "decoder_init.h"
 #include "decoder_builder.h"
+#include "scheduledIO_ign.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);

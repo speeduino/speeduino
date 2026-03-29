@@ -757,7 +757,7 @@ static inline void readBat(void)
     //Re-prime the fuel pump
     fpPrimeTime = currentStatus.secl;
     currentStatus.fpPrimed = false;
-    FUEL_PUMP_ON();
+    fuelPumpOn();
 
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
@@ -954,6 +954,26 @@ uint8_t getAnalogKnock(void)
   return (uint8_t)fastMap10Bit(readAnalogSensor(pinKnock), 0U, 255U);
 }
 
+#if defined(CORE_AVR)
+  static port_register_t flex_pin_port;
+  static pin_mask_t flex_pin_mask;
+  static inline void initialiseFlexPin(uint8_t pin)
+  {
+    pinMode(pin, INPUT);
+    
+    //Pre-cache the port and mask for faster reading within the interrupt
+    flex_pin_port = portInputRegister(digitalPinToPort(pin));
+    flex_pin_mask = digitalPinToBitMask(pin);
+  }
+  #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
+#else
+  #define READ_FLEX() digitalRead(pinFlex)
+  static inline void initialiseFlexPin(uint8_t pin)
+  {
+    pinMode(pin, INPUT);
+  }
+#endif
+
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second
@@ -971,6 +991,22 @@ void flexPulse(void)
     flexStartTime = micros(); //Start pulse width measurement.
   }
 }
+
+void initialiseFlexSensor(config2 &page2, statuses &current, uint8_t pin)
+{
+  current.ethanolPct = 0;
+
+  page2.flexEnabled  = page2.flexEnabled && !pinIsOutput(pinFlex);
+  if(page2.flexEnabled)
+  {
+    // Standard GM / Continental flex sensor requires pullup, but this should be onboard.
+    // The internal pullup will not work (Requires ~3.3k)!
+    initialiseFlexPin(pin);
+
+    attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); 
+  }  
+}
+
 
 /*
  * The interrupt function for pulses from a knock conditioner / controller

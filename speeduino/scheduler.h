@@ -43,7 +43,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 
 #include "globals.h"
 #include "crankMaths.h"
-#include "scheduledIO.h"
 
 #define USE_IGN_REFRESH
 #define IGNITION_REFRESH_THRESHOLD  30 //Time in uS that the refresh functions will check to ensure there is enough time before changing the end compare
@@ -77,6 +76,8 @@ enum ScheduleStatus {
   RUNNING_WITHNEXT = 0b00000100U,
 }; 
 
+/** @brief A scheduler callback that does nothing */
+static inline void nullCallback(void) { return; }
 
 /**
  * @brief A schedule for a single output channel. 
@@ -116,7 +117,9 @@ struct Schedule {
     : _counter(counter)
     , _compare(compare) 
   {
-  }  
+  }
+
+  using callback = void(*)(void);
 
   /**
    * @brief Scheduled duration (timer ticks) 
@@ -127,8 +130,8 @@ struct Schedule {
    */
   volatile COMPARE_TYPE duration = 0U;
   volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  voidVoidCallback pStartCallback = &nullCallback; ///< Start Callback function for schedule
-  voidVoidCallback pEndCallback = &nullCallback;   ///< End Callback function for schedule
+  callback pStartCallback = &nullCallback; ///< Start Callback function for schedule
+  callback pEndCallback = &nullCallback;   ///< End Callback function for schedule
   COMPARE_TYPE nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
@@ -150,7 +153,7 @@ static inline bool isRunning(const Schedule &schedule) {
  * @param pStartCallback Start callback
  * @param pEndCallback End callback
  */
-void setCallbacks(Schedule &schedule, voidVoidCallback pStartCallback, voidVoidCallback pEndCallback);
+void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback);
 
 /**
  * @brief Set the schedule action to run for a certain duration in the future

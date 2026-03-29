@@ -3,14 +3,13 @@
 #include "globals.h"
 #include "init.h"
 #include "schedule_calcs.h"
-#include "scheduledIO.h"
 #include "../test_utils.h"
 #include "storage.h"
 #include "../test_schedules/channel_test_helpers.h"
 
 void prepareForInitialiseAll(uint8_t boardId);
 
-static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, voidVoidCallback startFunction, voidVoidCallback endFunction)
+static void assert_ignition_channel(uint16_t angle, uint8_t channel, int channelInjDegrees, Schedule::callback startFunction, Schedule::callback endFunction)
 {
   char msg[32];
 
