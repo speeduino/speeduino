@@ -44,7 +44,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoder_init.h"
 #include "decoder_builder.h"
 #include "scheduledIO_ign.h"
-#include "fastInputPin.h"
+#include "src/pins/fastInputPin.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);

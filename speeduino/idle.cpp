@@ -10,9 +10,8 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "src/PID_v1/PID_v1.h"
 #include "units.h"
-#include "port_pin.h"
 #include "globals.h"
-#include "fastOutputPin.h"
+#include "src/pins/fastOutputPin.h"
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1

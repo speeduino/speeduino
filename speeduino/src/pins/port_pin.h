@@ -27,6 +27,6 @@ struct port_pin_t
   /** @brief The return type of a "call" to digitalPinToBitMask() */
   using pin_mask_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
 
-  port_register_t port = {0};
+  port_register_t port = {nullptr};
   pin_mask_t mask = {0};
 };

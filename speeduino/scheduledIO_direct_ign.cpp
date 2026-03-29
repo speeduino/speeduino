@@ -1,5 +1,5 @@
 #include "board_definition.h"
-#include "fastOutputPin.h"
+#include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
 
 // LCOV_EXCL_START

@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include "acc_mc33810.h"
-#include "fastOutputPin.h"
+#include "src/pins/fastOutputPin.h"
+#include "globals.h"
 
 uint8_t MC33810_BIT_INJ1 = 1;
 uint8_t MC33810_BIT_INJ2 = 2;
