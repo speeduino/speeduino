@@ -12,6 +12,7 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "port_pin.h"
 #include "globals.h"
+#include "fastOutputPin.h"
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1

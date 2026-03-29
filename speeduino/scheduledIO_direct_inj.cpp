@@ -1,6 +1,6 @@
 #include "globals.h"
 #include "board_definition.h"
-#include "port_pin.h"
+#include "fastOutputPin.h"
 #include "preprocessor.h"
 
 // LCOV_EXCL_START

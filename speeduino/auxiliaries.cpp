@@ -13,7 +13,8 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "board_definition.h"
 #include "atomic.h"
-#include "port_pin.h"
+#include "fastInputPin.h"
+#include "fastOutputPin.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
