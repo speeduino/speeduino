@@ -660,17 +660,32 @@ TESTABLE_INLINE_STATIC uint8_t correctionFuelTemp(void)
 
 // ============================= Air Fuel Ratio (AFR) correction =============================
 
+static inline uint16_t getAfrTargetLoad(const statuses &current, const config6 &page6)
+{
+  switch (page6.afrLoadSource)
+  {
+    case AFR_LOAD_MAP:
+      return current.MAP;
+    case AFR_LOAD_TPS:
+      return current.TPS * 2U;
+    case AFR_LOAD_PRIMARY:
+    default:
+      return current.fuelLoad;
+  }
+}
+
 uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
+  const uint16_t afrLoad = getAfrTargetLoad(current, page6);
   //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   if (page2.incorporateAFR == true) {
-    return get3DTableValue(&afrLookUpTable, current.MAP, current.RPM);
+    return get3DTableValue(&afrLookUpTable, afrLoad, current.RPM);
   }
   if (page6.egoType!=EGO_TYPE_OFF) 
   {
-    // AFR target tables always use MAP as the load axis, regardless of the primary fueling algorithm.
-    //Note that this should only run after the sensor warmup delay when using Include AFR option,
+    // AFR target tables may use the primary fuel load, MAP, or TPS depending on the AFR settings.
+    // Note that this should only run after the sensor warmup delay when using Include AFR option.
     if( current.runSecs > page6.ego_sdelay) { 
-      return get3DTableValue(&afrLookUpTable, current.MAP, current.RPM); 
+      return get3DTableValue(&afrLookUpTable, afrLoad, current.RPM); 
     }
     return current.O2; //Catch all
   }

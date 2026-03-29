@@ -135,6 +135,10 @@ constexpr uint8_t VVT_MODE_CLOSED_LOOP = 2U;
 constexpr uint8_t VVT_LOAD_MAP      = 0U;
 constexpr uint8_t VVT_LOAD_TPS      = 1U;
 
+constexpr uint8_t AFR_LOAD_PRIMARY  = 0U;
+constexpr uint8_t AFR_LOAD_MAP      = 1U;
+constexpr uint8_t AFR_LOAD_TPS      = 2U;
+
 constexpr uint8_t MULTIPLY_MAP_MODE_OFF   = 0U;
 constexpr uint8_t MULTIPLY_MAP_MODE_BARO  = 1U;
 constexpr uint8_t MULTIPLY_MAP_MODE_100   = 2U;
@@ -549,6 +553,8 @@ struct config6 : public config_page_t {
   byte fanHyster;         // Fan hysteresis
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
+  byte afrLoadSource : 2; ///< AFR target table load source. 0 = primary fuel load, 1 = MAP, 2 = TPS
+  byte unused6_129 : 6;
 
 } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 

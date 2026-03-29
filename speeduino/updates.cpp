@@ -64,9 +64,19 @@ TESTABLE_STATIC void upgradeV25toV26(void) {
   }
 }
 
+TESTABLE_STATIC void upgradeV26toV27(void) {
+  if(loadEEPROMVersion() == 26U)
+  {
+    // AFR target lookup now has an independent load source. Keep existing tunes on the primary fuel load.
+    configPage6.afrLoadSource = AFR_LOAD_PRIMARY;
+    saveAllPages();
+    saveEEPROMVersion(27);
+  }
+}
+
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    26
+  #define CURRENT_DATA_VERSION    27
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -847,6 +857,7 @@ void doUpdates(void)
     saveEEPROMVersion(25);
   }
   upgradeV25toV26();
+  upgradeV26toV27();
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )

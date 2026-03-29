@@ -1462,6 +1462,8 @@ static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
   memset(&current, 0, sizeof(current));
   current.runSecs = page6.ego_sdelay + 2U;
   current.fuelLoad = 60;
+  current.MAP = 80;
+  current.TPS = 50;
   setRpm(current, 3100U);
   current.O2 = 75U;
 }
@@ -1508,6 +1510,20 @@ static void test_corrections_afrtarget_incorporteafr(void) {
   TEST_ASSERT_EQUAL(77U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
 }
 
+static void test_corrections_afrtarget_incorporteafr_map(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = true;
+  page6.egoType = EGO_TYPE_OFF;
+  page6.afrLoadSource = AFR_LOAD_MAP;
+
+  TEST_ASSERT_EQUAL(86U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
 static void test_corrections_afrtarget_ego(void) {
   table3d16RpmLoad afrLookUpTable;
   statuses current;
@@ -1521,11 +1537,27 @@ static void test_corrections_afrtarget_ego(void) {
   TEST_ASSERT_EQUAL(77U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
 }
 
+static void test_corrections_afrtarget_ego_tps(void) {
+  table3d16RpmLoad afrLookUpTable;
+  statuses current;
+  config2 page2;
+  config6 page6;
+  setup_afrtarget(afrLookUpTable, current, page2, page6);
+
+  page2.incorporateAFR = false;
+  page6.egoType = EGO_TYPE_NARROW;
+  page6.afrLoadSource = AFR_LOAD_TPS;
+
+  TEST_ASSERT_EQUAL(115U, calculateAfrTarget(afrLookUpTable, current, page2, page6));
+}
+
 static void test_corrections_afrtarget(void) {
   RUN_TEST_P(test_corrections_afrtarget_no_compute);
   RUN_TEST_P(test_corrections_afrtarget_no_compute_egodelay);
   RUN_TEST_P(test_corrections_afrtarget_incorporteafr);
+  RUN_TEST_P(test_corrections_afrtarget_incorporteafr_map);
   RUN_TEST_P(test_corrections_afrtarget_ego);
+  RUN_TEST_P(test_corrections_afrtarget_ego_tps);
 }
 
 extern byte correctionIATDensity(void);
