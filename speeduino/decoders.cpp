@@ -45,6 +45,7 @@ A full copy of the license may be found in the projects root directory
 #include "decoder_builder.h"
 #include "scheduledIO_ign.h"
 #include "src/pins/fastInputPin.h"
+#include "src/pins/inputPin.h"
 
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
@@ -118,19 +119,19 @@ TESTABLE_STATIC decoder_status_t decoderStatus;
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
+#if defined(CORE_AVR)
 static fastInputPin_t triggerPri_pin;
 static fastInputPin_t triggerSec_pin;
 static fastInputPin_t triggerThird_pin;
-
-#if defined(CORE_AVR)
-  #define READ_PRI_TRIGGER() (triggerPri_pin.isPinHigh())
-  #define READ_SEC_TRIGGER() (triggerSec_pin.isPinHigh())
-  #define READ_THIRD_TRIGGER() (triggerThird_pin.isPinHigh())
 #else
-  #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
-  #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
-  #define READ_THIRD_TRIGGER() digitalRead(pinTrigger3)  
+static inputPin_t triggerPri_pin;
+static inputPin_t triggerSec_pin;
+static inputPin_t triggerThird_pin;
 #endif
+
+#define READ_PRI_TRIGGER() (triggerPri_pin.isPinHigh())
+#define READ_SEC_TRIGGER() (triggerSec_pin.isPinHigh())
+#define READ_THIRD_TRIGGER() (triggerThird_pin.isPinHigh())
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM_SECONDARY 1

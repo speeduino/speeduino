@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "src/pins/fastInputPin.h"
 #include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
@@ -81,40 +82,19 @@ static void initAirConRequestPin(const config15 &page15, uint8_t pin)
 }
 
 #if defined(CORE_TEENSY) || defined(CORE_STM32)
-
-#define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
-#define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
-static void initializeBoostPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-#define N2O_STAGE1_PIN_LOW()    (digitalWrite(configPage10.n2o_stage1_pin, LOW))
-#define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
-#define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
-#define N2O_STAGE2_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage2_pin, HIGH))
-static void initialiseN2oPins(const config10 &page10)
-{
-  pinMode(page10.n2o_stage1_pin, OUTPUT);
-  pinMode(page10.n2o_stage2_pin, OUTPUT);
-  initialiseN2oArmPin(page10);
-}
-#define AIRCON_PIN_LOW()        (digitalWrite(pinAirConComp, LOW))
-#define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
-#define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
-#define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
-
-static void initAirConCompressorPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-static void initAirConFanPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-
+static outputPin_t boost_pin;
+static outputPin_t n2o_stage1_pin;
+static outputPin_t n2o_stage2_pin;
+static outputPin_t aircon_comp_pin;
+static outputPin_t aircon_fan_pin;
 #else
-
 static fastOutputPin_t boost_pin;
+static fastOutputPin_t n2o_stage1_pin;
+static fastOutputPin_t n2o_stage2_pin;
+static fastOutputPin_t aircon_comp_pin;
+static fastOutputPin_t aircon_fan_pin;
+#endif
+
 #define BOOST_PIN_LOW()         ATOMIC() { boost_pin.setPinLow(); }
 #define BOOST_PIN_HIGH()        ATOMIC() { boost_pin.setPinHigh(); }
 static void initializeBoostPin(uint8_t pin)
@@ -122,22 +102,17 @@ static void initializeBoostPin(uint8_t pin)
   boost_pin.setPin(pin, OUTPUT);
 }
 
-static fastOutputPin_t n2o_stage1_pin;
-static fastOutputPin_t n2o_stage2_pin;
-
 #define N2O_STAGE1_PIN_LOW()    ATOMIC() { n2o_stage1_pin.setPinLow(); }
 #define N2O_STAGE1_PIN_HIGH()   ATOMIC() { n2o_stage1_pin.setPinHigh(); }
 #define N2O_STAGE2_PIN_LOW()    ATOMIC() { n2o_stage2_pin.setPinLow(); }
 #define N2O_STAGE2_PIN_HIGH()   ATOMIC() { n2o_stage2_pin.setPinHigh(); }
+
 static void initialiseN2oPins(const config10 &page10)
 {
   n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
   n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
-static fastOutputPin_t aircon_comp_pin;
-static fastOutputPin_t aircon_fan_pin;
-
 // Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
 // The ATOMIC is instead placed around the ternary call below
 #define AIRCON_PIN_LOW()        aircon_comp_pin.setPinLow()
@@ -153,7 +128,6 @@ static void initAirConFanPin(uint8_t pin)
 {
   aircon_fan_pin.setPin(pin, OUTPUT);
 }
-#endif
 
 #define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
 #define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
@@ -427,15 +401,10 @@ static inline void checkAirConRPMLockout(void)
  */
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
-#define FUEL_PUMP_PIN_HIGH()  digitalWrite(pinFuelPump, HIGH)
-#define FUEL_PUMP_PIN_LOW()   digitalWrite(pinFuelPump, LOW) 
-static inline void initialisePumpPin(uint8_t pin) 
-{ 
-  pinMode(pin, OUTPUT);
-}
+static outputPin_t pump_pin;
 #else
-
 static fastOutputPin_t pump_pin;
+#endif
 
 static inline void initialisePumpPin(uint8_t pin) 
 { 
@@ -444,8 +413,6 @@ static inline void initialisePumpPin(uint8_t pin)
 
 #define FUEL_PUMP_PIN_HIGH() pump_pin.setPinHigh()
 #define FUEL_PUMP_PIN_LOW()  pump_pin.setPinLow()
-
-#endif
 
 void fuelPumpOn(void)
 {
@@ -483,12 +450,10 @@ Fan control
 */
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
-#define FAN_PIN_LOW()           (digitalWrite(pinFan, LOW))
-#define FAN_PIN_HIGH()          (digitalWrite(pinFan, HIGH))
-static void initialiseFanPin(uint8_t pin) { UNUSED(pin); /* Do nothing */}
+static outputPin_t fan_pin;
 #else
-
 static fastOutputPin_t fan_pin;
+#endif
 
 #define FAN_PIN_LOW()           fan_pin.setPinLow()
 #define FAN_PIN_HIGH()          fan_pin.setPinHigh()
@@ -497,8 +462,6 @@ static void initialiseFanPin(uint8_t pin)
 { 
   fan_pin.setPin(pin, OUTPUT);
 }
-
-#endif
 
 void fanOn(void) 
 {
@@ -647,21 +610,12 @@ void fanControl(void)
 }
 
 #if(defined(CORE_TEENSY) || defined(CORE_STM32))
-
-#define VVT1_PIN_LOW()          (digitalWrite(pinVVT_1, LOW))
-#define VVT1_PIN_HIGH()         (digitalWrite(pinVVT_1, HIGH))
-#define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
-#define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
-
-static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
-{ 
-  pinMode(pin1, OUTPUT);
-  pinMode(pin2, OUTPUT);
-}
+static outputPin_t vvt1_pin;
+static outputPin_t vvt2_pin;
 #else
-
 static fastOutputPin_t vvt1_pin;
 static fastOutputPin_t vvt2_pin;
+#endif
 
 #define VVT1_PIN_LOW()          ATOMIC() { vvt1_pin.setPinLow(); }
 #define VVT1_PIN_HIGH()         ATOMIC() { vvt1_pin.setPinHigh(); }
@@ -673,8 +627,6 @@ static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2)
   vvt1_pin.setPin(pin1, OUTPUT);
   vvt2_pin.setPin(pin2, OUTPUT);
 }
-
-#endif
 
 void initialiseAuxPWM(void)
 {

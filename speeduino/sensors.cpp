@@ -29,6 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "polling.hpp"
 #include "decoders.h"
 #include "src/pins/fastInputPin.h"
+#include "src/pins/inputPin.h"
 
 uint8_t statusSensors = 0;
 
@@ -956,19 +957,15 @@ uint8_t getAnalogKnock(void)
 }
 
 #if defined(CORE_AVR)
-  static fastInputPin_t flex_pin;
-  static inline void initialiseFlexPin(uint8_t pin)
-  {
-    flex_pin.setPin(pin, INPUT);
-  }
-  #define READ_FLEX() (flex_pin.isPinHigh())
+static fastInputPin_t flex_pin;
 #else
-  #define READ_FLEX() digitalRead(pinFlex)==HIGH
-  static inline void initialiseFlexPin(uint8_t pin)
-  {
-    pinMode(pin, INPUT);
-  }
+static inputPin_t flex_pin;
 #endif
+
+static inline void initialiseFlexPin(uint8_t pin)
+{
+  flex_pin.setPin(pin, INPUT);
+}
 
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
@@ -976,7 +973,7 @@ uint8_t getAnalogKnock(void)
  */
 void flexPulse(void)
 {
-  if(READ_FLEX() == true)
+  if(flex_pin.isPinHigh())
   {
     uint16_t tempPW = clamp(micros() - flexStartTime, 0UL, (unsigned long)UINT16_MAX); //Calculate the pulse width
     flexPulseWidth = LOW_PASS_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);

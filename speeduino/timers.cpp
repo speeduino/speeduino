@@ -21,6 +21,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
 #include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
@@ -54,18 +55,17 @@ void initialiseTimers(void)
 }
 
 #if defined(CORE_TEENSY) || defined(CORE_STM32)
-  #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
-  #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
-  static void initTachoPin(uint8_t pin) { UNUSED(pin); /* Do nothing*/}
- #else
-  #define TACHO_PULSE_HIGH()        (tach_pin.setPinHigh())
-  #define TACHO_PULSE_LOW()         (tach_pin.setPinLow())
-  static fastOutputPin_t tach_pin;
-  static void initTachoPin(uint8_t pin) 
-  { 
-    tach_pin.setPin(pin, OUTPUT);
-  }
+static outputPin_t tach_pin;
+#else
+static fastOutputPin_t tach_pin;
 #endif
+
+static void initTachoPin(uint8_t pin) 
+{ 
+  tach_pin.setPin(pin, OUTPUT);
+}
+#define TACHO_PULSE_HIGH()        (tach_pin.setPinHigh())
+#define TACHO_PULSE_LOW()         (tach_pin.setPinLow())
 
 void initTacho(uint8_t tachoPin)
 {
