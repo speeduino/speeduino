@@ -1,6 +1,6 @@
-#include "acc_mc33810.h"
-#include "globals.h"
 #include <SPI.h>
+#include "acc_mc33810.h"
+#include "port_pin.h"
 
 uint8_t MC33810_BIT_INJ1 = 1;
 uint8_t MC33810_BIT_INJ2 = 2;
@@ -20,23 +20,19 @@ uint8_t MC33810_BIT_IGN6 = 6;
 uint8_t MC33810_BIT_IGN7 = 7;
 uint8_t MC33810_BIT_IGN8 = 8;
 
-static port_register_t mc33810_1_pin_port;
-static pin_mask_t mc33810_1_pin_mask;
-static port_register_t mc33810_2_pin_port;
-static pin_mask_t mc33810_2_pin_mask;
+static fastOutputPin_t mc33810_1_pin;
+static fastOutputPin_t mc33810_2_pin;
 
-void setMC33810_1_ACTIVE(void) { *mc33810_1_pin_port &= ~mc33810_1_pin_mask; }
-void setMC33810_1_INACTIVE(void) { *mc33810_1_pin_port |= mc33810_1_pin_mask; }
-void setMC33810_2_ACTIVE(void) { *mc33810_2_pin_port &= ~mc33810_2_pin_mask; }
-void setMC33810_2_INACTIVE(void) { *mc33810_2_pin_port |= mc33810_2_pin_mask; }
+void setMC33810_1_ACTIVE(void) { mc33810_1_pin.setPinHigh(); }
+void setMC33810_1_INACTIVE(void) { mc33810_1_pin.setPinLow(); }
+void setMC33810_2_ACTIVE(void) { mc33810_2_pin.setPinHigh(); }
+void setMC33810_2_INACTIVE(void) { mc33810_2_pin.setPinLow(); }
 
 void initMC33810(void)
 {
     //Set pin port/masks
-    mc33810_1_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_1_CS));
-    mc33810_1_pin_mask = digitalPinToBitMask(pinMC33810_1_CS);
-    mc33810_2_pin_port = portOutputRegister(digitalPinToPort(pinMC33810_2_CS));
-    mc33810_2_pin_mask = digitalPinToBitMask(pinMC33810_2_CS);
+    mc33810_1_pin.setPin(pinMC33810_1_CS, OUTPUT);
+    mc33810_2_pin.setPin(pinMC33810_2_CS, OUTPUT);
 
     //Set the output states of both ICs to be off to fuel and ignition
     mc33810_1_requestedState = 0;

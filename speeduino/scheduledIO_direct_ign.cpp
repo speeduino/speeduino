@@ -5,34 +5,31 @@
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
  
-static port_register_t pin_ports[IGN_CHANNELS];
-static pin_mask_t pin_masks[IGN_CHANNELS];
+static fastOutputPin_t pins[IGN_CHANNELS];
 
 template <uint8_t channel>
 static void channel_High(void)
 {
-    if (channel<=_countof(pin_ports))
+    if (channel<=_countof(pins))
     {
-        *pin_ports[channel-1U] |=  pin_masks[channel-1U];
+        pins[channel-1U].setPinHigh();
     }
 }
 
 template <uint8_t channel>
 static void channel_Low(void)
 {
-    if (channel<=_countof(pin_ports))
+    if (channel<=_countof(pins))
     {
-        *pin_ports[channel-1U] &= ~pin_masks[channel-1U];
+        pins[channel-1U].setPinLow();
     }
 }
 
-void initIgnDirectIO(const uint8_t (&pins)[IGN_CHANNELS])
+void initIgnDirectIO(const uint8_t (&pinNumbers)[IGN_CHANNELS])
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {
-        pinMode(pins[i], OUTPUT);
-        pin_ports[i] = portOutputRegister(digitalPinToPort(pins[i]));
-        pin_masks[i] = digitalPinToBitMask(pins[i]);
+        pins[i].setPin(pinNumbers[i], OUTPUT);
     }
 }
 
