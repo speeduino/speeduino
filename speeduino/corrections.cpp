@@ -663,14 +663,14 @@ TESTABLE_INLINE_STATIC uint8_t correctionFuelTemp(void)
 uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6) {
   //afrTarget value lookup must be done if O2 sensor is enabled, and always if incorporateAFR is enabled
   if (page2.incorporateAFR == true) {
-    return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM);
+    return get3DTableValue(&afrLookUpTable, current.MAP, current.RPM);
   }
   if (page6.egoType!=EGO_TYPE_OFF) 
   {
-    //Determine whether the Y axis of the AFR target table tshould be MAP (Speed-Density) or TPS (Alpha-N)
+    // AFR target tables always use MAP as the load axis, regardless of the primary fueling algorithm.
     //Note that this should only run after the sensor warmup delay when using Include AFR option,
     if( current.runSecs > page6.ego_sdelay) { 
-      return get3DTableValue(&afrLookUpTable, current.fuelLoad, current.RPM); 
+      return get3DTableValue(&afrLookUpTable, current.MAP, current.RPM); 
     }
     return current.O2; //Catch all
   }
