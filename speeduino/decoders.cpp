@@ -117,17 +117,14 @@ TESTABLE_STATIC decoder_status_t decoderStatus;
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
-static port_register_t triggerPri_pin_port;
-static pin_mask_t triggerPri_pin_mask;
-static port_register_t triggerSec_pin_port;
-static pin_mask_t triggerSec_pin_mask;
-static port_register_t triggerThird_pin_port;
-static pin_mask_t triggerThird_pin_mask;
+static fastInputPin_t triggerPri_pin;
+static fastInputPin_t triggerSec_pin;
+static fastInputPin_t triggerThird_pin;
 
 #if defined(CORE_AVR)
-  #define READ_PRI_TRIGGER() ((*triggerPri_pin_port & triggerPri_pin_mask) ? true : false)
-  #define READ_SEC_TRIGGER() ((*triggerSec_pin_port & triggerSec_pin_mask) ? true : false)
-  #define READ_THIRD_TRIGGER() ((*triggerThird_pin_port & triggerThird_pin_mask) ? true : false)
+  #define READ_PRI_TRIGGER() (triggerPri_pin.isPinHigh())
+  #define READ_SEC_TRIGGER() (triggerSec_pin.isPinHigh())
+  #define READ_THIRD_TRIGGER() (triggerThird_pin.isPinHigh())
 #else
   #define READ_PRI_TRIGGER() digitalRead(pinTrigger)
   #define READ_SEC_TRIGGER() digitalRead(pinTrigger2)
@@ -6433,16 +6430,9 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 }
 /** @} */
 
-static void initTriggerPin(uint8_t pin, port_register_t& pinPort, pin_mask_t& pinMask)
-{
-  pinMode(pin, INPUT);
-  pinPort = portInputRegister(digitalPinToPort(pin));
-  pinMask = digitalPinToBitMask(pin);
-}
-
 void initDecoderPins(uint8_t primaryPin, uint8_t secondaryPin, uint8_t tertiaryPin)
 {
-  initTriggerPin(primaryPin, triggerPri_pin_port, triggerPri_pin_mask);
-  initTriggerPin(secondaryPin, triggerSec_pin_port, triggerSec_pin_mask);
-  initTriggerPin(tertiaryPin, triggerThird_pin_port, triggerThird_pin_mask);
+  triggerPri_pin.setPin(primaryPin);
+  triggerSec_pin.setPin(secondaryPin);
+  triggerThird_pin.setPin(tertiaryPin);
 }

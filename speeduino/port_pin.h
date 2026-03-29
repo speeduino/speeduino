@@ -20,3 +20,28 @@ using port_register_t = decltype(type_detection_detail::return_type_of(&type_det
 
 /** @brief The return type of a "call" to digitalPinToBitMask() */
 using pin_mask_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
+
+/** 
+ * @brief A class for input pin operations that is faster than standard Arduino digitalRead() 
+ * 
+ * Call setPin() to initialize the pin, then call isPinHigh() to check if the pin is set high.
+ */
+class fastInputPin_t 
+{
+public:
+  /** @brief Set the input pin */
+  void setPin(uint8_t pin, uint8_t mode = INPUT);
+
+  /** @brief Check if the pin is set high */
+  bool isPinHigh(void) const;
+
+  /** @brief Check if the pin is set low */
+  bool isPinLow(void) const
+  {
+    return !isPinHigh();
+  }
+
+private:
+  port_register_t _port = {0};
+  pin_mask_t _mask = {0};
+};

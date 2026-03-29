@@ -35,8 +35,7 @@ static volatile char nextVVT;
 static byte boostCounter;
 static byte vvtCounter;
 
-static port_register_t n2o_arming_pin_port;
-static pin_mask_t n2o_arming_pin_mask;
+static fastInputPin_t n2o_arming_pin;
 
 static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
@@ -52,14 +51,11 @@ static void initialiseN2oArmPin(const config10 &page10)
   {
     // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
     // with other inputs. 
-    pinMode(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
-    n2o_arming_pin_port = portInputRegister(digitalPinToPort(page10.n2o_arming_pin));
-    n2o_arming_pin_mask = digitalPinToBitMask(page10.n2o_arming_pin);
+    n2o_arming_pin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
   }
 }
 
-static port_register_t aircon_req_pin_port;
-static pin_mask_t aircon_req_pin_mask;
+static fastInputPin_t aircon_req_pin;
 
 static uint8_t getAirConRequestPinMode(const config15 &page15)
 {
@@ -79,11 +75,8 @@ static uint8_t getAirConRequestPinMode(const config15 &page15)
 
 static void initAirConRequestPin(const config15 &page15, uint8_t pin)
 {
-  pinMode(pin, getAirConRequestPinMode(page15));
-  aircon_req_pin_port = portInputRegister(digitalPinToPort(pin));
-  aircon_req_pin_mask = digitalPinToBitMask(pin);
+  aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
 }
-#define READ_AIRCON_REQ_PIN()    ((*aircon_req_pin_port & aircon_req_pin_mask) ? true : false)
 
 #if defined(CORE_TEENSY) || defined(CORE_STM32)
 
@@ -179,8 +172,6 @@ static void initAirConFanPin(uint8_t pin)
 #define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
 #define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
 #define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
-
-#define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
@@ -280,7 +271,7 @@ static bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  currentStatus.airconRequested = READ_AIRCON_REQ_PIN()==configPage15.airConReqPol;
+  currentStatus.airconRequested = aircon_req_pin.isPinHigh()==configPage15.airConReqPol;
   return currentStatus.airconRequested;
 }
 
@@ -1244,7 +1235,7 @@ void nitrousControl(void)
 
   if(configPage10.n2o_enable > 0)
   {
-    bool isArmed = READ_N2O_ARM_PIN();
+    bool isArmed = n2o_arming_pin.isPinHigh();
     if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
