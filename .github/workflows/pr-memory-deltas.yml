@@ -1,0 +1,111 @@
+name: Calculate memory deltas
+
+on:
+  - push
+  - pull_request
+
+env:
+  # It's convenient to set variables for values used multiple times in the workflow.
+  SKETCHES_REPORTS_PATH: sketches-reports
+  # Libraries shared by all builds
+  COMMON_LIB_DEPS: | 
+    - name: SimplyAtomic
+      version: "1.0"
+    - name: avr-fast-shift
+      version: "1.1.0"
+    - name: libdivide
+      version: "5.2.0"
+    - name: FastCRC
+      version: "1.41"
+    - name: avr-fast-div
+      version: "1.4.0"
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          # Each element in the sequence produces a matrix job:
+          - fqbn: arduino:avr:mega
+            # This suffix will be used to define a unique name for the sketches report artifact.
+            artifact-name-suffix: arduino-avr-mega
+            family-name: arduino:avr
+            platform: |
+              - name: arduino:avr
+            compile-flags: |
+              - --build-property
+              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
+            lib_deps: |
+              - name: Time
+
+          - fqbn: teensy:avr:teensy35
+            artifact-name-suffix: teensy-avr-teensy35
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: |
+              - --build-property
+              - build.extra_flags="-Wall"
+            lib_deps: |
+              - name: SDfat
+              - name: InternalTemperature
+              - name: elapsedMillis
+              
+          - fqbn: teensy:avr:teensy41
+            artifact-name-suffix: teensy-avr-teensy41
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: |
+              - --build-property
+              - build..extra_flags="-Wall"
+            lib_deps: |
+              - name: SDfat
+              - name: InternalTemperature
+              - name: elapsedMillis
+          
+          - fqbn: STMicroelectronics:stm32:GenF4
+            artifact-name-suffix: stm32-avr-stm32f4
+            platform: |
+              - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+                name: STMicroelectronics:stm32
+                version: 2.7.1
+            compile-flags: |
+              - --build-property
+              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
+            lib_deps: |
+              - name: "STM32duino RTC"
+                version: 1.2.0
+              - name: SdFat
+              - name: elapsedMillis
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4     
+
+      - name: Compile platforms
+        uses: arduino/compile-sketches@v1.1.2
+        with:
+          fqbn: ${{ matrix.board.fqbn }}
+          enable-deltas-report: true
+          sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sketch-paths: |
+            - speeduino/speeduino.ino
+          platforms: |
+            ${{ matrix.board.platform }}
+          cli-compile-flags: |
+            ${{ matrix.board.compile-flags }}
+          libraries: |
+            ${{ matrix.board.lib_deps }}
+            ${{ env.COMMON_LIB_DEPS }}
+
+      # This step is needed to pass the size data to the report job.
+      - name: Upload sketches report to workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sketches-report-${{ matrix.board.artifact-name-suffix }}
+          path: ${{ env.SKETCHES_REPORTS_PATH }}

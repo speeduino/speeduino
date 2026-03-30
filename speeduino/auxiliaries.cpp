@@ -3,51 +3,188 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include "globals.h"
 #include "auxiliaries.h"
+#include "globals.h"
 #include "maths.h"
 #include "src/PID_v1/PID_v1.h"
 #include "decoders.h"
 #include "timers.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "units.h"
+#include "board_definition.h"
+#include "atomic.h"
+#include "port_pin.h"
+
+constexpr uint8_t SIMPLE_BOOST_P = 1U;
+constexpr uint8_t SIMPLE_BOOST_I = 1U;
+constexpr uint8_t SIMPLE_BOOST_D = 1U;
 
 static long vvt1_pwm_value;
 static long vvt2_pwm_value;
-volatile unsigned int vvt1_pwm_cur_value;
-volatile unsigned int vvt2_pwm_cur_value;
+static volatile unsigned int vvt1_pwm_cur_value;
+static volatile unsigned int vvt2_pwm_cur_value;
 static long vvt_pid_target_angle;
 static long vvt2_pid_target_angle;
 static long vvt_pid_current_angle;
 static long vvt2_pid_current_angle;
-volatile bool vvt1_pwm_state;
-volatile bool vvt2_pwm_state;
-volatile bool vvt1_max_pwm;
-volatile bool vvt2_max_pwm;
-volatile char nextVVT;
-byte boostCounter;
-byte vvtCounter;
+static volatile bool vvt1_pwm_state;
+static volatile bool vvt2_pwm_state;
+static volatile bool vvt1_max_pwm;
+static volatile bool vvt2_max_pwm;
+static volatile char nextVVT;
+static byte boostCounter;
+static byte vvtCounter;
 
-volatile PORT_TYPE *boost_pin_port;
-volatile PINMASK_TYPE boost_pin_mask;
-volatile PORT_TYPE *n2o_stage1_pin_port;
-volatile PINMASK_TYPE n2o_stage1_pin_mask;
-volatile PORT_TYPE *n2o_stage2_pin_port;
-volatile PINMASK_TYPE n2o_stage2_pin_mask;
-volatile PORT_TYPE *n2o_arming_pin_port;
-volatile PINMASK_TYPE n2o_arming_pin_mask;
-volatile PORT_TYPE *aircon_comp_pin_port;
-volatile PINMASK_TYPE aircon_comp_pin_mask;
-volatile PORT_TYPE *aircon_fan_pin_port;
-volatile PINMASK_TYPE aircon_fan_pin_mask;
-volatile PORT_TYPE *aircon_req_pin_port;
-volatile PINMASK_TYPE aircon_req_pin_mask;
-volatile PORT_TYPE *vvt1_pin_port;
-volatile PINMASK_TYPE vvt1_pin_mask;
-volatile PORT_TYPE *vvt2_pin_port;
-volatile PINMASK_TYPE vvt2_pin_mask;
-volatile PORT_TYPE *fan_pin_port;
-volatile PINMASK_TYPE fan_pin_mask;
+static port_register_t n2o_arming_pin_port;
+static pin_mask_t n2o_arming_pin_mask;
+
+static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
+{
+  if(page10.n2o_pin_polarity == 1U) 
+  { 
+    return INPUT_PULLUP; 
+  }
+  return INPUT;
+}
+static void initialiseN2oArmPin(const config10 &page10)
+{
+  if(configPage10.n2o_enable!=0U && !pinIsReserved(page10.n2o_arming_pin))
+  {
+    // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
+    // with other inputs. 
+    pinMode(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
+    n2o_arming_pin_port = portInputRegister(digitalPinToPort(page10.n2o_arming_pin));
+    n2o_arming_pin_mask = digitalPinToBitMask(page10.n2o_arming_pin);
+  }
+}
+
+static port_register_t aircon_req_pin_port;
+static pin_mask_t aircon_req_pin_mask;
+
+static uint8_t getAirConRequestPinMode(const config15 &page15)
+{
+  if(page15.airConReqPol)
+  {
+    // Inverted
+    // +5V is ON, Use external pull-down resistor for OFF
+    return INPUT;
+  }
+  else
+  {
+    //Normal
+    // Pin pulled to Ground is ON. Floating (internally pulled up to +5V) is OFF.
+    return INPUT_PULLUP;
+  }
+}
+
+static void initAirConRequestPin(const config15 &page15, uint8_t pin)
+{
+  pinMode(pin, getAirConRequestPinMode(page15));
+  aircon_req_pin_port = portInputRegister(digitalPinToPort(pin));
+  aircon_req_pin_mask = digitalPinToBitMask(pin);
+}
+#define READ_AIRCON_REQ_PIN()    ((*aircon_req_pin_port & aircon_req_pin_mask) ? true : false)
+
+#if defined(CORE_TEENSY) || defined(CORE_STM32)
+
+#define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
+#define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
+static void initializeBoostPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
+#define N2O_STAGE1_PIN_LOW()    (digitalWrite(configPage10.n2o_stage1_pin, LOW))
+#define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
+#define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
+#define N2O_STAGE2_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage2_pin, HIGH))
+static void initialiseN2oPins(const config10 &page10)
+{
+  pinMode(page10.n2o_stage1_pin, OUTPUT);
+  pinMode(page10.n2o_stage2_pin, OUTPUT);
+  initialiseN2oArmPin(page10);
+}
+#define AIRCON_PIN_LOW()        (digitalWrite(pinAirConComp, LOW))
+#define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
+#define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
+#define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
+
+static void initAirConCompressorPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
+static void initAirConFanPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+}
+
+#else
+
+static port_register_t boost_pin_port;
+static pin_mask_t boost_pin_mask;
+#define BOOST_PIN_LOW()         ATOMIC() { *boost_pin_port &= ~(boost_pin_mask); }
+#define BOOST_PIN_HIGH()        ATOMIC() { *boost_pin_port |= (boost_pin_mask);  }
+static void initializeBoostPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  boost_pin_port = portOutputRegister(digitalPinToPort(pin));
+  boost_pin_mask = digitalPinToBitMask(pin);
+}
+
+static port_register_t n2o_stage1_pin_port;
+static pin_mask_t n2o_stage1_pin_mask;
+static port_register_t n2o_stage2_pin_port;
+static pin_mask_t n2o_stage2_pin_mask;
+
+#define N2O_STAGE1_PIN_LOW()    ATOMIC() { *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask);  }
+#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
+#define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
+#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
+static void initialiseN2oPins(const config10 &page10)
+{
+  pinMode(page10.n2o_stage1_pin, OUTPUT);
+  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage1_pin));
+  n2o_stage1_pin_mask = digitalPinToBitMask(page10.n2o_stage1_pin);
+  pinMode(page10.n2o_stage2_pin, OUTPUT);
+  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage2_pin));
+  n2o_stage2_pin_mask = digitalPinToBitMask(page10.n2o_stage2_pin);
+  initialiseN2oArmPin(page10);
+}
+static port_register_t aircon_comp_pin_port;
+static pin_mask_t aircon_comp_pin_mask;
+static port_register_t aircon_fan_pin_port;
+static pin_mask_t aircon_fan_pin_mask;
+
+// Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
+// The ATOMIC is instead placed around the ternary call below
+#define AIRCON_PIN_LOW()        *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
+#define AIRCON_PIN_HIGH()       *aircon_comp_pin_port |= (aircon_comp_pin_mask)
+#define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
+#define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
+
+static void initAirConCompressorPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pin));
+  aircon_comp_pin_mask = digitalPinToBitMask(pin);
+}
+static void initAirConFanPin(uint8_t pin)
+{
+  pinMode(pin, OUTPUT);
+  aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pin));
+  aircon_fan_pin_mask = digitalPinToBitMask(pin);
+}
+#endif
+
+#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
+#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
+#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
+#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
+
+#define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
+
+#define VVT_TIME_DELAY_MULTIPLIER  50
+
+#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
@@ -55,32 +192,32 @@ uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 long fan_pwm_value;
 #endif
-static table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
+constexpr table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
-bool acIsEnabled;
-bool acStandAloneFanIsEnabled;
-uint8_t acStartDelay;
-uint8_t acTPSLockoutDelay;
-uint8_t acRPMLockoutDelay;
-uint8_t acAfterEngineStartDelay;
-bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
+static bool acIsEnabled;
+static bool acStandAloneFanIsEnabled;
+static uint8_t acStartDelay;
+static uint8_t acTPSLockoutDelay;
+static uint8_t acRPMLockoutDelay;
+static uint8_t acAfterEngineStartDelay;
+static bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
-long boost_pwm_target_value;
-volatile bool boost_pwm_state;
-volatile unsigned int boost_pwm_cur_value = 0;
+static long boost_pwm_target_value;
+static volatile bool boost_pwm_state;
+static volatile unsigned int boost_pwm_cur_value = 0;
 
-uint32_t vvtWarmTime;
-bool vvtIsHot;
-bool vvtTimeHold;
+static uint32_t vvtWarmTime;
+static bool vvtIsHot;
+static bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
+constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
-integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 static inline void checkAirConCoolantLockout(void);
 static inline void checkAirConTPSLockout(void);
@@ -91,9 +228,10 @@ Air Conditioning Control
 */
 void initialiseAirCon(void)
 {
-  if( (configPage15.airConEnable) == 1 &&
-      pinAirConRequest != 0 &&
-      pinAirConComp != 0 )
+  if( (configPage15.airConEnable) &&
+      !pinIsReserved(pinAirConRequest) &&
+      !pinIsReserved(pinAirConComp) &&
+      !pinIsOutput(pinAirConRequest))
   {
     // Hold the A/C off until a few seconds after cranking
     acAfterEngineStartDelay = 0;
@@ -103,24 +241,21 @@ void initialiseAirCon(void)
     acTPSLockoutDelay = 0;
     acRPMLockoutDelay = 0;
 
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_REQUEST);     // Bit 0
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_COMPRESSOR);  // Bit 1
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT); // Bit 2
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT); // Bit 3
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);  // Bit 4
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT); // Bit 5
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_FAN);         // Bit 6
-    aircon_req_pin_port = portInputRegister(digitalPinToPort(pinAirConRequest));
-    aircon_req_pin_mask = digitalPinToBitMask(pinAirConRequest);
-    aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pinAirConComp));
-    aircon_comp_pin_mask = digitalPinToBitMask(pinAirConComp);
-
+    currentStatus.airconRequested = false;
+    currentStatus.airconCompressorOn = false;
+    currentStatus.airconRpmLockout = false;
+    currentStatus.airconTpsLockout = false;
+    currentStatus.airconTurningOn = false;
+    currentStatus.airconCltLockout = false;
+    currentStatus.airconFanOn = false;
+    initAirConRequestPin(configPage15, pinAirConRequest);
+    initAirConCompressorPin(pinAirConComp);
+  
     AIRCON_OFF();
 
-    if((configPage15.airConFanEnabled > 0) && (pinAirConFan != 0))
+    if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
     {
-      aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pinAirConFan));
-      aircon_fan_pin_mask = digitalPinToBitMask(pinAirConFan);
+      initAirConFanPin(pinAirConFan);
       AIRCON_FAN_OFF();
       acStandAloneFanIsEnabled = true;
     }
@@ -138,6 +273,17 @@ void initialiseAirCon(void)
   }
 }
 
+static bool READ_AIRCON_REQUEST(void)
+{
+  if(acIsEnabled == false)
+  {
+    return false;
+  }
+  // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
+  currentStatus.airconRequested = READ_AIRCON_REQ_PIN()==configPage15.airConReqPol;
+  return currentStatus.airconRequested;
+}
+
 void airConControl(void)
 {
   if(acIsEnabled == true)
@@ -145,7 +291,7 @@ void airConControl(void)
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
-    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+    if (currentStatus.engineIsRunning)
     {
       if(acAfterEngineStartDelay >= configPage15.airConAfterStartDelay)
       {
@@ -175,12 +321,12 @@ void airConControl(void)
     // -----------------------------------------
     if( READ_AIRCON_REQUEST() == true &&
         waitedAfterCranking == true &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == false &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT) == false &&
-        BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT) == false )
+        currentStatus.airconTpsLockout == false &&
+        currentStatus.airconRpmLockout == false &&
+        currentStatus.airconCltLockout == false )
     {
-      // Set the BIT_AIRCON_TURNING_ON bit to notify the idle system to idle up & the cooling fan to start (if enabled)
-      BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+      // Set the flag bit to notify the idle system to idle up & the cooling fan to start (if enabled)
+      currentStatus.airconTurningOn = true;
 
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
@@ -200,7 +346,7 @@ void airConControl(void)
     }
     else
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON);
+      currentStatus.airconTurningOn = false;
 
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
@@ -214,20 +360,6 @@ void airConControl(void)
   }
 }
 
-bool READ_AIRCON_REQUEST(void)
-{
-  if(acIsEnabled == false)
-  {
-    return false;
-  }
-  // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  bool acReqPinStatus = ( ((configPage15.airConReqPol)==1) ? 
-                             !!(*aircon_req_pin_port & aircon_req_pin_mask) :
-                             !(*aircon_req_pin_port & aircon_req_pin_mask));
-  BIT_WRITE(currentStatus.airConStatus, BIT_AIRCON_REQUEST, acReqPinStatus);
-  return acReqPinStatus;
-}
-
 static inline void checkAirConCoolantLockout(void)
 {
   // ---------------------------
@@ -237,7 +369,7 @@ static inline void checkAirConCoolantLockout(void)
   if (currentStatus.coolant > offTemp)
   {
     // A/C is cut off due to high coolant
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+    currentStatus.airconCltLockout = true;
   }
   else if (currentStatus.coolant < (offTemp - 1))
   {
@@ -247,7 +379,7 @@ static inline void checkAirConCoolantLockout(void)
     // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
     // depending on sensor calibration and table interpolation.
     // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
-    BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_CLT_LOCKOUT);
+    currentStatus.airconCltLockout = false;
   }
 }
 
@@ -259,16 +391,16 @@ static inline void checkAirConTPSLockout(void)
   if (currentStatus.TPS > configPage15.airConTPSCut)
   {
     // A/C is cut off due to high TPS
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+    currentStatus.airconTpsLockout = true;
     acTPSLockoutDelay = 0;
   }
-  else if ( (BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT) == true) &&
+  else if ( (currentStatus.airconTpsLockout == true) &&
             (currentStatus.TPS <= configPage15.airConTPSCut) )
   {
     // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
     if (acTPSLockoutDelay >= configPage15.airConTPSCutTime)
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_TPS_LOCKOUT);
+      currentStatus.airconTpsLockout = false;
     }
     else
     {
@@ -290,7 +422,7 @@ static inline void checkAirConRPMLockout(void)
        (currentStatus.RPMdiv100 > configPage15.airConMaxRPMdiv100) )
   {
     // A/C is cut off due to high/low RPM
-    BIT_SET(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+    currentStatus.airconRpmLockout = true;
     acRPMLockoutDelay = 0;
   }
   else if ( (currentStatus.RPM >= (configPage15.airConMinRPMdiv10 * 10)) &&
@@ -299,7 +431,7 @@ static inline void checkAirConRPMLockout(void)
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
     if (acRPMLockoutDelay >= configPage15.airConRPMCutTime)
     {
-      BIT_CLEAR(currentStatus.airConStatus, BIT_AIRCON_RPM_LOCKOUT);
+      currentStatus.airconRpmLockout = false;
     }
     else
     {
@@ -312,16 +444,109 @@ static inline void checkAirConRPMLockout(void)
   }
 }
 
+/*
+ * Fuel pump control
+ */
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define FUEL_PUMP_PIN_HIGH()  digitalWrite(pinFuelPump, HIGH)
+#define FUEL_PUMP_PIN_LOW()   digitalWrite(pinFuelPump, LOW) 
+static inline void initialisePumpPin(uint8_t pin) 
+{ 
+  pinMode(pin, OUTPUT);
+}
+#else
+
+static port_register_t pump_pin_port;
+static pin_mask_t pump_pin_mask;
+
+static inline void initialisePumpPin(uint8_t pin) 
+{ 
+  pinMode(pin, OUTPUT);
+
+  pump_pin_port = portOutputRegister(digitalPinToPort(pin));
+  pump_pin_mask = digitalPinToBitMask(pin);
+}
+
+#define FUEL_PUMP_PIN_HIGH() *pump_pin_port |= (pump_pin_mask)
+#define FUEL_PUMP_PIN_LOW()  *pump_pin_port &= ~(pump_pin_mask)
+
+#endif
+
+void fuelPumpOn(void)
+{
+  ATOMIC() { 
+    FUEL_PUMP_PIN_HIGH();
+    currentStatus.fuelPumpOn = true;
+  }
+}
+void fuelPumpOff(void)
+{
+  ATOMIC() { 
+    FUEL_PUMP_PIN_LOW();
+    currentStatus.fuelPumpOn = false;
+  }
+}
+
+bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
+{
+  initialisePumpPin(pumpPin);
+  fuelPumpOff();  //Initialise program with the fuel pump in the off state
+
+  //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
+  //First check that the priming time is not 0
+  if(page2.fpPrime>0U)
+  {
+    fuelPumpOn();
+    return false; // Priming not complete
+  }
+  return true; //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+}
+
 
 /*
 Fan control
 */
-void initialiseFan(void)
+
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+#define FAN_PIN_LOW()           (digitalWrite(pinFan, LOW))
+#define FAN_PIN_HIGH()          (digitalWrite(pinFan, HIGH))
+static void initialiseFanPin(uint8_t pin) { UNUSED(pin); /* Do nothing */}
+#else
+
+static port_register_t fan_pin_port;
+static pin_mask_t fan_pin_mask;
+
+#define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)
+#define FAN_PIN_HIGH()          *fan_pin_port |= (fan_pin_mask)
+
+static void initialiseFanPin(uint8_t pin) 
+{ 
+  fan_pin_port = portOutputRegister(digitalPinToPort(pin));
+  fan_pin_mask = digitalPinToBitMask(pin);
+}
+
+#endif
+
+void fanOn(void) 
 {
-  fan_pin_port = portOutputRegister(digitalPinToPort(pinFan));
-  fan_pin_mask = digitalPinToBitMask(pinFan);
-  FAN_OFF();  //Initialise program with the fan in the off state
-  BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+  ATOMIC() { 
+    ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); 
+  }
+}
+void fanOff(void)
+{
+  ATOMIC() { 
+    ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); 
+  }
+}
+
+void initialiseFan(uint8_t fanPin)
+{
+  pinMode(pinFan, OUTPUT);
+  initialiseFanPin(fanPin);
+  fanOff();  //Initialise program with the fan in the off state
+  currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
   #if defined(PWM_FAN_AVAILABLE)
@@ -346,44 +571,44 @@ void fanControl(void)
 
     
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    else { fanPermit = currentStatus.engineIsRunning; }
 
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
            ((configPage15.airConTurnsFanOn) == 1 &&
-           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)) )
+           currentStatus.airconTurningOn == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      if((currentStatus.engineIsCranking) && (configPage2.fanWhenCranking == 0))
       {
         //If the user has elected to disable the fan during cranking, make sure it's off 
-        FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOff();
+        currentStatus.fanOn = false;
       }
       else 
       {
-        FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOn();
+        currentStatus.fanOn = true;
       }
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
-      FAN_OFF();
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      fanOff();
+      currentStatus.fanOn = false;
     }
   }
   else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
     bool fanPermit = false;
     if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN); }
+    else { fanPermit = currentStatus.engineIsRunning; }
     if (fanPermit == true)
       {
-      if(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) && (configPage2.fanWhenCranking == 0))
+      if((currentStatus.engineIsCranking) && (configPage2.fanWhenCranking == 0))
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        currentStatus.fanOn = false;
         #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
           DISABLE_FAN_TIMER();
         #endif
@@ -392,7 +617,7 @@ void fanControl(void)
       {
         byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureAddOffset(currentStatus.coolant)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
-           BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+           currentStatus.airconTurningOn == true)
         {
           // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
           if(tempFanDuty < configPage15.airConPwmFanMinDuty)
@@ -406,7 +631,7 @@ void fanControl(void)
           if (currentStatus.fanDuty > 0)
           {
             ENABLE_FAN_TIMER();
-            BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+            currentStatus.fanOn = true;
           }
         #endif
       }
@@ -414,66 +639,86 @@ void fanControl(void)
     else if (!fanPermit)
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+      currentStatus.fanOn = false;
     }
 
     #if defined(PWM_FAN_AVAILABLE)
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOff();
+        currentStatus.fanOn = false;
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOn();
+        currentStatus.fanOn = true;
         DISABLE_FAN_TIMER();
       }
     #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
       if(currentStatus.fanDuty == 0)
       {
         //Make sure fan has 0% duty)
-        FAN_OFF();
-        BIT_CLEAR(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOff();
+        currentStatus.fanOn = false;
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
-        FAN_ON();
-        BIT_SET(currentStatus.status4, BIT_STATUS4_FAN);
+        fanOn();
+        currentStatus.fanOn = true;
       }
     #endif
   }
 }
 
+#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+
+#define VVT1_PIN_LOW()          (digitalWrite(pinVVT_1, LOW))
+#define VVT1_PIN_HIGH()         (digitalWrite(pinVVT_1, HIGH))
+#define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
+#define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
+
+static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
+{ 
+  pinMode(pin1, OUTPUT);
+  pinMode(pin2, OUTPUT);
+}
+#else
+
+static port_register_t vvt1_pin_port;
+static pin_mask_t vvt1_pin_mask;
+static port_register_t vvt2_pin_port;
+static pin_mask_t vvt2_pin_mask;
+
+#define VVT1_PIN_LOW()          ATOMIC() { *vvt1_pin_port &= ~(vvt1_pin_mask);   }
+#define VVT1_PIN_HIGH()         ATOMIC() { *vvt1_pin_port |= (vvt1_pin_mask);    }
+#define VVT2_PIN_LOW()          ATOMIC() { *vvt2_pin_port &= ~(vvt2_pin_mask);   }
+#define VVT2_PIN_HIGH()         ATOMIC() { *vvt2_pin_port |= (vvt2_pin_mask);    }
+
+static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
+{ 
+  pinMode(pin1, OUTPUT);
+  vvt1_pin_port = portOutputRegister(digitalPinToPort(pin1));
+  vvt1_pin_mask = digitalPinToBitMask(pin1);
+  pinMode(pin2, OUTPUT);
+  vvt2_pin_port = portOutputRegister(digitalPinToPort(pin2));
+  vvt2_pin_mask = digitalPinToBitMask(pin2);
+}
+
+#endif
+
 void initialiseAuxPWM(void)
 {
-  boost_pin_port = portOutputRegister(digitalPinToPort(pinBoost));
-  boost_pin_mask = digitalPinToBitMask(pinBoost);
-  vvt1_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
-  vvt1_pin_mask = digitalPinToBitMask(pinVVT_1);
-  vvt2_pin_port = portOutputRegister(digitalPinToPort(pinVVT_2));
-  vvt2_pin_mask = digitalPinToBitMask(pinVVT_2);
-  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage1_pin));
-  n2o_stage1_pin_mask = digitalPinToBitMask(configPage10.n2o_stage1_pin);
-  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(configPage10.n2o_stage2_pin));
-  n2o_stage2_pin_mask = digitalPinToBitMask(configPage10.n2o_stage2_pin);
-  n2o_arming_pin_port = portInputRegister(digitalPinToPort(configPage10.n2o_arming_pin));
-  n2o_arming_pin_mask = digitalPinToBitMask(configPage10.n2o_arming_pin);
+  initializeBoostPin(pinBoost);
+  initialiseVvtPins(pinVVT_1, pinVVT_2);
+  initialiseN2oPins(configPage10);
 
   //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
   //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
-
-  if(configPage10.n2o_enable > 0)
-  {
-    //The pin modes are only set if the if n2o is enabled to prevent them conflicting with other outputs. 
-    if(configPage10.n2o_pin_polarity == 1) { pinMode(configPage10.n2o_arming_pin, INPUT_PULLUP); }
-    else { pinMode(configPage10.n2o_arming_pin, INPUT); }
-  }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
@@ -510,8 +755,8 @@ void initialiseAuxPWM(void)
     vvt1_pwm_value = 0;
     vvt2_pwm_value = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+    currentStatus.vvt1AngleError = false;
+    currentStatus.vvt2AngleError = false;
     vvtTimeHold = false;
     if (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
   }
@@ -526,7 +771,7 @@ void initialiseAuxPWM(void)
     #elif defined(CORE_TEENSY41)
       vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     #endif
-    BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+   currentStatus.wmiTankEmpty = false;
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
     vvt2_pwm_value = 0;
@@ -540,10 +785,9 @@ void initialiseAuxPWM(void)
   vvtCounter = 0;
 
   currentStatus.nitrous_status = NITROUS_OFF;
-
 }
 
-void boostByGear(void)
+static void boostByGear(void)
 {
   if(configPage4.boostType == OPEN_LOOP_BOOST)
   {
@@ -690,7 +934,7 @@ void boostControl(void)
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
       //Open loop
-      if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+      if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
       else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
@@ -704,7 +948,7 @@ void boostControl(void)
     {
       if( (boostCounter & 7) == 1) 
       { 
-        if ( (configPage9.boostByGearEnabled > 0) && (configPage2.vssMode > 1) ){ boostByGear(); }
+        if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
 
         //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
@@ -780,9 +1024,26 @@ void boostControl(void)
   boostCounter++;
 }
 
+void vvt1On(void)
+{
+  VVT1_PIN_HIGH();
+}
+void vvt1Off(void)
+{
+  VVT1_PIN_LOW();
+}
+void vvt2On(void)
+{
+  VVT2_PIN_HIGH();
+}
+void vvt2Off(void)
+{
+  VVT2_PIN_LOW();
+}
+
 void vvtControl(void)
 {
-  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) && (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN)))
+  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) && (currentStatus.engineIsRunning))
   {
     if(vvtTimeHold == false) 
     {
@@ -836,7 +1097,7 @@ void vvtControl(void)
         {
           currentStatus.vvt1Duty = 0;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-          BIT_SET(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = true;
         }
         //Check that we're not already at the angle we want to be
         else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
@@ -844,7 +1105,7 @@ void vvtControl(void)
           currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
           vvtPID.Initialize();
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = false;
         }
         else
         {
@@ -858,7 +1119,7 @@ void vvtControl(void)
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
           if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT1_ERROR);
+          currentStatus.vvt1AngleError = false;
         }
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
@@ -875,7 +1136,7 @@ void vvtControl(void)
           {
             currentStatus.vvt2Duty = 0;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-            BIT_SET(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = true;
           }
           //Check that we're not already at the angle we want to be
           else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
@@ -883,7 +1144,7 @@ void vvtControl(void)
             currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
             vvt2PID.Initialize();
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = false;
           }
           else
           {
@@ -893,7 +1154,7 @@ void vvtControl(void)
             //If not already at target angle, calculate new value from PID
             bool PID_compute = vvt2PID.Compute(true);
             if(PID_compute == true) { vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
-            BIT_CLEAR(currentStatus.status4, BIT_STATUS4_VVT2_ERROR);
+            currentStatus.vvt2AngleError = false;
           }
         }
         vvtCounter++;
@@ -905,8 +1166,8 @@ void vvtControl(void)
         if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
         {
           //Make sure solenoid is off (0% duty)
-          VVT1_PIN_OFF();
-          VVT2_PIN_OFF();
+          vvt1Off();
+          vvt2Off();
           vvt1_pwm_state = false;
           vvt1_max_pwm = false;
           vvt2_pwm_state = false;
@@ -916,8 +1177,8 @@ void vvtControl(void)
         else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
         {
           //Make sure solenoid is on (100% duty)
-          VVT1_PIN_ON();
-          VVT2_PIN_ON();
+          vvt1On();
+          vvt2On();
           vvt1_pwm_state = true;
           vvt1_max_pwm = true;
           vvt2_pwm_state = true;
@@ -937,14 +1198,14 @@ void vvtControl(void)
         if( currentStatus.vvt1Duty == 0 )
         {
           //Make sure solenoid is off (0% duty)
-          VVT1_PIN_OFF();
+          vvt1Off();
           vvt1_pwm_state = false;
           vvt1_max_pwm = false;
         }
         else if( currentStatus.vvt1Duty >= 200 )
         {
           //Make sure solenoid is on (100% duty)
-          VVT1_PIN_ON();
+          vvt1On();
           vvt1_pwm_state = true;
           vvt1_max_pwm = true;
         }
@@ -978,7 +1239,9 @@ void vvtControl(void)
 
 void nitrousControl(void)
 {
-  bool nitrousOn = false; //This tracks whether the control gets turned on at any point. 
+  currentStatus.nitrousActive = false;
+  currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
+
   if(configPage10.n2o_enable > 0)
   {
     bool isArmed = READ_N2O_ARM_PIN();
@@ -998,32 +1261,26 @@ void nitrousControl(void)
       // STAGE1 = 1
       // STAGE2 = 2
       // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
-      currentStatus.nitrous_status = NITROUS_OFF; //Reset the current state
       if( (currentStatus.RPM > realStage1MinRPM) && (currentStatus.RPM < realStage1MaxRPM) )
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;
-        BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+        currentStatus.nitrousActive = true;
         N2O_STAGE1_PIN_HIGH();
-        nitrousOn = true;
       }
       if(configPage10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
       {
         if( (currentStatus.RPM > realStage2MinRPM) && (currentStatus.RPM < realStage2MaxRPM) )
         {
           currentStatus.nitrous_status += NITROUS_STAGE2;
-          BIT_SET(currentStatus.status3, BIT_STATUS3_NITROUS);
+          currentStatus.nitrousActive = true;
           N2O_STAGE2_PIN_HIGH();
-          nitrousOn = true;
         }
       }
     }
   }
 
-  if (nitrousOn == false)
+  if (currentStatus.nitrousActive == false)
   {
-    currentStatus.nitrous_status = NITROUS_OFF;
-    BIT_CLEAR(currentStatus.status3, BIT_STATUS3_NITROUS);
-
     if(configPage10.n2o_enable > 0)
     {
       N2O_STAGE1_PIN_LOW();
@@ -1042,7 +1299,7 @@ void wmiControl(void)
   {
     if( WMI_TANK_IS_EMPTY() )
     {
-      BIT_CLEAR(currentStatus.status4, BIT_STATUS4_WMI_EMPTY);
+     currentStatus.wmiTankEmpty = false;
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
@@ -1071,7 +1328,7 @@ void wmiControl(void)
         if (wmiPW > 200) { wmiPW = 200; } //without this the duty can get beyond 100%
       }
     }
-    else { BIT_SET(currentStatus.status4, BIT_STATUS4_WMI_EMPTY); }
+    else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
     vvt2_pwm_value = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
@@ -1079,7 +1336,7 @@ void wmiControl(void)
     if(wmiPW == 0)
     {
       // Make sure water pump is off
-      VVT2_PIN_LOW();
+      vvt2Off();
       vvt2_pwm_state = false;
       vvt2_max_pwm = false;
       if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
@@ -1091,7 +1348,7 @@ void wmiControl(void)
       if (wmiPW >= 200)
       {
         // Make sure water pump is on (100% duty)
-        VVT2_PIN_HIGH();
+        vvt2On();
         vvt2_pwm_state = true;
         vvt2_max_pwm = true;
         if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
@@ -1114,11 +1371,7 @@ void boostDisable(void)
 }
 
 //The interrupt to control the Boost PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-  void boostInterrupt(void) //Most ARM chips can simply call a function
-#endif
+void boostInterrupt(void)
 {
   if (boost_pwm_state == true)
   {
@@ -1144,29 +1397,25 @@ void boostDisable(void)
 }
 
 //The interrupt to control the VVT PWM
-#if defined(CORE_AVR)
-  ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-  void vvtInterrupt(void) //Most ARM chips can simply call a function
-#endif
+void vvtInterrupt(void)
 {
   if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
   {
     if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      VVT1_PIN_OFF();
+      vvt1Off();
       #else
-      VVT1_PIN_ON();
+      vvt1On();
       #endif
       vvt1_pwm_state = true;
     }
     if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      VVT2_PIN_OFF();
+      vvt2Off();
       #else
-      VVT2_PIN_ON();
+      vvt2On();
       #endif
       vvt2_pwm_state = true;
     }
@@ -1195,9 +1444,9 @@ void boostDisable(void)
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT1_PIN_ON();
+        vvt1On();
         #else
-        VVT1_PIN_OFF();
+        vvt1Off();
         #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
@@ -1216,9 +1465,9 @@ void boostDisable(void)
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT2_PIN_ON();
+        vvt2On();
         #else
-        VVT2_PIN_OFF();
+        vvt2Off();
         #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
@@ -1237,9 +1486,9 @@ void boostDisable(void)
       if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
        #if defined(CORE_TEENSY41)
-        VVT1_PIN_ON();
+        vvt1On();
         #else
-        VVT1_PIN_OFF();
+        vvt1Off();
         #endif
         vvt1_pwm_state = false;
         vvt1_max_pwm = false;
@@ -1249,9 +1498,9 @@ void boostDisable(void)
       if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        VVT2_PIN_ON();
+        vvt2On();
         #else
-        VVT2_PIN_OFF();
+        vvt2Off();
         #endif
         vvt2_pwm_state = false;
         vvt2_max_pwm = false;
@@ -1268,13 +1517,13 @@ void boostDisable(void)
 {
   if (fan_pwm_state == true)
   {
-    FAN_OFF();
+    fanOff();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
     fan_pwm_state = false;
   }
   else
   {
-    FAN_ON();
+    fanOn();
     FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
     fan_pwm_cur_value = fan_pwm_value;
     fan_pwm_state = true;

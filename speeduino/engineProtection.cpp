@@ -1,141 +1,82 @@
-
 #include "globals.h"
 #include "engineProtection.h"
 #include "maths.h"
-#include "utilities.h"
 #include "units.h"
-#include "crankMaths.h"
+#include "unit_testing.h"
+#include "preprocessor.h"
+#include "decoder_init.h"
+#include "units.h"
+#include "preprocessor.h"
 
-byte oilProtStartTime = 0;
-static table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
-static table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
+TESTABLE_STATIC uint32_t oilProtEndTime;
+TESTABLE_CONSTEXPR table2D_u8_u8_4 oilPressureProtectTable(&configPage10.oilPressureProtRPM, &configPage10.oilPressureProtMins);
+TESTABLE_CONSTEXPR table2D_u8_u8_6 coolantProtectTable(&configPage9.coolantProtTemp, &configPage9.coolantProtRPM);
 
-byte checkEngineProtect(void)
+/* AFR protection state moved to file scope so unit tests can control/reset it */
+TESTABLE_STATIC bool checkAFRLimitActive = false;
+TESTABLE_STATIC unsigned long afrProtectedActivateTime = 0;
+
+TESTABLE_INLINE_STATIC bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis)
 {
-  byte protectActive = 0;
-  if(checkBoostLimit() || checkOilPressureLimit() || checkAFRLimit() )
+  bool engineProtectOil = false; //Will be set true below if required
+
+  if ( (page6.engineProtectType != PROTECT_CUT_OFF) 
+    && (page10.oilPressureProtEnbl == true) 
+    && (page10.oilPressureEnable == true))
   {
-    if( currentStatus.RPMdiv100 > configPage4.engineProtectMaxRPM ) { protectActive = 1; }
-  }
-
-  return protectActive;
-}
-
-byte checkRevLimit(void)
-{
-  //Hardcut RPM limit
-  byte currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
-  {
-    if(configPage9.hardRevMode == HARD_REV_FIXED)
+    uint8_t oilLimit = table2D_getValue(&oilPressureProtectTable, current.RPMdiv100);
+    if(current.oilPressure < oilLimit)
     {
-      currentLimitRPM = configPage4.HardRevLim;
-      if ( (currentStatus.RPMdiv100 >= configPage4.HardRevLim) || ((softLimitTime > configPage4.SoftLimMax) && (currentStatus.RPMdiv100 >= configPage4.SoftRevLim)) )
-      { 
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-      } 
-      else 
-      { 
-        BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM); 
-      }
+      //Check if this is the first time we've been below the limit
+      if(oilProtEndTime == 0U) { oilProtEndTime = currMillis + TIME_TEN_MILLIS.toUser(page10.oilPressureProtTime); }
+      /* Check if countdown has reached its target, if so then instruct to cut */
+      engineProtectOil = (currMillis >= oilProtEndTime) || (current.engineProtectOil);
     }
-    else if(configPage9.hardRevMode == HARD_REV_COOLANT )
-    {
-      currentLimitRPM = (int16_t)(table2D_getValue(&coolantProtectTable, temperatureAddOffset(currentStatus.coolant)));
-      if(currentStatus.RPMdiv100 > currentLimitRPM)
-      {
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_COOLANT);
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_RPM);
-      } 
+    else 
+    { 
+      oilProtEndTime = 0; //Reset the timer
     }
   }
 
-  return currentLimitRPM;
+  return engineProtectOil;
 }
 
-byte checkBoostLimit(void)
+TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const config6 &page6)
 {
-  byte boostLimitActive = 0;
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
+  return (page6.engineProtectType != PROTECT_CUT_OFF)
+      && (page6.boostCutEnabled > 0) 
+      && (current.MAP > ((long)page6.boostLimit * 2L));
+}
 
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) {
-    //Boost cutoff is very similar to launchControl, but with a check against MAP rather than a switch
-    if( (configPage6.boostCutEnabled > 0) && (currentStatus.MAP > (configPage6.boostLimit * 2)) ) //The boost limit is divided by 2 to allow a limit up to 511kPa
-    {
-      boostLimitActive = 1;
-      BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-      /*
-      switch(configPage6.boostCutType)
-      {
-        case 1:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_MAP);
-          break;
-        case 2:
-          BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          break;
-        case 3:
-          BIT_SET(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-          BIT_SET(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          break;
-        default:
-          //Shouldn't ever happen, but just in case, disable all cuts
-          BIT_CLEAR(currentStatus.status1, BIT_STATUS1_BOOSTCUT);
-          BIT_CLEAR(currentStatus.status2, BIT_STATUS2_BOOSTCUT);
-      }
-      */
-    }
+static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
+{
+  return (page6.engineProtectType != PROTECT_CUT_OFF) 
+      && (page9.afrProtectEnabled != AFR_PROTECT_OFF) 
+      && (page6.egoType == EGO_TYPE_WIDE);
+}
+
+static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &page9)
+{
+  if (page9.afrProtectEnabled==AFR_PROTECT_FIXED) {
+    return page9.afrProtectDeviation;
+  } 
+  if (page9.afrProtectEnabled==AFR_PROTECT_TABLE) {
+    return current.afrTarget + (uint16_t)page9.afrProtectDeviation;
   }
-
-  return boostLimitActive;
+  
+  return UINT16_MAX;
 }
 
-byte checkOilPressureLimit(void)
+static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-  byte oilProtectActive = 0;
-  bool alreadyActive = BIT_CHECK(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-  BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL); //Will be set true below if required
-
-  if (configPage6.engineProtectType != PROTECT_CUT_OFF) 
-  {
-    if( (configPage10.oilPressureProtEnbl == true) && (configPage10.oilPressureEnable == true) )
-    {
-      byte oilLimit = table2D_getValue(&oilPressureProtectTable, currentStatus.RPMdiv100);
-      if(currentStatus.oilPressure < oilLimit)
-      {
-        //Check if this is the first time we've been below the limit
-        if(oilProtStartTime == 0) { oilProtStartTime = div100(millis()); }
-
-        /* Check if countdown has reached its target, if so then instruct to cut */
-        if( (uint8_t(div100(millis())) >= (uint16_t(oilProtStartTime + configPage10.oilPressureProtTime)) ) || (alreadyActive > 0) )
-        {
-          BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_OIL);
-          oilProtectActive = 1;
-        }
-        
-      }
-      else { oilProtStartTime = 0; } //Reset the timer
-    }
-  }
-
-  return oilProtectActive;
+    return (current.MAP >= (long)(page9.afrProtectMinMAP * UINT16_C(2)))
+          && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
+          && (current.TPS >= page9.afrProtectMinTPS) 
+          && (current.O2 >= getAfrO2Limit(current, page9)); 
 }
 
-byte checkAFRLimit(void)
+TESTABLE_INLINE_STATIC bool checkAFRLimit(const statuses &current, const config6 &page6, const config9 &page9, uint32_t currMillis)
 {
-  static bool checkAFRLimitActive = false;
-  static bool afrProtectCountEnabled = false;
-  static unsigned long afrProtectCount = 0;
-  static constexpr char X2_MULTIPLIER = 2;
-  static constexpr char X100_MULTIPLIER = 100;
-
   /*
     To use this function, a wideband sensor is required.
 
@@ -160,69 +101,228 @@ byte checkAFRLimit(void)
     For reactivation, the following condition has to be met:
     - TPS below x %
   */
-
-  /*
-    Do 3 checks here;
-    - whether engine protection is enabled
-    - whether AFR protection is enabled
-    - whether wideband sensor is used
-  */
-  if(configPage6.engineProtectType != PROTECT_CUT_OFF && configPage9.afrProtectEnabled && configPage6.egoType == EGO_TYPE_WIDE) {
-    /* Conditions */
-    bool mapCondition = (currentStatus.MAP >= (configPage9.afrProtectMinMAP * X2_MULTIPLIER)) ? true : false;
-    bool rpmCondition = (currentStatus.RPMdiv100 >= configPage9.afrProtectMinRPM) ? true : false;
-    bool tpsCondition = (currentStatus.TPS >= configPage9.afrProtectMinTPS) ? true : false;
-
-    /*
-      Depending on selected mode, this could either be fixed AFR value or a
-      value set to be the maximum deviation from AFR target table.
-
-      1 = fixed value mode, 2 = target table mode
-    */
-    bool afrCondition;
-    switch(configPage9.afrProtectEnabled)
+  if ( canApplyAfrLimit(page6, page9) )
+  {
+    if (isAfrLimitCondtionActive(current, page9))
     {
-      case 1: afrCondition = (currentStatus.O2 >= configPage9.afrProtectDeviation) ? true : false; break; /* Fixed value */
-      case 2: afrCondition = (currentStatus.O2 >= (currentStatus.afrTarget + configPage9.afrProtectDeviation)) ? true : false; break; /* Deviation from target table */
-      default: afrCondition = false; /* Unknown mode. Shouldn't even get here */
-    }
-
-    /* Check if conditions above are fulfilled */
-    if(mapCondition && rpmCondition && tpsCondition && afrCondition) 
-    {
-      /* All conditions fulfilled - start counter for 'protection delay' */
-      if(!afrProtectCountEnabled) 
+      // All conditions fulfilled - start counter for 'protection delay'
+      if(afrProtectedActivateTime==0U) 
       {
-        afrProtectCountEnabled = true;
-        afrProtectCount = millis();
+        afrProtectedActivateTime = currMillis + (page9.afrProtectCutTime * UINT16_C(100));
       }
 
-      /* Check if countdown has reached its target, if so then instruct to cut */
-      if(millis() >= (afrProtectCount + (configPage9.afrProtectCutTime * X100_MULTIPLIER))) 
-      {
-        checkAFRLimitActive = true;
-        BIT_SET(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
-      }
+      // Check if countdown has reached its target, if so then instruct to cut
+      checkAFRLimitActive = currMillis >= afrProtectedActivateTime;
     } 
     else 
     {
-      /* Conditions have presumably changed - deactivate and reset counter */
-      if(afrProtectCountEnabled) 
-      {
-        afrProtectCountEnabled = false;
-        afrProtectCount = 0;
-      }
+      // NOTE: we deliberately do not reset checkAFRLimitActive here
+      // Once AFR protection is in effect, user must reduce throttle
+      // to below the reactivation limit to reset manually (below)
+
+      // Do nothing
     }
 
-    /* Check if condition for reactivation is fulfilled */
-    if(checkAFRLimitActive && (currentStatus.TPS <= configPage9.afrProtectReactivationTPS)) 
+    // Check if condition for reactivation is fulfilled
+    if(current.TPS <= page9.afrProtectReactivationTPS)
     {
       checkAFRLimitActive = false;
-      afrProtectCountEnabled = false;
-      BIT_CLEAR(currentStatus.engineProtectStatus, ENGINE_PROTECT_BIT_AFR);
+      afrProtectedActivateTime = 0U;
     }
   }
-
+  else
+  {
+    checkAFRLimitActive = false;
+  }
   return checkAFRLimitActive;
 }
 
+
+TESTABLE_INLINE_STATIC bool checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, uint32_t currMillis)
+{
+  current.engineProtectBoostCut = checkBoostLimit(current, page6);
+  current.engineProtectOil = checkOilPressureLimit(current, page6, page10, currMillis);
+  current.engineProtectAfr = checkAFRLimit(current, page6, page9, currMillis);
+
+  return (current.engineProtectBoostCut || current.engineProtectOil || current.engineProtectAfr)
+      && ( current.RPMdiv100 > page4.engineProtectMaxRPM );
+}
+
+BEGIN_LTO_ALWAYS_INLINE(bool) checkEngineProtect(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+{
+  return checkEngineProtect(current, page4, page6, page9, page10, millis());
+}
+END_LTO_INLINE();
+
+uint8_t checkRevLimit(statuses &current, const config4 &page4, const config6 &page6, const config9 &page9)
+{
+  //Hardcut RPM limit
+  uint8_t currentLimitRPM = UINT8_MAX; //Default to no limit (In case PROTECT_CUT_OFF is selected)
+  current.engineProtectRpm = false;
+  current.engineProtectClt = false;
+
+  if (page6.engineProtectType != PROTECT_CUT_OFF) 
+  {
+    if(page9.hardRevMode == HARD_REV_FIXED)
+    {
+      currentLimitRPM = page4.HardRevLim;
+      current.engineProtectRpm = (current.RPMdiv100 >= page4.HardRevLim) 
+                              || ((softLimitTime > page4.SoftLimMax) && (current.RPMdiv100 >= page4.SoftRevLim));
+    }
+    else if(page9.hardRevMode == HARD_REV_COOLANT )
+    {
+      currentLimitRPM = table2D_getValue(&coolantProtectTable, temperatureAddOffset(current.coolant));
+      if(current.RPMdiv100 > currentLimitRPM)
+      {
+        current.engineProtectClt = true;
+        current.engineProtectRpm = true;
+      } 
+    }
+  }
+
+  return currentLimitRPM;
+}
+
+TESTABLE_STATIC uint32_t rollingCutLastRev = 0; /**< Tracks whether we're on the same or a different rev for the rolling cut */
+TESTABLE_CONSTEXPR table2D_i8_u8_4 rollingCutTable(&configPage15.rollingProtRPMDelta, &configPage15.rollingProtCutPercent);
+
+// Test-hookable RNG for rolling cut (defaults to existing random1to100)
+TESTABLE_STATIC uint8_t (*rollingCutRandFunc)(void) = random1to100;
+
+BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10)
+{
+  if (current.decoder.getStatus().syncStatus==SyncStatus::None)
+  {
+    return { 0x0, 0x0, 0x0 };
+  }
+
+  statuses::scheduler_cut_t cutState = current.schedulerCutState;
+
+  //Check for any of the engine protections or rev limiters being turned on
+  uint16_t maxAllowedRPM = checkRevLimit(current, page4, page6, page9); //The maximum RPM allowed by all the potential limiters (Engine protection, 2-step, flat shift etc). Divided by 100. `checkRevLimit()` returns the current maximum RPM allow (divided by 100) based on either the fixed hard limit or the current coolant temp
+  //Check each of the functions that has an RPM limit. Update the max allowed RPM if the function is active and has a lower RPM than already set
+  if( checkEngineProtect(current, page4, page6, page9, page10) && (page4.engineProtectMaxRPM < maxAllowedRPM)) { maxAllowedRPM = page4.engineProtectMaxRPM; }
+  if ( (current.launchingHard == true) && (page6.lnchHardLim < maxAllowedRPM) ) { maxAllowedRPM = page6.lnchHardLim; }
+  maxAllowedRPM = maxAllowedRPM * 100U; //All of the above limits are divided by 100, convert back to RPM
+  if ( (current.flatShiftingHard == true) && (current.clutchEngagedRPM < maxAllowedRPM) ) { maxAllowedRPM = current.clutchEngagedRPM; } //Flat shifting is a special case as the RPM limit is based on when the clutch was engaged. It is not divided by 100 as it is set with the actual RPM
+
+  if(current.RPM >= maxAllowedRPM)
+  {
+    current.hardLimitActive = true;
+  }
+  else if(current.hardLimitActive)
+  {
+    current.hardLimitActive = false;
+  }
+
+  if( (page2.hardCutType == HARD_CUT_FULL) && current.hardLimitActive)
+  {
+    //Full hard cut turns outputs off completely. 
+    switch(page6.engineProtectType)
+    {
+      case PROTECT_CUT_OFF:
+        //Make sure all channels are turned on
+        cutState.ignitionChannels = 0xFF;
+        cutState.fuelChannels = 0xFF;
+        resetEngineProtect(current);
+        break;
+      case PROTECT_CUT_IGN:
+        cutState.ignitionChannels = 0;
+        break;
+      case PROTECT_CUT_FUEL:
+        cutState.fuelChannels = 0;
+        break;
+      case PROTECT_CUT_BOTH:
+        cutState.ignitionChannels = 0;
+        cutState.fuelChannels = 0;
+        break;
+      default:
+        cutState.ignitionChannels = 0;
+        cutState.fuelChannels = 0;
+        break;
+    }
+  } //Hard cut check
+  else if( (page2.hardCutType == HARD_CUT_ROLLING) && (current.RPM > (maxAllowedRPM + (rollingCutTable.axis[0] * 10))) ) //Limit for rolling is the max allowed RPM minus the lowest value in the delta table (Delta values are negative!)
+  { 
+    uint8_t revolutionsToCut = 1;
+    if(page2.strokes == FOUR_STROKE) { revolutionsToCut *= 2; } //4 stroke needs to cut for at least 2 revolutions
+    if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) || (page2.injLayout != INJ_SEQUENTIAL) ) { revolutionsToCut *= 2; } //4 stroke and non-sequential will cut for 4 revolutions minimum. This is to ensure no half fuel ignition cycles take place
+
+    if(rollingCutLastRev == 0) { rollingCutLastRev = current.startRevolutions; } //First time check
+    if ( (current.startRevolutions >= (rollingCutLastRev + revolutionsToCut)) || (current.RPM > maxAllowedRPM) ) //If current RPM is over the max allowed RPM always cut, otherwise check if the required number of revolutions have passed since the last cut
+    { 
+      uint8_t cutPercent = 0;
+      int16_t rpmDelta = current.RPM - maxAllowedRPM;
+      if(rpmDelta >= 0) { cutPercent = 100; } //If the current RPM is over the max allowed RPM then cut is full (100%)
+      else { cutPercent = table2D_getValue(&rollingCutTable, (int8_t)(rpmDelta / 10) ); } //
+      
+
+      for(uint8_t x=0; x<max(current.maxIgnOutputs, current.maxInjOutputs); x++)
+      {  
+        if( (cutPercent == 100) || (rollingCutRandFunc() < cutPercent) )
+        {
+          switch(page6.engineProtectType)
+          {
+            case PROTECT_CUT_OFF:
+              //Make sure all channels are turned on
+              cutState.ignitionChannels = 0xFF;
+              cutState.fuelChannels = 0xFF;
+              break;
+            case PROTECT_CUT_IGN:
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
+              break;
+            case PROTECT_CUT_FUEL:
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
+              break;
+            case PROTECT_CUT_BOTH:
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
+              break;
+            default:
+              BIT_CLEAR(cutState.ignitionChannels, x); //Turn off this ignition channel
+              BIT_CLEAR(cutState.fuelChannels, x); //Turn off this fuel channel
+              break;
+          }
+        }
+        else
+        {
+          //Turn fuel and ignition channels on
+
+          //Special case for non-sequential, 4-stroke where both fuel and ignition are cut. The ignition pulses should wait 1 cycle after the fuel channels are turned back on before firing again
+          if( (revolutionsToCut == 4) &&                          //4 stroke and non-sequential
+              (BIT_CHECK(cutState.fuelChannels, x) == false) &&          //Fuel on this channel is currently off, meaning it is the first revolution after a cut
+              (page6.engineProtectType == PROTECT_CUT_BOTH) //Both fuel and ignition are cut
+            )
+          { BIT_SET(cutState.ignitionChannelsPending, x); } //Set this ignition channel as pending
+          else { BIT_SET(cutState.ignitionChannels, x); } //Turn on this ignition channel
+            
+          
+          BIT_SET(cutState.fuelChannels, x); //Turn on this fuel channel
+        }
+      }
+      rollingCutLastRev = current.startRevolutions;
+    }
+
+    //Check whether there are any ignition channels that are waiting for injection pulses to occur before being turned back on. This can only occur when at least 2 revolutions have taken place since the fuel was turned back on
+    //Note that ignitionChannelsPending can only be >0 on 4 stroke, non-sequential fuel when protect type is Both
+    if( (cutState.ignitionChannelsPending > 0) && (current.startRevolutions >= (rollingCutLastRev + 2)) )
+    {
+      cutState.ignitionChannels = cutState.fuelChannels;
+      cutState.ignitionChannelsPending = 0;
+    }
+  } //Rolling cut check
+  else
+  {
+    resetEngineProtect(current);
+    //No engine protection active, so turn all the channels on
+    if(current.startRevolutions >= page4.StgCycles)
+    { 
+      //Enable the fuel and ignition, assuming staging revolutions are complete 
+      cutState.ignitionChannels = 0xff; 
+      cutState.fuelChannels = 0xff; 
+    } 
+  }
+
+  return cutState;
+}
+END_LTO_INLINE()

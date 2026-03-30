@@ -18,8 +18,7 @@ A full copy of the license may be found in the projects root directory
 #include "page_crc.h"
 #include "logger.h"
 #include "comms_legacy.h"
-#include "src/FastCRC/FastCRC.h"
-#include <avr/pgmspace.h>
+#include <FastCRC.h>
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
   #include "comms_sd.h"
@@ -92,6 +91,8 @@ using crc_t = uint32_t;
   commsInterface primaryComms(&Serial, SERIAL_BUFFER_SIZE);
 #endif
 
+static uint32_t deferEEPROMWritesUntil = 0; //!< Point in time that we can resume writing pages
+static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -303,7 +304,7 @@ static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffe
     {
       setPageValue(pageNum, (offset + i), buffer[i]);
     }
-    deferEEPROMWritesUntil = micros() + EEPROM_DEFER_DELAY;
+    setStorageWriteTimeout(micros() + EEPROM_DEFER_DELAY);
     return true;
   }
 
@@ -348,7 +349,17 @@ static void generateLiveValues(commsInterface *comms, uint16_t offset, uint16_t 
     comms->serialPayload[x+1U] = getTSLogEntry(offset+x); 
   }
   // Reset any flags that are being used to trigger page refreshes
-  BIT_CLEAR(currentStatus.status3, BIT_STATUS3_VSS_REFRESH);
+  currentStatus.vssUiRefresh = false;
+}
+
+// Abstract the FastCrC32 functions 
+// - they have have very slight differences in signatures, which causes the Arduino
+// compiler to fail for some boards (the Platform IO compiler works fine though)
+static inline uint32_t initializeCrc(uint8_t buffer) {
+  return CRC32_calibration.crc32(&buffer, 1U);
+}
+static inline uint32_t updateCrc(uint8_t buffer) {
+  return CRC32_calibration.crc32_upd(&buffer, 1U);
 }
 
 /**
@@ -359,9 +370,9 @@ static void generateLiveValues(commsInterface *comms, uint16_t offset, uint16_t 
  */
 static void loadO2CalibrationChunk(commsInterface *comms, uint16_t offset, uint16_t chunkSize)
 {
-  using pCrcCalc = uint32_t (FastCRC32::*)(const uint8_t *, const uint16_t, bool);
+  using pCrcCalc = uint32_t (*)(uint8_t);
   // First pass through the loop, we need to INITIALIZE the CRC
-  pCrcCalc pCrcFun = offset==0U ? &FastCRC32::crc32 : &FastCRC32::crc32_upd;
+  pCrcCalc pCrcFun = offset==0U ? &initializeCrc : &updateCrc;
   uint32_t calibrationCRC = 0U;
 
   //Read through the current chunk (Should be 256 bytes long)
@@ -379,16 +390,17 @@ static void loadO2CalibrationChunk(commsInterface *comms, uint16_t offset, uint1
     }
 
     //Update the CRC
-    calibrationCRC = (CRC32_calibration.*pCrcFun)(&comms->serialPayload[x+7U], 1, false);
+    //calibrationCRC = (CRC32_calibration.*pCrcFun)(&comms->serialPayload[x+7U], 1, false);
+    calibrationCRC = (*pCrcFun)(&comms->serialPayload[x+7U]);
     // Subsequent passes through the loop, we need to UPDATE the CRC
-    pCrcFun = &FastCRC32::crc32_upd;
+    pCrcFun = &updateCrc;
   }
  
   if( offset >= 1023U ) 
   {
     //All chunks have been received (1024 values). Finalise the CRC and burn to EEPROM
-    storeCalibrationCRC32(O2_CALIBRATION_PAGE, ~calibrationCRC);
-    writeCalibrationPage(O2_CALIBRATION_PAGE);
+    saveCalibrationCrc(SensorCalibrationTable::O2Sensor, calibrationCRC);
+    saveCalibrationTable(SensorCalibrationTable::O2Sensor);
   }
 }
 
@@ -413,18 +425,18 @@ static uint8_t toTemperature(byte lo, byte hi)
  * @param values The table values
  * @param bins The table bin values
  */
-static void processTemperatureCalibrationTableUpdate(commsInterface *comms, uint16_t calibrationLength, uint8_t calibrationPage, table2D_u16_u16_32 &table)
+static void processTemperatureCalibrationTableUpdate(commsInterface *comms, uint16_t calibrationLength, SensorCalibrationTable calibrationPage, uint8_t *values, uint16_t *bins)
 {
   //Temperature calibrations are sent as 32 16-bit values
   if(calibrationLength == 64U)
   {
     for (uint16_t x = 0; x < 32U; x++)
     {
-      table.values[x] = toTemperature(comms->serialPayload[(2U * x) + 7U], comms->serialPayload[(2U * x) + 8U]);
-      table.axis[x] = (x * 33U); // 0*33=0 to 31*33=1023
+      values[x] = toTemperature(comms->serialPayload[(2U * x) + 7U], comms->serialPayload[(2U * x) + 8U]);
+      bins[x] = (x * 33U); // 0*33=0 to 31*33=1023
     }
-    storeCalibrationCRC32(calibrationPage, CRC32_calibration.crc32(&comms->serialPayload[7], 64));
-    writeCalibrationPage(calibrationPage);
+    saveCalibrationCrc(calibrationPage, CRC32_serial.crc32(&comms->serialPayload[7], 64));
+    saveCalibrationTable(calibrationPage);
     sendReturnCodeMsg(comms, SERIAL_RC_OK);
   }
   else 
@@ -467,7 +479,7 @@ void serialReceive(commsInterface *comms)
       legacySerialCommand(comms);
       return;
     }
-    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (BIT_CHECK(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS)) )
+    else if( (((highByte >= 'A') && (highByte <= 'z')) || (highByte == '?')) && (currentStatus.allowLegacyComms) )
     {
       //Handle legacy cases here
       legacySerialCommand(comms);
@@ -504,7 +516,7 @@ void serialReceive(commsInterface *comms)
         {
           //CRC is correct. Process the command
           processSerialCommand(comms);
-          BIT_CLEAR(currentStatus.status4, BIT_STATUS4_ALLOW_LEGACY_COMMS); //Lock out legacy commands until next power cycle
+          currentStatus.allowLegacyComms = false; //Lock out legacy commands until next power cycle
         }
         else {
           //CRC Error. Need to send an error message
@@ -558,6 +570,15 @@ void serialTransmit(commsInterface *comms)
   }
 }
 
+static void burnSinglePage(uint8_t page)
+{
+  if( storageWriteTimeoutExpired()) { 
+    savePage(page); 
+  } else { 
+    setEepromWritePending(true); 
+  }
+}
+
 void processSerialCommand(commsInterface *comms)
 {
   uint8_t* serialPayload = comms->serialPayload.get();
@@ -568,19 +589,15 @@ void processSerialCommand(commsInterface *comms)
       break;
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
-      
-      sendReturnCodeMsg(comms, SERIAL_RC_BURN_OK);
+      burnSinglePage(serialPayload[2]);     
+      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
-      deferEEPROMWritesUntil += (EEPROM_DEFER_DELAY/4); //Add 25% more to the EEPROM defer time
-      if( (micros() > deferEEPROMWritesUntil)) { writeConfig(serialPayload[2]); } //Read the table number and perform burn. Note that byte 1 in the array is unused
-      else { BIT_SET(currentStatus.status4, BIT_STATUS4_BURNPENDING); }
-      
-      sendReturnCodeMsg(comms, SERIAL_RC_BURN_OK);
+      currentStatus.commCompat = true; //Force the compat mode
+      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4U)); //Add 25% more to the EEPROM defer time
+      burnSinglePage(serialPayload[2]);      
+      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -647,7 +664,7 @@ void processSerialCommand(commsInterface *comms)
 
     case 'k': //Send CRC values for the calibration pages
     {
-      uint32_t CRC32_val = reverse_bytes(readCalibrationCRC32(serialPayload[2])); //Get the CRC for the requested page
+      uint32_t CRC32_val = reverse_bytes(loadCalibrationCrc((SensorCalibrationTable)serialPayload[2])); //Get the CRC for the requested page
 
       serialPayload[0] = SERIAL_RC_OK;
       (void)memcpy(&serialPayload[1], (byte*)&CRC32_val, sizeof(CRC32_val));
@@ -762,7 +779,7 @@ void processSerialCommand(commsInterface *comms)
           
           serialPayload[0] = SERIAL_RC_OK;
 
-          serialPayload[1] = currentStatus.TS_SD_Status;
+          serialPayload[1] = buildSdCardStatus(currentStatus);
           serialPayload[2] = 0; //Error code
  
           //Sector size = 512
@@ -868,23 +885,23 @@ void processSerialCommand(commsInterface *comms)
 
     case 't': // receive new Calibration info. Command structure: "t", <tble_idx> <data array>.
     {
-      uint8_t cmd = serialPayload[2];
+      SensorCalibrationTable cmd = (SensorCalibrationTable)serialPayload[2];
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
-      if(cmd == O2_CALIBRATION_PAGE)
+      if(cmd == SensorCalibrationTable::O2Sensor)
       {
         loadO2CalibrationChunk(comms, offset, calibrationLength);
         sendReturnCodeMsg(comms, SERIAL_RC_OK);
         comms->pSerial->flush(); //This is safe because engine is assumed to not be running during calibration
       }
-      else if(cmd == IAT_CALIBRATION_PAGE)
+      else if(cmd == SensorCalibrationTable::IntakeAirTempSensor)
       {
-        processTemperatureCalibrationTableUpdate(comms, calibrationLength, IAT_CALIBRATION_PAGE, iatCalibrationTable);
+        processTemperatureCalibrationTableUpdate(comms, calibrationLength, cmd, iatCalibrationTable.values, iatCalibrationTable.axis);
       }
-      else if(cmd == CLT_CALIBRATION_PAGE)
+      else if(cmd == SensorCalibrationTable::CoolantSensor)
       {
-        processTemperatureCalibrationTableUpdate(comms, calibrationLength, CLT_CALIBRATION_PAGE, cltCalibrationTable);
+        processTemperatureCalibrationTableUpdate(comms, calibrationLength, cmd, cltCalibrationTable.values, cltCalibrationTable.axis);
       }
       else
       {
@@ -1056,7 +1073,7 @@ void processSerialCommand(commsInterface *comms)
 void sendToothLog(commsInterface *comms)
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
-  if (BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false) 
+  if (currentStatus.isToothLog1Full == false) 
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
@@ -1073,7 +1090,7 @@ void sendToothLog(commsInterface *comms)
     (void)serialWrite(comms, (uint16_t)(sizeof(toothHistory) + 1U)); //Size of the tooth log (uint32_t values) plus the return code
     //Begin new CRC hash
     const uint8_t returnCode = SERIAL_RC_OK;
-    CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
+    CRC32_val = CRC32_serial.crc32(&returnCode, 1);
 
     //Send the return code
     writeByteReliableBlocking(comms, returnCode);
@@ -1091,15 +1108,12 @@ void sendToothLog(commsInterface *comms)
 
     //Transmit the tooth time
     uint32_t transmitted = serialWrite(comms, toothHistory[logItemsTransmitted]);
-    CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
+    CRC32_val = CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted));
   }
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   comms->serialStatusFlag = SERIAL_INACTIVE;
   toothHistoryIndex = 0;
   logItemsTransmitted = 0;
-
-  //Apply the CRC reflection
-  CRC32_val = ~CRC32_val;
 
   //Send the CRC
   (void)serialWrite(comms, CRC32_val);
@@ -1107,7 +1121,7 @@ void sendToothLog(commsInterface *comms)
 
 void sendCompositeLog(commsInterface *comms)
 {
-  if ( BIT_CHECK(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY) == false )
+  if ( currentStatus.isToothLog1Full == false )
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
     while(toothHistoryIndex < TOOTH_LOG_SIZE)
@@ -1126,7 +1140,7 @@ void sendCompositeLog(commsInterface *comms)
     
     //Begin new CRC hash
     const uint8_t returnCode = SERIAL_RC_OK;
-    CRC32_val = CRC32_serial.crc32(&returnCode, 1, false);
+    CRC32_val = CRC32_serial.crc32(&returnCode, 1);
 
     //Send the return code
     writeByteReliableBlocking(comms, returnCode);
@@ -1143,22 +1157,27 @@ void sendCompositeLog(commsInterface *comms)
     }
 
     uint32_t transmitted = serialWrite(comms, toothHistory[logItemsTransmitted]); //This combined runtime (in us) that the log was going for by this record
-    (void)CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted), false);
+    (void)CRC32_serial.crc32_upd((const byte*)&transmitted, sizeof(transmitted));
 
     //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
     writeByteReliableBlocking(comms, compositeLogHistory[logItemsTransmitted]);
-    CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]), false);
+    CRC32_val = CRC32_serial.crc32_upd((const byte*)&compositeLogHistory[logItemsTransmitted], sizeof(compositeLogHistory[logItemsTransmitted]));
   }
-  BIT_CLEAR(currentStatus.status1, BIT_STATUS1_TOOTHLOG1READY);
+  currentStatus.isToothLog1Full = false;
   toothHistoryIndex = 0;
   comms->serialStatusFlag = SERIAL_INACTIVE;
   logItemsTransmitted = 0;
 
-  //Apply the CRC reflection
-  CRC32_val = ~CRC32_val;
-
   //Send the CRC
   (void)serialWrite(comms, CRC32_val);
+}
+
+void setStorageWriteTimeout(uint32_t time) {
+  deferEEPROMWritesUntil = time;
+}
+
+bool storageWriteTimeoutExpired(void) {
+  return micros() > deferEEPROMWritesUntil;
 }
 
 #if defined(CORE_AVR)

@@ -62,13 +62,13 @@ static constexpr uint16_t TS_CMD_STM32_BOOTLOADER = 12801;
 
 static constexpr uint16_t TS_CMD_SD_FORMAT  = 13057;
 
-static constexpr uint16_t TS_CMD_VSS_60KMH  = 39168; //0x99x00
-static constexpr uint16_t TS_CMD_VSS_RATIO1 = 39169;
-static constexpr uint16_t TS_CMD_VSS_RATIO2 = 39170;
-static constexpr uint16_t TS_CMD_VSS_RATIO3 = 39171;
-static constexpr uint16_t TS_CMD_VSS_RATIO4 = 39172;
-static constexpr uint16_t TS_CMD_VSS_RATIO5 = 39173;
-static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174;
+static constexpr uint16_t TS_CMD_VSS_60KMH  = 39168U; //0x99x00
+static constexpr uint16_t TS_CMD_VSS_RATIO1 = 39169U;
+static constexpr uint16_t TS_CMD_VSS_RATIO2 = 39170U;
+static constexpr uint16_t TS_CMD_VSS_RATIO3 = 39171U;
+static constexpr uint16_t TS_CMD_VSS_RATIO4 = 39172U;
+static constexpr uint16_t TS_CMD_VSS_RATIO5 = 39173U;
+static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174U;
 
 /* the maximum id number is 65,535 */
 bool TS_CommandButtonsHandler(uint16_t buttonCommand);

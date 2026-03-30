@@ -2,16 +2,16 @@
 #define MATH_H
 
 #include <stdint.h>
-#include "bit_shifts.h"
-
+#include <avr-fast-shift.h>
+#include <avr-fast-div.h>
 #ifdef USE_LIBDIVIDE
 // We use pre-computed constant parameters with libdivide where possible. 
 // Using predefined constants saves flash and RAM (.bss) versus calling the 
 // libdivide generator functions (E.g. libdivide_s32_gen)
 // 32-bit constants generated here: https://godbolt.org/z/vP8Kfejo9
-#include "src/libdivide/libdivide.h"
-#include "src/libdivide/constant_fast_div.h"
+#include <libdivide.h>
 #endif
+#include "unit_testing.h"
 
 uint8_t random1to100(void);
 
@@ -99,7 +99,7 @@ uint8_t random1to100(void);
  * @return uint16_t 
  */
 template <uint16_t divisor>
-static inline constexpr uint16_t div_round_closest_u16(uint16_t n) {
+TESTABLE_STATIC_CONSTEXPR uint16_t div_round_closest_u16(uint16_t n) {
     // This is a compile time version of UDIV_ROUND_CLOSEST
     //
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
@@ -124,7 +124,14 @@ static inline uint16_t div100(uint16_t n) {
     // As of avr-gcc 5.4.0, the compiler will optimize this to a multiply/shift
     // (unlike the signed integer overload, where __divmodhi4 is still called
     // see https://godbolt.org/z/c5bs5noT1)
+#ifdef USE_LIBDIVIDE
+    constexpr libdivide::libdivide_u16_t libdiv_u16_100 = { .magic = 18351, .more = 70 };
+    // LCOV_EXCL_BR_START
+    return libdivide::libdivide_u16_do_raw(n + DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_u16_100.magic, libdiv_u16_100.more);
+    // LCOV_EXCL_BR_STOP
+#else
     return UDIV_ROUND_CLOSEST(n, UINT16_C(100), uint16_t);
+#endif
 }
 
 static inline int16_t div100(int16_t n) {
@@ -135,7 +142,10 @@ static inline int16_t div100(int16_t n) {
     }
     // Negative values here, so adjust pre-division to get same
     // behavior as roundf(float)
-    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), S16_MAGIC(100), S16_MORE(100));
+    constexpr libdivide::libdivide_s16_t libdiv_s16_100 = { .magic = 20972, .more = 5 };
+    // LCOV_EXCL_BR_START
+    return libdivide::libdivide_s16_do_raw(n - DIV_ROUND_CORRECT(UINT16_C(100), uint16_t), libdiv_s16_100.magic, libdiv_s16_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return DIV_ROUND_CLOSEST(n, UINT16_C(100), int16_t);
 #endif
@@ -146,28 +156,28 @@ static inline uint32_t div100(uint32_t n) {
     if (n<=(uint32_t)UINT16_MAX) {
         return div100((uint16_t)n);
     }
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), 2748779070L, 6);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_100 = { .magic = 2748779070, .more = 6 };
+    // LCOV_EXCL_BR_START
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(100), uint32_t), libdiv_u32_100.magic, libdiv_u32_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return UDIV_ROUND_CLOSEST(n, UINT32_C(100), uint32_t);
 #endif
 }
 
-#if defined(__arm__)
-static inline int div100(int n) {
-    return DIV_ROUND_CLOSEST(n, 100U, int);
-}
-#else
 static inline int32_t div100(int32_t n) {
 #ifdef USE_LIBDIVIDE    
     if (n<=INT16_MAX && n>=INT16_MIN) {
         return div100((int16_t)n);            
     }
-    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), 1374389535L, 5);
+    constexpr libdivide::libdivide_s32_t libdiv_s32_100 = { .magic = 1374389535, .more = 5 };
+    // LCOV_EXCL_BR_START
+    return libdivide::libdivide_s32_do_raw(n + (DIV_ROUND_CORRECT(UINT16_C(100), uint32_t) * (n<0 ? -1 : 1)), libdiv_s32_100.magic, libdiv_s32_100.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return DIV_ROUND_CLOSEST(n, INT32_C(100), int32_t);
 #endif
 }
-#endif
 ///@}
 
 /**
@@ -178,20 +188,114 @@ static inline int32_t div100(int32_t n) {
  */
 static inline uint32_t div360(uint32_t n) {
 #ifdef USE_LIBDIVIDE
-    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), 1813430637L, 72);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_360 = { .magic = 1813430637, .more = 72 };
+    // LCOV_EXCL_BR_START
+    return libdivide::libdivide_u32_do_raw(n + DIV_ROUND_CORRECT(UINT32_C(360), uint32_t), libdiv_u32_360.magic, libdiv_u32_360.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return (uint32_t)UDIV_ROUND_CLOSEST(n, UINT32_C(360), uint32_t);
 #endif
 }
 
 /**
- * @brief Integer based percentage calculation.
+ * @brief Rounded arithmetic right shift
  * 
- * @param percent The percent to calculate ([0, 100])
- * @param value The value to operate on
+ * Right shifting throws away bits. When use for fixed point division, this
+ * effectively rounds down (towards zero). To round-to-the-nearest-integer
+ * when right-shifting by S, just add in 2 power b−1 (which is the 
+ * fixed-point equivalent of 0.5) first
+ *  
+ * @tparam b number of bits to shift by
+ * @param a value to shift
  * @return uint32_t 
  */
-static inline uint32_t percentage(uint8_t percent, uint32_t value) 
+template <uint8_t b> 
+static inline uint32_t rshift_round(uint32_t a) { 
+    constexpr uint8_t CORRECTION_SHIFT = b-1U; // cppcheck-suppress misra-c2012-10.4
+    constexpr uint32_t CORRECTION = 1UL<<CORRECTION_SHIFT;
+    return rshift<b>((uint32_t)(a+CORRECTION));
+}
+
+/// @cond
+
+/**
+ * @brief Computes value * (percent/100) using bitsPrecision
+ * Helper function, private to percentageApprox - do not use directly.
+ */
+template <uint8_t bitsPrecision>
+static inline uint32_t _percentageApprox(uint16_t percent, uint32_t value) {
+  uint16_t iPercent = div100((uint16_t)(percent << bitsPrecision));
+  return rshift_round<bitsPrecision>(value * (uint32_t)iPercent);
+}
+
+/// @endcond
+
+/**
+ * @brief Integer based percentage calculation: faster, but less accurate, than percentage()
+ * 
+ * Recommended use case is when dealing with percentages >50%.
+ * 
+ * @param percent The percent to apply to value
+ * @param value The value to operate on
+ *
+ * @note Performance unit test shows a 33% speed improvement over percentage(). 
+ * However, accuracy decreases as the percentage decreases, compared to percentage():
+ * Percent | Maximum Error | Example
+ * ------- | :-----------: | :----------------------------------
+ * 1%-6%   | 9%            | <c>percentage(4, 563)</c>         -> 23
+ * ^       | ^             | <c>percentageApprox(4, 563)</c>   -> 21
+ * 7%-40%  | 1%            | <c>percentage(10, 1806)</c>       -> 181
+ * ^       | ^             | <c>percentageApprox(10, 1806)</c> -> 179
+ * 41%+    | <0.3%         | <c>percentage(79, 2371)</c>       -> 1873
+ * ^       | ^             | <c>percentageApprox(79, 2371)</c> -> 1870
+ */
+static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
+    // To keep the percentage within 16-bits (for performance), we have to scale the precision based on the percentage.
+    // I.e. the larger the percentage, the smaller the precision has to be (and vice-versa).
+    //
+    // We could use __builtin_clz() and use the leading zero count as the precision, but that is slow:
+    //  * AVR doesn't have a clz ASM instruction, so __builtin_clz() is implemented in software
+    //  * It would require removing some compile time optimizations
+    #define TEST_AND_APPLY(precision) \
+        if (percent<(UINT16_C(1)<<(UINT16_C(16)-(precision)))) { \
+            return _percentageApprox<(precision)>(percent, value); \
+        }
+    
+    TEST_AND_APPLY(9)   // Percent<128
+    TEST_AND_APPLY(8)   // Percent<256
+    TEST_AND_APPLY(7)   // Percent<512
+    TEST_AND_APPLY(6)   // Percent<1024
+    
+    #undef TEST_AND_APPLY
+
+    // Percent<2048
+    return _percentageApprox<5U>(percent, value);
+}
+
+/**
+ * @brief Slightly faster version of percentageApprox(uint16_t, uint32_t), since we know percent<256.
+ */
+static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) {
+    if (percent<(UINT8_C(1)<<UINT8_C(7))) {
+        return _percentageApprox<9U>(percent, value);
+    }
+    return _percentageApprox<8U>(percent, value);
+}
+
+/** @brief This is only here to eliminate magic numbers
+ * 
+ * DO NOT USE UNLESS YOU REALLY ARE WORKING IN PERCENTAGES - it will be very
+ * confusing for maintainers (which is what we are trying to avoid!)
+ */
+static constexpr uint8_t ONE_HUNDRED_PCT = 100U;
+
+/**
+ * @brief Integer based percentage calculation.
+ * 
+ * @param percent The percent to apply to value
+ * @param value The value to operate on
+ */
+static inline uint32_t percentage(uint16_t percent, uint32_t value) 
 {
     return (uint32_t)div100((uint32_t)value * (uint32_t)percent);
 }
@@ -207,7 +311,10 @@ static inline uint32_t percentage(uint8_t percent, uint32_t value)
 static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
     uint32_t x200 = (uint32_t)percent * (uint32_t)value;
 #ifdef USE_LIBDIVIDE    
-    return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), 2748779070L, 7);
+    constexpr libdivide::libdivide_u32_t libdiv_u32_200 = { .magic = 2748779070, .more = 7 };
+    // LCOV_EXCL_BR_START
+    return (uint16_t)libdivide::libdivide_u32_do_raw(x200 + DIV_ROUND_CORRECT(UINT32_C(200), uint32_t), libdiv_u32_200.magic, libdiv_u32_200.more);
+    // LCOV_EXCL_BR_STOP
 #else
     return (uint16_t)UDIV_ROUND_CLOSEST(x200, UINT16_C(200), uint32_t);
 #endif
@@ -229,83 +336,15 @@ static inline int16_t nudge(int16_t min, int16_t max, int16_t value, int16_t nud
     return value;
 }
 
-#if defined(__AVR__)
-
-static inline bool udiv_is16bit_result(uint32_t dividend, uint16_t divisor) {
-  return divisor>(uint16_t)(dividend>>16U);
-}
-
-#endif
 /**
- * @brief Optimised division: uint32_t/uint16_t => uint16_t
- * 
- * Optimised division of unsigned 32-bit by unsigned 16-bit when it is known
- * that the result fits into unsigned 16-bit.
- * 
- * ~60% quicker than raw 32/32 => 32 division on ATMega
- * 
- * @note Bad things will likely happen if the result doesn't fit into 16-bits.
- * @note Copied from https://stackoverflow.com/a/66593564
- * 
- * @param dividend The dividend (numerator)
- * @param divisor The divisor (denominator)
- * @return uint16_t 
- */
-static inline uint16_t udiv_32_16 (uint32_t dividend, uint16_t divisor)
-{
-#if defined(__AVR__)
-
-    if (divisor==0U || !udiv_is16bit_result(dividend, divisor)) { return UINT16_MAX; }
-
-    #define INDEX_REG "r16"
-
-    asm(
-        "    ldi " INDEX_REG ", 16 ; bits = 16\n\t"
-        "0:\n\t"
-        "    lsl  %A0     ; shift\n\t"
-        "    rol  %B0     ;  rem:quot\n\t"
-        "    rol  %C0     ;   left\n\t"
-        "    rol  %D0     ;    by 1\n\t"
-        "    brcs 1f     ; if carry out, rem > divisor\n\t"
-        "    cp   %C0, %A1 ; is rem less\n\t"
-        "    cpc  %D0, %B1 ;  than divisor ?\n\t"
-        "    brcs 2f     ; yes, when carry out\n\t"
-        "1:\n\t"
-        "    sub  %C0, %A1 ; compute\n\t"
-        "    sbc  %D0, %B1 ;  rem -= divisor\n\t"
-        "    ori  %A0, 1  ; record quotient bit as 1\n\t"
-        "2:\n\t"
-        "    dec  " INDEX_REG "     ; bits--\n\t"
-        "    brne 0b     ; until bits == 0"
-        : "=d" (dividend) 
-        : "d" (divisor) , "0" (dividend) 
-        : INDEX_REG
-    );
-
-    // Lower word contains the quotient, upper word contains the remainder.
-    return dividend & 0xFFFFU;
-#else
-    // The non-AVR platforms are all fast enough (or have built in hardware dividers)
-    // so just fall back to regular 32-bit division.
-    return dividend / divisor;
-#endif
-}
-
-
-/**
- * @brief Same as udiv_32_16(), except this will round to nearest integer 
+ * @brief Same as fast_div(), except this will round to nearest integer 
  * instead of truncating.
  * 
  * Minor performance drop compared to non-rounding version.
  **/
-static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
-{
-#if defined(__AVR__)
-    dividend = dividend + (uint32_t)(DIV_ROUND_CORRECT(divisor, uint16_t));
-    return udiv_32_16(dividend, divisor);
-#else
-    return (uint16_t)UDIV_ROUND_CLOSEST(dividend, (uint32_t)divisor, uint32_t);
-#endif
+template <typename TDividend, typename TDivisor>
+TESTABLE_STATIC_CONSTEXPR TDividend fast_div_closest(TDividend dividend, TDivisor divisor) {
+    return fast_div(dividend + DIV_ROUND_CORRECT(divisor, TDivisor), divisor);
 }
 
 /**
@@ -319,10 +358,12 @@ static inline uint16_t udiv_32_16_closest(uint32_t dividend, uint16_t divisor)
  * @param hi The maximum threshold
  * @return if v compares less than lo, returns lo; otherwise if hi compares less than v, returns hi; otherwise returns v.
  */
+// LCOV_EXCL_START
 template<class T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi){
+TESTABLE_STATIC_CONSTEXPR const T& clamp(const T& v, const T& lo, const T& hi){
     return v<lo ? lo : hi<v ? hi : v;
 }
+// LCOV_EXCL_STOP
 
 /// @cond
 
@@ -330,11 +371,12 @@ template <typename T, typename TPrime>
 static inline T LOW_PASS_FILTER_8BIT(T input, uint8_t alpha, T prior) {
   // Intermediate steps are for MISRA compliance
   // Equivalent to: (input * (256 - alpha) + (prior * alpha)) >> 8
-  static constexpr T ALPHA_MAX = (T)256;
-  T inv_alpha = ALPHA_MAX - (T)alpha;
+  static constexpr uint16_t ALPHA_MAX_SHIFT = 8U;
+  static constexpr uint16_t ALPHA_MAX = 2U << (ALPHA_MAX_SHIFT-1U);
+  uint16_t inv_alpha = ALPHA_MAX - alpha;
   TPrime prior_alpha = (prior * (TPrime)alpha);
   TPrime preshift = (input * (TPrime)inv_alpha) + prior_alpha;
-  return (T)(preshift / ALPHA_MAX); // Division should resolve to a shift & avoids a MISRA violation
+  return (T)(preshift >> (TPrime)ALPHA_MAX_SHIFT);
 }
 
 /// @endcond
@@ -372,7 +414,7 @@ static inline int16_t LOW_PASS_FILTER(int16_t input, uint8_t alpha, int16_t prio
  */
 static inline uint8_t scale(const uint8_t from, const uint8_t fromRange, const uint8_t toRange) {
   // Using uint16_t to avoid overflow when calculating the result
-  return (((uint16_t)from * (uint16_t)toRange) / (uint16_t)fromRange);
+  return fromRange==0U ? 0U : (((uint16_t)from * (uint16_t)toRange) / (uint16_t)fromRange);
 }
 
 /**

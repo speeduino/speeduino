@@ -21,7 +21,6 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
 void sendValuesLegacy(void);
 void sendPage(void);
 void sendPageASCII(void);
-void receiveCalibration(byte tableID);
 void testComm(void);
 void sendToothLog_legacy(commsInterface *comms, byte startOffset);
 void sendCompositeLog_legacy(commsInterface *comms, byte startOffset);

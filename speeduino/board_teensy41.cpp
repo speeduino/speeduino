@@ -1,19 +1,14 @@
-#include "globals.h"
+#include "board_definition.h"
+
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
-#include "board_teensy41.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
-
-/*
-  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
-FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can1;
-FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can2;
-*/
+#include RTC_LIB_H
+#include EEPROM_LIB_H
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -21,7 +16,23 @@ static void TMR2_isr(void);
 static void TMR3_isr(void);
 static void TMR4_isr(void);
 
-void initBoard()
+/*
+* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
+* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
+*/
+static void serialBegin()
+{
+  uint32_t millis_begin = systick_millis_count;
+  while (!Serial) 
+  {
+    uint32_t elapsed = systick_millis_count - millis_begin;
+    //Wait up to 100ms for this. 
+    if (elapsed > 100) { break; }
+    yield();
+  }
+}
+
+void initBoard(uint32_t /*baudRate*/)
 {
     /*
     ***********************************************************************************************************
@@ -64,7 +75,6 @@ void initBoard()
     * Timers
     */
     //Uses the PIT timer channel 4 on Teensy 4.1.
-    //lowResTimer.begin(oneMSInterval, 1000);
     PIT_TCTRL3 = 0;
     PIT_TCTRL3 |= PIT_TCTRL_TIE; // enable Timer 2 interrupts
     PIT_TCTRL3 |= PIT_TCTRL_TEN; // start Timer 2
@@ -215,6 +225,9 @@ void initBoard()
     NVIC_ENABLE_IRQ(IRQ_QTIMER3);
     attachInterruptVector(IRQ_QTIMER4, TMR4_isr);
     NVIC_ENABLE_IRQ(IRQ_QTIMER4);
+
+    //Teensy 4.1 does not require .begin() to be called. This introduces a 700ms delay on startup time whilst USB is enumerated if it is called
+    serialBegin();
 }
 
 void PIT_isr()
@@ -239,10 +252,10 @@ void TMR1_isr(void)
   bool interrupt3 = (TMR1_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR1_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule4Interrupt(); }
+  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule1); }
+  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule2); }
+  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule3); }
+  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule4); }
 }
 void TMR2_isr(void)
 {
@@ -252,10 +265,10 @@ void TMR2_isr(void)
   bool interrupt3 = (TMR2_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR2_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule1Interrupt(); }
-  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule2Interrupt(); }
-  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule3Interrupt(); }
-  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule4Interrupt(); }
+  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule1); }
+  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule2); }
+  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule3); }
+  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule4); }
 }
 void TMR3_isr(void)
 {
@@ -265,10 +278,10 @@ void TMR3_isr(void)
   bool interrupt3 = (TMR3_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR3_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule5Interrupt(); }
-  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule6Interrupt(); }
-  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule7Interrupt(); }
-  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule8Interrupt(); }
+  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule5); }
+  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule6); }
+  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule7); }
+  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule8); }
 }
 void TMR4_isr(void)
 {
@@ -278,10 +291,10 @@ void TMR4_isr(void)
   bool interrupt3 = (TMR4_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR4_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule5Interrupt(); }
-  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule6Interrupt(); }
-  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule7Interrupt(); }
-  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule8Interrupt(); }
+  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule5); }
+  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule6); }
+  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule7); }
+  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule8); }
 }
 
 uint16_t freeRam()
@@ -302,7 +315,7 @@ uint16_t freeRam()
 }
 
 //This function is used for attempting to set the RTC time during compile
-time_t getTeensy3Time()
+static  time_t getTeensy3Time()
 {
   return Teensy3Clock.get();
 }
@@ -352,7 +365,7 @@ bool pinIsSerial(uint8_t pin)
   return isSerial;
 }
 
-void setPinHysteresis(uint8_t pin)
+static void setPinHysteresis(uint8_t pin)
 {
   //Refer to digital.c in the Teensyduino core for the following code
   //Refer also to Pgs 382 and 950 of the iMXRT1060 Reference Manual
@@ -365,7 +378,19 @@ void setPinHysteresis(uint8_t pin)
   *(p->mux) = 5 | 0x10;
 }
 
-void setTeensy41PinsHysteresis()
+uint8_t getSystemTemp(void)
+{
+  return trunc(InternalTemperature.readTemperatureC());
+}
+
+
+void boardInitRTC(void)
+{
+    setSyncProvider(getTeensy3Time);
+}
+
+
+void boardInitPins(void)
 {
   //Primary trigger
   setPinHysteresis(pinTrigger);
@@ -377,28 +402,24 @@ void setTeensy41PinsHysteresis()
   if(configPage2.flexEnabled > 0) { setPinHysteresis(pinFlex); }
   if(configPage2.vssMode > 1) { setPinHysteresis(pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
-
 }
 
-/*
-* The default Teensy41 serial.begin() has a timeout of 750ms, which is both too long to wait on startup and longer than it needs to be
-* This function is a copy of the default serial.begin() but with the timeout lowered to 100ms
-*/
-void teensy41_customSerialBegin()
+uint16_t getEepromWriteBlockSize(const statuses &current)
 {
-  uint32_t millis_begin = systick_millis_count;
-  while (!Serial) 
-  {
-    uint32_t elapsed = systick_millis_count - millis_begin;
-    //Wait up to 100ms for this. 
-    if (elapsed > 100) break;
-    yield();
-  }
+  uint16_t maxWrite = 64;
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
 }
 
-uint8_t getSystemTemp()
+EEPROM_t& getEEPROM(void) 
 {
-  return trunc(InternalTemperature.readTemperatureC());
+  return EEPROM;
 }
 
 #endif

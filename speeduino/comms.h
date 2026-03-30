@@ -136,7 +136,6 @@ struct commsInterface
 };
 extern commsInterface primaryComms;
 
-
 /**
  * @brief The serial receive pump. Should be called whenever the serial port
  * has data available to read.
@@ -147,5 +146,18 @@ void serialReceive(commsInterface *);
  * operation is in progress */
 void serialTransmit(commsInterface *comms);
 
+
+/**
+ * @brief During serial comms, defer storage writes
+ * 
+ * Serial comms can send data quicker than we can write it to permanent storage.
+ * This is used to manually throttle the writes so that we don't stall the main loop. 
+ * 
+ * @param time Absolute time in µS 
+ */
+void setStorageWriteTimeout(uint32_t time);
+
+/** @brief Test if the timeout set by @ref setStorageWriteTimeout has expired */
+bool storageWriteTimeoutExpired(void);
 
 #endif // COMMS_H

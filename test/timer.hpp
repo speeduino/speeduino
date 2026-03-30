@@ -1,6 +1,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <stdio.h>
 
 #if defined(__AVR__)
 #include <Arduino.h>

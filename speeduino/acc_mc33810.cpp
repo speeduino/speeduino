@@ -20,10 +20,15 @@ uint8_t MC33810_BIT_IGN6 = 6;
 uint8_t MC33810_BIT_IGN7 = 7;
 uint8_t MC33810_BIT_IGN8 = 8;
 
-volatile PORT_TYPE *mc33810_1_pin_port;
-volatile PINMASK_TYPE mc33810_1_pin_mask;
-volatile PORT_TYPE *mc33810_2_pin_port;
-volatile PINMASK_TYPE mc33810_2_pin_mask;
+static port_register_t mc33810_1_pin_port;
+static pin_mask_t mc33810_1_pin_mask;
+static port_register_t mc33810_2_pin_port;
+static pin_mask_t mc33810_2_pin_mask;
+
+void setMC33810_1_ACTIVE(void) { *mc33810_1_pin_port &= ~mc33810_1_pin_mask; }
+void setMC33810_1_INACTIVE(void) { *mc33810_1_pin_port |= mc33810_1_pin_mask; }
+void setMC33810_2_ACTIVE(void) { *mc33810_2_pin_port &= ~mc33810_2_pin_mask; }
+void setMC33810_2_INACTIVE(void) { *mc33810_2_pin_port |= mc33810_2_pin_mask; }
 
 void initMC33810(void)
 {
@@ -55,13 +60,13 @@ void initMC33810(void)
     //uint16_t cmd = 0b000111110000;
     uint16_t cmd = 0b0001111100000000;
     //IC1
-    MC33810_1_ACTIVE();
+    setMC33810_1_ACTIVE();
     SPI.transfer16(cmd);
-    MC33810_1_INACTIVE();
+    setMC33810_1_INACTIVE();
     //IC2
-    MC33810_2_ACTIVE();
+    setMC33810_2_ACTIVE();
     SPI.transfer16(cmd);
-    MC33810_2_INACTIVE();
+    setMC33810_2_INACTIVE();
 
     //Disable the Open Load pull-down current sync (See page 31 of MC33810 DS)
     /*
@@ -72,12 +77,12 @@ void initMC33810(void)
     */
     cmd = 0b0010100011110000;
     //IC1
-    MC33810_1_ACTIVE();
+    setMC33810_1_ACTIVE();
     SPI.transfer16(cmd);
-    MC33810_1_INACTIVE();
+    setMC33810_1_INACTIVE();
     //IC2
-    MC33810_2_ACTIVE();
+    setMC33810_2_ACTIVE();
     SPI.transfer16(cmd);
-    MC33810_2_INACTIVE();
+    setMC33810_2_INACTIVE();
     
 }

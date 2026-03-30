@@ -15,7 +15,7 @@ static void test_fast_map_edge_cases(void) {
     TEST_ASSERT_EQUAL_UINT8(0, fast_map(10, 10, 20, 0, 100));
     // Input equals end of range
     TEST_ASSERT_EQUAL_UINT8(100, fast_map(20, 10, 20, 0, 100));
-    // Single point range
+    // // Single point range
     TEST_ASSERT_EQUAL_UINT8(50, fast_map(10, 10, 10, 50, 50));
 }
 
