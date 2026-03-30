@@ -7,6 +7,8 @@
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
 #include <SPI.h>
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 #define CORE_STM32
 
@@ -338,3 +340,6 @@ extern STM32_CAN Can0;
 #else //libmaple core aka STM32DUINO
   #define SECONDARY_SERIAL_T HardwareSerial
 #endif
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;

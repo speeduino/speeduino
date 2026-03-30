@@ -81,19 +81,11 @@ static __attribute__((optimize("Os"))) void initAirConRequestPin(const config15 
   aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
 }
 
-#if defined(CORE_TEENSY) || defined(CORE_STM32)
-static outputPin_t boost_pin;
-static outputPin_t n2o_stage1_pin;
-static outputPin_t n2o_stage2_pin;
-static outputPin_t aircon_comp_pin;
-static outputPin_t aircon_fan_pin;
-#else
-static fastOutputPin_t boost_pin;
-static fastOutputPin_t n2o_stage1_pin;
-static fastOutputPin_t n2o_stage2_pin;
-static fastOutputPin_t aircon_comp_pin;
-static fastOutputPin_t aircon_fan_pin;
-#endif
+static boardOutputPin_t boost_pin;
+static boardOutputPin_t n2o_stage1_pin;
+static boardOutputPin_t n2o_stage2_pin;
+static boardOutputPin_t aircon_comp_pin;
+static boardOutputPin_t aircon_fan_pin;
 
 static __attribute__((optimize("Os"))) void initializeBoostPin(uint8_t pin)
 {
@@ -387,11 +379,7 @@ static inline void checkAirConRPMLockout(void)
  * Fuel pump control
  */
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-static outputPin_t pump_pin;
-#else
-static fastOutputPin_t pump_pin;
-#endif
+static boardOutputPin_t pump_pin;
 
 static __attribute__((optimize("Os"))) void initialisePumpPin(uint8_t pin) 
 { 
@@ -433,11 +421,7 @@ bool __attribute__((optimize("Os"))) initialiseFuelPump(const config2 &page2, ui
 Fan control
 */
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-static outputPin_t fan_pin;
-#else
-static fastOutputPin_t fan_pin;
-#endif
+static boardOutputPin_t fan_pin;
 
 static __attribute__((optimize("Os"))) void initialiseFanPin(uint8_t pin) 
 { 
@@ -590,13 +574,8 @@ void fanControl(void)
   }
 }
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-static outputPin_t vvt1_pin;
-static outputPin_t vvt2_pin;
-#else
-static fastOutputPin_t vvt1_pin;
-static fastOutputPin_t vvt2_pin;
-#endif
+static boardOutputPin_t vvt1_pin;
+static boardOutputPin_t vvt2_pin;
 
 static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 

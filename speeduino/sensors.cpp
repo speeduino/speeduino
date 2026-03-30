@@ -956,11 +956,7 @@ uint8_t getAnalogKnock(void)
   return (uint8_t)fastMap10Bit(readAnalogSensor(pinKnock), 0U, 255U);
 }
 
-#if defined(CORE_AVR)
-static fastInputPin_t flex_pin;
-#else
-static inputPin_t flex_pin;
-#endif
+static boardInputPin_t flex_pin;
 
 static inline void initialiseFlexPin(uint8_t pin)
 {

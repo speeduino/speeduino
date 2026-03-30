@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 #include <limits>
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 #define CORE_TEENSY41
 
@@ -217,3 +219,6 @@ static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
 
 #include <FlexCAN_T4.h>
 #define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;

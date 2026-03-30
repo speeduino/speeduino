@@ -54,11 +54,7 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
-#if defined(CORE_TEENSY) || defined(CORE_STM32)
-static outputPin_t tach_pin;
-#else
-static fastOutputPin_t tach_pin;
-#endif
+static boardOutputPin_t tach_pin;
 
 static void initTachoPin(uint8_t pin) 
 { 
