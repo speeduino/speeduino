@@ -1,4 +1,5 @@
 #include "outputPin.h"
+#include "atomic.h"
 
 // LCOV_EXCL_START
 // Exclude low level pin manipulation from coverage as it's not testable in a meaningful way
@@ -12,13 +13,13 @@ void outputPin_t::setPin(uint8_t pin, uint8_t mode)
 /** @brief Set the pin high */
 void outputPin_t::setPinHigh(void)
 {
-    digitalWrite(_pin, HIGH);
+   ATOMIC() { digitalWrite(_pin, HIGH); }
 }
 
 /** @brief Set the pin low */
 void outputPin_t::setPinLow(void)
 {
-    digitalWrite(_pin, LOW);
+  ATOMIC() { digitalWrite(_pin, LOW); }
 }
 
 // LCOV_EXCL_STOP
