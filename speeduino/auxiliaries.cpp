@@ -89,14 +89,67 @@ static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &pa
   initialiseN2oArmPin(page10);
 }
 
-#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? aircon_comp_pin.setPinLow() : aircon_comp_pin.setPinHigh()); currentStatus.airconCompressorOn = true; }
-#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? aircon_comp_pin.setPinHigh() : aircon_comp_pin.setPinLow()); currentStatus.airconCompressorOn = false; }
-#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? aircon_fan_pin.setPinLow() : aircon_fan_pin.setPinHigh()); currentStatus.airconFanOn = true; }
-#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? aircon_fan_pin.setPinHigh() : aircon_fan_pin.setPinLow()); currentStatus.airconFanOn = false; }
+static void airConOn(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConCompPol)
+    {
+      aircon_comp_pin.setPinLow();
+    }
+    else
+    {
+      aircon_comp_pin.setPinHigh();
+    }
+    currentStatus.airconCompressorOn = true; 
+  }  
+}
+static void airConOff(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConCompPol)
+    {
+      aircon_comp_pin.setPinHigh();
+    }
+    else
+    {
+      aircon_comp_pin.setPinLow();
+    }
+    currentStatus.airconCompressorOn = false; 
+  }
+}
+static void airConFanOn(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConFanPol)
+    {
+      aircon_fan_pin.setPinLow();
+    }
+    else
+    {
+      aircon_fan_pin.setPinHigh();
+    }
+    currentStatus.airconFanOn = true; 
+  }
+}
+static void airConFanOff(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConFanPol)
+    {
+      aircon_fan_pin.setPinHigh();
+    }
+    else
+    {
+      aircon_fan_pin.setPinLow();
+    }
+    currentStatus.airconFanOn = false; 
+  }
+}
 
-#define VVT_TIME_DELAY_MULTIPLIER  50
-
-#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
+static bool isWmiTankEmpty(void)
+{
+  return ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1);
+}
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
@@ -163,12 +216,12 @@ void __attribute__((optimize("Os"))) initialiseAirCon(void)
     aircon_req_pin.setPin(pinAirConRequest, getAirConRequestPinMode(configPage15));
     aircon_comp_pin.setPin(pinAirConComp, OUTPUT);
   
-    AIRCON_OFF();
+    airConOff();
 
     if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
     {
       aircon_fan_pin.setPin(pinAirConFan, OUTPUT);
-      AIRCON_FAN_OFF();
+      airConFanOff();
       acStandAloneFanIsEnabled = true;
     }
     else
@@ -243,13 +296,13 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_ON();
+        airConFanOn();
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
       if(acStartDelay >= configPage15.airConCompOnDelay)
       {
-        AIRCON_ON();
+        airConOn();
       }
       else
       {
@@ -263,10 +316,10 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_OFF();
+        airConFanOff();
       }
 
-      AIRCON_OFF();
+      airConOff();
       acStartDelay = 0;
     }
   }
@@ -897,6 +950,7 @@ void vvtControl(void)
     //Calculate the current cam angle for miata trigger
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
 
+    constexpr uint32_t VVT_TIME_DELAY_MULTIPLIER = 50;
     if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
     {
       vvtIsHot = true;
@@ -1139,7 +1193,7 @@ void wmiControl(void)
   // wmi can only work when vvt2 is disabled 
   if( (configPage10.vvt2Enabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
-    if( WMI_TANK_IS_EMPTY() )
+    if( isWmiTankEmpty() )
     {
      currentStatus.wmiTankEmpty = false;
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
