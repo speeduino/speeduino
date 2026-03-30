@@ -28,6 +28,7 @@ A full copy of the license may be found in the projects root directory
 #include "static_for.hpp"
 #include "polling.hpp"
 #include "decoders.h"
+#include "src/pins/fastInputPin.h"
 
 uint8_t statusSensors = 0;
 
@@ -955,19 +956,14 @@ uint8_t getAnalogKnock(void)
 }
 
 #if defined(CORE_AVR)
-  static port_register_t flex_pin_port;
-  static pin_mask_t flex_pin_mask;
+  static fastInputPin_t flex_pin;
   static inline void initialiseFlexPin(uint8_t pin)
   {
-    pinMode(pin, INPUT);
-    
-    //Pre-cache the port and mask for faster reading within the interrupt
-    flex_pin_port = portInputRegister(digitalPinToPort(pin));
-    flex_pin_mask = digitalPinToBitMask(pin);
+    flex_pin.setPin(pin, INPUT);
   }
-  #define READ_FLEX() ((*flex_pin_port & flex_pin_mask) ? true : false)
+  #define READ_FLEX() (flex_pin.isPinHigh())
 #else
-  #define READ_FLEX() digitalRead(pinFlex)
+  #define READ_FLEX() digitalRead(pinFlex)==HIGH
   static inline void initialiseFlexPin(uint8_t pin)
   {
     pinMode(pin, INPUT);

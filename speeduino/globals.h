@@ -28,7 +28,6 @@
 #include "table3d.h"
 #include "statuses.h"
 #include "config_pages.h"
-#include "port_pin.h"
 #include "atomic.h"
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))

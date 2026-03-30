@@ -13,7 +13,8 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "board_definition.h"
 #include "atomic.h"
-#include "port_pin.h"
+#include "src/pins/fastInputPin.h"
+#include "src/pins/fastOutputPin.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
@@ -35,8 +36,7 @@ static volatile char nextVVT;
 static byte boostCounter;
 static byte vvtCounter;
 
-static port_register_t n2o_arming_pin_port;
-static pin_mask_t n2o_arming_pin_mask;
+static fastInputPin_t n2o_arming_pin;
 
 static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
@@ -52,14 +52,11 @@ static void initialiseN2oArmPin(const config10 &page10)
   {
     // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
     // with other inputs. 
-    pinMode(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
-    n2o_arming_pin_port = portInputRegister(digitalPinToPort(page10.n2o_arming_pin));
-    n2o_arming_pin_mask = digitalPinToBitMask(page10.n2o_arming_pin);
+    n2o_arming_pin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
   }
 }
 
-static port_register_t aircon_req_pin_port;
-static pin_mask_t aircon_req_pin_mask;
+static fastInputPin_t aircon_req_pin;
 
 static uint8_t getAirConRequestPinMode(const config15 &page15)
 {
@@ -79,11 +76,8 @@ static uint8_t getAirConRequestPinMode(const config15 &page15)
 
 static void initAirConRequestPin(const config15 &page15, uint8_t pin)
 {
-  pinMode(pin, getAirConRequestPinMode(page15));
-  aircon_req_pin_port = portInputRegister(digitalPinToPort(pin));
-  aircon_req_pin_mask = digitalPinToBitMask(pin);
+  aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
 }
-#define READ_AIRCON_REQ_PIN()    ((*aircon_req_pin_port & aircon_req_pin_mask) ? true : false)
 
 #if defined(CORE_TEENSY) || defined(CORE_STM32)
 
@@ -119,59 +113,44 @@ static void initAirConFanPin(uint8_t pin)
 
 #else
 
-static port_register_t boost_pin_port;
-static pin_mask_t boost_pin_mask;
-#define BOOST_PIN_LOW()         ATOMIC() { *boost_pin_port &= ~(boost_pin_mask); }
-#define BOOST_PIN_HIGH()        ATOMIC() { *boost_pin_port |= (boost_pin_mask);  }
+static fastOutputPin_t boost_pin;
+#define BOOST_PIN_LOW()         ATOMIC() { boost_pin.setPinLow(); }
+#define BOOST_PIN_HIGH()        ATOMIC() { boost_pin.setPinHigh(); }
 static void initializeBoostPin(uint8_t pin)
 {
-  pinMode(pin, OUTPUT);
-  boost_pin_port = portOutputRegister(digitalPinToPort(pin));
-  boost_pin_mask = digitalPinToBitMask(pin);
+  boost_pin.setPin(pin, OUTPUT);
 }
 
-static port_register_t n2o_stage1_pin_port;
-static pin_mask_t n2o_stage1_pin_mask;
-static port_register_t n2o_stage2_pin_port;
-static pin_mask_t n2o_stage2_pin_mask;
+static fastOutputPin_t n2o_stage1_pin;
+static fastOutputPin_t n2o_stage2_pin;
 
-#define N2O_STAGE1_PIN_LOW()    ATOMIC() { *n2o_stage1_pin_port &= ~(n2o_stage1_pin_mask);  }
-#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { *n2o_stage1_pin_port |= (n2o_stage1_pin_mask);   }
-#define N2O_STAGE2_PIN_LOW()    ATOMIC() { *n2o_stage2_pin_port &= ~(n2o_stage2_pin_mask);  }
-#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { *n2o_stage2_pin_port |= (n2o_stage2_pin_mask);   }
+#define N2O_STAGE1_PIN_LOW()    ATOMIC() { n2o_stage1_pin.setPinLow(); }
+#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { n2o_stage1_pin.setPinHigh(); }
+#define N2O_STAGE2_PIN_LOW()    ATOMIC() { n2o_stage2_pin.setPinLow(); }
+#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { n2o_stage2_pin.setPinHigh(); }
 static void initialiseN2oPins(const config10 &page10)
 {
-  pinMode(page10.n2o_stage1_pin, OUTPUT);
-  n2o_stage1_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage1_pin));
-  n2o_stage1_pin_mask = digitalPinToBitMask(page10.n2o_stage1_pin);
-  pinMode(page10.n2o_stage2_pin, OUTPUT);
-  n2o_stage2_pin_port = portOutputRegister(digitalPinToPort(page10.n2o_stage2_pin));
-  n2o_stage2_pin_mask = digitalPinToBitMask(page10.n2o_stage2_pin);
+  n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
+  n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
-static port_register_t aircon_comp_pin_port;
-static pin_mask_t aircon_comp_pin_mask;
-static port_register_t aircon_fan_pin_port;
-static pin_mask_t aircon_fan_pin_mask;
+static fastOutputPin_t aircon_comp_pin;
+static fastOutputPin_t aircon_fan_pin;
 
 // Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
 // The ATOMIC is instead placed around the ternary call below
-#define AIRCON_PIN_LOW()        *aircon_comp_pin_port &= ~(aircon_comp_pin_mask)
-#define AIRCON_PIN_HIGH()       *aircon_comp_pin_port |= (aircon_comp_pin_mask)
-#define AIRCON_FAN_PIN_LOW()    *aircon_fan_pin_port &= ~(aircon_fan_pin_mask)
-#define AIRCON_FAN_PIN_HIGH()   *aircon_fan_pin_port |= (aircon_fan_pin_mask)
+#define AIRCON_PIN_LOW()        aircon_comp_pin.setPinLow()
+#define AIRCON_PIN_HIGH()       aircon_comp_pin.setPinHigh()
+#define AIRCON_FAN_PIN_LOW()    aircon_fan_pin.setPinLow()
+#define AIRCON_FAN_PIN_HIGH()   aircon_fan_pin.setPinHigh()
 
 static void initAirConCompressorPin(uint8_t pin)
 {
-  pinMode(pin, OUTPUT);
-  aircon_comp_pin_port = portOutputRegister(digitalPinToPort(pin));
-  aircon_comp_pin_mask = digitalPinToBitMask(pin);
+  aircon_comp_pin.setPin(pin, OUTPUT);
 }
 static void initAirConFanPin(uint8_t pin)
 {
-  pinMode(pin, OUTPUT);
-  aircon_fan_pin_port = portOutputRegister(digitalPinToPort(pin));
-  aircon_fan_pin_mask = digitalPinToBitMask(pin);
+  aircon_fan_pin.setPin(pin, OUTPUT);
 }
 #endif
 
@@ -179,8 +158,6 @@ static void initAirConFanPin(uint8_t pin)
 #define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
 #define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
 #define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
-
-#define READ_N2O_ARM_PIN()    ((*n2o_arming_pin_port & n2o_arming_pin_mask) ? true : false)
 
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
@@ -280,7 +257,7 @@ static bool READ_AIRCON_REQUEST(void)
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  currentStatus.airconRequested = READ_AIRCON_REQ_PIN()==configPage15.airConReqPol;
+  currentStatus.airconRequested = aircon_req_pin.isPinHigh()==configPage15.airConReqPol;
   return currentStatus.airconRequested;
 }
 
@@ -457,19 +434,15 @@ static inline void initialisePumpPin(uint8_t pin)
 }
 #else
 
-static port_register_t pump_pin_port;
-static pin_mask_t pump_pin_mask;
+static fastOutputPin_t pump_pin;
 
 static inline void initialisePumpPin(uint8_t pin) 
 { 
-  pinMode(pin, OUTPUT);
-
-  pump_pin_port = portOutputRegister(digitalPinToPort(pin));
-  pump_pin_mask = digitalPinToBitMask(pin);
+  pump_pin.setPin(pin, OUTPUT);
 }
 
-#define FUEL_PUMP_PIN_HIGH() *pump_pin_port |= (pump_pin_mask)
-#define FUEL_PUMP_PIN_LOW()  *pump_pin_port &= ~(pump_pin_mask)
+#define FUEL_PUMP_PIN_HIGH() pump_pin.setPinHigh()
+#define FUEL_PUMP_PIN_LOW()  pump_pin.setPinLow()
 
 #endif
 
@@ -514,16 +487,14 @@ Fan control
 static void initialiseFanPin(uint8_t pin) { UNUSED(pin); /* Do nothing */}
 #else
 
-static port_register_t fan_pin_port;
-static pin_mask_t fan_pin_mask;
+static fastOutputPin_t fan_pin;
 
-#define FAN_PIN_LOW()           *fan_pin_port &= ~(fan_pin_mask)
-#define FAN_PIN_HIGH()          *fan_pin_port |= (fan_pin_mask)
+#define FAN_PIN_LOW()           fan_pin.setPinLow()
+#define FAN_PIN_HIGH()          fan_pin.setPinHigh()
 
 static void initialiseFanPin(uint8_t pin) 
 { 
-  fan_pin_port = portOutputRegister(digitalPinToPort(pin));
-  fan_pin_mask = digitalPinToBitMask(pin);
+  fan_pin.setPin(pin, OUTPUT);
 }
 
 #endif
@@ -688,24 +659,18 @@ static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2)
 }
 #else
 
-static port_register_t vvt1_pin_port;
-static pin_mask_t vvt1_pin_mask;
-static port_register_t vvt2_pin_port;
-static pin_mask_t vvt2_pin_mask;
+static fastOutputPin_t vvt1_pin;
+static fastOutputPin_t vvt2_pin;
 
-#define VVT1_PIN_LOW()          ATOMIC() { *vvt1_pin_port &= ~(vvt1_pin_mask);   }
-#define VVT1_PIN_HIGH()         ATOMIC() { *vvt1_pin_port |= (vvt1_pin_mask);    }
-#define VVT2_PIN_LOW()          ATOMIC() { *vvt2_pin_port &= ~(vvt2_pin_mask);   }
-#define VVT2_PIN_HIGH()         ATOMIC() { *vvt2_pin_port |= (vvt2_pin_mask);    }
+#define VVT1_PIN_LOW()          ATOMIC() { vvt1_pin.setPinLow(); }
+#define VVT1_PIN_HIGH()         ATOMIC() { vvt1_pin.setPinHigh(); }
+#define VVT2_PIN_LOW()          ATOMIC() { vvt2_pin.setPinLow(); }
+#define VVT2_PIN_HIGH()         ATOMIC() { vvt2_pin.setPinHigh(); }
 
 static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 
-  pinMode(pin1, OUTPUT);
-  vvt1_pin_port = portOutputRegister(digitalPinToPort(pin1));
-  vvt1_pin_mask = digitalPinToBitMask(pin1);
-  pinMode(pin2, OUTPUT);
-  vvt2_pin_port = portOutputRegister(digitalPinToPort(pin2));
-  vvt2_pin_mask = digitalPinToBitMask(pin2);
+  vvt1_pin.setPin(pin1, OUTPUT);
+  vvt2_pin.setPin(pin2, OUTPUT);
 }
 
 #endif
@@ -1244,7 +1209,7 @@ void nitrousControl(void)
 
   if(configPage10.n2o_enable > 0)
   {
-    bool isArmed = READ_N2O_ARM_PIN();
+    bool isArmed = n2o_arming_pin.isPinHigh();
     if (configPage10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready

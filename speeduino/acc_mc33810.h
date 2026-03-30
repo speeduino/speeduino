@@ -2,8 +2,6 @@
 #define MC33810_H
 
 #include <SPI.h>
-#include "port_pin.h"
-#include "globals.h"
 #include "board_definition.h"
 
 static const uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal
