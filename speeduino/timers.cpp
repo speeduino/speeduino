@@ -41,7 +41,7 @@ volatile uint16_t tachoSweepAccum;
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
-void initialiseTimers(void)
+void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop5ms = 0;
@@ -51,20 +51,14 @@ void initialiseTimers(void)
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
-  tachoOutputFlag = TACHO_INACTIVE;
 }
 
 static boardOutputPin_t tach_pin;
 
-static void initTachoPin(uint8_t pin) 
-{ 
-  tach_pin.setPin(pin, OUTPUT);
-}
-
-void initTacho(uint8_t tachoPin)
+void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
 {
-  pinMode(tachoPin, OUTPUT);
-  initTachoPin(tachoPin);
+  tach_pin.setPin(tachoPin, OUTPUT);
+  tachoOutputFlag = TACHO_INACTIVE;
 }
 
 void tachoPulseHigh(void)

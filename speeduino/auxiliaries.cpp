@@ -76,36 +76,17 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
   }
 }
 
-static __attribute__((optimize("Os"))) void initAirConRequestPin(const config15 &page15, uint8_t pin)
-{
-  aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
-}
-
 static boardOutputPin_t boost_pin;
 static boardOutputPin_t n2o_stage1_pin;
 static boardOutputPin_t n2o_stage2_pin;
 static boardOutputPin_t aircon_comp_pin;
 static boardOutputPin_t aircon_fan_pin;
 
-static __attribute__((optimize("Os"))) void initializeBoostPin(uint8_t pin)
-{
-  boost_pin.setPin(pin, OUTPUT);
-}
-
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
   n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
   n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
-}
-
-static __attribute__((optimize("Os"))) void initAirConCompressorPin(uint8_t pin)
-{
-  aircon_comp_pin.setPin(pin, OUTPUT);
-}
-static __attribute__((optimize("Os"))) void initAirConFanPin(uint8_t pin)
-{
-  aircon_fan_pin.setPin(pin, OUTPUT);
 }
 
 #define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? aircon_comp_pin.setPinLow() : aircon_comp_pin.setPinHigh()); currentStatus.airconCompressorOn = true; }
@@ -179,14 +160,14 @@ void __attribute__((optimize("Os"))) initialiseAirCon(void)
     currentStatus.airconTurningOn = false;
     currentStatus.airconCltLockout = false;
     currentStatus.airconFanOn = false;
-    initAirConRequestPin(configPage15, pinAirConRequest);
-    initAirConCompressorPin(pinAirConComp);
+    aircon_req_pin.setPin(pinAirConRequest, getAirConRequestPinMode(configPage15));
+    aircon_comp_pin.setPin(pinAirConComp, OUTPUT);
   
     AIRCON_OFF();
 
     if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
     {
-      initAirConFanPin(pinAirConFan);
+      aircon_fan_pin.setPin(pinAirConFan, OUTPUT);
       AIRCON_FAN_OFF();
       acStandAloneFanIsEnabled = true;
     }
@@ -381,11 +362,6 @@ static inline void checkAirConRPMLockout(void)
 
 static boardOutputPin_t pump_pin;
 
-static __attribute__((optimize("Os"))) void initialisePumpPin(uint8_t pin) 
-{ 
-  pump_pin.setPin(pin, OUTPUT);
-}
-
 void fuelPumpOn(void)
 {
   ATOMIC() { 
@@ -403,7 +379,7 @@ void fuelPumpOff(void)
 
 bool __attribute__((optimize("Os"))) initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
 {
-  initialisePumpPin(pumpPin);
+  pump_pin.setPin(pumpPin, OUTPUT);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
@@ -423,11 +399,6 @@ Fan control
 
 static boardOutputPin_t fan_pin;
 
-static __attribute__((optimize("Os"))) void initialiseFanPin(uint8_t pin) 
-{ 
-  fan_pin.setPin(pin, OUTPUT);
-}
-
 void fanOn(void) 
 {
   ATOMIC() { 
@@ -443,8 +414,7 @@ void fanOff(void)
 
 void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
-  pinMode(pinFan, OUTPUT);
-  initialiseFanPin(fanPin);
+  fan_pin.setPin(fanPin, OUTPUT);
   fanOff();  //Initialise program with the fan in the off state
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
@@ -585,7 +555,7 @@ static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint
 
 void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
-  initializeBoostPin(pinBoost);
+  boost_pin.setPin(pinBoost, OUTPUT);
   initialiseVvtPins(pinVVT_1, pinVVT_2);
   initialiseN2oPins(configPage10);
 

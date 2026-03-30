@@ -958,11 +958,6 @@ uint8_t getAnalogKnock(void)
 
 static boardInputPin_t flex_pin;
 
-static inline void initialiseFlexPin(uint8_t pin)
-{
-  flex_pin.setPin(pin, INPUT);
-}
-
 /*
  * The interrupt function for reading the flex sensor frequency and pulse width
  * flexCounter value is incremented with every pulse and reset back to 0 once per second
@@ -981,7 +976,7 @@ void flexPulse(void)
   }
 }
 
-void initialiseFlexSensor(config2 &page2, statuses &current, uint8_t pin)
+void __attribute__((optimize("Os"))) initialiseFlexSensor(config2 &page2, statuses &current, uint8_t pin)
 {
   current.ethanolPct = 0;
 
@@ -990,7 +985,7 @@ void initialiseFlexSensor(config2 &page2, statuses &current, uint8_t pin)
   {
     // Standard GM / Continental flex sensor requires pullup, but this should be onboard.
     // The internal pullup will not work (Requires ~3.3k)!
-    initialiseFlexPin(pin);
+    flex_pin.setPin(pin, INPUT);
 
     attachInterrupt(digitalPinToInterrupt(pinFlex), flexPulse, CHANGE); 
   }  
