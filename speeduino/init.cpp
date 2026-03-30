@@ -136,15 +136,7 @@ void initialiseAll(void)
     if(configPage13.onboard_log_file_style) { initSD(); }
   #endif
 
-//Teensy 4.1 does not require .begin() to be called. This introduces a 700ms delay on startup time whilst USB is enumerated if it is called
-#ifndef CORE_TEENSY41
-    Serial.begin(115200);
-    #else
-    teensy41_customSerialBegin();
-#endif
-    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
-    //Setup the calibration tables
-    loadCalibration();   
+    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup 
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM

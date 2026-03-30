@@ -341,7 +341,7 @@ static void generateLiveValues(commsInterface *comms, uint16_t offset, uint16_t 
     currentStatus.secl = 0; 
   }
 
-  currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
+  //currentStatus.status2 ^= (-currentStatus.hasSync ^ currentStatus.status2) & (1U << BIT_STATUS2_SYNC); //Set the sync bit of the Spark variable to match the hasSync variable
 
   comms->serialPayload[0] = SERIAL_RC_OK;
   for(uint16_t x=0; x<packetLength; x++)
@@ -590,14 +590,14 @@ void processSerialCommand(commsInterface *comms)
 
     case 'b': // New EEPROM burn command to only burn a single page at a time 
       burnSinglePage(serialPayload[2]);     
-      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
+      sendReturnCodeMsg(comms, SERIAL_RC_BURN_OK);
       break;
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       currentStatus.commCompat = true; //Force the compat mode
       setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4U)); //Add 25% more to the EEPROM defer time
       burnSinglePage(serialPayload[2]);      
-      sendReturnCodeMsg(SERIAL_RC_BURN_OK);
+      sendReturnCodeMsg(comms, SERIAL_RC_BURN_OK);
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port

@@ -12,7 +12,7 @@
 
 #include <memory>
 #include "globals.h"
-#include BOARD_H
+#include "board_definition.h"
 
 static constexpr uint16_t SERIAL_TIMEOUT = 400; //!< Timeout threshold in milliseconds
 
