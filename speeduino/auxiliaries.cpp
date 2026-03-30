@@ -95,17 +95,10 @@ static fastOutputPin_t aircon_comp_pin;
 static fastOutputPin_t aircon_fan_pin;
 #endif
 
-#define BOOST_PIN_LOW()         ATOMIC() { boost_pin.setPinLow(); }
-#define BOOST_PIN_HIGH()        ATOMIC() { boost_pin.setPinHigh(); }
 static void initializeBoostPin(uint8_t pin)
 {
   boost_pin.setPin(pin, OUTPUT);
 }
-
-#define N2O_STAGE1_PIN_LOW()    ATOMIC() { n2o_stage1_pin.setPinLow(); }
-#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { n2o_stage1_pin.setPinHigh(); }
-#define N2O_STAGE2_PIN_LOW()    ATOMIC() { n2o_stage2_pin.setPinLow(); }
-#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { n2o_stage2_pin.setPinHigh(); }
 
 static void initialiseN2oPins(const config10 &page10)
 {
@@ -113,12 +106,6 @@ static void initialiseN2oPins(const config10 &page10)
   n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
-// Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
-// The ATOMIC is instead placed around the ternary call below
-#define AIRCON_PIN_LOW()        aircon_comp_pin.setPinLow()
-#define AIRCON_PIN_HIGH()       aircon_comp_pin.setPinHigh()
-#define AIRCON_FAN_PIN_LOW()    aircon_fan_pin.setPinLow()
-#define AIRCON_FAN_PIN_HIGH()   aircon_fan_pin.setPinHigh()
 
 static void initAirConCompressorPin(uint8_t pin)
 {
@@ -129,10 +116,10 @@ static void initAirConFanPin(uint8_t pin)
   aircon_fan_pin.setPin(pin, OUTPUT);
 }
 
-#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
-#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
-#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
-#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
+#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? aircon_comp_pin.setPinLow() : aircon_comp_pin.setPinHigh()); currentStatus.airconCompressorOn = true; }
+#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? aircon_comp_pin.setPinHigh() : aircon_comp_pin.setPinLow()); currentStatus.airconCompressorOn = false; }
+#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? aircon_fan_pin.setPinLow() : aircon_fan_pin.setPinHigh()); currentStatus.airconFanOn = true; }
+#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? aircon_fan_pin.setPinHigh() : aircon_fan_pin.setPinLow()); currentStatus.airconFanOn = false; }
 
 #define VVT_TIME_DELAY_MULTIPLIER  50
 
@@ -411,20 +398,17 @@ static inline void initialisePumpPin(uint8_t pin)
   pump_pin.setPin(pin, OUTPUT);
 }
 
-#define FUEL_PUMP_PIN_HIGH() pump_pin.setPinHigh()
-#define FUEL_PUMP_PIN_LOW()  pump_pin.setPinLow()
-
 void fuelPumpOn(void)
 {
   ATOMIC() { 
-    FUEL_PUMP_PIN_HIGH();
+    pump_pin.setPinHigh();
     currentStatus.fuelPumpOn = true;
   }
 }
 void fuelPumpOff(void)
 {
   ATOMIC() { 
-    FUEL_PUMP_PIN_LOW();
+    pump_pin.setPinLow();
     currentStatus.fuelPumpOn = false;
   }
 }
@@ -455,9 +439,6 @@ static outputPin_t fan_pin;
 static fastOutputPin_t fan_pin;
 #endif
 
-#define FAN_PIN_LOW()           fan_pin.setPinLow()
-#define FAN_PIN_HIGH()          fan_pin.setPinHigh()
-
 static void initialiseFanPin(uint8_t pin) 
 { 
   fan_pin.setPin(pin, OUTPUT);
@@ -466,13 +447,13 @@ static void initialiseFanPin(uint8_t pin)
 void fanOn(void) 
 {
   ATOMIC() { 
-    ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); 
+    ((configPage6.fanInv) ? fan_pin.setPinLow() : fan_pin.setPinHigh()); 
   }
 }
 void fanOff(void)
 {
   ATOMIC() { 
-    ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); 
+    ((configPage6.fanInv) ? fan_pin.setPinHigh() : fan_pin.setPinLow()); 
   }
 }
 
@@ -616,11 +597,6 @@ static outputPin_t vvt2_pin;
 static fastOutputPin_t vvt1_pin;
 static fastOutputPin_t vvt2_pin;
 #endif
-
-#define VVT1_PIN_LOW()          ATOMIC() { vvt1_pin.setPinLow(); }
-#define VVT1_PIN_HIGH()         ATOMIC() { vvt1_pin.setPinHigh(); }
-#define VVT2_PIN_LOW()          ATOMIC() { vvt2_pin.setPinLow(); }
-#define VVT2_PIN_HIGH()         ATOMIC() { vvt2_pin.setPinHigh(); }
 
 static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 
@@ -856,7 +832,7 @@ void boostControl(void)
       else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
@@ -896,7 +872,7 @@ void boostControl(void)
           }
 
           bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
-          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
           else
           {
             if(PIDcomputed == true)
@@ -926,7 +902,7 @@ void boostControl(void)
     if(currentStatus.boostDuty >= 10000)
     {
       DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
-      BOOST_PIN_HIGH(); //Turn on boost pin if duty is 100%
+      boost_pin.setPinHigh(); //Turn on boost pin if duty is 100%
     }
     else if(currentStatus.boostDuty > 0)
     {
@@ -944,19 +920,19 @@ void boostControl(void)
 
 void vvt1On(void)
 {
-  VVT1_PIN_HIGH();
+  vvt1_pin.setPinHigh();
 }
 void vvt1Off(void)
 {
-  VVT1_PIN_LOW();
+  vvt1_pin.setPinLow();
 }
 void vvt2On(void)
 {
-  VVT2_PIN_HIGH();
+  vvt2_pin.setPinHigh();
 }
 void vvt2Off(void)
 {
-  VVT2_PIN_LOW();
+  vvt2_pin.setPinLow();
 }
 
 void vvtControl(void)
@@ -1182,7 +1158,7 @@ void nitrousControl(void)
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;
         currentStatus.nitrousActive = true;
-        N2O_STAGE1_PIN_HIGH();
+        n2o_stage1_pin.setPinHigh();
       }
       if(configPage10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
       {
@@ -1190,7 +1166,7 @@ void nitrousControl(void)
         {
           currentStatus.nitrous_status += NITROUS_STAGE2;
           currentStatus.nitrousActive = true;
-          N2O_STAGE2_PIN_HIGH();
+          n2o_stage2_pin.setPinHigh();
         }
       }
     }
@@ -1200,8 +1176,8 @@ void nitrousControl(void)
   {
     if(configPage10.n2o_enable > 0)
     {
-      N2O_STAGE1_PIN_LOW();
-      N2O_STAGE2_PIN_LOW();
+      n2o_stage1_pin.setPinLow();
+      n2o_stage2_pin.setPinLow();
     }
   }
 }
@@ -1284,7 +1260,7 @@ void boostDisable(void)
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
   DISABLE_BOOST_TIMER(); //Turn off timer
-  BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
+  boost_pin.setPinLow(); //Make sure solenoid is off (0% duty)
 }
 
 //The interrupt to control the Boost PWM
@@ -1293,9 +1269,9 @@ void boostInterrupt(void)
   if (boost_pwm_state == true)
   {
     #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    BOOST_PIN_HIGH();
+    boost_pin.setPinHigh();
     #else
-    BOOST_PIN_LOW();  // Switch pin to low
+    boost_pin.setPinLow();  // Switch pin to low
     #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
@@ -1303,9 +1279,9 @@ void boostInterrupt(void)
   else
   {
     #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    BOOST_PIN_LOW();
+    boost_pin.setPinLow();
     #else
-    BOOST_PIN_HIGH();  // Switch pin high
+    boost_pin.setPinHigh();  // Switch pin high
     #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;

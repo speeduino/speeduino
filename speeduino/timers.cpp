@@ -64,8 +64,6 @@ static void initTachoPin(uint8_t pin)
 { 
   tach_pin.setPin(pin, OUTPUT);
 }
-#define TACHO_PULSE_HIGH()        (tach_pin.setPinHigh())
-#define TACHO_PULSE_LOW()         (tach_pin.setPinLow())
 
 void initTacho(uint8_t tachoPin)
 {
@@ -75,12 +73,12 @@ void initTacho(uint8_t tachoPin)
 
 void tachoPulseHigh(void)
 {
-  TACHO_PULSE_HIGH();
+  tach_pin.setPinHigh();
 }
 
 void tachoPulseLow(void)
 {
-  TACHO_PULSE_LOW();
+  tach_pin.setPinLow();
 }
 
 static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
@@ -160,7 +158,7 @@ void oneMSInterval(void)
     //Check for half speed tacho
     if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
     { 
-      TACHO_PULSE_LOW();
+      tach_pin.setPinLow();
       //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
       tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
       tachoOutputFlag = ACTIVE;
@@ -177,7 +175,7 @@ void oneMSInterval(void)
     //If the tacho output is already active, check whether it's reached it's end time
     if((uint8_t)ms_counter == tachoEndTime)
     {
-      TACHO_PULSE_HIGH();
+      tach_pin.setPinHigh();
       tachoOutputFlag = TACHO_INACTIVE;
     }
   }
