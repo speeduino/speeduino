@@ -40,7 +40,7 @@ static byte vvtCounter;
 
 static fastInputPin_t n2o_arming_pin;
 
-static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
+static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
   if(page10.n2o_pin_polarity == 1U) 
   { 
@@ -48,7 +48,7 @@ static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
   }
   return INPUT;
 }
-static void initialiseN2oArmPin(const config10 &page10)
+static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &page10)
 {
   if(configPage10.n2o_enable!=0U && !pinIsReserved(page10.n2o_arming_pin))
   {
@@ -60,7 +60,7 @@ static void initialiseN2oArmPin(const config10 &page10)
 
 static fastInputPin_t aircon_req_pin;
 
-static uint8_t getAirConRequestPinMode(const config15 &page15)
+static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const config15 &page15)
 {
   if(page15.airConReqPol)
   {
@@ -76,7 +76,7 @@ static uint8_t getAirConRequestPinMode(const config15 &page15)
   }
 }
 
-static void initAirConRequestPin(const config15 &page15, uint8_t pin)
+static __attribute__((optimize("Os"))) void initAirConRequestPin(const config15 &page15, uint8_t pin)
 {
   aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
 }
@@ -95,23 +95,23 @@ static fastOutputPin_t aircon_comp_pin;
 static fastOutputPin_t aircon_fan_pin;
 #endif
 
-static void initializeBoostPin(uint8_t pin)
+static __attribute__((optimize("Os"))) void initializeBoostPin(uint8_t pin)
 {
   boost_pin.setPin(pin, OUTPUT);
 }
 
-static void initialiseN2oPins(const config10 &page10)
+static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
   n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
   n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
 
-static void initAirConCompressorPin(uint8_t pin)
+static __attribute__((optimize("Os"))) void initAirConCompressorPin(uint8_t pin)
 {
   aircon_comp_pin.setPin(pin, OUTPUT);
 }
-static void initAirConFanPin(uint8_t pin)
+static __attribute__((optimize("Os"))) void initAirConFanPin(uint8_t pin)
 {
   aircon_fan_pin.setPin(pin, OUTPUT);
 }
@@ -165,7 +165,7 @@ static inline void checkAirConRPMLockout(void);
 /*
 Air Conditioning Control
 */
-void initialiseAirCon(void)
+void __attribute__((optimize("Os"))) initialiseAirCon(void)
 {
   if( (configPage15.airConEnable) &&
       !pinIsReserved(pinAirConRequest) &&
@@ -393,7 +393,7 @@ static outputPin_t pump_pin;
 static fastOutputPin_t pump_pin;
 #endif
 
-static inline void initialisePumpPin(uint8_t pin) 
+static __attribute__((optimize("Os"))) void initialisePumpPin(uint8_t pin) 
 { 
   pump_pin.setPin(pin, OUTPUT);
 }
@@ -413,7 +413,7 @@ void fuelPumpOff(void)
   }
 }
 
-bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
+bool __attribute__((optimize("Os"))) initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
 {
   initialisePumpPin(pumpPin);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
@@ -439,7 +439,7 @@ static outputPin_t fan_pin;
 static fastOutputPin_t fan_pin;
 #endif
 
-static void initialiseFanPin(uint8_t pin) 
+static __attribute__((optimize("Os"))) void initialiseFanPin(uint8_t pin) 
 { 
   fan_pin.setPin(pin, OUTPUT);
 }
@@ -457,7 +457,7 @@ void fanOff(void)
   }
 }
 
-void initialiseFan(uint8_t fanPin)
+void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
   pinMode(pinFan, OUTPUT);
   initialiseFanPin(fanPin);
@@ -598,13 +598,13 @@ static fastOutputPin_t vvt1_pin;
 static fastOutputPin_t vvt2_pin;
 #endif
 
-static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
+static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 
   vvt1_pin.setPin(pin1, OUTPUT);
   vvt2_pin.setPin(pin2, OUTPUT);
 }
 
-void initialiseAuxPWM(void)
+void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
   initializeBoostPin(pinBoost);
   initialiseVvtPins(pinVVT_1, pinVVT_2);
