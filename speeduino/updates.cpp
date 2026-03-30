@@ -20,6 +20,8 @@
 // Minimize flash usage of the non-performance critical code in this file.
 #pragma GCC optimize ("Os") 
 
+static constexpr uint8_t CURRENT_DATA_VERSION = 27U;
+
 TESTABLE_STATIC void updateTableU16toU8(table2D_u16_u8_32 &targetTable, uint16_t u16EEpromBinAddress)
 {
     uint16_t oldValues[32];
@@ -76,7 +78,6 @@ TESTABLE_STATIC void upgradeV26toV27(void) {
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    27
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
