@@ -148,7 +148,11 @@ static void airConFanOff(void)
 
 static bool isWmiTankEmpty(void)
 {
-  return ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1);
+  if (configPage10.wmiEmptyEnabled) 
+  {
+    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty);
+  }
+  return true;
 }
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
