@@ -53,6 +53,8 @@ public:
     TickEventGuard(void);
     /** @brief Resume tick event generation */
     ~TickEventGuard();
+private:
+    bool _stopped = false;
 };
 
 #endif

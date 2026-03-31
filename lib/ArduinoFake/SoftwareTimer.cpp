@@ -61,13 +61,18 @@ public:
     }
 
     /** @brief Halt event notification */
-    void stop(void)
+    bool stop(void)
     {
-        halt = true;
-        if (tickThread.joinable())
-        {
-            tickThread.join();
+        if (!halt)
+        { 
+            halt = true;
+            if (tickThread.joinable())
+            {
+                tickThread.join();
+            }
+            return true;
         }
+        return false;
     }
 
 private:
@@ -149,12 +154,14 @@ void software_timer_t::onNextTick(counter_t nextTick)
 }
 
 TickEventGuard::TickEventGuard(void)
+: _stopped(getTicker().stop())
 {
-    getTicker().stop();
 }
 TickEventGuard::~TickEventGuard()
 {
-    getTicker().start();
+    if (_stopped) {
+        getTicker().start();
+    }
 }
 
 #endif
