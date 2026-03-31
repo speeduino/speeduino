@@ -1,5 +1,5 @@
 #include "outputPin.h"
-#include "atomic.h"
+#include "../../atomic.h"
 
 // LCOV_EXCL_START
 // Exclude low level pin manipulation from coverage as it's not testable in a meaningful way
