@@ -152,9 +152,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * General
     */
-    #ifndef FLASH_LENGTH
-      #define FLASH_LENGTH 8192
-    #endif
     delay(10);
 
     #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
@@ -243,9 +240,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Schedules
     */
-    Timer1.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer2.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer3.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer1.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer2.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer3.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
 
     Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -279,7 +276,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
     Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
     #if (INJ_CHANNELS >= 5)
-    Timer5.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer5.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -319,7 +316,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
     Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
     #if (IGN_CHANNELS >= 5)
-    Timer4.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer4.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -358,9 +355,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
-    uint32_t freeRam;
-    uint32_t stackTop;
-    uint32_t heapTop;
+    uint32_t freeRam = 0;
+    uint32_t stackTop = 0;
+    uint32_t heapTop = 0;
 
     // current position of the stack.
     stackTop = (uint32_t)&stackTop;
@@ -371,8 +368,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     free(hTop);
     freeRam = stackTop - heapTop;
 
-    if(freeRam>0xFFFF){return 0xFFFF;}
-    else{return freeRam;}
+    return min((uint32_t)(numeric_limits<uint16_t>::max)(), freeRam);
   }
 
   void doSystemReset( void )
