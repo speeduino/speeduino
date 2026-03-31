@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 #include "bit_manip.h"
-#include "atomic.h"
 #include "maths.h"
 #include "decoder_builder.h"
 
@@ -345,12 +344,4 @@ struct statuses {
  * @param status 
  * @param smallRpm 
  */
-static inline void setRpm(statuses &status, uint16_t rpm)
-{
-  ATOMIC()
-  {
-    status.RPM = rpm;
-    status.RPMdiv100 = div100(rpm);
-    status.longRPM = rpm;
-  }
-}
+void setRpm(statuses &status, uint16_t rpm);
