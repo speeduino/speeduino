@@ -1,6 +1,7 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -8,7 +9,6 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
-#include EEPROM_LIB_H
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -404,7 +404,7 @@ void boardInitPins(void)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &current)
+static uint16_t getEepromWriteBlockSize(const statuses &current)
 {
   uint16_t maxWrite = 64;
 
@@ -417,9 +417,30 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-EEPROM_t& getEEPROM(void) 
-{
-  return EEPROM;
+namespace EEPROMApi {
+
+  static inline byte read(uint16_t address)
+  {
+    return EEPROM.read(address);
+  }
+  static inline void write(uint16_t address, byte val)
+  {
+    EEPROM.write(address, val);
+  }
+  static inline uint16_t length(void)
+  {
+    return EEPROM.length();
+  }
 }
 
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return {
+    .read = EEPROMApi::read,
+    .write = EEPROMApi::write,
+    .length = EEPROMApi::length,
+    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
+  };
+}
 #endif

@@ -7,7 +7,16 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
-#include EEPROM_LIB_H
+
+#if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
+  #include "src/BackupSram/BackupSramAsEEPROM.h"
+#elif defined(USE_SPI_EEPROM) // Use M25Qxx SPI flash on BlackF407VE
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#elif defined(FRAM_AS_EEPROM) // Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible
+  #include "src/FRAM/Fram.h"
+#else //default case, internal flash as EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#endif
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -420,7 +429,7 @@ void boardInitPins(void)
   // Do nothing
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &current)
+static uint16_t getEepromWriteBlockSize(const statuses &current)
 {
 #if defined(USE_SPI_EEPROM)
   //For use with common Winbond SPI EEPROMs Eg W25Q16JV
@@ -438,9 +447,31 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-EEPROM_t& getEEPROM(void) 
+namespace EEPROMApi {
+
+  static inline byte read(uint16_t address)
+  {
+    return EEPROM.read(address);
+  }
+  static inline void write(uint16_t address, byte val)
+  {
+    EEPROM.write(address, val);
+  }
+  static inline uint16_t length(void)
+  {
+    return EEPROM.length();
+  }
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
 {
-  return EEPROM;
+  return {
+    .read = EEPROMApi::read,
+    .write = EEPROMApi::write,
+    .length = EEPROMApi::length,
+    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
+  };
 }
 
 #endif

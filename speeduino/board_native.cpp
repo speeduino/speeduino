@@ -1,4 +1,5 @@
 #if defined(NATIVE_BOARD)
+#include <EEPROM.h>
 #include "board_native.h"
 #include "auxiliaries.h"
 #include "idle.h"
@@ -93,14 +94,37 @@ void boardInitPins(void)
   // Do nothing
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &)
-{
+
+namespace EEPROMApi {
+
+  static inline byte read(uint16_t address)
+  {
+    return EEPROM.read(address);
+  }
+  static inline void write(uint16_t address, byte val)
+  {
+    EEPROM.write(address, val);
+  }
+  static inline uint16_t length(void)
+  {
+    return EEPROM.length();
+  }
+
+  uint16_t getEepromWriteBlockSize(const statuses &)
+  {
     return 64U;
+  }
+
 }
 
-EEPROM_t& getEEPROM(void) 
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
 {
-  return EEPROM;
+  return {
+    .read = EEPROMApi::read,
+    .write = EEPROMApi::write,
+    .length = EEPROMApi::length,
+    .getMaxWriteBlockSize = EEPROMApi::getEepromWriteBlockSize,
+  };
 }
-
 #endif

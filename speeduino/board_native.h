@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <array>
 #include <limits>
-#include <EEPROM.h>
 #include <USBAPI.h>
 #include "../lib/ArduinoFake/SoftwareTimer.h"
 
@@ -153,8 +152,5 @@ constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
 #define SECONDARY_SERIAL_T decltype(Serial)
 
 #define RTC_LIB_H <time.h>
-#define EEPROM_LIB_H <EEPROM.h>
-class EEPROMClass;
-using EEPROM_t = EEPROMClass;
 
 #endif // NATIVE_BOARD
