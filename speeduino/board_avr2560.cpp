@@ -12,6 +12,7 @@
 #else
   #include <EEPROM.h>
 #endif
+#include "board_eeprom_adapter.hpp"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -284,31 +285,10 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-namespace EEPROMApi {
-
-  static inline byte read(uint16_t address)
-  {
-    return EEPROM.read(address);
-  }
-  static inline void write(uint16_t address, byte val)
-  {
-    EEPROM.write(address, val);
-  }
-  static inline uint16_t length(void)
-  {
-    return EEPROM.length();
-  }
-}
-
 /** @brief Get the EEPROM storage API for the board */
 storage_api_t getBoardStorageApi(void)
 {
-  return {
-    .read = EEPROMApi::read,
-    .write = EEPROMApi::write,
-    .length = EEPROMApi::length,
-    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
-  };
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif //CORE_AVR

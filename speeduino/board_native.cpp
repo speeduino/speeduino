@@ -5,6 +5,7 @@
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
+#include "board_eeprom_adapter.hpp"
 
 #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
 #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
@@ -95,36 +96,15 @@ void boardInitPins(void)
 }
 
 
-namespace EEPROMApi {
-
-  static inline byte read(uint16_t address)
-  {
-    return EEPROM.read(address);
-  }
-  static inline void write(uint16_t address, byte val)
-  {
-    EEPROM.write(address, val);
-  }
-  static inline uint16_t length(void)
-  {
-    return EEPROM.length();
-  }
-
-  uint16_t getEepromWriteBlockSize(const statuses &)
-  {
-    return 64U;
-  }
-
+static uint16_t getEepromWriteBlockSize(const statuses &)
+{
+  return 64U;
 }
 
 /** @brief Get the EEPROM storage API for the board */
 storage_api_t getBoardStorageApi(void)
 {
-  return {
-    .read = EEPROMApi::read,
-    .write = EEPROMApi::write,
-    .length = EEPROMApi::length,
-    .getMaxWriteBlockSize = EEPROMApi::getEepromWriteBlockSize,
-  };
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
+
 #endif

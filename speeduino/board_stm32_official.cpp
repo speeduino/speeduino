@@ -10,13 +10,49 @@
 
 #if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
   #include "src/BackupSram/BackupSramAsEEPROM.h"
+  BackupSramAsEEPROM EEPROM;
 #elif defined(USE_SPI_EEPROM) // Use M25Qxx SPI flash on BlackF407VE
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #if defined(STM32F407xx)
+      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    #else //Blue/Black Pills
+      SPIClass SPI_for_flash(PB15, PB14, PB13);
+    #endif
+ 
+    //winbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
 #elif defined(FRAM_AS_EEPROM) // Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible
   #include "src/FRAM/Fram.h"
+  #if defined(STM32F407xx)
+    SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    FramClass EEPROM(PB0, SPI_for_FRAM);
+  #else //Blue/Black Pills
+    SPIClass SPI_for_FRAM(PB15, PB14, PB13);
+    FramClass EEPROM(PB12, SPI_for_FRAM);
+  #endif
 #else //default case, internal flash as EEPROM
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #if defined(STM32F7xx)
+    #if defined(DUAL_BANK)
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+    #else
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+    #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F411xE)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #else //default case, internal flash as EEPROM for STM32F4
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #endif
 #endif
+#include "board_eeprom_adapter.hpp"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -32,46 +68,6 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 #if defined SD_LOGGING
     SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
 #endif
-
-#if defined(SRAM_AS_EEPROM)
-    BackupSramAsEEPROM EEPROM;
-#elif defined(USE_SPI_EEPROM)
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-    #else //Blue/Black Pills
-      SPIClass SPI_for_flash(PB15, PB14, PB13);
-    #endif
- 
-    //winbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
-    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
-    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-      FramClass EEPROM(PB0, SPI_for_FRAM);
-    #else //Blue/Black Pills
-      SPIClass SPI_for_FRAM(PB15, PB14, PB13);
-      FramClass EEPROM(PB12, SPI_for_FRAM);
-    #endif
-#elif defined(STM32F7xx)
-  #if defined(DUAL_BANK)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
-  #else
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
-  #endif
-    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F401xC)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F411xE)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#else //default case, internal flash as EEPROM for STM32F4
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#endif
-
 
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
@@ -443,31 +439,10 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-namespace EEPROMApi {
-
-  static inline byte read(uint16_t address)
-  {
-    return EEPROM.read(address);
-  }
-  static inline void write(uint16_t address, byte val)
-  {
-    EEPROM.write(address, val);
-  }
-  static inline uint16_t length(void)
-  {
-    return EEPROM.length();
-  }
-}
-
 /** @brief Get the EEPROM storage API for the board */
 storage_api_t getBoardStorageApi(void)
 {
-  return {
-    .read = EEPROMApi::read,
-    .write = EEPROMApi::write,
-    .length = EEPROMApi::length,
-    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
-  };
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif

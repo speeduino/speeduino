@@ -9,6 +9,7 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include "board_eeprom_adapter.hpp"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -417,30 +418,10 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-namespace EEPROMApi {
-
-  static inline byte read(uint16_t address)
-  {
-    return EEPROM.read(address);
-  }
-  static inline void write(uint16_t address, byte val)
-  {
-    EEPROM.write(address, val);
-  }
-  static inline uint16_t length(void)
-  {
-    return EEPROM.length();
-  }
-}
-
 /** @brief Get the EEPROM storage API for the board */
 storage_api_t getBoardStorageApi(void)
 {
-  return {
-    .read = EEPROMApi::read,
-    .write = EEPROMApi::write,
-    .length = EEPROMApi::length,
-    .getMaxWriteBlockSize = ::getEepromWriteBlockSize,
-  };
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
+
 #endif
