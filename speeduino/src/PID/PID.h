@@ -18,7 +18,8 @@ class PID
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute();                       // * performs the PID calculation.  it should be
+    bool Compute(unsigned long now);       // * performs the PID calculation for the given time.
+    bool Compute(void);                     // * legacy wrapper that uses millis().
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively

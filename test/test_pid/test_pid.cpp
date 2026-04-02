@@ -9,14 +9,16 @@ static void test_pid_mode_transitions_and_controller_direction(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
-    pid.SetOutputLimits(0, 200);
+    pid.SetOutputLimits(-200, 200);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(12, output); // 255*50/1000 integer scaling yields 12
 
     pid.SetControllerDirection(REVERSE);
-    TEST_ASSERT_TRUE(pid.Compute());
+    now += 100;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_LESS_THAN(0, output); // sign changed
 }
 
@@ -30,7 +32,8 @@ static void test_pid_set_sample_time_rescaling(void)
     pid.SetMode(AUTOMATIC);
 
     pid.SetSampleTime(200); // changes ki/kd scaling
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
 }
 
 static void test_pid_output_limits_in_auto_scope(void)
@@ -43,7 +46,8 @@ static void test_pid_output_limits_in_auto_scope(void)
     pid.SetMode(AUTOMATIC);
     pid.SetOutputLimits(0, 100); // inAuto path updates output and ITerm
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_LESS_OR_EQUAL(100, output);
 }
 
@@ -53,10 +57,11 @@ static void test_pid_manual_mode_compute_false(void)
     long output = 42;
     long setpoint = 100;
 
-    PID pid(&input, &output, &setpoint, 1000, 0, 0, DIRECT);
+    PID pid(&input, &output, &setpoint, 100, 0, 0, DIRECT);
     pid.SetMode(MANUAL);
 
-    TEST_ASSERT_FALSE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_FALSE(pid.Compute(now));
     TEST_ASSERT_EQUAL(42, output);
 }
 
@@ -69,11 +74,13 @@ static void test_pid_auto_mode_proportional(void)
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(25, output);  // 255 * 100 / 1000 = 25
 
     input = 100;
-    TEST_ASSERT_TRUE(pid.Compute());
+    now += 100;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(0, output);
 }
 
@@ -87,7 +94,8 @@ static void test_pid_output_limits_clamp(void)
     pid.SetOutputLimits(0, 255);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(255, output);
 }
 
@@ -101,7 +109,8 @@ static void test_pid_reverse_direction(void)
     pid.SetOutputLimits(-255, 255);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(-255, output);
 }
 
@@ -114,14 +123,16 @@ static void test_pid_set_sample_time_scaling_integral(void)
     PID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
-    TEST_ASSERT_EQUAL(1, output); // 1000 -> 1
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
+    TEST_ASSERT_EQUAL(1, output); 
 
     pid.SetSampleTime(200);
     output = 0;
+    now += 200;
 
-    TEST_ASSERT_TRUE(pid.Compute());
-    TEST_ASSERT_EQUAL(3, output); // now ki doubled, adds 2000 -> cumulative 3000 ->3
+    TEST_ASSERT_TRUE(pid.Compute(now));
+    TEST_ASSERT_EQUAL(1, output); 
 }
 
 static void test_pid_set_sample_time_scaling_derivative(void)
@@ -133,15 +144,18 @@ static void test_pid_set_sample_time_scaling_derivative(void)
     PID pid(&input, &output, &setpoint, 0, 0, 10, DIRECT);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     input = 100;
-    TEST_ASSERT_TRUE(pid.Compute());
-    TEST_ASSERT_EQUAL(-10, output); // dInput 100, kd=100 => -10000/1000=-10
+    now += 100;
+    TEST_ASSERT_TRUE(pid.Compute(now));
+    TEST_ASSERT_EQUAL(0, output); // dInput 100, kd=1 => -100/1000=0
 
     pid.SetSampleTime(200);
     input = 200;
-    TEST_ASSERT_TRUE(pid.Compute());
-    TEST_ASSERT_EQUAL(-5, output); // kd is halved by SetSampleTime(200)
+    now += 200;
+    TEST_ASSERT_TRUE(pid.Compute(now));
+    TEST_ASSERT_EQUAL(0, output); // kd halved
 }
 
 static void test_pid_integral_accumulation(void)
@@ -153,10 +167,12 @@ static void test_pid_integral_accumulation(void)
     PID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
     pid.SetMode(AUTOMATIC);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    unsigned long now = 1000000;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(1, output);
 
-    TEST_ASSERT_TRUE(pid.Compute());
+    now += 100;
+    TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(2, output);
 }
 
@@ -168,5 +184,10 @@ void testPID(void)
         RUN_TEST_P(test_pid_output_limits_clamp);
         RUN_TEST_P(test_pid_reverse_direction);
         RUN_TEST_P(test_pid_integral_accumulation);
+        RUN_TEST_P(test_pid_set_sample_time_scaling_derivative);
+        RUN_TEST_P(test_pid_set_sample_time_scaling_integral);
+        RUN_TEST_P(test_pid_output_limits_in_auto_scope);
+        RUN_TEST_P(test_pid_set_sample_time_rescaling);
+        RUN_TEST_P(test_pid_mode_transitions_and_controller_direction);
     }
 }

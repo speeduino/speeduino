@@ -16,7 +16,8 @@ public:
     integerPID_ideal(long*, uint16_t*, uint16_t*, uint16_t*, uint8_t*,        // * constructor.  links the PID to the Input, Output, and
         uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
 
-    bool Compute(uint16_t);               // * performs the PID calculation.  it should be
+    bool Compute(unsigned long now, uint16_t);  // * performs the PID calculation with injected time.
+    bool Compute(uint16_t);                      // * legacy wrapper that calls millis().
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively

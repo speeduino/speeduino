@@ -38,12 +38,10 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID_ideal::Compute(uint16_t FeedForward)
+bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 {
    constexpr uint16_t limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
 
-   unsigned long now = millis();
-   //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= *mySampleTime)
    {
@@ -77,18 +75,15 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
       output = FeedForward + (output / 10); //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
-      //if(output > (outMax * limitMultiplier)) { output  = (outMax * limitMultiplier);  }
-      //if(output < (outMin * limitMultiplier)) { output  = (outMin * limitMultiplier);  }
-
       if(output > (outMax * limitMultiplier))
-      { 
+      {
          output  = (outMax * limitMultiplier);
-         ITerm -= error; //Prevent the ITerm from growing indefinitely whilst the output is being limited (error was added to ITerm above, so this is simply setting it back to it's original value)
+         ITerm -= error;
       }
-      if(output < (outMin * limitMultiplier)) 
-      { 
+      if(output < (outMin * limitMultiplier))
+      {
          output  = (outMin * limitMultiplier);
-         ITerm -= error; //Prevent the ITerm from growing indefinitely whilst the output is being limited (error was added to ITerm above, so this is simply setting it back to it's original value)
+         ITerm -= error;
       }
 
 	    *myOutput = output;
@@ -102,6 +97,12 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
    else return false;
 }
 
+// LCOV_EXCL_START
+bool integerPID_ideal::Compute(uint16_t FeedForward)
+{
+    return Compute(millis(), FeedForward);
+}
+// LCOV_EXCL_STOP
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.

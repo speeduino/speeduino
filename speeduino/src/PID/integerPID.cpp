@@ -41,10 +41,9 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
+bool integerPID::Compute(unsigned long now, bool pOnE, long FeedForwardTerm)
 {
    if(!inAuto) return false;
-   unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= SampleTime)
    {
@@ -96,6 +95,13 @@ bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
    }
    return false;
 }
+
+// LCOV_EXCL_START
+bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
+{
+    return Compute(millis(), pOnE, FeedForwardTerm);
+}
+// LCOV_EXCL_STOP
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.

@@ -33,11 +33,10 @@ PID::PID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute()
+bool PID::Compute(unsigned long now)
 {
    if(!inAuto) return false;
-   unsigned long now = millis();
-   SampleTime = (now - lastTime);
+   unsigned long timeChange = (now - lastTime);
    //if(timeChange>=SampleTime)
    {
       /*Compute all the working error variables*/
@@ -63,6 +62,12 @@ bool PID::Compute()
    //else return false;
 }
 
+// LCOV_EXCL_START
+bool PID::Compute()
+{
+    return Compute(millis());
+}
+// LCOV_EXCL_STOP
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.
