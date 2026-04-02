@@ -11,7 +11,7 @@ static void test_integerPID_manual_mode_compute_false(void)
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetMode(MANUAL);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_FALSE(pid.Compute(now));
     TEST_ASSERT_EQUAL(8, output);
 }
@@ -26,7 +26,7 @@ static void test_integerPID_auto_mode_p_on_error(void)
     pid.SetSampleTime(1);
     pid.SetMode(AUTOMATIC);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_TRUE(pid.Compute(now));
     // Expected: kp scaled to 320, error=10, output=3200>>10=3
     TEST_ASSERT_EQUAL(3, output);
@@ -43,7 +43,7 @@ static void test_integerPID_output_limits_clamp(void)
     pid.SetOutputLimits(0, 10);
     pid.SetMode(AUTOMATIC);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_EQUAL(10, output);
 }
@@ -58,7 +58,7 @@ static void test_integerPID_input_zero_failsafe(void)
     pid.SetSampleTime(1);
     pid.SetMode(AUTOMATIC);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_FALSE(pid.Compute(now, 0));
     TEST_ASSERT_EQUAL(3, output);
 }
@@ -74,7 +74,7 @@ static void test_integerPID_reverse_direction(void)
     pid.SetOutputLimits(-255, 255);
     pid.SetMode(AUTOMATIC);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_LESS_THAN(0, output);  // negative output expected in reverse
 }
@@ -89,7 +89,7 @@ static void test_integerPID_feedforward_term(void)
     pid.SetSampleTime(1);
     pid.SetMode(AUTOMATIC);
 
-    unsigned long now = 1000000;
+    unsigned long now = millis();
     TEST_ASSERT_TRUE(pid.Compute(now, 15));
     TEST_ASSERT_EQUAL(15, output);
 }

@@ -19,8 +19,8 @@ public:
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute(unsigned long now, bool pOnE, long FeedForwardTerm = 0);   // * performs the PID calculation at provided time.
-    bool Compute(bool pOnE, long FeedForwardTerm = 0);                      // * legacy wrapper that calls millis().
+    bool Compute(unsigned long now, long FeedForwardTerm = 0);   // * performs the PID calculation at provided time.
+    bool Compute(long FeedForwardTerm = 0);                      // * legacy wrapper that calls millis().
     void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application

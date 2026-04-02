@@ -41,7 +41,7 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute(unsigned long now, bool pOnE, long FeedForwardTerm)
+bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
 {
    if(!inAuto) return false;
    unsigned long timeChange = (now - lastTime);
@@ -65,19 +65,8 @@ bool integerPID::Compute(unsigned long now, bool pOnE, long FeedForwardTerm)
          /*Compute PID Output*/
          long output;
          
-         if(pOnE)
-         {
-            output = (kp * error);
-            if (ki != 0) { output += outputSum; }
-         }
-         else
-         {
-            outputSum -= (kp * dInput);
-            if(outputSum > outMax) { outputSum = outMax; }
-            else if(outputSum < outMin) { outputSum = outMin; }
-
-            output = outputSum;
-         }
+         output = (kp * error);
+         if (ki != 0) { output += outputSum; }
          if (kd != 0) { output -= (kd * dInput)>>2; }
          output += FeedForwardTerm;
 
@@ -97,9 +86,9 @@ bool integerPID::Compute(unsigned long now, bool pOnE, long FeedForwardTerm)
 }
 
 // LCOV_EXCL_START
-bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
+bool integerPID::Compute(long FeedForwardTerm)
 {
-    return Compute(millis(), pOnE, FeedForwardTerm);
+    return Compute(millis(), FeedForwardTerm);
 }
 // LCOV_EXCL_STOP
 
