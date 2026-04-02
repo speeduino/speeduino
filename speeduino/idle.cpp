@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "timers.h"
 #include "preprocessor.h"
-#include "src/PID_v1/PID_v1.h"
+#include "src/PID/integerPID.h"
 #include "units.h"
 #include "globals.h"
 #include "src/pins/fastOutputPin.h"
