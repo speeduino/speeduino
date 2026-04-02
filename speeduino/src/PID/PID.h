@@ -18,9 +18,7 @@ class PID
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute(unsigned long now);       // * performs the PID calculation for the given time.
-    bool Compute(void);                     // * legacy wrapper that uses millis().
-                                          //   called every time loop() cycles. ON/OFF and
+    bool Compute(void);                   //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
 
@@ -38,9 +36,7 @@ class PID
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
-    void SetSampleTime(int);              // * sets the frequency, in Milliseconds, with which
-                                          //   the PID calculation is performed.  default is 100
-  private:
+private:
 	void Initialize();
 
     long kp;                  // * (P)roportional Tuning Parameter
@@ -54,10 +50,8 @@ class PID
     long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
                                   //   what these values are.  with pointers we'll just know.
 
-	unsigned long lastTime;
 	long ITerm, lastInput;
 
-	unsigned long SampleTime;
 	long outMin, outMax;
 	bool inAuto;
 };

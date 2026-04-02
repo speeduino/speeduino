@@ -18,12 +18,8 @@ PID::PID(long* Input, long* Output, long* Setpoint,
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 
-    SampleTime = 100;							//default Controller Sample Time is 0.1 seconds
-
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd);
-
-    lastTime = millis()-SampleTime;
 }
 
 
@@ -33,41 +29,28 @@ PID::PID(long* Input, long* Output, long* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute(unsigned long now)
+bool PID::Compute(void)
 {
    if(!inAuto) return false;
-   unsigned long timeChange = (now - lastTime);
-   //if(timeChange>=SampleTime)
-   {
-      /*Compute all the working error variables*/
-	  long input = *myInput;
-      long error = *mySetpoint - input;
-      ITerm += (ki * error);
-      if(ITerm > outMax) ITerm= outMax;
-      else if(ITerm < outMin) ITerm = outMin;
-      long dInput = (input - lastInput);
+   /*Compute all the working error variables*/
+   long input = *myInput;
+   long error = *mySetpoint - input;
+   ITerm += (ki * error);
+   if(ITerm > outMax) ITerm= outMax;
+   else if(ITerm < outMin) ITerm = outMin;
+   long dInput = (input - lastInput);
 
-      /*Compute PID Output*/
-      long output = (kp * error) + ITerm- (kd * dInput);
+   /*Compute PID Output*/
+   long output = (kp * error) + ITerm- (kd * dInput);
 
-	  if(output > outMax) { output = outMax; }
-      else if(output < outMin) { output = outMin; }
-	  *myOutput = output/1000;
+   if(output > outMax) { output = outMax; }
+   else if(output < outMin) { output = outMin; }
+   *myOutput = output/1000;
 
-      /*Remember some variables for next time*/
-      lastInput = input;
-      lastTime = now;
-	  return true;
-   }
-   //else return false;
+   /*Remember some variables for next time*/
+   lastInput = input;
+   return true;
 }
-
-// LCOV_EXCL_START
-bool PID::Compute()
-{
-    return Compute(millis());
-}
-// LCOV_EXCL_STOP
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.
@@ -95,20 +78,6 @@ void PID::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
    }
 }
 
-/* SetSampleTime(...) *********************************************************
- * sets the period, in Milliseconds, at which the calculation is performed
- ******************************************************************************/
-void PID::SetSampleTime(int NewSampleTime)
-{
-   if (NewSampleTime > 0)
-   {
-      unsigned long ratioX1000  = (unsigned long)(NewSampleTime * 1000) / (unsigned long)SampleTime;
-      ki = (ki * ratioX1000) / 1000;
-      //kd /= ratio;
-      kd = (kd * 1000) / ratioX1000;
-      SampleTime = (unsigned long)NewSampleTime;
-   }
-}
 
 /* SetOutputLimits(...)****************************************************
  *     This function will be used far more often than SetInputLimits.  while
