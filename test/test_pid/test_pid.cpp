@@ -92,6 +92,41 @@ static void test_pid_reverse_direction(void)
     TEST_ASSERT_EQUAL(-255, output);
 }
 
+static void test_pid_set_output_limits_long_range(void)
+{
+    long input = 0;
+    long output = 0;
+    long setpoint = 1000;
+
+    PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
+    pid.SetMode(AUTOMATIC);
+
+    pid.SetOutputLimits(0, 10);
+    TEST_ASSERT_TRUE(pid.Compute());
+    TEST_ASSERT_EQUAL(10, output);
+
+    pid.SetOutputLimits(-20, 20);
+    input = 1000;
+    setpoint = 0;
+    pid.Initialize();
+    TEST_ASSERT_TRUE(pid.Compute());
+    TEST_ASSERT_EQUAL(-20, output);
+
+    pid.SetOutputLimits(100, 200);
+    input = 0;
+    setpoint = 0;
+    pid.Initialize();
+    TEST_ASSERT_TRUE(pid.Compute());
+    TEST_ASSERT_EQUAL(100, output);
+
+    pid.SetOutputLimits(150, 150); // invalid min==max should be ignored
+    input = 0;
+    setpoint = 0;
+    pid.Initialize();
+    TEST_ASSERT_TRUE(pid.Compute());
+    TEST_ASSERT_EQUAL(100, output); // remains from previous in-range bounds
+}
+
 static void test_pid_integral_accumulation(void)
 {
     long input = 0;
@@ -108,6 +143,71 @@ static void test_pid_integral_accumulation(void)
     TEST_ASSERT_EQUAL(2, output);
 }
 
+static void test_pid_set_tunings_runtime_changes(void)
+{
+    long input = 0;
+    long output = 0;
+    long setpoint = 100;
+
+    PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
+    pid.SetMode(AUTOMATIC);
+
+    TEST_ASSERT_TRUE(pid.Compute());
+    long originalOutput = output;
+
+    pid.SetTunings(20, 0, 0); // Change Kp
+    TEST_ASSERT_TRUE(pid.Compute());
+    // Output should change due to new Kp
+    TEST_ASSERT_NOT_EQUAL(originalOutput, output);
+}
+
+static void test_pid_initialize_resets_state(void)
+{
+    long input = 0;
+    long output = 50;
+    long setpoint = 100;
+
+    PID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
+    pid.SetMode(AUTOMATIC);
+
+    TEST_ASSERT_TRUE(pid.Compute()); // Accumulate some integral
+
+    pid.Initialize(); // Reset state
+    TEST_ASSERT_TRUE(pid.Compute());
+    // After reset, output should be based on new state (integral reset)
+    TEST_ASSERT_NOT_EQUAL(50, output); // Should not be the initial output
+}
+
+static void test_pid_set_output_limits_invalid_ignored(void)
+{
+    long input = 0;
+    long output = 0;
+    long setpoint = 100;
+
+    PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
+    pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
+    pid.SetMode(AUTOMATIC);
+
+    TEST_ASSERT_TRUE(pid.Compute());
+    // Output should still be computed normally (limits ignored, default 0-255)
+    TEST_ASSERT_NOT_EQUAL(0, output);
+}
+
+static void test_pid_set_controller_direction_runtime_manual(void)
+{
+    long input = 0;
+    long output = 0;
+    long setpoint = 100;
+
+    PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
+    pid.SetMode(MANUAL); // Manual mode
+    pid.SetControllerDirection(REVERSE); // Should not affect in manual mode
+
+    pid.SetMode(AUTOMATIC);
+    TEST_ASSERT_TRUE(pid.Compute());
+    TEST_ASSERT_GREATER_THAN(0, output); // Reverse direction normally produces negative output
+}
+
 void testPID(void)
 {
     SET_UNITY_FILENAME() {
@@ -118,5 +218,10 @@ void testPID(void)
         RUN_TEST_P(test_pid_integral_accumulation);
         RUN_TEST_P(test_pid_output_limits_in_auto_scope);
         RUN_TEST_P(test_pid_mode_transitions_and_controller_direction);
+        RUN_TEST_P(test_pid_set_output_limits_long_range);
+        RUN_TEST_P(test_pid_set_tunings_runtime_changes);
+        RUN_TEST_P(test_pid_initialize_resets_state);
+        RUN_TEST_P(test_pid_set_output_limits_invalid_ignored);
+        RUN_TEST_P(test_pid_set_controller_direction_runtime_manual);
     }
 }
