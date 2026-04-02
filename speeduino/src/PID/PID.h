@@ -36,23 +36,22 @@ class PID
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
-private:
 	void Initialize();
-
-    long kp;                  // * (P)roportional Tuning Parameter
+private:
+  long kp;                  // * (P)roportional Tuning Parameter
   long ki;                  // * (I)ntegral Tuning Parameter
   long kd;                  // * (D)erivative Tuning Parameter
 
 	int controllerDirection;
 
-    long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
-    long *myOutput;             //   This creates a hard link between the variables and the
-    long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
-                                  //   what these values are.  with pointers we'll just know.
+  long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
+  long *myOutput;             //   This creates a hard link between the variables and the
+  long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
+                                //   what these values are.  with pointers we'll just know.
 
-	long ITerm, lastInput;
+  long ITerm, lastInput;
 
-	long outMin, outMax;
-	bool inAuto;
+  long outMin, outMax;
+  bool inAuto;
 };
 
