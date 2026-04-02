@@ -4,17 +4,14 @@
 
 class integerPID
 {
-
-
-  public:
+public:
 
   //Constants used in some of the functions below
   #define AUTOMATIC	1
   #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
-  #define PID_SHIFTS  10 //Increased resolution
-
+  
   //commonly used functions **************************************************************************
     integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
         int16_t, int16_t, int16_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
@@ -26,9 +23,6 @@ class integerPID
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
-    bool Compute2(int, int, bool);
-    bool ComputeVVT(uint32_t);
-    
     void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
@@ -37,7 +31,7 @@ class integerPID
 
   //available but not commonly used functions ********************************************************
     void SetTunings(int16_t, int16_t,       // * While most users will set the tunings once in the
-                    int16_t, uint8_t=0);       	  //   constructor, this function gives the user the option
+                    int16_t);       	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
 	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
@@ -48,9 +42,6 @@ class integerPID
 
 
 
-  //Display functions ****************************************************************
-	int GetMode();						  //  inside the PID.
-	int GetDirection();					  //
   void Initialize();
   void ResetIntegeral();
 
@@ -73,8 +64,7 @@ class integerPID
 
 	unsigned long lastTime;
 	long outputSum, lastInput, lastMinusOneInput;
-  int16_t lastError;
-
+  
 	uint16_t SampleTime;
 	long outMin, outMax;
 	bool inAuto;

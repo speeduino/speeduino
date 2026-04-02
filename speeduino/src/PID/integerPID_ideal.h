@@ -4,9 +4,7 @@
 
 class integerPID_ideal
 {
-
-
-  public:
+public:
 
   //Constants used in some of the functions below
   #define AUTOMATIC	1
@@ -18,10 +16,6 @@ class integerPID_ideal
     integerPID_ideal(long*, uint16_t*, uint16_t*, uint16_t*, uint8_t*,        // * constructor.  links the PID to the Input, Output, and
         uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
 
-    bool Compute();                       // * performs the PID calculation.  it should be
-                                          //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
     bool Compute(uint16_t);               // * performs the PID calculation.  it should be
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
@@ -44,9 +38,6 @@ class integerPID_ideal
 
 
 
-  //Display functions ****************************************************************
-	int GetMode();						  //  inside the PID.
-	int GetDirection();					  //
 	void Initialize();
 
   private:

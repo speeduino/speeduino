@@ -1081,7 +1081,6 @@ void vvtControl(void)
 
           //If not already at target angle, calculate new value from PID
           bool PID_compute = vvtPID.Compute(true);
-          //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
           if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }

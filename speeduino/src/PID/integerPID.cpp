@@ -1,6 +1,8 @@
 #include "integerPID.h"
 #include <Arduino.h>
 
+constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
+
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
@@ -95,111 +97,12 @@ bool integerPID::Compute(bool pOnE, long FeedForwardTerm)
    return false;
 }
 
-bool integerPID::ComputeVVT(uint32_t Sample)
-{
-   if(!inAuto) return false;
-   /*Compute all the working error variables*/
-   long pTerm, dTerm;
-   long input = *myInput;
-   long error = *mySetpoint - input;
-   long dInput = error - lastError;
-   long dTime = lastTime - Sample;
-
-   pTerm = kp * error;
-
-   if (ki != 0)
-   {
-      outputSum += (ki * error) * dTime; //integral += error × dt
-      if(outputSum > outMax*100) { outputSum = outMax*100; }
-      else if(outputSum < -outMax*100) { outputSum = -outMax*100; }
-   }
-
-   dTerm = dInput * kd * dTime;
-
-   /*Compute PID Output*/
-   long output = (pTerm + outputSum + dTerm) >> 5;
-
-   if(output > outMax) output = outMax;
-   else if(output < outMin) output = outMin;
-   *myOutput = output;
-
-   /*Remember some variables for next time*/
-   lastError = error;
-   lastTime = dTime;
-
-   return true;
-}
-
-bool integerPID::Compute2(int target, int input, bool pOnE)
-{
-   if(!inAuto) return false;
-   unsigned long now = millis();
-   //SampleTime = (now - lastTime);
-   uint16_t timeChange = (now - lastTime);
-   if(timeChange >= SampleTime)
-   {
-      long Kp, Ki, Kd;
-      long PV; 
-      long output;
-      long SP1;
-      long error;
-      long pid_deriv;
-
-      #define pid_divider 1024
-      #define pid_multiplier 100
-      
-      //pid_divider = 128;
-      //pid_multiplier = 10;
-
-      //convert_unitless_percent(min, max, targ, raw_PV, &PV, &SP);
-      PV = (((long)input - outMin) * 10000L) / (outMax - outMin); //125
-      SP1 = (((long)target - outMin) * 10000L) / (outMax - outMin); //500
-   
-      error = SP1 - PV; //375
-      pid_deriv = PV - (2 * lastInput) + lastMinusOneInput; //125
-
-      if(!pOnE) 
-      {
-         Kp = ((long) ((PV - lastInput) * (long)kp)); //125 * kp
-      } 
-      else
-      {
-        Kp = ((long) ((error - lastError) * (long)kp)); 
-      }
-      Ki = ((((long) error * timeChange) / (long)pid_divider) * (long)ki); //12*ki
-      Kd = ((long) pid_deriv * (((long) kd * pid_multiplier) / timeChange)); 
-
-      if(!pOnE) 
-      {
-        output = Kp - Ki + Kd;
-      } 
-      else 
-      {
-        output = Kp + Ki - Kd;
-      }
-
-	    if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
-	    *myOutput = output;
-
-      /*Remember some variables for next time*/
-      lastMinusOneInput = lastInput;
-      lastInput = input;
-      lastError = error;
-      lastTime = now;
-
-      return true;
-   }
-   else return false;
-}
-
-
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd, uint8_t realTime)
+void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd)
 {
    if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
    dispKp = Kp; dispKi = Ki; dispKd = Kd;
@@ -210,20 +113,11 @@ void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd, uint8_t realTime
    ki = Ki * SampleTimeInSec;
    kd = Kd / SampleTimeInSec;
    */
-   if(realTime == 0)
-   {
-      long InverseSampleTimeInSec = 1000 / SampleTime;
-      //New resolution, 32x to improve ki here | kp 3.125% | ki 3.125% | kd 0.781%
-      kp = Kp * 32;
-      ki = (long)(Ki * 32) / InverseSampleTimeInSec;
-      kd = (long)(Kd * 32) * InverseSampleTimeInSec;
-   }
-   else
-   {
-      kp = Kp;
-      ki = Ki;
-      kd = Kd;
-   }
+   long InverseSampleTimeInSec = 1000 / SampleTime;
+   //New resolution, 32x to improve ki here | kp 3.125% | ki 3.125% | kd 0.781%
+   kp = Kp * 32;
+   ki = (long)(Ki * 32) / InverseSampleTimeInSec;
+   kd = (long)(Kd * 32) * InverseSampleTimeInSec;
 
    if(controllerDirection == REVERSE)
    {
@@ -316,11 +210,4 @@ void integerPID::SetControllerDirection(uint8_t Direction)
    controllerDirection = Direction;
 }
 
-/* Status Functions*************************************************************
- * Just because you set the Kp=-1 doesn't mean it actually happened.  these
- * functions query the internal state of the PID.  they're here for display
- * purposes.  this are the functions the PID Front-end uses for example
- ******************************************************************************/
-int integerPID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
-int integerPID::GetDirection(){ return controllerDirection;}
 void integerPID::ResetIntegeral() { outputSum=0;}

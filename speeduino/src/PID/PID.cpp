@@ -71,8 +71,6 @@ bool PID::Compute()
  ******************************************************************************/
 void PID::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
 {
-   dispKp = Kp; dispKi = Ki; dispKd = Kd;
-
    /*
    double SampleTimeInSec = ((double)SampleTime)/1000;
    kp = Kp;
@@ -174,14 +172,3 @@ void PID::SetControllerDirection(uint8_t Direction)
    }
    controllerDirection = Direction;
 }
-
-/* Status Functions*************************************************************
- * Just because you set the Kp=-1 doesn't mean it actually happened.  these
- * functions query the internal state of the PID.  they're here for display
- * purposes.  this are the functions the PID Front-end uses for example
- ******************************************************************************/
-int16_t PID::GetKp(){ return  dispKp; }
-int16_t PID::GetKi(){ return  dispKi;}
-int16_t PID::GetKd(){ return  dispKd;}
-int PID::GetMode(){ return  inAuto ? AUTOMATIC : MANUAL;}
-int PID::GetDirection(){ return controllerDirection;}

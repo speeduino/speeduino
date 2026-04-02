@@ -39,24 +39,10 @@ class PID
 										  //   once it is set in the constructor.
     void SetSampleTime(int);              // * sets the frequency, in Milliseconds, with which
                                           //   the PID calculation is performed.  default is 100
-
-
-
-  //Display functions ****************************************************************
-	int16_t GetKp();						  // These functions query the pid for internal values.
-	int16_t GetKi();						  //  they were created mainly for the pid front-end,
-	int16_t GetKd();						  // where it's important to know what is actually
-	int GetMode();						  //  inside the PID.
-	int GetDirection();					  //
-
   private:
 	void Initialize();
 
-	long dispKp;				// * we'll hold on to the tuning parameters in user-entered
-	long dispKi;				//   format for display purposes
-	long dispKd;				//
-
-	long kp;                  // * (P)roportional Tuning Parameter
+    long kp;                  // * (P)roportional Tuning Parameter
   long ki;                  // * (I)ntegral Tuning Parameter
   long kd;                  // * (D)erivative Tuning Parameter
 

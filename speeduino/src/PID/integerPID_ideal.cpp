@@ -7,8 +7,6 @@
 #include "integerPID_ideal.h"
 #include <Arduino.h>
 
-//************************************************************************************************************************
-#define limitMultiplier 100 //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
 
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
@@ -33,17 +31,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     lastError = 0;
 }
 
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/
-bool integerPID_ideal::Compute()
-{
-   //This is the original PID with 50% Base target DC
-   return Compute(50*limitMultiplier);
-}
 
 /* Compute() **********************************************************************
  *     This, as they say, is where the magic happens.  this function should be called
@@ -53,6 +40,8 @@ bool integerPID_ideal::Compute()
  **********************************************************************************/
 bool integerPID_ideal::Compute(uint16_t FeedForward)
 {
+   constexpr uint16_t limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+
    unsigned long now = millis();
    //SampleTime = (now - lastTime);
    unsigned long timeChange = (now - lastTime);
@@ -180,10 +169,3 @@ void integerPID_ideal::SetControllerDirection(uint8_t Direction)
    }
    controllerDirection = Direction;
 }
-
-/* Status Functions*************************************************************
- * Just because you set the Kp=-1 doesn't mean it actually happened.  these
- * functions query the internal state of the PID.  they're here for display
- * purposes.  this are the functions the PID Front-end uses for example
- ******************************************************************************/
-int integerPID_ideal::GetDirection(){ return controllerDirection;}
