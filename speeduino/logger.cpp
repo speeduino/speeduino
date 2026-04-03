@@ -161,6 +161,7 @@ static byte buildEngineProtectStatus(const statuses &current)
     current.engineProtect.afr,
     current.engineProtect.coolant,
     false, // Unused
+    false, // Unused
     current.ioError,    
   };
   return setStatusBits(0, bits);
