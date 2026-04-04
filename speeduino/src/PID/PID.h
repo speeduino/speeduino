@@ -8,8 +8,7 @@ class PID
 public:
 
   //commonly used functions **************************************************************************
-    PID(long* Input, long* Output, long* Setpoint,
-        uint8_t Kp, uint8_t Ki, uint8_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
+    PID(long* Input, long* Output, long* Setpoint);     //   Setpoint.  Initial tuning parameters are also set here
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
     void activate(void);
@@ -33,9 +32,9 @@ public:
 										  //   once it is set in the constructor.
 	void Initialize();
 private:
-  long kp;                  // * (P)roportional Tuning Parameter
-  long ki;                  // * (I)ntegral Tuning Parameter
-  long kd;                  // * (D)erivative Tuning Parameter
+  long kp = 1;                  // * (P)roportional Tuning Parameter
+  long ki = 1;                  // * (I)ntegral Tuning Parameter
+  long kd = 1;                  // * (D)erivative Tuning Parameter
 
   PidDirection _direction = PidDirection::Direct;
 
