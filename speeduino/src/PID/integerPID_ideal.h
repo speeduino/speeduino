@@ -7,8 +7,6 @@ class integerPID_ideal
 public:
 
   //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
 

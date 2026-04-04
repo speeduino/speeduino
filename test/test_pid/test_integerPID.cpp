@@ -11,7 +11,6 @@ static void test_integerPID_manual_mode_compute_false(void)
     long setpoint = 20;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
-    pid.SetMode(MANUAL);
 
     TEST_ASSERT_FALSE(pid.Compute(NOW));
     TEST_ASSERT_EQUAL(8, output);
@@ -25,7 +24,7 @@ static void test_integerPID_auto_mode_p_on_error(void)
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     // Expected: kp scaled to 320, error=10, output=3200>>10=3
@@ -41,7 +40,7 @@ static void test_integerPID_output_limits_clamp(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 10);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_EQUAL(10, output);
@@ -55,7 +54,7 @@ static void test_integerPID_output_limits_zero_range(void)
 
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     output = 1000;
     pid.SetOutputLimits(0, 10);
@@ -75,7 +74,7 @@ static void test_integerPID_controller_direction_switches_effect(void)
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now));
@@ -103,7 +102,7 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-50, 50);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now));
@@ -124,7 +123,7 @@ static void test_integerPID_reverse_direction(void)
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, REVERSE);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_LESS_THAN(0, output);  // negative output expected in reverse
@@ -138,7 +137,7 @@ static void test_integerPID_feedforward_term(void)
 
     integerPID pid(&input, &output, &setpoint, 0, 0, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 15));
     TEST_ASSERT_EQUAL(15, output);
@@ -152,7 +151,7 @@ static void test_integerPID_integral_with_feedforward(void)
 
     integerPID pid(&input, &output, &setpoint, 0, 100, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     // With ki=100 (non-zero), error=90, kp=0, and feedforward=10
     // This tests that Compute with ki!=0 path is executed
@@ -170,7 +169,7 @@ static void test_integerPID_output_limits_upper_clamp(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 50); // Set max to 50
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_EQUAL(50, output); // Should be clamped to max
@@ -185,7 +184,7 @@ static void test_integerPID_output_limits_lower_clamp(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(100, 255); // Set min to 100
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_EQUAL(100, output); // Should be clamped to min
@@ -200,7 +199,7 @@ static void test_integerPID_output_limits_negative_range(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0, REVERSE);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-100, 10);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_LESS_OR_EQUAL(10, output);
@@ -216,7 +215,7 @@ static void test_integerPID_output_limits_no_clamp_needed(void)
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 255); // Wide limits
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     // Output should not be clamped; error=50, kp=10 yields ~15 internally
@@ -233,7 +232,7 @@ static void test_integerPID_output_limits_affects_integral(void)
     integerPID pid(&input, &output, &setpoint, 0, 50, 0, DIRECT);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 20); // Tight limit
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     // Integral windup prevention: output should not exceed limit
@@ -248,7 +247,7 @@ static void test_integerPID_auto_mode_output_limits(void)
 
     integerPID pid(&input, &output, &setpoint, 0, 50, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     output = 1000;
     pid.SetOutputLimits(-1001, 1001);
@@ -275,7 +274,7 @@ static void test_integerPID_derivative_term(void)
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255); // allow negative derivative output
     pid.SetTunings(0, 0, 1); // Re-set tunings after SetSampleTime
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now, 0));
@@ -299,7 +298,7 @@ static void test_Compute_NoTimeChange_ReturnsFalse(void)
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetSampleTime(100); // Set sample time to 100ms
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW)); // First compute should succeed
 
@@ -315,7 +314,7 @@ static void test_integerPID_set_sample_time_recalculates_tunings(void)
 
     integerPID pid(&input, &output, &setpoint, 10, 10, 10, DIRECT);
     pid.SetSampleTime(1); // Initial sample time
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     long firstOutput = output;
@@ -336,7 +335,7 @@ static void test_integerPID_initialize_resets_state(void)
 
     integerPID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW)); // Accumulate some integral
 
@@ -354,7 +353,7 @@ static void test_integerPID_reset_integral_zeros_output_sum(void)
 
     integerPID pid(&input, &output, &setpoint, 5, 100, 60, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.SetOutputLimits(-5000, 5000);
     pid.Initialize();
 
@@ -380,7 +379,7 @@ static void test_integerPID_set_tunings_runtime_changes(void)
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     long originalOutput = output;
@@ -398,7 +397,6 @@ static void test_integerPID_compute_in_manual_mode_returns_false(void)
     long setpoint = 20;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
-    pid.SetMode(MANUAL); // Manual mode
 
     TEST_ASSERT_FALSE(pid.Compute(NOW)); // Should return false in manual mode
     TEST_ASSERT_EQUAL(0, output); // Output unchanged
@@ -412,7 +410,7 @@ static void test_integerPID_set_output_limits_invalid_ignored(void)
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     // Output should still be computed normally (limits ignored)
@@ -426,9 +424,8 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
     long setpoint = 20;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
-    pid.SetMode(MANUAL); // Manual mode
     pid.SetControllerDirection(REVERSE); // Should not affect in manual mode
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     TEST_ASSERT_GREATER_THAN(0, output);
@@ -471,7 +468,7 @@ static void test_end_to_end_positive_positive_up(void)
     integerPID pid(&input, &output, &setpoint, 3, 1, 2, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
@@ -486,7 +483,7 @@ static void test_end_to_end_positive_positive_down(void)
     integerPID pid(&input, &output, &setpoint, 5, 2, 4, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
@@ -502,7 +499,7 @@ static void test_end_to_end_negative_negative_up(void)
     integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
@@ -517,7 +514,7 @@ static void test_end_to_end_negative_negative_down(void)
     integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
@@ -532,7 +529,7 @@ static void test_end_to_end_positive_negative(void)
     integerPID pid(&input, &output, &setpoint, 15, 1, 1, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
@@ -547,7 +544,7 @@ static void test_end_to_end_negative_positive(void)
     integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
