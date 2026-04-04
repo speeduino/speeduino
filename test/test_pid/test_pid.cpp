@@ -9,14 +9,14 @@ static void test_pid_mode_transitions_and_controller_direction(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Direct);
     pid.SetOutputLimits(-200, 200);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(12, output); // 255*50/1000 integer scaling yields 12
 
-    pid.SetControllerDirection(PidDirection::Reverse);
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Reverse);
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_LESS_THAN(0, output); // sign changed
 }
@@ -28,7 +28,7 @@ static void test_pid_output_limits_in_auto_scope(void)
     long setpoint = 500;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Direct);
     pid.activate();
     pid.SetOutputLimits(0, 100); // inAuto path updates output and ITerm
 
@@ -43,7 +43,7 @@ static void test_pid_manual_mode_compute_false(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 0, 0));
+    pid.SetTunings(make_pid_tuning(100, 0, 0), PidDirection::Direct);
 
     TEST_ASSERT_FALSE(pid.Compute());
     TEST_ASSERT_EQUAL(42, output);
@@ -56,7 +56,7 @@ static void test_pid_auto_mode_proportional(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
@@ -74,7 +74,7 @@ static void test_pid_output_limits_clamp(void)
     long setpoint = 1000;  // results in max output for Kp=255
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
     pid.activate();
 
@@ -89,10 +89,9 @@ static void test_pid_reverse_direction(void)
     long setpoint = 1000;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Reverse);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
-    pid.SetControllerDirection(PidDirection::Reverse);
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(-255, output);
@@ -105,7 +104,7 @@ static void test_pid_set_output_limits_long_range(void)
     long setpoint = 1000;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(255, 0, 0));
+    pid.SetTunings(make_pid_tuning(255, 0, 0), PidDirection::Direct);
     pid.activate();
 
     pid.SetOutputLimits(0, 10);
@@ -141,7 +140,7 @@ static void test_pid_integral_accumulation(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(0, 10, 0));
+    pid.SetTunings(make_pid_tuning(0, 10, 0), PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
@@ -158,14 +157,13 @@ static void test_pid_set_tunings_runtime_changes(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(10, 0, 0));
-    pid.SetControllerDirection(PidDirection::Direct);
+    pid.SetTunings(make_pid_tuning(10, 0, 0), PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     long originalOutput = output;
 
-    pid.SetTunings(make_pid_tuning(20, 0, 0)); // Change Kp
+    pid.SetTunings(make_pid_tuning(20, 0, 0), PidDirection::Direct); // Change Kp
     TEST_ASSERT_TRUE(pid.Compute());
     // Output should change due to new Kp
     TEST_ASSERT_NOT_EQUAL(originalOutput, output);
@@ -178,8 +176,7 @@ static void test_pid_initialize_resets_state(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(0, 10, 0));
-    pid.SetControllerDirection(PidDirection::Direct);
+    pid.SetTunings(make_pid_tuning(0, 10, 0), PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute()); // Accumulate some integral
@@ -197,8 +194,7 @@ static void test_pid_set_output_limits_invalid_ignored(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(10, 0, 0));
-    pid.SetControllerDirection(PidDirection::Direct);
+    pid.SetTunings(make_pid_tuning(10, 0, 0), PidDirection::Direct);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
     pid.activate();
 
@@ -214,8 +210,7 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(10, 0, 0));
-    pid.SetControllerDirection(PidDirection::Reverse); // Should not affect in manual mode
+    pid.SetTunings(make_pid_tuning(10, 0, 0), PidDirection::Reverse); // Should not affect in manual mode
     pid.SetOutputLimits(-25, 25);
     pid.activate();
 
@@ -258,7 +253,7 @@ static void test_end_to_end_positive_positive_up(void)
     long setpoint = 1500;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 30, 50));
+    pid.SetTunings(make_pid_tuning(100, 30, 50), PidDirection::Direct);
     pid.SetOutputLimits(-25, 25);
     pid.activate();
     pid.Initialize();
@@ -273,7 +268,7 @@ static void test_end_to_end_positive_positive_down(void)
     long setpoint = 900;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 5, 5));
+    pid.SetTunings(make_pid_tuning(100, 5, 5), PidDirection::Direct);
     pid.SetOutputLimits(-75, 75);
     pid.activate();
     pid.Initialize();
@@ -288,10 +283,9 @@ static void test_end_to_end_negative_negative_up(void)
     long setpoint = -900;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 25, 2));
+    pid.SetTunings(make_pid_tuning(100, 25, 2), PidDirection::Direct);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
-    pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
 }
@@ -303,7 +297,7 @@ static void test_end_to_end_negative_negative_down(void)
     long setpoint = -1500;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 30, 50));
+    pid.SetTunings(make_pid_tuning(100, 30, 50), PidDirection::Direct);
     pid.SetOutputLimits(-25, 25);
     pid.activate();
     pid.Initialize();
@@ -318,7 +312,7 @@ static void test_end_to_end_negative_positive(void)
     long setpoint = 199;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(50, 1, 80));
+    pid.SetTunings(make_pid_tuning(50, 1, 80), PidDirection::Direct);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
 
@@ -332,7 +326,7 @@ static void test_end_to_end_positive_to_negative(void)
     long setpoint = -1500;
 
     PID pid(&input, &output, &setpoint);
-    pid.SetTunings(make_pid_tuning(100, 30, 20));
+    pid.SetTunings(make_pid_tuning(100, 30, 20), PidDirection::Direct);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
     pid.Initialize();

@@ -86,12 +86,15 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID_ideal::SetTunings(const PidTuningParameters& pidParams)
+void integerPID_ideal::SetTunings(const PidTuningParameters& pidParams, PidDirection direction)
 {
-   _pidParams = pidParams;
-  if(_direction == PidDirection::Reverse)
+   if(direction == PidDirection::Reverse)
    {
       _pidParams = _pidParams * -1;
+   }
+   else
+   {
+      _pidParams = pidParams;
    }
 }
 
@@ -122,19 +125,5 @@ void integerPID_ideal::Initialize()
 {
    ITerm = 0;
    lastInput = *myInput;
-}
-
-/* SetControllerDirection(...)*************************************************
- * The PID will either be connected to a DIRECT acting process (+Output leads
- * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
- * know which one, because otherwise we may increase the output when we should
- * be decreasing.  This is called from the constructor.
- ******************************************************************************/
-void integerPID_ideal::SetControllerDirection(PidDirection direction)
-{
-   if(_direction != direction)
-   {
-      _pidParams = _pidParams * -1;
-   }
-   _direction = direction;
+   // lastError = 0;
 }

@@ -13,7 +13,7 @@ static void test_p_only_clamped_to_min(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(1, 0, 0)); // P-only
+    pid.SetTunings(make_pid_tuning(1, 0, 0), PidDirection::Direct); // P-only
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -29,7 +29,7 @@ static void test_p_only_clamped_to_max(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(100, 0, 0)); // P-only
+    pid.SetTunings(make_pid_tuning(100, 0, 0), PidDirection::Direct); // P-only
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -61,7 +61,7 @@ static void test_ki_windup_limits(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(10, 10, 0));
+    pid.SetTunings(make_pid_tuning(10, 10, 0), PidDirection::Direct);
     pid.SetOutputLimits(20, 80);
     pid.Initialize();
 
@@ -80,7 +80,7 @@ static void test_reverse_direction(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pidDirect(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pidDirect.SetTunings(make_pid_tuning(50, 0, 0));
+    pidDirect.SetTunings(make_pid_tuning(50, 0, 0), PidDirection::Direct);
     pidDirect.SetOutputLimits(0, 5000);
     pidDirect.Initialize();
 
@@ -88,9 +88,8 @@ static void test_reverse_direction(void)
     uint16_t directOutput = output;
 
     integerPID_ideal pidReverse(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pidReverse.SetTunings(make_pid_tuning(50, 0, 0));
+    pidReverse.SetTunings(make_pid_tuning(50, 0, 0), PidDirection::Reverse);
     pidReverse.SetOutputLimits(0, 5000);
-    pidReverse.SetControllerDirection(PidDirection::Reverse);
     pidReverse.Initialize();
     TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0));
     uint16_t reverseOutput = output;
@@ -122,7 +121,7 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(100, 0, 0));
+    pid.SetTunings(make_pid_tuning(100, 0, 0), PidDirection::Direct);
     pid.SetOutputLimits(80, 20);
     pid.Initialize();
 
@@ -139,7 +138,7 @@ static void test_initialize_resets_integral_and_error(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(1, 10, 0));
+    pid.SetTunings(make_pid_tuning(1, 10, 0), PidDirection::Direct);
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
@@ -160,7 +159,7 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     uint8_t sampleTime = 0;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(1, 0, 1));
+    pid.SetTunings(make_pid_tuning(1, 0, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
@@ -204,7 +203,7 @@ static void test_end_to_end_positive_positive_up(void)
     uint8_t sampleTime = 25;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(3, 2, 1));
+    pid.SetTunings(make_pid_tuning(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 
@@ -220,7 +219,7 @@ static void test_end_to_end_positive_positive_down(void)
     uint8_t sampleTime = 25;
 
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime);
-    pid.SetTunings(make_pid_tuning(3, 2, 1));
+    pid.SetTunings(make_pid_tuning(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 

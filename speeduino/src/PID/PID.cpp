@@ -52,7 +52,7 @@ bool PID::Compute(void)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void PID::SetTunings(const PidTuningParameters &pidParams)
+void PID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction)
 {
    /*
    double SampleTimeInSec = ((double)SampleTime)/1000;
@@ -64,7 +64,7 @@ void PID::SetTunings(const PidTuningParameters &pidParams)
   _pidParams = pidParams;
   _pidParams.Kd = _pidParams.Kd * 10;
 
-  if(_direction == PidDirection::Reverse)
+  if(direction == PidDirection::Reverse)
    {
       _pidParams = _pidParams * -1;
    }
@@ -114,19 +114,4 @@ void PID::Initialize()
    lastInput = *myInput;
    if(ITerm > outMax) ITerm = outMax;
    else if(ITerm < outMin) ITerm = outMin;
-}
-
-/* SetControllerDirection(...)*************************************************
- * The PID will either be connected to a DIRECT acting process (+Output leads
- * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
- * know which one, because otherwise we may increase the output when we should
- * be decreasing.  This is called from the constructor.
- ******************************************************************************/
-void PID::SetControllerDirection(PidDirection direction)
-{
-   if(_direction != direction)
-   {
-      _pidParams = _pidParams * -1;
-   }
-   _direction = direction;
 }
